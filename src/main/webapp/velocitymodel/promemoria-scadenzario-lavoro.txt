@@ -1,0 +1,5 @@
+Si informa che in data #if ($DATASCAD)$DATASCAD#end scadra' l'attività #if ($TIT)"$TIT"#end per lo scadenzario relativo al seguente lavoro:
+
+- codice del lavoro: #if ($CODLAV)$CODLAV#end
+
+- titolo: #if ($TITSIL)$TITSIL#end

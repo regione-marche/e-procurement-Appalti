@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Documento" pageWidth="595" pageHeight="842" columnWidth="483" leftMargin="56" rightMargin="56" topMargin="17" bottomMargin="22">
+	<property name="ireport.zoom" value="1.4641000000000008"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="ireport.callouts" value="##Wed Feb 05 15:49:26 CET 2014"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String">
+		<parameterDescription><![CDATA[Cartella contenente i sottoreport]]></parameterDescription>
+		<defaultValueExpression><![CDATA["C:\\Java\\Progetti\\PG\\src\\main\\webapp\\WEB-INF\\jrReport\\subreports\\"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="IMAGES_DIR" class="java.lang.String">
+		<parameterDescription><![CDATA[Cartella contenente le immagini]]></parameterDescription>
+		<defaultValueExpression><![CDATA["C:\\Java\\Progetti\\PG\\src\\main\\webapp\\WEB-INF\\jrReport\\images\\"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="CUSTOM_SUBREPORT_DIR" class="java.lang.String">
+		<parameterDescription><![CDATA[Cartella contenente i sottoreport]]></parameterDescription>
+		<defaultValueExpression><![CDATA["C:\\Java\\Progetti\\PG\\src\\main\\webapp\\WEB-INF\\jrReport\\ELDA\\subreports\\"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="NUMERO_GARA" class="java.lang.String">
+		<defaultValueExpression><![CDATA["G00192"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="IDSTAMPA" class="java.lang.String">
+		<defaultValueExpression><![CDATA["UNIPD_INV01"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT
+GARE.CRITLICG AS criterio_valutazione,
+GARE.DETLICG AS determinato_mediante,
+COUNT(DISTINCT GOEV.necvan) AS num_criteri,
+COUNT(DISTINCT GCAP.contaf) AS num_lav_forn,
+COUNT(DISTINCT USRSYS.SYSCON) AS num_punti_istru,
+COUNT(DISTINCT C1.DESCAT) AS num_presta_princi,
+COUNT(DISTINCT C2.DESCAT) AS num_ult_presta
+FROM GARE
+LEFT JOIN GARE G1 ON G1.NGARA = GARE.NGARA AND G1.MODLICG = 6
+LEFT JOIN GOEV ON GOEV.NGARA = G1.NGARA
+LEFT JOIN GARE G2 ON G2.NGARA = GARE.NGARA AND G2.MODLICG IN (5,14,6)
+LEFT JOIN GCAP ON GCAP.NGARA = G2.NGARA
+LEFT JOIN G_PERMESSI ON GARE.CODGAR1 = G_PERMESSI.CODGAR AND G_PERMESSI.MERUOLO = 2 AND G_PERMESSI.AUTORI = 1
+LEFT JOIN USRSYS ON USRSYS.SYSCON = G_PERMESSI.SYSCON
+LEFT JOIN V_GARE_CATEGORIE C1 ON C1.NGARA = GARE.NGARA AND C1.ISPREV = '1' AND C1.ISCATGARA = '1'
+LEFT JOIN V_GARE_CATEGORIE C2 ON C2.NGARA = GARE.NGARA AND C2.ISPREV = '2' AND C2.ISCATGARA='1'
+WHERE GARE.NGARA = $P{NUMERO_GARA}
+GROUP BY GARE.CRITLICG, GARE.DETLICG]]>
+	</queryString>
+	<field name="CRITERIO_VALUTAZIONE" class="java.lang.Integer"/>
+	<field name="DETERMINATO_MEDIANTE" class="java.lang.Integer"/>
+	<field name="NUM_CRITERI" class="java.lang.Integer"/>
+	<field name="NUM_LAV_FORN" class="java.lang.Integer"/>
+	<field name="NUM_PUNTI_ISTRU" class="java.lang.Integer"/>
+	<field name="NUM_PRESTA_PRINCI" class="java.lang.Integer"/>
+	<field name="NUM_ULT_PRESTA" class="java.lang.Integer"/>
+	<detail>
+		<band height="193" splitType="Immediate">
+			<image scaleImage="RealSize" hAlign="Center">
+				<reportElement x="0" y="0" width="483" height="40" isRemoveLineWhenBlank="true"/>
+				<graphicElement>
+					<pen lineWidth="0.0" lineStyle="Solid"/>
+				</graphicElement>
+				<imageExpression class="java.lang.String"><![CDATA[$P{IMAGES_DIR} + "/logo_mercato_elettronico.png"]]></imageExpression>
+			</image>
+			<subreport>
+				<reportElement positionType="Float" x="0" y="40" width="483" height="17" isRemoveLineWhenBlank="true"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="IDSTAMPA">
+					<subreportParameterExpression><![CDATA[$P{IDSTAMPA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_GARA">
+					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "/INV01_Testata.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement positionType="Float" x="0" y="57" width="483" height="17" isRemoveLineWhenBlank="true"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUM_PUNTI_ISTRU">
+					<subreportParameterExpression><![CDATA[$F{NUM_PUNTI_ISTRU}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUM_ULT_PRESTA">
+					<subreportParameterExpression><![CDATA[$F{NUM_ULT_PRESTA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUM_PRESTA_PRINCI">
+					<subreportParameterExpression><![CDATA[$F{NUM_PRESTA_PRINCI}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="IDSTAMPA">
+					<subreportParameterExpression><![CDATA[$P{IDSTAMPA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_GARA">
+					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "/INV01_DatiDellaGara.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement positionType="Float" x="0" y="74" width="483" height="17" isRemoveLineWhenBlank="true"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_GARA">
+					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUM_PUNTI_ISTRU">
+					<subreportParameterExpression><![CDATA[$F{NUM_PUNTI_ISTRU}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUM_PRESTA_PRINCI">
+					<subreportParameterExpression><![CDATA[$F{NUM_PRESTA_PRINCI}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUM_ULT_PRESTA">
+					<subreportParameterExpression><![CDATA[$F{NUM_ULT_PRESTA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "/INV01_DatiDellaGara2.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement positionType="Float" x="0" y="91" width="483" height="17" isRemoveLineWhenBlank="true"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_GARA">
+					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "/INV01_UlterioriDatiDellaGara.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement positionType="Float" x="0" y="108" width="483" height="16" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{NUM_CRITERI} > 0]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_GARA">
+					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "/INV01_CriteriDiValutazione.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement positionType="Float" x="0" y="142" width="483" height="16" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{NUM_LAV_FORN} > 0]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_GARA">
+					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "/INV01_LavorazioniEForniture.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport runToBottom="false">
+				<reportElement positionType="Float" x="0" y="124" width="483" height="18" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{NUM_CRITERI} > 0]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="SUBREPOT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_GARA">
+					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "/INV01_CriteriDiValutazione_eco.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="21">
+			<textField>
+				<reportElement x="161" y="1" width="80" height="20"/>
+				<textElement textAlignment="Right">
+					<font fontName="Times New Roman"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["pag. "+$V{PAGE_NUMBER}+" di"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="241" y="1" width="40" height="20"/>
+				<textElement>
+					<font fontName="Times New Roman"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

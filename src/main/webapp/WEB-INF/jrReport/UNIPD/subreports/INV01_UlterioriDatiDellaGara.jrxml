@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="UlterioriDatiDellaGara" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+	<property name="ireport.zoom" value="1.7715610000000013"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="NUMERO_GARA" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT
+XGARE.XGARE01 AS sopralluogo_obbl,
+XGARE.XGARE12 AS data_termine_sopralluogo,
+XGARE.XGARE15 AS ora_termine_sopralluogo,
+XGARE.XGARE02 AS ref_sopralluogo,
+XGARE.XGARE03 AS ref_sopralluogo_cont_al,
+XGARE.XGARE04 AS sopralluogo_presso,
+XGARE.XGARE05 AS campionatura,
+XGARE.XGARE06 AS ref_campionatura,
+XGARE.XGARE07 AS ref_campionatura_cont_al,
+XGARE.XGARE08 AS campionatura_presso,
+XGARE.XGARE09 AS pres_campionatura_entro,
+XGARE.XGARE10 AS data_cons_campionatura,
+XGARE.XGARE11 AS lista_campionatura
+FROM XGARE
+WHERE XGARE.XNGARA = $P{NUMERO_GARA}]]>
+	</queryString>
+	<field name="SOPRALLUOGO_OBBL" class="java.lang.Integer"/>
+	<field name="DATA_TERMINE_SOPRALLUOGO" class="java.lang.String"/>
+	<field name="ORA_TERMINE_SOPRALLUOGO" class="java.lang.String"/>
+	<field name="REF_SOPRALLUOGO" class="java.lang.String"/>
+	<field name="REF_SOPRALLUOGO_CONT_AL" class="java.lang.String"/>
+	<field name="SOPRALLUOGO_PRESSO" class="java.lang.String"/>
+	<field name="CAMPIONATURA" class="java.lang.Integer"/>
+	<field name="REF_CAMPIONATURA" class="java.lang.String"/>
+	<field name="REF_CAMPIONATURA_CONT_AL" class="java.lang.String"/>
+	<field name="CAMPIONATURA_PRESSO" class="java.lang.String"/>
+	<field name="PRES_CAMPIONATURA_ENTRO" class="java.lang.String"/>
+	<field name="DATA_CONS_CAMPIONATURA" class="java.lang.String"/>
+	<field name="LISTA_CAMPIONATURA" class="java.lang.String"/>
+	<detail>
+		<band height="20" splitType="Immediate">
+			<frame>
+				<reportElement x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{SOPRALLUOGO_OBBL} == 1]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Sopralluogo obbligatorio?]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[($F{SOPRALLUOGO_OBBL} != null && $F{SOPRALLUOGO_OBBL} == 1) ? "Sì" : "No"]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20" splitType="Prevent">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{DATA_TERMINE_SOPRALLUOGO} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Data termine sopralluogo]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.util.Date"><![CDATA[$F{DATA_TERMINE_SOPRALLUOGO} != null ? (new SimpleDateFormat("yyyy-MM-dd")).parse($F{DATA_TERMINE_SOPRALLUOGO}.substring(0,10)) : null]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{ORA_TERMINE_SOPRALLUOGO} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Ora sopralluogo]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{ORA_TERMINE_SOPRALLUOGO}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{REF_SOPRALLUOGO} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Referente per il sopralluogo]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{REF_SOPRALLUOGO}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{REF_SOPRALLUOGO_CONT_AL} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Contattabile al]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{REF_SOPRALLUOGO_CONT_AL}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{SOPRALLUOGO_PRESSO} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Sopralluogo da effetuarsi presso]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{SOPRALLUOGO_PRESSO}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{CAMPIONATURA} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Campionatura]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[($F{CAMPIONATURA} != null && $F{CAMPIONATURA} == 1) ? "Sì" : "No"]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{REF_CAMPIONATURA} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Referente campionatura]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{REF_CAMPIONATURA}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{REF_CAMPIONATURA_CONT_AL} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Contattabile al]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{REF_CAMPIONATURA_CONT_AL}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{CAMPIONATURA_PRESSO} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Campionatura da consegnare presso]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{CAMPIONATURA_PRESSO}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{PRES_CAMPIONATURA_ENTRO} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Presentazione campionatura entro le ore]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{PRES_CAMPIONATURA_ENTRO}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{DATA_CONS_CAMPIONATURA} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Data consegna campionatura]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{DATA_CONS_CAMPIONATURA}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="31">
+			<frame>
+				<reportElement x="0" y="20" width="482" height="10"/>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{LISTA_CAMPIONATURA} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Lista campionatura]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{LISTA_CAMPIONATURA}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+	</detail>
+</jasperReport>

@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+
+ <!DOCTYPE tiles-definitions PUBLIC
+       "-//Apache Software Foundation//DTD Tiles Configuration 1.1//EN"
+       "http://jakarta.apache.org/struts/dtds/tiles-config_1_1.dtd">
+
+
+<!--
+     This is a blank Tiles definition file with a commented example.
+-->
+
+<tiles-definitions>
+
+    <!-- sample tiles definitions
+    <definition name=".mainLayout" path="/common/layouts/classicLayout.jsp">
+        <put name="title"  value="Sample Page Title" />
+        <put name="header" value="/common/header.jsp" />
+        <put name="menu"   value=".mainMenu" />
+        <put name="footer" value="/common/footer.jsp" />
+        <put name="body"   value=".portal.body" />
+    </definition>
+
+    <definition name=".mainMenu" path="/common/layouts/vboxLayout.jsp" >
+        <putList name="list" >
+            <add value=".menu.links" />
+            <add value=".menu.taglib.references" />
+            <add value=".menu.printer.friendly" />
+            <add value=".menu.old.documents" />
+      </putList>
+    </definition>
+
+    <definition name="aPage" extends=".mainLayout">
+        <put name="title"  value="Another Title" />
+        <put name="body"   value=".aPage.body" />
+    </definition>
+
+    end samples -->
+
+	<!-- Definizione della pagina 'Nuova gara' -->
+	<definition name="nuovaGaraDef" extends=".dettaglioNoTabDef">
+		<put name="head" value="/WEB-INF/pages/gare/v_gare_torn/headNuovaGara.jsp"/>
+		<put name="titoloMaschera" value="/WEB-INF/pages/gare/v_gare_torn/titoloNuovaGara.jsp" />
+		<put name="azioniContesto" value="/WEB-INF/pages/gare/v_gare_torn/azioniNuovaGara.jsp"/>
+		<put name="dettaglio" value="/WEB-INF/pages/gare/v_gare_torn/formNuovaGara.jsp"/>
+	</definition>
+
+	<definition name="exportOffertaPrezzi" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Esportazione della lista delle lavorazioni e forniture della gara" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-exportOffertaPrezzi.jsp"/>
+	</definition>
+	
+	<definition name="successExportOffertaPrezzi" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Esportazione della lista delle lavorazioni e forniture della gara completata" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-exportOffertaPrezzi.jsp"/>
+	</definition>
+	
+	<definition name="exportLottiGara" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Esportazione della lista dei lotti della gara" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-exportLottiGara.jsp"/>
+	</definition>
+	
+	<definition name="successExportLottiGara" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Esportazione della lista dei lotti della gara completata" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-exportLottiGara.jsp"/>
+	</definition>
+	
+	<definition name="importLottiGara" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Importazione della lista dei lotti della gara" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-importLottiGara.jsp"/>
+	</definition>
+
+	<definition name="successImportLottiGara" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Importazione della lista dei lotti della gara" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-importLottiGara.jsp"/>
+	</definition>
+
+	<definition name="importOffertaPrezzi" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Importazione della lista delle lavorazioni e forniture della gara" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-importOffertaPrezzi.jsp"/>
+	</definition>
+
+	<definition name="successImportOffertaPrezzi" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Importazione della lista delle lavorazioni e forniture della gara" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-importOffertaPrezzi.jsp"/>
+	</definition>
+	
+	<definition name="importVariazionePrezzi" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Importazione della variazione dei prezzi a base di gara delle lavorazioni e forniture" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-importVariazionePrezzi.jsp"/>
+	</definition>
+
+	<definition name="successImportVariazionePrezzi" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Importazione della variazione dei prezzi a base di gara delle lavorazioni e forniture" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-importVariazionePrezzi.jsp"/>
+	</definition>
+
+	<definition name="importOffertaPrezziDitta" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Importazione della lista delle lavorazioni e forniture della ditta" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-importOffertaPrezzi.jsp"/>
+	</definition>
+
+	<definition name="successImportOffertaPrezziDitta" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Importazione della lista delle lavorazioni e forniture della ditta" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-importOffertaPrezzi.jsp"/>
+	</definition>
+	
+	<definition name="listaCarrelli" extends=".popupDef">
+		<put name="titoloMaschera" value="Lista carrelli fornitori" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/carrelloFabbisogni/listaCarrelloFabbisogni.jsp"/>
+	</definition>
+	
+	<definition name="elencoFornitori" extends=".popupDef">
+		<put name="titoloMaschera" value="Lista elenco fornitori" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/elencoFornitori/listaElencoFornitori.jsp"/>
+	</definition>
+	
+	<definition name="trovaConcorrentiAUR" extends=".popupDef">
+		<put name="head" value="/WEB-INF/pages/gare/gare/elencoFornitori/headTrovaConcorrentiAUR.jsp"/>
+		<put name="eventiDiPagina" value=""/>
+		<put name="titoloMaschera" value="Ricerca fornitori" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/elencoFornitori/formTrovaConcorrentiAUR.jsp"/>
+	</definition>
+	
+	<definition name="listaModelliComunicazioni" extends=".listaDef">
+		<put name="head" value="/WEB-INF/pages/geneweb/w_confcom/head-w_confcom-lista.jsp"/>
+		<put name="azioniContesto" value="/WEB-INF/pages/geneweb/w_confcom/azioni-w_confcom-lista.jsp"/>
+		<put name="titoloMaschera" value="Nuova comunicazione" />
+		<put name="dettaglio" value="/WEB-INF/pages/geneweb/w_confcom/w_confcom-lista.jsp"/>
+	</definition>
+	
+	<definition name="listaProtocolliFascicolo" extends=".popupDef">
+		<put name="head" value="/WEB-INF/pages/gare/gare/protocolliFascicolo/headListaProtocolliFascicolo.jsp"/>
+		<put name="eventiDiPagina" value=""/>
+		<put name="titoloMaschera" value="Lista protocolli fascicolo" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/protocolliFascicolo/listaProtocolliFascicolo.jsp"/>
+	</definition>
+	
+	<definition name="listaAllegatiProtocollo" extends=".popupDef">
+		<put name="head" value="/WEB-INF/pages/gare/gare/protocolliFascicolo/headListaAllegatiProtocollo.jsp"/>
+		<put name="eventiDiPagina" value=""/>
+		<put name="titoloMaschera" value="Lista allegati protocollo" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/protocolliFascicolo/listaAllegatiProtocollo.jsp"/>
+	</definition>
+	
+	<definition name="successRegistrazioneImprese" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Riepilogo esito registrazioni" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/commons/popupRegistraImpreseSuPortaleSuccess.jsp"/>
+	</definition>
+	
+	
+	<definition name="exportOffertaPrezziOEPV" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Esportazione del dettaglio offerta prezzi della gara" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-exportOffertaPrezziOEPV.jsp"/>
+	</definition>
+	
+	<definition name="successExportOffertaPrezziOEPV" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Esportazione del dettaglio offerta prezzi della gara" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-exportOffertaPrezziOEPV.jsp"/>
+	</definition>
+	
+</tiles-definitions>

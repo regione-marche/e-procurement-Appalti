@@ -1,0 +1,109 @@
+TABLE.comunicazioni {
+	margin: 0;
+	margin-top: 5px;
+	margin-bottom: 5px;
+	padding: 0px;
+	width: 100%;
+	font-size: 11px;
+	border-collapse: collapse;
+	border-left: 1px solid #A0AABA;
+	border-top: 1px solid #A0AABA;
+	border-right: 1px solid #A0AABA;
+}
+
+TABLE.comunicazioni THEAD TR{
+	background-color: #A7BFD9;
+	border-bottom: 1px solid #A0AABA;
+}
+
+TABLE.comunicazioni THEAD TR TH{
+	padding: 6 2 6 2;
+	text-align: center;
+	font-weight: bold;
+	height: 30px;
+}
+
+TABLE.comunicazioni TR {
+	background-color: #EFEFEF;
+}
+
+TABLE.comunicazioni TR TD.aligncenter {
+	text-align: center;
+}
+
+
+TABLE.comunicazioni TBODY{
+	//cursor:pointer;
+}
+
+TABLE.comunicazioni TR TD, TABLE.comunicazioni TR TH {
+	padding-top: 2px;
+	padding-bottom: 2px;
+	padding-right: 6px;
+	padding-left: 6px;
+	text-align: left;
+	vertical-align: top;
+	border-left: 1px solid #A0AABA;
+	border-right: 1px solid #A0AABA;
+	border-top: 1px solid #A0AABA;
+	border-bottom: 1px solid #A0AABA;
+	height: 22px;
+}
+
+TABLE.comunicazioni TD.rowChildAllegati {
+    padding-left: 0px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+
+TD.details-control {
+    background: url('../../../img/TreeExpand.png') no-repeat center center;
+    cursor: pointer;
+    title:"aaaa";
+}
+
+TR.shown TD.details-control {
+    background: url('../../../img/TreeCollapse.png') no-repeat center center;
+}
+
+
+
+TABLE.allegati {
+	margin: 0;
+	margin-top: 0px;
+	margin-bottom: 0px;
+	margin-left: 28px;
+	padding: 0px;
+	width: 94%;
+	font-size: 10px;
+	border-collapse: collapse;
+	border-top: 1px solid #A0AABA;
+	border-left: 1px solid #A0AABA;
+	border-right: 1px solid #A0AABA;
+	
+}
+
+TABLE.allegati TD.descrizione{
+	text-align: center;
+	width: 40%;
+	background-color: #EBEBEB;
+}
+
+TABLE.allegati TD.nomeAllegato{
+	text-align: center;
+	width: 60%;
+	background-color: #EBEBEB;
+}
+
+TABLE.allegati TD.idprg, TD.iddocdig, TD.comdatins, TD.comtipo, TD.idcom, TD.idprgCom, TD.descbusta, TD.comtipma{
+	display: none;
+}
+
+span.spanNomeAllegato{
+	cursor: pointer;
+}
+
+span.spanCopiaAllegato{
+	cursor: pointer;
+}
+

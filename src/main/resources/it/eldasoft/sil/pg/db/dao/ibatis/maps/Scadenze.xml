@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+<sqlMap namespace="ScadenzeGare">
+
+  <select id="getGiorniScadenza" resultClass="java.lang.Integer">
+    SELECT numgio 
+      FROM catsca 
+     WHERE tiplav=#tipoAppalto#
+     	<![CDATA[AND liminf<=#importoGara#]]>
+     	<![CDATA[AND (limsup>#importoGara# OR limsup = #numNonDefinito#)]]>
+       AND calcolo=#tipoCalcolo#
+       AND (tipgar=#tipoProcedura# or tipgar=#numNonDefinito#) 
+       AND (prourg=#proceduraUrgente# or prourg=#strNonDefinita#) 
+       AND (terrid=#termineRidotto# or terrid=#strNonDefinita#) 
+       AND (banweb=#bandoWeb# or banweb=#strNonDefinita#) 
+       AND (docweb=#docWeb# or docweb=#strNonDefinita#) 
+       AND (oggcont=#oggettoContratto# or oggcont=#numNonDefinito#)
+  </select>
+
+</sqlMap>

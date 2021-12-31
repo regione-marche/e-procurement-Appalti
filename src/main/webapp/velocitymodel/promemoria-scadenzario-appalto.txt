@@ -1,0 +1,7 @@
+Si informa che in data #if ($DATASCAD)$DATASCAD#end scadra' l'attività #if ($TIT)"$TIT"#end per lo scadenzario relativo al seguente appalto:
+
+- codice dell'appalto: #if ($CODLAV)$CODLAV#end#if ($NAPPAL), $NAPPAL#end 
+
+- oggetto: #if ($NOTAPP)$NOTAPP#end
+
+- CIG: #if ($CODCIG)$CODCIG#end

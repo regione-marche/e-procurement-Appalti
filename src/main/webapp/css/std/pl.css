@@ -1,0 +1,122 @@
+/* ********************** FORMATTAZIONI GENERALI  ********************** */
+ TABLE.griglia {
+                 margin: 0;
+                 margin-top: 5;
+                 margin-bottom: 5;
+                 PADDING: 0px;
+                 width: 100%;
+                 FONT-SIZE: 11px;
+                 border-collapse: collapse;
+                 border-left: 1px solid #A0AABA;
+                 border-top: 1px solid #A0AABA;
+                 border-right: 1px solid #A0AABA;
+            }
+        
+            TABLE.griglia TD {
+                 PADDING: 2px 0px 2px;
+                 BORDER-BOTTOM: #A0AABA 1px solid;
+            }
+
+            TABLE.griglia TD.no-border {
+                 PADDING: 2px 0px 2px;
+                 BORDER-BOTTOM: 0px;
+            }
+          
+            TABLE.griglia TD.etichetta-dato {
+                 width: 150px;
+                 HEIGHT: 22px;
+                 PADDING-RIGHT: 10px;
+                 BORDER-TOP: #A0AABA 1px solid;
+                 BACKGROUND-COLOR: #EFEFEF;
+                 color: #000000;
+                 TEXT-ALIGN: right;
+            }
+           
+            TABLE.griglia TD.etichetta-dato-archivio {
+                 width: 200px;
+                 HEIGHT: 22px;
+                 PADDING-RIGHT: 10px;
+                 BORDER-TOP: #FFFFFF 1px solid;
+                 BACKGROUND-COLOR: #EFEFEF;
+                 color: #000000;
+                 TEXT-ALIGN: right;
+            }
+
+            TABLE.griglia TD.valore-dato {
+                 width: 190px;
+                 PADDING-LEFT: 10px;
+                 TEXT-ALIGN: left;
+                 BORDER-LEFT: #A0AABA 1px solid;
+            }
+ 
+             TABLE.griglia TD.valore-dato-numerico {
+                 width: 190px;
+                 PADDING-LEFT: 10px;
+                 TEXT-ALIGN: right;
+                 BORDER-LEFT: #A0AABA 1px solid;
+            }
+            
+            TABLE.griglia TD.titolo-valore-dato {
+                 width: 200px;
+                 PADDING-LEFT: 10px;
+                 TEXT-ALIGN: left;
+                 BORDER-LEFT: #A0AABA 1px solid;
+            }
+
+            TABLE.griglia TD.valore-dato A {
+                 text-decoration: underline;
+                 color: #000000;
+            }
+           
+            TABLE.griglia TD.valore-dato A:hover {
+                 text-decoration: none;
+            }
+           
+            span.importo {
+                 width: 190px;
+                 display:block;
+            }
+           
+            span.importoNegativo {
+                 width: 190px;
+                 display:block;
+            }
+            
+TABLE.validazionew3 {
+	margin-left: 0px;
+	margin-right: 0px;
+	margin-top: 15px;
+	margin-bottom: 15px;
+	padding: 0px;
+	width: 100%;
+	font-size: 11px;
+	border-collapse: collapse;
+}
+
+TABLE.validazionew3 TR.intestazione {
+	background-color: #EFEFEF;
+}
+
+TABLE.validazionew3 TR.intestazione TD {
+	padding: 10 4 10 4;
+	text-align: center;
+	border: 1px solid #A0AABA;	
+	height: 40px;
+	font-weight: bold;
+}
+
+TABLE.validazionew3 TR TD {
+	padding-left: 4px;
+	padding-right: 4px;
+	padding-top: 6px;
+	padding-bottom: 6px;
+	height: 20px;
+	text-align: left;
+	border: 1px solid #A0AABA;
+}
+
+TABLE.validazionew3 TR TD.center {
+	text-align: center;
+}
+
+

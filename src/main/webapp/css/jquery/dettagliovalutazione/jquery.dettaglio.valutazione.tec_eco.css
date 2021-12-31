@@ -1,0 +1,114 @@
+TABLE.dettaglioValutazione {
+	margin: 0;
+	margin-top: 5px;
+	margin-bottom: 5px;
+	padding: 0px;
+	width: 100%;
+	font-size: 11px;
+	border-collapse: collapse;
+	border-left: 1px solid #A0AABA;
+	border-top: 1px solid #A0AABA;
+	border-right: 1px solid #A0AABA;
+}
+
+TABLE.dettaglioValutazione THEAD TR{
+	background-color: #A7BFD9;
+	border-bottom: 1px solid #A0AABA;
+}
+
+TABLE.dettaglioValutazione THEAD TR TH{
+	padding: 6 2 6 2;
+	text-align: center;
+	font-weight: bold;
+	height: 30px;
+}
+
+TABLE.dettaglioValutazione TR {
+	background-color: #EFEFEF;
+}
+
+TABLE.dettaglioValutazione TR.criterioPadre {
+    background-color: #E1E9F2;
+}
+
+
+TABLE.dettaglioValutazione TR TD.aligncenter {
+	text-align: center;
+}
+
+TABLE.dettaglioValutazione TR TD.alignleft {
+	text-align: left;
+}
+
+
+TABLE.dettaglioValutazione TR TD, TABLE.dettaglioValutazione TR TH {
+	padding-top: 2px;
+	padding-bottom: 2px;
+	padding-right: 6px;
+	padding-left: 6px;
+	text-align: left;
+	vertical-align: top;
+	border-left: 1px solid #A0AABA;
+	border-right: 1px solid #A0AABA;
+	border-top: 1px solid #A0AABA;
+	border-bottom: 1px solid #A0AABA;
+	height: 22px;
+}
+
+TABLE.schedaDettaglio {
+	margin: 0;
+	margin-top: 0px;
+	margin-bottom: 0px;
+	padding: 0px;
+	width: 96%;
+	font-size: 11px;
+	border-collapse: collapse;
+	border-top: 1px solid #A0AABA;
+	border-left: 1px solid #A0AABA;
+	border-right: 1px solid #A0AABA;
+	margin-left:auto; 
+	margin-right:auto;
+}
+
+TABLE.schedaDettaglio TD.intestazione{
+	text-align: right;
+	background-color: #EBEBEB;
+	box-sizing: border-box;
+}
+TABLE.schedaDettaglio TD{
+	width: 300px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+TABLE.schedaDettaglio TD.colonnaDatiNascosti{
+	//border-collapse: collapse;
+	//border-left: 0px;
+	display: none;
+}
+
+TABLE.schedaDettaglio TD.datoCoefficente{
+	border-collapse: collapse;
+	border-right: 0px;
+}
+
+TABLE.schedaDettaglio TD.linkCoefficente{
+	border-collapse: collapse;
+	border-right: 0px;
+	border-left: 0px;
+	cursor: pointer;
+}
+
+TABLE.tabellaCoefficente TR TD{
+	padding-top: 2px;
+	padding-bottom: 2px;
+	padding-right: 6px;
+	padding-left: 6px;
+	text-align: left;
+	vertical-align: top;
+	height: 22px;
+	font-size: 11px;
+}
+
+#errorMessage{
+	color: red;
+}

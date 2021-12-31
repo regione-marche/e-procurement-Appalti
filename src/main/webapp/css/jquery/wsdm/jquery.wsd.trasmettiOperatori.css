@@ -1,0 +1,37 @@
+TABLE.operatori {
+	margin: 0;
+	margin-top: 5px;
+	margin-bottom: 5px;
+	padding: 0px;
+	width: 100%;
+	font-size: 11px;
+	border-collapse: collapse;
+	border-left: 1px solid #A0AABA;
+	border-top: 1px solid #A0AABA;
+	border-right: 1px solid #A0AABA;
+}
+
+TABLE.operatori THEAD TR{
+	background-color: #EFEFEF;
+	border-bottom: 1px solid #A0AABA;
+}
+
+TABLE.operatori THEAD TR TH{
+	padding: 6 2 6 2;
+	text-align: center;
+	font-weight: bold;
+	height: 25px;
+}
+
+TABLE.operatori TR {
+	background-color: #FFFFFF;
+}
+
+TABLE.operatori TR TD.aligncenter {
+	text-align: center;
+}
+
+
+TABLE.operatori TBODY{
+	//cursor:pointer;
+}

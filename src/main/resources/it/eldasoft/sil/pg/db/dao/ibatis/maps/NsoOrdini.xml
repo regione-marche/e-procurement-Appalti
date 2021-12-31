@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+<sqlMap namespace="Nso">
+	
+	<resultMap id="puntoConsegna" class="it.eldasoft.sil.pg.db.domain.nso.PuntoConsegna">
+	</resultMap>
+	
+	<select id="getOrderById" resultClass="it.eldasoft.sil.pg.db.domain.nso.Ordine">
+		SELECT nso.*,
+		uffint.nomein as nomein,
+		COALESCE(uffint.ivaein,uffint.cfein,'') as piva,
+		COALESCE(tab2.tab2d1,'IT') as codnaz,
+		nso_p.codord as codord_padre,
+		nso_r.codord as codord_originario
+		FROM nso_ordini nso
+		LEFT JOIN uffint ON uffint.codein = nso.codein
+		LEFT JOIN tab2 ON tab2.TAB2TIP = uffint.codnaz AND tab2.tab2cod = 'G_z23'
+		LEFT JOIN nso_ordini nso_p on nso.id_padre = nso_p.id and nso.id_padre != nso.id
+		LEFT JOIN nso_ordini nso_r on nso.id_originario = nso_r.id 
+		WHERE nso.id=#id#
+	</select>
+	
+	<select id="getOrderLinesByNsoOrdiniId" resultClass="it.eldasoft.sil.pg.db.domain.nso.LineaOrdine">
+		SELECT id,
+				nso_ordini_id,
+				id_linea, 
+				codice,
+				descrizione,
+				quantita,
+				unimis,
+				prezzo_unitario,
+				iva,
+				codice_esenzione,
+				centro_costo,
+				cons_parziale,
+				data_inizio_cons,
+				data_fine_cons,
+				codcpv,
+				note,
+				codein_rich,
+				uffint.cfein as codein_rich_cf,
+				uffint.nomein as codein_rich_nome
+				FROM nso_linee_ordini
+				LEFT JOIN uffint ON uffint.codein = nso_linee_ordini.codein_rich
+				WHERE nso_ordini_id=#id#
+	</select>
+	
+	<select id="getDeliveryPointByNsoOrdiniId" resultClass="it.eldasoft.sil.pg.db.domain.nso.PuntoConsegna">
+		SELECT id,
+				nso_ordini_id,
+				codein,	
+				cod_punto_cons,
+				indirizzo,
+				localita,
+				cap,
+				citta,
+				tab2.tab2d1 as codnaz,
+				altre_indic,
+				altro_punto_cons,
+				cons_domicilio
+ 				FROM nso_punticons, tab2
+ 				WHERE tab2.TAB2TIP = nso_punticons.codnaz
+ 				AND tab2cod = 'G_z23'
+ 				AND nso_ordini_id=#id#
+	</select>
+	
+	<select id="getBuyerCustomerPartyByNsoOrdiniIdAndType" resultClass="it.eldasoft.sil.pg.db.domain.nso.Ordinante">
+		SELECT id,
+				nso_ordini_id,
+				tipo,
+				codein,
+				nomein,
+				endpoint,
+				via,
+				citta,
+				cap,
+				tab2.tab2d1 as codnaz,
+				piva,
+				note
+ 				FROM nso_ordinanti, tab2
+ 				WHERE tab2.TAB2TIP = nso_ordinanti.codnaz
+ 				AND tab2cod = 'G_z23'
+ 				AND nso_ordini_id=#id#
+ 				AND tipo=#tipo#
+	</select>
+	
+	<select id="getBuyerCustomerPartiesByNsoOrdiniId" resultClass="it.eldasoft.sil.pg.db.domain.nso.Ordinante">
+		SELECT nso_ordinanti.id,
+				nso_ordinanti.nso_ordini_id,
+				nso_ordinanti.tipo,
+				nso_ordinanti.codein,
+				nso_ordinanti.nomein,
+				nso_ordinanti.endpoint,
+				nso_ordinanti.via,
+				nso_ordinanti.citta,
+				nso_ordinanti.cap,
+				tab2.tab2d1 as codnaz,
+				nso_ordinanti.piva,
+				nso_ordinanti.note,
+				uffint.codipa as codipa
+ 				FROM nso_ordinanti, tab2, uffint
+ 				WHERE tab2.TAB2TIP = nso_ordinanti.codnaz
+				AND uffint.codein = nso_ordinanti.codein
+ 				AND tab2cod = 'G_z23'
+ 				AND nso_ordini_id=#id#
+ 				ORDER BY nso_ordinanti.tipo ASC
+	</select>
+	
+	<select id="getSellerSupplierPartyByNsoOrdiniId" resultClass="it.eldasoft.sil.pg.db.domain.nso.Fornitore">
+		SELECT nso_fornitore.id,
+				nso_fornitore.nso_ordini_id,
+				nso_fornitore.codimp,
+				nso_fornitore.nomimp,
+				nso_fornitore.endpoint,
+				nso_fornitore.cfimp,
+				nso_fornitore.via,
+				nso_fornitore.citta,
+				nso_fornitore.cap,
+				tab2.tab2d1 as codnaz,
+				nso_fornitore.persona_rif,
+				CASE
+					WHEN COALESCE(impr.natgiui, 0) = 10 THEN 'PF'
+					ELSE 'PIVA'
+				END AS type
+		FROM nso_fornitore
+			JOIN tab2 ON tab2.TAB2TIP = nso_fornitore.codnaz AND tab2.tab2cod = 'G_z23'
+			LEFT JOIN impr on nso_fornitore.codimp = impr.codimp
+		WHERE nso_fornitore.nso_ordini_id=#id#
+	</select>
+	
+	<select id="getDeliveryPartyByNsoOrdiniId" resultClass="it.eldasoft.sil.pg.db.domain.nso.Beneficiario">
+		SELECT nso_beneficiario.id, 
+				nso_beneficiario.nso_ordini_id, 
+				nso_beneficiario.denominazione, 
+				nso_beneficiario.contatto_rif, 
+				nso_beneficiario.indirizzo, 
+				nso_beneficiario.localita, 
+				nso_beneficiario.cap, 
+				nso_beneficiario.citta, 
+				tab2.tab2d1 as codnaz
+		FROM nso_beneficiario
+			JOIN tab2 ON tab2.TAB2TIP = nso_beneficiario.codnaz AND tab2.tab2cod = 'G_z23'
+		WHERE nso_beneficiario.nso_ordini_id=#id#
+	</select>
+	
+	<resultMap id="nsoWsOrdineBinary" class="it.eldasoft.sil.pg.db.domain.nso.NsoWsOrdine">
+		<result property="fileXml" column="XML_FILE" jdbcType="BINARY"/>
+		<result property="id" column="ID" />
+		<result property="fileName" column="NOME_FILE" />
+	</resultMap>
+	
+	<select id="getNsoWsOrdineFileXmlFromFileName" resultMap="nsoWsOrdineBinary">
+		select ID,
+				NOME_FILE,
+				XML_FILE
+		from nso_ws_ordini 
+		where nome_file=#fileName#;
+	</select>
+	
+	<select id="getNsoAllegatiByNsoOrdiniId" resultClass="it.eldasoft.sil.pg.db.domain.nso.NsoAllegato">
+		SELECT * 
+		FROM nso_allegati
+		WHERE nso_ordini_id=#nso_ordini_id# 
+		ORDER BY nprogr ASC
+	</select>
+  
+</sqlMap>

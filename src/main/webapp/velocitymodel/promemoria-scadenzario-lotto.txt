@@ -1,0 +1,14 @@
+Si informa che in data #if ($DATASCAD)$DATASCAD#end scade l'attività #if ($TIT)"$TIT"#end per lo scadenzario relativo al seguente lotto di gara:
+codice lotto di gara:#if ($CODICE_LOTTO)$CODICE_LOTTO#end
+
+oggetto del lotto: #if ($OGGETTO_LOTTO)$OGGETTO_LOTTO#end
+
+codice cig: #if ($CODCIG)$CODCIG#end
+
+codice gara: #if ($CODICE)$CODICE#end
+
+oggetto della gara: #if ($OGGETTO)$OGGETTO#end
+
+tipologia: #if ($TIPOLOGIA)$TIPOLOGIA#end
+
+tipologia di appalto: #if ($TIPOLOGIA_APPALTO)$TIPOLOGIA_APPALTO#end

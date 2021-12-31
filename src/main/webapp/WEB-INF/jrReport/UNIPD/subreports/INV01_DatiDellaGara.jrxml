@@ -1,0 +1,1026 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="DatiDellaGara" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="1b210829-2125-42de-9284-e527d3463c2f">
+	<property name="ireport.zoom" value="1.4641000000000008"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="160"/>
+	<subDataset name="punto_istruttore" uuid="9d26e2ca-6897-4f6e-8115-ede4d80bac28">
+		<parameter name="NUMERO_GARA" class="java.lang.String"/>
+		<queryString>
+			<![CDATA[SELECT
+USRSYS.SYSUTE AS punto_istruttore
+FROM GARE
+JOIN G_PERMESSI ON GARE.CODGAR1 = G_PERMESSI.CODGAR AND G_PERMESSI.MERUOLO = 2 AND G_PERMESSI.AUTORI = 1 AND G_PERMESSI.PROPRI = '1'
+JOIN USRSYS ON USRSYS.SYSCON = G_PERMESSI.SYSCON
+WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
+		</queryString>
+		<field name="PUNTO_ISTRUTTORE" class="java.lang.String"/>
+	</subDataset>
+	<subDataset name="prestazione_principale" uuid="d138d5c4-f11f-4419-81d9-7dc5df140813">
+		<parameter name="NUMERO_GARA" class="java.lang.String"/>
+		<queryString>
+			<![CDATA[SELECT
+C1.DESCAT AS prestazione_principale
+FROM GARE
+JOIN V_GARE_CATEGORIE C1 ON C1.NGARA = GARE.NGARA AND C1.ISPREV = '1' AND C1.ISCATGARA = '1'
+WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
+		</queryString>
+		<field name="PRESTAZIONE_PRINCIPALE" class="java.lang.String"/>
+	</subDataset>
+	<subDataset name="ulteriori_prestazioni" uuid="78eb150f-1d30-43e1-a670-3ae823d824fd">
+		<parameter name="NUMERO_GARA" class="java.lang.String"/>
+		<queryString>
+			<![CDATA[SELECT
+C2.DESCAT AS ulteriore_prestazione
+FROM GARE
+JOIN V_GARE_CATEGORIE C2 ON C2.NGARA = GARE.NGARA AND C2.ISPREV = '2' AND C2.ISCATGARA = '1'
+WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
+		</queryString>
+		<field name="ULTERIORE_PRESTAZIONE" class="java.lang.String"/>
+	</subDataset>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String"/>
+	<parameter name="NUMERO_GARA" class="java.lang.String"/>
+	<parameter name="NUM_PUNTI_ISTRU" class="java.lang.Integer" isForPrompting="false"/>
+	<parameter name="NUM_PRESTA_PRINCI" class="java.lang.Integer" isForPrompting="false"/>
+	<parameter name="NUM_ULT_PRESTA" class="java.lang.Integer" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[SELECT
+GARE.CODCIG AS codice_cig,
+T1.TAB1DESC AS tipo_appalto,
+GARE.NOT_GAR AS oggetto,
+T2.TAB1DESC AS tipo_procedura,
+TORN.GARTEL AS telematica,
+GARE.CRITLICG AS cod_crit_aggiudicazione,
+T3.TAB1DESC AS criterio_aggiudicazione,
+GARE.DETLICG AS codice_determinato_mediante,
+T4.TAB1DESC AS determinato_mediante,
+GARE.IMPAPP AS importo_base_gara,
+GARE.IMPNRL AS importo_no_ribasso,
+GARE.IMPSIC AS importo_sicurezza,
+T8.TAB1DESC AS offerta_espressa_mediante,
+TORN.OFFAUM AS ammesse_offerte_in_aumento,
+UFFINT.NOMEIN AS staz_app,
+UFFINT.EMAIIN AS email_staz_app,
+TECNI.NOMTEC AS rup,
+TORN.DTEOFF AS data_scad_presentazione_off,
+TORN.OTEOFF AS ora_scad_presentazione_off,
+TORN.VALOFF AS num_giorni_validita_off,
+TORN.DTERMRISPCPO AS data_ter_risp_chiarimenti,
+TORN.DTERMRICHCPO AS data_ter_rich_chiarimenti,
+GARE.CALCSOANG AS calcolo_soglia,
+T5.TAB1DESC AS esclusione_automatica
+FROM GARE
+JOIN TORN ON TORN.CODGAR = GARE.CODGAR1
+LEFT JOIN TAB1 T1 ON T1.TAB1TIP = TORN.TIPGEN AND T1.TAB1COD = 'A1007'
+LEFT JOIN TAB1 T2 ON T2.TAB1TIP = GARE.TIPGARG AND T2.TAB1COD = 'A2044'
+LEFT JOIN TAB1 T3 ON T3.TAB1TIP = GARE.CRITLICG AND T3.TAB1COD = 'A2081'
+LEFT JOIN TAB1 T4 ON T4.TAB1TIP = GARE.DETLICG AND T4.TAB1COD = 'A2082'
+LEFT JOIN TAB1 T5 ON T5.TAB1TIP = GARE.MODASTG AND T5.TAB1COD='A1039'
+LEFT JOIN UFFINT ON UFFINT.CODEIN = TORN.CENINT
+LEFT JOIN TECNI ON TECNI.CODTEC = TORN.CODRUP
+LEFT JOIN TAB1 T8 ON T8.TAB1TIP = GARE.RIBCAL AND T8.TAB1COD = 'A1053'
+LEFT JOIN V_GARE_CATEGORIE C1 ON C1.NGARA = GARE.NGARA AND C1.ISPREV = '1' AND C1.ISCATGARA = '1'
+WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
+	</queryString>
+	<field name="CODICE_CIG" class="java.lang.String"/>
+	<field name="TIPO_APPALTO" class="java.lang.String"/>
+	<field name="OGGETTO" class="java.lang.String"/>
+	<field name="TIPO_PROCEDURA" class="java.lang.String"/>
+	<field name="TELEMATICA" class="java.lang.Integer"/>
+	<field name="COD_CRIT_AGGIUDICAZIONE" class="java.lang.Integer"/>
+	<field name="CRITERIO_AGGIUDICAZIONE" class="java.lang.String"/>
+	<field name="CODICE_DETERMINATO_MEDIANTE" class="java.lang.Integer"/>
+	<field name="DETERMINATO_MEDIANTE" class="java.lang.String"/>
+	<field name="IMPORTO_BASE_GARA" class="java.lang.Double"/>
+	<field name="IMPORTO_NO_RIBASSO" class="java.lang.Double"/>
+	<field name="IMPORTO_SICUREZZA" class="java.lang.Double"/>
+	<field name="OFFERTA_ESPRESSA_MEDIANTE" class="java.lang.String"/>
+	<field name="AMMESSE_OFFERTE_IN_AUMENTO" class="java.lang.Integer"/>
+	<field name="STAZ_APP" class="java.lang.String"/>
+	<field name="EMAIL_STAZ_APP" class="java.lang.String"/>
+	<field name="RUP" class="java.lang.String"/>
+	<field name="DATA_SCAD_PRESENTAZIONE_OFF" class="java.lang.String"/>
+	<field name="ORA_SCAD_PRESENTAZIONE_OFF" class="java.lang.String"/>
+	<field name="NUM_GIORNI_VALIDITA_OFF" class="java.lang.Integer"/>
+	<field name="DATA_TER_RICH_CHIARIMENTI" class="java.lang.String"/>
+	<field name="DATA_TER_RISP_CHIARIMENTI" class="java.lang.String"/>
+	<field name="CALCOLO_SOGLIA" class="java.lang.Integer"/>
+	<field name="ESCLUSIONE_AUTOMATICA" class="java.lang.String"/>
+	<detail>
+		<band height="160" splitType="Immediate">
+			<frame>
+				<reportElement x="0" y="0" width="482" height="20" uuid="379da2d6-5da4-4976-8b64-443bb274ff13"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="14a40ca2-6203-4d06-937a-88481f734e6b"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Codice richiesta di offerta]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="db141715-4220-4885-9d95-f1eda4569b58"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{NUMERO_GARA}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="20" width="482" height="20" uuid="99ccab96-9ff8-415b-ab64-d1ddd312362b"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="8909e381-7889-4264-9e9f-c0131274d550"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Codice CIG]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="6341f380-2268-4f26-bf38-56e61d112ff8"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{CODICE_CIG}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="40" width="482" height="20" uuid="5b285713-021f-4f17-a966-a5b16ad012b2"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="1dc22dde-df97-47f2-ac74-c5c8dd4a2f60"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Tipo di appalto]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="19cbf945-c7d2-4e39-ac66-60fb5fc04cc9"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{TIPO_APPALTO}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="60" width="482" height="20" uuid="00d235d1-da82-49cf-8887-60de82ed7c5a"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="d4d6c805-a002-4b4b-81d4-16f90218ccdd"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Oggetto]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="fa8c1102-e71a-441b-9ead-9a7be0617c7e"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{OGGETTO}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="80" width="482" height="20" uuid="7e56e8c4-8aba-4a6f-ac9f-81055d3ea5a2"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="04a4b97f-0dfe-4011-bf4c-fb12a762c820"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Tipo di procedura]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="be9adc7b-02ff-43a4-87ac-94a02dfee4ff"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{TIPO_PROCEDURA}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="120" width="482" height="20" uuid="f8fc864c-f1fb-435a-a149-5813869e62b3"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="201ac8ee-1b82-432a-b511-2acc90645c56"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Criterio di aggiudicazione]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="fd9c8f7d-bc65-4cba-beaa-223c1f9cff84"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{CRITERIO_AGGIUDICAZIONE}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="140" width="482" height="20" uuid="e177cd4b-0daf-4ebd-ab55-6a3e0d728082"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="dc4a7e81-124f-40ae-8b38-7fd733dadbc0"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Importo a base di gara]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="#,##0.00 €" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="42ec51a4-4439-463b-8d64-93c27d9cd872"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{IMPORTO_BASE_GARA}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="100" width="482" height="20" uuid="6b90772d-6a72-4dcc-9db2-257dac27e56b"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="8b8e1a34-8bb3-4f6f-9e8e-b5e803748b9d"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Procedura telematica?]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="075fb711-2081-4290-a71f-011c6cdb069e"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{TELEMATICA} == 1 ? "Sì" : "No"]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="621b747c-29ae-4c32-b145-3f3b40585488"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="54c72315-1781-4532-a985-416ebb9cf7a0"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Di cui soggetto a ribasso]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="#,##0.00 €" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="fa34b8d8-2130-456d-bc13-bdef8ad37949"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[($F{IMPORTO_BASE_GARA} != null
+    ? (
+        $F{IMPORTO_BASE_GARA} -
+        ($F{IMPORTO_NO_RIBASSO} != null ? $F{IMPORTO_NO_RIBASSO} : 0) -
+        ($F{IMPORTO_SICUREZZA} != null ? $F{IMPORTO_SICUREZZA} : 0)
+      )
+    : null
+)]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true" uuid="b3b3b31c-155c-41ba-8fa8-46c8d5da0215">
+					<printWhenExpression><![CDATA[$F{IMPORTO_NO_RIBASSO} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="93b33450-fecb-4594-bee5-c6155eee9d27"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Di cui non soggetto a ribasso]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="#,##0.00 €" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="8642b716-1854-4aa0-b1f4-75f0e4c6d9e7"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{IMPORTO_NO_RIBASSO}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true" uuid="ff51d2f0-a636-4281-900b-c01782e5bc47">
+					<printWhenExpression><![CDATA[$F{IMPORTO_SICUREZZA} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="1a8b7aa5-93a1-4ac0-a7e4-f996cae9792e"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Di cui sicurezza]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="#,##0.00 €" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="4f534109-b779-4d25-b4c0-4c86619821e0"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{IMPORTO_SICUREZZA}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true" uuid="2b7b2443-1e0f-49d7-a47e-4b3f9b914c8f">
+					<printWhenExpression><![CDATA[$F{DETERMINATO_MEDIANTE} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="096f3840-ab5d-442f-a3df-71d7b9dd4cbe"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Modalità di formulazione dell'offerta economica]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="b70edde0-c75f-44be-bb2b-c22d1ba0a80e"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{DETERMINATO_MEDIANTE}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true" uuid="24bf637b-e2e1-4e7a-9a30-48618d29faac">
+					<printWhenExpression><![CDATA[$F{CODICE_DETERMINATO_MEDIANTE} == 3]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="946eb26b-9346-4b29-8bd3-ecbd346b0692"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Offerta complessiva espressa mediante]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="ff19770a-ed85-4cbd-a9d0-c84934e10728"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{OFFERTA_ESPRESSA_MEDIANTE}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true" uuid="9866a3e4-8280-447d-b6a9-08ae9076e67a">
+					<printWhenExpression><![CDATA[$F{CALCOLO_SOGLIA} != null && $F{CALCOLO_SOGLIA} == 1]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="c961e7d3-45d6-46c7-b3b8-4344812f325e"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman"/>
+					</textElement>
+					<text><![CDATA[Esclusione automatica offerte anomale?]]></text>
+				</staticText>
+				<textField>
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="c089fc9a-e3c9-4c8d-a11e-5e0652ef7066"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{ESCLUSIONE_AUTOMATICA}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="fe465141-2502-462c-8715-7ab78bc9bfcf"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="7003931f-30de-4742-90a8-0394614639d5"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Ammesse offerte in aumento?]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="511b1e87-a4ea-4be8-b7bd-1e8f6575b2ce"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[(($F{AMMESSE_OFFERTE_IN_AUMENTO} != null && $F{AMMESSE_OFFERTE_IN_AUMENTO} == 1) ? "Sì" : "No")]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="60">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="28eddc94-de82-4a14-864f-933431ce78a5"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="84317482-3022-426e-8f1d-c5e511e0c307"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Stazione Appaltante]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="0416f436-a5dc-4bcb-8cd9-b3ebb79a3da4"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{STAZ_APP}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="20" width="482" height="20" uuid="e33b67c4-7226-4252-935c-e490b2e8539f"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="7f3cdf8c-a6a3-4ceb-92a4-d2a3741e8dd4"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[E-mail stazione appaltante]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="d96807ec-7419-40bd-9f39-8d8eff0565a7"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{EMAIL_STAZ_APP}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="40" width="482" height="20" uuid="e9d56cf9-1a8e-49ef-92d0-e74101937480"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="28c52c05-09cd-4a1e-b8ea-8c59b3ade4c1"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{RUP}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="6b137509-da32-4d06-aef6-1986e356c8d3"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[RUP]]></text>
+				</staticText>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true" uuid="0e7b4644-0cbe-4a86-929b-f3d4b32273f4">
+					<printWhenExpression><![CDATA[$P{NUM_PUNTI_ISTRU} > 0]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="26cde289-55cb-48a5-b884-61d407ffc403"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Punto Istruttore]]></text>
+				</staticText>
+				<frame>
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="54c6a05d-7cdb-4bfb-919e-2b7d95215610"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<componentElement>
+						<reportElement positionType="Float" mode="Transparent" x="0" y="0" width="234" height="13" uuid="254e672d-7a23-464b-bad4-5a1c361c1659"/>
+						<jr:list xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" printOrder="Vertical">
+							<datasetRun subDataset="punto_istruttore" uuid="5e906563-d2d9-44df-9293-03ec37580bc7">
+								<datasetParameter name="NUMERO_GARA">
+									<datasetParameterExpression><![CDATA[$P{NUMERO_GARA}]]></datasetParameterExpression>
+								</datasetParameter>
+								<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+							</datasetRun>
+							<jr:listContents height="13" width="234">
+								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+									<reportElement positionType="Float" stretchType="RelativeToTallestObject" x="0" y="0" width="234" height="13" uuid="dd179bbe-680d-4b53-bf16-5f7c6fcef49f"/>
+									<textElement>
+										<font fontName="Times New Roman" size="10"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{PUNTO_ISTRUTTORE}]]></textFieldExpression>
+								</textField>
+							</jr:listContents>
+						</jr:list>
+					</componentElement>
+				</frame>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="6459fe3b-414c-4100-8209-19da10f2b135"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="4a9a0b49-4181-422b-ab04-3cd547edc8ed"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Data e ora scadenza presentazione offerte]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="94e598f9-b32c-47d5-8296-749b34f94f0f"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[(
+    $F{DATA_SCAD_PRESENTAZIONE_OFF} != null
+    ? (
+        new SimpleDateFormat("dd/MM/yyyy").format(new SimpleDateFormat("yyyy-MM-dd").parse($F{DATA_SCAD_PRESENTAZIONE_OFF}.substring(0,10))) +
+        (
+            $F{ORA_SCAD_PRESENTAZIONE_OFF} != null
+            ? " alle ore " + $F{ORA_SCAD_PRESENTAZIONE_OFF}
+            : ""
+        )
+      )
+: null)]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true" uuid="341410ae-8708-43cf-b7e4-c9fe5af4e31b">
+					<printWhenExpression><![CDATA[$F{NUM_GIORNI_VALIDITA_OFF} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="1eb9da62-6a8b-4c42-8d46-cce53b275c5d"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Numero giorni validità offerta]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="0ca9817a-569a-43bc-84b1-76abd9706bc0"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{NUM_GIORNI_VALIDITA_OFF}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true" uuid="9e0eaab9-fd6f-49b2-8470-ec84e7740e50">
+					<printWhenExpression><![CDATA[$F{DATA_TER_RICH_CHIARIMENTI} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="4f0fc13f-0a12-466c-b914-c4b41c5d710e"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Data termine richiesta chiarimenti]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="1e385ac9-b06e-465b-9883-4b202c843894"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{DATA_TER_RICH_CHIARIMENTI} != null ? (new SimpleDateFormat("yyyy-MM-dd")).parse($F{DATA_TER_RICH_CHIARIMENTI}.substring(0,10)) : null]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true" uuid="a25ea576-ea80-4b87-b712-9495ca8e7804">
+					<printWhenExpression><![CDATA[$F{DATA_TER_RISP_CHIARIMENTI} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="00272ac7-073f-4b86-83af-3c9191f9ebf8"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Data termine risposta chiarimenti]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="1b3dd0ec-fb53-4196-8660-411c1617722d"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{DATA_TER_RISP_CHIARIMENTI} != null ? (new SimpleDateFormat("yyyy-MM-dd")).parse($F{DATA_TER_RISP_CHIARIMENTI}.substring(0,10)) : null]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true" uuid="aabc6e5f-d4a8-4c4a-bb15-100b3c6810fd">
+					<printWhenExpression><![CDATA[$P{NUM_PRESTA_PRINCI} > 0]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="098abde5-d541-4953-849f-e5e4bc41d99e"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Prestazione principale]]></text>
+				</staticText>
+				<frame>
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="c01b2983-b71f-43bd-90c2-16d0978b25be"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<componentElement>
+						<reportElement positionType="Float" mode="Transparent" x="0" y="0" width="234" height="13" uuid="5b37f2ee-6626-4bb4-acb2-feae0acb47a7"/>
+						<jr:list xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" printOrder="Vertical">
+							<datasetRun subDataset="prestazione_principale" uuid="e54b82e7-54c4-4149-b496-67a7cda235c9">
+								<datasetParameter name="NUMERO_GARA">
+									<datasetParameterExpression><![CDATA[$P{NUMERO_GARA}]]></datasetParameterExpression>
+								</datasetParameter>
+								<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+							</datasetRun>
+							<jr:listContents height="13" width="234">
+								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+									<reportElement positionType="Float" stretchType="RelativeToTallestObject" x="0" y="0" width="234" height="13" uuid="07d20936-32b6-4a70-9430-51e95448aee0"/>
+									<textElement>
+										<font fontName="Times New Roman" size="10"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{PRESTAZIONE_PRINCIPALE}]]></textFieldExpression>
+								</textField>
+							</jr:listContents>
+						</jr:list>
+					</componentElement>
+				</frame>
+			</frame>
+		</band>
+		<band height="20">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true" uuid="c210e72a-7b29-49e2-9d40-f76a34353247">
+					<printWhenExpression><![CDATA[$P{NUM_ULT_PRESTA} > 0]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="d3c41b95-1dc5-489d-bf75-7167406ea429"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Ulteriori prestazioni]]></text>
+				</staticText>
+				<frame>
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="a32ee2fc-ae26-45b9-bd14-c3243f2b4c16"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<componentElement>
+						<reportElement positionType="Float" mode="Transparent" x="0" y="0" width="234" height="13" uuid="3baf8841-c458-49b9-bd32-cc7490ce5885"/>
+						<jr:list xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" printOrder="Vertical">
+							<datasetRun subDataset="ulteriori_prestazioni" uuid="49f34c86-da17-4c22-baa5-6a1b128d4093">
+								<datasetParameter name="NUMERO_GARA">
+									<datasetParameterExpression><![CDATA[$P{NUMERO_GARA}]]></datasetParameterExpression>
+								</datasetParameter>
+								<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+							</datasetRun>
+							<jr:listContents height="13" width="234">
+								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+									<reportElement positionType="Float" stretchType="RelativeToTallestObject" x="0" y="0" width="234" height="13" uuid="75a14b0f-4958-4ee4-8524-a3c96a3c6b2d"/>
+									<textElement>
+										<font fontName="Times New Roman" size="10"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{ULTERIORE_PRESTAZIONE}]]></textFieldExpression>
+								</textField>
+							</jr:listContents>
+						</jr:list>
+					</componentElement>
+				</frame>
+			</frame>
+		</band>
+	</detail>
+</jasperReport>

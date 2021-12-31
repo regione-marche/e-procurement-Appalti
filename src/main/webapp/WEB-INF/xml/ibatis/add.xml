@@ -1,0 +1,6 @@
+<sqlMapConfig>
+	<!-- File specifici dell'applicazione corrente -->
+	<!-- sqlMap resource="it/eldasoft/....xml" / -->
+	<sqlMap resource="it/eldasoft/sil/pg/db/dao/ibatis/maps/Scadenze.xml" />
+	<sqlMap resource="it/eldasoft/sil/pg/db/dao/ibatis/maps/NsoOrdini.xml" />
+</sqlMapConfig>

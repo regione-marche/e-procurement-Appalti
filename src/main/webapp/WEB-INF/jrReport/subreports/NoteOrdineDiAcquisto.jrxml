@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="NoteOrdineDiAcquisto" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="3796a48a-f331-46f5-be46-e154a4d2917d">
+	<property name="ireport.zoom" value="1.3310000000000006"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String"/>
+	<parameter name="IMAGES_DIR" class="java.lang.String"/>
+	<parameter name="NUMERO_GARA" class="java.lang.String"/>
+	<queryString language="SQL">
+		<![CDATA[SELECT GARECONT.NOTE FROM GARECONT WHERE GARECONT.NGARA = $P{NUMERO_GARA}]]>
+	</queryString>
+	<field name="NOTE" class="java.lang.String"/>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="482" height="20" backcolor="#CCCCCC" uuid="8bfbd6b0-bb78-44c8-80dd-76735f3c27d6"/>
+				<box topPadding="2" leftPadding="0" bottomPadding="0">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font size="12" isBold="true" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[NOTE ALL'ORDINE]]></text>
+			</staticText>
+		</band>
+		<band height="62">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="false">
+				<reportElement positionType="Float" x="0" y="0" width="482" height="42" uuid="fa273c29-fe7d-4c6e-ac86-cd3f43b1077d"/>
+				<box topPadding="2" leftPadding="2" bottomPadding="2" rightPadding="2">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" markup="none">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Attenzione: le \"Note\" possono esprimere esclusivamente indicazioni e/o specificazioni di supporto all'esecuzione dell'ordine; in nessun caso possono modificare i termini tecnici ed economici della fornitura, pena l'inefficacia dell'ordine." +
+($F{NOTE} != null ? ("\n\n" + $F{NOTE}) : "")]]></textFieldExpression>
+			</textField>
+			<frame>
+				<reportElement positionType="Float" x="0" y="42" width="482" height="20" uuid="8e7a32ea-4b9d-43e6-a630-9dcb905fbac5"/>
+			</frame>
+		</band>
+	</detail>
+</jasperReport>

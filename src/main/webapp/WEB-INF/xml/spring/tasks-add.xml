@@ -1,0 +1,19 @@
+<list>
+	<ref bean="acquisisciRegistrazioniPortaleManagerTrigger" />
+	<ref bean="controlloIscrizioniAElencoScaduteManagerTrigger" />
+	<ref bean="deregistraImpreseNonInPortaleManagerTrigger" />
+	<ref bean="inviaDatiRichiestaCigManagerTrigger" />
+	<ref bean="acquisisciProdottiMEManagerTrigger" />
+	<ref bean="ordiniApprovatiSmatManagerTrigger" />
+	<ref bean="acquisisciRinnoviIscrizioneManagerTrigger" />
+	<ref bean="aggiornaAdempimentiNonValidiManagerTrigger" />
+	<ref bean="creazioneArchivioDocumentiGaraManagerTrigger" />
+	<ref bean="acquisisciWSERPDatiL190Trigger" />
+	<ref bean="controlloDati190ManagerTrigger" />
+	<ref bean="acquisizioneAggiornamentoAnagraficoTrigger" />
+	<ref bean="acquisisciRegistrazioniInErroreManagerTrigger" />
+	<ref bean="aggiornaERPStatoGaraTrigger" />
+	<ref bean="generazioneInvioIndiceCOSTrigger" />
+	<ref bean="protocollaComunicazioneSchedulerTrigger" />     
+	<ref bean="condivisioneGaraComponentiCommisioneTrigger" />
+</list>
