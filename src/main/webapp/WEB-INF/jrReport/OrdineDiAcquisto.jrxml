@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="OrdineDiAcquisto" pageWidth="595" pageHeight="842" columnWidth="483" leftMargin="56" rightMargin="56" topMargin="17" bottomMargin="22" uuid="4a415eb7-a14e-46c3-86b6-7e3bfd868036">
+	<property name="ireport.zoom" value="1.4641000000000008"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="ireport.callouts" value="##Wed Feb 05 15:49:26 CET 2014"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String">
+		<parameterDescription><![CDATA[Cartella contenente i sottoreport]]></parameterDescription>
+		<defaultValueExpression><![CDATA["C:\\Java\\Progetti\\PG\\src\\main\\webapp\\WEB-INF\\jrReport\\subreports\\"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="IMAGES_DIR" class="java.lang.String">
+		<parameterDescription><![CDATA[Cartella contenente le immagini]]></parameterDescription>
+		<defaultValueExpression><![CDATA["C:\\Java\\Progetti\\PG\\src\\main\\webapp\\WEB-INF\\jrReport\\images\\"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="NUMERO_GARA" class="java.lang.String">
+		<defaultValueExpression><![CDATA["ODA00016"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="CODICE_IMPRESA" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT
+GARECONT.STATO,
+COUNT (*) AS NUMERO_PRODOTTI
+FROM GARECONT
+JOIN MERICART ON MERICART.NGARA = GARECONT.NGARA
+JOIN MERICPROD on MERICPROD.IDRICART = MERICART.ID
+WHERE GARECONT.NGARA = $P{NUMERO_GARA} and MERICPROD.ACQUISTA = '1'
+GROUP BY GARECONT.STATO]]>
+	</queryString>
+	<field name="STATO" class="java.lang.Integer"/>
+	<field name="NUMERO_PRODOTTI" class="java.lang.Integer"/>
+	<pageHeader>
+		<band height="131" splitType="Prevent">
+			<printWhenExpression><![CDATA[$F{STATO} == 2]]></printWhenExpression>
+			<image>
+				<reportElement x="0" y="0" width="399" height="113" uuid="fe0af087-a4a2-4157-9aed-5a34c80641b5"/>
+				<imageExpression><![CDATA[$P{IMAGES_DIR} + "bozza_ordine.png"]]></imageExpression>
+			</image>
+			<frame>
+				<reportElement positionType="Float" x="0" y="113" width="483" height="18" uuid="434bf1f6-7fb8-4c1e-88f0-db2e866e7cba"/>
+			</frame>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="157" splitType="Immediate">
+			<image scaleImage="RealSize" hAlign="Center">
+				<reportElement positionType="Float" x="0" y="0" width="483" height="40" isRemoveLineWhenBlank="true" uuid="4e946b43-f9b0-4586-9e72-5b9d7d325190"/>
+				<graphicElement>
+					<pen lineWidth="0.0" lineStyle="Solid"/>
+				</graphicElement>
+				<imageExpression><![CDATA[$P{IMAGES_DIR} + "logo_mercato_elettronico.png"]]></imageExpression>
+			</image>
+			<subreport>
+				<reportElement positionType="Float" x="0" y="40" width="483" height="17" uuid="16eafc41-36b1-4950-8907-f4ed10bf2c22"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="CODICE_IMPRESA">
+					<subreportParameterExpression><![CDATA[$P{CODICE_IMPRESA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_GARA">
+					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "TestataOrdineDiAcquisto.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement positionType="Float" x="0" y="57" width="483" height="17" uuid="7253193c-859c-44ee-989b-f53f004247d4"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="CODICE_IMPRESA">
+					<subreportParameterExpression><![CDATA[$P{CODICE_IMPRESA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_GARA">
+					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "AmministrazioneAcquirente.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement positionType="Float" x="0" y="74" width="483" height="17" uuid="1825b071-41f4-4b58-b484-0944d3b1d1f4"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="CODICE_IMPRESA">
+					<subreportParameterExpression><![CDATA[$P{CODICE_IMPRESA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_GARA">
+					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "FornitoreContraente.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement positionType="Float" x="0" y="91" width="483" height="17" uuid="70ef6e99-6721-4392-bcb1-4e5985f08a7a"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_PRODOTTI">
+					<subreportParameterExpression><![CDATA[$F{NUMERO_PRODOTTI}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="CODICE_IMPRESA">
+					<subreportParameterExpression><![CDATA[$P{CODICE_IMPRESA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_GARA">
+					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "OggettoOrdine.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement positionType="Float" x="0" y="108" width="483" height="16" uuid="e70c46c6-6de8-4931-8ee0-8ad1416ca201"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="CODICE_IMPRESA">
+					<subreportParameterExpression><![CDATA[$P{CODICE_IMPRESA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_GARA">
+					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "RiepilogoEconomico.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement positionType="Float" x="0" y="124" width="483" height="16" uuid="fe44f1b3-6b87-4448-94a9-d8a4048ac041"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="IMAGES_DIR">
+					<subreportParameterExpression><![CDATA[$P{IMAGES_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_GARA">
+					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "NoteOrdineDiAcquisto.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement positionType="Float" x="0" y="140" width="483" height="16" uuid="6ec8cb0d-cdd0-460d-89ff-4ca9e971f40d"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="IMAGES_DIR">
+					<subreportParameterExpression><![CDATA[$P{IMAGES_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NUMERO_GARA">
+					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "FooterOrdineDiAcquisto.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="29" splitType="Stretch">
+			<textField>
+				<reportElement x="161" y="9" width="80" height="20" uuid="4baa9a10-fb99-453b-9433-3ed18adeab6a"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["pag. "+$V{PAGE_NUMBER}+" di"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="241" y="9" width="40" height="20" uuid="275d4872-22a0-4494-8494-e28786cbe60d"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

@@ -1,0 +1,620 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="TestataOrdineDiAcquisto" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="8234b462-5ba4-4dd9-b961-e6f394251c18">
+	<property name="ireport.zoom" value="1.3310000000000006"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<subDataset name="dati_istruttori" uuid="933f9c68-e697-4ee7-8bf9-05500246bf1b">
+		<parameter name="NUMERO_GARA" class="java.lang.String"/>
+		<queryString>
+			<![CDATA[SELECT
+USRSYS.SYSUTE AS istruttore
+FROM GARE
+JOIN MERIC ON MERIC.ID = GARE.IDRIC
+JOIN G_PERMESSI ON G_PERMESSI.IDMERIC = MERIC.ID AND G_PERMESSI.MERUOLO = 2
+JOIN USRSYS ON USRSYS.SYSCON = G_PERMESSI.SYSCON
+WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
+		</queryString>
+		<field name="ISTRUTTORE" class="java.lang.String"/>
+	</subDataset>
+	<subDataset name="punto_ordinante" uuid="9604ed19-5a60-48de-959f-9d42ba17fd00">
+		<parameter name="NUMERO_GARA" class="java.lang.String"/>
+		<queryString>
+			<![CDATA[SELECT
+USRSYS.SYSUTE AS punto_ordinante
+FROM GARE
+JOIN MERIC ON MERIC.ID = GARE.IDRIC
+JOIN G_PERMESSI ON G_PERMESSI.IDMERIC = MERIC.ID AND G_PERMESSI.MERUOLO = 1
+JOIN USRSYS ON USRSYS.SYSCON = G_PERMESSI.SYSCON
+WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
+		</queryString>
+		<field name="punto_ordinante" class="java.lang.String"/>
+	</subDataset>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String">
+		<parameterDescription><![CDATA[Cartella contenente i sottoreport]]></parameterDescription>
+		<defaultValueExpression><![CDATA["C:\\progetti\\PL\\src\\main\\webapp\\WEB-INF\\jrReport\\subreports\\"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="NUMERO_GARA" class="java.lang.String">
+		<defaultValueExpression><![CDATA["ODA00016"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="CODICE_IMPRESA" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT
+UFFINT.NOMEIN AS nome_ente,
+UFFINT.CFEIN AS codice_fiscale_ente,
+UFFINT.VIAEIN AS indirizzo_ente,
+UFFINT.NCIEIN AS numero_civico_ente,
+UFFINT.CAPEIN AS cap_ente,
+UFFINT.CITEIN AS citta_ente,
+UFFINT.PROEIN AS provincia_ente,
+UFFINT.TELEIN AS telefono_ente,
+UFFINT.FAXEIN AS fax_ente,
+UFFINT.EMAIIN AS email_punto_ordinante,
+UFFINT.CODFE as codufficiofe_ente,
+UFFINT.EMAI2IN as pec_ente,
+GARECONT.LOCESE AS luogo_cons,
+GARECONT.PCOESE AS punto_contatto_cons,
+PUNTO_CONSEGNA.NOMPUN AS nominativo_consegna,
+PUNTO_CONSEGNA.VIAEIN AS via_consegna,
+PUNTO_CONSEGNA.NCIEIN AS numero_civico_consegna,
+PUNTO_CONSEGNA.CAPEIN AS cap_consegna,
+PUNTO_CONSEGNA.CITEIN AS citta_consegna,
+PUNTO_CONSEGNA.PROEIN AS provincia_consegna,
+GARECONT.LOCFAT AS luogo_fatt,
+GARECONT.PCOFAT AS punto_contatto_fatt,
+PUNTO_FATTURAZIONE.NOMPUN AS nominativo_fatturazione,
+PUNTO_FATTURAZIONE.VIAEIN AS via_fatturazione,
+PUNTO_FATTURAZIONE.NCIEIN AS numero_civico_fatturazione,
+PUNTO_FATTURAZIONE.CAPEIN AS cap_fatturazione,
+PUNTO_FATTURAZIONE.CITEIN AS citta_fatturazione,
+PUNTO_FATTURAZIONE.PROEIN AS provincia_fatturazione,
+PUNTO_FATTURAZIONE.CODFE AS codufficiofe_fatturazione,
+PUNTO_FATTURAZIONE.EMAI2IN AS pec_fatturazione,
+TECNI.NOMTEC as nome_rup
+FROM GARE
+JOIN TORN ON TORN.CODGAR = GARE.CODGAR1
+JOIN UFFINT ON UFFINT.CODEIN = TORN.CENINT
+JOIN MERIC ON MERIC.ID = GARE.IDRIC
+JOIN GARECONT ON GARECONT.NGARA = GARE.NGARA
+LEFT JOIN PUNTICON PUNTO_CONSEGNA ON PUNTO_CONSEGNA.NUMPUN = GARECONT.PCOESE AND PUNTO_CONSEGNA.CODEIN = TORN.CENINT
+LEFT JOIN PUNTICON PUNTO_FATTURAZIONE ON PUNTO_FATTURAZIONE.NUMPUN = GARECONT.PCOFAT AND TORN.CENINT = PUNTO_FATTURAZIONE.CODEIN
+LEFT JOIN TECNI ON (TECNI.CODTEC = MERIC.CODRUP  AND MERIC.ID = GARE.IDRIC)
+WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
+	</queryString>
+	<field name="NOME_ENTE" class="java.lang.String"/>
+	<field name="CODICE_FISCALE_ENTE" class="java.lang.String"/>
+	<field name="INDIRIZZO_ENTE" class="java.lang.String"/>
+	<field name="NUMERO_CIVICO_ENTE" class="java.lang.String"/>
+	<field name="CAP_ENTE" class="java.lang.String"/>
+	<field name="CITTA_ENTE" class="java.lang.String"/>
+	<field name="PROVINCIA_ENTE" class="java.lang.String"/>
+	<field name="TELEFONO_ENTE" class="java.lang.String"/>
+	<field name="FAX_ENTE" class="java.lang.String"/>
+	<field name="EMAIL_PUNTO_ORDINANTE" class="java.lang.String"/>
+	<field name="LUOGO_CONS" class="java.lang.String"/>
+	<field name="PUNTO_CONTATTO_CONS" class="java.lang.String"/>
+	<field name="NOMINATIVO_CONSEGNA" class="java.lang.String"/>
+	<field name="VIA_CONSEGNA" class="java.lang.String"/>
+	<field name="NUMERO_CIVICO_CONSEGNA" class="java.lang.String"/>
+	<field name="CAP_CONSEGNA" class="java.lang.String"/>
+	<field name="CITTA_CONSEGNA" class="java.lang.String"/>
+	<field name="PROVINCIA_CONSEGNA" class="java.lang.String"/>
+	<field name="LUOGO_FATT" class="java.lang.String"/>
+	<field name="PUNTO_CONTATTO_FATT" class="java.lang.String"/>
+	<field name="NOMINATIVO_FATTURAZIONE" class="java.lang.String"/>
+	<field name="VIA_FATTURAZIONE" class="java.lang.String"/>
+	<field name="NUMERO_CIVICO_FATTURAZIONE" class="java.lang.String"/>
+	<field name="CAP_FATTURAZIONE" class="java.lang.String"/>
+	<field name="CITTA_FATTURAZIONE" class="java.lang.String"/>
+	<field name="PROVINCIA_FATTURAZIONE" class="java.lang.String"/>
+	<field name="CODUFFICIOFE_ENTE" class="java.lang.String"/>
+	<field name="CODUFFICIOFE_FATTURAZIONE" class="java.lang.String"/>
+	<field name="PEC_ENTE" class="java.lang.String"/>
+	<field name="PEC_FATTURAZIONE" class="java.lang.String"/>
+	<field name="NOME_RUP" class="java.lang.String"/>
+	<detail>
+		<band height="20" splitType="Immediate">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="482" height="20" backcolor="#CCCCCC" uuid="98df5b87-b431-4132-a70f-034756377c25"/>
+				<box topPadding="2" leftPadding="0" bottomPadding="0">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font size="12" isBold="true" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[AMMINISTRAZIONE ACQUIRENTE]]></text>
+			</staticText>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="f92cb921-2c66-4eb8-97ee-e4c4a6aa463f"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="b504ae32-d3e9-4344-96a7-26f186bbc219"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Amministrazione]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="6b084763-567b-428b-870e-83c1f2b17dfd"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{NOME_ENTE}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="81367b89-359f-4821-85ff-bda3dca49cbf"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="041057fe-817a-481a-8124-1b6e4e453e19"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Codice Fiscale]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="1cfb3e45-ce6d-4bdf-b22a-7c14f830b223"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{CODICE_FISCALE_ENTE}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="03f8f5d8-b7a5-48bc-bc1f-24fb591eb317"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="f2331615-cd4e-4c0f-b036-e3a5ee90745a"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Indirizzo ufficio]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="1f7a897a-915d-4990-a9cb-a5a483dd96db"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression><![CDATA[($F{INDIRIZZO_ENTE} == null || $F{CITTA_ENTE} == null)
+? "<indirizzo non specificato o incompleto in archivio>"
+: (
+$F{INDIRIZZO_ENTE} + " " +
+($F{NUMERO_CIVICO_ENTE} == null ? "" : $F{NUMERO_CIVICO_ENTE}) + ", " +
+($F{CAP_ENTE} == null ? "" : ($F{CAP_ENTE} + " ")) +
+$F{CITTA_ENTE} + " " +
+($F{PROVINCIA_ENTE} == null ? "" : "(" + $F{PROVINCIA_ENTE} + ")")
+)]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="592b550f-9493-4970-a771-77a93165594d"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="50523926-b407-4595-bb60-34c90ef6cf2a"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Telefono]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="8e0c6484-8bbe-4438-a42d-8e7be533d2c4"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{TELEFONO_ENTE}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="ea64ea52-7a0f-4959-adc7-f3faf79cc688"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="6bf48dcf-4e77-472a-923c-7391c66ff8d7"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Fax]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="1b610761-da9e-4a5f-96d8-d167d317121b"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{FAX_ENTE}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="30">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="30" uuid="91ba8b6d-f19d-498d-95c9-f9c9dc433c7c"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="30" uuid="fd276f61-57ab-4800-b348-44bc07693978"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[E-mail per eventuali comunicazioni in merito all'ordine]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="30" uuid="efe70013-0308-47c0-801c-1c00ba09276a"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{EMAIL_PUNTO_ORDINANTE}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="f2c9a7ad-7651-4bed-bbd0-e2b98931314e"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="2f9eee7a-0ab9-40dd-a7ca-729a4f078737"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<text><![CDATA[RUP]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="077b8bce-31ff-452c-825d-7794036971e5"/>
+					<box leftPadding="5" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{NOME_RUP}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="e58bc370-359e-44c2-9bce-b69d6a43d70d"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="79de85d9-135f-4121-b943-a7df121cb8d2"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Punto Ordinante]]></text>
+				</staticText>
+				<frame>
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="9728c075-d08c-47ce-920e-da3e3b5f1aa5"/>
+					<box leftPadding="5" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<componentElement>
+						<reportElement positionType="Float" mode="Transparent" x="0" y="0" width="234" height="15" uuid="38202202-5f70-46c0-8e2d-7246b007ca45"/>
+						<jr:list xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" printOrder="Vertical">
+							<datasetRun subDataset="punto_ordinante" uuid="033fc21d-bf5c-49e7-9dc1-4f94ecdfb837">
+								<datasetParameter name="NUMERO_GARA">
+									<datasetParameterExpression><![CDATA[$P{NUMERO_GARA}]]></datasetParameterExpression>
+								</datasetParameter>
+								<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+							</datasetRun>
+							<jr:listContents height="15" width="234">
+								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+									<reportElement positionType="Float" stretchType="RelativeToTallestObject" x="0" y="0" width="234" height="13" uuid="2b8f84f4-7404-45d8-8113-3cea9dcb3955"/>
+									<box leftPadding="0" rightPadding="0">
+										<leftPen lineWidth="0.0"/>
+									</box>
+									<textElement>
+										<font size="11"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{punto_ordinante}]]></textFieldExpression>
+								</textField>
+							</jr:listContents>
+						</jr:list>
+					</componentElement>
+				</frame>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="7410d18f-db8d-4fec-805f-b2792ac49dad"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="a2c6e041-b023-4c7d-bd54-ba3aff352a29"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Ordine istruito da]]></text>
+				</staticText>
+				<frame>
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="83a8b353-a830-4703-9879-c8b4dfb7f36b"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<componentElement>
+						<reportElement positionType="Float" mode="Transparent" x="0" y="0" width="234" height="13" uuid="9cb6f703-2999-449b-bc2b-5988e28fd7c3"/>
+						<jr:list xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" printOrder="Vertical">
+							<datasetRun subDataset="dati_istruttori" uuid="18383ea0-c194-4d2f-9efd-ddb0de3b1da6">
+								<datasetParameter name="NUMERO_GARA">
+									<datasetParameterExpression><![CDATA[$P{NUMERO_GARA}]]></datasetParameterExpression>
+								</datasetParameter>
+								<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+							</datasetRun>
+							<jr:listContents height="13" width="234">
+								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+									<reportElement positionType="Float" stretchType="RelativeToTallestObject" x="0" y="0" width="234" height="13" uuid="c7fb1313-5dfd-47fa-add1-984c7ddedb40"/>
+									<box leftPadding="0" rightPadding="0">
+										<pen lineWidth="0.0"/>
+										<topPen lineWidth="0.0"/>
+										<leftPen lineWidth="0.0"/>
+										<bottomPen lineWidth="0.0"/>
+										<rightPen lineWidth="0.0"/>
+									</box>
+									<textElement>
+										<font size="11"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{ISTRUTTORE}]]></textFieldExpression>
+								</textField>
+							</jr:listContents>
+						</jr:list>
+					</componentElement>
+				</frame>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="d6a04ede-5ab7-4df5-978b-0ffe9eb1b86b"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="2fec2d32-1d26-4cc6-9711-526521dbd102"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Indirizzo di consegna]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="b750c3a1-4e2a-47c7-8e48-4f1b3d081326"/>
+					<box leftPadding="5" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression><![CDATA[(
+    ($F{LUOGO_CONS} != null && !"".equals($F{LUOGO_CONS}))
+    ? $F{LUOGO_CONS}
+    : (
+        ($F{PUNTO_CONTATTO_CONS} != null && !"".equals($F{PUNTO_CONTATTO_CONS}))
+        ? (
+            ($F{NOMINATIVO_CONSEGNA} == null ? "" : ($F{NOMINATIVO_CONSEGNA} + "\n")) +
+            (
+                ($F{VIA_CONSEGNA} == null || $F{CITTA_CONSEGNA} == null)
+                ? "<indirizzo non specificato o incompleto in archivio>"
+                : (
+                    $F{VIA_CONSEGNA} + " " +
+                    ($F{NUMERO_CIVICO_CONSEGNA} == null ? "" : $F{NUMERO_CIVICO_CONSEGNA}) + ", " +
+                    ($F{CAP_CONSEGNA} == null ? "" : ($F{CAP_CONSEGNA} + " ")) +
+                    $F{CITTA_CONSEGNA} + " " +
+                    ($F{PROVINCIA_CONSEGNA} == null ? "" : "(" + $F{PROVINCIA_CONSEGNA} + ")")
+                  )
+            )
+          )
+        : (
+            ($F{INDIRIZZO_ENTE} == null || $F{CITTA_ENTE} == null)
+            ? "<indirizzo non specificato o incompleto in archivio>"
+            : (
+                $F{INDIRIZZO_ENTE} + " " +
+                ($F{NUMERO_CIVICO_ENTE} == null ? "" : $F{NUMERO_CIVICO_ENTE}) + ", " +
+                ($F{CAP_ENTE} == null ? "" : ($F{CAP_ENTE} + " ")) +
+                $F{CITTA_ENTE} + " " +
+                ($F{PROVINCIA_ENTE} == null ? "" : "(" + $F{PROVINCIA_ENTE} + ")")
+              )
+          )
+      )
+)]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" isRemoveLineWhenBlank="true" uuid="52bb8a53-21d5-4ba2-8d80-23f5a0e39f51">
+					<printWhenExpression><![CDATA[$F{LUOGO_FATT} != null && !"".equals($F{LUOGO_FATT})]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="18c64986-2e60-41f6-a2d3-5f22dc9cd32d"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Riferimenti per fatturazione]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="34afc796-eaab-457b-90a5-d9f1e0607013"/>
+					<box leftPadding="5" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression><![CDATA[(
+    ($F{LUOGO_FATT} != null && !"".equals($F{LUOGO_FATT}))
+    ? $F{LUOGO_FATT}
+    : ""
+)]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="30">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="30" isRemoveLineWhenBlank="true" uuid="3dc45c79-5034-4cf2-b7b6-502be604595f">
+					<printWhenExpression><![CDATA[$F{LUOGO_FATT} == null || $F{LUOGO_FATT} == ""]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="30" uuid="8a66009a-4b89-418e-9368-adf128243a0f"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Codice Univoco Ufficio per fatturazione elettronica]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="30" uuid="b4a68921-2a4a-40f0-ab0c-0c3c3714861b"/>
+					<box leftPadding="5" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression><![CDATA[(
+    ($F{LUOGO_FATT} == null || $F{LUOGO_FATT} == "")
+    ? (
+        ($F{PUNTO_CONTATTO_FATT} != null && !"".equals($F{PUNTO_CONTATTO_FATT}))
+        ? $F{CODUFFICIOFE_FATTURAZIONE}
+        : $F{CODUFFICIOFE_ENTE}
+       )
+   : ""
+)]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" isRemoveLineWhenBlank="true" uuid="2a6471f9-65c9-45d4-8648-6866f412c4b3">
+					<printWhenExpression><![CDATA[$F{LUOGO_FATT} == null || $F{LUOGO_FATT} == ""]]></printWhenExpression>
+				</reportElement>
+				<box topPadding="0" leftPadding="0" bottomPadding="0" rightPadding="0">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="bce88a2e-9bd4-498d-b5ed-7aa8b0f2bcb7"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[PEC per fatturazione elettronica]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="db047ee4-c934-4b2a-86fb-67c6d216ba17"/>
+					<box leftPadding="5" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression><![CDATA[(
+    ($F{LUOGO_FATT} == null || $F{LUOGO_FATT} == "")
+    ? (
+        ($F{PUNTO_CONTATTO_FATT} != null && !"".equals($F{PUNTO_CONTATTO_FATT}))
+        ? $F{PEC_FATTURAZIONE}
+        : $F{PEC_ENTE}
+       )
+   : ""
+)]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+	</detail>
+</jasperReport>

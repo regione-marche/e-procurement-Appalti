@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="TestataOrdineDiAcquisto" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+	<property name="ireport.zoom" value="1.2100000000000004"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String"/>
+	<parameter name="NUMERO_GARA" class="java.lang.String"/>
+	<parameter name="CODICE_IMPRESA" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT
+GARE.NREPAT as nr_ordine,
+GARE.CODCIG as cig,
+GARE.NOT_GAR as oggetto,
+GARE.DAATTO as data_creazione,
+GARE.IAGGIU as tot_no_iva,
+GARECONT.IMPTOT as tot_iva,
+GARECONT.MODPAG as modo_pagamento
+FROM GARE
+JOIN GARECONT ON GARE.NGARA = GARECONT.NGARA
+WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
+	</queryString>
+	<field name="NR_ORDINE" class="java.lang.String"/>
+	<field name="CIG" class="java.lang.String"/>
+	<field name="OGGETTO" class="java.lang.String"/>
+	<field name="DATA_CREAZIONE" class="java.lang.String"/>
+	<field name="TOT_NO_IVA" class="java.lang.String"/>
+	<field name="TOT_IVA" class="java.lang.String"/>
+	<field name="MODO_PAGAMENTO" class="java.lang.String"/>
+	<detail>
+		<band height="20" splitType="Immediate">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="482" height="20" backcolor="#CCCCCC"/>
+				<box topPadding="2" leftPadding="0" bottomPadding="0">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font size="12" isBold="true" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[ORDINE DIRETTO DI ACQUISTO]]></text>
+			</staticText>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Codice ordine di acquisto]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$P{NUMERO_GARA}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Nr. Identificativo Ordine]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{NR_ORDINE}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[CIG]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{CIG}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Strumento d'acquisto]]></text>
+				</staticText>
+				<staticText>
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement markup="none">
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Mercato Elettronico]]></text>
+				</staticText>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{OGGETTO}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Oggetto]]></text>
+				</staticText>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Data Creazione Ordine]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression class="java.util.Date"><![CDATA[$F{DATA_CREAZIONE} != null ? (new SimpleDateFormat("yyyy-MM-dd")).parse($F{DATA_CREAZIONE}.substring(0,10)) : null]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textField isStretchWithOverflow="true" pattern="#,##0.00 € " isBlankWhenNull="false">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression class="java.lang.Double"><![CDATA[$F{TOT_NO_IVA} != null ? Double.valueOf($F{TOT_NO_IVA}) : null]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[TOTALE (IVA esclusa)]]></text>
+				</staticText>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[TOTALE (IVA inclusa)]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="#,##0.00 € " isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression class="java.lang.Double"><![CDATA[$F{TOT_IVA} != null ? Double.valueOf($F{TOT_IVA}) : null]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="15">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<text><![CDATA[Modalità di pagamento]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font size="11"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{MODO_PAGAMENTO}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+	</detail>
+</jasperReport>

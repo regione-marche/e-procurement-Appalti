@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="TestataOrdineDiAcquisto" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="26445809-b98b-4052-963e-63a6daf9706c">
+	<property name="ireport.zoom" value="1.9487171000000016"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<subDataset name="punto_ordinante" uuid="d77b4aab-b8ba-4c7a-8905-b6d755d74d08">
+		<parameter name="NUMERO_GARA" class="java.lang.String"/>
+		<queryString>
+			<![CDATA[SELECT
+USRSYS.SYSUTE AS punto_ordinante
+FROM GARE
+JOIN G_PERMESSI ON GARE.CODGAR1 = G_PERMESSI.CODGAR AND G_PERMESSI.MERUOLO = 1 AND G_PERMESSI.AUTORI = 1
+JOIN USRSYS ON USRSYS.SYSCON = G_PERMESSI.SYSCON
+WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
+		</queryString>
+		<field name="PUNTO_ORDINANTE" class="java.lang.String"/>
+	</subDataset>
+	<parameter name="NUMERO_GARA" class="java.lang.String"/>
+	<parameter name="IDSTAMPA" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT
+TORN.TIPGEN AS offerta_per,
+UFFINT.NOMEIN AS stazione_appaltante,
+UFFINT.VIAEIN AS indirizzo,
+UFFINT.NCIEIN AS numero_civico,
+UFFINT.CAPEIN AS cap,
+UFFINT.CITEIN AS citta,
+UFFINT.PROEIN AS provincia
+FROM GARE
+JOIN TORN ON TORN.CODGAR = GARE.CODGAR1
+LEFT JOIN UFFINT ON UFFINT.CODEIN = TORN.CENINT
+WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
+	</queryString>
+	<field name="offerta_per" class="java.lang.Integer"/>
+	<field name="stazione_appaltante" class="java.lang.String"/>
+	<field name="indirizzo" class="java.lang.String"/>
+	<field name="numero_civico" class="java.lang.String"/>
+	<field name="cap" class="java.lang.String"/>
+	<field name="citta" class="java.lang.String"/>
+	<field name="provincia" class="java.lang.String"/>
+	<detail>
+		<band height="83" splitType="Immediate">
+			<staticText>
+				<reportElement mode="Transparent" x="0" y="0" width="482" height="35" backcolor="#FFFFFF" uuid="026b6551-2153-49fe-a3cb-4e3029ac1472"/>
+				<box topPadding="2" leftPadding="0" bottomPadding="0">
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Top" markup="none">
+					<font fontName="Times New Roman" size="15" isBold="true" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Informazioni riepilogative della richiesta di offerta (RdO)]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement positionType="Float" x="0" y="35" width="482" height="48" uuid="a0510e6e-2d8f-4b7b-88b7-f437c980ab03"/>
+				<box topPadding="2" leftPadding="2" bottomPadding="0" rightPadding="2">
+					<leftPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Justified" verticalAlignment="Middle" markup="html">
+					<font fontName="Times New Roman" size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA["La Stazione Appaltante: <b>" + ($F{stazione_appaltante} != null ? $F{stazione_appaltante} : "") + "</b><br/>" +
+"Indirizzo: <b>" +
+(($F{indirizzo} == null || $F{citta} == null)
+? "<indirizzo non specificato o incompleto in archivio>"
+: (
+$F{indirizzo} + " " +
+($F{numero_civico} == null ? "" : $F{numero_civico}) + ", " +
+($F{cap} == null ? "" : ($F{cap} + " ")) +
+$F{citta} + " " +
+($F{provincia} == null ? "" : "(" + $F{provincia} + ")")
+))  + "</b>"]]></textFieldExpression>
+			</textField>
+		</band>
+		<band height="16" splitType="Immediate">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="464" height="15" uuid="8892cd6c-031a-4aeb-b0cd-64870e3e1d77">
+					<printWhenExpression><![CDATA[!($P{IDSTAMPA}.equals("SMAT_INV01"))]]></printWhenExpression>
+				</reportElement>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="85" height="15" uuid="e2f6d2fa-a443-4050-8f3f-10bdb727fc63"/>
+					<box topPadding="0" leftPadding="2" bottomPadding="0" rightPadding="2"/>
+					<textElement>
+						<font fontName="Times New Roman" size="11"/>
+					</textElement>
+					<text><![CDATA[Punto ordinante:]]></text>
+				</staticText>
+				<frame>
+					<reportElement positionType="Float" x="85" y="0" width="362" height="15" uuid="84ffee1d-c1c7-4087-941e-b4efd88c72f6"/>
+					<componentElement>
+						<reportElement positionType="Float" x="0" y="0" width="335" height="15" uuid="a39f1d57-2fb2-48fc-8d08-832bd74ca833"/>
+						<jr:list xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" printOrder="Vertical">
+							<datasetRun subDataset="punto_ordinante" uuid="c3c409c3-6c45-49ce-b944-a967332a2550">
+								<datasetParameter name="NUMERO_GARA">
+									<datasetParameterExpression><![CDATA[$P{NUMERO_GARA}]]></datasetParameterExpression>
+								</datasetParameter>
+								<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+							</datasetRun>
+							<jr:listContents height="15" width="335">
+								<textField>
+									<reportElement positionType="Float" stretchType="RelativeToTallestObject" x="0" y="0" width="315" height="15" uuid="e7245815-8cc8-4123-94b2-09971524573a"/>
+									<box topPadding="0" leftPadding="2" bottomPadding="0" rightPadding="2"/>
+									<textElement>
+										<font fontName="Times New Roman" size="11" isBold="true"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{PUNTO_ORDINANTE}]]></textFieldExpression>
+								</textField>
+							</jr:listContents>
+						</jr:list>
+					</componentElement>
+				</frame>
+			</frame>
+		</band>
+		<band height="67">
+			<frame>
+				<reportElement positionType="Float" x="0" y="50" width="482" height="14" uuid="e18020cd-86db-47fe-b18d-1034a174bf4e"/>
+			</frame>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement positionType="Float" x="0" y="0" width="482" height="50" uuid="0a45426b-ad05-4f89-a5fc-da6083a388ff"/>
+				<box topPadding="2" leftPadding="2" bottomPadding="2" rightPadding="2">
+					<leftPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="html">
+					<font fontName="Times New Roman" size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA["<b>INVITA</b>"  + "<br/>" +
+"a presentare un'offerta per i " +
+($F{offerta_per} == 2 ? "Prodotti" : ($F{offerta_per} == 3 ? "Servizi" : "<tipologia non valida>"))+ " relativamente alla Richiesta di Offerta di seguito dettagliata"]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

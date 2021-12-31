@@ -1,0 +1,176 @@
+a.link-generico:hover {
+	text-decoration: none;
+	cursor:pointer;
+}
+
+img.dettaglioPrezzi {
+	cursor:pointer;
+}
+
+div.testo{
+	font:11px Verdana, Arial, Helvetica, sans-serif;
+}
+
+TABLE.scheda {
+	margin:0; PADDING: 0px; width: 100%; FONT-SIZE: 11px; border-collapse:collapse;
+}
+TABLE.scheda TD {
+	PADDING: 2px 0px 2px; BORDER-BOTTOM: #A1BAA9 1px solid;
+}
+TABLE.scheda TD.etichetta {
+	 width:110px; HEIGHT: 22px; BORDER-TOP: white 1px solid; BACKGROUND-COLOR: #efefef; color:#000000; TEXT-ALIGN: right;
+}
+TABLE.scheda TD.valore {
+	TEXT-ALIGN: center;
+}
+TABLE.scheda TD.grassetto {
+	FONT-WEIGHT: bold;
+}
+
+TABLE.ditte {
+	margin: 0;
+	margin-top: 5px;
+	margin-bottom: 5px;
+	padding: 0px;
+	width: 100%;
+	font-size: 11px;
+	border-collapse: collapse;
+	border-left: 1px solid #A0AABA;
+	border-top: 1px solid #A0AABA;
+	border-right: 1px solid #A0AABA;
+}
+
+TABLE.ditte THEAD TR{
+	background-color: #EFEFEF;
+	border-bottom: 1px solid #A0AABA;
+}
+
+TABLE.ditte THEAD TR TH{
+	padding: 6 2 6 2;
+	text-align: center;
+	font-weight: bold;
+	height: 30px;
+}
+
+TABLE.ditte TR {
+	background-color: #FFFFFF;
+}
+
+TABLE.ditte TR TD.aligncenter {
+	text-align: center;
+}
+
+
+TABLE.ditte TBODY{
+	//cursor:pointer;
+}
+
+TABLE.ditte TR TD, TABLE.ditte TR TH {
+	padding-top: 2px;
+	padding-bottom: 2px;
+	padding-right: 6px;
+	padding-left: 6px;
+	text-align: left;
+	border-left: 1px solid #A0AABA;
+	border-right: 1px solid #A0AABA;
+	border-top: 1px solid #A0AABA;
+	border-bottom: 1px solid #A0AABA;
+	height: 22px;
+}
+
+TABLE.rilanci {
+	margin: 0;
+	margin-top: 5px;
+	margin-bottom: 5px;
+	padding: 0px;
+	width: 100%;
+	font-size: 11px;
+	border-collapse: collapse;
+	border-left: 1px solid #A0AABA;
+	border-top: 1px solid #A0AABA;
+	border-right: 1px solid #A0AABA;
+}
+
+TABLE.rilanci THEAD TR{
+	background-color: #b0bed9;
+	border-bottom: 1px solid #A0AABA;
+}
+
+TABLE.rilanci THEAD TR TH{
+	padding: 6 2 6 2;
+	text-align: center;
+	font-weight: bold;
+	height: 30px;
+}
+
+TABLE.rilanci TR {
+	background-color: #FFFFFF;
+}
+
+TABLE.rilanci TR TD.aligncenter {
+	text-align: center;
+}
+
+TABLE.rilanci TR TD, TABLE.rilanci TR TH {
+	padding-top: 2px;
+	padding-bottom: 2px;
+	padding-right: 6px;
+	padding-left: 6px;
+	text-align: left;
+	border-left: 1px solid #A0AABA;
+	border-right: 1px solid #A0AABA;
+	border-top: 1px solid #A0AABA;
+	border-bottom: 1px solid #A0AABA;
+	height: 22px;
+}
+
+TABLE.prezzi {
+	margin: 0;
+	margin-top: 5px;
+	margin-bottom: 5px;
+	padding: 0px;
+	width: 100%;
+	font-size: 11px;
+	border-collapse: collapse;
+	border-left: 1px solid #A0AABA;
+	border-top: 1px solid #A0AABA;
+	border-right: 1px solid #A0AABA;
+}
+
+TABLE.prezzi THEAD TR{
+	background-color: #b0bed9;
+	border-bottom: 1px solid #A0AABA;
+}
+
+TABLE.prezzi THEAD TR TH{
+	padding: 6 2 6 2;
+	text-align: center;
+	font-weight: bold;
+	height: 30px;
+}
+
+TABLE.prezzi TR {
+	background-color: #FFFFFF;
+}
+
+TABLE.prezzi TR TD.aligncenter {
+	text-align: center;
+}
+
+
+TABLE.prezzi TBODY{
+	//cursor:pointer;
+}
+
+TABLE.prezzi TR TD, TABLE.prezzi TR TH {
+	padding-top: 2px;
+	padding-bottom: 2px;
+	padding-right: 6px;
+	padding-left: 6px;
+	text-align: left;
+	border-left: 1px solid #A0AABA;
+	border-right: 1px solid #A0AABA;
+	border-top: 1px solid #A0AABA;
+	border-bottom: 1px solid #A0AABA;
+	height: 22px;
+}	

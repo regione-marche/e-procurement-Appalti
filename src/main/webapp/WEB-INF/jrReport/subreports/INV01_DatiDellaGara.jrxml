@@ -1,0 +1,987 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="DatiDellaGara" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+	<property name="ireport.zoom" value="1.4641000000000008"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="149"/>
+	<subDataset name="punto_istruttore">
+		<parameter name="NUMERO_GARA" class="java.lang.String"/>
+		<queryString>
+			<![CDATA[SELECT
+USRSYS.SYSUTE AS punto_istruttore
+FROM GARE
+JOIN G_PERMESSI ON GARE.CODGAR1 = G_PERMESSI.CODGAR AND G_PERMESSI.MERUOLO = 2 AND G_PERMESSI.AUTORI = 1
+JOIN USRSYS ON USRSYS.SYSCON = G_PERMESSI.SYSCON
+WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
+		</queryString>
+		<field name="PUNTO_ISTRUTTORE" class="java.lang.String"/>
+	</subDataset>
+	<subDataset name="prestazione_principale">
+		<parameter name="NUMERO_GARA" class="java.lang.String"/>
+		<queryString>
+			<![CDATA[SELECT
+C1.DESCAT AS prestazione_principale
+FROM GARE
+JOIN V_GARE_CATEGORIE C1 ON C1.NGARA = GARE.NGARA AND C1.ISPREV = '1' AND C1.ISCATGARA = '1'
+WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
+		</queryString>
+		<field name="PRESTAZIONE_PRINCIPALE" class="java.lang.String"/>
+	</subDataset>
+	<subDataset name="ulteriori_prestazioni">
+		<parameter name="NUMERO_GARA" class="java.lang.String"/>
+		<queryString>
+			<![CDATA[SELECT
+C2.DESCAT AS ulteriore_prestazione
+FROM GARE
+JOIN V_GARE_CATEGORIE C2 ON C2.NGARA = GARE.NGARA AND C2.ISPREV = '2' AND C2.ISCATGARA = '1'
+WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
+		</queryString>
+		<field name="ULTERIORE_PRESTAZIONE" class="java.lang.String"/>
+	</subDataset>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String"/>
+	<parameter name="NUMERO_GARA" class="java.lang.String"/>
+	<parameter name="NUM_PUNTI_ISTRU" class="java.lang.Integer" isForPrompting="false"/>
+	<parameter name="NUM_PRESTA_PRINCI" class="java.lang.Integer" isForPrompting="false"/>
+	<parameter name="NUM_ULT_PRESTA" class="java.lang.Integer" isForPrompting="false"/>
+	<parameter name="IDSTAMPA" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT
+GARE.CODCIG AS codice_cig,
+T1.TAB1DESC AS tipo_appalto,
+GARE.NOT_GAR AS oggetto,
+T2.TAB1DESC AS tipo_procedura,
+TORN.GARTEL AS telematica,
+GARE.CRITLICG AS cod_criterio_aggiudicazione,
+T3.TAB1DESC AS criterio_aggiudicazione,
+GARE.DETLICG AS codice_determinato_mediante,
+T4.TAB1DESC AS determinato_mediante,
+GARE.IMPAPP AS importo_base_gara,
+GARE.IMPNRL AS importo_no_ribasso,
+GARE.IMPSIC AS importo_sicurezza,
+T8.TAB1DESC AS offerta_espressa_mediante,
+TORN.OFFAUM AS ammesse_offerte_in_aumento,
+UFFINT.NOMEIN AS staz_app,
+UFFINT.EMAIIN AS email_staz_app,
+TECNI.NOMTEC AS rup,
+TORN.DTEOFF AS data_scad_presentazione_off,
+TORN.OTEOFF AS ora_scad_presentazione_off,
+TORN.VALOFF AS num_giorni_validita_off,
+TORN.DTERMRICHCPO AS data_ter_rich_chiarimenti,
+TORN.DTERMRISPCPO AS data_ter_risp_chiarimenti
+FROM GARE
+JOIN TORN ON TORN.CODGAR = GARE.CODGAR1
+LEFT JOIN TAB1 T1 ON T1.TAB1TIP = TORN.TIPGEN AND T1.TAB1COD = 'A1007'
+LEFT JOIN TAB1 T2 ON T2.TAB1TIP = GARE.TIPGARG AND T2.TAB1COD = 'A2044'
+LEFT JOIN TAB1 T3 ON T3.TAB1TIP = GARE.CRITLICG AND T3.TAB1COD = 'A2081'
+LEFT JOIN TAB1 T4 ON T4.TAB1TIP = GARE.DETLICG AND T4.TAB1COD = 'A2082'
+LEFT JOIN UFFINT ON UFFINT.CODEIN = TORN.CENINT
+LEFT JOIN TECNI ON TECNI.CODTEC = TORN.CODRUP
+LEFT JOIN TAB1 T8 ON T8.TAB1TIP = GARE.RIBCAL AND T8.TAB1COD = 'A1053'
+LEFT JOIN V_GARE_CATEGORIE C1 ON C1.NGARA = GARE.NGARA AND C1.ISPREV = '1' AND C1.ISCATGARA = '1'
+WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
+	</queryString>
+	<field name="CODICE_CIG" class="java.lang.String"/>
+	<field name="TIPO_APPALTO" class="java.lang.String"/>
+	<field name="OGGETTO" class="java.lang.String"/>
+	<field name="TIPO_PROCEDURA" class="java.lang.String"/>
+	<field name="TELEMATICA" class="java.lang.Integer"/>
+	<field name="COD_CRITERIO_AGGIUDICAZIONE" class="java.lang.Integer"/>
+	<field name="CRITERIO_AGGIUDICAZIONE" class="java.lang.String"/>
+	<field name="CODICE_DETERMINATO_MEDIANTE" class="java.lang.Integer"/>
+	<field name="DETERMINATO_MEDIANTE" class="java.lang.String"/>
+	<field name="IMPORTO_BASE_GARA" class="java.lang.Double"/>
+	<field name="IMPORTO_NO_RIBASSO" class="java.lang.Double"/>
+	<field name="IMPORTO_SICUREZZA" class="java.lang.Double"/>
+	<field name="OFFERTA_ESPRESSA_MEDIANTE" class="java.lang.String"/>
+	<field name="AMMESSE_OFFERTE_IN_AUMENTO" class="java.lang.Integer"/>
+	<field name="STAZ_APP" class="java.lang.String"/>
+	<field name="EMAIL_STAZ_APP" class="java.lang.String"/>
+	<field name="RUP" class="java.lang.String"/>
+	<field name="DATA_SCAD_PRESENTAZIONE_OFF" class="java.lang.String"/>
+	<field name="ORA_SCAD_PRESENTAZIONE_OFF" class="java.lang.String"/>
+	<field name="NUM_GIORNI_VALIDITA_OFF" class="java.lang.Integer"/>
+	<field name="DATA_TER_RICH_CHIARIMENTI" class="java.lang.String"/>
+	<field name="DATA_TER_RISP_CHIARIMENTI" class="java.lang.String"/>
+	<detail>
+		<band height="160" splitType="Immediate">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Codice richiesta di offerta]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$P{NUMERO_GARA}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="20" width="482" height="20"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Codice CIG]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{CODICE_CIG}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="40" width="482" height="20"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Tipo di appalto]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{TIPO_APPALTO}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="60" width="482" height="20"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Oggetto]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{OGGETTO}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="80" width="482" height="20"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Tipo di procedura]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{TIPO_PROCEDURA}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="100" width="482" height="20"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Procedura telematica?]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{TELEMATICA} == 1 ? "Sì" : "No"]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="120" width="482" height="20"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Criterio di aggiudicazione]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{CRITERIO_AGGIUDICAZIONE}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="140" width="482" height="20"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Importo a base di gara]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="#,##0.00 €" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.Double"><![CDATA[$F{IMPORTO_BASE_GARA}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20" splitType="Prevent">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Di cui soggetto a ribasso]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="#,##0.00 €" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.Double"><![CDATA[($F{IMPORTO_BASE_GARA} != null
+    ? (
+        $F{IMPORTO_BASE_GARA} -
+        ($F{IMPORTO_NO_RIBASSO} != null ? $F{IMPORTO_NO_RIBASSO} : 0) -
+        ($F{IMPORTO_SICUREZZA} != null ? $F{IMPORTO_SICUREZZA} : 0)
+      )
+    : null
+)]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20" splitType="Prevent">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{IMPORTO_NO_RIBASSO} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Di cui non soggetto a ribasso]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="#,##0.00 €" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.Double"><![CDATA[$F{IMPORTO_NO_RIBASSO}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20" splitType="Prevent">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{IMPORTO_SICUREZZA} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Di cui sicurezza]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="#,##0.00 €" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.Double"><![CDATA[$F{IMPORTO_SICUREZZA}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20" splitType="Prevent">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{DETERMINATO_MEDIANTE} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Modalità di formulazione dell'offerta economica]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{DETERMINATO_MEDIANTE}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20" splitType="Prevent">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{CODICE_DETERMINATO_MEDIANTE} == 3]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Offerta complessiva espressa mediante]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{OFFERTA_ESPRESSA_MEDIANTE}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="80" splitType="Immediate">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Ammesse offerte in aumento?]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[(($F{AMMESSE_OFFERTE_IN_AUMENTO} != null && $F{AMMESSE_OFFERTE_IN_AUMENTO} == 1) ? "Sì" : "No")]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="20" width="482" height="20"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Stazione Appaltante]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{STAZ_APP}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="40" width="482" height="20"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[E-mail stazione appaltante]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{EMAIL_STAZ_APP}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="60" width="482" height="20"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[RUP]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{RUP}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20" splitType="Prevent">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$P{NUM_PUNTI_ISTRU} > 0 && !($P{IDSTAMPA}.equals("SMAT_INV01"))]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Punto Istruttore]]></text>
+				</staticText>
+				<frame>
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<componentElement>
+						<reportElement positionType="Float" mode="Transparent" x="0" y="0" width="234" height="13"/>
+						<jr:list xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" printOrder="Vertical">
+							<datasetRun subDataset="punto_istruttore">
+								<datasetParameter name="NUMERO_GARA">
+									<datasetParameterExpression><![CDATA[$P{NUMERO_GARA}]]></datasetParameterExpression>
+								</datasetParameter>
+								<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+							</datasetRun>
+							<jr:listContents height="13" width="234">
+								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+									<reportElement positionType="Float" x="0" y="0" width="234" height="13"/>
+									<textElement>
+										<font fontName="Times New Roman" size="10"/>
+									</textElement>
+									<textFieldExpression class="java.lang.String"><![CDATA[$F{PUNTO_ISTRUTTORE}]]></textFieldExpression>
+								</textField>
+							</jr:listContents>
+						</jr:list>
+					</componentElement>
+				</frame>
+			</frame>
+		</band>
+		<band height="20" splitType="Prevent">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Data e ora scadenza presentazione offerte]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[(
+    $F{DATA_SCAD_PRESENTAZIONE_OFF} != null
+    ? (
+        new SimpleDateFormat("dd/MM/yyyy").format(new SimpleDateFormat("yyyy-MM-dd").parse($F{DATA_SCAD_PRESENTAZIONE_OFF}.substring(0,10))) +
+        (
+            $F{ORA_SCAD_PRESENTAZIONE_OFF} != null
+            ? " alle ore " + $F{ORA_SCAD_PRESENTAZIONE_OFF}
+            : ""
+        )
+      )
+: null)]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20" splitType="Prevent">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{NUM_GIORNI_VALIDITA_OFF} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Numero giorni validità offerta]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.lang.Integer"><![CDATA[$F{NUM_GIORNI_VALIDITA_OFF}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20" splitType="Prevent">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{DATA_TER_RICH_CHIARIMENTI} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Data termine richiesta chiarimenti]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.util.Date"><![CDATA[$F{DATA_TER_RICH_CHIARIMENTI} != null ? (new SimpleDateFormat("yyyy-MM-dd")).parse($F{DATA_TER_RICH_CHIARIMENTI}.substring(0,10)) : null]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20" splitType="Prevent">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$F{DATA_TER_RISP_CHIARIMENTI} != null]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Data termine risposta chiarimenti]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<textFieldExpression class="java.util.Date"><![CDATA[$F{DATA_TER_RISP_CHIARIMENTI} != null ? (new SimpleDateFormat("yyyy-MM-dd")).parse($F{DATA_TER_RISP_CHIARIMENTI}.substring(0,10)) : null]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="20" splitType="Prevent">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$P{NUM_PRESTA_PRINCI} > 0]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Prestazione principale]]></text>
+				</staticText>
+				<frame>
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<componentElement>
+						<reportElement positionType="Float" mode="Transparent" x="0" y="0" width="234" height="13"/>
+						<jr:list xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" printOrder="Vertical">
+							<datasetRun subDataset="prestazione_principale">
+								<datasetParameter name="NUMERO_GARA">
+									<datasetParameterExpression><![CDATA[$P{NUMERO_GARA}]]></datasetParameterExpression>
+								</datasetParameter>
+								<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+							</datasetRun>
+							<jr:listContents height="13" width="234">
+								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+									<reportElement positionType="Float" x="0" y="0" width="234" height="13"/>
+									<textElement>
+										<font fontName="Times New Roman" size="10"/>
+									</textElement>
+									<textFieldExpression class="java.lang.String"><![CDATA[$F{PRESTAZIONE_PRINCIPALE}]]></textFieldExpression>
+								</textField>
+							</jr:listContents>
+						</jr:list>
+					</componentElement>
+				</frame>
+			</frame>
+		</band>
+		<band height="20" splitType="Prevent">
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[$P{NUM_ULT_PRESTA} > 0]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman" size="10"/>
+					</textElement>
+					<text><![CDATA[Ulteriori prestazioni]]></text>
+				</staticText>
+				<frame>
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<leftPen lineWidth="0.5"/>
+					</box>
+					<componentElement>
+						<reportElement positionType="Float" mode="Transparent" x="0" y="0" width="234" height="13"/>
+						<jr:list xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" printOrder="Vertical">
+							<datasetRun subDataset="ulteriori_prestazioni">
+								<datasetParameter name="NUMERO_GARA">
+									<datasetParameterExpression><![CDATA[$P{NUMERO_GARA}]]></datasetParameterExpression>
+								</datasetParameter>
+								<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+							</datasetRun>
+							<jr:listContents height="13" width="234">
+								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+									<reportElement positionType="Float" x="0" y="0" width="234" height="13"/>
+									<textElement>
+										<font fontName="Times New Roman" size="10"/>
+									</textElement>
+									<textFieldExpression class="java.lang.String"><![CDATA[$F{ULTERIORE_PRESTAZIONE}]]></textFieldExpression>
+								</textField>
+							</jr:listContents>
+						</jr:list>
+					</componentElement>
+				</frame>
+			</frame>
+		</band>
+	</detail>
+</jasperReport>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pdf417>
+  <quiet-zone>1</quiet-zone>
+  <module-width>3</module-width>
+  <min-rows>10</min-rows>
+  <width-to-height-ratio>1</width-to-height-ratio>
+</pdf417>

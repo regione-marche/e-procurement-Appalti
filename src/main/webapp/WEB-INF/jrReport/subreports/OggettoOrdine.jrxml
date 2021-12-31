@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="OggettoOrdine" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+	<property name="ireport.zoom" value="1.4641000000000006"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String"/>
+	<parameter name="NUMERO_GARA" class="java.lang.String"/>
+	<parameter name="CODICE_IMPRESA" class="java.lang.String"/>
+	<parameter name="NUMERO_PRODOTTI" class="java.lang.Integer" isForPrompting="false">
+		<defaultValueExpression><![CDATA[$P{NUMERO_PRODOTTI}]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT
+MERICPROD.ID AS id,
+V_MEPRODOTTI.CODOE AS codice_fornitore,
+MEARTCAT.TIPO AS tipo,
+MEARTCAT.DESCR AS descrizione_articolo,
+V_MEPRODOTTI.MARCAPRODUT AS marca,
+V_MEPRODOTTI.CODPRODUT AS codice_produttore,
+V_MEPRODOTTI.NOME AS denominazione,
+MEARTCAT.COLORE AS colore,
+V_MEPRODOTTI.PRZUNITPROD AS prezzo,
+UNITA_DI_MISURA_PREZZO.TAB1DESC AS unita_di_misura_prezzo,
+V_MEPRODOTTI.QUNIMISACQ AS lotto_minimo_udm,
+MEARTCAT.GPP AS acquisti_verdi,
+UNITA_DI_MISURA_CONSEGNA.TAB1DESC AS unita_misura_consegna,
+V_MEPRODOTTI.TEMPOCONS AS tempo_consegna,
+V_MEPRODOTTI.DESCAGG AS descrizione,
+V_MEPRODOTTI.GARANZIA AS garanzia,
+MERICPROD.QUANTI AS quantita,
+MEARTCAT.PRZUNITPER AS prezzo_unitario_per,
+MERICART.QUADET1 AS quantita_dettaglio_1,
+MERICART.QUADET2 AS quantita_dettaglio_2,
+MERICART.DESDET1 AS descrizione_dettaglio_1,
+MERICART.DESDET2 AS descrizione_dettaglio_2,
+IVA.TAB1DESC AS iva,
+MEARTCAT.OBBLGAR as garanzia_obbligatoria
+FROM GARE
+JOIN MERICART ON MERICART.NGARA = GARE.NGARA
+JOIN MEARTCAT ON MEARTCAT.ID = MERICART.IDARTCAT
+JOIN MERICPROD ON MERICPROD.IDRICART = MERICART.ID
+JOIN V_MEPRODOTTI ON V_MEPRODOTTI.ID = MERICPROD.IDPROD
+JOIN TAB1 IVA ON IVA.TAB1TIP = MERICPROD.PERCIVA AND IVA.TAB1COD = 'G_055'
+JOIN TAB1 UNITA_DI_MISURA_PREZZO ON UNITA_DI_MISURA_PREZZO.TAB1TIP = MEARTCAT.UNIMISACQ AND UNITA_DI_MISURA_PREZZO.TAB1COD ='ME007'
+JOIN TAB1 UNITA_DI_MISURA_CONSEGNA ON UNITA_DI_MISURA_CONSEGNA.TAB1COD = 'ME004' AND UNITA_DI_MISURA_CONSEGNA.TAB1TIP = MEARTCAT.UNIMISTEMPOCONS
+WHERE GARE.NGARA = $P{NUMERO_GARA} AND MERICPROD.ACQUISTA = '1']]>
+	</queryString>
+	<field name="ID" class="java.lang.String"/>
+	<field name="CODICE_FORNITORE" class="java.lang.String"/>
+	<field name="TIPO" class="java.lang.Integer"/>
+	<field name="DESCRIZIONE_ARTICOLO" class="java.lang.String"/>
+	<field name="MARCA" class="java.lang.String"/>
+	<field name="CODICE_PRODUTTORE" class="java.lang.String"/>
+	<field name="DENOMINAZIONE" class="java.lang.String"/>
+	<field name="COLORE" class="java.lang.String"/>
+	<field name="PREZZO" class="java.lang.String"/>
+	<field name="UNITA_DI_MISURA_PREZZO" class="java.lang.String"/>
+	<field name="LOTTO_MINIMO_UDM" class="java.lang.Integer"/>
+	<field name="ACQUISTI_VERDI" class="java.lang.String"/>
+	<field name="UNITA_MISURA_CONSEGNA" class="java.lang.String"/>
+	<field name="TEMPO_CONSEGNA" class="java.lang.Integer"/>
+	<field name="DESCRIZIONE" class="java.lang.String"/>
+	<field name="GARANZIA" class="java.lang.Integer"/>
+	<field name="QUANTITA" class="java.lang.Double"/>
+	<field name="PREZZO_UNITARIO_PER" class="java.lang.Integer"/>
+	<field name="QUANTITA_DETTAGLIO_1" class="java.lang.Double"/>
+	<field name="QUANTITA_DETTAGLIO_2" class="java.lang.Double"/>
+	<field name="DESCRIZIONE_DETTAGLIO_1" class="java.lang.String"/>
+	<field name="DESCRIZIONE_DETTAGLIO_2" class="java.lang.String"/>
+	<field name="IVA" class="java.lang.String"/>
+	<field name="GARANZIA_OBBLIGATORIA" class="java.lang.Integer"/>
+	<group name="PRODOTTO">
+		<groupExpression><![CDATA[$F{ID}]]></groupExpression>
+	</group>
+	<detail>
+		<band height="20" splitType="Immediate">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement positionType="Float" mode="Opaque" x="0" y="0" width="482" height="20" backcolor="#CCCCCC"/>
+				<box topPadding="2" leftPadding="0" bottomPadding="0" rightPadding="0">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["Oggetto dell'ordine (" + $V{REPORT_COUNT} + " di " + $P{NUMERO_PRODOTTI} + ") - " + $F{DESCRIZIONE_ARTICOLO}]]></textFieldExpression>
+			</textField>
+		</band>
+		<band height="20">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement positionType="Float" x="0" y="0" width="482" height="10"/>
+				<box>
+					<topPen lineWidth="0.75"/>
+					<leftPen lineWidth="0.75"/>
+					<bottomPen lineWidth="0.75"/>
+					<rightPen lineWidth="0.75"/>
+				</box>
+				<textElement>
+					<font fontName="SansSerif"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[($F{CODICE_FORNITORE} != null ? "Codice fornitore: " + $F{CODICE_FORNITORE} : "")+
+($F{TIPO}== 1 ? " - Marca: " +$F{MARCA} + " - Codice articolo produttore: " +$F{CODICE_PRODUTTORE} : "")+
+($F{DENOMINAZIONE} != null ? " - Denominazione commerciale: " + $F{DENOMINAZIONE} : "") +
+($F{TIPO} == 1 && $F{COLORE} != null ? " - Colore: " + $F{COLORE} : "") +
+($F{PREZZO} != null ? " - Prezzo: " + new java.text.DecimalFormat("#,##0.##### € ").format(Double.valueOf($F{PREZZO})) : "")+
+" - Unità di misura: " + $F{UNITA_DI_MISURA_PREZZO} +
+($F{PREZZO_UNITARIO_PER} != 4 ? " - Lotto minimo per UdM: " + $F{LOTTO_MINIMO_UDM} : "" ) +
+" - Tempo di consegna in " + $F{UNITA_MISURA_CONSEGNA} + ": " + $F{TEMPO_CONSEGNA} +
+($F{TIPO} == 1 && $F{GARANZIA_OBBLIGATORIA} == 1? " - Garanzia in mesi: " + $F{GARANZIA} : "") +
+" - Quantità totale ordinata: " + new java.text.DecimalFormat("###.#").format($F{QUANTITA}) + ($F{PREZZO_UNITARIO_PER} == 4 ? " (" + new java.text.DecimalFormat("###.#").format($F{QUANTITA_DETTAGLIO_1}) + " " + $F{DESCRIZIONE_DETTAGLIO_1} + " per " + new java.text.DecimalFormat("###.#").format($F{QUANTITA_DETTAGLIO_2}) + " " + $F{DESCRIZIONE_DETTAGLIO_2} + ")": "") +
+" - Aliquota IVA da applicare: " + $F{IVA} + "%"]]></textFieldExpression>
+			</textField>
+			<frame>
+				<reportElement positionType="Float" x="0" y="10" width="482" height="10"/>
+			</frame>
+		</band>
+	</detail>
+</jasperReport>
