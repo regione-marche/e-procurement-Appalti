@@ -27,6 +27,15 @@
 </c:choose>
 
 <c:choose>
+	<c:when test='${item[16] eq "1"}'>
+	<c:set var="bloccoCommicg" value="true" />
+	</c:when>
+	<c:otherwise>
+	<c:set var="bloccoCommicg" value="false" />
+	</c:otherwise>
+</c:choose>
+
+<c:choose>
 	<c:when test="${param.tipoDettaglio eq 1}">
 		<gene:campoScheda campo="NGARA2_${param.contatore}" entita="GFOF" campoFittizio="true" visibile="false" definizione="T21;1;;;NGARA_FUN" value="${item[0]}" />
 		<gene:archivio titolo="tecnici"
@@ -34,14 +43,15 @@
 			scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda.jsp","")}'
 			schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda-popup.jsp","")}'
 			campi="TECNI.CODTEC;TECNI.NOMTEC"
+			functionId="skip"
 			chiave="GFOF_CODFOF_${param.contatore}"
 			formName="formComponenteCommissione${param.contatore}"
 			inseribile="${isCollegamentoAlbo}">
-			<gene:campoScheda campo="CODFOF_${param.contatore}" entita="GFOF" campoFittizio="true" modificabile="${isModificabile and !giudizioEspresso}" obbligatorio="true" definizione="T10;1;;;CODFOF" value="${item[1]}" />
-			<gene:campoScheda campo="NOMFOF_${param.contatore}" entita="GFOF" campoFittizio="true" modificabile="${isModificabile and !giudizioEspresso}" definizione="T61;0;;;NOMFOF" value="${item[2]}" /> 
+			<gene:campoScheda campo="CODFOF_${param.contatore}" entita="GFOF" campoFittizio="true" modificabile="${isModificabile and !giudizioEspresso and !bloccoCommicg}" obbligatorio="true" definizione="T10;1;;;CODFOF" value="${item[1]}" />
+			<gene:campoScheda campo="NOMFOF_${param.contatore}" entita="GFOF" campoFittizio="true" modificabile="${isModificabile and !giudizioEspresso and !bloccoCommicg}" definizione="T61;0;;;NOMFOF" value="${item[2]}" /> 
 		</gene:archivio>
-		<gene:campoScheda campo="INCFOF_${param.contatore}" entita="GFOF" campoFittizio="true" modificabile="${isModificabile}" definizione="N2;1;A1001;;INCFOF" value="${item[3]}" obbligatorio="true" />
-		<gene:campoScheda campo="NUMCOMM_${param.contatore}" entita="GFOF" campoFittizio="true" modificabile="${isModificabile}" visibile="false" definizione="N3;1;;;NUMCOMMFOF" value="1" />
+		<gene:campoScheda campo="INCFOF_${param.contatore}" entita="GFOF" campoFittizio="true" modificabile="${isModificabile and !(param.obbligoPresidente eq '1' && bloccoCommicg eq 'true')}" definizione="N2;1;A1001;;INCFOF" value="${item[3]}" obbligatorio="true" />
+		<gene:campoScheda campo="NUMCOMM_${param.contatore}" entita="GFOF" campoFittizio="true" modificabile="${isModificabile}" visibile="false" definizione="N3;0;;;NUMCOMMFOF" value="1" />
 		<gene:campoScheda campo="INTFOF_${param.contatore}" entita="GFOF" campoFittizio="true" modificabile="${isModificabile}" definizione="T2;0;;SN;G1INTFOF" value="${item[4]}" obbligatorio="true" />
 		<gene:campoScheda campo="IMPFOF_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="F15;0;;MONEY;G1IMPFOF" value="${item[5]}"  />
 		<gene:campoScheda campo="IMPLIQ_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="F15;0;;MONEY;G1IMPLIQ_F" value="${item[6]}" />
@@ -51,19 +61,29 @@
 		<gene:campoScheda campo="MOTIVINDISP_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="T2000;0;;NOTE;MOTINDFOF" value="${item[10]}"  visibile="${isAlboCommissioneCollegato eq 'true'}"/>
 		<gene:campoScheda campo="DATARICHIESTA_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="T10;0;;DATA_ELDA;DRICHFOF" value="${item[11]}" visibile="${isAlboCommissioneCollegato eq 'true'}"/>
 		<gene:campoScheda campo="DATAACCETTAZIONE_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="T10;0;;DATA_ELDA;DACCETTFOF" value="${item[12]}" visibile="${isAlboCommissioneCollegato eq 'true'}"/>
-		<gene:campoScheda campo="ESPGIU_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="T2;0;;SN;G1ESPGIU" value="${item[13]}" modificabile="${!giudizioEspresso}"/>
+		<gene:campoScheda campo="ESPGIU_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="T2;0;;SN;G1ESPGIU" value="${item[13]}" modificabile="${!giudizioEspresso and !bloccoCommicg}"/>
+		<gene:campoScheda campo="COMMICG_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="T2;0;;SN;G1COMMICG" value="${item[16]}" modificabile="false" visibile="${param.integrazioneMEval eq '1'}"/>
+		<gene:campoScheda campo="SEZALBO_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="N2;0;A1172;;G1SEZALBO" value="${item[15]}" />
 		<gene:campoScheda campo="ID_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="N2;1;;;G1IDGFOF" value="${item[14]}" visibile="false" />
 		<gene:fnJavaScriptScheda funzione='visualizzaImporti(${param.contatore})' elencocampi="GFOF_INTFOF_${param.contatore}" esegui="true" />
 		<gene:fnJavaScriptScheda funzione="calcolaIMPCOM()" elencocampi="GFOF_IMPFOF_${param.contatore}" />
 		<gene:fnJavaScriptScheda funzione="calcolaIMPLIQ()" elencocampi="GFOF_IMPLIQ_${param.contatore}" />		
 		<gene:fnJavaScriptScheda funzione='visualizzaIndisponibilita(${param.contatore})' elencocampi="GFOF_INDISPONIBILITA_${param.contatore}" esegui="true"/>
-		<c:if test='${giudizioEspresso eq "true" and modo eq "MODIFICA"}'>
+		<c:if test='${(giudizioEspresso eq "true" || bloccoCommicg eq "true") and modo eq "MODIFICA"}'>
 		<c:set var="non_cancellabile" value="true"/>
 		<gene:campoScheda>
+			<c:choose>
+				<c:when test='${giudizioEspresso eq "true"}'>
+				<c:set var="msgBlocco" value="Componente commissione con valutazioni sugli operatori in gara e pertanto non modificabile" />
+				</c:when>
+				<c:otherwise>
+				<c:set var="msgBlocco" value="Componente commissione abilitato alla valutazione su M-Eval e pertanto non modificabile" />
+				</c:otherwise>
+			</c:choose>
 			<tr>
 			<td class="etichetta-dato"></td>
 			<td>
-				<span>&nbsp&nbspATTENZIONE: Componente commissione con valutazioni sugli operatori in gara e pertanto non modificabile</span>
+				<span>&nbsp&nbspATTENZIONE: ${msgBlocco}</span>
 			</td>
 			</tr>
 		</gene:campoScheda>
@@ -76,6 +96,7 @@
 				scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda.jsp","")}'
 				schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda-popup.jsp","")}'
 				campi="TECNI.CODTEC;TECNI.NOMTEC"
+				functionId="skip"
 				chiave="GFOF_CODFOF_${param.contatore}"
 				formName="formComponenteCommissione${param.contatore}"
 				inseribile="true">
@@ -83,7 +104,7 @@
 				<gene:campoScheda campo="NOMFOF_${param.contatore}" entita="GFOF" modificabile="${isModificabile}" campoFittizio="true" definizione="T61;0;;;NOMFOF" /> 
 			</gene:archivio>
 		<gene:campoScheda campo="INCFOF_${param.contatore}" entita="GFOF" campoFittizio="true" modificabile="${isModificabile}" definizione="N2;1;A1001;;INCFOF" obbligatorio="true" />
-		<gene:campoScheda campo="NUMCOMM_${param.contatore}" entita="GFOF" campoFittizio="true" modificabile="${isModificabile}" visibile="false" definizione="N3;1;;;NUMCOMMFOF" value="1" />
+		<gene:campoScheda campo="NUMCOMM_${param.contatore}" entita="GFOF" campoFittizio="true" modificabile="${isModificabile}" visibile="false" definizione="N3;0;;;NUMCOMMFOF" value="1" />
 		<gene:campoScheda campo="INTFOF_${param.contatore}" entita="GFOF" campoFittizio="true" modificabile="${isModificabile}" definizione="T2;0;;SN;G1INTFOF" value="${gene:if(modoAperturaScheda eq 'VISUALIZZA','', '1')}" obbligatorio="true" />
 		<gene:campoScheda campo="IMPFOF_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="F15;0;;MONEY;G1IMPFOF" />
 		<gene:campoScheda campo="IMPLIQ_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="F15;0;;MONEY;G1IMPLIQ_F" />
@@ -94,6 +115,8 @@
 		<gene:campoScheda campo="DATARICHIESTA_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="T10;0;;DATA_ELDA;DRICHFOF" visibile="${isAlboCommissioneCollegato eq 'true'}"/>
 		<gene:campoScheda campo="DATAACCETTAZIONE_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="T10;0;;DATA_ELDA;DACCETTFOF" visibile="${isAlboCommissioneCollegato eq 'true'}"/>
 		<gene:campoScheda campo="ESPGIU_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="T2;0;;SN;G1ESPGIU" value="${gene:if(modoAperturaScheda eq 'VISUALIZZA','', '1')}" />
+		<gene:campoScheda campo="COMMICG_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="T2;0;;SN;G1COMMICG" modificabile="false" visibile="${param.integrazioneMEval eq '1'}"/>
+		<gene:campoScheda campo="SEZALBO_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="N2;0;A1172;;G1SEZALBO" />
 		<gene:campoScheda campo="ID_${param.contatore}" entita="GFOF" campoFittizio="true" definizione="N2;1;;;G1IDGFOF" visibile="false" />
 		<gene:fnJavaScriptScheda funzione='visualizzaImporti(${param.contatore})' elencocampi="GFOF_INTFOF_${param.contatore}" esegui="true" />
 		<gene:fnJavaScriptScheda funzione="calcolaIMPCOM()" elencocampi="GFOF_IMPFOF_${param.contatore}" />

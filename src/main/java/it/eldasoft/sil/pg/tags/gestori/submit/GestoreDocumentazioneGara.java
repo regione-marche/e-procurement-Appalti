@@ -10,11 +10,26 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Vector;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.apache.struts.upload.FormFile;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.bl.GenChiaviManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.commons.web.TempFileUtilities;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.db.datautils.DataColumn;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
@@ -24,31 +39,23 @@ import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.sil.pg.bl.GestioneWSERPManager;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
+import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiGaraFunction;
+import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiRicezioneFunction;
 import it.eldasoft.sil.pg.web.struts.UploadMultiploForm;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityDate;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoResType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoType;
-
-import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
-
-import javax.servlet.ServletOutputStream;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
-import org.apache.struts.upload.FormFile;
-import org.springframework.transaction.TransactionStatus;
+import it.maggioli.eldasoft.ws.erp.WSERPAllegatoType;
 
 /**
- * Gestore per update dei dati della pagina commissione di prequalifica
+ * Gestore per update dei dati della pagina della documentazione
  *
  * @author Marcello Caminiti
  */
@@ -59,7 +66,10 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
 
   /** Manager per la gestione dell'integrazione con WSDM. */
   private GestioneWSDMManager gestioneWSDMManager;
-  
+
+  /** Manager per la gestione dell'integrazione con WSERP. */
+  private GestioneWSERPManager gestioneWSERPManager;
+
   @Override
   public String getEntita() {
     return "GARE";
@@ -85,6 +95,7 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
   @Override
   public void preInsert(TransactionStatus status, DataColumnContainer datiForm)
       throws GestoreException {
+
   }
 
   @Override
@@ -102,90 +113,215 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
     String tipoDoc = UtilityStruts.getParametroString(this.getRequest(),
         "filtroDocumentazione");
 
-    String suffisso = null;
+    String modoQform = UtilityStruts.getParametroString(this.getRequest(),
+        "modoQform");
 
-    if (tipoDoc != null) {
-      if ("1".equals(tipoDoc)) {
-        suffisso = "DOCUMGARA";
-      } else if ("2".equals(tipoDoc)) {
-        suffisso = "DOCUMREQ";
-      } else if ("3".equals(tipoDoc) || "8".equals(tipoDoc)) {
-        suffisso = "DOCUMCONC";
-      } else if ("4".equals(tipoDoc)) {
-        suffisso = "DOCUMESITO";
-      } else if ("5".equals(tipoDoc)) {
-        suffisso = "DOCUMTRASP";
-      } else if ("6".equals(tipoDoc) || "12".equals(tipoDoc)) {
-        suffisso = "DOCUMINVITI";
-      }else if ("10".equals(tipoDoc) || "15".equals(tipoDoc)) {
-        suffisso = "ATTI";
-      }else if ("11".equals(tipoDoc)) {
-        suffisso = "ALLEGATI";
-      }
-    }
+    if(modoQform!=null && !"".equals(modoQform)) {
+      if("INSQFORM".equals(modoQform) || "INSQFORM_RETT".equals(modoQform)) {
+        GenChiaviManager genChiaviManager = (GenChiaviManager) UtilitySpring.getBean("genChiaviManager",
+            this.getServletContext(), GenChiaviManager.class);
 
-    // Gestione personalizzata delle sezioni dinamiche
-    AbstractGestoreChiaveNumerica gestoreDOCUMGARA = new DefaultGestoreEntitaChiaveNumerica(
-        "DOCUMGARA", "NORDDOCG", new String[] {"CODGAR" }, this.getRequest());
-    this.gestisciAggiornamentiRecordSchedaMultiplaDOCUMGARA(status, datiForm,
-        gestoreDOCUMGARA, suffisso,
-        new DataColumn[] {datiForm.getColumn("GARE.CODGAR1") }, null);
+        //GESTIONE QFORM
+        Long idModello = datiForm.getLong("QFORM.IDMODELLO");
+        try {
+          if("INSQFORM".equals(modoQform)){
+            String oggettoModello = (String)this.sqlManager.getObject("select oggetto from qformlib where id=?", new Object[] {idModello});
+            datiForm.addColumn("QFORM.OGGETTO", JdbcParametro.TIPO_TESTO, oggettoModello);
+          }else {
+            String archivioMod = UtilityStruts.getParametroString(this.getRequest(),"archivioMod");
+            if("SI".equals(archivioMod)) {
+              String oggettoModello = (String)this.sqlManager.getObject("select oggetto from qformlib where id=?", new Object[] {idModello});
+              datiForm.setValue("QFORM.OGGETTO", oggettoModello);
+            }
+            datiForm.setOriginalValue("QFORM.OGGETTO", new JdbcParametro(JdbcParametro.TIPO_TESTO,""));
+          }
+          Long id = new Long(genChiaviManager.getNextId("QFORM"));
 
-    // Il gestore viene adoperato dalla pagina "Documentazione di gara" e
-    // dallo step invito delle fasi ricezione.
-    // In quest'ultimo nella stessa pagina nel caso di offerte distinte si
-    // hanno i documenti dei concorrenti relativi
-    // alla gara e relativi ai lotti, entrambi appartententi al gruppo 3, ma
-    // per comodità è stato definito il tipoDoc=8
-    // per indicare i documenti dei concorrenti relativi al lotto, ma che in
-    // db corrispondono sempre a gruppo=3
-    if ("3".equals(tipoDoc) || "8".equals(tipoDoc)) {
-      PgManager pgManager = (PgManager) UtilitySpring.getBean("pgManager",
-          this.getServletContext(), PgManager.class);
+          //datiForm.setValue("QFORM.OGGETTO", oggettoModello);
+          datiForm.setValue("QFORM.ID", id);
+          datiForm.setOriginalValue("QFORM.ENTITA", new JdbcParametro(JdbcParametro.TIPO_TESTO,""));
+          datiForm.setOriginalValue("QFORM.KEY1", new JdbcParametro(JdbcParametro.TIPO_TESTO,""));
+          datiForm.setOriginalValue("QFORM.DESCRIZIONE", new JdbcParametro(JdbcParametro.TIPO_TESTO,""));
+          datiForm.setOriginalValue("QFORM.TITOLO", new JdbcParametro(JdbcParametro.TIPO_TESTO,""));
+          datiForm.setOriginalValue("QFORM.BUSTA", new JdbcParametro(JdbcParametro.TIPO_NUMERICO,null));
+          datiForm.setOriginalValue("QFORM.STATO", new JdbcParametro(JdbcParametro.TIPO_NUMERICO,null));
+          datiForm.setOriginalValue("QFORM.TIPOLOGIA", new JdbcParametro(JdbcParametro.TIPO_NUMERICO,null));
+          datiForm.setOriginalValue("QFORM.IDMODELLO", new JdbcParametro(JdbcParametro.TIPO_NUMERICO,null));
+          String dultaggmod = datiForm.getString("DULTAGGMOD_FIT");
+          if(dultaggmod!=null && !"".equals(dultaggmod)) {
+            Date d= UtilityDate.convertiData(dultaggmod,UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS);
+            datiForm.addColumn("QFORM.DULTAGGMOD", d);
+          }
+          datiForm.removeColumns(new String[] {"DULTAGGMOD_FIT"});
+          datiForm.insert("QFORM", sqlManager);
+          this.getRequest().setAttribute("RISULTATO", "OK");
+          if("INSQFORM_RETT".equals(modoQform)) {
+            this.getRequest().setAttribute("idQformRett", id);
 
-      // Cancellazione delle occorrenze di imprdocg che non hanno
-      // corrispondenza in DOCUMGARA
-      String codgar = datiForm.getString("GARE.CODGAR1");
-      String ngara = null;
-      // List listaLotti = null;
+          }
 
-      // Nel caso di chiamata dalla pagina torn-pg-documentazione.jsp
-      // (offerta unica e offerte distinte) non è
-      // presente il campo "GARE.NGARA", quindi ngara rimane null
-      // Nel caso della pagina inviti delle fasi ricezione, il campo
-      // GARE.NGARA è valorizzato anche nei casi di offerta unica
-      // e offerte distine, quindi lo si deve sbiancare in questi casi
-      if (datiForm.isColumn("GARE.NGARA")) {
-        ngara = datiForm.getString("GARE.NGARA");
-        if (datiForm.isColumn("WIZARD_PAGINA_ATTIVA") && !"8".equals(tipoDoc)) {
-          // Se tipodoc=8, si sta considerando la documentazione del
-          // lotto ed è giusto che NGARA rimanga valorizzato
-          ngara = null;
+          Long busta = datiForm.getLong("QFORM.BUSTA");
+          if(new Long(1).equals(busta) || new Long(4).equals(busta)) {
+            //Va cancellato il documento DGUE
+            String ngara=datiForm.getString("QFORM.KEY1");
+            String codgar = (String)this.sqlManager.getObject("select codgar1 from gare where ngara=?",new Object[] {ngara});
+            this.sqlManager.update("delete from documgara where codgar=? and gruppo=3 and busta=? and IDSTAMPA = 'DGUE' ", new Object[] {codgar,busta});
+          }
+        } catch (SQLException e) {
+          throw new GestoreException("Errore nell'inserimento del formulario", null, e);
+        }
+      }else {
+        if(datiForm.isModifiedTable("QFORM")) {
+          try {
+            datiForm.update("QFORM", sqlManager);
+          } catch (SQLException e) {
+            throw new GestoreException("Errore nell'aggiornamento del formulario", null, e);
+          }
         }
       }
 
-      pgManager.updateImprdocgDaDocumgara(codgar, ngara);
-    }
-    
-    ////////////////////////////////////////////////////////////////////////////////
-    //Ricalcolo NUMORD.DOCUMGARA
-    String codgar = datiForm.getString("GARE.CODGAR1");
-    Long gruppo = new Long(tipoDoc);
-    PgManagerEst1 pgManagerEst1 = (PgManagerEst1) UtilitySpring.getBean("pgManagerEst1",
-        this.getServletContext(), PgManagerEst1.class);
-    
-    pgManagerEst1.ricalcNumordDocGara(codgar, gruppo);
-    ////////////////////////////////////////////////////////////////////////////////
+    }else {
+      String suffisso = null;
 
+      if (tipoDoc != null) {
+        if ("1".equals(tipoDoc)) {
+          suffisso = "DOCUMGARA";
+        } else if ("2".equals(tipoDoc)) {
+          suffisso = "DOCUMREQ";
+        } else if ("3".equals(tipoDoc) || "8".equals(tipoDoc)) {
+          suffisso = "DOCUMCONC";
+        } else if ("4".equals(tipoDoc)) {
+          suffisso = "DOCUMESITO";
+        } else if ("5".equals(tipoDoc)) {
+          suffisso = "DOCUMTRASP";
+        } else if ("6".equals(tipoDoc) || "12".equals(tipoDoc)) {
+          suffisso = "DOCUMINVITI";
+        }else if ("10".equals(tipoDoc) || "15".equals(tipoDoc)) {
+          suffisso = "ATTI";
+        }else if ("11".equals(tipoDoc)) {
+          suffisso = "ALLEGATI";
+        }
+      }
+
+      // Gestione personalizzata delle sezioni dinamiche
+      AbstractGestoreChiaveNumerica gestoreDOCUMGARA = new DefaultGestoreEntitaChiaveNumerica(
+          "DOCUMGARA", "NORDDOCG", new String[] {"CODGAR" }, this.getRequest());
+      this.gestisciAggiornamentiRecordSchedaMultiplaDOCUMGARA(status, datiForm,
+          gestoreDOCUMGARA, suffisso,
+          new DataColumn[] {datiForm.getColumn("GARE.CODGAR1") }, null);
+
+      String codgar = datiForm.getString("GARE.CODGAR1");
+
+      PgManager pgManager = (PgManager) UtilitySpring.getBean("pgManager",
+          this.getServletContext(), PgManager.class);
+
+      // Il gestore viene adoperato dalla pagina "Documentazione di gara" e
+      // dallo step invito delle fasi ricezione.
+      // In quest'ultimo nella stessa pagina nel caso di offerte distinte si
+      // hanno i documenti dei concorrenti relativi
+      // alla gara e relativi ai lotti, entrambi appartententi al gruppo 3, ma
+      // per comodità è stato definito il tipoDoc=8
+      // per indicare i documenti dei concorrenti relativi al lotto, ma che in
+      // db corrispondono sempre a gruppo=3
+      if ("3".equals(tipoDoc) || "8".equals(tipoDoc)) {
+
+
+        // Cancellazione delle occorrenze di imprdocg che non hanno
+        // corrispondenza in DOCUMGARA
+
+        String ngara = null;
+        // List listaLotti = null;
+
+        // Nel caso di chiamata dalla pagina torn-pg-documentazione.jsp
+        // (offerta unica e offerte distinte) non è
+        // presente il campo "GARE.NGARA", quindi ngara rimane null
+        // Nel caso della pagina inviti delle fasi ricezione, il campo
+        // GARE.NGARA è valorizzato anche nei casi di offerta unica
+        // e offerte distine, quindi lo si deve sbiancare in questi casi
+        if (datiForm.isColumn("GARE.NGARA")) {
+          ngara = datiForm.getString("GARE.NGARA");
+          if (datiForm.isColumn("WIZARD_PAGINA_ATTIVA") && !"8".equals(tipoDoc)) {
+            // Se tipodoc=8, si sta considerando la documentazione del
+            // lotto ed è giusto che NGARA rimanga valorizzato
+            ngara = null;
+          }
+        }
+
+        pgManager.updateImprdocgDaDocumgara(codgar, ngara);
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////
+      //Ricalcolo NUMORD.DOCUMGARA
+      Long gruppo = new Long(tipoDoc);
+      PgManagerEst1 pgManagerEst1 = (PgManagerEst1) UtilitySpring.getBean("pgManagerEst1",
+      this.getServletContext(), PgManagerEst1.class);
+
+      pgManagerEst1.ricalcNumordDocGara(codgar, gruppo);
+      ////////////////////////////////////////////////////////////////////////////////
+
+    //Gestione integrazione MDGUE
+      String urlMDGUE = ConfigManager.getValore(CostantiAppalti.PROP_INTEGRAZIONE_MDGUE_URL);
+      if(urlMDGUE!=null && !"".equals(urlMDGUE) && ("1".equals(tipoDoc) || "6".equals(tipoDoc))) {
+        boolean saltareControllo=false;
+        //Non deve scattare il controllo nello step "Invito" delle fasi ricezione per nella sottopagina "Dati dell'invito"
+        if("1".equals(tipoDoc)) {
+          int stepAttivo =0;
+          if(UtilityStruts.getParametroString(
+              this.getRequest(), GestioneFasiGaraFunction.PARAM_WIZARD_PAGINA_ATTIVA) !=null &&
+              !"".equals(UtilityStruts.getParametroString(
+                  this.getRequest(), GestioneFasiGaraFunction.PARAM_WIZARD_PAGINA_ATTIVA))) {
+            stepAttivo = new Long(UtilityStruts.getParametroString(
+                this.getRequest(), GestioneFasiGaraFunction.PARAM_WIZARD_PAGINA_ATTIVA)).intValue();
+            if(GestioneFasiRicezioneFunction.FASE_INVITI==stepAttivo)
+              saltareControllo=true;
+          }
+
+        }
+        try {
+          if(!saltareControllo) {
+            Vector<?> datiTorn = this.sqlManager.getVector("select gartel, offtel, iterga from torn where codgar=?", new Object[] {codgar});
+            if(datiTorn != null && datiTorn.size() >0) {
+              String gartel = SqlManager.getValueFromVectorParam(datiTorn, 0).getStringValue();
+              Long offtel = SqlManager.getValueFromVectorParam(datiTorn, 1).longValue();
+              Long iterga = SqlManager.getValueFromVectorParam(datiTorn, 2).longValue();
+              if("1".equals(gartel) && !(new Long (3)).equals(offtel)) {
+                Long gruppoDGUE= new Long(1);
+                if("6".equals(tipoDoc))
+                  gruppoDGUE = new Long(6);
+                Long busta= new Long(1);
+                if((new Long(2).equals(iterga) || new Long(4).equals(iterga)) && "1".equals(tipoDoc))
+                  busta= new Long(4);
+
+                String ngara = null;
+                if (datiForm.isColumn("GARE.NGARA"))
+                  ngara = datiForm.getString("GARE.NGARA");
+
+                pgManagerEst1.gestioneDocDGUEConcorrenti(codgar, ngara, gruppoDGUE, busta, false);
+
+                if (datiForm.isColumn("WIZARD_PAGINA_ATTIVA") && !"8".equals(tipoDoc)) {
+                  // Se tipodoc=8, si sta considerando la documentazione del
+                  // lotto ed è giusto che NGARA rimanga valorizzato
+                  ngara = null;
+                }
+                pgManager.updateImprdocgDaDocumgara(codgar, ngara);
+
+              }
+            }
+          }
+        } catch (SQLException e) {
+          throw new GestoreException("Errore nell'inserimento dell'occorrenza dei documenti dei concorrenti per MDGUE", null, e);
+        }
+      }
+    }
     if (logger.isDebugEnabled()) {
       logger.debug("GestoreDocumentazioneGara: preUpdate: fine metodo");
     }
   }
 
-  
+
   @Override
   public void postUpdate(DataColumnContainer datiForm) throws GestoreException {
-   
+
   }
 
   /**
@@ -220,10 +356,13 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
 
     TabellatiManager tabellatiManager = (TabellatiManager) UtilitySpring.getBean(
         "tabellatiManager", this.getServletContext(), TabellatiManager.class);
-    
+
     gestioneWSDMManager = (GestioneWSDMManager) UtilitySpring.getBean("gestioneWSDMManager",
         this.getServletContext(), GestioneWSDMManager.class);
-    
+
+    gestioneWSERPManager = (GestioneWSERPManager) UtilitySpring.getBean("gestioneWSERPManager",
+            this.getServletContext(), GestioneWSERPManager.class);
+
     String nomeCampoNumeroRecord = "NUMERO_" + suffisso;
     String nomeCampoDelete = "DEL_" + suffisso;
     String nomeCampoMod = "MOD_" + suffisso;
@@ -243,6 +382,7 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
       HashMap hm = ((UploadMultiploForm) this.getForm()).getFormFiles();
       long dimTotale = 0;
       String nomeAllegatoDocumentale = null;
+      String nomeAllegatoWSERP = null;
       FormFile ff = null;
       String fname = null;
       for (int i = 1; i <= numeroRecord; i++) {
@@ -305,7 +445,7 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
       }
 
       for (int i = 1; i <= numeroRecord; i++) {
-        
+
         DataColumnContainer newDataColumnContainer = new DataColumnContainer(
             tmpDataColumnContainer.getColumnsBySuffix("_" + i, false));
 
@@ -368,14 +508,14 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
                     valoreChiave[z].getValue());
               }
             }
-            
+
             if(newDataColumnContainer.isColumn("DOCUMGARA.URLDOC")
                 && newDataColumnContainer.getString("DOCUMGARA.URLDOC") != null && !"".equals(newDataColumnContainer.getString("DOCUMGARA.URLDOC"))){
               String url = newDataColumnContainer.getString("DOCUMGARA.URLDOC");
               if(!PgManager.validazioneURL(url)){
                 throw new GestoreException("Errore nella validazione dell'Url del documento", "upload.validate.wrongUrlFormat");
               }
-              
+
             }
 
             if (newDataColumnContainer.getLong(gestore.getCampoNumericoChiave()) == null) {
@@ -473,8 +613,8 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
                   fname = ff.getFileName();
                 }
                 nomeAllegatoDocumentale = this.getRequest().getParameter("getdocumentoallegato_nomeallegato_" + i);
-                
-                
+                nomeAllegatoWSERP = this.getRequest().getParameter("getdocumentoallegatoWSERP_nomeallegato_" + i);
+
                 Long idDocumento = dataColumnContainer.getLong("W_DOCDIG.IDDOCDIG_"
                     + i);
                 boolean cancellareAllegato = false;
@@ -486,7 +626,7 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
                 if ((newDataColumnContainer.isColumn("DOCUMGARA.URLDOC")
                     && newDataColumnContainer.getString("DOCUMGARA.URLDOC") != null && !"".equals(newDataColumnContainer.getString("DOCUMGARA.URLDOC")))
                     || (newDataColumnContainer.getLong("DOCUMGARA.IDDOCDG") != null
-                        && (fname == null || fname.length() == 0) && (nomeAllegatoDocumentale == null || nomeAllegatoDocumentale.length() == 0) && cancellareAllegato)) {
+                        && (fname == null || fname.length() == 0) && (nomeAllegatoDocumentale == null || nomeAllegatoDocumentale.length() == 0) && (nomeAllegatoWSERP == null || nomeAllegatoWSERP.length() == 0) && cancellareAllegato)) {
                   try {
                     this.getSqlManager().update(
                         "delete from W_DOCDIG where IDPRG = ? and IDDOCDIG = ?",
@@ -506,15 +646,15 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
                         "Errore nella cancellazione di W_DOCDIG", null, e);
                   }
                 } else {
-                    
-                  if(cancellareAllegato && (fname.length() > 0 || (nomeAllegatoDocumentale != null && nomeAllegatoDocumentale.length() > 0)) && (dataColumnContainer.getString("W_DOCDIG.DIGNOMDOC_" + i) != null && !"".equals(dataColumnContainer.getString("W_DOCDIG.DIGNOMDOC_" + i)))){
+
+                	if(cancellareAllegato && (fname.length() > 0 || (nomeAllegatoDocumentale != null && nomeAllegatoDocumentale.length() > 0) || (nomeAllegatoWSERP != null && nomeAllegatoWSERP.length() > 0)) && (dataColumnContainer.getString("W_DOCDIG.DIGNOMDOC_" + i) != null && !"".equals(dataColumnContainer.getString("W_DOCDIG.DIGNOMDOC_" + i)))){
                     dataColumnContainer.getColumn("W_DOCDIG.IDDOCDIG_" + i).setValue(dataColumnContainer.getColumn("W_DOCDIG.IDDOCDIG_" + i).getOriginalValue());
                   }
                   // Gestione w_DOCDIG
                   long numDoc = this.gestioneW_DOCDIG(newDataColumnContainer,
                       dataColumnContainer, i, suffisso);
                   if (numDoc > 0) {
-                    
+
                     Long nProgressivoDOCUMGARA = newDataColumnContainer.getLong("DOCUMGARA.NORDDOCG");
 
                     if (nProgressivoDOCUMGARA != null
@@ -585,7 +725,7 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
     String nomeallegatodocumentale = null;
     byte contenutoallegatodocumentale[] = null;
     Long idDocumentale = null;
-    
+
     String nomeallegato = this.getRequest().getParameter("getdocumentoallegato_nomeallegato_" + indice);
     if(nomeallegato!= null && nomeallegato.length()>0){
       String username = this.getRequest().getParameter("getdocumentoallegato_username_" + indice);
@@ -595,7 +735,7 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
       Long annoprotocollo = null;
       if(annoprotocollostringa != null && annoprotocollostringa.length()>0){annoprotocollo = new Long(annoprotocollostringa);}
       String numeroprotocollo = this.getRequest().getParameter("getdocumentoallegato_numeroprotocollo_" + indice);
-      
+
       String nome = this.getRequest().getParameter("getdocumentoallegato_nome_" + indice);
       String cognome = this.getRequest().getParameter("getdocumentoallegato_cognome_" + indice);
       String codiceuo = this.getRequest().getParameter("getdocumentoallegato_codiceuo_" + indice);
@@ -605,9 +745,9 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
       String numerodocumento = this.getRequest().getParameter("getdocumentoallegato_numerodocumento_" + indice);
       String servizio = this.getRequest().getParameter("getdocumentoallegato_servizio_" + indice);
       String idconfi = this.getRequest().getParameter("idconfi");
-      
+
       WSDMProtocolloDocumentoResType wsdmProtocolloDocumentoRes;
-      
+
       if(numeroprotocollo != null && numeroprotocollo.length()>0 && annoprotocollo != null){
           wsdmProtocolloDocumentoRes = gestioneWSDMManager.wsdmProtocolloLeggi(username, password, ruolo,
           nome, cognome, codiceuo, idutente, idutenteunop, annoprotocollo, numeroprotocollo, servizio, idconfi);
@@ -615,7 +755,7 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
           wsdmProtocolloDocumentoRes = gestioneWSDMManager.wsdmDocumentoLeggi(username, password, ruolo,
           nome, cognome, codiceuo, idutente, idutenteunop, numerodocumento, servizio, idconfi);
       }
-      
+
       if (wsdmProtocolloDocumentoRes.isEsito()) {
         WSDMProtocolloDocumentoType wsdmProtocolloDocumento = wsdmProtocolloDocumentoRes.getProtocolloDocumento();
         if(numerodocumento == null || numerodocumento.length() == 0){
@@ -643,7 +783,29 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
             "Errore nell'interrogazione del servizio", wsdmProtocolloDocumentoRes.getMessaggio());
       }
     }
-    
+
+    String nomeallegatoWSERP = this.getRequest().getParameter("getdocumentoallegatoWSERP_nomeallegato_" + indice);
+    if(nomeallegatoWSERP!= null && nomeallegatoWSERP.length()>0){
+
+        String servizioWSERP ="WSERP";
+
+        ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
+                CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+            Long syscon = new Long(profilo.getId());
+            String[] credenziali = this.gestioneWSERPManager.wserpGetLogin(syscon, servizioWSERP);
+
+            String usernameWSERP = credenziali[0];
+            String passwordWSERP = credenziali[1];
+
+        String titoloallegatoWSERP = this.getRequest().getParameter("getdocumentoallegatoWSERP_titoloallegato_" + indice);
+        String idfileWSERP = this.getRequest().getParameter("getdocumentoallegatoWSERP_idfile_" + indice);
+
+        WSERPAllegatoType allegato = gestioneWSERPManager.wserpLeggiAllegato(usernameWSERP, passwordWSERP, nomeallegatoWSERP, servizioWSERP, idfileWSERP);
+
+        nomeallegatodocumentale = allegato.getNome();
+        contenutoallegatodocumentale =  allegato.getContenuto();
+    }
+
     try {
       Long numDoc = datiForm.getLong("DOCUMGARA.IDDOCDG");
       boolean inserimento = true;
@@ -723,7 +885,7 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
           }
         }
       }
-     
+
 
       if (!controlliFile) {
         salvareW_DOCDIG = false;
@@ -761,8 +923,8 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
             newDataColumnContainer.setValue("W_DOCDIG.IDPRG", "PG");
             newDataColumnContainer.setValue("W_DOCDIG.IDDOCDIG", numDoc);
             newDataColumnContainer.insert("W_DOCDIG", this.geneManager.getSql());
-            
-            //salvataggio dell'occorrenza inwsallegati se il file proviene dal documentale 
+
+            //salvataggio dell'occorrenza inwsallegati se il file proviene dal documentale
             if (nomeallegato != null && nomeallegato.length()>0 && idDocumentale != null){
               GenChiaviManager genChiaviManager = (GenChiaviManager) UtilitySpring.getBean("genChiaviManager",
                   this.getServletContext(), GenChiaviManager.class);
@@ -774,7 +936,7 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
                     "Errore nell'inserimento su wsallegati", null, e);
               }
             }
-            
+
           } else {
             ret = -1;
           }
@@ -829,7 +991,7 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
    * @param file
    *        il file
    * @return true se i controlli sono andati a buon fine
-   * @throws GestoreException 
+   * @throws GestoreException
    */
   private boolean checkFileToAdd(String nomeFile, byte[] file) throws GestoreException {
 
@@ -852,7 +1014,7 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
           "Il file selezionato utilizza una estensione non ammessa", "upload.estensioneNonAmmessa",
           new String[] {nomeFile }, null);
     }
-    
+
     return salvareW_DOCDIG;
   }
 }

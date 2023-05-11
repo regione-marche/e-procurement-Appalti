@@ -57,7 +57,7 @@ public class ControlliDL_32_2019OEPVFunction extends AbstractFunzioneTag {
     int normativa = 0;
     try {
 
-        Vector datiGara = sqlManager.getVector("select t.iterga, t.dpubav, t.dinvit, g.calcsoang, g.modlicg, t.imptor, g.impapp, g.codgar1, t.tipgen" +
+        Vector datiGara = sqlManager.getVector("select t.iterga, t.dpubav, t.dinvit, g.calcsoang, g.modlicg, t.imptor, g.impapp, g.codgar1, t.tipgen " +
         		" from gare g, torn t" +
         		" where g.ngara=? and g.codgar1=t.codgar", new Object[] {ngara});
 
@@ -80,7 +80,7 @@ public class ControlliDL_32_2019OEPVFunction extends AbstractFunzioneTag {
 
           if(new Long(6).equals(modlicg) && "1".equals(calcsoang)){
             Date datpub = (Date)sqlManager.getObject("select datpub from pubbli where codgar9=? and tippub=?", new Object[]{codgar1, new Long(11)});
-            normativa = aggiudicazioneManager.getLeggeCalcoloSoglia(iterga, dinvit, dpubavg, datpub);
+            normativa = aggiudicazioneManager.getLeggeCalcoloSoglia(iterga, dinvit, dpubavg, datpub, "0");
             if(normativa  == 3){
 
                 //Controllo che il numero di ditte ammesse in gara sia superiore al valore specificato nel tabellato A1135
@@ -89,7 +89,7 @@ public class ControlliDL_32_2019OEPVFunction extends AbstractFunzioneTag {
                 int numeroVoceParametro=1;
                 if (importoGara < importoSogliaPerGara.doubleValue())
                   numeroVoceParametro=2;
-                Object[] risultato = aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(ngara,"A1156",numeroVoceParametro);
+                Object[] risultato = aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(ngara,"A1156",numeroVoceParametro,"0");
                 Boolean esitoControlloNumDitte = (Boolean)risultato[0];
                 if(!esitoControlloNumDitte){
                   result="graduatoria";

@@ -129,7 +129,7 @@
 	<c:if test='${tipo eq "FS4" and not empty requestScope.messaggi}'>
 		<gene:campoScheda>
 			<td colSpan="2">
-				<textarea cols="90" rows="14" readonly="readonly">${requestScope.messaggi }</textarea>
+				<textarea cols="90" rows="14" name="msgAnteprima" readonly="readonly">${requestScope.messaggi }</textarea>
 			</td>
 		</gene:campoScheda>	
 	</c:if>

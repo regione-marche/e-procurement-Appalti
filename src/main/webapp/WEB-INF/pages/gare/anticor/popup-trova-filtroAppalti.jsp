@@ -73,7 +73,7 @@
 		
 		<gene:javaScript>	
 			document.forms[0].jspPathTo.value="gare/commons/popup-filtro.jsp";
-			document.forms[0].action=document.forms[0].action + "?tipo=Anticor";
+			document.forms[0].action=document.forms[0].action + "?tipo=Anticor&entFiltro=ANTICORLOTTI";
 						
 			var appaltiPerPagina="${appaltiPerPagina}";
 			var indiceSelezionato =  document.getElementById('risultatiPerPagina').selectedIndex;

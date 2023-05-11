@@ -1,15 +1,8 @@
 package it.eldasoft.sil.pg.web.struts.permessi;
 
-import it.eldasoft.gene.bl.GeneManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
-import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
-import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.utils.properties.ConfigManager;
-
 import java.io.PrintWriter;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -17,13 +10,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspException;
 
-import net.sf.json.JSONObject;
-
-import org.apache.commons.lang.StringUtils;
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
+
+import it.eldasoft.gene.bl.GeneManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import net.sf.json.JSONObject;
 
 public class GetListaPermessiUtentiCommissioneAction extends Action {
 
@@ -64,10 +60,12 @@ public class GetListaPermessiUtentiCommissioneAction extends Action {
     String ngara = request.getParameter("ngara");
     String codgar = request.getParameter("codgar");
     //String codein = request.getParameter("codein");
-    
-    String ngaraParameter = "'" + ngara + "'";
+
+    //String ngaraParameter = "'" + ngara + "'";
+    String ngaraParameter = ngara ;
 
     try {
+      List<Object> parameters = new ArrayList<Object>();
       String selectUSR = "select distinct usrsys.syslogin, "
           + " usrsys.sysute, "
           + " usrsys.email, "
@@ -95,7 +93,7 @@ public class GetListaPermessiUtentiCommissioneAction extends Action {
           + " usrsys.sysdisab, "
           + " tecni.codtec, "
           + " tecni.nomtec ";
-      
+
       String selectTECNI = "select distinct null, "
         + " null, "
         + " null, "
@@ -109,16 +107,18 @@ public class GetListaPermessiUtentiCommissioneAction extends Action {
         + " null, "
         + " tecni.codtec, "
         + " tecni.nomtec ";
-      
+
       if ("VISUALIZZA".equals(operation)) {
             selectUSR = selectUSR
             + " from usrsys, g_permessi, gfof, tecni "
             + " where g_permessi.syscon = usrsys.syscon "
-            + " and g_permessi.codgar = '" + codgar + "'"
+            + " and g_permessi.codgar = ? "
             + " and gfof.codfof = tecni.codtec"
-            + " and tecni.cftec = usrsys.syscf"
+            + " and upper(tecni.cftec) = upper(usrsys.syscf)"
             + " and (gfof.indisponibilita is null or gfof.indisponibilita != '1')"
-            + " and gfof.ngara2 = " + ngaraParameter;
+            + " and gfof.ngara2 = ? ";
+            parameters.add(codgar);
+            parameters.add(ngaraParameter);
 
               selectUSR = selectUSR + " union "
                   + selectUSR_mod
@@ -126,35 +126,41 @@ public class GetListaPermessiUtentiCommissioneAction extends Action {
                   + " where not exists ("
                         + "select * from g_permessi "
                         + " where usrsys.syscon = g_permessi.syscon "
-                        + " and g_permessi.codgar = '" + codgar + "'"
+                        + " and g_permessi.codgar = ? "
                   + ") and gfof.codfof = tecni.codtec"
-                  + " and tecni.cftec = usrsys.syscf"
+                  + " and upper(tecni.cftec) = upper(usrsys.syscf)"
                   + " and (gfof.indisponibilita is null or gfof.indisponibilita != '1')"
-                  + " and gfof.ngara2 = " + ngaraParameter 
+                  + " and gfof.ngara2 = ? "
                   + " and (usrsys.sysdisab is null or usrsys.sysdisab = '0')";
-              
+              parameters.add(codgar);
+              parameters.add(ngaraParameter);
+
               selectUSR = selectUSR + " union "
               + selectTECNI
               + " from tecni, gfof "
               + " where gfof.codfof = tecni.codtec"
-              + " and not exists (select usrsys.syscf from usrsys where usrsys.syscf = tecni.cftec"
+              + " and not exists (select usrsys.syscf from usrsys where upper(usrsys.syscf) = upper(tecni.cftec)"
               + " and (usrsys.sysdisab is null or usrsys.sysdisab = '0')) "
-              + " and not exists (select * from usrsys, g_permessi where usrsys.syscf = tecni.cftec"
+              + " and not exists (select * from usrsys, g_permessi where upper(usrsys.syscf) = upper(tecni.cftec)"
               + " and g_permessi.syscon = usrsys.syscon "
-              + " and g_permessi.codgar = '" + codgar + "' ) "
+              + " and g_permessi.codgar = ? ) "
               + " and (gfof.indisponibilita is null or gfof.indisponibilita != '1')"
-              + " and gfof.ngara2 = " + ngaraParameter;
+              + " and gfof.ngara2 = ? ";
+              parameters.add(codgar);
+              parameters.add(ngaraParameter);
 
       } else if ("MODIFICA".equals(operation)) {
 
     	    selectUSR = selectUSR
             + " from usrsys, g_permessi, gfof, tecni "
             + " where g_permessi.syscon = usrsys.syscon "
-            + " and g_permessi.codgar = '" + codgar + "'"
+            + " and g_permessi.codgar = ? "
             + " and gfof.codfof = tecni.codtec"
-            + " and tecni.cftec = usrsys.syscf"
+            + " and upper(tecni.cftec) = upper(usrsys.syscf)"
             + " and (gfof.indisponibilita is null or gfof.indisponibilita != '1')"
-            + " and gfof.ngara2 = " + ngaraParameter;
+            + " and gfof.ngara2 = ? ";
+    	    parameters.add(codgar);
+    	    parameters.add(ngaraParameter);
 
               selectUSR = selectUSR + " union "
                   + selectUSR_mod
@@ -162,27 +168,32 @@ public class GetListaPermessiUtentiCommissioneAction extends Action {
                   + " where not exists ("
                         + "select * from g_permessi "
                         + " where usrsys.syscon = g_permessi.syscon "
-                        + " and g_permessi.codgar = '" + codgar + "'"
+                        + " and g_permessi.codgar = ? "
                   + ") and gfof.codfof = tecni.codtec"
-                  + " and tecni.cftec = usrsys.syscf"
+                  + " and upper(tecni.cftec) = upper(usrsys.syscf)"
                   + " and (gfof.indisponibilita is null or gfof.indisponibilita != '1')"
-                  + " and gfof.ngara2 = " + ngaraParameter
+                  + " and gfof.ngara2 = ? "
                   + " and (usrsys.sysdisab is null or usrsys.sysdisab = '0')";
+              parameters.add(codgar);
+              parameters.add(ngaraParameter);
+              
               selectUSR = selectUSR + " union "
                 + selectTECNI
                 + " from tecni, gfof "
                 + " where gfof.codfof = tecni.codtec"
-                + " and not exists (select usrsys.syscf from usrsys where usrsys.syscf = tecni.cftec"
+                + " and not exists (select usrsys.syscf from usrsys where upper(usrsys.syscf) = upper(tecni.cftec)"
                 + " and (usrsys.sysdisab is null or usrsys.sysdisab = '0')) "
-                + " and not exists (select * from usrsys, g_permessi where usrsys.syscf = tecni.cftec"
+                + " and not exists (select * from usrsys, g_permessi where upper(usrsys.syscf) = upper(tecni.cftec)"
                 + " and g_permessi.syscon = usrsys.syscon "
-                + " and g_permessi.codgar = '" + codgar + "' ) "
+                + " and g_permessi.codgar = ? ) "
                 + " and (gfof.indisponibilita is null or gfof.indisponibilita != '1')"
-                + " and gfof.ngara2 = " + ngaraParameter;
+                + " and gfof.ngara2 = ? ";
+              parameters.add(codgar);
+              parameters.add(ngaraParameter);
 
     	  }
 
-      List<?> hmUSR = this.sqlManager.getListHashMap(selectUSR, null);
+      List<?> hmUSR = this.sqlManager.getListHashMap(selectUSR, parameters.toArray());
 
       if (hmUSR != null && hmUSR.size() > 0) {
     	  for (int i=0; i < hmUSR.size(); i++) {

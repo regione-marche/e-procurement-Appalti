@@ -172,6 +172,16 @@
 		</c:otherwise>
 </c:choose>
 
+<c:choose>
+	<c:when test='${not empty param.isRicercaMercatoNegoziata}'>
+		<c:set var="isRicercaMercatoNegoziata" value="${param.isRicercaMercatoNegoziata}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="isRicercaMercatoNegoziata" value="${isRicercaMercatoNegoziata}" />
+	</c:otherwise>
+</c:choose>	
+
+
 <c:set var="IsDittaAggiudicataria" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.IsDittaAggiudicatariaFunction", pageContext,numeroGara,codiceDitta,isGaraLottiConOffertaUnica)}'/>
 
 <c:set var="integrazioneWSERP" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSERPFunction", pageContext)}' />
@@ -581,6 +591,9 @@
 	  				<gene:campoLista campo="PREOFF" title='${gene:if(tipoForniture eq "98","Prezzo offerto per confezione","Prezzo unitario")}' visibile = '${isPrequalifica eq "false" and stepWizard ne step6Wizard}' headerClass="sortable" />
 	  				<gene:campoLista campo="PERCIVAEFF" visibile = '${gene:checkProt(pageContext, "COLS.VIS.GARE.GCAP.PERCIVA") and (tipoForniture eq "3" or tipoForniture eq "") and isPrequalifica eq "false" and stepWizard ne step6Wizard}' headerClass="sortable" width="80"/>
 					<gene:campoLista campo="IMPOFF" visibile = '${isPrequalifica eq "false" and stepWizard ne step6Wizard}' headerClass="sortable" />
+					<gene:campoLista campo="DATACONSOFF" visibile = '${isRicercaMercatoNegoziata eq "true"}' headerClass="sortable" />
+					<gene:campoLista campo="TIPOLOGIA" visibile = '${isRicercaMercatoNegoziata eq "true"}' headerClass="sortable" />
+					<gene:campoLista campo="NOTE" visibile = '${isRicercaMercatoNegoziata eq "true"}'  />
 					<gene:campoLista campo="RIBPESO" visibile = '${isPrequalifica eq "false" and stepWizard ne step6Wizard and ribcal eq "3"}' headerClass="sortable" width="80" title="Ribasso pesato"/>
 					<gene:campoLista campo="ISSOLODITTA" visibile="false" />
 					<gene:campoLista campo="ISQUANTIMOD" visibile="false" />
@@ -620,7 +633,9 @@
 						<input type="hidden" name="offtel" value="${offtel}" />
 						<input type="hidden" name="modlicg" value="${modlicg}" />
 						<input type="hidden" name="daAgg" value="${daAgg}" />	
-						<input type="hidden" name="riboepvVis" value="${riboepvVis}" />					
+						<input type="hidden" name="riboepvVis" value="${riboepvVis}" />
+						<input type="hidden" name="isRicercaMercatoNegoziata" value="${isRicercaMercatoNegoziata}" />
+										
 				</gene:formLista>
 				</td>
 			</tr>

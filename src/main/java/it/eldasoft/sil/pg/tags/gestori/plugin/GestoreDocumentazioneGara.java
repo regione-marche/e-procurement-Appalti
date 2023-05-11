@@ -1,5 +1,12 @@
 package it.eldasoft.sil.pg.tags.gestori.plugin;
 
+import java.sql.SQLException;
+import java.util.HashMap;
+
+import javax.servlet.http.HttpSession;
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.PageContext;
+
 import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
@@ -10,6 +17,7 @@ import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestorePreload;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.sil.pg.bl.GestioneWSERPManager;
+import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.sil.pg.tags.funzioni.GetITERGAMacroFunction;
 import it.eldasoft.sil.pg.tags.funzioni.GetTipologiaGaraFunction;
 import it.eldasoft.utils.properties.ConfigManager;
@@ -17,13 +25,6 @@ import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityStringhe;
 import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
 import it.maggioli.eldasoft.ws.conf.WSERPConfigurazioneOutType;
-
-import java.sql.SQLException;
-import java.util.HashMap;
-
-import javax.servlet.http.HttpSession;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 /**
  * Gestore preload per la pagina documentazione di gara.
@@ -50,6 +51,12 @@ public class GestoreDocumentazioneGara extends AbstractGestorePreload {
   public void doBeforeBodyProcessing(PageContext page, String modoAperturaScheda)
       throws JspException {
 
+    GeneManager geneManager = (GeneManager) UtilitySpring.getBean("geneManager",
+        page, GeneManager.class);
+
+    PgManagerEst1 pgManagerEst1 = (PgManagerEst1) UtilitySpring.getBean("pgManagerEst1",
+        page, PgManagerEst1.class);
+
     String chiave = (String) page.getAttribute(UtilityTags.DEFAULT_HIDDEN_KEY_TABELLA, PageContext.REQUEST_SCOPE);
 
     String filtroDocumentazione = UtilityTags.getParametro(page,"filtroDocumentazione");
@@ -61,7 +68,7 @@ public class GestoreDocumentazioneGara extends AbstractGestorePreload {
       isFasiRicezione=true;
     String lottoDiGara = UtilityTags.getParametro(page,"lottoDiGara");
     String idconfi = UtilityTags.getParametro(page,"idconfi");
-    
+
     GetTipologiaGaraFunction function = new GetTipologiaGaraFunction();
 
     String genereGara = function.function(page, new Object[]{page,chiave});
@@ -73,6 +80,10 @@ public class GestoreDocumentazioneGara extends AbstractGestorePreload {
     Long iterga = (Long)page.getAttribute("iterga");
 
     page.setAttribute("iterga", iterga, PageContext.REQUEST_SCOPE);
+
+    HttpSession session = page.getSession();
+
+    String profiloAttivo = (String) session.getAttribute("profiloAttivo");
 
     if(filtroDocumentazione == null || "".equals(filtroDocumentazione)){
       //Valutazione del tipo di documentazione in cui aprire la pagina la prima volta
@@ -86,12 +97,9 @@ public class GestoreDocumentazioneGara extends AbstractGestorePreload {
         else
           pagina="TORN-scheda";
 
-      HttpSession session = page.getSession();
 
-      String profiloAttivo = (String) session.getAttribute("profiloAttivo");
 
-      GeneManager geneManager = (GeneManager) UtilitySpring.getBean("geneManager",
-          page, GeneManager.class);
+
 
       Long filtroAttivo = null;
       if(isFasiRicezione || geneManager.getProfili().checkProtec(profiloAttivo,"SEZ","VIS","GARE." + pagina + ".DOCUMGARA.DOCUMGARA"))
@@ -142,8 +150,9 @@ public class GestoreDocumentazioneGara extends AbstractGestorePreload {
 
     String codiceGara = null;
     String select = null;
+    String ngara = null;
     if (key.get("GARE.NGARA") != null){
-      String ngara = ((JdbcParametro) key.get("GARE.NGARA")).getStringValue();
+      ngara = ((JdbcParametro) key.get("GARE.NGARA")).getStringValue();
       select="select CODGAR1 from GARE where NGARA=?";
       try {
         codiceGara = (String) sqlManager.getObject(select,new Object[] { ngara });
@@ -153,6 +162,12 @@ public class GestoreDocumentazioneGara extends AbstractGestorePreload {
        }
     }else{
       codiceGara = ((JdbcParametro) key.get("TORN.CODGAR")).getStringValue();
+      try {
+        ngara = (String) sqlManager.getObject("select ngara from GARE where codgar1=?",new Object[] { codiceGara });
+      }catch (SQLException e) {
+        throw new JspException(
+            "Errore durante la determinazione del codice della gara", e);
+       }
     }
 
 
@@ -176,7 +191,6 @@ public class GestoreDocumentazioneGara extends AbstractGestorePreload {
       try {
         Long numeroPubblicazioniEsito = null;
         if (key.get("GARE.NGARA") != null){
-          String ngara = ((JdbcParametro) key.get("GARE.NGARA")).getStringValue();
           select="select count(NGARA) from PUBG where NGARA = ? and TIPPUBG=12";
           numeroPubblicazioniEsito = (Long) sqlManager.getObject(select, new Object[] { ngara });
         }else{
@@ -191,6 +205,97 @@ public class GestoreDocumentazioneGara extends AbstractGestorePreload {
       }
 
     }
+
+    if("3".equals(filtroDocumentazione)){
+      //Gestione Questionari
+      boolean moduloQFORMAttivo = geneManager.getProfili().checkProtec(profiloAttivo, "FUNZ", "VIS", "ALT.GENEWEB.QuestionariQForm");
+      if("true".equals(isProceduraTelematica) && moduloQFORMAttivo) {
+        boolean formularioCompletoAttivo = geneManager.getProfili().checkProtec(profiloAttivo, "FUNZ", "VIS", PgManagerEst1.QFORM_VOCEPROFILO_TUTTE_BUSTE);
+        boolean formularioCompletoAbilitato = false;
+        if(formularioCompletoAttivo) {
+          try {
+            Long offtel = (Long)sqlManager.getObject("select offtel from torn where codgar=?", new Object[] {codiceGara});
+            if(new Long(3).equals(offtel))
+              formularioCompletoAbilitato = true;
+          } catch (SQLException e) {
+            throw new JspException("Si è verificato un errore durante la lettura del campo OFFTEL della gara " + codiceGara, e);
+          }
+
+        }
+        boolean formularioPreqAttivo = geneManager.getProfili().checkProtec(profiloAttivo, "FUNZ", "VIS", "ALT.GARE.QuestionariQForm.associazioneBusta.preq");
+        boolean formularioAmmqAttivo = geneManager.getProfili().checkProtec(profiloAttivo, "FUNZ", "VIS", "ALT.GARE.QuestionariQForm.associazioneBusta.amm");
+
+        if(formularioPreqAttivo || formularioAmmqAttivo || formularioCompletoAbilitato) {
+          String gestioneQuestionariPreq = null;
+          String gestioneQuestionariAmm = null;;
+          try {
+            if(formularioPreqAttivo || formularioCompletoAbilitato) {
+              //boolean obbligoformularioPreq = geneManager.getProfili().checkProtec(profiloAttivo, "FUNZ", "VIS", "ALT.GARE.QuestionariQForm.obbligoBusta.preq");
+              boolean obbligoformularioPreq = false;
+              gestioneQuestionariPreq = pgManagerEst1.gestioneQuestionari(ngara,codiceGara, new Long(genereGara), 4, iterga, false);
+              if(PgManagerEst1.QFORM_INSERIMENTO_OBBLIGO.equals(gestioneQuestionariPreq)) {
+                obbligoformularioPreq = true;
+                gestioneQuestionariPreq = PgManagerEst1.QFORM_INSERIMENTO;
+              }
+              page.setAttribute("gestioneQuestionariPreq", gestioneQuestionariPreq, PageContext.REQUEST_SCOPE);
+              page.setAttribute("obbligoformularioPreq", new Boolean(obbligoformularioPreq), PageContext.REQUEST_SCOPE);
+            }
+            if(formularioAmmqAttivo || formularioCompletoAbilitato) {
+              //boolean obbligoformularioAmm = geneManager.getProfili().checkProtec(profiloAttivo, "FUNZ", "VIS", "ALT.GARE.QuestionariQForm.obbligoBusta.amm");
+              boolean obbligoformularioAmm = false;
+              gestioneQuestionariAmm = pgManagerEst1.gestioneQuestionari(ngara,codiceGara, new Long(genereGara), 1, iterga,false);
+              if(PgManagerEst1.QFORM_INSERIMENTO_OBBLIGO.equals(gestioneQuestionariAmm)) {
+                obbligoformularioAmm = true;
+                gestioneQuestionariAmm = PgManagerEst1.QFORM_INSERIMENTO;
+              }
+              page.setAttribute("gestioneQuestionariAmm", gestioneQuestionariAmm, PageContext.REQUEST_SCOPE);
+              page.setAttribute("obbligoformularioAmm", new Boolean(obbligoformularioAmm), PageContext.REQUEST_SCOPE);
+            }
+
+            if(formularioCompletoAbilitato && !"3".equals(genereGara)) {
+              //busta tecnica
+              String gestioneQuestionariTec = pgManagerEst1.gestioneQuestionari(ngara,codiceGara, new Long(genereGara), 2, iterga,false);
+              page.setAttribute("gestioneQuestionariTec", gestioneQuestionariTec, PageContext.REQUEST_SCOPE);
+
+              //busta economica
+              String gestioneQuestionariEco = pgManagerEst1.gestioneQuestionari(ngara,codiceGara, new Long(genereGara), 3, iterga,false);
+              page.setAttribute("gestioneQuestionariEco", gestioneQuestionariEco, PageContext.REQUEST_SCOPE);
+
+            }else if(formularioCompletoAbilitato && "3".equals(genereGara)){
+              page.setAttribute("gestioneQuestionariTec", PgManagerEst1.QFORM_TEC_LISTA_LOTTI, PageContext.REQUEST_SCOPE);
+              page.setAttribute("gestioneQuestionariEco", PgManagerEst1.QFORM_ECO_LISTA_LOTTI, PageContext.REQUEST_SCOPE);
+            }
+          } catch (SQLException e) {
+            throw new JspException("Si è verificato un errore durante la lettura dei documenti/questionari della busta di prequalifica della gara " + codiceGara, e);
+          }
+        }
+
+        boolean usareModaleDocumenti = false;
+        //Se attivo il formulario su tutte le buste, non va attivata la finestra modale nella creazione dei documenti
+        if(formularioCompletoAbilitato)
+          usareModaleDocumenti = true;
+
+        page.setAttribute("noModaleDocumentiQform", new Boolean(usareModaleDocumenti), PageContext.REQUEST_SCOPE);
+      }else if(("10".equals(genereGara) || "20".equals(genereGara)) && moduloQFORMAttivo) {
+        //gestione qform elenchi
+        String listaOpzioniDisponibili = (String) page.getAttribute("listaOpzioniDisponibili");
+        boolean formularioIscrizione = geneManager.getProfili().checkProtec(profiloAttivo, "FUNZ", "VIS", "ALT.GARE.QuestionariQForm.elenchi.iscrizione");
+        if (listaOpzioniDisponibili !=null && listaOpzioniDisponibili.contains(PgManagerEst1.OPZIONE_QFORM_ELENCHI) && formularioIscrizione) {
+          try {
+            String gestioneQuestionariIscrizione = pgManagerEst1.gestioneQuestionariElenco(ngara,codiceGara);
+            page.setAttribute("gestioneQuestionariIscriz", gestioneQuestionariIscrizione, PageContext.REQUEST_SCOPE);
+          } catch (SQLException e) {
+            throw new JspException("Si è verificato un errore durante la lettura dei documenti/questionari per l'iscrizione a elenco/catalogo " + codiceGara, e);
+          }
+
+        }
+
+
+      }
+
+
+    }
+
     //Il gestore viene richiamato anche nelle pagine "Invito" delle fasi ricezione, in cui serve
     //sapere nel caso di integrazione WSDM se il tipo documentale è PALEO e se è presente l'invio
     //mail a carico documentale.
@@ -272,7 +377,6 @@ public class GestoreDocumentazioneGara extends AbstractGestorePreload {
 
             }else{
               if (key.get("GARE.NGARA") != null){
-                String ngara = ((JdbcParametro) key.get("GARE.NGARA")).getStringValue();
                 countRda = (Long) sqlManager.getObject(
                     "select count(*) from gcap where ngara = ? and codrda is not null ",new Object[] { ngara });
               }

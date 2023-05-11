@@ -132,6 +132,8 @@
 						<input type="hidden" id="pgLastValori" name="pgLastValori" value="" />
 
 						<input type="hidden" id="updateLista" name="updateLista" value="${updateLista}" />
+						<input type="hidden" name="entitaPrincipaleModificabile" id="entitaPrincipaleModificabile" value="${sessionScope.entitaPrincipaleModificabile}" />
+						
 						<gene:campoScheda campo="NGARA" visibile="false" />
 						<gene:campoScheda campo="CODGAR1" visibile="false" />
 					<c:if test='${isGaraLottiConOffertaUnica eq "true"}'>

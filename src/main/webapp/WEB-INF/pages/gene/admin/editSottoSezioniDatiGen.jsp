@@ -92,6 +92,20 @@
 	      	</html:select>
 		  </td>
 	</tr>
+	<tr>
+		<td class="etichetta-dato" >Abilita funzioni di amministrazione sulle gare</td>
+			<td class="valore-dato"> 
+				<input type="checkbox" name="opzioniUtenteSys" value="ou233" <c:if test='${fn:contains(listaOpzioniUtenteSys, "ou233#")}'>checked="checked" </c:if>/>
+		</td>
+	</tr>
+	<tr>
+		<td class="etichetta-dato" >Privilegi dell'utente su selezione da elenco operatori</td>
+		<td class="valore-dato"> 
+			<html:select  name="accountForm" property="opzioniUtenteSys" styleId="opzioniSelOp" >	
+				<html:options property="listaValueSelOp" labelProperty="listaTextSelOp" />
+	  		</html:select>
+ 		</td>
+	</tr>
 </c:if>
 
 <c:if test='${moduloAttivo eq "PL" || (moduloAttivo eq "PG" && integrazioneLavori eq true)}'>

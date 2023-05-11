@@ -84,6 +84,7 @@
 		<gene:campoScheda campo="TIPOCLASS"  entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" obbligatorio="true"/>
 		<gene:campoScheda campo="ISCRIRT" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA"  obbligatorio="true"/>
 		<gene:campoScheda campo="COORDSIC" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" />
+		<gene:campoScheda campo="REQTORRE" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" />
 		<gene:campoScheda campo="PUBOPE" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" visibile='${fn:contains(listaOpzioniDisponibili, "OP114#")}'/>  
 		<gene:campoScheda campo="CTRLAGGIU" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" />
 		<gene:campoScheda campo="CTRLIMP" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" obbligatorio="true">
@@ -93,7 +94,9 @@
 			<gene:checkCampoScheda funzione='checkValorePositivo("##")' obbligatorio="true" messaggio="Deve essere inserito un valore maggiore di zero" onsubmit="false"/>
 		</gene:campoScheda>
 		<gene:campoScheda campo="CTRLELE" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" />
+		<gene:campoScheda campo="CTRLPROV" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" />
 		<gene:campoScheda campo="CTRLIMPGA" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" />
+		<gene:campoScheda campo="ISOPEAUTO" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" />
 	</gene:gruppoCampi>
 
 	<gene:fnJavaScriptScheda funzione='gestioneCTRLAGGIU("#GAREALBO_CTRLAGGIU#")' elencocampi='GAREALBO_CTRLAGGIU' esegui="true" />
@@ -126,7 +129,15 @@
 				</c:if>
 				<c:set var="rifFascicolo" value="${rifFascicolo } Classifica: ${datiRiga.WSFASCICOLO_CLASSIFICA}"/>
 			</c:if>
-			<c:if test="${tipoWSDM eq 'TITULUS'}">
+			<c:if test="${tipoWSDM eq 'TITULUS' || tipoWSDM eq 'ENGINEERINGDOC'}">
+				<c:choose>
+					<c:when test="${tipoWSDM eq 'ENGINEERINGDOC'}">
+						<c:set var="labelCoduff" value="U.O. di competenza"/>
+					</c:when>
+					<c:otherwise>
+						<c:set var="labelCoduff" value="Ufficio"/>
+					</c:otherwise>
+				</c:choose>
 				<c:if test="${!empty datiRiga.WSFASCICOLO_CODAOO and datiRiga.WSFASCICOLO_CODAOO !=''}" >
 					<c:set var="rifFascicolo" value="${rifFascicolo } - AOO: ${datiRiga.WSFASCICOLO_CODAOO}"/>
 					<c:if test="${!empty datiRiga.WSFASCICOLO_DESAOO and datiRiga.WSFASCICOLO_DESAOO !=''}" >
@@ -134,22 +145,22 @@
 					</c:if>
 				</c:if>
 				<c:if test="${!empty datiRiga.WSFASCICOLO_CODUFF and datiRiga.WSFASCICOLO_CODUFF !=''}" >
-					<c:set var="rifFascicolo" value="${rifFascicolo } - Ufficio: ${datiRiga.WSFASCICOLO_CODUFF}"/>
+					<c:set var="rifFascicolo" value="${rifFascicolo } - ${labelCoduff}: ${datiRiga.WSFASCICOLO_CODUFF}"/>
 					<c:if test="${!empty datiRiga.WSFASCICOLO_DESUFF and datiRiga.WSFASCICOLO_DESUFF !=''}" >
 						<c:set var="rifFascicolo" value="${rifFascicolo } ${datiRiga.WSFASCICOLO_DESUFF}"/>
 					</c:if>
 				</c:if>
 			</c:if>
 			<gene:campoScheda campo="ISPGD_FIT" campoFittizio="true" title="Riferimento al fascicolo" definizione="T40;"  value="${rifFascicolo}" modificabile="false"/>
-			<gene:campoScheda campo="CODICE" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
-			<gene:campoScheda campo="ANNO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
-			<gene:campoScheda campo="NUMERO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
-			<gene:campoScheda campo="CLASSIFICA" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
+			<gene:campoScheda campo="CODICE" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
+			<gene:campoScheda campo="ANNO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
+			<gene:campoScheda campo="NUMERO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
+			<gene:campoScheda campo="CLASSIFICA" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
 			
-			<gene:campoScheda campo="CODAOO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
-			<gene:campoScheda campo="DESAOO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
-			<gene:campoScheda campo="CODUFF" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
-			<gene:campoScheda campo="DESUFF" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
+			<gene:campoScheda campo="CODAOO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
+			<gene:campoScheda campo="DESAOO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
+			<gene:campoScheda campo="CODUFF" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
+			<gene:campoScheda campo="DESUFF" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
 		</gene:gruppoCampi>
 	</c:if>
 	
@@ -163,6 +174,24 @@
 		</jsp:include>
 		<jsp:include page="/WEB-INF/pages/commons/pulsantiScheda.jsp" />
 	</gene:campoScheda>
+	<c:if test='${!(modo eq "MODIFICA" or modo eq "NUOVO")}'>
+		<gene:redefineInsert name="addToAzioni">
+			<c:if test='${tipoWSDM eq "ENGINEERINGDOC" and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ModificaUOCompetenza")}'>
+				<c:set var="esisteFascicoloAssociato" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteFascicoloAssociatoFunction", pageContext, "GARE", datiRiga.GARE_NGARA,idconfi)}' scope="request"/>
+				<c:if test="${esisteFascicoloAssociato eq 'true' }">
+					<tr>
+						<td class="vocemenulaterale" >
+							<c:if test='${isNavigazioneDisattiva ne "1"}'>
+								<a href="javascript:apriPopupModificaUOCompetenza('${datiRiga.GARE_NGARA}','GARE',${idconfi});" title="Modifica U.O. di competenza" >
+							</c:if>
+								Modifica U.O. di competenza
+							<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
+						</td>
+					</tr>
+				</c:if>
+			</c:if>
+		</gene:redefineInsert>
+	</c:if>
 
 </gene:formScheda>
 
@@ -175,22 +204,27 @@
 			showObj("rowGAREALBO_CTRLGG",true);
 			showObj("rowGAREALBO_CTRLELE",true);
 			showObj("rowGAREALBO_CTRLIMPGA",true);
+			showObj("rowGAREALBO_CTRLPROV",true);
 			<c:if test='${modo ne "VISUALIZZA"}'>
 				if(getValue("GAREALBO_CTRLELE")==null || getValue("GAREALBO_CTRLELE")=="")
 					setValue("GAREALBO_CTRLELE", "1");
 				if(getValue("GAREALBO_CTRLIMPGA")==null || getValue("GAREALBO_CTRLIMPGA")=="")
 					setValue("GAREALBO_CTRLIMPGA", "2");
+				if(getValue("GAREALBO_CTRLPROV")==null || getValue("GAREALBO_CTRLPROV")=="")
+					setValue("GAREALBO_CTRLPROV", "2");
 			</c:if>
 		}else{
 			showObj("rowGAREALBO_CTRLIMP",false);
 			showObj("rowGAREALBO_CTRLGG",false);
 			showObj("rowGAREALBO_CTRLELE",false);
 			showObj("rowGAREALBO_CTRLIMPGA",false);
+			showObj("rowGAREALBO_CTRLPROV",false);
 			<c:if test='${modo ne "VISUALIZZA"}'>
 				setValue("GAREALBO_CTRLIMP", "");
 				setValue("GAREALBO_CTRLGG", "");
 				setValue("GAREALBO_CTRLELE", "");
 				setValue("GAREALBO_CTRLIMPGA", "");
+				setValue("GAREALBO_CTRLPROV", "");
 			</c:if>
 		}
 	}

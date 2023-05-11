@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.18.1.final utlizzo versione della libreria JasperReports6.18.1-9d75d1969e774d4f179fb3be8401e98a0e6d1611  -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="TestataOrdineDiAcquisto" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="8234b462-5ba4-4dd9-b961-e6f394251c18">
 	<property name="ireport.zoom" value="1.3310000000000006"/>
 	<property name="ireport.x" value="0"/>
@@ -10,7 +11,7 @@
 USRSYS.SYSUTE AS istruttore
 FROM GARE
 JOIN MERIC ON MERIC.ID = GARE.IDRIC
-JOIN G_PERMESSI ON G_PERMESSI.IDMERIC = MERIC.ID AND G_PERMESSI.MERUOLO = 2
+JOIN G_PERMESSI ON G_PERMESSI.IDMERIC = MERIC.ID AND (G_PERMESSI.MERUOLO = 2 OR G_PERMESSI.MERUOLO = 3)
 JOIN USRSYS ON USRSYS.SYSCON = G_PERMESSI.SYSCON
 WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 		</queryString>
@@ -125,7 +126,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
-					<font size="12" isBold="true" isPdfEmbedded="true"/>
+					<font size="12" isBold="true"/>
 				</textElement>
 				<text><![CDATA[AMMINISTRAZIONE ACQUIRENTE]]></text>
 			</staticText>
@@ -147,7 +148,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Amministrazione]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="6b084763-567b-428b-870e-83c1f2b17dfd"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -176,7 +177,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Codice Fiscale]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="1cfb3e45-ce6d-4bdf-b22a-7c14f830b223"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -205,7 +206,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Indirizzo ufficio]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="1f7a897a-915d-4990-a9cb-a5a483dd96db"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -242,7 +243,7 @@ $F{CITTA_ENTE} + " " +
 					</textElement>
 					<text><![CDATA[Telefono]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="8e0c6484-8bbe-4438-a42d-8e7be533d2c4"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -271,7 +272,7 @@ $F{CITTA_ENTE} + " " +
 					</textElement>
 					<text><![CDATA[Fax]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="1b610761-da9e-4a5f-96d8-d167d317121b"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -305,7 +306,7 @@ $F{CITTA_ENTE} + " " +
 					</textElement>
 					<text><![CDATA[E-mail per eventuali comunicazioni in merito all'ordine]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="30" uuid="efe70013-0308-47c0-801c-1c00ba09276a"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -331,7 +332,7 @@ $F{CITTA_ENTE} + " " +
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
 					<text><![CDATA[RUP]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="077b8bce-31ff-452c-825d-7794036971e5"/>
 					<box leftPadding="5" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -375,7 +376,7 @@ $F{CITTA_ENTE} + " " +
 								<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
 							</datasetRun>
 							<jr:listContents height="15" width="234">
-								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+								<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 									<reportElement positionType="Float" stretchType="RelativeToTallestObject" x="0" y="0" width="234" height="13" uuid="2b8f84f4-7404-45d8-8113-3cea9dcb3955"/>
 									<box leftPadding="0" rightPadding="0">
 										<leftPen lineWidth="0.0"/>
@@ -423,7 +424,7 @@ $F{CITTA_ENTE} + " " +
 								<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
 							</datasetRun>
 							<jr:listContents height="13" width="234">
-								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+								<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 									<reportElement positionType="Float" stretchType="RelativeToTallestObject" x="0" y="0" width="234" height="13" uuid="c7fb1313-5dfd-47fa-add1-984c7ddedb40"/>
 									<box leftPadding="0" rightPadding="0">
 										<pen lineWidth="0.0"/>
@@ -460,7 +461,7 @@ $F{CITTA_ENTE} + " " +
 					</textElement>
 					<text><![CDATA[Indirizzo di consegna]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="b750c3a1-4e2a-47c7-8e48-4f1b3d081326"/>
 					<box leftPadding="5" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -522,7 +523,7 @@ $F{CITTA_ENTE} + " " +
 					</textElement>
 					<text><![CDATA[Riferimenti per fatturazione]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="34afc796-eaab-457b-90a5-d9f1e0607013"/>
 					<box leftPadding="5" rightPadding="2">
 						<leftPen lineWidth="0.5"/>

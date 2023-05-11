@@ -30,6 +30,8 @@
 <c:set var="listaOpzioniDisponibili" value="${fn:join(opzDisponibili,'#')}#"/>
 
 <c:set var="gestioneUrl" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsGestioneUrlDocumentazioneFunction", pageContext)}' scope="request"/>
+<c:set var="inizializzaAllmail" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.InizializzazioneAllmailFunction", pageContext)}' scope="request"/>
+
 
 <c:set var="richiestaFirma" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "documentiDb.richiestaFirma")}'/>
 
@@ -49,8 +51,12 @@
 </c:choose>	
 
 <c:choose> 
-	<c:when test="${gruppo eq 3}" >
+	<c:when test="${gruppo eq 3 and genereGara ne 10 and  genereGara ne 20 }" >
 		<c:set var="busta" value='${param.busta}'/>
+		<c:set var="titoloBusta" value='${param.titoloBusta}'/>
+	</c:when>
+	<c:when test="${gruppo eq 3 and (genereGara eq 10 or genereGara eq 20) }" >
+		<c:set var="fasEle" value='${param.fasEle}'/>
 		<c:set var="titoloBusta" value='${param.titoloBusta}'/>
 	</c:when>
 	<c:otherwise>
@@ -76,9 +82,12 @@
 	</c:otherwise>
 </c:choose>
 
+<c:if test='${empty idconfi}'>
+<c:set var="uffintGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetUffintGaraFunction",  pageContext,codiceGara)}' />
+<c:set var="idconfi" value='${gene:callFunction3("it.eldasoft.gene.tags.functions.GetWSDMConfiAttivaFunction",  pageContext,uffintGara,sessionScope.moduloAttivo)}' scope="request"/>
+</c:if>
+
 <c:if test='${(gruppo eq 1 or gruppo eq 15) and (genereGara eq 1 or genereGara eq 2 or genereGara eq 3)}'>
-		<c:set var="uffintGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetUffintGaraFunction",  pageContext,codiceGara)}' />
-		<c:set var="idconfi" value='${gene:callFunction3("it.eldasoft.gene.tags.functions.GetWSDMConfiAttivaFunction",  pageContext,uffintGara,sessionScope.moduloAttivo)}' />
 		<c:set var="insDocDaProtocollo" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.GetPropertyWsdmFunction", inserimentoDocDaProtocollo,idconfi)}'/>
 		<c:set var="ssoProtocollo" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "sso.protocollo")}'/>
 		<c:if test="${not empty ssoProtocollo and ssoProtocollo ne '0'}">
@@ -86,7 +95,13 @@
 		</c:if>
 		
 </c:if>
-
+<c:set var="integrazioneWSDM" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNFunction", pageContext, codiceGara,idconfi)}' />
+<c:if test="${integrazioneWSDM eq '1'}">
+	<c:set var="tipoWSDM" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetTipoWSDMFunction", pageContext, "FASCICOLOPROTOCOLLO", "NO",idconfi)}' />
+	<c:if test="${tipoWSDM eq 'ITALPROT'}">
+		<c:set var="firmaDocumento" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.GetPropertyWsdmFunction", firmaDocumenti,idconfi)}' scope="request"/>
+	</c:if>
+</c:if>
 
 <gene:template file="scheda-template.jsp" gestisciProtezioni="true" schema="GARE" idMaschera="DOCUMGARA-Tipologia-scheda">
 
@@ -135,6 +150,7 @@
 				<input type="hidden"  name="bustalotti" value="${bustalotti}">
 				<input type="hidden"  name="idconfi" value="${idconfi}">
 				
+								
 				<jsp:include page="/WEB-INF/pages/gare/documgara/torn-sezione-documenti.jsp">
 					<jsp:param name="codiceGara" value="${codiceGara}"/>
 					<jsp:param name="tipoDoc" value="${gruppo}"/>
@@ -197,6 +213,7 @@
 				<input type="hidden"  name="lottoFaseInvito" value="${lottoFaseInvito}">
 				<input type="hidden"  name="isProceduraTelematica" value="${isProceduraTelematica}">
 				<input type="hidden"  name="idconfi" value="${idconfi}">
+				<input type="hidden"  name="fasEle" value="${fasEle}">
 				
 				<jsp:include page="/WEB-INF/pages/gare/documgara/sezione-documenti.jsp">
 					<jsp:param name="codiceGara" value="${codiceGara}"/>
@@ -212,13 +229,28 @@
 					<jsp:param name="nomeTipologia" value="${datiRiga.G1CF_PUBB_NOME}" />
 					<jsp:param name="isProceduraTelematica" value="${isProceduraTelematica}" />
 					<jsp:param name="insDocDaProtocollo" value="${insDocDaProtocollo}" />
-					
+					<jsp:param name="fasEle" value="${fasEle}" />
 				</jsp:include>
 				
 			</gene:formScheda>
 		</c:otherwise>
 	</c:choose>
 	<jsp:include page="/WEB-INF/pages/gene/system/firmadigitale/modalPopupFirmaDigitaleRemota.jsp" />
+	
+	<c:choose>
+		<c:when test="${genereGara eq '3' ||  genereGara eq '1'}">
+			<c:set var="chiaveGara" value="${codiceGara }"/> 
+		</c:when>
+		<c:otherwise>
+			<c:set var="chiaveGara" value="${ngara }"/> 
+		</c:otherwise>
+	</c:choose>
+	
+	<c:if test='${firmaDocumento eq "1"}'>
+		<jsp:include page="/WEB-INF/pages/gare/commons/modalPopupFirmaDocumento.jsp" >
+			<jsp:param name="key1" value="${chiaveGara}"/>
+		</jsp:include>
+	</c:if>
 	
 	<form name="formAllegatiRda" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
 		<input type="hidden" name="href" value="gare/commons/lista-allegati-rda-scheda.jsp" /> 
@@ -233,14 +265,7 @@
 	</form>
 	
 	
-	<c:choose>
-		<c:when test="${genereGara eq '3' ||  genereGara eq '1'}">
-			<c:set var="chiaveGara" value="${codiceGara }"/> 
-		</c:when>
-		<c:otherwise>
-			<c:set var="chiaveGara" value="${ngara }"/> 
-		</c:otherwise>
-	</c:choose>
+	
 	
 	<c:set var="ssoProtocollo" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "sso.protocollo")}'/>
 	<c:if test="${not empty ssoProtocollo and ssoProtocollo ne '0' }">

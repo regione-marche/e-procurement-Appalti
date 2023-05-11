@@ -18,6 +18,7 @@
 <c:set var="listaOpzioniDisponibili" value="${fn:join(opzDisponibili,'#')}#"/>
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 <fmt:setBundle basename="AliceResources" />
+<c:set var="propertyUrlsito" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction",  "it.eldasoft.sil.pg.avcp.urlPortaleAlice")}' scope="request"/>
 
 <gene:formScheda entita="ANTICOR" gestisciProtezioni="true"  gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreANTICOR">
 	
@@ -91,4 +92,27 @@
 		else
 		 return true;
 	}
+	
+	var schedaConfermaDefault = schedaConferma;
+
+	function schedaConfermaCustom() {
+		var protocollo = '${propertyUrlsito}';
+		var isIntegrazionePortale = '${fn:contains(listaOpzioniDisponibili, "OP114#")}';
+		protocollo = protocollo.substring(0, 5);
+		if(isIntegrazionePortale == 'true' ){
+			if ("http:".indexOf(protocollo) == -1 ){
+				if (confirm("L'URL del sito di pubblicazione dei dati non contiene il protocollo http e pertanto non verr\u00E0 ritenuto corretto.\nL'indirizzo deve contenere obbligatoriamente il protocollo http e non https per essere ritenuto corretto.\n\nConfermi l'operazione?")) {
+					schedaConfermaDefault();
+				}
+			}else{
+				schedaConfermaDefault();
+			}
+		}
+		else{
+			schedaConfermaDefault();
+		}
+	}
+	
+	var schedaConferma = schedaConfermaCustom;
+	
 </gene:javaScript>

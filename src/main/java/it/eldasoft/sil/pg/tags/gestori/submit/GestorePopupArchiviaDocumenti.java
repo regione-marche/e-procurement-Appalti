@@ -12,10 +12,12 @@ package it.eldasoft.sil.pg.tags.gestori.submit;
 
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.Vector;
 
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
 
+import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.domain.LogEvento;
@@ -23,6 +25,8 @@ import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.PgManager;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityStringhe;
@@ -91,6 +95,15 @@ public class GestorePopupArchiviaDocumenti extends
     TabellatiManager tabellatiManager = (TabellatiManager) UtilitySpring.getBean(
         "tabellatiManager", this.getServletContext(), TabellatiManager.class);
 
+    String idstampa=null;
+    String chiaveRigaLista = null;
+    boolean bloccoArchiviazioneDGUE=false;
+
+    String urlMDGUE = ConfigManager.getValore(CostantiAppalti.PROP_INTEGRAZIONE_MDGUE_URL);
+    boolean gestioneDGUE = false;
+    if(urlMDGUE!=null && !"".equals(urlMDGUE) ) {
+      gestioneDGUE = true;
+    }
 
     if (listaDocumentiSelezionati != null && !"1".equals(isarchi)) {
       //variabili per tracciatura eventi
@@ -98,23 +111,75 @@ public class GestorePopupArchiviaDocumenti extends
       int livEvento = 3;
       String errMsgEvento = this.resBundleGenerale.getString("errors.logEventi.inaspettataException");
       String codGara = "";
+      Vector datiDoc=null;
       try {
+        String idprg=null;
+        Long iddocdg=null;
 
+        Long bustaDGUE= new Long(1);
         String updateDocumgara = "update documgara set isarchi=? where codgar=? and norddocg=?";
         try {
+          if(gestioneDGUE) {
+            Long iterga =(Long) this.sqlManager.getObject("select  iterga from torn where codgar=?", new Object[] {codgar});
+            if((new Long(2).equals(iterga) || new Long(6).equals(iterga)) && "1".equals(tipoDoc))
+              bustaDGUE= new Long(4);
+          }
           for (int i = 0; i < listaDocumentiSelezionati.length; i++) {
-            norddocg = listaDocumentiSelezionati[i];
+            chiaveRigaLista = listaDocumentiSelezionati[i];
+            norddocg = chiaveRigaLista.split(";")[0];
             elencoNorddocg += norddocg;
+
+            if(chiaveRigaLista.split(";").length>1)
+              idstampa = chiaveRigaLista.split(";")[1];
+            else
+              idstampa = null;
+
+            if(gestioneDGUE && "DGUE".equals(idstampa) && "3".equals(tipoDoc) ) {
+              bloccoArchiviazioneDGUE=true;
+              break;
+            }
+
             if (i < listaDocumentiSelezionati.length - 1)
               elencoNorddocg += ",";
             if (codgar != null && norddocg != null) {
-                this.sqlManager.update(updateDocumgara, new Object[] { "1", codgar,
+
+              this.sqlManager.update(updateDocumgara, new Object[] { "1", codgar,
                     new Long(norddocg) });
 
+              if(gestioneDGUE && "DGUE".equals(idstampa) && ("1".equals(tipoDoc) || "6".equals(tipoDoc))) {
+                datiDoc = this.sqlManager.getVector("select idprg,iddocdg from documgara where codgar=? and norddocg=?", new Object[] {codgar, new Long(norddocg)});
+                if(datiDoc != null && datiDoc.size()>0) {
+                  idprg = SqlManager.getValueFromVectorParam(datiDoc, 0).getStringValue();
+                  iddocdg = SqlManager.getValueFromVectorParam(datiDoc, 1).longValue();
+                  Long norddocgDocConc = (Long)this.sqlManager.getObject("select norddocg from documgara where codgar= ? and GRUPPO = ? and busta =? and idprg=? and iddocdg=? "
+                      + "and idstampa = 'DGUE' and (isarchi='2' or isarchi is null)",
+                      new Object[] {codgar, new Long(3), bustaDGUE, idprg, iddocdg});
+                  if(norddocgDocConc != null)
+                    this.sqlManager.update(updateDocumgara, new Object[] { "1", codgar,
+                        new Long(norddocgDocConc) });
+                }
+              }
               Date oggi = UtilityDate.getDataOdiernaAsDate();
               this.sqlManager.update("update torn set dultagg=? where codgar=?", new Object[] {oggi, codgar});
               this.getRequest().setAttribute("RISULTATO", "OK");
             }
+          }
+
+          if(bloccoArchiviazioneDGUE) {
+            livEvento = 3;
+            errMsgEvento = "Errore nell'archiviazione dei documenti per la gara." +
+                  "Non è possibile archiviare i documenti integrati a M-DGUE per la busta ";
+            String busta = this.getRequest().getParameter("busta");
+            String titoloBusta = "amministrativa";
+            if("4".equals(busta))
+              errMsgEvento +=" di prequalifica";
+            errMsgEvento+=titoloBusta;
+
+
+            this.getRequest().setAttribute("RISULTATO", "ERRORI_CONTROLLI");
+            throw new GestoreException(
+                "Errore nell'archiviazione dei documenti per la gara "
+                + codgar  , "archiviazioneDocumenti.documentoDGUE",new Object[]{titoloBusta}, new Exception());
           }
 
           if (!"1".equals(lottoDiGara)) {

@@ -224,9 +224,7 @@
 			<input type="hidden" name="modalitaPresentazione" id="modalitaPresentazione" value="${param.modalitaPresentazione}" />
 			<input type="hidden" name="scProfilo" id="scProfilo" value="${param.scProfilo}" />
 			<input type="hidden" name="messaggioControllo" id="messaggioControllo" value="${param.messaggioControllo}" />
-			
-			
-			
+			<input type="hidden" name="tipoGara" id="tipoGara" value="${param.tipoGara}" />
 
 		<table class="dettaglio-notab">
 			<tr>
@@ -255,6 +253,16 @@
 											<INPUT type="button" id="pulsasscarrello" class="bottone-azione" value='Associa procedimenti' title='Associa procedimenti'>
 										</c:otherwise>
 										</c:choose>
+								</c:when>
+								<c:when test='${requestScope.tipoWSERP eq "RAIWAY"}'>
+									<c:choose>
+										<c:when test='${param.tipoGara=="garaLottoUnico"}'>
+											<INPUT type="button" id="pulsassprocedi" class="bottone-azione" value='Prosegui' title='Prosegui'>
+										</c:when>
+										<c:otherwise>
+											<INPUT type="button" id="pulsassprocedi" class="bottone-azione" value='Prosegui' title='Prosegui'>
+										</c:otherwise>
+									</c:choose>
 								</c:when>
 								<c:otherwise>
 										<INPUT type="button" id="pulsasscarrello" class="bottone-azione" value='Associa RdA' title='Associa RdA'>
@@ -311,6 +319,25 @@
 						</c:if>	
 					 </td>
 				   </tr>
+				</tr>
+			</c:when>
+			<c:when test='${requestScope.tipoWSERP eq "RAIWAY"}'>
+				<c:choose>
+					<c:when test='${param.tipoGara=="garaLottoUnico"}'>
+						<c:set var="menuRAIWAY" value="Prosegui"/>
+					</c:when>
+					<c:otherwise>
+						<c:set var="menuRAIWAY" value="Prosegui"/>
+					</c:otherwise>
+				</c:choose>
+				<tr>
+				<tr>
+					<td class="vocemenulaterale">
+						<c:if test='${isNavigazioneDisattiva eq isNavigazioneDisattiva}'>
+							<a href="#" id="menuassprocedi" title=${menuRAIWAY} tabindex="1512">${menuRAIWAY}</a>
+						</c:if>
+					</td>
+				</tr>
 				</tr>
 			</c:when>
 			<c:otherwise>

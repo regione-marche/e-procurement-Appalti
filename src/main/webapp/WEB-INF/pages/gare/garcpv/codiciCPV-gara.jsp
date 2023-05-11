@@ -37,6 +37,10 @@
 			<c:set var="chiave" value='${gene:getValCampo(key, "NGARA")}' />
 			</c:if>
 		</c:when>
+		<c:when test="${param.lottoStipula eq 'true'}">
+			<c:set var="where" value="GARCPV.NGARA = '${ngara}' AND GARCPV.TIPCPV = '1'" />
+			<c:set var="chiave" value='${ngara}' />
+		</c:when>
 		<c:otherwise>
 			<c:set var="where" value="GARCPV.NGARA = GARE.NGARA AND GARCPV.TIPCPV = '1'" />
 			<c:set var="chiave" value='${gene:getValCampo(key, "NGARA")}' />
@@ -46,7 +50,7 @@
 
 	<gene:gruppoCampi idProtezioni="CPVPR">
 		<gene:campoScheda>
-			<td colspan="2"><b>CPV</b></td>
+			<td colspan="2" id="IntestazioneCPV"><b>CPV</b></td>
 		</gene:campoScheda>
 		<gene:campoScheda campo="NGARA" entita="GARCPV" visibile="false" where="${where}" value='${chiave}'/>
 		<gene:campoScheda campo="NUMCPV" entita="GARCPV" visibile="false" where="${where}"/>

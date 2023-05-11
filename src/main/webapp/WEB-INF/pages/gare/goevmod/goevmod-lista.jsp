@@ -19,7 +19,18 @@
 	<jsp:include page="/WEB-INF/pages/commons/iconeCheckUncheck.jsp" />
 </gene:set>
 
-<c:set var="idcrimod" value='${gene:getValCampo(key,"IDCRIMOD")}' />
+
+<c:choose>
+	<c:when test="${not empty param.idcrimod}">
+		<c:set var="idcrimod" value="${param.idcrimod}"/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="idcrimod" value="${idcrimod}"/>
+	</c:otherwise>
+</c:choose>
+
+<c:if test='${not empty idcrimod and gene:matches(idcrimod, "^-?[0-9]+$", true)}' />
+
 <c:set var="criterioModificato" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.ControlloPunteggiCriteriModelliFunction", pageContext, idcrimod)}' />
 <c:set var="titolo" value="${param.titolo}"/>
 
@@ -154,6 +165,7 @@
 						<gene:campoLista campo="TITOLO" entita="G1CRIMOD" where="G1CRIMOD.ID = GOEVMOD.IDCRIMOD" visibile="false"/>
 						<gene:campoLista campo="REGOLA" title="Modalità" campoFittizio="true" definizione="T20" width="180"  gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoRegolaValutazione"/>
 						<input type="hidden" name="tipoCriterio" value="${tipoCriterio }"/>
+						<input type="hidden" name="idcrimod" value="${idcrimod }"/>
 					</gene:formLista >
 				
 					</td>
@@ -186,7 +198,7 @@
 	inizializzaLista();
             
 	function cambiaPaginaCriteri(pagina){
-		link =  '${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/goevmod/goevmod-lista.jsp&key=GOEVMOD.IDCRIMOD=T:${idcrimod}&tipoCriterio='+ pagina + "&titolo=${titolo}";
+		link =  '${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/goevmod/goevmod-lista.jsp&idcrimod=${idcrimod}&tipoCriterio='+ pagina + "&titolo=${titolo}";
 		document.location.href = link;	
 	}
 	

@@ -28,8 +28,9 @@
 			scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda.jsp","")}'
 			schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
 			campi="IMPR.CODIMP;IMPR.NOMIMP"
+			functionId="perp"
+			parametriWhere="T:${numeroGara}"
 			chiave="PERP_CODIMP_${param.contatore}"
-			where="IMPR.CODIMP in (select DITTAO from DITG where NGARA5 = '${numeroGara}' and INVOFF = 1 and (FASGAR is null or FASGAR > 1))"
 			formName="formDittaRappresentata${param.contatore}"
 			inseribile="false">
 			<gene:campoScheda campo="CODIMP_${param.contatore}" entita="PERP" campoFittizio="true" definizione="T10;;;;G1CODIMP" value="${item[3]}" />
@@ -47,8 +48,9 @@
 			scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda.jsp","")}'
 			schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
 			campi="IMPR.CODIMP;IMPR.NOMIMP"
+			functionId="perpInvoff"
+			parametriWhere="T:${numeroGara}"
 			chiave="PERP_CODIMP_${param.contatore}"
-			where="IMPR.CODIMP in (select DITTAO from DITG where NGARA5 = '${numeroGara}' and (INVOFF in ('0', '1') or INVOFF is null) and (FASGAR is null or FASGAR=0 or FASGAR > 1))"
 			formName="formDittaRappresentata${param.contatore}"
 			inseribile="false">
 			<gene:campoScheda campo="CODIMP_${param.contatore}" entita="PERP" campoFittizio="true" definizione="T10;;;;G1CODIMP" />

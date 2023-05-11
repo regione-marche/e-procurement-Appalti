@@ -61,13 +61,23 @@
 	</c:otherwise>
 </c:choose>
 
+<c:choose>
+	<c:when test='${not empty param.calcoloSogliaAnomaliaExDLgs2017}'>
+		<c:set var="calcoloSogliaAnomaliaExDLgs2017" value="${param.calcoloSogliaAnomaliaExDLgs2017}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="calcoloSogliaAnomaliaExDLgs2017" value="${calcoloSogliaAnomaliaExDLgs2017}" />
+	</c:otherwise>
+</c:choose>
+
 <c:if test='${param.operazione eq "ATTIVA"}'>		
 <c:choose>
 	<c:when test="${garaTelematica eq 'true' }">
 		<c:set var="isSuperataDataAperturaPlichi" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.IsSuperataDataAperturaPlichiFunction", pageContext, ngara)}' />
 		<c:set var="isSuperataDataTerminePresentazione" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.IsSuperataDataTerminePresentazioneFunction", pageContext, ngara, "1")}' />
 		<c:set var="esistonoAcquisizioniOfferteDaElaborare" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsistonoAcquisizioniOfferteDaElaborareFunction", pageContext, ngara, "FS11" )}' />
-		<c:if test="${esistonoAcquisizioniOfferteDaElaborare eq 'false' }">
+		<c:set var="EsistonoAcquisizioniRinunceDaElaborare" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsistonoAcquisizioniOfferteDaElaborareFunction", pageContext, ngara, "FS14" )}' />
+		<c:if test="${esistonoAcquisizioniOfferteDaElaborare eq 'false' or EsistonoAcquisizioniRinunceDaElaborare eq 'false'}">
 			<c:choose>
 				<c:when test="${isGaraLottiConOffertaUnica eq 'true'}">
 					<c:set var="whereDitte" value=" and codgar5=ngara5 and (invoff is null and (ammgar is null or ammgar='1'))"/>
@@ -76,7 +86,7 @@
 					<c:set var="whereDitte" value=" and (invoff is null and (ammgar is null or ammgar='1'))"/>
 				</c:otherwise>
 			</c:choose>
-			<c:set var="esistonoAcquisizioniOfferteDaElaborare" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsistonoDitteInGaraFunction", pageContext, "CODGAR5", codiceGara,whereDitte)}' />
+			<c:set var="esistonoAcquisizioniOfferteDaElaborare1" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsistonoDitteInGaraFunction", pageContext, "CODGAR5", codiceGara,whereDitte)}' />
 		</c:if>
 		<c:set var="faseRicezionePlichi" value='${faseGara eq "1"}' />
 		<c:set var="esistonoDitteInGara" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsistonoDitteInGaraFunction", pageContext, "CODGAR5", codiceGara," and (fasgar > 1 or fasgar is null)")}' />
@@ -90,13 +100,24 @@
 </c:choose>
 </c:if>
 
+<c:set var="whereNobustamm" value="codgar='${codiceGara }'"/>
+<c:set var="nobustamm" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "nobustamm","torn", whereNobustamm)}' />
+
+<c:choose>
+	<c:when test='${ nobustamm ne "1"}'>
+		<c:set var="msg" value="documentazione amministrativa"/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="msg" value="offerte"/>
+	</c:otherwise>
+</c:choose>
 <gene:template file="popup-message-template.jsp">
 <c:choose>
 	<c:when test='${param.operazione eq "ATTIVA"}'>
-		<gene:setString name="titoloMaschera" value='Attiva apertura documentazione amministrativa' />
+		<gene:setString name="titoloMaschera" value='Attiva apertura ${msg}' />
 	</c:when>
 	<c:otherwise>
-		<gene:setString name="titoloMaschera" value='Disattiva apertura documentazione amministrativa' />
+		<gene:setString name="titoloMaschera" value='Disattiva apertura ${msg}' />
 	</c:otherwise>
 </c:choose>
 
@@ -104,12 +125,13 @@
 		<c:choose>
 			<c:when test='${param.operazione eq "ATTIVA"}'>		
 				<c:choose>
-					<c:when test="${garaTelematica eq 'true' && (isSuperataDataAperturaPlichi ne 'true' || isSuperataDataTerminePresentazione ne 'true' || esistonoAcquisizioniOfferteDaElaborare ne 'false' || faseRicezionePlichi ne 'true' || esistonoDitteInGara eq 'false') }">
+					<c:when test="${garaTelematica eq 'true' && (isSuperataDataAperturaPlichi ne 'true' || isSuperataDataTerminePresentazione ne 'true' || esistonoAcquisizioniOfferteDaElaborare ne 'false' || faseRicezionePlichi ne 'true' || esistonoDitteInGara eq 'false'
+						|| esistonoAcquisizioniOfferteDaElaborare1 ne 'false') }">
 						<c:set var="bloccoSalvataggio" value='true'/>
 						<c:choose>
 							<c:when test="${isSuperataDataAperturaPlichi eq 'false'}">
 								<br>
-								Non &egrave; possibile procedere alla fase di apertura della documentazione amministrativa perch&egrave; non &egrave; ancora scaduto il termine di apertura dei plichi.
+								Non &egrave; possibile procedere alla fase di apertura ${msg} perch&egrave; non &egrave; ancora scaduto il termine di apertura dei plichi.
 								<br>
 								<br>
 								L'apertura dei plichi è prevista il giorno <b>${torn_desoff}</b>
@@ -119,16 +141,16 @@
 							</c:when>
 							<c:when test="${isSuperataDataTerminePresentazione eq 'false'}">
 								<br>
-								Non &egrave; possibile procedere alla fase di apertura della documentazione amministrativa perch&egrave; non &egrave; ancora scaduto il termine di presentazione delle offerte.
+								Non &egrave; possibile procedere alla fase di apertura ${msg} perch&egrave; non &egrave; ancora scaduto il termine di presentazione delle offerte.
 								<br>
 								<br>
 								Il termine per la presentazione delle offerte scade il giorno <b>${dataScadenza}</b> alle ore <b>${oraScadenza}</b>.
 								<br>
 								<br>
 							</c:when>
-							<c:when test="${esistonoAcquisizioniOfferteDaElaborare eq 'true'}">
+							<c:when test="${esistonoAcquisizioniOfferteDaElaborare eq 'true' || esistonoAcquisizioniOfferteDaElaborare1 eq 'true'}">
 								<br>
-								Non &egrave; possibile procedere alla fase di apertura della documentazione amministrativa perch&egrave; devono essere prima acquisite le offerte da portale Appalti. 
+								Non &egrave; possibile procedere alla fase di apertura ${msg} perch&egrave; devono essere prima acquisite le offerte da portale Appalti. 
 								<br>
 								Ritornare alla fase 'Ricezione plichi' e attivare la funzione 'Acquisisci offerte da portale Appalti'.
 								<br>
@@ -136,13 +158,13 @@
 							</c:when>
 							<c:when test="${esistonoDitteInGara eq 'false' }">
 								<br>
-								Non &egrave; possibile procedere alla fase di apertura della documentazione amministrativa perch&egrave; non ci sono ditte in gara.
+								Non &egrave; possibile procedere alla fase di apertura ${msg} perch&egrave; non ci sono ditte in gara.
 								<br>
 								<br>
 							</c:when>
 							<c:otherwise>
 								<br>
-								Non &egrave; possibile procedere alla fase di apertura della documentazione amministrativa perch&egrave; la fase della gara non è "Ricezione plichi". 
+								Non &egrave; possibile procedere alla fase di apertura ${msg} perch&egrave; la fase della gara non è "Ricezione plichi". 
 								<br>
 								<br>
 							</c:otherwise>			
@@ -165,10 +187,15 @@
 					</c:when>
 					<c:otherwise>
 						<br>
-						Mediante questa funzione &egrave; possibile procedere alla fase di apertura della documentazione amministrativa.
+						Mediante questa funzione &egrave; possibile procedere alla fase di apertura ${msg}.
+												
+						<c:set var="esitoControlloCommissione" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.ControlliComponentiCommissioneFunction", pageContext, ngara,"false", ngara, isGaraLottiConOffertaUnica)}' />
+						<c:if test="${ esitoControlloCommissione eq 'NOK'}">
+							${msgCommissione}
+						</c:if>
 						<br><br>
 						
-						<c:if test="${bloccoSalvataggio ne 'true' }">
+						<c:if test="${bloccoSalvataggio ne 'true' and calcoloSogliaAnomaliaExDLgs2017 ne '1'}">
 							<c:set var="IsMODLICG_13_14" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.IsMODLICG_13_14Function", pageContext, ngara,isGaraLottiConOffertaUnica)}' />
 							<c:if test="${IsMODLICG_13_14 eq 'true' }">
 								<c:set var="isGaraDopoDLGS2016Manuale" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.IsGaraDopoDLGS2016ManualeFunction", pageContext, ngara,"true","false","true")}' />
@@ -261,7 +288,7 @@
 								Confermi l'operazione ?
 							</c:when>
 						</c:choose>
-						
+											
 						<br>
 						<br>
 					</c:otherwise>
@@ -270,7 +297,7 @@
 			</c:when>
 			<c:otherwise>
 				<br>
-				Mediante questa funzione &egrave; possibile disattivare la fase di apertura della documentazione amministrativa.
+				Mediante questa funzione &egrave; possibile disattivare la fase di apertura ${msg}.
 				<br><br>
 				Confermi l'operazione ?
 				<br>

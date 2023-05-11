@@ -85,7 +85,7 @@ public class GestorePopupCopiaCriteriValutazione extends AbstractGestoreEntita {
       //Lista criteri da copiare
       List listaCriteri = sqlManager.getListVector(
           "select G.NECVAN,G.NORPAR,G.TIPPAR,G.MAXPUN,G.DESPAR,G.LIVPAR,G.NECVAN1," +
-          "G.NORPAR1,G.MINPUN, G1.ID, G1.DESCRI,G1.MAXPUN,G1.FORMATO,G1.MODPUNTI,G1.MODMANU,G.ISNOPRZ,G1.NUMDECI,G1.FORMULA,G.TIPCAL, G.SEZTEC from GOEV G LEFT JOIN G1CRIDEF G1 "
+          "G.NORPAR1,G.MINPUN, G1.ID, G1.DESCRI,G1.MAXPUN,G1.FORMATO,G1.MODPUNTI,G1.MODMANU,G.ISNOPRZ,G1.NUMDECI,G1.FORMULA,G.TIPCAL, G.SEZTEC, G1.ESPONENTE from GOEV G LEFT JOIN G1CRIDEF G1 "
             + "ON G.NGARA = G1.NGARA and G.NECVAN = G1.NECVAN where G.NGARA = ? ORDER BY G.NECVAN, G1.ID",new Object[] { lottoSorgente });
 
 

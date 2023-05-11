@@ -59,6 +59,8 @@
 	</c:choose>
 	
 
+	${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, codgar, "SC", "21")}
+	
 	<gene:setString name="titoloMaschera" value="Esportazione dei criteri di valutazione ${tipoCriteri} di uno o pi&ugrave; lotti della gara ${codgar}" />
 
 	<gene:redefineInsert name="corpo">
@@ -103,9 +105,13 @@
 			  			<br><br>
 			  		</c:if>
 			  		Utilizzare l'icona <img align="middle" width="16" height="16" src="${pageContext.request.contextPath}/img/export.gif"/> per esportare il lotto di interesse:	
-					<c:set var="filtroLotti" value="GARE.CODGAR1 = '${codgar}' AND MODLICG = 6 AND (GARE.GENERE is null)" />
-				
-					<gene:formLista entita="GARE" sortColumn="3" where="${filtroLotti}">
+					
+					
+					<c:set var="where" value="GARE.CODGAR1 = ? AND MODLICG = 6 AND (GARE.GENERE is null) "/>
+					<c:set var="parametri" value="T:${codgar}"/>
+					${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunction", pageContext, "GARE", where, parametri)}
+									
+					<gene:formLista entita="GARE" sortColumn="3" >
 						<gene:campoLista title="&nbsp;" width="20">
 							<a href="javascript:esporta('${datiRiga.GARE_NGARA}');" title="Esporta il lotto in formato Excel" >
 								<img align="middle"  width="16" height="16" title="Esporta il lotto in formato Excel" alt="Esporta il lotto in formato Excel" src="${pageContext.request.contextPath}/img/export.gif"/>

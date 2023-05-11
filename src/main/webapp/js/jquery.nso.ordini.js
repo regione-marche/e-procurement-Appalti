@@ -6,7 +6,7 @@
  var _tableLavNso = null;
  var _messaggio_ctr = "LA QUERY NON HA PRODOTTO RISULTATO";
  var _multiSelezione = true;
- 
+ var checkedState = false;
 $(window).on("load", function (){
 	
 		
@@ -36,17 +36,18 @@ $(window).on("load", function (){
 	};
 	
 	
-	$("body").delegate('[id^="ck_rda_"]', "click", function() {
-		checkedState = $(this).attr('checked');
+	$("body").on( "click",'[id^="ck_rda_"]', function() {
+		checkedState = $(this).prop('checked');
 		$(this).prop('checked', checkedState);
 	});
 	
-	$("body").delegate('[id="incl_cons"]', "click", function() {
-		checkedState = $(this).attr('checked');
+	$("body").on( "click",'[id="incl_cons"]', function() {
+		checkedState = $(this).prop('checked');
 		$("#listaLavNso_wrapper").remove();
 		$("#incl_cons_row").remove();
 		_creaTabellaLavNso();
-		if(checkedState =='checked'){
+//		if(checkedState =='checked'){
+		if(checkedState){
 		_popolaLavNso(1);
 		var _trchk = $('<tr id="incl_cons_row" />', {"class": "intestazione"});		
 		_trchk.append('<td ><input type="checkbox" id="incl_cons" name="incl_cons" checked= "checked" value="1" /><b><i>Includi lavorazioni consumate</i></b></td>');
@@ -64,7 +65,7 @@ $(window).on("load", function (){
 
 	
 	
-	$("body").delegate('#listaLavNso tr td:nth-child(2)', "mouseover",
+	$("body").on( "mouseover",'#listaLavNso tr td:nth-child(2)',
 		function(event) {
 			
 			var par = $(this).parent();
@@ -87,7 +88,7 @@ $(window).on("load", function (){
 		}
 	);
 	
-	$("body").delegate('#listaLavNso tr', "mouseout",
+	$("body").on( "mouseout",'#listaLavNso tr',
 		function() {
 			$("#div_descrizione").remove();
 		}
@@ -99,7 +100,7 @@ $(window).on("load", function (){
 		var arrmultikey  = '';
 		var oTable = $('#listaLavNso').dataTable();
 		$( "input[id^='ck_rda_']", oTable.fnGetNodes() ).each( function( index ) {
-			if($( this ).attr( "checked")){
+			if($( this ).prop( "checked")){
 				nSelected= nSelected + 1;
 				_ck_id = $(this).attr("id");
 				if (_ck_id.substring(0,7) == 'ck_rda_'){
@@ -137,7 +138,7 @@ $(window).on("load", function (){
 		var arrmultikey  = '';
 		var oTable = $('#listaLavNso').dataTable();
 		$( "input[id^='ck_rda_']", oTable.fnGetNodes() ).each( function( index ) {
-			if($( this ).attr( "checked")){
+			if($( this ).prop( "checked")){
 				nSelected= nSelected + 1;
 				_ck_id = $(this).attr("id");
 				if (_ck_id.substring(0,7) == 'ck_rda_'){
@@ -268,7 +269,7 @@ $(window).on("load", function (){
 
 	
 	  function _selezionaTutti() {
-	   $("input[id^='ck_rda_']").attr("checked","checked");
+	   $("input[id^='ck_rda_']").prop("checked","checked");
 	  }
 	
 	  function _deselezionaTutti() {
@@ -276,7 +277,7 @@ $(window).on("load", function (){
 				if ($( this ).attr( "disabled")) {
 					;
 				}else{
-					$( this ).attr( "checked",false);
+					$( this ).prop( "checked",false);
 				}
 		});
 	  }
@@ -350,7 +351,7 @@ $(window).on("load", function (){
 						{	
 							"data": "um",
 							"visible": true,
-							"sTitle": "Unità di misura",
+							"sTitle": "Unitï¿½ di misura",
 							"searchable": false,
 							"targets": [ 2 ]
 						},

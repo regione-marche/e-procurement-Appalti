@@ -14,6 +14,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<c:set var="configInvioCC" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "comunicazione.inviocopiaconoscenza") eq "1"}'/>
+
 <c:if test='${modo eq "VISUALIZZA" or modo eq "MODIFICA" or empty modo}' >
 	<gene:sqlSelect nome="tipoEvidenza" parametri='${key}' tipoOut="VectorString" >
 		select COMPUB from W_INVCOM where IDPRG=#W_INVCOM.IDPRG# and IDCOM= #W_INVCOM.IDCOM#
@@ -45,6 +47,9 @@
 	</c:if>
 			
 	<gene:setString name="titoloMaschera" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTitleComunicazioneFunction", pageContext, "W_INVCOM")}' />
+	<c:set var="integrazioneWSDM" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNFunction", pageContext, codgar, idconfi)}'/>
+	<c:set var="abilitatoInvioMailDocumentale" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.AbilitatoInvioMailDocumentaleFunction", pageContext, idconfi)}'/>
+
 	
 	<gene:redefineInsert name="modelliPredisposti" />
 	<gene:redefineInsert name="documentiAssociati" />
@@ -62,7 +67,13 @@
 				<jsp:include page="w_invcom-pg-lista-w_invcomdes.jsp" >
 					<jsp:param name="idconfi" value="${idconfi}" /> 
 				</jsp:include>
-			</gene:pagina>	
+			</gene:pagina>
+			<gene:pagina title="Soggetti destinatari in CC" idProtezioni="W_INVCOMDESCC" visibile='${configInvioCC && !(abilitatoInvioMailDocumentale && integrazioneWSDM eq "1")}' selezionabile='${(tipoEvidenza[0] ne "1")}'>
+
+				<jsp:include page="w_invcom-pg-lista-w_invcomdescc.jsp" >
+					<jsp:param name="idconfi" value="${idconfi}" /> 
+				</jsp:include>
+			</gene:pagina>					
 			<gene:pagina title="Documenti richiesti" idProtezioni="G1DOCSOC" visibile='${(commodello eq "1")}'>
 				<jsp:include page="w_invcom-pg-lista-g1docsoc.jsp" >
 					<jsp:param name="idconfi" value="${idconfi}" />

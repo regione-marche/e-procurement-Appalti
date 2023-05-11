@@ -19,6 +19,7 @@
 <c:set var="numeroDocumentoWSDM" value="${param.numeroDocumentoWSDM}" />
 <c:set var="codiceGara" value='${fn:substringBefore(param.chiave, ";")}' />
 <c:set var="tipologia" value='${param.tipologia}' />
+<c:set var="associataRdaWSERP" value='${param.associataRdaWSERP}' />
 
 <c:choose>
 	<c:when test='${item[7] eq "5" and param.tipoDettaglio eq 1}'>
@@ -35,6 +36,15 @@
 	</c:when>
 	<c:otherwise>
 		<c:set var="associataRdaJIRIDE" value='false' />
+	</c:otherwise>
+</c:choose>
+
+<c:choose>
+	<c:when test='${integrazioneWSERP eq "1" and tipoWSERP eq "AMIU" and presenzaRda eq "1"}'>
+		<c:set var="associataRdaWSERP" value='true' />
+	</c:when>
+	<c:otherwise>
+		<c:set var="associataRdaWSERP" value='false' />
 	</c:otherwise>
 </c:choose>
 
@@ -73,16 +83,26 @@
 						<input type="radio" value="3" name="allegato_${param.contatore}" id="doc_${param.contatore}" onclick="javascript:cambiaTipoAllegato(3,${param.contatore},false);" />
 						 allega file da fascicolo 
 						  </c:if>
+						 <c:if test='${associataRdaWSERP eq "true"}'>
+						 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input type="radio" value="4" name="allegato_${param.contatore}" id="doc_${param.contatore}" onclick="javascript:cambiaTipoAllegato(4,${param.contatore},false);" />
+						 allega file da rda
+						  </c:if>
 					</gene:campoScheda>
 				</c:if>
 				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" modificabile="false" entita="W_DOCDIG" campoFittizio="true" definizione="T100;0;;;DIGNOMDOC"  value="${documentiEsitoDescFile[(3 * param.contatore) - 2 ]}" href="javascript:visualizzaFileAllegato('${item[5]}','${item[6]}',${gene:string4Js(documentiEsitoDescFile[(3 * param.contatore) - 2 ])});">
 					<c:if test='${modo eq "VISUALIZZA" || !campiEsistentiModificabiliDaProfilo}'>
-						<c:if test="${param.richiestaFirma eq '1' and documentiEsitoDescFile[(3 * param.contatore) - 1 ] eq '1'}">
+						<c:if test="${documentiEsitoDescFile[(3 * param.contatore) - 1 ] eq '1'}">
 							<span style="float:right;"><img width="16" height="16" src="${pageContext.request.contextPath}/img/isquantimod.png"/>&nbsp;In attesa di firma</span>
 						</c:if>
 					</c:if>
 					<c:if test='${not empty documentiEsitoDescFile[(3 * param.contatore) - 2 ] and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and item[7] ne "5" and not empty param.firmaRemota and param.autorizzatoModifiche ne "2" and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.FirmaRemotaDocumenti")}'>
 						<a style="float:right;" href="javascript:openModal('${item[5]}','${item[6]}','${documentiEsitoDescFile[(3 * param.contatore) - 2 ]}','${pageContext.request.contextPath}');">
+						<img src="${pageContext.request.contextPath}/img/firmaRemota.png" title="Firma digitale del documento" alt="Firma documento" width="16" height="16">
+						<span title="Firma digitale del documento">Firma documento</span></a>
+					</c:if>
+					<c:if test='${not empty documentiEsitoDescFile[(3 * param.contatore) - 2 ] and (empty documentiEsitoDescFile[(3 * param.contatore) - 1 ] or documentiEsitoDescFile[(3 * param.contatore) - 1 ] eq "2") and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and param.autorizzatoModifiche ne "2" and param.firmaDocumento eq "1" and item[7] ne "5"}'>
+						<a style="float:right;" href="javascript:apriModaleRichiestaFirma('${item[5]}','${item[6]}','${param.contatore}');">
 						<img src="${pageContext.request.contextPath}/img/firmaRemota.png" title="Firma digitale del documento" alt="Firma documento" width="16" height="16">
 						<span title="Firma digitale del documento">Firma documento</span></a>
 					</c:if>
@@ -100,6 +120,9 @@
 					<gene:campoScheda title="Nome file" nome="selezioneFileDocumentale_${param.contatore}">
 							<input type="button" value="Sfoglia da fascicolo" name="selFileDocumentale[${param.contatore}]" id="selFileDocumentale[${param.contatore}]" size="70" onkeydown="return bloccaCaratteriDaTastiera(event);"  onclick='javascript:apriPopupSelezioneDocumentale(${param.contatore});'/>
 					</gene:campoScheda>
+					<gene:campoScheda title="Nome file" nome="selezioneFileRda_${param.contatore}">
+							<input type="button" value="Sfoglia da rda" name="selFileRda[${param.contatore}]" id="selFileRda[${param.contatore}]" size="70" onkeydown="return bloccaCaratteriDaTastiera(event);"  onclick='javascript:apriPopupSelezioneRda(${param.contatore});'/>
+					</gene:campoScheda>
 				</c:if>
 				<c:choose>
 					<c:when test="${genereGara eq '1' and !modificabile}">
@@ -111,15 +134,16 @@
 							scheda=''
 							schedaPopUp=''
 							campi="GARE.NGARA"
+							functionId="default_0"
+							parametriWhere="T:${codiceGara}"
 							chiave=""
-							where="GARE.CODGAR1 = '${codiceGara}' and GARE.CODGAR1 != GARE.NGARA"
 							formName="formLotti_${param.contatore}">
 							<gene:campoScheda campo="NGARA_${param.contatore}" entita="DOCUMGARA" title="Codice lotto ${gene:if(modo eq 'MODIFICA' or modo eq 'NUOVO','(valorizzare solo se documento specifico del lotto)','') }" campoFittizio="true" visibile="${genereGara eq '1'}" definizione="T10;0;;;NGARADG" value="${item[1]}" modificabile='${campiEsistentiModificabiliDaProfilo }'/>
 						</gene:archivio>
 					</c:otherwise>
 				</c:choose>
 				<gene:campoScheda campo="VALENZA_${param.contatore}" entita="DOCUMGARA" campoFittizio="true" visibile="false" definizione="N2;0;;;VALENZADG" value="${item[11]}" />
-				<c:if test="${param.richiestaFirma eq '1'}">
+				<c:if test="${param.richiestaFirma eq '1' or param.firmaDocumento eq '1'}">
 					<gene:campoScheda campo="DIGFIRMA_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2;0;" value="${documentiEsitoDescFile[(3 * param.contatore) - 1 ]}" />
 				</c:if>
 				<gene:campoScheda campo="DATAPROV_${param.contatore}" entita="DOCUMGARA" campoFittizio="true"  definizione="D;0;;;G1DATAPROV" obbligatorio="true" value="${item[24]}" visibile="${tipologia eq '17'}" modificabile="${campiEsistentiModificabiliDaProfilo and modificabile}"/>
@@ -152,6 +176,11 @@
 						<input type="radio" value="3" name="allegato_${param.contatore}" id="doc_${param.contatore}" onclick="javascript:cambiaTipoAllegato(3,${param.contatore},false);" />
 						 allega file da fascicolo
 						 </c:if>
+						 <c:if test='${associataRdaWSERP eq "true"}'>
+						 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input type="radio" value="4" name="allegato_${param.contatore}" id="doc_${param.contatore}" onclick="javascript:cambiaTipoAllegato(4,${param.contatore},false);" />
+						 allega file da rda 
+						 </c:if>
 					</gene:campoScheda>
 				</c:if>
 				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" modificabile="false" campoFittizio="true" definizione="T100;0;;;DIGNOMDOC"  value=''/>
@@ -168,14 +197,18 @@
 					<gene:campoScheda title="Nome file" nome="selezioneFileDocumentale_${param.contatore}">
 							<input type="button" value="Sfoglia da fascicolo" name="selFile[${param.contatore}]" id="selFileDocumentale[${param.contatore}]" size="70" onkeydown="return bloccaCaratteriDaTastiera(event);" onclick='javascript:apriPopupSelezioneDocumentale(${param.contatore});'/>
 					</gene:campoScheda>
+					<gene:campoScheda title="Nome file" nome="selezioneFileRda_${param.contatore}">
+							<input type="button" value="Sfoglia da rda" name="selFile[${param.contatore}]" id="selFileRda[${param.contatore}]" size="70" onkeydown="return bloccaCaratteriDaTastiera(event);" onclick='javascript:apriPopupSelezioneRda(${param.contatore});'/>
+					</gene:campoScheda>
 				</c:if>
 				<gene:archivio titolo="lotti di gara"
 					lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GARE.DOCUMGARA.NGARA"),"gare/gare/gare-popup-lista-lotti.jsp","")}'
 					scheda=''
 					schedaPopUp=''
 					campi="GARE.NGARA"
+					functionId="default_0"
+					parametriWhere="T:${codiceGara}"
 					chiave=""
-					where="GARE.CODGAR1 = '${codiceGara}' and GARE.CODGAR1 != GARE.NGARA"
 					formName="formLotti_${param.contatore}">
 					<gene:campoScheda campo="NGARA_${param.contatore}" entita="DOCUMGARA" title="Codice lotto ${gene:if(modo eq 'MODIFICA' or modo eq 'NUOVO','(valorizzare solo se documento specifico del lotto)','') }" campoFittizio="true" visibile="${genereGara eq '1'}" definizione="T10;0;;;NGARADG"  value="${numeroGara}"/>
 				</gene:archivio>
@@ -204,6 +237,11 @@
 	<input type="hidden" id="getdocumentoallegato_tipoallegato_${param.contatore}" name="getdocumentoallegato_tipoallegato_${param.contatore}" value="" />
 	<input type="hidden" id="getdocumentoallegato_servizio_${param.contatore}" name="getdocumentoallegato_servizio_${param.contatore}" value="${param.servizio }" />
 </c:if>
+<c:if test='${associataRdaWSERP eq "true"}'>
+	<input type="hidden" id="getdocumentoallegatoWSERP_titoloallegato_${param.contatore}" name="getdocumentoallegatoWSERP_titoloallegato_${param.contatore}" value="" />
+	<input type="hidden" id="getdocumentoallegatoWSERP_nomeallegato_${param.contatore}" name="getdocumentoallegatoWSERP_nomeallegato_${param.contatore}" value="" />
+	<input type="hidden" id="getdocumentoallegatoWSERP_idfile_${param.contatore}" name="getdocumentoallegatoWSERP_idfile_${param.contatore}" value="" />
+</c:if>
 
 <gene:javaScript>
 
@@ -212,6 +250,11 @@ var idconfi = "${idconfi}";
 function apriPopupSelezioneDocumentale(indice){
 	var href = "href=gare/commons/popup-seleziona-da-documentale.jsp?codiceGara=${codiceGara}&indice=" + indice + "&numerowsdocumento=${numeroDocumentoWSDM}";
 	if(idconfi){href+="&idconfi="+idconfi;}
+	openPopUpCustom(href, "insDocumentiPredefiniti", 700, 500, "no", "yes");
+}
+
+function apriPopupSelezioneRda(indice){
+	var href = "href=gare/commons/popup-seleziona-da-rda.jsp?codiceGara=${codiceGara}&indice=" + indice;
 	openPopUpCustom(href, "insDocumentiPredefiniti", 700, 500, "no", "yes");
 }
 
@@ -232,6 +275,13 @@ function popolaFormDocumentale(indice,username,password,ruolo,nome,cognome,codic
 	$("#getdocumentoallegato_numerodocumento_" + indice).val(numerodocumento);
 	$("#getdocumentoallegato_servizio_" + indice).val(servizio);
 	scegliFileDocumentale(nomeallegato,tipoallegato,indice);
+}
+
+function popolaFormWSERP(indice,titoloallegato,nomeallegato,idfile){
+	$("#getdocumentoallegatoWSERP_titoloallegato_" + indice).val(titoloallegato);
+	$("#getdocumentoallegatoWSERP_nomeallegato_" + indice).val(nomeallegato);
+	$("#getdocumentoallegatoWSERP_idfile_" + indice).val(idfile);
+	scegliFileDocumentale(nomeallegato,"",indice);
 }
 
 <c:if test='${modo eq "VISUALIZZA" and gestioneUrl eq "true"}'>
@@ -257,7 +307,7 @@ function popolaFormDocumentale(indice,username,password,ruolo,nome,cognome,codic
 	}
 </c:if>
 
-<c:if test='${(modo eq "MODIFICA" or modo eq "NUOVO") and (gestioneUrl eq "true" or associataRdaJIRIDE eq "true")}'>
+<c:if test='${(modo eq "MODIFICA" or modo eq "NUOVO") and (gestioneUrl eq "true" or associataRdaJIRIDE eq "true" or associataRdaWSERP eq "true")}'>
 	function cambiaTipoAllegato(tipo, indice, inizializza){
 		if(tipo==1){
 			$("#rowDOCUMGARA_URLDOC_" + indice).hide();
@@ -269,6 +319,7 @@ function popolaFormDocumentale(indice,username,password,ruolo,nome,cognome,codic
 			$("#rowselezioneFile_" + indice).show();
 			$("#getdocumentoallegato_nomeallegato_" + indice).val('');
 			$("#rowselezioneFileDocumentale_" + indice).hide();
+			$("#rowselezioneFileRda_" + indice).hide();
 		}else{
 			if(tipo == 3){
 				$("#rowDOCUMGARA_URLDOC_" + indice).hide();
@@ -279,18 +330,32 @@ function popolaFormDocumentale(indice,username,password,ruolo,nome,cognome,codic
 				$("#rowselezioneFile_" + indice).hide();
 				$("input#selezioneFile_" + indice).val('');
 				$("#rowselezioneFileDocumentale_" + indice).show();
+				$("#rowselezioneFileRda_" + indice).hide();
 			}
 			else{
-			$("#rowDOCUMGARA_URLDOC_" + indice).show();
-			$("#rowW_DOCDIG_DIGNOMDOC_" + indice).hide();
-			setValue("W_DOCDIG_DIGNOMDOC_" + indice,"");
-			setValue("W_DOCDIG_IDDOCDIG_" + indice,"");
-			$("#rowselezioneFile_" + indice).hide();
-			$("#rowselezioneFileDocumentale_" + indice).hide();
+				if(tipo == 4){
+					$("#rowDOCUMGARA_URLDOC_" + indice).hide();
+					setValue("DOCUMGARA_URLDOC_" + indice,"");
+					$("#rowW_DOCDIG_DIGNOMDOC_" + indice).show();
+					setValue("W_DOCDIG_DIGNOMDOC_" + indice,"");
+					setValue("W_DOCDIG_IDDOCDIG_" + indice,"");
+					$("#rowselezioneFile_" + indice).hide();
+					$("input#selezioneFile_" + indice).val('');
+					$("#rowselezioneFileDocumentale_" + indice).hide();
+					$("#rowselezioneFileRda_" + indice).show();
+				}else{
+					$("#rowDOCUMGARA_URLDOC_" + indice).show();
+					$("#rowW_DOCDIG_DIGNOMDOC_" + indice).hide();
+					setValue("W_DOCDIG_DIGNOMDOC_" + indice,"");
+					setValue("W_DOCDIG_IDDOCDIG_" + indice,"");
+					$("#rowselezioneFile_" + indice).hide();
+					$("#rowselezioneFileDocumentale_" + indice).hide();
+					$("#rowselezioneFileRda_" + indice).hide();
 			<c:if test="${param.richiestaFirma eq '1'}">
 				setValue("W_DOCDIG_DIGFIRMA_" + indice,"");
 				$("#richiestaFirma_" + indice).removeAttr("checked");
 			</c:if>
+				}
 			}
 		}
 	}
@@ -306,6 +371,10 @@ function popolaFormDocumentale(indice,username,password,ruolo,nome,cognome,codic
 
 <c:if test='${associataRdaJIRIDE ne "true"}'>
 	$("[id^='rowselezioneFileDocumentale_']").hide();
+</c:if>
+
+<c:if test='${associataRdaWSERP ne "true"}'>
+	$("[id^='rowselezioneFileRda_']").hide();
 </c:if>
 
 <c:if test='${(modo eq "MODIFICA" or modo eq "NUOVO")}'>

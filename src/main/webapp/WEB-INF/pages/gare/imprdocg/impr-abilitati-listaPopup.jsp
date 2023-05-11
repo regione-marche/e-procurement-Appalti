@@ -59,6 +59,7 @@
 				
 		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmsupporto.js?v=${sessionScope.versioneModuloAttivo}"></script>
 		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmfascicoloprotocollo.js?v=${sessionScope.versioneModuloAttivo}"></script>
+		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmuffici.js?v=${sessionScope.versioneModuloAttivo}"></script>
 	</gene:redefineInsert>
 	
 	<gene:setString name="titoloMaschera"	value="Operatori in corso di abilitazione" />
@@ -326,6 +327,10 @@
 							winOpener.document.getElementById("nomeRup").value=$("#nomeRup").text();
 							winOpener.document.getElementById("acronimoRup").value=$("#acronimoRup").text();
 							winOpener.document.getElementById("sottotipo").value=$("#sottotipo option:selected").val();
+							winOpener.document.getElementById("tipofirma").value=$("#tipofirma option:selected").val();
+							winOpener.document.getElementById("idunitaoperativamittenteDesc").value=$( "#idunitaoperativamittente option:selected" ).text();
+							winOpener.document.getElementById("uocompetenza").value=$("#uocompetenza").val();
+							winOpener.document.getElementById("uocompetenzadescrizione").value=$("#uocompetenzadescrizione").val();
 							_setWSLogin();
 						}
 					}
@@ -383,6 +388,13 @@
                	$("#datiLogin").hide();
 				$("#datiProtocollo").hide();
 				$("#step").val("1");
+				<c:if test="${ integrazioneWSDM =='1'}">
+				_getTipoWSDM();
+				if(_tipoWSDM == "LAPISOPERA")
+					$("#radio1").attr('disabled',true);	
+        		</c:if>
+        	
+				
             } else{
             	<c:if test="${ integrazioneWSDM =='1'}">
             		caricamentoDati();
@@ -394,7 +406,8 @@
                	document.getElementById("tabellaNoInvioMail").style.display='none';
                	inizializzazionePagina(1);
                	<c:if test="${ integrazioneWSDM =='1'}">
-               		if(_delegaInvioMailDocumentaleAbilitata == 1 && (_tipoWSDM == "PALEO" || _tipoWSDM == "JIRIDE"  || _tipoWSDM == "ENGINEERING" || _tipoWSDM == "TITULUS" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "SMAT")){
+               		if(_delegaInvioMailDocumentaleAbilitata == 1 && (_tipoWSDM == "PALEO" || _tipoWSDM == "JIRIDE"  || _tipoWSDM == "ENGINEERING" || _tipoWSDM == "ENGINEERING" 
+               			|| _tipoWSDM == "TITULUS" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "SMAT")){
             			aggiornaSelMailPec(2);
             			//$("#fs1").attr('disabled',true);
             			//$("#fs1").hide();
@@ -409,6 +422,13 @@
 	    
         aggiornaModoSalvataggio(2);
         <c:if test="${ integrazioneWSDM =='1'}">
+        	         	
+        	function apriListaUffici() {
+				_ctx = "${pageContext.request.contextPath}";
+				$("#finestraListaUffici").dialog('option','width',700);
+				$("#finestraListaUffici").dialog("open");
+				_creaContainerListaUffici();
+			}
         	
         	function inizializzazionePagina(step){
 	        	if(step=="1"){
@@ -428,7 +448,8 @@
 					$("#valoreTestoMail").show();
 					$("#mittente").show();
 					$("#valoreMittente").show();
-					if(_delegaInvioMailDocumentaleAbilitata == 1 && (_tipoWSDM == "JIRIDE" || _tipoWSDM == "PALEO" || _tipoWSDM == "ENGINEERING" || _tipoWSDM == "TITULUS" || _tipoWSDM == "SMAT")){
+					if(_delegaInvioMailDocumentaleAbilitata == 1 && (_tipoWSDM == "JIRIDE" || _tipoWSDM == "PALEO" || _tipoWSDM == "ENGINEERING" 
+						|| _tipoWSDM == "ENGINEERINGDOC" || _tipoWSDM == "TITULUS" || _tipoWSDM == "SMAT")){
 						/*
 						$("#intestazione").hide();
 						$("#valoreIntestazione").hide();
@@ -438,7 +459,8 @@
 						$("#valoreMittente").hide();
 						*/
 						$("#TipoMail").hide();
-					}	
+						
+					}
 				}else{
 					$("#datiLogin").show();
 					$("#datiProtocollo").show();
@@ -462,6 +484,13 @@
 					}
 					if (_tipoWSDM == "TITULUS" ){
 						oggettoDocumentoTitulus();
+					}
+					if (_tipoWSDM == "ENGINEERINGDOC" ){
+						var testoOggettoDocumento= "${numeroGara} - " + $('#oggettodocumento').val();
+						$("#oggettodocumento").val(testoOggettoDocumento);
+					}
+					if (_tipoWSDM == "LAPISOPERA" && _fascicoliPresenti == 0){
+						$('#pulsanteConferma').hide();
 					}
 				}
 			}
@@ -493,6 +522,7 @@
 				_popolaTabellato("idunitaoperativamittente","idunitaoperativamittente");
 				_popolaTabellato("supporto","supporto");
 				_popolaTabellato("sottotipo","sottotipo");
+				_popolaTabellato("tipofirma","tipofirma");
 				
 				_getComunicazione();
 				_controlloPresenzaFascicolazione();
@@ -578,7 +608,7 @@
                     $("#obblmezzoinvio").hide();
                 }	
 				
-				if(_tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "JDOC"){
+				if(_tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "JDOC"  && _tipoWSDM != "NUMIX"){
                 	$("#mezzo").hide();
 					$("#mezzo").closest('tr').hide();
 					
@@ -621,7 +651,7 @@
 					caricamentoCodiceAooTITULUS();
 					_popolaTabellatoClassificaTitulus();
 				}
-				if (_tipoWSDM == "JIRIDE"){
+				else if (_tipoWSDM == "JIRIDE"){
 					if(_letturaMittenteDaServzio){
 						$('#mittenteinterno').empty();
 						_popolaTabellatoJirideMittente("mittenteinterno");
@@ -632,6 +662,9 @@
 					}
 					caricamentoStrutturaJIRIDE();
 				}
+				else if (_tipoWSDM == "NUMIX"){
+					caricamentoClassificaNumix();
+				}
 		    });
 			
 			
@@ -640,6 +673,8 @@
 					
 					caricamentoCodiceAooTITULUS();
 					_popolaTabellatoClassificaTitulus();
+				}else if (_tipoWSDM == "NUMIX"){
+					caricamentoClassificaNumix();
 				}
 		    });
 			
@@ -658,6 +693,9 @@
     		$('#annofascicolo').change(function() {
 				if (_tipoWSDM == "PRISMA"){
 					gestionemodificacampoannofascicolo();
+				}else if (_tipoWSDM == "ITALPROT"){
+					$('#listafascicoli').empty();
+					$('#codicefascicolo').val(); 
 				}
 			});
 			
@@ -675,7 +713,19 @@
 			if (_tipoWSDM == "JIRIDE"){
 				caricamentoStrutturaJIRIDE();
 			}
-    });
+    		});
+    		
+    		$('#classificafascicolonuovoItalprot').change(function() {
+				$('#listafascicoli').empty();
+				$('#codicefascicolo').val(); 
+				
+			});
+    		
+    		$('#listafascicoli').on('change',  function () {
+				var str = this.value;
+				gestioneSelezioneFascicolo(str);
+				
+			});
 			
         </c:if>
         

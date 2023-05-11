@@ -72,10 +72,11 @@
 		<gene:campoScheda campo="CODCIG" defaultValue="${codcig}" obbligatorio="true" modificabile="${empty codcig}" >
 			<gene:checkCampoScheda funzione='gestioneCodiceCIG("##")'  obbligatorio="true" messaggio="Codice CIG non valido" onsubmit="true"/>
 		</gene:campoScheda>		
-		<gene:campoScheda campo="ESENTE_CIG" campoFittizio="true" computed="true" title="Esente CIG?" definizione="T10;;;SN" defaultValue="2" modificabile="${empty codcig}" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoSiNoSenzaNull" />
-		<gene:fnJavaScriptScheda funzione="gestioneEsenteCIG()" elencocampi="ESENTE_CIG" esegui="false"/>
-		
 		<gene:campoScheda campo="DACQCIG" title="Data acquisizione" defaultValue="${getDacqcigFunctionResult}" obbligatorio="true"/>
+		<gene:campoScheda campo="ESENTE_CIG" campoFittizio="true" computed="true" title="Esente CIG?" definizione="T10;;;SN" defaultValue="2" modificabile="${empty codcig}" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoSiNoSenzaNull" />
+		<gene:campoScheda campo="MOTESENTECIG" entita="GARE1" where="GARE.CODGAR1 = GARE1.CODGAR1" visibile="${gene:checkProt(pageContext, 'COLS.VIS.GARE.GARE1.MOTESENTECIG') }"/>
+		<gene:fnJavaScriptScheda funzione="gestioneEsenteCIG()" elencocampi="ESENTE_CIG" esegui="false"/>
+				
 		<gene:campoScheda>
 			<td colSpan="2"><br></td>
 		</gene:campoScheda>
@@ -105,8 +106,17 @@
 			var esenteCig = getValue("ESENTE_CIG");
 			if ("1" == esenteCig) {
 				showObj("rowGARE_CODCIG", false);
+				showObj("rowGARE_DACQCIG", false);
+				showObj("rowTORN_NUMAVCP", false);
+				setValue("GARE_DACQCIG", "");
+				setValue("TORN_NUMAVCP", "");
+				showObj("rowGARE1_MOTESENTECIG", true);
 			} else {
 				showObj("rowGARE_CODCIG", true);
+				showObj("rowGARE_DACQCIG", true);
+				showObj("rowTORN_NUMAVCP", true);
+				showObj("rowGARE1_MOTESENTECIG", false);
+				setValue("GARE1_MOTESENTECIG", "", false);
 			}
 		}
 		

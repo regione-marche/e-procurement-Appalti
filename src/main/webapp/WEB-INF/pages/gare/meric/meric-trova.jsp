@@ -23,7 +23,7 @@
 	
 	<% // Ridefinisco il corpo della ricerca %>
 	<gene:redefineInsert name="corpo">
-  		<gene:formTrova entita="MERIC" filtro="${filtro}" gestisciProtezioni="true" >
+  		<gene:formTrova entita="MERIC" filtro="${filtro}" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.trova.gestori.MericGestoreTrova" >
 			<gene:gruppoCampi idProtezioni="DATIGEN" >
 				<tr><td colspan="3"><b>Dati generali</b></td></tr>
 				<gene:campoTrova campo="CODRIC" />
@@ -44,28 +44,10 @@
 					<td class="etichetta-dato">Ricerche di mercato con articoli per cui non è stato selezionato nessun prodotto</td>
 					<td class="operatore-trova"/>
 					<td class="valore-dato-trova">
-						<input type="checkbox" id="ricercheNonCompletate" value="1" onchange="javascript:impostaFiltro(this);"/>
+						<input type="checkbox" id="ricercheNonCompletate" name="ricercheNonCompletate" value="1"/>
 					</td>
 				</tr>
 			</gene:gruppoCampi>
-			
-			
     </gene:formTrova>
-    <gene:javaScript>
-						
-			function impostaFiltro(oggetto){
-				var filtro="${filtro}";
-				if(oggetto.checked){
-					if(filtro!=null && filtro!="")
-						document.forms[0].filtro.value += " and(";
-					document.forms[0].filtro.value+="id in (select idric from mericart a where not exists(select idric from v_odaprod p where p.idric= a.idric and p.idricart=a.id))";
-					if(filtro!=null && filtro!="")
-						document.forms[0].filtro.value += ")";
-				}else{
-					document.forms[0].filtro.value=filtro;
-				}
-			}
-			
-		</gene:javaScript>
   </gene:redefineInsert>
 </gene:template>

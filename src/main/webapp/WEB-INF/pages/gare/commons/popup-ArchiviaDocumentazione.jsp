@@ -14,6 +14,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 
+<jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
+
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 
 <c:choose>
@@ -204,6 +206,15 @@
 	</c:otherwise>
 </c:choose>
 
+<c:choose>
+	<c:when test="${not empty param.fasEle}">
+		<c:set var="fasEle" value="${param.fasEle}"/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="fasEle" value="${fasEle}"/>
+	</c:otherwise>
+</c:choose>
+
 <c:if test="${not empty titolo}">
 	<c:set var="descTipoDoc" value="${titolo}"/>
 </c:if>
@@ -216,6 +227,8 @@
 	<c:set var="bustalotti" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetBustalottiFunction", pageContext, varTemp)}' />
 </c:if>
 
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, codgar1, "SC", "21")}
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, tipoDoc, "N","")}
 <c:set var="where" value="DOCUMGARA.CODGAR='${codgar1 }' and DOCUMGARA.GRUPPO=${tipoDoc} and DOCUMGARA.STATODOC = 5"/>
 
 <c:choose>
@@ -228,12 +241,30 @@
 </c:choose>
 
 <c:if test="${not empty tipologia}">
+	${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, tipologia, "N","")}
 	<c:set var="where" value="${where} and DOCUMGARA.TIPOLOGIA=${tipologia}"/>
 </c:if>
 
 <c:if test="${not empty busta}">
+	${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, busta, "N","")}
 	<c:set var="where" value="${where} and DOCUMGARA.BUSTA=${busta}"/>
 </c:if>
+
+<c:if test="${fasEle eq iscrizione}">
+	<c:set var="where" value="${where} and (DOCUMGARA.FASELE=1 or DOCUMGARA.FASELE=2)"/>
+</c:if>
+
+<c:if test="${fasEle eq rinnovo}">
+	<c:choose>
+		<c:when test="${isarchi eq 1 }">
+			<c:set var="where" value="${where} and (DOCUMGARA.FASELE=2 or DOCUMGARA.FASELE=3)"/>
+		</c:when>
+		<c:otherwise>
+			<c:set var="where" value="${where} and DOCUMGARA.FASELE=3"/>
+		</c:otherwise>
+	</c:choose>
+</c:if>
+
 
 <gene:template file="popup-template.jsp" gestisciProtezioni="false" >
 	<gene:setString name="titoloMaschera" value="${titoloForm}" />
@@ -346,7 +377,7 @@
 					</gene:set>
 					<gene:campoLista title="Opzioni<center>${titoloMenu}</center>" width="50" visibile="${isarchi ne 1}" >
 						<c:if test="${currentRow >= 0 and datiRiga.DOCUMGARA_ISARCHI ne 1}">
-							<input type="checkbox" name="keys" value="${datiRiga.DOCUMGARA_NORDDOCG}"  />
+							<input type="checkbox" name="keys" value="${datiRiga.DOCUMGARA_NORDDOCG};${datiRiga.DOCUMGARA_IDSTAMPA}"  />
 							<c:set var="numeroDocumentiDaArchiviare" value="${numeroDocumentiDaArchiviare + 1}"/>
 						</c:if>
 					</gene:campoLista>
@@ -387,6 +418,7 @@
 					<gene:campoLista campo="IDPRG"  visibile="false"/>
 					<gene:campoLista campo="IDDOCDG"  visibile="false"/>
 					<gene:campoLista campo="ISARCHI"  visibile="false" />
+					<gene:campoLista campo="IDSTAMPA"  visibile="false" />
 										
 					<input type="hidden" name="numeroDocumenti" id="numeroDocumenti" value="" />
 					<input type="hidden" name="codgar1" id="codgar1" value="${codgar1 }" />
@@ -406,7 +438,7 @@
 					<input type="hidden" name="bustalotti" id="bustalotti" value="${bustalotti }" />
 					<input type="hidden" name="bustaPrequalificaPresente" id="bustaPrequalificaPresente" value="No" />
 					<input type="hidden" name="sezionitec" id="sezionitec" value="${sezionitec}" />
-					
+					<input type="hidden" name="fasEle" id="fasEle" value="${fasEle}" />
 				</gene:formLista>
 				</td>
 			</tr>

@@ -38,14 +38,14 @@ public class ControlloAllineamentoG1cridefG1crivalFunction extends AbstractFunzi
     if (!"".equals(sezione))
       selectNonCorrispondenzaG1CridefG1Crival += " and g.seztec = 1 ";
     selectNonCorrispondenzaG1CridefG1Crival += "and not exists (select v.id from g1crival v where v.idcridef=c.id and v.ngara=? and v.dittao=?)";
-    String selectEsistenzaDettaglioManuale="select count(c.id) from g1cridef c, goev g where c.ngara=? and g.ngara = c.ngara and g.necvan = c.necvan and g.tippar = ? and c.maxpun >0 and c.modpunti=1";
+    String selectEsistenzaDettaglioManuale="select count(c.id) from g1cridef c, goev g where c.ngara=? and g.ngara = c.ngara and g.necvan = c.necvan and g.tippar = ? and c.maxpun >0 and (c.modpunti=1 or c.modpunti=3)";
     if (!"".equals(sezione))
       selectEsistenzaDettaglioManuale +=  " and g.seztec = 1 ";
-    String selectEsistenzaDettaglioManualeG1Crival="select count(c.id) from g1cridef c, goev g where c.ngara=? and g.ngara = c.ngara and g.necvan = c.necvan and g.tippar = ? and c.maxpun >0 and c.modpunti=1 ";
+    String selectEsistenzaDettaglioManualeG1Crival="select count(c.id) from g1cridef c, goev g where c.ngara=? and g.ngara = c.ngara and g.necvan = c.necvan and g.tippar = ? and c.maxpun >0 and (c.modpunti=1 or c.modpunti=3) ";
     if (!"".equals(sezione))
       selectEsistenzaDettaglioManualeG1Crival += " and g.seztec = 1 ";
     selectEsistenzaDettaglioManualeG1Crival += " and exists (select v.id from g1crival v where v.idcridef=c.id and v.ngara=? and v.dittao=? and v.punteg is null)";
-    String selectEsistenzaDettaglioManualeCoeffNonValidi="select count(c.id) from g1cridef c, goev g where c.ngara=? and g.ngara = c.ngara and g.necvan = c.necvan and g.tippar = ? and c.maxpun >0 and c.modpunti=1 ";
+    String selectEsistenzaDettaglioManualeCoeffNonValidi="select count(c.id) from g1cridef c, goev g where c.ngara=? and g.ngara = c.ngara and g.necvan = c.necvan and g.tippar = ? and c.maxpun >0 and (c.modpunti=1 or c.modpunti=3) ";
     if (!"".equals(sezione))
       selectEsistenzaDettaglioManualeCoeffNonValidi += " and g.seztec = 1 ";
     selectEsistenzaDettaglioManualeCoeffNonValidi += "and exists (select v.id from g1crival v where v.idcridef=c.id and v.ngara=? and v.dittao=? and (v.coeffi is not null and (v.coeffi>1 or v.coeffi<0)))";

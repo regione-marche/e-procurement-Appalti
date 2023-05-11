@@ -27,18 +27,28 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRExporter;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.data.JRXmlDataSource;
 import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.export.SimpleExporterInput;
+import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
+import net.sf.jasperreports.export.SimplePdfExporterConfiguration;
+import net.sf.jasperreports.export.type.PdfaConformanceEnum;
+
 import org.apache.log4j.Logger;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
@@ -102,7 +112,7 @@ public class StampaRiepilogoPswBusteAction extends ActionBaseNoOpzioni {
 
         String target = null;
         String messageKey = null;
-        JRExporter jrExporter = null;
+        JRPdfExporter jrExporter = null;
         
         String genericMsgErr = "Errore inaspettato durante la tracciatura su w_logeventi";
        
@@ -136,8 +146,21 @@ public class StampaRiepilogoPswBusteAction extends ActionBaseNoOpzioni {
             ByteArrayOutputStream baosJrReport = new ByteArrayOutputStream();
             
             jrExporter = new JRPdfExporter();
-            jrExporter.setParameter(JRExporterParameter.JASPER_PRINT, print);
-            jrExporter.setParameter(JRExporterParameter.OUTPUT_STREAM, baosJrReport);
+            JasperReportsContext jasperReportsContext = DefaultJasperReportsContext.getInstance();
+            jasperReportsContext.setProperty("net.sf.jasperreports.default.font.name", "Arial");
+            jasperReportsContext.setProperty("net.sf.jasperreports.default.pdf.font.name", "Arial");
+            jasperReportsContext.setProperty("net.sf.jasperreports.default.pdf.embedded", "true");
+            SimplePdfExporterConfiguration configuration = new SimplePdfExporterConfiguration();
+            configuration.setPdfaConformance(PdfaConformanceEnum.PDFA_1A);
+//            String pathToICC = ctx.getRealPath(PDF_A_ICC_PATH);
+            configuration.setIccProfilePath(request.getSession().getServletContext().getRealPath("/WEB-INF/jrReport/sRGB_v4_ICC_preference.icc"));
+            jrExporter.setConfiguration(configuration);
+//            jrExporter.setParameter(JRExporterParameter.JASPER_PRINT, print);
+//            jrExporter.setParameter(JRExporterParameter.OUTPUT_STREAM, baosJrReport);
+            List<JasperPrint> jasperPrintList = new ArrayList<JasperPrint>();
+            jasperPrintList.add(print);
+            jrExporter.setExporterInput(SimpleExporterInput.getInstance(jasperPrintList));
+            jrExporter.setExporterOutput(new SimpleOutputStreamExporterOutput(baosJrReport));
             jrExporter.exportReport();
             inputStream.close();
             baosJrReport.close();

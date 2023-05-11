@@ -16,17 +16,21 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
-<c:set var="tipo" value="${fn:substring(trovaAddWhere, fn:indexOf(trovaAddWhere, 'V_GARE_ACCORDIQUADRO.TIPGEN = ') + 30, fn:indexOf(trovaAddWhere, 'V_GARE_ACCORDIQUADRO.TIPGEN = ') + 31)}" />
+<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.archWhereFunctions.ComponiWhereV_GARE_ACCORDIQUADROFunction" />
+
+<c:set var="nomeContainerFiltri" value="deftrovaGARE-${empty param.numeroPopUp ? 0 : param.numeroPopUp}"/> 
+<!--  c:set var="tipo" value="${fn:substring(sessionScope[nomeContainerFiltri].trovaAddWhere, fn:indexOf(sessionScope[nomeContainerFiltri].trovaAddWhere, 'V_GARE_ACCORDIQUADRO.TIPGEN = ') + 30, fn:indexOf(sessionScope[nomeContainerFiltri].trovaAddWhere, 'V_GARE_ACCORDIQUADRO.TIPGEN = ') + 31)}" / -->
+<c:set var="tipo" value="${tipgen }"/>
 <c:set var="descTipo" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1007", tipo, "")}'/>
 <c:set var="descTipo" value='${fn:toLowerCase(descTipo) }'/>
 
-<c:set var="cenintPresente" value="${fn:containsIgnoreCase(trovaAddWhere, 'cenint') }" />
+<c:set var="cenintPresente" value="${fn:containsIgnoreCase(sessionScope[nomeContainerFiltri].trovaAddWhere, 'cenint') }" />
 
 <gene:template file="popup-template.jsp">
 	<gene:setString name="titoloMaschera" value="Selezione dell'accordo quadro"/>
 	<gene:redefineInsert name="corpo">
 		<br/>
-		Nella lista vengono riportati gli accordi quadro per ${descTipo } con data atto contrattuale e durata valorizzati.<br>
+		Nella lista vengono riportati gli accordi quadro per ${descTipo } con data contratto e durata valorizzati.<br>
 		<c:if test="${cenintPresente}">
 		Inoltre vengono considerati solo gli accordi quadro per cui la stazione appaltante dell'adesione è qualificata a ricorrere 
 		(la stazione appaltante è presente nell'elenco dei soggetti dell'accordo quadro oppure l'elenco dei soggetti non è definito).<br>

@@ -73,6 +73,7 @@ public class GetBusteDocumentazioneFunction extends AbstractFunzioneTag {
     if(!"".equals(inclause)){
       whereBusteAttive = entita + "." + campo + " is null OR " + entita + "." + campo + " in (" + inclause + ")";
     }
+    pageContext.getSession().setAttribute("whereBusteAttiveWizard", whereBusteAttive);
     return whereBusteAttive;
 
  }

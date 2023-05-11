@@ -45,13 +45,11 @@
 	<c:set var="isNavigazioneDisabilitata" value="1" scope="request" />
 </c:if>
 
-<c:if test="${!empty filtroAppalti}">
-	<c:set var="trovaAddWhere" value="${sessionScope.filtroAppalti.trovaAddWhere}" scope="request" />
-	<c:set var="trovaParameter" value="${sessionScope.filtroAppalti.trovaParameter}" scope="request" />
-</c:if>
 
 <table class="dettaglio-tab-lista">
 	<c:if test="${!empty filtroAppalti }">
+	<c:set var="hashName" value="deftrovaANTICORLOTTI-1"/>
+	<c:set  var="test" value="and ${sessionScope[hashName].trovaAddWhere}"/> 
 		<tr>
 			<td style="font: 11px Verdana, Arial, Helvetica, sans-serif;">
 			 <br><img src="${pageContext.request.contextPath}/img/filtro.gif" alt="Filtro">&nbsp;<span style="color: #ff0028; font-weight: bold;">Lista filtrata</span>
@@ -65,7 +63,7 @@
 	
 	<tr>
 		<td>
-			<gene:formLista entita="ANTICORLOTTI" where='${where} and ${filtroResponsabile}' tableclass="datilista" sortColumn='5' 
+			<gene:formLista entita="ANTICORLOTTI" where='${where} and ${filtroResponsabile}${filtroAppalti}' tableclass="datilista" sortColumn='5' 
 					gestisciProtezioni="true"  gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreAnticorAppalti" pagesize="25" >
 				
 				<gene:redefineInsert name="listaNuovo"></gene:redefineInsert>

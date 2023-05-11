@@ -54,11 +54,11 @@
 	$(function() {
 				$("#configurazione").append(
 "				<p>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/archdocg/archdocg-lista.jsp'+ '&' + csrfToken;\">\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-selezione.jsp'+ '&' + csrfToken;\">\n"+
 "					<img alt=\"Documentazione di gara\" src=\"${contextPath}/img/ArchivioDocumentazione.png\"></a>\n"+
 "					&nbsp;&nbsp;&nbsp;\n"+
 "					<b>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/archdocg/archdocg-lista.jsp'+ '&' + csrfToken;\">Documentazione di gara</a>\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-selezione.jsp'+ '&' + csrfToken;\">Documentazione di gara e di contratto</a>\n"+
 "					</b>\n"+
 "				</p>\n"
 				);

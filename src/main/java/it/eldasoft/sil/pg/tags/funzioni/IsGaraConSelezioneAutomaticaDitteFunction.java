@@ -10,15 +10,15 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import it.eldasoft.gene.bl.TabellatiManager;
-import it.eldasoft.gene.db.domain.Tabellato;
-import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.utils.spring.UtilitySpring;
-
 import java.util.List;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import it.eldasoft.gene.bl.TabellatiManager;
+import it.eldasoft.gene.db.domain.Tabellato;
+import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.utils.spring.UtilitySpring;
 
 /**
  * Funzione che determina se la selezione degli operatori economici
@@ -43,7 +43,7 @@ public class IsGaraConSelezioneAutomaticaDitteFunction extends AbstractFunzioneT
     List<Tabellato> listaTabellato = tabellatiManager.getTabellato("A1101");
     if (listaTabellato != null && listaTabellato.size() > 0) {
       String descrTab = (listaTabellato.get(0)).getDescTabellato();
-      if (descrTab != null && descrTab.startsWith("1"))
+      if (descrTab != null && (descrTab.startsWith("1") || descrTab.startsWith("2") ))
         selezioneAutomatica = "true";
     }
 

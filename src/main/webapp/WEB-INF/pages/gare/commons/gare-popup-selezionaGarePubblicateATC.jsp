@@ -17,6 +17,8 @@
 <%@ taglib uri="http://www.eldasoft.it/tags" prefix="elda"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.archWhereFunctions.ComponiWhereV_GARE_TORNFunction" />
+
 <c:set var="where" value="codgar in (select codgar from garuuid where (tipric='ATCPAT_esito' or tipric='ATCPAT_bando'))" />
 
 <gene:template file="popup-template.jsp" gestisciProtezioni="false" schema="GARE">

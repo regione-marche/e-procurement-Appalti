@@ -85,7 +85,15 @@ public class GestorePopupArchiviaGara extends AbstractGestoreEntita {
                         null, e);
           }
         }
+		else if(datiForm.isColumn("G1STIPULA.ISARCHI")){
+	          try {
 
+	            datiForm.update("G1STIPULA", sqlManager);
+	          } catch (SQLException e) {
+	                throw new GestoreException("Errore nell'update dell'occorrenza in G1STIPULA",
+	                        null, e);
+	          }
+	        }
 	}
 
 }

@@ -21,6 +21,9 @@ public class OrderNsoRequest extends ValidationNsoRequest{
   private Double totalPriceWithVat;
   private String cig;
   private String ngara;
+  //specific fields for celeris api
+  private String sender;
+  private String receiver;
   
   public String getOrderCode() {
     return orderCode;
@@ -142,6 +145,38 @@ public class OrderNsoRequest extends ValidationNsoRequest{
     this.ngara = ngara;
   }
 
+  
+  /**
+   * @return the sender
+   */
+  public String getSender() {
+    return sender;
+  }
+
+  
+  /**
+   * @param sender the sender to set
+   */
+  public void setSender(String sender) {
+    this.sender = sender;
+  }
+
+  
+  /**
+   * @return the receiver
+   */
+  public String getReceiver() {
+    return receiver;
+  }
+
+  
+  /**
+   * @param receiver the receiver to set
+   */
+  public void setReceiver(String receiver) {
+    this.receiver = receiver;
+  }
+
   @Override
   public String toString() {
     return "OrderNsoRequest ["
@@ -158,8 +193,13 @@ public class OrderNsoRequest extends ValidationNsoRequest{
         + (codimp != null ? "codimp=" + codimp + ", " : "")
         + (uffint != null ? "uffint=" + uffint + ", " : "")
         + (totalPriceWithVat != null ? "totalPriceWithVat=" + totalPriceWithVat + ", " : "")
-        + (orderId != null ? "orderId=" + orderId : "")
+        + (cig != null ? "cig=" + cig + ", " : "")
+        + (ngara != null ? "ngara=" + ngara + ", " : "")
+        + (sender != null ? "sender=" + sender + ", " : "")
+        + (receiver != null ? "receiver=" + receiver : "")
         + "]";
   }
+
+  
   
 }

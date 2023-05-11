@@ -10,21 +10,6 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import it.eldasoft.gene.bl.FileAllegatoManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.bl.TabellatiManager;
-import it.eldasoft.gene.db.domain.BlobFile;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.PgManager;
-import it.eldasoft.sil.portgare.datatypes.AggiornamentoIscrizioneImpresaElencoOperatoriDocument;
-import it.eldasoft.sil.portgare.datatypes.CategoriaType;
-import it.eldasoft.sil.portgare.datatypes.DocumentoType;
-import it.eldasoft.sil.portgare.datatypes.ListaCategorieIscrizioneType;
-import it.eldasoft.sil.portgare.datatypes.ListaDocumentiType;
-import it.eldasoft.utils.spring.UtilitySpring;
-
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Vector;
@@ -33,6 +18,23 @@ import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 
 import org.apache.xmlbeans.XmlException;
+
+import it.eldasoft.gene.bl.FileAllegatoManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.bl.TabellatiManager;
+import it.eldasoft.gene.db.domain.BlobFile;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.PgManager;
+import it.eldasoft.sil.pg.bl.PgManagerEst1;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
+import it.eldasoft.sil.portgare.datatypes.AggiornamentoIscrizioneImpresaElencoOperatoriDocument;
+import it.eldasoft.sil.portgare.datatypes.CategoriaType;
+import it.eldasoft.sil.portgare.datatypes.DocumentoType;
+import it.eldasoft.sil.portgare.datatypes.ListaCategorieIscrizioneType;
+import it.eldasoft.sil.portgare.datatypes.ListaDocumentiType;
+import it.eldasoft.utils.spring.UtilitySpring;
 
 /**
  * Vengono eseguiti i controlli sulle variazioni apportate dal messaggio FS4
@@ -49,7 +51,7 @@ import org.apache.xmlbeans.XmlException;
 public class ControlloVariazioniAggiornamentoDaPortaleFunction extends
     AbstractFunzioneTag {
 
-  static String     nomeFileXML_Aggiornamento = "dati_aggisc.xml";
+
 
   public ControlloVariazioniAggiornamentoDaPortaleFunction() {
     super(5, new Class[] { PageContext.class, String.class, String.class, String.class, String.class });
@@ -129,7 +131,7 @@ public class ControlloVariazioniAggiornamentoDaPortaleFunction extends
     try {
 
         datiW_DOCDIG = sqlManager.getVector(select,
-            new Object[]{digent, idcom.toString(), idprgW_DOCDIG, nomeFileXML_Aggiornamento});
+            new Object[]{digent, idcom.toString(), idprgW_DOCDIG, CostantiAppalti.nomeFileXML_Aggiornamento});
 
     } catch (SQLException e) {
       pageContext.setAttribute("erroreAcquisizione", "1",PageContext.REQUEST_SCOPE);
@@ -185,7 +187,7 @@ public class ControlloVariazioniAggiornamentoDaPortaleFunction extends
               //quindi si può procedere all'acquisizione
               select="select w.idprg,w.iddocdig from w_docdig w, garacquisiz g where w.digent = ? and w.digkey1 = " + sqlManager.getDBFunction("inttostr",  new String[] {"g.idcom"}) +
                   "  and w.idprg = ? and w.dignomdoc = ? and w.idprg=g.idprg and g.ngara=? and g.codimp=? and g.stato=?";
-              Vector datiComunicazioneGaracquisiz = sqlManager.getVector(select, new Object[]{digent, idprgW_DOCDIG,nomeFileXML_Aggiornamento,ngara, codiceDitta, new Long(1)});
+              Vector datiComunicazioneGaracquisiz = sqlManager.getVector(select, new Object[]{digent, idprgW_DOCDIG,CostantiAppalti.nomeFileXML_Aggiornamento,ngara, codiceDitta, new Long(1)});
               if(datiComunicazioneGaracquisiz!= null && datiComunicazioneGaracquisiz.size()>0){
                 idprgW_INVCOM = ((JdbcParametro) datiComunicazioneGaracquisiz.get(0)).getStringValue();
                 iddocdig = ((JdbcParametro) datiComunicazioneGaracquisiz.get(1)).longValue();
@@ -261,7 +263,40 @@ public class ControlloVariazioniAggiornamentoDaPortaleFunction extends
             }
           }
 
-          String msg = msgCategorie + msgDocumenti + msgCoordinatoreSic;
+          //Controllo variazioni ascesa torre
+          String msgAscesaTorre="";
+          if("FS4".equals(tipo)){
+            String ascesatorrGarealbo=(String)sqlManager.getObject("select reqtorre from garealbo where ngara=?", new Object[]{ngara});
+            if("1".equals(ascesatorrGarealbo)){
+              String ascesatorrOld = (String)sqlManager.getObject("select reqtorre from ditg where ngara5=? and dittao=?", new Object[]{ngara,codiceDitta});
+              String ascesatorrNew="";
+              if(document.getAggiornamentoIscrizioneImpresaElencoOperatori().isSetRequisitiAscesaTorre()){
+                boolean reqAscesaTorre= document.getAggiornamentoIscrizioneImpresaElencoOperatori().getRequisitiAscesaTorre();
+                if(reqAscesaTorre)
+                	ascesatorrNew = "1";
+                else
+                	ascesatorrNew = "2";
+              }
+
+              if("1".equals(ascesatorrNew))
+            	ascesatorrNew = "Si";
+              else if ("2".equals(ascesatorrNew))
+            	ascesatorrNew = "No";
+
+              if("1".equals(ascesatorrOld))
+            	ascesatorrOld = "Si";
+              else if ("2".equals(ascesatorrOld))
+            	ascesatorrOld = "No";
+              else
+                ascesatorrOld = "";
+
+              if(!ascesatorrOld.equals(ascesatorrNew)){
+            	  msgAscesaTorre+="\nIl campo Possesso requisiti di ascesa torre? viene impostato a '" + ascesatorrNew + "'\n";
+              }
+            }
+          }
+
+          String msg = msgCategorie + msgDocumenti + msgCoordinatoreSic + msgAscesaTorre;
           pageContext.setAttribute("messaggi", msg,PageContext.REQUEST_SCOPE);
         } catch (XmlException e) {
           this.getRequest().setAttribute("erroreAcquisizione", "1");
@@ -294,7 +329,7 @@ public class ControlloVariazioniAggiornamentoDaPortaleFunction extends
    * @param document
    *
    */
-  private String controlloDocumenti(AggiornamentoIscrizioneImpresaElencoOperatoriDocument document) {
+  public String controlloDocumenti(AggiornamentoIscrizioneImpresaElencoOperatoriDocument document) {
     String msg="";
     //ListaDocumentiType listaDocumenti = ((AggiornamentoIscrizioneImpresaElencoOperatoriDocument)document).getAggiornamentoIscrizioneImpresaElencoOperatori().getDocumenti();
     ListaDocumentiType listaDocumenti = document.getAggiornamentoIscrizioneImpresaElencoOperatori().getDocumenti();
@@ -303,9 +338,10 @@ public class ControlloVariazioniAggiornamentoDaPortaleFunction extends
       for (int j = 0; j < listaDocumenti.sizeOfDocumentoArray(); j++) {
         DocumentoType datoCodificato = listaDocumenti.getDocumentoArray(j);
         String nomeFile = datoCodificato.getNomeFile();
-        String descrizione = datoCodificato.getDescrizione();
-        msg+="\nViene inserito il documento '"+ nomeFile +"' - " + descrizione + "\n";
-
+        if(!CostantiAppalti.nomeFileQestionario.equals(nomeFile)) {
+          String descrizione = datoCodificato.getDescrizione();
+          msg+="\nViene inserito il documento '"+ nomeFile +"' - " + descrizione + "\n";
+        }
 
       }
 
@@ -361,7 +397,7 @@ public class ControlloVariazioniAggiornamentoDaPortaleFunction extends
 
           Long tipcat = ((JdbcParametro) tmp.get(4)).longValue();
           //Codice del tabellato contenente la descrizione breve della classifica dipendente dalla tipologia della categoria
-          String codiceTabellato = this.getTabellatoClassifica(tipcat);
+          String codiceTabellato = PgManagerEst1.getTabellatoClassifica(tipcat);
 
           categoriaTrovata = false;
           invitiPresenti = false;
@@ -496,7 +532,7 @@ public class ControlloVariazioniAggiornamentoDaPortaleFunction extends
             if(datoCodificato.isSetClassificaMinima() || datoCodificato.isSetClassificaMassima()){
               Long tipcat = (Long)sqlManager.getObject(select,
                 new Object[]{categoria});
-              String codiceTabellato = this.getTabellatoClassifica(tipcat);
+              String codiceTabellato = PgManagerEst1.getTabellatoClassifica(tipcat);
               if(datoCodificato.isSetClassificaMinima()){
                 msg+= " con classifica minima " + tabellatiManager.getDescrTabellato(codiceTabellato, datoCodificato.getClassificaMinima());
                 if(datoCodificato.isSetClassificaMassima())
@@ -520,16 +556,5 @@ public class ControlloVariazioniAggiornamentoDaPortaleFunction extends
     return msg;
   }
 
-  private String getTabellatoClassifica(Long tipcat){
-    String codiceTabellato = "A1015";
-    if (tipcat.longValue() == 2)
-      codiceTabellato = "G_035";
-    else if (tipcat.longValue() == 3)
-      codiceTabellato = "G_036";
-    else if (tipcat.longValue() == 4)
-      codiceTabellato = "G_037";
-    else if (tipcat.longValue() == 5)
-      codiceTabellato = "G_049";
-    return codiceTabellato;
-  }
+
 }

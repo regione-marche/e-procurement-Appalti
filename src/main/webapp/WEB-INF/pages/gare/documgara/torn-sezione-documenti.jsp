@@ -13,10 +13,23 @@
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+
+<c:set var="digitalSignatureUrlCheck" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-check-url")}'/>
+<c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:choose>
+	<c:when test="${!empty digitalSignatureUrlCheck && !empty digitalSignatureProvider && (digitalSignatureProvider eq 1 || digitalSignatureProvider eq 2)}">
+		<c:set var="digitalSignatureWsCheck" value='1'/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="digitalSignatureWsCheck" value='0'/>
+	</c:otherwise>
+</c:choose>
 	
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 <script type="text/javascript" src="${contextPath}/js/jquery.documenti.gara.js"></script>
-<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>	
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmsupporto.js?v=${sessionScope.versioneModuloAttivo}"></script>
+<script type="text/javascript" src="${contextPath}/js/jquery.validate.min.js"></script>		
 	
 <c:choose>
 	<c:when test='${!empty param.bustalotti}'>
@@ -40,10 +53,15 @@
 
 
 <c:set var="gestioneUrl" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsGestioneUrlDocumentazioneFunction", pageContext)}' scope="request"/>
-<c:set var="firmaRemota" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "firmaremota.auto.url")}'/>
-
+<c:set var="firmaProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:if test='${firmaProvider eq 2}'>
+	<c:set var="firmaRemota" value="true"/>
+</c:if>
 <c:set var="gestioneERP" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.GetPropertyWsdmFunction", "wsdm.gestioneERP",idconfi)}'/>
 <c:set var="numeroDocumentoWSDM" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.CheckAssociataRdaJIRIDEFunction", pageContext, codiceGara)}' scope="request"/>
+<c:if test='${integrazioneWSERP eq "1" and tipoWSERP eq "AMIU"}'>
+	<c:set var="presenzaRda" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetWSERPPresenzaRdaFunction", pageContext, codiceGara, null, requestScope.tipoWSERP)}' scope="request" />
+</c:if>
 
 <c:choose> 
 	<c:when test="${gruppo eq 3}" >
@@ -57,7 +75,8 @@
 <c:set var="genereGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTipologiaGaraFunction", pageContext, key)}' scope="request"/>
 
 <c:set var="condizioneFunzArchivia" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.CheckDocumentiPubblicatiTipologiaFunction", pageContext, codiceGara, tipologia, busta, gruppo)}' scope="request"/>
-		
+
+<c:set var="integrazioneMDgueUrl" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "integrazioneMDgue.url")}'/>		
 <gene:redefineInsert name="schedaConferma">
 	<tr>
 		<td class="vocemenulaterale">
@@ -95,9 +114,11 @@
 			<jsp:param name="usaContatoreLista" value="true"/>
 			<jsp:param name="richiestaFirma" value="${richiestaFirma}"/>
 			<jsp:param name="firmaRemota" value="${firmaRemota}"/>
+			<jsp:param name="firmaDocumento" value="${firmaDocumento}"/>
 			<jsp:param name="tipologia" value="${tipologia}"/>
 			<jsp:param name="funzEliminazione" value="delDocumento"/>
 			<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
+			<jsp:param name="associataRdaWSERP" value="${associataRdaWSERP}"/>
 		</jsp:include>
 		<c:set var="condizioneModificaSezioneProfilo" value='${(genereGara eq "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMGARA")) || (genereGara ne "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-scheda.DOCUMGARA.DOCUMGARA")) }'/>
 	</c:if>
@@ -117,6 +138,7 @@
 			<jsp:param name="usaContatoreLista" value="true"/>
 			<jsp:param name="tipologia" value="${tipologia}"/>
 			<jsp:param name="firmaRemota" value="${firmaRemota}"/>
+			<jsp:param name="firmaDocumento" value="${firmaDocumento}"/>
 			<jsp:param name="funzEliminazione" value="delDocumento"/>
 			<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
 		</jsp:include>
@@ -137,7 +159,7 @@
 			<jsp:param name="nomeAttributoLista" value='documentazioneConcorrenti' />
 			<jsp:param name="idProtezioni" value="DOCUMCONC" />
 			<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/documgara/documentazione-concorrenti.jsp"/>
-			<jsp:param name="arrayCampi" value="'DOCUMGARA_CODGAR_', 'DOCUMGARA_NGARA_', 'DOCUMGARA_NORDDOCG_','DOCUMGARA_GRUPPO_', 'DOCUMGARA_FASGAR_','DOCUMGARA_BUSTA_','DOCUMGARA_FASELE_','DOCUMGARA_REQCAP_','DOCUMGARA_TIPODOC_','DOCUMGARA_DESCRIZIONE_','DOCUMGARA_CONTESTOVAL_','DOCUMGARA_OBBLIGATORIO_','DOCUMGARA_STATODOC_','DOCUMGARA_IDPRG_', 'DOCUMGARA_IDDOCDG_','DOCUMGARA_VALENZA_','DOCUMGARA_MODFIRMA_','W_DOCDIG_IDPRG_','W_DOCDIG_IDDOCDIG_','W_DOCDIG_DIGDESDOC_','W_DOCDIG_DIGNOMDOC_','selezioneFile_','DOCUMGARA_GENTEL_','DOCUMGARA_SEZTEC_'"/>		
+			<jsp:param name="arrayCampi" value="'DOCUMGARA_CODGAR_', 'DOCUMGARA_NGARA_', 'DOCUMGARA_NORDDOCG_','DOCUMGARA_GRUPPO_', 'DOCUMGARA_FASGAR_','DOCUMGARA_BUSTA_','DOCUMGARA_FASELE_','DOCUMGARA_REQCAP_','DOCUMGARA_TIPODOC_','DOCUMGARA_DESCRIZIONE_','DOCUMGARA_CONTESTOVAL_','DOCUMGARA_OBBLIGATORIO_','DOCUMGARA_STATODOC_','DOCUMGARA_IDPRG_', 'DOCUMGARA_IDDOCDG_','DOCUMGARA_VALENZA_','DOCUMGARA_MODFIRMA_','W_DOCDIG_IDPRG_','W_DOCDIG_IDDOCDIG_','W_DOCDIG_DIGDESDOC_','W_DOCDIG_DIGNOMDOC_','selezioneFile_','DOCUMGARA_GENTEL_','DOCUMGARA_SEZTEC_','DOCUMGARA_IDSTAMPA_'"/>		
 			<jsp:param name="titoloSezione" value="Documento" />
 			<jsp:param name="titoloNuovaSezione" value="Nuovo documento" />
 			<jsp:param name="descEntitaVociLink" value="documento" />
@@ -147,6 +169,7 @@
 			<jsp:param name="tipologia" value="${tipologia}"/>
 			<jsp:param name="busta" value="${busta}"/>
 			<jsp:param name="firmaRemota" value="${firmaRemota}"/>
+			<jsp:param name="firmaDocumento" value="${firmaDocumento}"/>
 			<jsp:param name="funzEliminazione" value="delDocumento"/>
 			<jsp:param name="bustalotti" value="${bustalotti}"/>
 			<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
@@ -172,8 +195,10 @@
 			<jsp:param name="richiestaFirma" value="${richiestaFirma}"/>
 			<jsp:param name="tipologia" value="${tipologia}"/>
 			<jsp:param name="firmaRemota" value="${firmaRemota}"/>
+			<jsp:param name="firmaDocumento" value="${firmaDocumento}"/>
 			<jsp:param name="funzEliminazione" value="delDocumento"/>
 			<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
+			<jsp:param name="associataRdaWSERP" value="${associataRdaWSERP}"/>
 		</jsp:include>
 		<c:set var="condizioneModificaSezioneProfilo" value='${(genereGara eq "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMGARA")) || (genereGara ne "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-scheda.DOCUMGARA.DOCUMGARA")) }'/>
 	</c:if>
@@ -194,6 +219,7 @@
 			<jsp:param name="richiestaFirma" value="${richiestaFirma}"/>
 			<jsp:param name="tipologia" value="${tipologia}"/>
 			<jsp:param name="firmaRemota" value="${firmaRemota}"/>
+			<jsp:param name="firmaDocumento" value="${firmaDocumento}"/>
 			<jsp:param name="funzEliminazione" value="delDocumento"/>
 			<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
 		</jsp:include>
@@ -217,10 +243,12 @@
 			<jsp:param name="richiestaFirma" value="${richiestaFirma}"/>
 			<jsp:param name="tipologia" value="${tipologia}"/>
 			<jsp:param name="firmaRemota" value="${firmaRemota}"/>
+			<jsp:param name="firmaDocumento" value="${firmaDocumento}"/>
 			<jsp:param name="funzEliminazione" value="delDocumento"/>
 			<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
 			<jsp:param name="condizioneBloccoAllmail" value="${condizioneBloccoAllmail}"/>
 			<jsp:param name="isProceduraTelematica" value="${isProceduraTelematica}"/>
+			<jsp:param name="associataRdaWSERP" value="${associataRdaWSERP}"/>
 		</jsp:include>
 		<c:set var="condizioneModificaSezioneProfilo" value='${(genereGara eq "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMGARA")) || (genereGara ne "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-scheda.DOCUMGARA.DOCUMGARA")) }'/>
 	</c:if>
@@ -242,8 +270,10 @@
 			<jsp:param name="gruppo" value="${gruppo}"/>
 			<jsp:param name="tipologia" value="${tipologia}"/>
 			<jsp:param name="firmaRemota" value="${firmaRemota}"/>
+			<jsp:param name="firmaDocumento" value="${firmaDocumento}"/>
 			<jsp:param name="funzEliminazione" value="delDocumento"/>
 			<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
+			<jsp:param name="associataRdaWSERP" value="${associataRdaWSERP}"/>
 		</jsp:include>
 		<c:set var="condizioneModificaSezioneProfilo" value='${(genereGara eq "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMGARA")) || (genereGara ne "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-scheda.DOCUMGARA.DOCUMGARA")) }'/>
 	</c:if>	
@@ -391,6 +421,17 @@
 			</tr>
 			
 		</c:if>	
+		<c:if test="${not empty integrazioneMDgueUrl and integrazioneMDgueUrl ne '' and (gruppo eq 1 or gruppo eq 6) and modoAperturaScheda eq 'VISUALIZZA'  and autorizzatoModifiche ne '2' and gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.InsertDocDGUE')}">
+			<tr>
+				<td class="vocemenulaterale" >
+					<c:if test='${isNavigazioneDisattiva ne "1"}'>
+						<a href="javascript:insDocumentoMDGUE('${ngara}','${codiceGara}','${gruppo}','${isProceduraTelematica}','${tipologia}');" title='Inserisci documento con M-DGUE' tabindex="1512">
+					</c:if>
+						Inserisci documento con M-DGUE
+					<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
+				</td>
+			</tr>
+		</c:if>
 	</gene:redefineInsert>
 	<gene:redefineInsert name="modelliPredisposti" />
 	<c:if test='${gruppo ne 2}'>
@@ -412,13 +453,13 @@ function apriPopupInsertPredefiniti() {
 	var gruppo="${gruppo}";
 	var busta="${busta}";
 	var isProceduraTelematica ="${isProceduraTelematica }";
-	var href = "href=gare/archdocg/conferma-ins-doc-predefiniti.jsp?codgar="+getValue("TORN_CODGAR")+"&lottoDiGara=" + lottoDiGara+"&isOffertaUnica=1";
+	var href = "href=gare/documgara/conferma-ins-doc-predefiniti.jsp?codgar="+getValue("TORN_CODGAR")+"&lottoDiGara=" + lottoDiGara+"&isOffertaUnica=1";
 	//href += "&tiplav=" +  tipgen + "&tipgarg=" +tipgarg;
 	href += "&tiplav=" +  tipgen + "&tipgarg=" +tipgarg + "&importo=" + importo + "&critlic=" + critlic + "&isProceduraTelematica=" + isProceduraTelematica + "&tipologia=" + tipologia + "&gruppo=" + gruppo;
 	if(busta){
 		href = href + "&busta=" + busta;
 	}
-	openPopUpCustom(href, "insDocumentiPredefiniti", 600, 350, "no", "yes");
+	openPopUpCustom(href, "insDocumentiPredefiniti",700, 450, "no", "yes");
 }
 
 
@@ -446,12 +487,32 @@ function ConfermaAnnulla(){
 }
  
 function scegliFile(indice) {
+	var firmaDocumento="${firmaDocumento}";
+	if(firmaDocumento=='1'){
+		var digfirma = getValue("W_DOCDIG_DIGFIRMA_" + indice);
+		if(digfirma==1){
+			alert("Il documento è in attesa di firma, non è possibile modificare il file");
+			document.getElementById("selFile[" + indice + "]").value = "";
+			return;
+		}
+	}
+	
 	var selezioneFile = document.getElementById("selFile[" + indice + "]").value;
 	var lunghezza_stringa=selezioneFile.length;
 	var posizione_barra=selezioneFile.lastIndexOf("\\");
 	var nome=selezioneFile.substring(posizione_barra+1,lunghezza_stringa).toUpperCase();
 	var tipoDoc="${gruppo}";
-	if(tipoDoc=="6"){
+	var idstampa="";
+	if(document.getElementById("DOCUMGARA_IDSTAMPA_" + indice ))
+		idstampa = document.getElementById("DOCUMGARA_IDSTAMPA_" + indice ).value;
+	if(idstampa=="DGUE" && (tipoDoc=="6" || tipoDoc=="1")){
+		if(!controlloTipoFile(nome,"xml")){
+			alert("Il formato del file selezionato non è valido.\nE' consentito solo il formato xml");
+			document.getElementById("selFile[" + indice + "]").value="";
+			setValue("W_DOCDIG_DIGNOMDOC_" + indice,"");
+			return;
+		}
+	} else if(tipoDoc=="6"){
 		var formatoAllegati="${formatoAllegati}";
 		if(!controlloTipoFile(nome,formatoAllegati)){
 			alert("Il formato del file selezionato non è valido.\nI formati consentiti sono: " + formatoAllegati);
@@ -496,17 +557,40 @@ function scegliFileDocumentale(param1,param2,indice) {
 }
 
 function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
+	var gruppo = '${gruppo}';
+	var busta = '${busta}';
+	var tipologia = '${tipologia}';
+	key=getValue("TORN_CODGAR");
 	var vet = dignomdoc.split(".");
 	var ext = vet[vet.length-1];
 	ext = ext.toUpperCase();
-	if(ext=='P7M' || ext=='TSD'){
-		document.formVisFirmaDigitale.idprg.value = idprg;
-		document.formVisFirmaDigitale.iddocdig.value = iddocdig;
-		document.formVisFirmaDigitale.submit();
-	}else{
-		var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-		document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
-	}
+	<c:choose>
+		<c:when test="${digitalSignatureWsCheck eq 0}">
+			if(ext=='P7M' || ext=='TSD'){
+				document.formVisFirmaDigitale.idprg.value = idprg;
+				document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+				tracciamentoDownloadDocgara(idprg, iddocdig,key,gruppo,busta,tipologia);
+				document.formVisFirmaDigitale.submit();
+			}else{
+				tracciamentoDownloadDocgara(idprg, iddocdig,key,gruppo,busta,tipologia);
+				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+			}
+		</c:when>
+		<c:otherwise>
+			if(ext=='P7M' || ext=='TSD' || ext=='XML' || ext=='PDF'){
+				document.formVisFirmaDigitale.idprg.value = idprg;
+				document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+				tracciamentoDownloadDocgara(idprg, iddocdig,key,gruppo,busta,tipologia);
+				document.formVisFirmaDigitale.submit();
+			}else{
+				tracciamentoDownloadDocgara(idprg, iddocdig,key,gruppo,busta,tipologia);
+				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+			}
+			
+		</c:otherwise>
+	</c:choose>
 }	
 
 function visualizzaFileGenerato(nomeFile) {
@@ -627,7 +711,7 @@ function visualizzaFileGenerato(nomeFile) {
 
 	function archiviaDocumenti(){
 		var tipoDoc = "${gruppo}";
-		var codgar1 = "${codiceGara }";
+		var codgar1 = "${codiceGara}";
 		var ngara = "${numeroGara}";
 		var iterga = getValue("TORN_ITERGA");
 		var modlic = getValue("TORN_MODLIC");

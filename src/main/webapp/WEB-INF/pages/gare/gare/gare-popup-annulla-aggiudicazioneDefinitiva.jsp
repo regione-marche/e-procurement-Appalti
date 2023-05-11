@@ -52,6 +52,8 @@
 	
 	<c:set var="esisteVariazionePrezzo" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.EsistonoVariazioniPrezzoFunction",  pageContext, ngara, "", "NoDitta","2")}'/>
 	
+	<c:set var="esisteStipulaGara" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteStipulaGaraFunction",  pageContext, ngara, ditta)}'/>
+	
 	<gene:setString name="titoloMaschera" value="Annulla aggiudicazione definitiva" />
 	
 	<gene:redefineInsert name="corpo">
@@ -89,6 +91,13 @@
 						</td>
 					</gene:campoScheda>
 				</c:when>
+				<c:when test="${esisteStipulaGara eq 'true' }">
+					<gene:campoScheda>
+						<td colSpan="2"><br>Non é possibile procedere con l'annullamento dell'aggiudicazione perchè c'è un contratto in fase di stipula o già attivo 
+							<br>&nbsp;<br>
+						</td>
+					</gene:campoScheda>
+				</c:when>
 				<c:otherwise>
 					<gene:campoScheda>
 						<td colSpan="2"><br>Viene annullata l'aggiudicazione definitiva, ripristinando la gara  
@@ -107,7 +116,7 @@
 			<input type="hidden" name="isGaraLottiConOffertaUnica" id="isGaraLottiConOffertaUnica" value="${isGaraLottiConOffertaUnica }" />							
 			<gene:campoScheda>
 				<td class="comandi-dettaglio" colSpan="2">
-					<c:if test='${!empty ditta and ditta ne "" and RISULTATO ne "VARIAZIONI_PREZZO" and esisteVariazionePrezzo ne "true"}'>
+					<c:if test='${!empty ditta and ditta ne "" and RISULTATO ne "VARIAZIONI_PREZZO" and esisteVariazionePrezzo ne "true" and esisteStipulaGara ne "true"}'>
 						<INPUT type="button" class="bottone-azione" value="Conferma" title="Conferma" onclick="javascript:conferma();">
 					</c:if>
 					<INPUT type="button" class="bottone-azione" value="Annulla" title="Annulla" onclick="javascript:annulla();">&nbsp;&nbsp;

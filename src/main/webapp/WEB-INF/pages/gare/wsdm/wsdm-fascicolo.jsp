@@ -68,7 +68,8 @@
 		<jsp:include page="wsdm-login.jsp"></jsp:include>
 
 		<tr>
-			<td colspan="2"><br><b>Dati del fascicolo</b></td>
+			<td colspan="2"><br><b>Dati del fascicolo</b> <span style="float:right;"><a href="javascript:gestioneletturafascicolo();" id="linkleggiDatiFascicolo" class="linkLettura" style="display: none;">Rileggi dati fascicolo</a></span>
+			</td>
 		</tr>
 		<tr>
 			<td class="etichetta-dato">Anno fascicolo</td>
@@ -91,6 +92,7 @@
 		<tr>
 			<td class="etichetta-dato">Classifica</td>
 			<td class="valore-dato"><span id="classificafascicolodescrizione" name="classificafascicolodescrizione" title="Classifica"></span></td>
+			<input type="hidden" id="classificadescrizione"  name="classificadescrizione"/>
 		</tr>
 		<tr>
 			<td class="etichetta-dato">Descrizione</td>

@@ -10,12 +10,12 @@
  */
 package it.eldasoft.sil.pg.bl;
 
-import it.eldasoft.gene.bl.SqlManager;
-
 import java.sql.SQLException;
 import java.util.List;
 
 import org.apache.log4j.Logger;
+
+import it.eldasoft.gene.bl.SqlManager;
 
 /**
  * Manager che raccoglie alcune funzionalità per la gestione Oepv
@@ -81,7 +81,7 @@ public class ControlliOepvManager {
         new Object[] { codiceGara });
 
 
-    if(offtel == null || offtel == 2){
+    if(offtel == null || offtel == 2 || offtel == 3){
       return true;
     }
     if(offtel == 1 && tippub != null){

@@ -21,6 +21,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
@@ -90,16 +92,14 @@ public class EseguiImportOEPVAction extends ActionBaseNoOpzioni {
 
 		try {
 			UploadFileForm documentoXLS = (UploadFileForm) form;
-			HSSFWorkbook XLS = new HSSFWorkbook(
-					documentoXLS.getSelezioneFile().getInputStream());
+			
+			Workbook XLS = WorkbookFactory.create(documentoXLS.getSelezioneFile().getInputStream());
 			// Import dei dati dal file Excel
 			this.importExportOEPVManager.importazione(ngara, step, XLS);
 
 			if(archiviaXLSDocAss){
 				// Creazione di un file temporaneo del file Excel uploadato
-				File tempFile = TempFileUtilities.getTempFile(
-						ImportExportOEPVManager.NOME_FILE_C0OGGASS_IMPORT,
-								request.getSession());
+			  File tempFile = TempFileUtilities.getTempFile(documentoXLS.getSelezioneFile().getFileName(),request.getSession());
 				FileUtils.writeByteArrayToFile(tempFile,
 						documentoXLS.getSelezioneFile().getFileData());
 

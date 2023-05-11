@@ -10,15 +10,6 @@
  */
 package it.eldasoft.sil.pg.bl.tasks;
 
-import it.eldasoft.gene.bl.FileAllegatoManager;
-import it.eldasoft.gene.bl.GenChiaviManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.WebUtilities;
-import it.eldasoft.gene.db.domain.BlobFile;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.utils.properties.ConfigManager;
-import it.eldasoft.utils.utility.UtilityDate;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -38,6 +29,15 @@ import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.springframework.dao.DataAccessException;
+
+import it.eldasoft.gene.bl.FileAllegatoManager;
+import it.eldasoft.gene.bl.GenChiaviManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.WebUtilities;
+import it.eldasoft.gene.db.domain.BlobFile;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.utility.UtilityDate;
 
 public class CreazioneArchivioDocumentiGaraManager {
 
@@ -93,7 +93,7 @@ public class CreazioneArchivioDocumentiGaraManager {
     if(pathArchivioDocumenti != null && !"".equals(pathArchivioDocumenti)){
       try {
 
-        String getJobsSql="select id_archiviazione, syscon, codgara from gardoc_jobs where da_processare = '1' and tipo_archiviazione = 1 order by id_archiviazione";
+        String getJobsSql="select id_archiviazione, syscon, codgara,entita from gardoc_jobs where da_processare = '1' and tipo_archiviazione = 1 order by id_archiviazione";
         List<?> jobs = this.sqlManager.getListVector(getJobsSql, null);
 
         if(jobs!=null && jobs.size()>0){
@@ -108,8 +108,9 @@ public class CreazioneArchivioDocumentiGaraManager {
      		"from w_invcom i join w_docdig w on " + this.sqlManager.getDBFunction("inttostr",  new String[] {"i.idcom"}) + "=w.digkey2 and i.idprg=w.digkey1 and w.digent='W_INVCOM' join gare g on i.comkey1=g.ngara " +
     		"where g.codgar1 = ? and i.compub = '1' and (i.comstato='3' or i.comstato='12') order by i.idcom,w.iddocdig";
 
-          String queryDocDitta = "select d.bustadesc, d.ngara, d.codimp, d.descrizione, d.IDPRG, d.iddocdg, d.DIGNOMDOC, d.datarilascio, d.orarilascio " +
+          String queryDocDitta = "select d.bustadesc, d.ngara, d.codimp, d.descrizione, d.IDPRG, d.iddocdg, d.DIGNOMDOC, d.datarilascio, d.orarilascio, d.docannul as  ARCHIVIATO, d.doctel as DOCTEL, i.uuid as UUID " +
    			"from v_gare_docditta d join w_docdig w on d.iddocdg=w.iddocdig and d.idprg=w.idprg " +
+   			"join imprdocg i on d.codgar = i.codgar and d.ngara = i.ngara and d.codimp = i.codimp and d.norddoci = i.norddoci and d.proveni = i.proveni " +
    			"where d.codgar = ? and d.idprg is not null and d.iddocdg is not null order by d.codgar, d.ngara, d.bustaord, d.codimp, d.norddoci";
 
           String queryDocAssociati = null;
@@ -145,58 +146,128 @@ public class CreazioneArchivioDocumentiGaraManager {
           String queryDocComDallaDittaTorn = "select comkey1, comkey2, i.commsgogg, w.IDPRG, w.IDDOCDIG, w.DIGNOMDOC, " + this.sqlManager.getDBFunction("datetimetostring",  new String[] {"i.COMDATINS"}) + ", w.DIGDESDOC " +
           "from w_invcom i join w_docdig w on " + this.sqlManager.getDBFunction("inttostr",  new String[] {"i.idcom"}) + "=w.digkey1 and i.idprg=w.idprg and w.digent='W_INVCOM' " +
           "join torn t on (i.comkey2=t.codgar) " +
-          "where t.codgar = ? and i.compub <> '1' and COMTIPO='FS12' order by comkey1,i.idcom,w.iddocdig";
+          "where t.codgar = ? and i.compub <> '1' and COMTIPO='FS12' and COMSTATO='3' and COMENT IS NULL order by comkey1,i.idcom,w.iddocdig";
 
           String queryDocComDallaDittaGare = "select comkey1, comkey2, i.commsgogg, w.IDPRG, w.IDDOCDIG, w.DIGNOMDOC, " + this.sqlManager.getDBFunction("datetimetostring",  new String[] {"i.COMDATINS"}) + ", w.DIGDESDOC " +
           "from w_invcom i join w_docdig w on " + this.sqlManager.getDBFunction("inttostr",  new String[] {"i.idcom"}) + "=w.digkey1 and i.idprg=w.idprg and w.digent='W_INVCOM' " +
     	  "join gare g on i.comkey2=g.ngara " +
-          "where g.codgar1 = ? and i.compub <> '1' and COMTIPO='FS12' order by comkey1,i.idcom,w.iddocdig";
+          "where g.codgar1 = ? and i.compub <> '1' and COMTIPO='FS12' and COMSTATO='3' and COMENT IS NULL order by comkey1,i.idcom,w.iddocdig";
 
+          //Documenti stipula
+          String castDATA="DATE";
+          if("POS".equals(this.sqlManager.getTipoDB()))
+            castDATA="TIMESTAMP";
+          else if("MSQ".equals(this.sqlManager.getTipoDB()))
+            castDATA="DATETIME";
+
+          String condizioneAppend = this.sqlManager.getDBFunction("concat",  new String[] {"'Documento contratto - '" , "t.tab1desc" });
+
+          String queryDocStipula = "select cast(null as varchar(20)) as LOTTO, " + condizioneAppend + " as GRUPPO,  " +
+              " TITOLO as DESCRIZIONE, w.IDPRG, w.IDDOCDIG, w.DIGNOMDOC, cast(null as varchar(2)) as ARCHIVIATO, " +
+              "cast(null as " + castDATA + ") as DATA " +
+              "from G1DOCSTIPULA  d join V_GARE_DOCSTIPULA w on w.id=d.id join tab1 t on t.tab1tip=d.visibilita " +
+              "where d.idstipula = ? and w.idprg is not null and w.IDDOCDIG is not null and t.tab1cod='A1182' ";
+
+          String queryDocAssociatiStipula = null;
+          String sqlSintassi= this.sqlManager.getDBFunction("inttostr",  new String[] {"g.id"});
+          if (documentiAssociatiDB.equals("1")) {
+            queryDocAssociatiStipula = "select c.c0akey1, c.c0atit, w.idprg, w.iddocdig, c.c0anomogg, coalesce(";
+            queryDocAssociatiStipula += this.sqlManager.getDBFunction("datetimetostring",  new String[] {"c.C0ADATTO"}) + ",";
+            queryDocAssociatiStipula += this.sqlManager.getDBFunction("datetimetostring",  new String[] {"c.C0ADPROT"}) + ",";
+            queryDocAssociatiStipula += this.sqlManager.getDBFunction("datetimetostring",  new String[] {"c.c0adat"});
+            queryDocAssociatiStipula += ") from c0oggass c join G1STIPULA g on c.c0akey1=" + sqlSintassi + " join w_docdig w on c.c0acod=w.digkey1 and c.c0aprg=w.idprg and w.digent='C0OGGASS' where g.id = ? and c.c0aent in ('G1STIPULA','G1DOCSTIPULA')";
+          } else {
+            queryDocAssociatiStipula = "select c.c0akey1, c.c0atit, c.c0aprg, c.c0acod, c.c0anomogg, coalesce(";
+            queryDocAssociatiStipula += this.sqlManager.getDBFunction("datetimetostring",  new String[] {"c.C0ADATTO"}) + ",";
+            queryDocAssociatiStipula += this.sqlManager.getDBFunction("datetimetostring",  new String[] {"c.C0ADPROT"}) + ",";
+            queryDocAssociatiStipula += this.sqlManager.getDBFunction("datetimetostring",  new String[] {"c.c0adat"});
+            queryDocAssociatiStipula += ") from c0oggass c join G1STIPULA g on c.c0akey1=" + sqlSintassi + " where g.id = ? and c.c0aent in ('G1STIPULA','G1DOCSTIPULA')";
+          }
+
+          String queryDocComAllaDittaStipula = "select DISTINCT comkey1, i.commsgogg, w.IDPRG, w.IDDOCDIG, w.DIGNOMDOC, id.descodsog, " + this.sqlManager.getDBFunction("datetimetostring",  new String[] {"id.DESDATINV"}) + ", w.DIGDESDOC, id.idcom, descodent " +
+              "from w_invcom i join w_docdig w on " + this.sqlManager.getDBFunction("inttostr",  new String[] {"i.idcom"}) + "=w.digkey2 and w.digkey1=i.idprg and w.digent='W_INVCOM' join g1stipula g on i.comkey1= g.codstipula " +
+              "join (select DISTINCT idprg,idcom,descodsog,descodent,DESSTATO,MIN(DESDATINV) as DESDATINV from w_invcomdes group by idprg,idcom,descodsog,descodent,DESSTATO) id on id.idprg = i.idprg and id.idcom = i.idcom " +
+              "where g.id = ? and i.compub <> '1' and (COMTIPO is null or COMTIPO<>'FS12') and (id.DESSTATO = '2' or id.DESSTATO = '4')";
+
+          String queryDocComDallaDittaStipula = "select comkey1, comkey2, i.commsgogg, w.IDPRG, w.IDDOCDIG, w.DIGNOMDOC, " + this.sqlManager.getDBFunction("datetimetostring",  new String[] {"i.COMDATINS"}) + ", w.DIGDESDOC " +
+              "from w_invcom i join w_docdig w on " + this.sqlManager.getDBFunction("inttostr",  new String[] {"i.idcom"}) + "=w.digkey1 and i.idprg=w.idprg and w.digent='W_INVCOM' " +
+              "join g1stipula g on i.comkey2=g.codstipula " +
+              "where g.id = ? and i.compub <> '1' and COMTIPO='FS12' and COMSTATO='3' and COMENT = 'G1STIPULA' order by comkey1,i.idcom,w.iddocdig";
 
           for(int i=0;i<jobs.size();i++){
         	  numErrori = 0;
         	  String messaggioErrore = "";
         	  Long id_archiviazione = SqlManager.getValueFromVectorParam(jobs.get(i), 0).longValue();
         	  Long syscon = SqlManager.getValueFromVectorParam(jobs.get(i), 1).longValue();
-        	  String codgar = SqlManager.getValueFromVectorParam(jobs.get(i), 2).getStringValue();
-        	  Long genere = (Long)this.sqlManager.getObject("select min(genere) from v_gare_genere where codgar = ?", new Object[]{codgar});
+        	  String chiaveGardoc = SqlManager.getValueFromVectorParam(jobs.get(i), 2).getStringValue();
+        	  String codgar = null;
+        	  String entitaGardoc =SqlManager.getValueFromVectorParam(jobs.get(i), 3).getStringValue();
+        	  Long genere = null;
         	  String oggetto = "gara";
         	  String entita=null;
-        	  if (genere != null) {
-        		  if (genere.equals(new Long(10))) {
-            		  oggetto = "elenco operatori";
-            	  } else if (genere.equals(new Long(20))) {
-            		  oggetto = "catalogo elettronico";
-            	  }else if (genere.equals(new Long(11))) {
-                    oggetto = "avviso";
+        	  Long idStipula=null;
+        	  String codgarApp=null;
+
+        	  if("G1STIPULA".equals(entitaGardoc)) {
+        	    oggetto = "stipula";
+        	    idStipula =  new Long(chiaveGardoc);
+        	    codgar = (String)this.sqlManager.getObject("select codstipula from g1stipula where id=?", new Object[] {idStipula});
+        	    codgarApp = codgar;
+        	  }else {
+        	    codgar = chiaveGardoc;
+        	    codgarApp = codgar;
+        	    genere = (Long)this.sqlManager.getObject("select min(genere) from v_gare_genere where codgar = ?", new Object[]{codgar});
+                if (codgar.startsWith("$")) {
+                    codgarApp = codgar.substring(1);
                 }
+            	  if (genere != null) {
+            		  if (genere.equals(new Long(10))) {
+                		  oggetto = "elenco operatori";
+                	  } else if (genere.equals(new Long(20))) {
+                		  oggetto = "catalogo elettronico";
+                	  }else if (genere.equals(new Long(11))) {
+                        oggetto = "avviso";
+                    }
+            	  }
         	  }
-        	  String codgarApp = codgar;
-        	  if (codgar.startsWith("$")) {
-        		  codgarApp = codgar.substring(1);
-        	  }
+
         	  //Per ogni record da elaborare
         	  try {
+        	    List<?> listaDocumentiGara = null;
+                List<?> listaDocumentiComunicazioni = null;
+                List<?> listaDocumentiDitta = null;
+                List<?> listaDocumentiAssociati = null;
+                List<?> listaDocumentiComAllaDitta = null;
+                List<?> listaDocumentiComDallaDitta = null;
 
-        		  List<?> listaDocumentiGara = this.sqlManager.getListVector(queryDocGara, new Object[]{codgar});
-        		  List<?> listaDocumentiComunicazioni = this.sqlManager.getListVector(queryDocComunicazioni, new Object[]{codgar});
-        		  List<?> listaDocumentiDitta = this.sqlManager.getListVector(queryDocDitta, new Object[]{codgar});
-        		  List<?> listaDocumentiAssociati = this.sqlManager.getListVector(queryDocAssociati, new Object[]{codgar, codgar});
-        		  List<?> listaDocumentiComAllaDitta = this.sqlManager.getListVector(queryDocComAllaDitta, new Object[]{codgar});
-        		  List<?> listaDocumentiComDallaDitta = null;
+                List<?> listaDocumentiStipula = null;
+
+        	    if("G1STIPULA".equals(entitaGardoc)) {
+        	      listaDocumentiStipula = this.sqlManager.getListVector(queryDocStipula, new Object[]{idStipula});
+                  listaDocumentiAssociati = this.sqlManager.getListVector(queryDocAssociatiStipula, new Object[]{idStipula});
+                  listaDocumentiComAllaDitta = this.sqlManager.getListVector(queryDocComAllaDittaStipula, new Object[]{idStipula});
+                  listaDocumentiComDallaDitta = this.sqlManager.getListVector(queryDocComDallaDittaStipula, new Object[]{idStipula});
+        	    }else {
+        		  listaDocumentiGara = this.sqlManager.getListVector(queryDocGara, new Object[]{codgar});
+        		  listaDocumentiComunicazioni = this.sqlManager.getListVector(queryDocComunicazioni, new Object[]{codgar});
+        		  listaDocumentiDitta = this.sqlManager.getListVector(queryDocDitta, new Object[]{codgar});
+        		  listaDocumentiAssociati = this.sqlManager.getListVector(queryDocAssociati, new Object[]{codgar, codgar});
+        		  listaDocumentiComAllaDitta = this.sqlManager.getListVector(queryDocComAllaDitta, new Object[]{codgar});
+        		  listaDocumentiComDallaDitta = null;
         		  if(new Long(1).equals(genere)){
         		    listaDocumentiComDallaDitta = this.sqlManager.getListVector(queryDocComDallaDittaTorn, new Object[]{codgar});
         		  }else{
         		    listaDocumentiComDallaDitta = this.sqlManager.getListVector(queryDocComDallaDittaGare, new Object[]{codgar});
         		  }
-
+        	    }
 
             	  if((listaDocumentiGara!=null && listaDocumentiGara.size()>0) ||
             			  (listaDocumentiComDallaDitta!=null && listaDocumentiComDallaDitta.size()>0) ||
             			  (listaDocumentiComAllaDitta!=null && listaDocumentiComAllaDitta.size()>0) ||
             			  (listaDocumentiAssociati!=null && listaDocumentiAssociati.size()>0) ||
             			  (listaDocumentiDitta!=null && listaDocumentiDitta.size()>0) ||
-            			  (listaDocumentiComunicazioni!=null && listaDocumentiComunicazioni.size()>0)){
+            			  (listaDocumentiComunicazioni!=null && listaDocumentiComunicazioni.size()>0) ||
+            			  (listaDocumentiStipula!=null && listaDocumentiStipula.size()>0)){
             		  //creo una cartella temporanea per contenere tutti i documenti della gara
             		  File CartellaTemporaneaDocGara = null;
             		  String codgarMod = codgar.toUpperCase().replaceAll("/", "_");
@@ -217,7 +288,7 @@ public class CreazioneArchivioDocumentiGaraManager {
             			  //Aggiungo intestazione file indice
             			  StringBuffer fileIndiceRow = new StringBuffer();
             			  fileIndiceRow.append("Codice " + oggetto + ";");
-            			  if (!codgar.startsWith("$")) {
+            			  if (!codgar.startsWith("$") && !"G1STIPULA".equals(entitaGardoc)) {
             				  fileIndiceRow.append("Codice lotto;");
             			  }
             			  fileIndiceRow.append("Argomento;");
@@ -227,7 +298,7 @@ public class CreazioneArchivioDocumentiGaraManager {
             			  fileIndiceRow.append("Descrizione file;");
             			  fileIndiceRow.append("Nome file;");
             			  fileIndiceRow.append("Data;");
-            			  fileIndiceRow.append("Doc.archiviato?");
+            			  fileIndiceRow.append("Doc.archiviato/annullato da operatore?");
             			  fileIndice.println(fileIndiceRow.toString());
             		  } catch (Exception e) {
             			  logger.error("creazioneArchivioDocumentiGara : impossibile creare fileIndiceGara " + codgarMod + ".csv", e);
@@ -244,151 +315,206 @@ public class CreazioneArchivioDocumentiGaraManager {
            		          return;
             		  }
             		  //Documentazione di gara
-            		  for(int j=0; j<listaDocumentiGara.size();j++) {
-            			  try {
-            				  HashMap<String,Object> campi = new HashMap<String,Object>();
-            				  campi.put("argomento", "Documentazione " + oggetto);
-            				  campi.put("gruppo", this.getGruppo(SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 1).getStringValue()));
-            				  campi.put("lotto", SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 0).getStringValue());
-            				  campi.put("cfDitta", "");
-            				  campi.put("ditta", "");
-            				  campi.put("descrizione", SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 2).getStringValue());
-            				  campi.put("idprg", SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 3).getStringValue());
-            				  campi.put("iddocdig", SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 4).longValue());
-            				  campi.put("dignomdoc", SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 5).getStringValue());
-            				  campi.put("data", SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 7).getStringValue());
-            				  campi.put("archiviato", SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 6).getStringValue().equals("1")?"si":"");
-            				  this.addFileToArchive(codgar, pathArchivioDocumenti, campi, zipOut, fileIndice);
-            			  } catch(Exception e) {
-            				  logger.error("creazioneArchivioDocumentiGara : errore durante il recupero di un file Documentazione di gara ", e);
-            				  messaggioErrore += "Errore documentazione di gara: " + e.getMessage() + "\r\n";
-            				  numErrori++;
-            			  }
-            		  }
-            		  //Comunicazioni pubbliche
-            		  for(int j=0; j<listaDocumentiComunicazioni.size();j++) {
-            			  try {
-            				  HashMap<String,Object> campi = new HashMap<String,Object>();
-            				  campi.put("argomento", "Documentazione " + oggetto);
-            				  campi.put("gruppo", "Comunicazione pubblica");
-            				  campi.put("lotto", SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 0).getStringValue());
-            				  campi.put("cfDitta", "");
-            				  campi.put("ditta", "");
-            				  campi.put("descrizione", SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 1).getStringValue() + " - " + SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 6).getStringValue());
-            				  campi.put("idprg", SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 2).getStringValue());
-            				  campi.put("iddocdig", SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 3).longValue());
-            				  campi.put("dignomdoc", SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 4).getStringValue());
-                              campi.put("archiviato", SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 5).getStringValue().equals("1")?"si":"");
-            				  campi.put("data", SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 6).getStringValue());
-            				  this.addFileToArchive(codgar, pathArchivioDocumenti, campi, zipOut, fileIndice);
-            			  } catch(Exception e) {
-            				  logger.error("creazioneArchivioDocumentiGara : errore durante il recupero di un file Comunicazioni pubbliche", e);
-            				  messaggioErrore += "Errore comunicazioni pubbliche: " + e.getMessage() + "\r\n";
-            				  numErrori++;
-            			  }
-            		  }
-            		  //Documenti associati
-            		  for(int j=0; j<listaDocumentiAssociati.size();j++) {
-            			  try {
-            				  HashMap<String,Object> campi = new HashMap<String,Object>();
-            				  campi.put("argomento", "Documentazione " + oggetto);
-            				  campi.put("gruppo", "Documento associato");
-            				  campi.put("lotto", SqlManager.getValueFromVectorParam(listaDocumentiAssociati.get(j), 0).getStringValue());
-            				  campi.put("cfDitta", "");
-            				  campi.put("ditta", "");
-            				  campi.put("descrizione", SqlManager.getValueFromVectorParam(listaDocumentiAssociati.get(j), 1).getStringValue());
-            				  campi.put("idprg", SqlManager.getValueFromVectorParam(listaDocumentiAssociati.get(j), 2).getStringValue());
-            				  campi.put("iddocdig", SqlManager.getValueFromVectorParam(listaDocumentiAssociati.get(j), 3).longValue());
-            				  campi.put("dignomdoc", SqlManager.getValueFromVectorParam(listaDocumentiAssociati.get(j), 4).getStringValue());
-           					  campi.put("data", SqlManager.getValueFromVectorParam(listaDocumentiAssociati.get(j), 5).getStringValue());
-            				  campi.put("archiviato", "");
-            				  if (documentiAssociatiDB.equals("1")) {
-            					  this.addFileToArchive(codgar, pathArchivioDocumenti, campi, zipOut, fileIndice);
-            				  } else {
-            					  this.addFileToArchive(codgar, pathArchivioDocumenti, campi, zipOut, fileIndice, pathDocumentiAssociati);
-            				  }
-            			  } catch(Exception e) {
-            				  logger.error("creazioneArchivioDocumentiGara : errore durante il recupero di un file Documenti associati", e);
-            				  messaggioErrore += "Errore documenti associati: " + e.getMessage() + "\r\n";
-            				  numErrori++;
-            			  }
-            		  }
-            		  //Documenti presentati dalla ditta
-            		  String dataApp;
-            		  for(int j=0; j<listaDocumentiDitta.size();j++) {
-            			  try {
-            				  HashMap<String,Object> campi = new HashMap<String,Object>();
-            				  campi.put("argomento", "Documentazione presentata dalle ditte");
-            				  campi.put("gruppo", SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 0).getStringValue());
-            				  campi.put("lotto", SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 1).getStringValue());
-            				  this.getDitta(SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 2).getStringValue(), campi, false,null);
-            				  campi.put("descrizione", SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 3).getStringValue());
-            				  campi.put("idprg", SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 4).getStringValue());
-            				  campi.put("iddocdig", SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 5).longValue());
-            				  campi.put("dignomdoc", SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 6).getStringValue());
-            				  dataApp = "";
-            				  if (SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 7).dataValue() != null) {
-            					  dataApp = UtilityDate.convertiData(SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 7).dataValue(), UtilityDate.FORMATO_GG_MM_AAAA);
-            					  dataApp += " " +  SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 8).getStringValue();
-            				  }
-            				  campi.put("data", dataApp);
-            				  campi.put("archiviato", "");
-            				  this.addFileToArchive(codgar, pathArchivioDocumenti, campi, zipOut, fileIndice);
-            			  } catch(Exception e) {
-            				  logger.error("creazioneArchivioDocumentiGara : errore durante il recupero di un file Documenti presentati dalla ditta", e);
-            				  messaggioErrore += "Errore documentazione delle ditte: " + e.getMessage() + "\r\n";
-            				  numErrori++;
-            			  }
+            		  if(listaDocumentiGara!=null){
+                		  for(int j=0; j<listaDocumentiGara.size();j++) {
+                			  try {
+                				  HashMap<String,Object> campi = new HashMap<String,Object>();
+                				  campi.put("argomento", "Documentazione " + oggetto);
+                				  campi.put("gruppo", this.getGruppo(SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 1).getStringValue()));
+                				  campi.put("lotto", SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 0).getStringValue());
+                				  campi.put("cfDitta", "");
+                				  campi.put("ditta", "");
+                				  campi.put("descrizione", SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 2).getStringValue());
+                				  campi.put("idprg", SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 3).getStringValue());
+                				  campi.put("iddocdig", SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 4).longValue());
+                				  campi.put("dignomdoc", SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 5).getStringValue());
+                				  campi.put("data", SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 7).getStringValue());
+                				  campi.put("archiviato", SqlManager.getValueFromVectorParam(listaDocumentiGara.get(j), 6).getStringValue().equals("1")?"si":"");
+                				  this.addFileToArchive(codgar, entitaGardoc, pathArchivioDocumenti, campi, zipOut, fileIndice);
+                			  } catch(Exception e) {
+                				  logger.error("creazioneArchivioDocumentiGara : errore durante il recupero di un file Documentazione di gara ", e);
+                				  messaggioErrore += "Errore documentazione di gara: " + e.getMessage() + "\r\n";
+                				  numErrori++;
+                			  }
+                		  }
             		  }
 
+            		  //Documentazione di stipula
+                      if(listaDocumentiStipula!=null) {
+              		  for(int j=0; j<listaDocumentiStipula.size();j++) {
+                            try {
+                                HashMap<String,Object> campi = new HashMap<String,Object>();
+                                campi.put("argomento", "Documentazione " + oggetto);
+                                campi.put("gruppo", SqlManager.getValueFromVectorParam(listaDocumentiStipula.get(j), 1).getStringValue());
+                                campi.put("lotto", SqlManager.getValueFromVectorParam(listaDocumentiStipula.get(j), 0).getStringValue());
+                                campi.put("cfDitta", "");
+                                campi.put("ditta", "");
+                                campi.put("descrizione", SqlManager.getValueFromVectorParam(listaDocumentiStipula.get(j), 2).getStringValue());
+                                campi.put("idprg", SqlManager.getValueFromVectorParam(listaDocumentiStipula.get(j), 3).getStringValue());
+                                campi.put("iddocdig", SqlManager.getValueFromVectorParam(listaDocumentiStipula.get(j), 4).longValue());
+                                campi.put("dignomdoc", SqlManager.getValueFromVectorParam(listaDocumentiStipula.get(j), 5).getStringValue());
+                                campi.put("data", SqlManager.getValueFromVectorParam(listaDocumentiStipula.get(j), 7).getStringValue());
+                                campi.put("archiviato", SqlManager.getValueFromVectorParam(listaDocumentiStipula.get(j), 6).getStringValue().equals("1")?"si":"");
+                                this.addFileToArchive(codgar, entitaGardoc, pathArchivioDocumenti, campi, zipOut, fileIndice);
+                            } catch(Exception e) {
+                                logger.error("creazioneArchivioDocumentiGara : errore durante il recupero di un file Documentazione della stipula ", e);
+                                messaggioErrore += "Errore documentazione della stipula: " + e.getMessage() + "\r\n";
+                                numErrori++;
+                            }
+                        }
+                      }
+
+            		  //Comunicazioni pubbliche
+                      if(listaDocumentiComunicazioni!=null) {
+                          for(int j=0; j<listaDocumentiComunicazioni.size();j++) {
+                			  try {
+                				  HashMap<String,Object> campi = new HashMap<String,Object>();
+                				  campi.put("argomento", "Documentazione " + oggetto);
+                				  campi.put("gruppo", "Comunicazione pubblica");
+                				  campi.put("lotto", SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 0).getStringValue());
+                				  campi.put("cfDitta", "");
+                				  campi.put("ditta", "");
+                				  campi.put("descrizione", SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 1).getStringValue() + " - " + SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 6).getStringValue());
+                				  campi.put("idprg", SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 2).getStringValue());
+                				  campi.put("iddocdig", SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 3).longValue());
+                				  campi.put("dignomdoc", SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 4).getStringValue());
+                                  campi.put("archiviato", SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 5).getStringValue().equals("1")?"si":"");
+                				  campi.put("data", SqlManager.getValueFromVectorParam(listaDocumentiComunicazioni.get(j), 6).getStringValue());
+                				  this.addFileToArchive(codgar, entitaGardoc, pathArchivioDocumenti, campi, zipOut, fileIndice);
+                			  } catch(Exception e) {
+                				  logger.error("creazioneArchivioDocumentiGara : errore durante il recupero di un file Comunicazioni pubbliche", e);
+                				  messaggioErrore += "Errore comunicazioni pubbliche: " + e.getMessage() + "\r\n";
+                				  numErrori++;
+                			  }
+                		  }
+                      }
+
+            		  //Documenti associati
+                      if(listaDocumentiAssociati!=null) {
+                          for(int j=0; j<listaDocumentiAssociati.size();j++) {
+                			  try {
+                				  HashMap<String,Object> campi = new HashMap<String,Object>();
+                				  campi.put("argomento", "Documentazione " + oggetto);
+                				  campi.put("gruppo", "Documento associato");
+                				  campi.put("lotto", SqlManager.getValueFromVectorParam(listaDocumentiAssociati.get(j), 0).getStringValue());
+                				  campi.put("cfDitta", "");
+                				  campi.put("ditta", "");
+                				  campi.put("descrizione", SqlManager.getValueFromVectorParam(listaDocumentiAssociati.get(j), 1).getStringValue());
+                				  campi.put("idprg", SqlManager.getValueFromVectorParam(listaDocumentiAssociati.get(j), 2).getStringValue());
+                				  campi.put("iddocdig", SqlManager.getValueFromVectorParam(listaDocumentiAssociati.get(j), 3).longValue());
+                				  campi.put("dignomdoc", SqlManager.getValueFromVectorParam(listaDocumentiAssociati.get(j), 4).getStringValue());
+               					  campi.put("data", SqlManager.getValueFromVectorParam(listaDocumentiAssociati.get(j), 5).getStringValue());
+                				  campi.put("archiviato", "");
+                				  if (documentiAssociatiDB.equals("1")) {
+                					  this.addFileToArchive(codgar, entitaGardoc, pathArchivioDocumenti, campi, zipOut, fileIndice);
+                				  } else {
+                					  this.addFileToArchive(codgar, entitaGardoc, pathArchivioDocumenti, campi, zipOut, fileIndice, pathDocumentiAssociati);
+                				  }
+                			  } catch(Exception e) {
+                				  logger.error("creazioneArchivioDocumentiGara : errore durante il recupero di un file Documenti associati", e);
+                				  messaggioErrore += "Errore documenti associati: " + e.getMessage() + "\r\n";
+                				  numErrori++;
+                			  }
+                		  }
+                      }
+
+            		  //Documenti presentati dalla ditta
+                      if(listaDocumentiDitta!=null) {
+                          String dataApp;
+                		  String idprg = null;
+                          String doctel = null;
+                          String uuid = null;
+                          String selecStatoComunicazione = "select i.comstato from w_invcom i,w_docdig d where d.idprg=? and d.digkey3=? and i.idprg=d.idprg and i.idcom=" + this.sqlManager.getDBFunction("strtoint",  new String[] {"d.digkey1" });
+                		  for(int j=0; j<listaDocumentiDitta.size();j++) {
+                			  try {
+                				  HashMap<String,Object> campi = new HashMap<String,Object>();
+                				  idprg = SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 4).getStringValue();
+                				  doctel = SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 10).getStringValue();
+                				  uuid = SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 11).getStringValue();
+                				  if("1".equals(doctel) && uuid!=null && !"".equals(uuid)) {
+                	                 String comstato = (String)this.sqlManager.getObject(selecStatoComunicazione, new Object[]{idprg,uuid});
+                	                 if("13".equals(comstato) || "20".equals(comstato))
+                	                   continue;
+                	              }
+
+                				  campi.put("argomento", "Documentazione presentata dalle ditte");
+                				  campi.put("gruppo", SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 0).getStringValue());
+                				  campi.put("lotto", SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 1).getStringValue());
+                				  this.getDitta(SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 2).getStringValue(), campi, false,null);
+                				  campi.put("descrizione", SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 3).getStringValue());
+                				  campi.put("idprg", SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 4).getStringValue());
+                				  campi.put("iddocdig", SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 5).longValue());
+                				  campi.put("dignomdoc", SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 6).getStringValue());
+                				  dataApp = "";
+                				  if (SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 7).dataValue() != null) {
+                					  dataApp = UtilityDate.convertiData(SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 7).dataValue(), UtilityDate.FORMATO_GG_MM_AAAA);
+                					  dataApp += " " +  SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 8).getStringValue();
+                				  }
+                				  campi.put("data", dataApp);
+                				  campi.put("archiviato", SqlManager.getValueFromVectorParam(listaDocumentiDitta.get(j), 9).getStringValue().equals("1")?"si":"");
+                				  this.addFileToArchive(codgar, entitaGardoc, pathArchivioDocumenti, campi, zipOut, fileIndice);
+                			  } catch(Exception e) {
+                				  logger.error("creazioneArchivioDocumentiGara : errore durante il recupero di un file Documenti presentati dalla ditta", e);
+                				  messaggioErrore += "Errore documentazione delle ditte: " + e.getMessage() + "\r\n";
+                				  numErrori++;
+                			  }
+                		  }
+                      }
+
             		  //Documenti inviati alla ditta
-            		  for(int j=0; j<listaDocumentiComAllaDitta.size();j++) {
-            			  try {
-            				  HashMap<String,Object> campi = new HashMap<String,Object>();
-            				  campi.put("argomento", "Documentazione " + oggetto);
-            				  campi.put("gruppo", "Documento inviato alla ditta");
-            				  campi.put("lotto", SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 0).getStringValue());
-            				  entita= SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 9).getStringValue();
-            				  this.getDitta(SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 5).getStringValue(), campi, false,entita);
-            				  if (campi.get("ditta").equals("")) {
-            					  Long idcom = SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 8).longValue();
-            					  String email = (String) this.sqlManager.getObject("select desmail from w_invcomdes where idcom=? and descodent is null and descodsog is null", new Object[]{idcom});
-            					  campi.put("ditta", email);
-            				  }
-            				  campi.put("descrizione", SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 1).getStringValue() + " - " + SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 7).getStringValue());
-            				  campi.put("idprg", SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 2).getStringValue());
-            				  campi.put("iddocdig", SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 3).longValue());
-            				  campi.put("dignomdoc", SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 4).getStringValue());
-           					  campi.put("data", SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 6).getStringValue());
-            				  campi.put("archiviato", "");
-            				  this.addFileToArchive(codgar, pathArchivioDocumenti, campi, zipOut, fileIndice);
-            			  } catch(Exception e) {
-            				  logger.error("creazioneArchivioDocumentiGara : errore durante il recupero di un file Documenti inviato alla ditta", e);
-            				  messaggioErrore += "Errore documenti inviati alla ditta: " + e.getMessage() + "\r\n";
-            				  numErrori++;
-            			  }
-            		  }
+                      if(listaDocumentiComAllaDitta!=null) {
+                          for(int j=0; j<listaDocumentiComAllaDitta.size();j++) {
+                			  try {
+                				  HashMap<String,Object> campi = new HashMap<String,Object>();
+                				  campi.put("argomento", "Documentazione " + oggetto);
+                				  campi.put("gruppo", "Documento inviato alla ditta");
+                				  campi.put("lotto", SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 0).getStringValue());
+                				  entita= SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 9).getStringValue();
+                				  this.getDitta(SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 5).getStringValue(), campi, false,entita);
+                				  if (campi.get("ditta").equals("")) {
+                					  Long idcom = SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 8).longValue();
+                					  String email = (String) this.sqlManager.getObject("select desmail from w_invcomdes where idcom=? and descodent is null and descodsog is null", new Object[]{idcom});
+                					  campi.put("ditta", email);
+                				  }
+                				  campi.put("descrizione", SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 1).getStringValue() + " - " + SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 7).getStringValue());
+                				  campi.put("idprg", SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 2).getStringValue());
+                				  campi.put("iddocdig", SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 3).longValue());
+                				  campi.put("dignomdoc", SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 4).getStringValue());
+               					  campi.put("data", SqlManager.getValueFromVectorParam(listaDocumentiComAllaDitta.get(j), 6).getStringValue());
+                				  campi.put("archiviato", "");
+                				  this.addFileToArchive(codgar, entitaGardoc, pathArchivioDocumenti, campi, zipOut, fileIndice);
+                			  } catch(Exception e) {
+                				  logger.error("creazioneArchivioDocumentiGara : errore durante il recupero di un file Documenti inviato alla ditta", e);
+                				  messaggioErrore += "Errore documenti inviati alla ditta: " + e.getMessage() + "\r\n";
+                				  numErrori++;
+                			  }
+                		  }
+                      }
+
             		  //Documenti inviati dalla ditta
-            		  for(int j=0; j<listaDocumentiComDallaDitta.size();j++) {
-            			  try {
-            				  HashMap<String,Object> campi = new HashMap<String,Object>();
-            				  campi.put("argomento", "Documentazione presentata dalle ditte");
-            				  campi.put("gruppo", "Documento inviato dalla ditta");
-            				  campi.put("lotto", SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 1).getStringValue());
-            				  this.getDitta(SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 0).getStringValue(), campi, true,null);
-            				  campi.put("descrizione", SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 2).getStringValue()+ " - " + SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 7).getStringValue());
-            				  campi.put("idprg", SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 3).getStringValue());
-            				  campi.put("iddocdig", SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 4).longValue());
-            				  campi.put("dignomdoc", SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 5).getStringValue());
-            				  campi.put("data", SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 6).getStringValue());
-            				  campi.put("archiviato", "");
-            				  this.addFileToArchive(codgar, pathArchivioDocumenti, campi, zipOut, fileIndice);
-            			  } catch(Exception e) {
-            				  logger.error("creazioneArchivioDocumentiGara : errore durante il recupero di un file Documenti inviato dalla ditta", e);
-            				  messaggioErrore += "Errore documenti inviati dalla ditta: " + e.getMessage() + "\r\n";
-            				  numErrori++;
-            			  }
-            		  }
+                      if(listaDocumentiComDallaDitta!=null) {
+                          for(int j=0; j<listaDocumentiComDallaDitta.size();j++) {
+                			  try {
+                				  HashMap<String,Object> campi = new HashMap<String,Object>();
+                				  campi.put("argomento", "Documentazione presentata dalle ditte");
+                				  campi.put("gruppo", "Documento inviato dalla ditta");
+                				  campi.put("lotto", SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 1).getStringValue());
+                				  this.getDitta(SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 0).getStringValue(), campi, true,null);
+                				  campi.put("descrizione", SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 2).getStringValue()+ " - " + SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 7).getStringValue());
+                				  campi.put("idprg", SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 3).getStringValue());
+                				  campi.put("iddocdig", SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 4).longValue());
+                				  campi.put("dignomdoc", SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 5).getStringValue());
+                				  campi.put("data", SqlManager.getValueFromVectorParam(listaDocumentiComDallaDitta.get(j), 6).getStringValue());
+                				  campi.put("archiviato", "");
+                				  this.addFileToArchive(codgar, entitaGardoc, pathArchivioDocumenti, campi, zipOut, fileIndice);
+                			  } catch(Exception e) {
+                				  logger.error("creazioneArchivioDocumentiGara : errore durante il recupero di un file Documenti inviato dalla ditta", e);
+                				  messaggioErrore += "Errore documenti inviati dalla ditta: " + e.getMessage() + "\r\n";
+                				  numErrori++;
+                			  }
+                		  }
+                      }
+
             		  fileIndice.close();
             		  //aggiungo il file indice allo zip
             		  File f = new File(pathArchivioDocumenti + "/" + codgarMod + "/" + nomeFile + "_fileIndice.csv");
@@ -404,15 +530,15 @@ public class CreazioneArchivioDocumentiGaraManager {
                       //cancello directory temporanea della gara
                       this.RemoveDirectory(CartellaTemporaneaDocGara);
                       //scrivo il messaggio di avvenuta creazione dell'archivio all'utente che l'ha richiesto
-                      this.updateJob(syscon, codgar, numErrori > 0 ? 1:0, id_archiviazione, messaggioErrore, genere);
+                      this.updateJob(syscon, codgar, numErrori > 0 ? 1:0, id_archiviazione, messaggioErrore, genere, entitaGardoc);
             	  } else {
             		  //non esistono documenti per la gara
-            		  this.updateJob(syscon, codgar, 2, id_archiviazione, messaggioErrore, genere);
+            		  this.updateJob(syscon, codgar, 2, id_archiviazione, messaggioErrore, genere, entitaGardoc);
             	  }
         	  } catch (SQLException e) {
     			  logger.error("creazioneArchivioDocumentiGara : errore durante il recupero dei documenti gara con queryDoc " + codgar, e);
     			  messaggioErrore += "Errore di estrapolazione dati: " + e.getMessage();
-    			  this.updateJob(syscon, codgar, 3, id_archiviazione, messaggioErrore, genere);
+    			  this.updateJob(syscon, codgar, 3, id_archiviazione, messaggioErrore, genere, entitaGardoc);
     		  }
           }
         }
@@ -458,7 +584,7 @@ public class CreazioneArchivioDocumentiGaraManager {
 	  return "";
   }
 
-  private void addFileToArchive(String codgar, String pathArchivioDocumenti, HashMap<?,?> campi, ZipOutputStream zipOut, PrintWriter fileIndice) throws Exception {
+  private void addFileToArchive(String codgar, String entita, String pathArchivioDocumenti, HashMap<?,?> campi, ZipOutputStream zipOut, PrintWriter fileIndice) throws Exception {
 	  BlobFile file = this.fileAllegatoManager.getFileAllegato((String)campi.get("idprg"),(Long)campi.get("iddocdig"));
 	  String codgarMod = codgar.toUpperCase().replaceAll("/", "_");
 	  OutputStream out = new FileOutputStream(pathArchivioDocumenti + "/" + codgarMod + "/" + (String)campi.get("idprg") + campi.get("iddocdig") + "_" + (String)campi.get("dignomdoc"));
@@ -480,7 +606,7 @@ public class CreazioneArchivioDocumentiGaraManager {
 		  codgarApp = codgar.substring(1);
 	  }
 	  fileIndiceRow.append("\"").append(codgarApp).append("\";");
-	  if (!codgar.startsWith("$")) {
+	  if (!codgar.startsWith("$") && !"G1STIPULA".equals(entita)) {
 		  if (codgarApp.equals(campi.get("lotto"))) {
 			  fileIndiceRow.append("\"").append("\";");
 		  } else {
@@ -498,7 +624,7 @@ public class CreazioneArchivioDocumentiGaraManager {
 	  fileIndice.println(fileIndiceRow.toString());
   }
 
-  private void addFileToArchive(String codgar, String pathArchivioDocumenti, HashMap<?,?> campi, ZipOutputStream zipOut, PrintWriter fileIndice, String pathDocumentiAssociati) throws Exception {
+  private void addFileToArchive(String codgar, String entita, String pathArchivioDocumenti, HashMap<?,?> campi, ZipOutputStream zipOut, PrintWriter fileIndice, String pathDocumentiAssociati) throws Exception {
 	  File fileAssociato = new File(pathDocumentiAssociati + "/" + (String)campi.get("dignomdoc"));
 	  if (fileAssociato.exists()) {
 		  //copia il file associato nella cartella
@@ -517,7 +643,7 @@ public class CreazioneArchivioDocumentiGaraManager {
 			  codgarApp = codgar.substring(1);
 		  }
 		  fileIndiceRow.append("\"").append(codgarApp).append("\";");
-		  if (!codgar.startsWith("$")) {
+		  if (!codgar.startsWith("$") && !"G1STIPULA".equals(entita)) {
 			  if (codgarApp.equals(campi.get("lotto"))) {
 				  fileIndiceRow.append("\"").append("\";");
 			  } else {
@@ -585,20 +711,24 @@ public class CreazioneArchivioDocumentiGaraManager {
 	  }
   }
 
-  private void updateJob(Long syscon, String codgar, int errore, Long id_archiviazione, String MessaggiErrore, Long genere) {
+  private void updateJob(Long syscon, String codgar, int errore, Long id_archiviazione, String MessaggiErrore, Long genere, String entita) {
 	  try {
 		  String codgarApp = codgar;
     	  if (codgar.startsWith("$")) {
     		  codgarApp = codgar.substring(1);
     	  }
     	  String oggetto = "la gara";
-    	  if (genere != null) {
-    		  if (genere.equals(new Long(10))) {
-        		  oggetto = "l'elenco operatori";
-        	  } else if (genere.equals(new Long(20))) {
-        		  oggetto = "il catalogo elettronico";
-        	  } else if (genere.equals(new Long(11))) {
-        	    oggetto = "l'avviso";
+    	  if("G1STIPULA".equals(entita)) {
+    	    oggetto = "la stipula";
+    	  }else {
+        	  if (genere != null) {
+        		  if (genere.equals(new Long(10))) {
+            		  oggetto = "l'elenco operatori";
+            	  } else if (genere.equals(new Long(20))) {
+            		  oggetto = "il catalogo elettronico";
+            	  } else if (genere.equals(new Long(11))) {
+            	    oggetto = "l'avviso";
+            	  }
         	  }
     	  }
 		  String link = "<a href='javascript:downloadExportDocumenti(" + id_archiviazione + ")'>";
@@ -636,17 +766,19 @@ public class CreazioneArchivioDocumentiGaraManager {
    * Il metodo restituisce l'id dell'occorrenza inserita in gardoc_jobs
    * @param syscon
    * @param codgar
+   * param entita
    * @return Long
    * @throws Exception
    */
-  public Long insertJob(Long syscon, String codgar) throws Exception{
+  public Long insertJob(Long syscon, String codgar, String entita) throws Exception{
 
 	Long id_archiviazione = null;
     try {
 		  id_archiviazione = new Long(genChiaviManager.getNextId("GARDOC_JOBS"));
 
 		  //aggiorno flag di esecuzione nella lista record da elaborare
-          this.sqlManager.update("insert into gardoc_jobs(id_archiviazione, syscon, codgara, data_inserimento, da_processare, tipo_archiviazione) values(?,?,?,?,'1',?)", new Object[]{id_archiviazione, syscon, codgar, new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()),new Long(1)});
+          this.sqlManager.update("insert into gardoc_jobs(id_archiviazione, syscon, codgara, data_inserimento, da_processare, tipo_archiviazione, entita) "
+              + "values(?,?,?,?,'1',?,?)", new Object[]{id_archiviazione, syscon, codgar, new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()),new Long(1), entita});
 
 	  } catch (Exception e) {
 		  logger.error("creazioneArchivioDocumentiGara.insertJob : errore durante l'inserimento del job di esportazione documenti per la gara " + codgar, e);

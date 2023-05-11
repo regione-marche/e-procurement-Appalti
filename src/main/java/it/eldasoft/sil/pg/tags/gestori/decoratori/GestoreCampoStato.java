@@ -73,6 +73,7 @@ public class GestoreCampoStato extends AbstractGestoreCampo {
     this.getCampo().addValore("", "");
     this.getCampo().addValore("In corso", "In corso");
     this.getCampo().addValore("In aggiudicazione", "In aggiudicazione");
+    this.getCampo().addValore("Sospesa", "Sospesa");
     this.getCampo().addValore("Conclusa", "Conclusa");
   }
 

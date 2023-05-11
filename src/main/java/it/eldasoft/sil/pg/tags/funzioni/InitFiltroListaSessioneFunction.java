@@ -10,18 +10,16 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.gene.tags.utils.UtilityTags;
-import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.util.HashMap;
-
 import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 
 import org.apache.commons.lang.StringUtils;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.gene.tags.utils.UtilityTags;
+import it.eldasoft.utils.spring.UtilitySpring;
 
 /**
  * Funzione che elabora i filtri impostati nelle pagine
@@ -36,7 +34,7 @@ public class InitFiltroListaSessioneFunction extends AbstractFunzioneTag {
 
 
   public InitFiltroListaSessioneFunction() {
-    super(3, new Class[] { PageContext.class, String.class,String.class });
+    super(4, new Class[]{PageContext.class, String.class, String.class, String.class});
   }
 
   @Override
@@ -52,12 +50,20 @@ public class InitFiltroListaSessioneFunction extends AbstractFunzioneTag {
   public String function(PageContext pageContext, Object[] params)
       throws JspException {
 
-    HttpSession sessione = pageContext.getSession();
-    String trovaAddWhere = UtilityTags.getParametro(pageContext,UtilityTags.DEFAULT_HIDDEN_WHERE_DA_TROVA);
-    String trovaParameter = UtilityTags.getParametro(pageContext,UtilityTags.DEFAULT_HIDDEN_PARAMETRI_DA_TROVA);
+    String parametro = (String) params[1];
+    String tipoChiamante = (String) params[2];
+    String entita = (String) params[3];
+    SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager", pageContext, SqlManager.class);
+    if (entita != null && !"".equals(entita) && !sqlManager.isTable(entita)) {
+        throw new JspException("Errore di validazione");
+    }
 
-    String parametro = (String)params[1];
-    String tipoChiamante = (String)params[2];
+    HttpSession sessione = pageContext.getSession();
+    //String trovaAddWhere = UtilityTags.getParametro(pageContext,UtilityTags.DEFAULT_HIDDEN_WHERE_DA_TROVA);
+    //String trovaParameter = UtilityTags.getParametro(pageContext,UtilityTags.DEFAULT_HIDDEN_PARAMETRI_DA_TROVA);
+    String trovaAddWhere = UtilityTags.getAttributeForSqlBuild(sessione, entita, UtilityTags.getNumeroPopUp(pageContext), "trovaAddWhere");
+    String trovaParameter = UtilityTags.getAttributeForSqlBuild(sessione, entita, UtilityTags.getNumeroPopUp(pageContext), "trovaParameter");
+    String filtro = UtilityTags.getAttributeForSqlBuild(sessione, entita, UtilityTags.getNumeroPopUp(pageContext), "filtro");
 
     if ("1".equals(parametro)) {
       sessione.removeAttribute("filtroDitte");
@@ -114,8 +120,6 @@ public class InitFiltroListaSessioneFunction extends AbstractFunzioneTag {
             trovaAddWhere = trovaAddWhere.replaceFirst("\\?", valore);
 
           } else if("D".equals(tipo)) {
-            SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",
-                pageContext, SqlManager.class);
             String dbFunctionStringToDate = sqlManager.getDBFunction("stringtodate",
                 new String[] { valore });
             trovaAddWhere = trovaAddWhere.replaceFirst("\\?", dbFunctionStringToDate);
@@ -127,14 +131,17 @@ public class InitFiltroListaSessioneFunction extends AbstractFunzioneTag {
         //sessione.removeAttribute("filtroDitte");
         sessione.setAttribute("filtroCategorie", trovaAddWhere);
       } else if(trovaAddWhere.indexOf("ANTICORLOTTI") >= 0) {
-    	String trovaAddWhere1 = UtilityTags.getParametro(pageContext,UtilityTags.DEFAULT_HIDDEN_WHERE_DA_TROVA);
+    	/*
+        String trovaAddWhere1 = UtilityTags.getParametro(pageContext,UtilityTags.DEFAULT_HIDDEN_WHERE_DA_TROVA);
     	String trovaParameter1 = UtilityTags.getParametro(pageContext,UtilityTags.DEFAULT_HIDDEN_PARAMETRI_DA_TROVA);
 
     	HashMap<String,String> hash = new HashMap<String,String>();
     	hash.put("trovaAddWhere", trovaAddWhere1);
     	hash.put("trovaParameter", trovaParameter1);
     	sessione.setAttribute("filtroAppalti", hash);
-      } else if(trovaAddWhere.indexOf("COMMNOMIN") >= 0) {
+    	*/
+        sessione.setAttribute("filtroAppalti", " and " + trovaAddWhere);
+      } else if(trovaAddWhere.indexOf("COMMNOMIN") >= 0 || "COMMNOMIN".equals(entita)) {
         sessione.setAttribute("filtroNominativi", " and " + trovaAddWhere);
       } else if(trovaAddWhere.indexOf("W_INVCOM") >= 0) {
         // ho 2 oggetti in sessione per le comunicazioni, i filtri per le comunicazioni ricevute
@@ -158,6 +165,10 @@ public class InitFiltroListaSessioneFunction extends AbstractFunzioneTag {
         }
         //sessione.removeAttribute("filtroCategorie");
       }
+    } else if ("Valutazione".equals(tipoChiamante) && StringUtils.isNotEmpty((filtro))) {
+      pageContext.setAttribute("filtroValutazione", " and " + filtro);
+      sessione.removeAttribute("filtroDitte");
+      sessione.removeAttribute("trovaDITG");
     } else {
       if ("Ditte".equals(tipoChiamante)) {
         sessione.removeAttribute("filtroDitte");
@@ -167,7 +178,7 @@ public class InitFiltroListaSessioneFunction extends AbstractFunzioneTag {
         sessione.removeAttribute("filtroLotti");
       }
       if ("Valutazione".equals(tipoChiamante)) {
-        sessione.removeAttribute("filtroValutazione");      
+        sessione.removeAttribute("filtroValutazione");
         sessione.removeAttribute("filtroDitte");
         sessione.setAttribute("filtroDitteLocale", "si");
       }

@@ -16,6 +16,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.archWhereFunctions.ComponiWhereV_SMAT_RDAFunction" />
+
 <gene:template file="popup-template.jsp">
 	<gene:setString name="titoloMaschera" value="Selezione RdA"/>
 	<gene:redefineInsert name="corpo">

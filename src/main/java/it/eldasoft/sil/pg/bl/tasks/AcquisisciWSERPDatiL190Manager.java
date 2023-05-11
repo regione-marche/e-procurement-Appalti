@@ -68,7 +68,7 @@ public void acquisisciDatiL190() throws GestoreException {
           logger.info("Avvio della procedura di acquisizione dei dati di L190");
         }
 
-        if("AVM".equals(tipoWSERP) || "UGOV".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "SMEUP".equals(tipoWSERP) || "TPER".equals(tipoWSERP) || "ENEA".equals(tipoWSERP)){
+        if("AVM".equals(tipoWSERP) || "UGOV".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "SMEUP".equals(tipoWSERP) || "TPER".equals(tipoWSERP) || "ENEA".equals(tipoWSERP) || "ATAC".equals(tipoWSERP)){
 
           Calendar cal = Calendar.getInstance();
           Calendar newCal = Calendar.getInstance();
@@ -91,6 +91,16 @@ public void acquisisciDatiL190() throws GestoreException {
           		" and ((gc.ngara=ga.ngara and gc.ncont=1) or (gc.ngara=ga.codgar1 and (gc.ngaral is null or gc.ngaral=ga.ngara)))" +
           		" and ga.ditta is not null and ga.clavor is null and ga.codcig is not null and (gc.dcertu is null or gc.dcertu >  ?)" +
           		" order by ga.codcig";
+          
+          if("TPER".equals(tipoWSERP)) {
+              selezioneCIG = "select ga.codcig, gc.ngara, gc.ncont, gc.impliq, gc.dverbc, gc.dcertu" +
+            	" from gare ga, garecont gc, torn t" +
+           		" where gc.codimp = ga.ditta"+
+            	" and ga.codgar1=t.codgar and t.cenint = '000001'" +
+            	" and ((gc.ngara=ga.ngara and gc.ncont=1) or (gc.ngara=ga.codgar1 and (gc.ngaral is null or gc.ngaral=ga.ngara)))" +
+               	" and ga.ditta is not null and ga.clavor is null and ga.codcig is not null and (gc.dcertu is null or gc.dcertu >  ?)" +
+               	" order by ga.codcig";
+          }
 
           try {
 
@@ -181,7 +191,7 @@ public void acquisisciDatiL190() throws GestoreException {
                         dataInizio = calInizio.getTime();
                       }
                       Double impLiquidato = liquidatoType.getImpLiquidato();
-                      if("AVM".equals(tipoWSERP) || "UGOV".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "SMEUP".equals(tipoWSERP) || "TPER".equals(tipoWSERP)){
+                      if("AVM".equals(tipoWSERP) || "UGOV".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "SMEUP".equals(tipoWSERP) || "TPER".equals(tipoWSERP) || "ATAC".equals(tipoWSERP)){
                         if(!"".equals(codcig) && impLiquidato != null && impLiquidato != new Double(0)){
                           gestioneWSERPManager.updDatiL190Cig(tipoWSERP, codcig, impLiquidato, dataInizio, dataUltimazione, c_ngara, c_ncont, c_impliq, c_dverbc, c_dcertu);
                         }

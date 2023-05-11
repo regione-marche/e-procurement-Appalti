@@ -18,6 +18,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <%@ taglib uri="http://www.eldasoft.it/tags" prefix="elda" %>
 
+<% // Validazione parametri tramite regex %>
+<c:if test='${not empty param.stepWizard and gene:matches(param.stepWizard, "^-?[0-9]+$", true)}' />
 
 <c:choose>
 	<c:when test='${not empty param.stepWizard}'>

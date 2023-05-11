@@ -28,7 +28,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 
 <gene:redefineInsert name="head">
 		<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>
-		<script type="text/javascript" src="${pageContext.request.contextPath}/js/nso-ordini.js"></script>
+		<script type="text/javascript" src="${pageContext.request.contextPath}/js/nso-ordini.js?t=<%=System.currentTimeMillis()%>"></script>
 </gene:redefineInsert>
 
 <c:set var="chiaveGara" value='${key}'/>
@@ -45,17 +45,14 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	<c:set var="IsW_CONFCOMPopolata" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.IsW_CONFCOMPopolataFunction",pageContext,"2")}' />
 </c:if>
 
-<c:choose>
-	<c:when test="${modo eq 'MODIFICA'}">
-		<c:set var="whereOrdineCollegato" value="NSO_ORDINI.ID<>${idOrdine} AND ${filtroUffint}" />
-	</c:when>
-	<c:otherwise>
-		<c:set var="whereOrdineCollegato" value="${filtroUffint}" />
-	</c:otherwise>
-</c:choose>
+<c:set var="functionId" value="default_${modo eq 'MODIFICA'}" />
+<c:set var="parametriWhere" value="" />
+<c:if test="${modo eq 'MODIFICA'}">
+	<c:set var="parametriWhere" value="N:${idOrdine}" />
+</c:if>
 
 <c:choose>
-	<c:when test="${sessionScope.profiloUtente.ruoloUtenteMercatoElettronico eq 1}">
+	<c:when test="${sessionScope.profiloUtente.ruoloUtenteMercatoElettronico eq 1 || sessionScope.profiloUtente.ruoloUtenteMercatoElettronico eq 3}">
 		<c:set var="isPuntoOrdinante" value="true" />
 	</c:when>
 	<c:otherwise>
@@ -72,12 +69,25 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 
 <gene:redefineInsert name="schedaNuovo" />
 <gene:redefineInsert name="pulsanteNuovo" />
-<c:if test='${requestScope.statoOrdine eq 3 || requestScope.statoOrdine eq 4}'>
+<%-- <c:if test="${requestScope.statoOrdine eq 8}">
+	<%/*
+		se l'ordine è revocato non devo permettere alcuna modifica
+	*/ %>
+	<gene:redefineInsert name="schedaModifica"></gene:redefineInsert>
+</c:if> --%>
+<c:if test='${(requestScope.statoOrdine ne 1 && requestScope.statoOrdine ne 2)}'>
 		<gene:redefineInsert name="schedaModifica" />
 		<gene:redefineInsert name="pulsanteModifica" />
  </c:if>
 
 <gene:redefineInsert name="addToAzioni" >
+	<c:if test='${(requestScope.statoOrdine eq 4 || requestScope.statoOrdine eq 5 || requestScope.statoOrdine eq 6) && requestScope.isPeriodoVariazione eq 1}' >
+		<tr>
+			<td class="vocemenulaterale">
+					<a href="javascript:revocaOrdineNso();" id="menuValidaOrdine" title="Revoca Ordine" tabindex="1510">Revoca Ordine</a>
+			</td>
+		</tr>
+	</c:if>
 	<c:if test="${(requestScope.statoOrdine eq 1) || (requestScope.statoOrdine eq 2)}">
 		<tr>
 			<td class="vocemenulaterale">
@@ -173,7 +183,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		<gene:campoScheda campo="DATA_ORDINE" defaultValue="${requestScope.initDATORD}" />
 		<gene:campoScheda campo="REFERENTE" />
 		<gene:campoScheda campo="CENTRO_COSTO" title="Centro di costo dell'ordine"/>
-		<gene:campoScheda campo="DATA_SCADENZA" />
+		<gene:campoScheda campo="DATA_SCADENZA" obbligatorio="true" />
 		<gene:campoScheda campo="DATA_LIMITE_MOD" modificabile="false" />
 		
 		<gene:campoScheda campo="CODEIN_FATTURA" visibile="false" defaultValue="${requestScope.initUFFINT}"   />
@@ -183,8 +193,9 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			scheda=""
 			schedaPopUp=""
 			campi="NSO_ORDINI.CODORD"
+			functionId="${functionId}"
+			parametriWhere="${parametriWhere}"
 			chiave=""
-			where ="${whereOrdineCollegato}"
 			inseribile="false">
 			<gene:campoScheda campo="CODORD_COLLEGATO" />
 		</gene:archivio>
@@ -212,7 +223,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			</c:when>
 			<c:otherwise>
 				<gene:insert name="pulsanteModifica">
-					<c:if test='${gene:checkProtFunz(pageContext,"MOD","SCHEDAMOD")}'>
+					<c:if test='${gene:checkProtFunz(pageContext,"MOD","SCHEDAMOD") && requestScope.statoOrdine ne 8}'>
 						<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' onclick="javascript:schedaModifica()">
 					</c:if>
 				</gene:insert>
@@ -224,6 +235,9 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				<c:if test='${isPuntoOrdinante}'>
 					<c:if test='${requestScope.statoOrdine eq 2}'>
 						<INPUT type="button"  class="bottone-azione" value='Invia ordine a NSO' title='Invia ordine a NSO' onclick="javascript:inviaOrdine()">
+					</c:if>
+					<c:if test='${(requestScope.statoOrdine eq 4 || requestScope.statoOrdine eq 5 || requestScope.statoOrdine eq 6) && requestScope.isPeriodoVariazione eq 1}' >
+						<INPUT type="button"  class="bottone-azione" value='Revoca Ordine' title='Revoca Ordine' onclick="javascript:revocaOrdineNso()">
 					</c:if>
 				</c:if>	
 			</c:otherwise>
@@ -271,6 +285,11 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
   	
   </p>
 </div>
+<div id="nso-dialog-revocation" title="Revoca Ordine NSO" style="display:none">
+  <p id="nso-dialog-revocation-content">
+  	Vuoi revocare l&#39;ordine?<br>Questa operazione non si pu&ograve; annullare.
+  </p>
+</div>
 <c:set var="genere" value="40" />
 <gene:javaScript>
 		function leggiComunicazioni() {
@@ -283,7 +302,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		function inviaComunicazioni() {
 			var entitaWSDM="NSO_ORDINI";
 			var chiaveWSDM=getValue("NSO_ORDINI_ID");
-			var idconfi=${idconfi};
+			var idconfi=idconfi;
 			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=geneweb/w_invcom/w_invcom-lista.jsp&genere=${genere}&entita=" + document.forms[0].entita.value + "&chiave=" + document.forms[0].key.value;
 			href+="&entitaWSDM=" + entitaWSDM + "&chiaveWSDM=" + chiaveWSDM + "&idconfi=" + idconfi;
 			href+="&COD_ORD=" + document.forms[0].NSO_ORDINI_CODORD.value;

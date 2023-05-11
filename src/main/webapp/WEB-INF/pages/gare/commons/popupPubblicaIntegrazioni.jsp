@@ -154,6 +154,15 @@
 		</c:otherwise>
 	</c:choose>
 	
+	<c:choose>
+		<c:when test='${!empty param.genere}'>
+			<c:set var="genere" value="${param.genere}" />
+		</c:when>
+		<c:otherwise>
+			<c:set var="genere" value="${genere}" />
+		</c:otherwise>
+	</c:choose>
+	
 	<gene:redefineInsert name="corpo">
 	<gene:formScheda entita="${entita }" gestisciProtezioni="false" 
 	plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestorePubblicaIntegrazioni" 
@@ -166,8 +175,8 @@
 				<c:when test='${controlloSuperato eq "SI"}'>
 					<br>
 					<c:if test="${not empty msgWarning}">
-					<b>ATTENZIONE:</b>
-					${msgWarning}
+					<font color='#0000FF'><b>ATTENZIONE:</b>
+					${msgWarning}</font>
 					<br><br>
 					</c:if>
 					Confermi l'integrazione dei documenti di gara sul portale Appalti?
@@ -212,6 +221,8 @@
 			<input type="hidden" name="idconfi" id="idconfi" value="${idconfi}" />
 			<input type="hidden" name="listaDocumenti" id="listaDocumenti" value="${param.listaDocumenti}" />
 			<input type="hidden" name="pubblicaTrasparenza" id="pubblicaTrasparenza" value="${param.pubblicaTrasparenza}" />
+			<input type="hidden" name="pubblicaQformRettifica" id="pubblicaQformRettifica" value="${pubblicaQformRettifica}" />
+			<input type="hidden" name="genere" id="genere" value="${genere}" />
 			<h2>${param.listaDocumenti}</h2>
 			
 	</gene:formScheda>

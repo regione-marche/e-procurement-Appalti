@@ -10,6 +10,14 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Vector;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
@@ -24,14 +32,6 @@ import it.eldasoft.gene.web.struts.tags.gestori.GestoreRAGIMPMultiplo;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.SmatManager;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Vector;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.springframework.transaction.TransactionStatus;
 /**
  * Gestore salvataggio entita' DITG
  *
@@ -170,10 +170,15 @@ public class GestoreDITG extends AbstractGestoreEntita {
 		boolean isGaraElenco=false;
 		boolean isGaraCatalogo=false;
 
-		String isRTI = UtilityStruts.getParametroString(this.getRequest(), "isRTI");
-	    String codiceRaggruppamento = UtilityStruts.getParametroString(this.getRequest(), "codiceRaggruppamento");
+		String isRTI = "";
+	    String codiceRaggruppamento = "";
+	    String inserimentoDitteSMAT = "";
+	    if(this.getRequest()!=null) {
+	        isRTI = UtilityStruts.getParametroString(this.getRequest(), "isRTI");
+	        codiceRaggruppamento = UtilityStruts.getParametroString(this.getRequest(), "codiceRaggruppamento");
+	        inserimentoDitteSMAT = UtilityStruts.getParametroString(this.getRequest(),"inserimentoDitteSMAT");
+	    }
 
-	    String inserimentoDitteSMAT = UtilityStruts.getParametroString(this.getRequest(),"inserimentoDitteSMAT");
 	    if ("SI".equals(inserimentoDitteSMAT) && "0".equals(isRTI)){
 	      //Personalizzazione SMAT
 	      int ret = smatManager.gestioneSMAT(dataColumnContainer, true);
@@ -250,7 +255,9 @@ public class GestoreDITG extends AbstractGestoreEntita {
 	          //Poichè quando il campo QUODIC è in sola visualizzazione il suo valore viene visto come String e
 	          //non come Double, c'è un errore nella pagina a livello di librerie generali, allora introduco
 	          //la varibile quotaPartecip.
-	          String quotaPartecip = UtilityStruts.getParametroString(this.getRequest(),"quotaPartecip");
+	          String quotaPartecip = "";
+	          if(this.getRequest()!=null)
+	            quotaPartecip = UtilityStruts.getParametroString(this.getRequest(),"quotaPartecip");
 	          if(quotaPartecip!=null && !"".equals(quotaPartecip))
 	            quodic = Double.valueOf(quotaPartecip);
 	        }
@@ -401,7 +408,9 @@ public class GestoreDITG extends AbstractGestoreEntita {
 			}
 		}
 
-		String offertaRT =  UtilityStruts.getParametroString(this.getRequest(), "offertaRT");
+		String offertaRT =  "";
+		if(this.getRequest()!=null)
+		  offertaRT =  UtilityStruts.getParametroString(this.getRequest(), "offertaRT");
 		if("1".equals(offertaRT)){
 		  numProgDITG = dataColumnContainer.getLong("DITG.NPROGG");
 		}
@@ -415,7 +424,9 @@ public class GestoreDITG extends AbstractGestoreEntita {
 	    }
 
 	    String invito=null;
-	    if(!"1".equals(sortinv) || new Long(8).equals(acquisiz))
+	    if(new Long(9).equals(acquisiz))
+	      invito="2";
+	    else if(!"1".equals(sortinv) || new Long(8).equals(acquisiz))
 	      invito="1";
 		dataColumnContainer.addColumn("DITG.INVGAR", invito);
 		if (!isGaraElenco && !isGaraCatalogo){
@@ -433,18 +444,21 @@ public class GestoreDITG extends AbstractGestoreEntita {
 		// gestoreDITG.inserisci(status, dataColumnContainer);
 
 		if (!esisteOccorrenzaInEDIT) {
+		  HttpServletRequest req =null;
+		  if(this.getRequest()!=null)
+		    req = this.getRequest();
 			// Insert dell'occorrenza nella tabella EDIT
 			if (modalitaNPROGGsuLotti)
 				this.insertEDIT(status, codiceTornata, numeroGara, codiceDitta,
 						ragioneSociale, new Long(nProgressivoEDIT.longValue() + 1),
-						this.getRequest());
+						req);
 			else
 				this.insertEDIT(status, codiceTornata, numeroGara, codiceDitta,
-						ragioneSociale, numProgDITG, this.getRequest());
+						ragioneSociale, numProgDITG, req);
 		}
 
 		//Solo per il profilo protocollo viene gestita la documentazione di gara
-		if (this.geneManager.getProfili().checkProtec((String) this.getRequest().getSession().getAttribute(
+		if (this.getRequest()!=null && this.geneManager.getProfili().checkProtec((String) this.getRequest().getSession().getAttribute(
             CostantiGenerali.PROFILO_ATTIVO), "FUNZ", "VIS", "ALT.GARE.V_GARE_NSCAD-lista.ApriGare")){
 		  //Quando si inserisce una ditta in gara si deve in automatico popolare IMPRDOCG
 		  //a partire dalle occorrenze di DOCUMGARA, impostando SITUAZDOCI a 2 e PROVENI a 1
@@ -616,7 +630,12 @@ public class GestoreDITG extends AbstractGestoreEntita {
 				JdbcParametro.TIPO_NUMERICO, nProgressivo)));
 
 		// Creo il gestore dell'entita' EDIT
-		DefaultGestoreEntita gestoreEDIT = new DefaultGestoreEntita("EDIT",	request);
+		//DefaultGestoreEntita gestoreEDIT = new DefaultGestoreEntita("EDIT",	request);
+		AbstractGestoreEntita gestoreEDIT = null;
+		if(this.getRequest()!=null)
+		  gestoreEDIT = new GestoreEntita("EDIT", request);
+	    else
+	      gestoreEDIT = new GestoreEntita("EDIT", this.sqlManager,this.geneManager);
 		// Osservazione: si e' deciso di usare la classe DefaultGestoreEntita
 		// invece di creare la classe GestoreEDIT come apposito gestore di entita',
 		// perche' essa non avrebbe avuto alcuna logica di business

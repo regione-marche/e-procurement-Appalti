@@ -15,7 +15,7 @@ $(window).on("load", function () {
 	
 	$('div.legenda').hide();
 	
-	if(_tipoWSERP == 'AVM' || _tipoWSERP == 'TPER' || _tipoWSERP == 'CAV'){
+	if(_tipoWSERP == 'AVM' || _tipoWSERP == 'TPER' || _tipoWSERP == 'CAV' || _tipoWSERP == 'RAIWAY'){
 		caricaAttributiFornitore();	
 	}
 
@@ -47,7 +47,7 @@ $(window).on("load", function () {
 						$.map( data, function( item ) {
 
 							if (iNextNew < maxATTR) {
-									if(iNextNew==0 && (_tipoWSERP == 'TPER' || _tipoWSERP == 'CAV') ){
+									if(iNextNew==0 && (_tipoWSERP == 'TPER' || _tipoWSERP == 'CAV' || _tipoWSERP == 'RAIWAY') ){
 										$("#idFornitore").val(item[1]);
 									}
 									if(iNextNew==0 && _tipoWSERP == 'AVM'){

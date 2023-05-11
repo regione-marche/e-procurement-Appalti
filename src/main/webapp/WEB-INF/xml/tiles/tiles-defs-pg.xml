@@ -68,6 +68,18 @@
 		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-exportLottiGara.jsp"/>
 	</definition>
 	
+	<definition name="exportOperatoriIscritti" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Esportazione della lista degli operatori iscritti" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/ditg/ditg-popup-exportOperatoriIscritti.jsp"/>
+	</definition>
+	
+	<definition name="successExportOperatoriIscritti" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Esportazione della lista degli operatori iscritti completata" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/ditg/ditg-popup-exportOperatoriIscritti.jsp"/>
+	</definition>
+	
 	<definition name="importLottiGara" extends=".popupDef">
 		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
 		<put name="titoloMaschera" value="Importazione della lista dei lotti della gara" />
@@ -78,6 +90,18 @@
 		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
 		<put name="titoloMaschera" value="Importazione della lista dei lotti della gara" />
 		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-importLottiGara.jsp"/>
+	</definition>
+
+	<definition name="importDitteGaraExcel" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Importazione delle ditte della gara" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-importDitteGaraExcel.jsp"/>
+	</definition>
+
+	<definition name="successImportDitteGaraExcel" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Importazione delle ditte della gara" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-importDitteGaraExcel.jsp"/>
 	</definition>
 
 	<definition name="importOffertaPrezzi" extends=".popupDef">

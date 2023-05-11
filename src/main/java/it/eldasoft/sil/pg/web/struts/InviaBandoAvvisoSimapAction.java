@@ -50,6 +50,7 @@ import javax.servlet.http.HttpServletResponse;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
@@ -103,8 +104,9 @@ public class InviaBandoAvvisoSimapAction extends DispatchActionBaseNoOpzioni {
     ProfiloUtente profiloUtente = (ProfiloUtente) request.getSession().getAttribute(
         CostantiGenerali.PROFILO_UTENTE_SESSIONE);
 
-    boolean autenticazioneSSO = profiloUtente.isAutenticazioneSSO();
-
+    String ssoprotocollo = StringUtils.stripToEmpty(ConfigManager.getValore("sso.protocollo"));
+    boolean autenticazioneSSO = !("".equals(ssoprotocollo) || "0".equals(ssoprotocollo));
+    
     if ("CORRENTI".equals(credenziali) || autenticazioneSSO) {
 
 
@@ -263,7 +265,7 @@ public class InviaBandoAvvisoSimapAction extends DispatchActionBaseNoOpzioni {
     String target = FORWARD_SUCCESS;
     
     String codgar = request.getParameter("codgar");
-    JSONArray ja = this.leggiPubblicazioniManager.leggiPubblicazioni(codgar);
+    JSONArray ja = this.leggiPubblicazioniManager.leggiPubblicazioni(codgar,request);
     
     ArrayList<ArrayList> pubblicazioni = new ArrayList<ArrayList>();
     

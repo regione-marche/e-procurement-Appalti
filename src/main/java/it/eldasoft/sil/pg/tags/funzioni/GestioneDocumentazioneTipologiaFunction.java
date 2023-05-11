@@ -18,11 +18,15 @@ import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 
 import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.tags.functions.GetWSDMConfiAttivaFunction;
 import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
+import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
 /**
  * Funzione per inizializzare le sezioni delle documentazione di gara,
  * oltre a prelevare le informazioni dall'entità DOCUMGARE, vengono
@@ -36,6 +40,8 @@ public class GestioneDocumentazioneTipologiaFunction extends AbstractFunzioneTag
       + "OBBLIGATORIO, DESCRIZIONE, DITTAAGG, BUSTA, FASELE, MODFIRMA, URLDOC, TIPOLOGIA, IDSTAMPA, GENTEL, ALLMAIL, DATARILASCIO";
 
   public static final String    SELECT_W_DOCDIC = "select DIGDESDOC,DIGNOMDOC,DIGFIRMA from W_DOCDIG where IDPRG = ? and IDDOCDIG = ?";
+
+  public static final String    FILTRO_FASELE = "and (FASELE = ?  or FASELE = ?)";
 
 
   public GestioneDocumentazioneTipologiaFunction() {
@@ -51,18 +57,49 @@ public class GestioneDocumentazioneTipologiaFunction extends AbstractFunzioneTag
     Long parametroFiltro = null;
     String codGara = (String) params[1];
     String tipologiaString = (String) params[2];
+    Long valoriFasele[] = null;
+
     if(tipologiaString!= null && tipologiaString != ""){
-      parametroFiltro = Long.parseLong(tipologiaString);
+      if(PgManagerEst1.ELENCO_DOC_ISCRIZIONE.equals(tipologiaString)) {
+        valoriFasele = new Long[]{new Long(1), new Long(2)};
+      }else if(PgManagerEst1.ELENCO_DOC_RINNOVO.equals(tipologiaString) ) {
+        valoriFasele = new Long[]{new Long(2), new Long(3)};
+      } else {
+        parametroFiltro = Long.parseLong(tipologiaString);
       }
+    }
     String gruppoString = (String) params[3];
     if(gruppoString!= null){gruppo = Long.parseLong(gruppoString);}
     //Long tipoDocumentazione = (Long) params[3];
     sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",
         pageContext, SqlManager.class);
 
-    String abilitataRichiestaFirma = ConfigManager.getValore(CostantiAppalti.PROP_RICHIESTA_FIRMA);
-
     try {
+      String abilitataRichiestaFirma = ConfigManager.getValore(CostantiAppalti.PROP_RICHIESTA_FIRMA);
+      if(!"1".equals(abilitataRichiestaFirma)) {
+        GetUffintGaraFunction getUffint= new GetUffintGaraFunction();
+        String uffint=getUffint.function(pageContext, new Object[] {pageContext,codGara});
+        GetWSDMConfiAttivaFunction getIdconfi = new GetWSDMConfiAttivaFunction();
+        String idconfi = getIdconfi.function(pageContext, new Object[] {pageContext,uffint,"PG"});
+
+        GestioneWSDMManager gestioneWSDMManager = (GestioneWSDMManager) UtilitySpring.getBean("gestioneWSDMManager",
+            pageContext, GestioneWSDMManager.class);
+
+        boolean integrazioneWSDMAttiva =gestioneWSDMManager.isIntegrazioneWSDMAttivaValida(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO,idconfi);
+        if(integrazioneWSDMAttiva) {
+          WSDMConfigurazioneOutType configurazione = gestioneWSDMManager.wsdmConfigurazioneLeggi(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO,idconfi);
+          String tipoWSDM = "";
+          if(configurazione.isEsito())
+            tipoWSDM = configurazione.getRemotewsdm();
+          if("ITALPROT".equals(tipoWSDM)) {
+            String firmaDocumentiAttiva = ConfigManager.getValore("wsdm.firmaDocumenti."+idconfi);
+            if("1".equals(firmaDocumentiAttiva))
+              abilitataRichiestaFirma = "1";
+          }
+        }
+      }
+
+
       String select="select " +  ELENCO_CAMPI_DOCUMGARA + " from DOCUMGARA where CODGAR=? and TIPOLOGIA = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";
       if (gruppo.longValue()==3)
         select="select " +  ELENCO_CAMPI_DOCUMGARA + " from DOCUMGARA where CODGAR=? and GRUPPO = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";
@@ -110,12 +147,18 @@ public class GestioneDocumentazioneTipologiaFunction extends AbstractFunzioneTag
             }
           if(parametroFiltro!= null){
             select+=" and busta = ?";
-            }
+          }
+          if(valoriFasele!=null) {
+            select+=" " + FILTRO_FASELE;
+          }
           select+=" and (ISARCHI is null or ISARCHI<>'1') order by NGARA,NUMORD,TAB1NORD,FASELE,NORDDOCG";
 
           if(parametroFiltro!= null){
             documentazioneConcorrenti = sqlManager.getListVector(
                 select, new Object[] { "A1013", codGara, new Long(3),parametroFiltro});
+          }else if(valoriFasele!=null) {
+            documentazioneConcorrenti = sqlManager.getListVector(
+                select, new Object[] { "A1013", codGara, new Long(3),valoriFasele[0],valoriFasele[1]});
           }else{
             documentazioneConcorrenti = sqlManager.getListVector(
                 select, new Object[] { "A1013", codGara, new Long(3)});

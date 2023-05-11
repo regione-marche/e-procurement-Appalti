@@ -118,8 +118,17 @@
 		document.forms[0].jspPathTo.value="gare/anticor/popup-esportaDati.jsp";
 		
 		function conferma() {
-			document.forms[0].jspPathTo.value="gare/anticor/popup-esportaDati.jsp";
-			schedaConferma();
+			var protocollo = $("#URL").val();
+			protocollo = protocollo.substring(0, 5);
+			if ("http:".indexOf(protocollo) == -1 ){
+				if (confirm("L'URL del sito di pubblicazione dei dati non contiene il protocollo http e pertanto non verr\u00E0 ritenuto corretto.\nL'indirizzo deve contenere obbligatoriamente il protocollo http e non https per essere ritenuto corretto.\n\nConfermi l'operazione?")) {
+					document.forms[0].jspPathTo.value="gare/anticor/popup-esportaDati.jsp";
+					schedaConferma();
+				}
+			}else{
+				document.forms[0].jspPathTo.value="gare/anticor/popup-esportaDati.jsp";
+				schedaConferma();
+			}
 		}
 		
 		function annulla(){

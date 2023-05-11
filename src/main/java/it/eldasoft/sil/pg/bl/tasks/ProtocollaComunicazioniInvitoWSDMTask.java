@@ -1,18 +1,5 @@
 package it.eldasoft.sil.pg.bl.tasks;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.WebUtilities;
-import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
-import it.eldasoft.gene.db.domain.LogEvento;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.gene.utils.LogEventiUtils;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
-import it.eldasoft.utils.properties.ConfigManager;
-import it.eldasoft.utils.sicurezza.CriptazioneException;
-import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
-import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
-
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -22,6 +9,20 @@ import java.util.List;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.WebUtilities;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.db.domain.LogEvento;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.utils.LogEventiUtils;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.GestioneProgrammazioneManager;
+import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.sicurezza.CriptazioneException;
+import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
+import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
 
 /**
  * Task per la protocollazione delle comunicazioni dell'invito in stato 14 e 15, associate alle occorrenze di GARPRO_WSDM
@@ -35,6 +36,8 @@ public class ProtocollaComunicazioniInvitoWSDMTask {
   private SqlManager                            sqlManager;
 
   private GestioneWSDMManager                   gestioneWSDMManager;
+  
+  private GestioneProgrammazioneManager gestioneProgrammazioneManager;
 
   public void setSqlManager(SqlManager sqlManager) {
     this.sqlManager = sqlManager;
@@ -42,6 +45,10 @@ public class ProtocollaComunicazioniInvitoWSDMTask {
 
   public void setGestioneWSDMManager(GestioneWSDMManager gestioneWSDMManager) {
     this.gestioneWSDMManager = gestioneWSDMManager;
+  }
+  
+  public void setGestioneProgrammazioneManager(GestioneProgrammazioneManager gestioneProgrammazioneManager) {
+    this.gestioneProgrammazioneManager = gestioneProgrammazioneManager;
   }
 
   public void protocollaComunicazioni() throws GestoreException, IOException, SQLException {
@@ -104,6 +111,7 @@ public class ProtocollaComunicazioniInvitoWSDMTask {
       String RUP =null;
       String nomeRup =null;
       String commsgogg = null;
+      String coment = null;
 
       String selectGareConComunicazioniDaProcessare="select distinct(comkey1) from w_invcom where idprg=? and comstato = ? order by comkey1";
       List listaGareConComunicazioni=null;
@@ -124,20 +132,20 @@ public class ProtocollaComunicazioniInvitoWSDMTask {
         String selComunicazioniDaElaborare = "select w.idcom, w.commsgtes, w.commsgtip, gr.codgar1, g.classifica as classifica_doc, g.cod_reg, "
             +"g.tipo_doc, g.mitt_int, g.indice, g.classifica_tit, g.uo_mittdest, "
             +"l.username, l.password, l.ruolo, l.nome, l.cognome,l.codiceuo,l.idutente,l.idutenteunop, g.mezzo, g.struttura, "
-            +"g.supporto, g.indirizzo_mitt, g.mezzo_invio, g.oggetto_mail, g.livello_ris, g.sottotipo, w.commsgogg "
+            +"g.supporto, g.indirizzo_mitt, g.mezzo_invio, g.oggetto_mail, g.livello_ris, g.sottotipo, w.commsgogg, w.coment "
             +"from w_invcom w, garpro_wsdm g, wslogin l, gare gr "
-            +"where w.comkey1 = ? and w.comkey1=g.ngara and g.syscon = l.syscon and l.servizio=? and w.comkey1 = gr.ngara "
-            +"and w.idprg=? and tipologia = ? and w.comstato = '14' and l.idconfiwsdm = ? order by g.ngara";
+            +"where w.comkey1 = ? and  w.comkey1=g.ngara and w.idgarpro = g.id and g.syscon = l.syscon and l.servizio=? and w.comkey1 = gr.ngara "
+            +"and w.idprg=? and w.comstato = '14' and l.idconfiwsdm = ? order by g.ngara, w.idgarpro asc";
 
 
         String selectFascicolo = "select codice, anno, numero, classifica, codaoo, coduff, desclassi,desvoce  from wsfascicolo wsf where key1= ? and entita = ? ";
 
-        List listaDatiComunicazione = null;
-        Vector datiFascicolo = null;
+        List<?> listaDatiComunicazione = null;
+        Vector<?> datiFascicolo = null;
 
         Object rispostaSingolaProtocollazione[]=null;
         boolean comunicazioniGaraProcessateTuttePositivamente=true;
-        Vector datiGare_genere = null;
+        Vector<?> datiGare_genere = null;
 
         String inserimentoinfascicolo = null;
         String applicaFascicolazione = null;
@@ -146,6 +154,7 @@ public class ProtocollaComunicazioniInvitoWSDMTask {
         String idconfi = null;
 
         for (int i=0; i< listaGareConComunicazioni.size(); i++){
+
           ngara = SqlManager.getValueFromVectorParam(listaGareConComunicazioni.get(i), 0).getStringValue();
 
             datiGare_genere = this.sqlManager.getVector("select codgar, genere from v_gare_genere where codice = ?", new Object[]{ngara});
@@ -174,14 +183,14 @@ public class ProtocollaComunicazioniInvitoWSDMTask {
             if(!this.gestioneWSDMManager.isIntegrazioneWSDMAttivaValida(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO,idconfi))
               continue;
             listaDatiComunicazione = sqlManager.getListVector(selComunicazioniDaElaborare,
-                new Object[] {ngara, GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO, idprg, new Long(1), idconfi });
+                new Object[] {ngara, GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO, idprg, idconfi });
 
 
             if (listaDatiComunicazione != null && listaDatiComunicazione.size() > 0) {
 
-
+              comunicazioniGaraProcessateTuttePositivamente=true;
               for (int h = 0; h < listaDatiComunicazione.size(); h++) {
-                comunicazioniGaraProcessateTuttePositivamente=true;
+
                 idcom = SqlManager.getValueFromVectorParam(listaDatiComunicazione.get(h), 0).longValue();
                 commsgtes = SqlManager.getValueFromVectorParam(listaDatiComunicazione.get(h), 1).getStringValue();
                 commsgtip = SqlManager.getValueFromVectorParam(listaDatiComunicazione.get(h), 2).getStringValue();
@@ -210,6 +219,7 @@ public class ProtocollaComunicazioniInvitoWSDMTask {
                 livelloRiservatezza = SqlManager.getValueFromVectorParam(listaDatiComunicazione.get(h), 25).getStringValue();
                 sottotipo = SqlManager.getValueFromVectorParam(listaDatiComunicazione.get(h), 26).getStringValue();
                 commsgogg = SqlManager.getValueFromVectorParam(listaDatiComunicazione.get(h), 27).getStringValue();
+                coment = SqlManager.getValueFromVectorParam(listaDatiComunicazione.get(h), 28).getStringValue();
                 codiceFascicolo = null;
                 annoFascicolo = null;
                 numeroFascicolo = null;
@@ -281,6 +291,7 @@ public class ProtocollaComunicazioniInvitoWSDMTask {
                 datiWSDM.put(GestioneWSDMManager.LABEL_VOCE, voce);
                 datiWSDM.put(GestioneWSDMManager.LABEL_IDCONFI, idconfi);
                 datiWSDM.put(GestioneWSDMManager.LABEL_SOTTOTIPO, sottotipo);
+                datiWSDM.put(GestioneWSDMManager.LABEL_COMENT, coment);
 
                 try{
                   rispostaSingolaProtocollazione = gestioneWSDMManager.protocollaComunicazioniWSDM(ngara, codgara, genere, tipoWSDM, abilitatoInvioMailDocumentale,
@@ -316,6 +327,7 @@ public class ProtocollaComunicazioniInvitoWSDMTask {
                       datiGestioneComunicazione.put(GestioneWSDMManager.LABEL_IDCOM, idcom);
                       datiGestioneComunicazione.put(GestioneWSDMManager.LABEL_NUMERO_ALLEGATI_REALI, numeroallegati);
                       datiGestioneComunicazione.put(GestioneWSDMManager.LABEL_OGGETTO_DOCUMENTO, oggettoMail);
+                      datiGestioneComunicazione.put(GestioneWSDMManager.LABEL_CODICE_REGISTRO_DOCUMENTO, codiceRegistroDocumento);
 
                       datiLogin = new HashMap<String,Object>();
                       datiLogin.put(GestioneWSDMManager.LABEL_USERNAME, username);
@@ -386,6 +398,7 @@ public class ProtocollaComunicazioniInvitoWSDMTask {
             errMsgEventoPubblicazione="";
             try {
               gestioneWSDMManager.aggiornamentoGara(codgara,numeroProtocollo,abilitatoInvioSingolo);
+              gestioneProgrammazioneManager.aggiornaRdaGara(codgara,null,null);
             } catch (SQLException e) {
               livEventoPubblicazione=3;
               errMsgEventoPubblicazione=e.getMessage();

@@ -89,8 +89,8 @@
 							scheda="" 
 							schedaPopUp="" 
 							campi="IMPR.NOMEST;IMPR.CFIMP;IMPR.PIVIMP;IMPR.NAZIMP" 
+							functionId="anticor"
 							chiave=""
-							where="IMPR.TIPIMP is not null and IMPR.TIPIMP <> 3 AND IMPR.TIPIMP <> 10"
 							inseribile="false"
 							formName="formArchivioImprese">
 							<gene:campoScheda campo="RAGSOC" entita="ANTICORDITTE" where="ANTICORDITTE.IDANTICORPARTECIP=ANTICORPARTECIP.ID"/>
@@ -141,8 +141,8 @@
 								scheda="" 
 								schedaPopUp="" 
 								campi="IMPR.NOMEST;IMPR.CFIMP;IMPR.PIVIMP;IMPR.NAZIMP" 
+								functionId="anticor"
 								chiave=""
-								where="IMPR.TIPIMP is not null and IMPR.TIPIMP <> 3 AND IMPR.TIPIMP <> 10"
 								inseribile="false"
 								formName="formArchivioImprese">
 								<gene:campoScheda campo="RAGSOC" entita="ANTICORDITTE" where="ANTICORDITTE.IDANTICORPARTECIP=ANTICORPARTECIP.ID"/>

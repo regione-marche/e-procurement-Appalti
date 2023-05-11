@@ -17,11 +17,11 @@ import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 
-import it.eldasoft.gene.commons.web.struts.DispatchActionBaseNoOpzioni;
+import it.eldasoft.gene.commons.web.struts.DispatchActionAjaxLogged;
 import it.eldasoft.sil.pg.bl.NsoIntegrationManager;
 
 
-public class NsoIntegrationAction extends DispatchActionBaseNoOpzioni {
+public class NsoIntegrationAction extends DispatchActionAjaxLogged {
 
   Logger logger = Logger.getLogger(NsoIntegrationAction.class);
   
@@ -124,6 +124,33 @@ public class NsoIntegrationAction extends DispatchActionBaseNoOpzioni {
       }
     }
 
+    return null;
+  }
+  
+  public ActionForward revokeOrder(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) {
+    String orderId = request.getParameter("orderId");
+    logger.info("Revocation of orderId["+orderId+"]");
+    
+    try {
+      Thread.sleep(2000l);
+    } catch (InterruptedException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    //TODO update order + send annullamento
+    response.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+    response.setCharacterEncoding(ContentType.APPLICATION_JSON.getCharset().name());
+    logger.info("Revocation of orderId["+orderId+"]");
+    PrintWriter out = null;
+    try {
+    out = response.getWriter();
+    out.print(nsoIntegrationManager.revokeOrder(orderId));
+    out.flush();
+    }catch (Exception e) {
+      
+    } finally {
+      if(out!=null) out.close();
+    }
     return null;
   }
   

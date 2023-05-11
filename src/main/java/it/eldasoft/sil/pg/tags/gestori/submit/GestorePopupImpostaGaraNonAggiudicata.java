@@ -231,13 +231,18 @@ public class GestorePopupImpostaGaraNonAggiudicata extends AbstractGestoreEntita
 
 
                   if("SMEUP".equals(tipoWSERP)){
-                    int res = this.gestioneWSERPManager.scollegaRda(codgar, codiceLotto, "2", null, null, this.getRequest());
-                    if(res < 0){
+                    String[] res = this.gestioneWSERPManager.scollegaRda(codgar, codiceLotto, "2", null, null, this.getRequest());
+                    String ris = res[0];
+                    int intRis = 0;
+                    if(ris!=null) {
+                    	 intRis=Long.valueOf(ris).intValue();
+                    }
+                    if(intRis < 0){
                       throw new GestoreException(
                           "Errore durante l'operazione di scollegamento delle RdA dalla gara",
                           "scollegaRdaGara", null);
                     }
-                  }else if("AVM".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP)){
+                  }else if("AVM".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "AMIU".equals(tipoWSERP)){
                     //nel caso di FNM non si scollega
                     Long countGareRda = (Long)this.sqlManager.getObject("select count(numrda) from garerda where codgar = ? and numrda is not null", new Object[]{codgar});
                     String linkrda = null;
@@ -246,11 +251,22 @@ public class GestorePopupImpostaGaraNonAggiudicata extends AbstractGestoreEntita
                     }else{
                       linkrda = "2";
                     }
-                    int res = this.gestioneWSERPManager.scollegaRda(codgar, codiceLotto, linkrda, null, null, this.getRequest());
-                    if(res < 0){
-                      throw new GestoreException(
-                          "Errore durante l'operazione di scollegamento delle RdA dalla gara",
-                          "scollegaRdaGara", null);
+                    String[] res = this.gestioneWSERPManager.scollegaRda(codgar, codiceLotto, linkrda, null, null, this.getRequest());
+                    String ris = res[0];
+                    int intRis = 0;
+                    if(ris!=null) {
+                    	 intRis=Long.valueOf(ris).intValue();
+                    }
+                    if(intRis < 0){
+                    	if("AMIU".equals(tipoWSERP) && res[1]!=null) {
+                            throw new GestoreException(
+                                    "Errore durante l'operazione di scollegamento delle RdA dalla gara",
+                                    "scollegaRdaGaraMsg",new Object[] {res[1]}, null);
+                    	}else {
+                            throw new GestoreException(
+                                    "Errore durante l'operazione di scollegamento delle RdA dalla gara",
+                                    "scollegaRdaGara", null);
+                    	}
                     }
                   }
                 }

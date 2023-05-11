@@ -32,11 +32,13 @@
 			<c:set var="idprg" value="${IDPRG}" />
 			<c:set var="idcom" value="${IDCOM}" />
 			<c:set var="compub" value="${COMPUB}" />
+			<c:set var="descc" value="${DESCC}" />
 		</c:when>
 		<c:otherwise>
 			<c:set var="idprg" value="${param.idprg}" />
 			<c:set var="idcom" value="${param.idcom}" />
 			<c:set var="compub" value="${param.compub}" />
+			<c:set var="descc" value="${param.descc}" />
 		</c:otherwise>
 	</c:choose>
 	
@@ -50,6 +52,11 @@
 					<tr>
 						<td>
 							<c:choose>
+								<c:when test="${RISULTATO eq 'ERRORE.MARCATEMP'}">
+									<br>
+									<b>Il servizio di marcatura temporale non risponde o risponde in maniera errata, riprovare più tardi oppure contattare il servizio di assistenza.</b>
+									<br><br>
+								</c:when>
 								<c:when test="${compub eq '1'}">
 									<br>
 									La comunicazione selezionata è stata inviata
@@ -83,10 +90,7 @@
 				<c:set var="esitoControlli" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ControlliInvioComunicazioniFunction",pageContext,idprg,idcom,commodello)}' />	
 				
 				<!-- esistonoAllegatiComunicazione = ${esistonoAllegatiComunicazione} -->
-				<!-- faxAllegatoObbligatorio = ${faxAllegatoObbligatorio} -->
-				<!-- faxNumeroMaxAllegatiValido = ${faxNumeroMaxAllegatiValido} -->
-				<!-- faxEsistonoAllegatiFormatoValido = ${faxEsistonoAllegatiFormatoValido} -->
-				
+								
 				<c:set var="modo" value="MODIFICA" scope="request" />
 				<table class="lista">
 					<tr>
@@ -101,24 +105,15 @@
 								<c:otherwise>
 									<c:choose>
 										<c:when test="${esistonoAllegatiComunicazione eq 'FALSE' and esitoControlli eq 'OK'}">
-											<c:choose>
-												<c:when test="${faxAllegatoObbligatorio eq 'TRUE'}">
-													<br>
-													<b>Non è stato inserito alcun documento allegato.</b>
-													<br><br>
-													Non è possibile inviare la comunicazione, in quanto per l'invio mediante fax deve essere specificato almeno un allegato.
-													<br><br>
-												</c:when>
-												<c:otherwise>
-													<br>
-													<b>ATTENZIONE!</b>
-													<br><br>
-													<b>Non è stato inserito alcun documento allegato.</b>
-													<br><br>
-													Si intende confermare comunque l'invio della comunicazione selezionata ?
-													<br><br>
-												</c:otherwise>
-											</c:choose>
+											
+											<br>
+											<b>ATTENZIONE!</b>
+											<br><br>
+											<b>Non è stato inserito alcun documento allegato.</b>
+											<br><br>
+											Si intende confermare comunque l'invio della comunicazione selezionata ?
+											<br><br>
+												
 										</c:when>
 										<c:otherwise>
 											<c:choose>
@@ -134,20 +129,6 @@
 													<b>Documenti allegati da firmare.</b>
 													<br><br>
 													Non è possibile inviare la comunicazione in quanto ci sono degli allegati in attesa di firma.
-													<br><br>
-												</c:when>
-												<c:when test="${faxNumeroMaxAllegatiValido eq 'FALSE'}">
-													<br>
-													<b>Troppi documenti allegati</b>
-													<br><br>
-													Non è possibile inviare la comunicazione in quanto il numero dei documenti allegati supera il numero massimo previsto per l'invio mediante fax.
-													<br><br>
-												</c:when>
-												<c:when test="${faxEsistonoAllegatiFormatoValido eq 'FALSE'}">
-													<br>
-													<b>Documento allegato in formato non valido.</b>
-													<br><br>
-													Non è possibile inviare la comunicazione in quanto il documento allegato non è nel formato valido per l'invio mediante fax.
 													<br><br>
 												</c:when>
 												<c:when test="${esitoControlli eq 'NO-TESTOCOM'}">
@@ -200,15 +181,18 @@
 								<gene:campoScheda campo="IDCFG_NEW" visibile="false" campoFittizio="true" definizione="T10" value="${param.cenint}"/> 
 								<gene:campoScheda campo="IDCOMRIS" visibile="false"/>
 								<gene:campoScheda campo="IDPRGRIS" visibile="false"/>
+								<gene:campoScheda campo="COMMSGOGG" visibile="false"/>
+								<gene:campoScheda campo="COMMSGTES" visibile="false"/>
+								<gene:campoScheda campo="COMENT" visibile="false"/>
 								<input type="hidden" name="commodello" id="commodello" value="${commodello}" />
+								<input type="hidden" name="descc" id="descc" value="${descc}">
 							</gene:formScheda>
 						</td>
 					</tr>
 					<tr>
 						<td class="comandi-dettaglio" colSpan="2">
 							<c:if test="${(compub eq '1' and esistonoAllegatiDaFirmare eq 'FALSE' and esistonoAllegatiFormatoNonValido eq 'FALSE') or (esistonoSoggettiDestinatari eq 'TRUE' 
-									and faxEsistonoAllegatiFormatoValido eq 'TRUE' and faxNumeroMaxAllegatiValido eq 'TRUE' 
-									and (esistonoAllegatiComunicazione eq 'TRUE' or faxAllegatoObbligatorio eq 'FALSE') and esistonoAllegatiDaFirmare eq 'FALSE'
+									and esistonoAllegatiDaFirmare eq 'FALSE'
 									and esistonoAllegatiFormatoNonValido eq 'FALSE') and esitoControlli eq 'OK'}">
 								<INPUT type="button" class="bottone-azione" value="Invia" title="Invia" onclick="javascript:schedaConferma();">
 							</c:if>

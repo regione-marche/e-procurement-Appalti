@@ -16,11 +16,25 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
-<% // il tipo della gara viene ricavato da trovaAddWhere in cui viene impostato il filtro (APPA.TIPLAVG = ...)%>
+<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.archWhereFunctions.ComponiWhereAPPAFunction" />
+
+<% // il tipo della gara viene ricavato da trovaParameter in cui viene impostato il valore del parametro per APPA.TIPLAVG = ?%>
+<% // in trovaParameter vanno prese in considerazione le seguenti casistiche:%>
+<% // trovaParameter=T:1 e trovaParameter=%...%;T:1%>
 <c:set var="labelTipoGara" value=''/>
-<c:if test = "${fn:contains(trovaAddWhere, 'APPA.TIPLAVG')}">
-	<c:set var="indicePartenza" value='${fn:indexOf(trovaAddWhere, "APPA.TIPLAVG")}'/>
-	<c:set var="tipoGara" value='${fn:substring(trovaAddWhere, indicePartenza + 15, indicePartenza + 16)}'/>
+<c:set var="nomeContainerFiltri" value="deftrovaAPPA-${empty param.numeroPopUp ? 0 : param.numeroPopUp}"/> 
+<c:if test = "${fn:containsIgnoreCase(sessionScope[nomeContainerFiltri].trovaAddWhere, 'APPA.TIPLAVG')}">
+	
+	<c:choose>
+		<c:when test="${fn:contains(sessionScope[nomeContainerFiltri].trovaParameter, ';')}">
+			<% // il tipo della gara viene ricavato da trovaParameter in cui viene impostato il filtro (APPA.TIPLAVG = ...)%>
+			<c:set var="indicePartenza" value="${fn:indexOf(sessionScope[nomeContainerFiltri].trovaParameter, ';') + 2}"/>
+		</c:when>
+		<c:otherwise>
+			<c:set var="indicePartenza" value="${fn:indexOf(sessionScope[nomeContainerFiltri].trovaParameter, ':')}"/>
+		</c:otherwise>
+	</c:choose>
+	<c:set var="tipoGara" value="${fn:substring(sessionScope[nomeContainerFiltri].trovaParameter, indicePartenza + 1, indicePartenza + 2)}"/>
 	<c:choose>
 		<c:when test="${tipoGara eq '1' }">
 			<c:set var="labelTipoGara" value='per lavori'/>

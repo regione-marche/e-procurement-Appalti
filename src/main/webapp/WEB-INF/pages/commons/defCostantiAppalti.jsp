@@ -29,8 +29,13 @@
 <% // gateway Url del ws per verifiche art. 80 sulle ditte %>
 <c:set var="gatewayArt80" value="art80.ws.url.gateway" scope="request" />
 
+<c:set var="multiuffintArt80" value="art80.gateway.multiuffint" scope="request" />
+
 <% // Url del ws per la richiesta del codice CIG %>
 <c:set var="urlWsCig" value="it.eldasoft.inviodaticig.ws.url" scope="request" />
+
+<% // Url del ws per la richiesta CIG a Simog %>
+<c:set var="urlWsSimog" value="it.eldasoft.simog.ws.url" scope="request" />
 
 <% // Nome applicativo per l'interazione col ws per la richiesta del codice Cig %>
 <c:set var="nomeAppicativoCig" value="it.eldasoft.inviodaticig.nomeApplicativo" scope="request" />
@@ -49,3 +54,19 @@
 
 <% // Property che indica l'accesso alla funzine fascicolo documentale della commessa%>
 <c:set var="accessoFascicoloDocumentaleCommessa" value="wsdm.accediFascicoloDocumentaleCommessa" scope="request" />
+
+<% // Property che indica se è attiva la funzione firma documento %>
+<c:set var="firmaDocumenti" value="wsdm.firmaDocumenti" scope="request" />
+
+<c:set var="rinnovo" value="RINN" scope="request" />
+<c:set var="iscrizione" value="ISCR" scope="request" />
+
+<c:set var="regExpresValidazStringhe" value="^[a-zA-Z0-9-_\\./ \\$@]+$" scope="request"/>
+
+<% // Etichette per i pulsanti e funzioni per gare concorso di idee %>
+<c:set var="etichettaAcquisizioneAnonima" value="(1) Acquisisci buste tecniche in forma anonima" scope="request" />
+<c:set var="etichettaScaricaZipAnonima" value="(2) Scarica zip buste tecniche anonime" scope="request" />
+<c:set var="etichettaInserimentoPunteggiAnonima" value="(3) Procedi a inserimento punteggi" scope="request" />
+
+<c:set var="urlAppaltiMs" value="appalti-ms.ws.url" scope="request" />
+

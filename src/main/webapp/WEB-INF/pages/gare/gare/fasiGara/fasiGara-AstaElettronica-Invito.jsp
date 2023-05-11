@@ -28,6 +28,17 @@
 <script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.pg.titoli.js"></script>
 <script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.pg.hrefProtocollo.js"></script>	
 
+<c:set var="digitalSignatureUrlCheck" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-check-url")}'/>
+<c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:choose>
+	<c:when test="${!empty digitalSignatureUrlCheck && !empty digitalSignatureProvider && (digitalSignatureProvider eq 1 || digitalSignatureProvider eq 2)}">
+		<c:set var="digitalSignatureWsCheck" value='1'/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="digitalSignatureWsCheck" value='0'/>
+	</c:otherwise>
+</c:choose>
+
 <c:set var="numeroGara" value='${gene:getValCampo(key, "NGARA")}'/>
 <c:set var="codiceGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetCodiceGaraFunction", pageContext)}' />
 <c:set var="integrazioneWSDM" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNFunction",  pageContext, codiceGara, idconfi)}'/>	
@@ -36,8 +47,10 @@
 </c:if>
 
 <c:set var="gestioneUrl" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsGestioneUrlDocumentazioneFunction", pageContext)}' scope="request"/>
-<c:set var="firmaRemota" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "firmaremota.auto.url")}'/>
-
+<c:set var="firmaProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:if test='${firmaProvider eq 2}'>
+	<c:set var="firmaRemota" value="true"/>
+</c:if>
 <c:set var="gestioneERP" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.GetPropertyWsdmFunction", "wsdm.gestioneERP",idconfi)}'/>
 <c:set var="numeroDocumentoWSDM" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.CheckAssociataRdaJIRIDEFunction", pageContext, codiceGara)}' scope="request"/>
 
@@ -100,7 +113,7 @@
 											${gene:resource("label.tags.template.dettaglio.schedaModifica")}</a></td>
 									</tr>
 								</c:if>
-								<c:if test='${autorizzatoModifiche ne 2 and datiRiga.GARE_FASGAR eq 6 and meruolo eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InviaInvitoAstaElettronica")}'>
+								<c:if test='${autorizzatoModifiche ne 2 and datiRiga.GARE_FASGAR eq 6 and (meruolo eq "1" or meruolo eq "3") and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InviaInvitoAstaElettronica")}'>
 									<tr>
 										<td class="vocemenulaterale">
 											<a href="javascript:apriPopupInviaInvito('${numeroGara}','${codiceGara }','${integrazioneWSDM }','${idconfi}');" title="Invia invito all'asta elettronica" tabindex="1502">
@@ -221,6 +234,7 @@
 					<input type="hidden" id="filtroDocumentazione" name="filtroDocumentazione" value="${tipoDoc }" />
 					<input type="hidden" name="WIZARD_PAGINA_ATTIVA" value="${paginaAttivaWizard}" />						
 					<input type="hidden" id="updateLista" name="updateLista" value="${updateLista}" />
+					<input type="hidden" name="entitaPrincipaleModificabile" id="entitaPrincipaleModificabile" value="${sessionScope.entitaPrincipaleModificabile}" />
 				</gene:formScheda>
 				
 				<jsp:include page="/WEB-INF/pages/gene/system/firmadigitale/modalPopupFirmaDigitaleRemota.jsp" />
@@ -239,15 +253,28 @@ function visualizzaFileAllegatoCustom(idprg,iddocdig,dignomdoc) {
 	var vet = dignomdoc.split(".");
 	var ext = vet[vet.length-1];
 	ext = ext.toUpperCase();
-
-	if(ext=='P7M' || ext=='TSD'){
-		document.formVisFirmaDigitale.idprg.value = idprg;
-		document.formVisFirmaDigitale.iddocdig.value = iddocdig;
-		document.formVisFirmaDigitale.submit();
-	}else{
-		var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-	document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
-	}
+	<c:choose>
+		<c:when test="${digitalSignatureWsCheck eq 0}">
+			if(ext=='P7M' || ext=='TSD'){
+				document.formVisFirmaDigitale.idprg.value = idprg;
+				document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+				document.formVisFirmaDigitale.submit();
+			}else{
+				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+			}
+		</c:when>
+		<c:otherwise>
+			if(ext=='P7M' || ext=='TSD' || ext=='XML' || ext=='PDF'){
+				document.formVisFirmaDigitale.idprg.value = idprg;
+				document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+				document.formVisFirmaDigitale.submit();
+			}else{
+				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+			}
+		</c:otherwise>
+	</c:choose>
 }
 var visualizzaFileAllegato = visualizzaFileAllegatoCustom;
 		

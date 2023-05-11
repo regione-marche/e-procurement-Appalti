@@ -10,15 +10,6 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.plugin;
 
-import it.eldasoft.gene.bl.GeneManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
-import it.eldasoft.gene.tags.BodyTagSupportGene;
-import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestorePreload;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.utils.spring.UtilitySpring;
-import it.eldasoft.utils.utility.UtilityDate;
-
 import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.Date;
@@ -27,6 +18,15 @@ import java.util.Vector;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import it.eldasoft.gene.bl.GeneManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.tags.BodyTagSupportGene;
+import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestorePreload;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityDate;
 
 /**
  * Gestore che effettua i controlli preliminari e popola la popup per
@@ -76,7 +76,7 @@ public class GestorePopupRettificaTermini extends AbstractGestorePreload {
     String tipoRettifica="";
     String msgTipoRettifica="";
     boolean visualizzarePresentazioneOfferta = false;
-    if("Datigen".equals(pagina) && ("2".equals(iterga) || "4".equals(iterga))){
+    if("Datigen".equals(pagina) && ("2".equals(iterga) || "4".equals(iterga) || "7".equals(iterga))){
       //Caricamento dati termini per la presentazione della domanda di partecipazione
       try {
         datiTorn=this.sqlManager.getVector("select DTEPAR, OTEPAR, DTERMRICHCDP, DTERMRISPCDP from TORN where codgar=?", new Object[]{codgar});

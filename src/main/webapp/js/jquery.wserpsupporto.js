@@ -416,23 +416,59 @@ function _getWSERPRda(numeroRda,esercizio) {
 	});
 }
 
+/*
+ * Legge i dati del dettaglio rda.
+ */
+function _getWSERPDettaglioRda(numeroRda,callback) {
 
-function appendLeadingZeroes(n){
-	if(n <= 9){
-		return "0" + n;
-	}
-	return n
+	var callbackFunction = function(json){
+		if (json.esito == true) {
+			if (json.xmltojson.rdaArray != null) {
+				$("#oggettodocumento").text(json.xmltojson.rdaArray.oggetto);	
+			}
+		} else {
+			;
+		}
+		if (callback && typeof callback === 'function'){
+			callback(json.esito);
+		}
+	};
+
+
+	_wait();
+	
+	$.ajax({
+		type: "POST",
+		dataType: "json",
+		async: true,
+		beforeSend: function(x) {
+			if(x && x.overrideMimeType) {
+				x.overrideMimeType("application/json;charset=UTF-8");
+			}
+		},
+		url: "pg/GetWSERPDettaglioRda.do",
+		"data" : { 
+				codicerda: numeroRda
+		},
+		success: callbackFunction,
+		error: function(e){
+			var messaggio = "Errore durante la lettura delle rda";
+			$('#rdamessaggio').text(messaggio);
+			$('#rdamessaggio').show(300);
+		},
+		complete: function() {
+			_nowait();
+        }
+		
+		
+		
+	});
 }
 
-function ddformat(ds) {
-	var dd = new Date(ds);
-	var df = appendLeadingZeroes(dd.getDate()) + "/" + appendLeadingZeroes(dd.getMonth() + 1) + "/" + dd.getFullYear();
-	return df;
-}
 
 
 /**
- * Popola la scheda rda DA MODICARE
+ * Popola la scheda rda
  */
 function _creaPopolaSchedaRda(codicerda, tiporda) {
 	
@@ -462,18 +498,20 @@ function _creaPopolaSchedaRda(codicerda, tiporda) {
 		"Privacy",
 		"Prezziario di riferimento",
 		"Fornitore individuato",
+		"Partita IVA fornitore",
+		"Codice fiscale fornitore",
 		"Protocollo dell'offerta dell'affidatario",
 		"Protocolli delle altre offerte richieste",
 		"Ribasso offerto",
 		"Condizioni di pagamento",
 		"Durata",
-		"Unità di misura della durata (G - Giorni, M - Mesi)",
+		"UnitÃ  di misura della durata (G - Giorni, M - Mesi)",
 		"Decorrenza (data di inizio prevista)",
 		"Note sulla durata e la decorrenza",
 		"Penali",
 		"Contesto sicurezza",
 		"DUVRI",
-		"Tipo attività",
+		"Tipo attivitÃ ",
 		"Documentazione tecnica",
 		"Importo totale",
 		"Oneri sicurezza"];
@@ -495,6 +533,8 @@ function _creaPopolaSchedaRda(codicerda, tiporda) {
 		"privacy",
 		"prezzarioRiferimento",
 		"fornitore",
+		"pivaFornitore",
+		"cfFornitore",
 		"protocolloFornitore",
 		"protocolliOfferenti",
 		"ribasso_offerto",
@@ -587,12 +627,6 @@ function _creaPopolaSchedaRda(codicerda, tiporda) {
 				if (jsonResult.xmltojson.rdaArray != null) {
 					$.each(jsonResult.xmltojson.rdaArray, function(k, v) {
 						k = k.replace("'", "\\'");
-
-						// Fornitore
-						if (k == 'fornitore') {
-							 var jsonNominaFornitore = _getNomina("", "", "I", v);
-							 v = jsonNominaFornitore.denominazioneincaricato;
-						}
 						
 						// Tipologia
 						if (k == 'tipologia') {
@@ -689,6 +723,384 @@ function _creaPopolaSchedaRda(codicerda, tiporda) {
 
 }
 
+function _creaPopolaRdaAmiu(codicerda) {
+	
+	_wait();
+	
+	// Dati generali
+	var _tableDatiGenerali = $("<table/>", {"id": "tableDatiGeneraliContainer", "class": "dettaglio-notab"});
+	_tableDatiGenerali.css("font","11px Verdana, Arial, Helvetica, sans-serif");
+	_tableDatiGenerali.css("border-top","1px solid #A0AABA ");
+	_tableDatiGenerali.css("margin-top","2px");
+	_tableDatiGenerali.css("background-color","#FFFFFF");
+
+	var datiGeneraliDescrizione = ["Dati generali",
+	    "Tipo documento RdA",
+		"Numero RdA",
+		"Valore totale RdA a rilascio",
+		"Testata",
+		"Smart CIG"];
+		
+	var datiGeneraliAttributi = ["",
+	    "tipoRdaErp",
+		"codiceRda",
+		"valoreStimato",
+		"oggetto",
+		"codiceCig"];
+		
+	var iDatiGenerali;
+	for (iDatiGenerali = 0; iDatiGenerali < datiGeneraliDescrizione.length; iDatiGenerali++) {
+		var _dgtrx = $("<tr/>");
+		if (datiGeneraliAttributi[iDatiGenerali] == "") {
+			var _dgtdx = $("<td/>",{"colspan": "2"});
+			_dgtdx.css("font-weight","bold");
+			_dgtdx.css("border-top","1px white solid");
+			_dgtdx.append(datiGeneraliDescrizione[iDatiGenerali]);
+			_dgtrx.append(_dgtdx);
+		} else {
+			_dgtrx.append($("<td/>",{"class":"etichetta-dato", "text": datiGeneraliDescrizione[iDatiGenerali]}));
+			_dgtrx.append($("<td/>",{"id": datiGeneraliAttributi[iDatiGenerali], "class":"valore-dato", "text": ""}));
+		}
+		_tableDatiGenerali.append(_dgtrx);
+	}
+	
+	$("#finestraSchedaRda").append(_tableDatiGenerali);
+	
+	
+	
+		// Lista delle posizioni
+	var _tablePosizioniRda  = $("<table/>", {"id": "tablePosizioniRdaContainer", "class": "rda", "width" : "100%"});
+	_tablePosizioniRda.css("font","11px Verdana, Arial, Helvetica, sans-serif");
+	_tablePosizioniRda.css("border-top","1px solid #A0AABA ");
+	_tablePosizioniRda.css("margin-top","2px");
+	
+	var _postr2 = $("<tr/>", {"class" : "intestazione"});
+	_postr2.append($("<th/>",{"text": "Posizione RdA"}));
+	_postr2.append($("<th/>",{"text": "Richiedente"}));
+	_postr2.append($("<th/>",{"text": "Categoria posizione"}));
+	_postr2.append($("<th/>",{"text": "Tipo contabilizzazione"}));
+	_postr2.append($("<th/>",{"text": "Testo breve"}));
+	_postr2.append($("<th/>",{"text": "Quantita'"}));
+	_postr2.append($("<th/>",{"text": "Unita'di misura"}));
+	_postr2.append($("<th/>",{"text": "Prezzo"}));
+	_postr2.append($("<th/>",{"text": "Unita'di prezzo"}));
+	_postr2.append($("<th/>",{"text": "Gruppo merci"}));
+	_postr2.append($("<th/>",{"text": "Divisione"}));
+	_postr2.append($("<th/>",{"text": "Magazzzino"}));
+	_postr2.append($("<th/>",{"text": "Org.acquisti"}));
+	_tablePosizioniRda.append(_postr2);
+		
+	$("#finestraSchedaRda").append("<b><br>Posizioni RdA</b><br>").append(_tablePosizioniRda);
+	
+		
+	$.ajax({
+		"type": "POST",
+		"dataType": "json",
+		"async": false,
+		"beforeSend": function(x) {
+			if(x && x.overrideMimeType) {
+				x.overrideMimeType("application/json;charset=utf-8");
+			}
+		},
+		"url": "pg/GetWSERPDettaglioRda.do",
+		"data": {
+			"codicerda" : codicerda
+		},
+		"success": function(jsonResult){
+			_nowait();
+			if (jsonResult.esito == true) {
+				if (jsonResult.xmltojson.rdaArray != null) {
+					$.each(jsonResult.xmltojson.rdaArray, function(k, v) {
+						k = k.replace("'", "\\'");
+
+						
+						// Tipologia
+						if (k == 'tipologia') {
+							if (v == 'L') {
+								v = "Lavori";
+							} else if (v == 'S') {
+								v = "Servizi";
+							} else if (v == 'F') {
+								v = "Forniture";
+							}
+						}
+						
+						// Data creazione
+						if (k == 'dataCreazioneRda') {
+							v = ddformat(v);
+						}
+						
+						$("[id='"+ k + "']").text(v);
+					});
+				} 
+
+				if (jsonResult.xmltojson.rdaArray != null) {
+					if (jsonResult.xmltojson.rdaArray.posizioneRdaArray != null) {
+						var _posizioneRdaArray = jsonResult.xmltojson.rdaArray.posizioneRdaArray;
+						if (_posizioneRdaArray.length > 1){
+						
+						} else {
+							_posizioneRdaArray = jQuery.makeArray(_posizioneRdaArray);
+						}
+					
+						$.each(_posizioneRdaArray, function(i,pa) {
+							var _trx = $("<tr/>");
+							_trx.append($("<td/>",{"text": pa.posizioneRiferimento}));
+							_trx.append($("<td/>",{"text": pa.richiedente}));
+							_trx.append($("<td/>",{"text": pa.categoria}));
+							_trx.append($("<td/>",{"text": pa.tipoContab}));
+							_trx.append($("<td/>",{"text": pa.descrizioneEstesa}));
+							_trx.append($("<td/>",{"text": pa.quantita}));
+							_trx.append($("<td/>",{"text": pa.um}));
+							var _prezzoPrevisto = toMoney(pa.prezzoPrevisto).view;
+							_trx.append($("<td/>",{"html": _prezzoPrevisto}));
+							_trx.append($("<td/>",{"text": pa.up}));
+							_trx.append($("<td/>",{"text": pa.gruppoMerci}));
+							_trx.append($("<td/>",{"text": pa.Divisione}));
+							_trx.append($("<td/>",{"text": pa.Magazzino}));
+							_trx.append($("<td/>",{"text": pa.orgAcq}));
+							_tablePosizioniRda.append(_trx);
+						});
+					}
+				}
+				
+				
+				
+			} else {
+				alert("Si e' verificato un errore durante l'interazione con i servizi di lettura della RdA: " + jsonResult.messaggio);
+			}
+		},
+		"error": function ( e ) {
+			_nowait();
+			alert("Si e' verificato un errore durante l'interazione con i servizi di lettura della RdA: " + e);
+		}
+	});
+
+
+}
+
+function _creaPopolaRdaRaiway(codicerda) {
+	
+	_wait();
+	
+	// Dati generali
+	var _tableDatiGenerali = $("<table/>", {"id": "tableDatiGeneraliContainer", "class": "dettaglio-notab"});
+	_tableDatiGenerali.css("font","11px Verdana, Arial, Helvetica, sans-serif");
+	_tableDatiGenerali.css("border-top","1px solid #A0AABA ");
+	_tableDatiGenerali.css("margin-top","2px");
+	_tableDatiGenerali.css("background-color","#FFFFFF");
+
+	var datiGeneraliDescrizione = ["Dati generali",
+		"Codice RdA",
+		"Data creazione RdA",
+		"Struttura competente acquisto",
+		"Procedura selezione",
+		"Oggetto",
+		"RUP",
+		//"Importo",
+		"Durata contratto gg",
+		//"Importo opzioni",
+		//"codice CPV",
+		"Ripartizione in lotti?",
+		"Accordo quadro?",
+		"Appalto green?",
+		"Motivazione appalto green",
+		"Data rilascio controller"
+		];
+		
+	var datiGeneraliAttributi = ["",
+	    "codiceRda",
+		"dataCreazioneRda",
+		"divisione",
+		"sceltaContraente",
+		"oggetto",
+		"fornitore",
+		//"valoreStimato",
+		"durata",
+		//"importoOpzioni",
+		//"codCpv",
+		"divisioneInLotti",
+		"accqua",
+		"green",
+		"motGreen",
+		"dataConsegna"
+		];
+		
+	var iDatiGenerali;
+	for (iDatiGenerali = 0; iDatiGenerali < datiGeneraliDescrizione.length; iDatiGenerali++) {
+		var _dgtrx = $("<tr/>");
+		if (datiGeneraliAttributi[iDatiGenerali] == "") {
+			var _dgtdx = $("<td/>",{"colspan": "2"});
+			_dgtdx.css("font-weight","bold");
+			_dgtdx.css("border-top","1px white solid");
+			_dgtdx.append(datiGeneraliDescrizione[iDatiGenerali]);
+			_dgtrx.append(_dgtdx);
+		} else {
+			_dgtrx.append($("<td/>",{"class":"etichetta-dato", "text": datiGeneraliDescrizione[iDatiGenerali]}));
+			_dgtrx.append($("<td/>",{"id": datiGeneraliAttributi[iDatiGenerali], "class":"valore-dato", "text": ""}));
+		}
+		_tableDatiGenerali.append(_dgtrx);
+	}
+	
+	$("#finestraSchedaRda").append(_tableDatiGenerali);
+	
+
+	// Lista dei lotti
+ 	var _tableLottiRda  = $("<table/>", {"id": "tableLottiRdaContainer", "class": "rda", "width" : "100%"});
+	_tableLottiRda.css("font","11px Verdana, Arial, Helvetica, sans-serif");
+	_tableLottiRda.css("border-top","1px solid #A0AABA ");
+	_tableLottiRda.css("margin-top","2px");
+	 var _lostr3 = $("<tr/>", {"class" : "intestazione"});
+	_lostr3.append($("<th/>",{"text": "Numero lotto"}));
+	_lostr3.append($("<th/>",{"text": "Descrizione lotto"}));
+	
+	//Modifica Emanuele
+	_lostr3.append($("<th/>",{"text": "Importo"}));
+	_lostr3.append($("<th/>",{"text": "Importo Opzioni"}));
+	_lostr3.append($("<th/>",{"text": "Codice CPV"}));
+	_lostr3.append($("<th/>",{"text": "Importo Sicurezza"}));
+	
+	_tableLottiRda.append(_lostr3);
+	$("#finestraSchedaRda").append("<b><br>Lotti RdA</b><br>").append(_tableLottiRda);
+	
+	// Lista delle posizioni
+	var _tablePosizioniRda  = $("<table/>", {"id": "tablePosizioniRdaContainer", "class": "rda", "width" : "100%"});
+	_tablePosizioniRda.css("font","11px Verdana, Arial, Helvetica, sans-serif");
+	_tablePosizioniRda.css("border-top","1px solid #A0AABA ");
+	_tablePosizioniRda.css("margin-top","2px");
+	
+	var _postr2 = $("<tr/>", {"class" : "intestazione"});
+	_postr2.append($("<th/>",{"text": "Lotto"}));
+	_postr2.append($("<th/>",{"text": "Codice articolo"}));
+	_postr2.append($("<th/>",{"text": "Numero posizione RdA"}));
+	_postr2.append($("<th/>",{"text": "Testo breve"}));
+	_postr2.append($("<th/>",{"text": "Quantita'"}));
+	_postr2.append($("<th/>",{"text": "Unita'di misura"}));
+	_postr2.append($("<th/>",{"text": "Prezzo"}));
+	_postr2.append($("<th/>",{"text": "Sicurezza?"}));
+	_tablePosizioniRda.append(_postr2);
+		
+	$("#finestraSchedaRda").append("<b><br>Posizioni RdA</b><br>").append(_tablePosizioniRda);
+	
+		
+	$.ajax({
+		"type": "POST",
+		"dataType": "json",
+		"async": false,
+		"beforeSend": function(x) {
+			if(x && x.overrideMimeType) {
+				x.overrideMimeType("application/json;charset=utf-8");
+			}
+		},
+		"url": "pg/GetWSERPDettaglioRda.do",
+		"data": {
+			"codicerda" : codicerda
+		},
+		"success": function(jsonResult){
+			_nowait();
+			if (jsonResult.esito == true) {
+				if (jsonResult.xmltojson.rdaArray != null) {
+					$.each(jsonResult.xmltojson.rdaArray, function(k, v) {
+						k = k.replace("'", "\\'");
+					
+						// Data creazione
+						if (k == 'dataCreazioneRda' || k == 'dataConsegna' ) {
+							v = ddformat(v);
+						}
+						
+						if (k == 'divisioneInLotti' || k == 'accqua' || k == 'green') {
+							v = sinoformat(v);
+						}
+						
+						if (k == 'sceltaContraente') {
+							var jsonResultSceltaContraente = _getSceltaContraente('A2044', v);
+							if (jsonResultSceltaContraente != null) {
+								descrizioneSceltaContraente = jsonResultSceltaContraente.descrizione;
+								v = descrizioneSceltaContraente;
+							}
+						}
+						
+						$("[id='"+ k + "']").text(v);
+					});
+				} 
+				
+				//recupero rup
+				if (jsonResult.xmltojson.rdaArray.tecniciArray != null) {
+					var _tecniciArray = jsonResult.xmltojson.rdaArray.tecniciArray;
+					if (_tecniciArray.length = 1){
+						_tecniciArray = jQuery.makeArray(_tecniciArray);
+						$.each(_tecniciArray, function(i,ta) {
+							rup = ta.denominazione;
+							$("[id='fornitore']").text(rup);
+						});
+					}
+				}
+				
+				//lotti
+				if (jsonResult.xmltojson.rdaArray != null) {
+					if (jsonResult.xmltojson.rdaArray.lottoArray != null) {
+						var _lottoArray = jsonResult.xmltojson.rdaArray.lottoArray;
+						if (_lottoArray.length > 1){
+							;
+						} else {
+							_lottoArray = jQuery.makeArray(_lottoArray);
+						}
+					$.each(_lottoArray, function(i,la) {
+							var _trx = $("<tr/>");
+							_trx.append($("<td/>",{"text": la.idLotto}));
+							_trx.append($("<td/>",{"text": la.descrizione}));
+							
+							_trx.append($("<td/>",{"html": toMoney(la.importoLotto).view}));
+							_trx.append($("<td/>",{"html": toMoney(la.importoOpzioni).view}));
+							_trx.append($("<td/>",{"text": la.codCpv}));
+							_trx.append($("<td/>",{"html": toMoney(la.importoSicurezza).view}));
+							
+							_tableLottiRda.append(_trx);
+						});
+					}
+				}						
+				
+				//posizioni
+				if (jsonResult.xmltojson.rdaArray != null) {
+					if (jsonResult.xmltojson.rdaArray.posizioneRdaArray != null) {
+						var _posizioneRdaArray = jsonResult.xmltojson.rdaArray.posizioneRdaArray;
+						if (_posizioneRdaArray.length > 1){
+						
+						} else {
+							_posizioneRdaArray = jQuery.makeArray(_posizioneRdaArray);
+						}
+					
+						$.each(_posizioneRdaArray, function(i,pa) {
+							var _trx = $("<tr/>");
+							_trx.append($("<td/>",{"text": pa.idLotto}));
+							_trx.append($("<td/>",{"text": pa.codiceArticolo}));
+							_trx.append($("<td/>",{"text": pa.posizioneRiferimento}));
+							_trx.append($("<td/>",{"text": pa.descrizioneEstesa}));
+							_trx.append($("<td/>",{"text": pa.quantita}));
+							_trx.append($("<td/>",{"text": pa.um}));
+							var _prezzoPrevisto = toMoney(pa.prezzoPrevisto).view;
+							_trx.append($("<td/>",{"html": _prezzoPrevisto}));
+							_trx.append($("<td/>",{"text": sinoformat(pa.sicurezza)}));
+							_tablePosizioniRda.append(_trx);
+						});
+					}
+				}
+				
+				
+				
+			} else {
+				alert("Si e' verificato un errore durante l'interazione con i servizi di lettura della RdA: " + jsonResult.messaggio);
+			}
+		},
+		"error": function ( e ) {
+			_nowait();
+			alert("Si e' verificato un errore durante l'interazione con i servizi di lettura della RdA: " + e);
+		}
+	});
+
+
+}
+
 function _getNomina(tab1cod, tab1tip, tipoarchivio, codicearchivio) {
 	
 	var jsonResultNomina;
@@ -716,5 +1128,90 @@ function _getNomina(tab1cod, tab1tip, tipoarchivio, codicearchivio) {
 	
 	return jsonResultNomina
 	
+}
+
+function _getSceltaContraente(tab1cod, tab1tip) {
+	
+	var jsonResultSceltaContraente;
+	
+	$.ajax({
+		"type": "POST",
+		"dataType": "json",
+		"async": false,
+		"beforeSend": function(x) {
+			if(x && x.overrideMimeType) {
+				x.overrideMimeType("application/json;charset=UTF-8");
+			}
+		},
+		"url": "pg/GetWSERPSceltaContraente.do",
+		"data": {
+			"tab1cod" : tab1cod,
+			"tab1tip" : tab1tip
+		},
+		"success": function(jsonResult){
+			jsonResultSceltaContraente = jsonResult;
+		}
+	});
+	
+	return jsonResultSceltaContraente
+	
+}
+
+
+/*
+ * Common utility
+ */
+ 
+/*
+ * Lettura del dato fisso da "nome".
+ */
+function _popolaWSERPDatoVariabile(codice,id) {
+	$.ajax({
+		type: "POST",
+		dataType: "json",
+		async: false,
+		beforeSend: function(x) {
+			if(x && x.overrideMimeType) {
+				x.overrideMimeType("application/json;charset=UTF-8");
+			}
+		},
+		url: "pg/GetWSERPTabellato.do",
+		data: "codice=" + codice,
+		success: function(data){
+			if (data) {
+				$.map( data, function( item ) {
+					$("#"+id).val(item[0]);
+				});
+        	}
+		},
+		error: function(e){
+			alert("Errore durante la lettura del dato fisso " + codice);
+		}
+	});
+}
+
+function appendLeadingZeroes(n){
+	if(n <= 9){
+		return "0" + n;
+	}
+	return n
+}
+
+function ddformat(ds) {
+	var dd = new Date(ds);
+	var df = appendLeadingZeroes(dd.getDate()) + "/" + appendLeadingZeroes(dd.getMonth() + 1) + "/" + dd.getFullYear();
+	return df;
+}
+
+function sinoformat(bs) {
+	var sino ="";
+	if(bs){
+		sino="Si";
+	}else{
+		sino="No";
+		
+	}
+
+	return sino;
 }
 

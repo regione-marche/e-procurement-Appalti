@@ -10,19 +10,22 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
-import it.eldasoft.utils.properties.ConfigManager;
-import it.eldasoft.utils.spring.UtilitySpring;
-
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.tags.functions.GetWSDMConfiAttivaFunction;
+import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
+import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.spring.UtilitySpring;
+import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
 /**
  * Funzione per inizializzare le sezioni delle documentazione di gara,
  * oltre a prelevare le informazioni dall'entità DOCUMGARE, vengono
@@ -54,9 +57,31 @@ public class GestioneDocumentazioneFunction extends AbstractFunzioneTag {
     sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",
         pageContext, SqlManager.class);
 
-    String abilitataRichiestaFirma = ConfigManager.getValore(CostantiAppalti.PROP_RICHIESTA_FIRMA);
-
     try {
+    String abilitataRichiestaFirma = ConfigManager.getValore(CostantiAppalti.PROP_RICHIESTA_FIRMA);
+    if(!"1".equals(abilitataRichiestaFirma)) {
+      GetUffintGaraFunction getUffint= new GetUffintGaraFunction();
+      String uffint=getUffint.function(pageContext, new Object[] {pageContext,codGara});
+      GetWSDMConfiAttivaFunction getIdconfi = new GetWSDMConfiAttivaFunction();
+      String idconfi = getIdconfi.function(pageContext, new Object[] {pageContext,uffint,"PG"});
+
+      GestioneWSDMManager gestioneWSDMManager = (GestioneWSDMManager) UtilitySpring.getBean("gestioneWSDMManager",
+          pageContext, GestioneWSDMManager.class);
+
+      boolean integrazioneWSDMAttiva =gestioneWSDMManager.isIntegrazioneWSDMAttivaValida(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO,idconfi);
+      if(integrazioneWSDMAttiva) {
+        WSDMConfigurazioneOutType configurazione = gestioneWSDMManager.wsdmConfigurazioneLeggi(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO,idconfi);
+        String tipoWSDM = "";
+        if(configurazione.isEsito())
+          tipoWSDM = configurazione.getRemotewsdm();
+        if("ITALPROT".equals(tipoWSDM)) {
+          String firmaDocumentiAttiva = ConfigManager.getValore("wsdm.firmaDocumenti."+idconfi);
+          if("1".equals(firmaDocumentiAttiva))
+            abilitataRichiestaFirma = "1";
+        }
+      }
+    }
+
       String select="select " +  ELENCO_CAMPI_DOCUMGARA + " from DOCUMGARA where CODGAR=? and NGARA = ? and GRUPPO = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";
       if (nGara== null)
         select="select " +  ELENCO_CAMPI_DOCUMGARA + " from DOCUMGARA where CODGAR=? and NGARA is null and GRUPPO = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";

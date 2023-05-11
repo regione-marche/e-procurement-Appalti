@@ -29,8 +29,8 @@
 			scheda=""
 			schedaPopUp=""
 			campi="V_CAIS_TIT.CAISIM;V_CAIS_TIT.DESCAT;V_CAIS_TIT.ACONTEC;V_CAIS_TIT.QUAOBB;V_CAIS_TIT.TIPLAVG;V_CAIS_TIT.ISFOGLIA"
+			functionId="skip"
 			chiave=""
-			where=""
 			formName="formUlterioreCategoriaGare${param.contatore}" inseribile="false">
 			<gene:campoScheda entita="OPES" campo="CATOFF_${param.contatore}" title="Codice" campoFittizio="true" definizione="T30;0;;;CATOFF" value="${item[2]}" modificabile="${categoriaUtilizzata eq 'false'}"/>
 			<gene:campoScheda title="Descrizione" campo="DESCAT_${param.contatore}" entita="CAIS" campoFittizio="true" definizione="T2000;0;;;DESCAT" modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.OPES.CATOFF") and categoriaUtilizzata eq "false"}' visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.OPES.CATOFF")}' value="${fn:split(listaDescrizioni[param.contatore - 1], '|')[0]}"/>
@@ -56,8 +56,8 @@
 			scheda=""
 			schedaPopUp=""
 			campi="V_CAIS_TIT.CAISIM;V_CAIS_TIT.DESCAT;V_CAIS_TIT.ACONTEC;V_CAIS_TIT.QUAOBB;V_CAIS_TIT.TIPLAVG;V_CAIS_TIT.ISFOGLIA"
+			functionId="skip"
 			chiave=""
-			where=""
 			formName="formUlterioreCategoriaGare${param.contatore}" inseribile="false">
 			<gene:campoScheda entita="OPES" campo="CATOFF_${param.contatore}" title="Codice" campoFittizio="true" definizione="T30;0;;;CATOFF" />
 			<gene:campoScheda title="Descrizione" campo="DESCAT_${param.contatore}" entita="CAIS" campoFittizio="true" definizione="T2000;0;;;DESCAT" modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.OPES.CATOFF")}' visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.OPES.CATOFF")}'/>

@@ -25,6 +25,18 @@
 	<gene:redefineInsert name="gestioneHistory" />
 	
 	<c:choose>
+		<c:when test='${!empty param.idstipula}'>
+			<c:set var="idstipula" value="${param.idstipula}" />
+		</c:when>
+		<c:otherwise>
+			<c:set var="idstipula" value="${idstipula}" />
+		</c:otherwise>
+	</c:choose>
+	
+	<c:choose>
+		<c:when test="${!empty idstipula}">
+			<c:set var="oggetto" value=" della stipula"/>
+		</c:when>
 		<c:when test="${param.genere eq '10'}">
 			<c:set var="oggetto" value=" dell'elenco operatori"/>
 		</c:when>
@@ -39,7 +51,16 @@
 		</c:otherwise>
 	</c:choose>
 	
-	<gene:setString name="titoloMaschera" value="Export documenti ${oggetto} ${fn:replace(param.codgar,'$','')} su file zip" />
+	<c:choose>
+		<c:when test="${!empty idstipula}">
+			<c:set var="chiaveTemp" value="${idstipula }"/>
+		</c:when>
+		<c:otherwise>
+			<c:set var="chiaveTemp" value="${param.codgar }"/>
+		</c:otherwise>
+	</c:choose>
+	
+	<gene:setString name="titoloMaschera" value="Export documenti ${oggetto} ${param.codice} su file zip" />
 	
 	<gene:redefineInsert name="corpo">
 	
@@ -48,7 +69,9 @@
 		 	<input type=hidden name="codice" value="${param.codice}" />
 		 	<input type=hidden name="genere" value="${param.genere}" />
 		 	<input type=hidden name="oggetto" value="${oggetto}" />
-			<c:set var="temp" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.UltimoExportDocumentiGaraFunction", pageContext, param.codgar)}'/>
+		 	<input type=hidden name="entita" value="${param.entita}" />
+		 	<input type=hidden name="idstipula" value="${idstipula}" />
+			<c:set var="temp" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.UltimoExportDocumentiGaraFunction", pageContext, chiaveTemp)}'/>
 			
 			<table class="dettaglio-notab">
 				<tr>

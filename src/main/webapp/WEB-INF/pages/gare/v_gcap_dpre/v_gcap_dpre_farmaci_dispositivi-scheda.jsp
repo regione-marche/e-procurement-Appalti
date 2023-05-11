@@ -111,8 +111,9 @@
 							 scheda=''
 							 schedaPopUp=''
 							 campi="V_GCAP_LOTTI.NGARA;V_GCAP_LOTTI.CODIGA;V_GCAP_LOTTI.NORVOC_MAX"
-							 chiave="V_GCAP_DPRE_NGARA"
-							 where="V_GCAP_LOTTI.CODGAR = '${codiceGara }'">
+							 functionId="default"
+							 parametriWhere="T:${codiceGara}"
+							 chiave="V_GCAP_DPRE_NGARA" >
 								<gene:campoScheda campo="NGARA" title="Codice lotto" obbligatorio="true" modificabile='${modo eq "NUOVO" }'/>
 								<gene:campoScheda campo="CODIGA" title="Lotto" obbligatorio='${campoObbligatorio eq true}' entita="GARE" modificabile='${modo eq "NUOVO" }' where="GARE.NGARA = V_GCAP_DPRE.NGARA"/>
 								<gene:campoScheda campo="NORVOC_MAX" campoFittizio="true" visibile='false' definizione="F8.3"/>

@@ -10,6 +10,26 @@
  */
 package it.eldasoft.sil.pg.web.struts;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.Vector;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.log4j.Logger;
+import org.apache.struts.action.Action;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
@@ -24,35 +44,14 @@ import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.MEPAManager;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiRicezioneFunction;
 import it.eldasoft.sil.pg.tags.gestori.submit.GestoreDITG;
 import it.eldasoft.sil.pg.tags.gestori.submit.GestoreFasiRicezione;
 import it.eldasoft.sil.portgare.datatypes.TipoPartecipazioneDocument;
 import it.eldasoft.sil.portgare.datatypes.TipoPartecipazioneType;
 import it.eldasoft.utils.utility.UtilityDate;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.ResourceBundle;
-import java.util.Vector;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import net.sf.json.JSONObject;
-
-import org.apache.log4j.Logger;
-import org.apache.struts.action.Action;
-import org.apache.struts.action.ActionForm;
-import org.apache.struts.action.ActionForward;
-import org.apache.struts.action.ActionMapping;
-import org.apache.xmlbeans.XmlException;
-import org.springframework.transaction.TransactionStatus;
 
 public class AcquisisciOfferteDaPortaleAction extends Action {
 
@@ -68,7 +67,7 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
 
   private MEPAManager         mepaManager;
 
-  private String selectW_DOCDIG = "select idprg, iddocdig from w_docdig where digent = ? and idprg = ? and digkey1 = ?";
+  private String selectW_DOCDIG = "select idprg, iddocdig from w_docdig where digent = ? and idprg = ? and digkey1 = ? and lower(dignomdoc) = '" + CostantiAppalti.nomeFileDatiPartecipazione + "'";
 
   private TransactionStatus status = null;
 
@@ -112,6 +111,8 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
 
     int numeroAcquisizioni = 0;
     int numeroAcquisizioniErrore = 0;
+    int numeroRinunce = 0;
+    int numeroRinunceErrore = 0;
 
     String ngara = request.getParameter("ngara");
 
@@ -125,12 +126,17 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
     }
     String dbFunctionDateToString = sqlManager.getDBFunction("DATETIMETOSTRING",
         new String[] { "comdatprot" });
+    String dbFunctionDateToStringDatins = sqlManager.getDBFunction("DATETIMETOSTRING",
+            new String[] { "comdatins" });
     String selectW_INVCOM = "select idprg, idcom, comkey1, comnumprot, " + dbFunctionDateToString + ", comkey3 from w_invcom where comkey2 = ? and comstato = '5' and comtipo = 'FS11' order by comkey1, comkey3";
     String selectW_PUSER = "select userkey1 from w_puser where usernome = ?";
 
     String selectDITG = "select count(*) from ditg where codgar5 = ? and ngara5 = ? and (ammgar is null or ammgar = '1') and dittao = ? and ncomope=?";
+    String selectDITG_rinuncia = "select count(*) from ditg where codgar5 = ? and ngara5 = ? and dittao = ? and invoff='2'";
     String selectRaggruppamentoDITG = "select dittao from ditg where codgar5 = ? and ngara5 = ? and (ammgar is null or ammgar = '1') and "
         + "dittao=(select codime9 from ragimp where coddic =? and impman='1' and codime9=dittao) and ncomope = ? ";
+    String selectRaggruppamentoDITG_rinuncia = "select dittao from ditg where codgar5 = ? and ngara5 = ? and invoff='2' and "
+            + "dittao=(select codime9 from ragimp where coddic =? and impman='1' and codime9=dittao)";
     String selectDITGNcomopeMinimo = "select invoff, rtofferta from ditg where codgar5 = ? and ngara5 = ? and dittao = ? and ncomope != ? order by ncomope";
     String selectRaggruppamentoDITGNcomopeMinimo = "select ncomope,dittao,invoff from ditg where codgar5 = ? and ngara5 = ? and "
         + "dittao=(select codime9 from ragimp where coddic =? and impman='1' and codime9=dittao) and ncomope != ? order by ncomope";
@@ -183,6 +189,15 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
         messaggioPerLog = messaggioPerLog.replace("{1}", esitoControllo[2]);
         throw new GestoreException("Non é possibile procedere con l'acquisizione delle offerte da portale Appalti perché termini non scaduti.","acquisizione.OfferteDaPortale.TerminiNonScaduti", new Object[]{esitoControllo[1],esitoControllo[2]} , new Exception());
       }
+      
+      //Controllo che la gara non sia sospesa
+      boolean isGaraSospesa = pgManagerEst1.isGaraSospesa(codgar1);
+      if(isGaraSospesa){
+        erroreGestito=true;
+        messageKey ="errors.gestoreException.*.acquisizione.OfferteDaPortale.GaraSospesa";
+        messaggioPerLog = resBundleGenerale.getString(messageKey);
+        throw new GestoreException("Non é possibile procedere con l'acquisizione delle offerte da portale Appalti perché gara sospesa.","acquisizione.OfferteDaPortale.GaraSospesa", new Object[]{} , new Exception());
+      }
 
       // Si determina se la gara è ad Offerta unica
       genere = (Long) this.sqlManager.getObject("select genere from gare where ngara=?", new Object[] { ngara });
@@ -200,7 +215,6 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
         String gestione = null; // valori gestiti: "S" standard, "R" solo inserimento RT
         boolean acquisito = false;
         boolean esisteDITG = false;
-
         for (int i = 0; i < datiW_INVCOM.size(); i++) {
           try {
             //variabili per tracciatura eventi
@@ -335,8 +349,13 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
 
               if (esisteDITG) {
                 // Lettura della data e dell'ora dal file XML
-                TipoPartecipazioneDocument document = mepaManager.estrazioneDocumentMessaggioFS10_FS11(selectW_DOCDIG, w_invcom_idprg,
-                    w_invcom_idcom.toString());
+                TipoPartecipazioneDocument document = null;
+                try {
+                  document = mepaManager.estrazioneDocumentMessaggioFS10_FS11(selectW_DOCDIG, w_invcom_idprg,
+                      w_invcom_idcom.toString());
+                }catch(Exception e) {
+                  logger.error(this.erroreStackToString(e));
+                }
                 if (document != null) {
                   Calendar dataPresentazione = document.getTipoPartecipazione().getDataPresentazione();
                   if (dataPresentazione != null) {
@@ -371,8 +390,13 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
                 // Se l'impresa si presenta come RTI se ne deve gestire
                 // l'inserimento in anagrafica
                 codimp = userkey1;
-                TipoPartecipazioneDocument document = mepaManager.estrazioneDocumentMessaggioFS10_FS11(selectW_DOCDIG, w_invcom_idprg,
-                    w_invcom_idcom.toString());
+                TipoPartecipazioneDocument document = null;
+                try {
+                  document = mepaManager.estrazioneDocumentMessaggioFS10_FS11(selectW_DOCDIG, w_invcom_idprg,
+                      w_invcom_idcom.toString());
+                }catch(Exception e) {
+                  logger.error(this.erroreStackToString(e));
+                }
                 if (document != null) {
                   String ragioneSociale = (String) sqlManager.getObject("select nomest from impr where codimp=?", new Object[] { codimp });
                   if (ragioneSociale.length() > 61) ragioneSociale = ragioneSociale.substring(0, 60);
@@ -575,7 +599,123 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
           }
         }
       }
-    } catch (GestoreException ge) {
+      //Procedura non aperta
+      if (iterga != null && iterga.longValue() != 1) {
+    	boolean acquisito = false;
+    	genere = (Long) this.sqlManager.getObject("select genere from gare where ngara=?", new Object[] { ngara });
+        String selectW_INVCOM_rinuncia = "select idprg, idcom, comkey1, comnumprot, " + dbFunctionDateToString + ", comkey3, commsgtes, " + dbFunctionDateToStringDatins + " from w_invcom where comkey2 = ? and comstato = '5' and comtipo = 'FS14' order by comkey1, comkey3";
+        List<?> datiW_INVCOM_rinuncia = this.sqlManager.getListVector(selectW_INVCOM_rinuncia, new Object[] { ngara });
+
+      //verifico se sono presenti rinunce
+      if (datiW_INVCOM_rinuncia != null && datiW_INVCOM_rinuncia.size() > 0) {
+    	 //per ogni rinuncia eseguo
+         for (int i = 0; i < datiW_INVCOM_rinuncia.size(); i++) {
+            try {
+      	     //variabili per tracciatura eventi
+       	     errMsgEvento = genericMsgErr;
+       	     acquisito = false;
+       	     String dittaoRT;
+       	     status = this.sqlManager.startTransaction();
+       	     String w_invcom_idprg = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM_rinuncia.get(i), 0).getValue();
+       	     Long w_invcom_idcom = (Long) SqlManager.getValueFromVectorParam(datiW_INVCOM_rinuncia.get(i), 1).getValue();
+       	     String comkey1 = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM_rinuncia.get(i), 2).getValue();
+       	     String userkey1 = (String) this.sqlManager.getObject(selectW_PUSER, new Object[] { comkey1 });
+       	     String codiceDittaEventi=userkey1;
+       	     String comnumprot = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM_rinuncia.get(i), 3).getValue();
+       	     Timestamp comdatprotTimestamp=null;
+       	     String comdatprotString = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM_rinuncia.get(i), 4).getValue();
+       	     if(comdatprotString!=null && !"".equals(comdatprotString)){
+       	        comdatprotTimestamp = new Timestamp(UtilityDate.convertiData(comdatprotString, UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS).getTime());
+                }
+       	     String commsgtes = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM_rinuncia.get(i), 6).getValue();
+       	     Timestamp comdatinsTimestamp=null;
+       	     String comdatinsString = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM_rinuncia.get(i), 7).getValue();
+       	     if(comdatinsString!=null && !"".equals(comdatinsString)){
+       	    	comdatinsTimestamp = new Timestamp(UtilityDate.convertiData(comdatinsString, UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS).getTime());
+                }
+
+             if (userkey1 != null) {
+                 //Si cerca se vi è una ditta in gara con stesso progressivo della comunicazione (comkey3 = ncomope)
+                 Long conteggio = (Long) this.sqlManager.getObject(selectDITG_rinuncia, new Object[] { codgar1, ngara, userkey1 });
+                 //caso non RT
+                 if (conteggio != null && conteggio.longValue() > 0) {
+                       //update
+
+                       String updateDITG_ESCLUSIONE = "update ditg set motrinuncia = ?, datrinuncia = ?, mezoff = ?, nproff=?, dproff=? where codgar5 = ? and ngara5 = ? and dittao = ?";
+                       this.sqlManager.update(updateDITG_ESCLUSIONE, new Object[] { commsgtes, comdatinsTimestamp,new Long(5), comnumprot, comdatprotTimestamp, codgar1, ngara, userkey1 });
+                     //Aggiornamento di DITGEVENTI
+                       Date dataCorrente=new Date();
+                       Long numOccorrenze=(Long)this.sqlManager.getObject("select count(ngara) from DITGEVENTI where DITGEVENTI.NGARA=? and DITGEVENTI.DITTAO=? and DITGEVENTI.CODGAR=?", new Object[]{ngara,codiceDittaEventi,codgar1});
+                       if(numOccorrenze!=null && numOccorrenze.longValue()>0){
+                         String sqlUpdate="update ditgeventi set DATFS14=? where ngara=? and dittao=? and codgar=?";
+                         this.sqlManager.update(sqlUpdate, new Object[]{new Timestamp(dataCorrente.getTime()),ngara,codiceDittaEventi,codgar1});
+                       }else{
+                         String sqlInsert="insert into ditgeventi(NGARA,DITTAO,CODGAR,DATFS14) values(?,?,?,?)";
+                         this.sqlManager.update(sqlInsert, new Object[]{ngara,codiceDittaEventi, codgar1, new Timestamp(dataCorrente.getTime())});
+                       }
+
+                       acquisito = true;
+                 }
+                 // Se l'impresa partecipa come mandataria di un RT allora si
+                 // deve estrarre il codice della RTI
+                 List<?> listaDatiRaggruppamento = this.sqlManager.getListVector(selectRaggruppamentoDITG_rinuncia, new Object[] { codgar1, ngara,
+                         userkey1 });
+                 if (listaDatiRaggruppamento != null && listaDatiRaggruppamento.size() > 0) {
+                	 for (int j = 0; j < listaDatiRaggruppamento.size(); j++) {
+                		 dittaoRT = (String) SqlManager.getValueFromVectorParam(listaDatiRaggruppamento.get(j), 0).getValue();
+                		 String updateDITG_ESCLUSIONE = "update ditg set motrinuncia = ?, datrinuncia = ?, mezoff = ?, nproff=?, dproff=? where codgar5 = ? and ngara5 = ? and dittao = ?";
+                		 this.sqlManager.update(updateDITG_ESCLUSIONE, new Object[] { commsgtes,comdatinsTimestamp,new Long(5), comnumprot, comdatprotTimestamp, codgar1, ngara, dittaoRT });
+                		//Aggiornamento di DITGEVENTI
+                		 Date dataCorrente=new Date();
+                         Long numOccorrenze=(Long)this.sqlManager.getObject("select count(ngara) from DITGEVENTI where DITGEVENTI.NGARA=? and DITGEVENTI.DITTAO=? and DITGEVENTI.CODGAR=?", new Object[]{ngara,dittaoRT,codgar1});
+                         if(numOccorrenze!=null && numOccorrenze.longValue()>0){
+                           String sqlUpdate="update ditgeventi set DATFS14=? where ngara=? and dittao=? and codgar=?";
+                           this.sqlManager.update(sqlUpdate, new Object[]{new Timestamp(dataCorrente.getTime()),ngara,dittaoRT,codgar1});
+                         }else{
+                           String sqlInsert="insert into ditgeventi(NGARA,DITTAO,CODGAR,DATFS14) values(?,?,?,?)";
+                           this.sqlManager.update(sqlInsert, new Object[]{ngara,dittaoRT, codgar1, new Timestamp(dataCorrente.getTime())});
+                         }
+                         acquisito = true;
+                	 }
+                 }
+             }
+
+             if (acquisito) {
+                 this.sqlManager.update(updateW_INVCOM, new Object[] { "6", w_invcom_idprg, w_invcom_idcom });
+                 numeroRinunce++;
+               } else {
+                 this.sqlManager.update(updateW_INVCOM, new Object[] { "7", w_invcom_idprg, w_invcom_idcom });
+                 numeroRinunceErrore++;
+               }
+
+             //Tracciatura acquisizione singolo messaggio
+             LogEvento logEvento = LogEventiUtils.createLogEvento(request);
+             logEvento.setLivEvento(1);
+             logEvento.setOggEvento(ngara);
+             logEvento.setCodEvento("GA_ACQUISIZIONE_RINUNCIA");
+             logEvento.setDescr("Acquisizione rinuncia invio offerta ditta " + codiceDittaEventi + " (cod.operatore " + comkey1 + ", id.comunicazione " + w_invcom_idcom + ")" );
+             logEvento.setErrmsg("");
+             LogEventiUtils.insertLogEventi(logEvento);
+
+             }finally {
+                  if (status != null) {
+                      try {
+                        if (commit == true) {
+                          livEvento = 1;
+                          errMsgEvento = "";
+                          this.sqlManager.commitTransaction(status);
+                        } else {
+                          this.sqlManager.rollbackTransaction(status);
+                        }
+                      } catch (SQLException e) {
+
+                      }
+                    }
+               }
+           }
+        }
+     }
+     } catch (GestoreException ge) {
       livEvento = 3;
       if(erroreGestito){
         errMsgEvento = messaggioPerLog;
@@ -593,20 +733,26 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
         logEvento.setOggEvento(ngara);
         logEvento.setCodEvento("GA_ACQUISIZIONE_OFFERTE_FINE");
         logEvento.setDescr("Fine acquisizione offerte da portale Appalti:" +
-            numeroAcquisizioni + " acquisizioni, " +
-            numeroAcquisizioniErrore + " acquisizioni con errore");
+            numeroAcquisizioni + " acquisizioni offerte, " +
+            numeroAcquisizioniErrore + " acquisizioni offerte con errore," +
+        	numeroRinunce + " acquisizioni rinuncia, " +
+        	numeroRinunceErrore + " acquisizioni rinuncia con errore");
         logEvento.setErrmsg(errMsgEvento);
         LogEventiUtils.insertLogEventi(logEvento);
       } catch (Exception le) {
         logger.error(genericMsgErr, le);
       }
 
-    logger.info("Acquisizione offerte da portale Appalti, numero acquisizioni: " + numeroAcquisizioni);
-    logger.info("Acquisizione offerte da portale Appalti, numero acquisizioni con errore: " + numeroAcquisizioniErrore);
+    logger.info("Acquisizione offerte da portale Appalti, numero acquisizioni offerte: " + numeroAcquisizioni);
+    logger.info("Acquisizione offerte da portale Appalti, numero acquisizioni offerte con errore: " + numeroAcquisizioniErrore);
+    logger.info("Acquisizione offerte da portale Appalti, numero acquisizioni rinuncia: " + numeroRinunce);
+    logger.info("Acquisizione offerte da portale Appalti, numero acquisizioni rinuncia con errore: " + numeroRinunceErrore);
 
     result.put("ngara", ngara);
     result.put("numeroAcquisizioni", numeroAcquisizioni);
     result.put("numeroAcquisizioniErrore", numeroAcquisizioniErrore);
+    result.put("numeroRinunce", numeroRinunce);
+    result.put("numeroRinunceErrore", numeroRinunceErrore);
 
     out.print(result);
     out.flush();
@@ -644,22 +790,25 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
    * @param request
    * @return Object[]
    * @throws SQLException
-   * @throws IOException
-   * @throws XmlException
    * @throws GestoreException
    */
   private final Object[] gestioneRT(String userkey1, String codiceDittaInv, String w_invcom_idprg, Long w_invcom_idcom, String ngara, String codgar1, String gestione, String comnumprot,
-      Timestamp comdatprotTimestamp, String comkey3, Long iterga, Long faseGaraLong, Long offtel, final HttpServletRequest request) throws SQLException, IOException, XmlException, GestoreException{
+      Timestamp comdatprotTimestamp, String comkey3, Long iterga, Long faseGaraLong, Long offtel, final HttpServletRequest request) throws SQLException, GestoreException{
 
     boolean acquisito = false;
     boolean esisteDITG = true;
     String codiceDittaEventi=null;
-
+    String msgErrMessaggioFS10_FS11 = null;
     Object[] ret=new Object[3];
 
     String codimp = userkey1;
-    TipoPartecipazioneDocument document = mepaManager.estrazioneDocumentMessaggioFS10_FS11(selectW_DOCDIG, w_invcom_idprg,
+    TipoPartecipazioneDocument document = null;
+    try {
+      document =mepaManager.estrazioneDocumentMessaggioFS10_FS11(selectW_DOCDIG, w_invcom_idprg,
         w_invcom_idcom.toString());
+    }catch (Exception e) {
+      logger.error(this.erroreStackToString(e));
+    }
     if (document != null) {
       String ragioneSociale = (String) sqlManager.getObject("select nomest from impr where codimp=?", new Object[] { codimp });
       if (ragioneSociale.length() > 61) ragioneSociale = ragioneSociale.substring(0, 60);
@@ -777,6 +926,17 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
     ret[2] = codiceDittaEventi;
 
     return ret;
+  }
+
+  private String erroreStackToString(Exception e) {
+    String errore="";
+    StringWriter writer = new StringWriter();
+    PrintWriter printWriter = new PrintWriter( writer );
+    e.printStackTrace( printWriter );
+    printWriter.flush();
+
+    errore = writer.toString();
+    return errore;
   }
 
 }

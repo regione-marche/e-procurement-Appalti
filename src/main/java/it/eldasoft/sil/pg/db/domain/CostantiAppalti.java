@@ -24,4 +24,30 @@ public class CostantiAppalti {
   public static final String PROP_WS_PORTALEAPPALTI_ESITI_URL               = "sitoIstituzionale.ws.urlEsitiPortaleAppalti";
   public static final String PROP_WS_PORTALEAPPALTI_AVVISI_URL              = "sitoIstituzionale.ws.urlAvvisiPortaleAppalti";
 
+  public static final String PROP_INTEGRAZIONE_MDGUE_URL                    = "integrazioneMDgue.url";
+
+  public static final String nomeFileXML_Aggiornamento                      = "dati_aggisc.xml";
+  public static final String nomeFileXML_Iscrizione                         = "dati_iscele.xml";
+  public static final String nomeFileXML_AggiornamentoAnagrafica            = "dati_agganag.xml";
+  public static final String nomeFileQestionario                            = "questionario.json";
+  public static final String nomeFileDatiPartecipazione                     = "dati_partrti.xml";
+  public static final String nomeFileXML_IscrizioneImpresa                  = "dati_reg.xml";
+  public static final String NOME_FILE_RINNOVO_ISCRIZIONE                   = "dati_rin.xml";
+
+  public static final String importoOffertoQuestionario                     = "bidValueTotal";
+  public static final String ribassoOffertoQuestionario                     = "bidDiscountValueTotal";
+  public static final String sezioneDatiQuestionario                        = "survey";
+  public static final String sezioneFileCancellatiQuestionario              = "deletedFiles";
+
+  //Valori dello stato di DITGQFORM
+  public static final int statoDITGQFORMDaAttivare                          = 1;
+  public static final int statoDITGQFORMAttivo                              = 2;
+  public static final int statoDITGQFORMErrori                              = 3;
+  public static final int statoDITGQFORMRifiutato                           = 4;
+  public static final int statoDITGQFORMSuperato                            = 5;
+
+  public static final String PROP_APPALTI_MS_URL                            = "appalti-ms.ws.url";
+
+  public static final String FORMATO_ALLEGATI_FIRMATI                       = "PDF.P7M";
+
 }

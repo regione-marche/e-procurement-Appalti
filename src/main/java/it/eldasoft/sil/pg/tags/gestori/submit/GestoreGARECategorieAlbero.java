@@ -1,11 +1,5 @@
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.db.datautils.DataColumnContainer;
-import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.utils.spring.UtilitySpring;
-
 import java.sql.SQLException;
 import java.util.List;
 
@@ -14,11 +8,19 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
 
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.db.datautils.DataColumnContainer;
+import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.utils.spring.UtilitySpring;
+
 public class GestoreGARECategorieAlbero extends AbstractGestoreEntita {
 
   static Logger      logger     = Logger.getLogger(GestoreGARECategorieAlbero.class);
 
   private SqlManager sqlManager = null;
+
+  private final static String FILTRO_CARATTERI_DA_ESCLUDERE = " and (caisim not like '%/%' or caisim not like '%. %' or caisim not like '% .%')";
 
   @Override
   public void setRequest(HttpServletRequest request) {
@@ -105,18 +107,18 @@ public class GestoreGARECategorieAlbero extends AbstractGestoreEntita {
           if (node_ck.startsWith("R_____")) {
             String tiplavg_s = node_ck.substring(6);
             if (tiplavg_s != null) {
-              String selectCAIS = "select caisim from cais where tiplavg = ? and (isarchi is null or isarchi <> '1')";
+              String selectCAIS = "select caisim from cais where tiplavg = ? and (isarchi is null or isarchi <> '1')" + FILTRO_CARATTERI_DA_ESCLUDERE;
               datiCAIS = this.sqlManager.getListVector(selectCAIS, new Object[] { new Long(tiplavg_s) });
             }
           } else if (node_ck.startsWith("T_____")) {
             String titcat = node_ck.substring(6, node_ck.indexOf("_____R"));
             String tiplavg_s = node_ck.substring(node_ck.indexOf("R_____") + 6);
-            String selectCAIS = "select caisim from cais where tiplavg = ? and titcat = ? and (isarchi is null or isarchi <> '1')";
+            String selectCAIS = "select caisim from cais where tiplavg = ? and titcat = ? and (isarchi is null or isarchi <> '1')" + FILTRO_CARATTERI_DA_ESCLUDERE;
             datiCAIS = this.sqlManager.getListVector(selectCAIS, new Object[] { new Long(tiplavg_s), titcat });
 
           } else if (node_ck.startsWith("C_____")) {
             String caisim = node_ck.substring(6, node_ck.indexOf("_____", 6));
-            String selectCAIS = "select caisim from cais where (caisim = ? or codliv1 = ? or codliv2 = ? or codliv3 = ? or codliv4 = ?) and (isarchi is null or isarchi <> '1')";
+            String selectCAIS = "select caisim from cais where (caisim = ? or codliv1 = ? or codliv2 = ? or codliv3 = ? or codliv4 = ?) and (isarchi is null or isarchi <> '1')" + FILTRO_CARATTERI_DA_ESCLUDERE;
             datiCAIS = this.sqlManager.getListVector(selectCAIS, new Object[] { caisim, caisim, caisim, caisim, caisim });
           }
 

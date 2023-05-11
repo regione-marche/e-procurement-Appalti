@@ -10,8 +10,15 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Vector;
+
+import org.apache.log4j.Logger;
+import org.apache.xmlbeans.XmlException;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.FileAllegatoManager;
-import it.eldasoft.gene.bl.GenChiaviManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
@@ -21,17 +28,10 @@ import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.PgManager;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.sil.portgare.datatypes.AggiornamentoIscrizioneImpresaElencoOperatoriDocument;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
-
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.apache.xmlbeans.XmlException;
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore non standard per l'acquisizione degli aggiornamenti delle categorie di un singolo
@@ -43,8 +43,6 @@ public class GestorePopupAcquisizionePuntualeDaPortaleAggCat extends AbstractGes
 
   /** Logger */
   static Logger            logger           = Logger.getLogger(GestorePopupAcquisizionePuntualeDaPortaleAggCat.class);
-
-  static String     nomeFileXML_Aggiornamento = "dati_aggisc.xml";
 
   @Override
   public String getEntita() {
@@ -81,9 +79,6 @@ public class GestorePopupAcquisizionePuntualeDaPortaleAggCat extends AbstractGes
     PgManager pgManager = (PgManager) UtilitySpring.getBean("pgManager",
         this.getServletContext(), PgManager.class);
 
-    GenChiaviManager genChiaviManager = (GenChiaviManager) UtilitySpring.getBean("genChiaviManager",
-        this.getServletContext(), GenChiaviManager.class);
-
     String ngara = UtilityStruts.getParametroString(this.getRequest(),"ngara");
     String codiceDitta = UtilityStruts.getParametroString(this.getRequest(),"codiceDitta");
     String opScelta = UtilityStruts.getParametroString(this.getRequest(),"opScelta");
@@ -102,6 +97,7 @@ public class GestorePopupAcquisizionePuntualeDaPortaleAggCat extends AbstractGes
 
     if("2".equals(opScelta)){
       this.aggiornaStatoGaracquisiz(id, new Long(4),syscon);
+      this.aggiornaStatoDitgqform(ngara,codiceDitta, id, CostantiAppalti.statoDITGQFORMRifiutato);
       this.getRequest().setAttribute("acquisizioneEseguita", "1");
     }else{
       //Vengono letti i documenti associati ad ogni occorrenza di di W_INVCOM
@@ -112,7 +108,7 @@ public class GestorePopupAcquisizionePuntualeDaPortaleAggCat extends AbstractGes
       Vector datiW_DOCDIG = null;
       try {
           datiW_DOCDIG = sqlManager.getVector(select,
-              new Object[]{ngara,codiceDitta,digent, new Long(1), nomeFileXML_Aggiornamento});
+              new Object[]{ngara,codiceDitta,digent, new Long(1), CostantiAppalti.nomeFileXML_Aggiornamento});
       } catch (SQLException e) {
         this.getRequest().setAttribute("erroreAcquisizione", "1");
         throw new GestoreException("Errore nella lettura della tabella W_DOCDIG ",null, e);
@@ -145,15 +141,30 @@ public class GestorePopupAcquisizionePuntualeDaPortaleAggCat extends AbstractGes
         String xml=null;
         if(fileAllegato!=null && fileAllegato.getStream()!=null){
           xml = new String(fileAllegato.getStream());
-
+          AggiornamentoIscrizioneImpresaElencoOperatoriDocument document = null;
           try{
-            AggiornamentoIscrizioneImpresaElencoOperatoriDocument document = AggiornamentoIscrizioneImpresaElencoOperatoriDocument.Factory.parse(xml);
+            document = AggiornamentoIscrizioneImpresaElencoOperatoriDocument.Factory.parse(xml);
             gacqport.gestioneCategorie(document, ngara, codiceDitta, pgManager, status);
             this.aggiornaStatoGaracquisiz(id, new Long(2),syscon);
+
           }catch (XmlException e) {
             this.getRequest().setAttribute("erroreAcquisizione", "1");
             this.aggiornaStatoGaracquisiz(id, new Long(3),syscon);
             throw new GestoreException("Errore nella lettura del file XML", null, e);
+          }
+
+          //Se è presente una occorrenza in ditgqform associata all'occorrenza di garacquisiz, va processata
+          String json = null;
+          try {
+            json = (String)this.sqlManager.getObject("select oggetto from ditgqform where ngara=? and dittao=? and idacquisiz=? and stato=?",
+                new Object[] {ngara,codiceDitta,id, CostantiAppalti.statoDITGQFORMDaAttivare});
+
+          } catch (SQLException e) {
+            this.getRequest().setAttribute("erroreAcquisizione", "1");
+            throw new GestoreException("Errore nella lettura della tabella DITGQFORM dell'elenco:" + ngara + ", operatore:" + codiceDitta,null, e);
+          }
+          if(json !=null && !"".equals(json)) {
+            this.aggiornaStatoDitgqform(ngara, codiceDitta, id, CostantiAppalti.statoDITGQFORMAttivo);
           }
 
         }else{
@@ -204,6 +215,31 @@ public class GestorePopupAcquisizionePuntualeDaPortaleAggCat extends AbstractGes
     } catch (SQLException e) {
       this.getRequest().setAttribute("erroreAcquisizione", "1");
       throw new GestoreException("Errore nell'aggiornamento dell'entità GARACQUISIZ", null, e);
+    }
+  }
+
+  private void aggiornaStatoDitgqform(String ngara, String codiceDitta, Long id, int stato) throws GestoreException{
+    String update="update ditgqform set stato =?";
+    if(CostantiAppalti.statoDITGQFORMAttivo==stato)
+      update += ", dataatt=?";
+    update += " where ngara=? and dittao=? and idacquisiz=?";
+    Object par[]= null;
+    if(CostantiAppalti.statoDITGQFORMAttivo==stato) {
+      par = new Object[] {new Long(stato), new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()),
+          ngara, codiceDitta, id};
+    }else {
+      par = new Object[] {new Long(stato), ngara, codiceDitta, id};
+    }
+    try {
+
+      if(CostantiAppalti.statoDITGQFORMAttivo==stato)
+        this.sqlManager.update("update ditgqform set stato=?, datadis=? where ngara= ? and dittao = ? and stato = ?",
+            new Object[] {new Long(CostantiAppalti.statoDITGQFORMSuperato), new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()),
+                ngara, codiceDitta, new Long(CostantiAppalti.statoDITGQFORMAttivo)});
+      this.getSqlManager().update(update,par);
+    } catch (SQLException e) {
+      this.getRequest().setAttribute("erroreAcquisizione", "1");
+      throw new GestoreException("Errore nell'aggiornamento dell'entità DITGQFORM", null, e);
     }
   }
 

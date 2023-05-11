@@ -57,6 +57,38 @@
     	  	</c:forEach>
 		</td>
 	</tr>
+	<tr>
+		<td class="etichetta-dato" >Abilita funzioni di amministrazione sulle gare</td>
+			<td class="valore-dato">
+				<c:choose>
+					<c:when test='${fn:contains(listaOpzioniUtenteSys, "ou233#")}'>
+						<c:out value="Si"/>
+					</c:when>
+					<c:otherwise>
+						<c:out value="No"/>
+					</c:otherwise>
+				</c:choose>
+			</td>
+	</tr>
+	<tr >
+		<td class="etichetta-dato" >Privilegi dell'utente su selezione da elenco operatori</td>
+  			<td class="valore-dato"> 
+ 				<c:choose>
+ 					<c:when test='${fn:contains(listaOpzioniUtenteSys, "ou235#")}'>
+ 						${account.listaTextSelOp[1]}
+ 					</c:when>
+ 					<c:when test='${fn:contains(listaOpzioniUtenteSys, "ou236#")}'>
+ 						${account.listaTextSelOp[2]}
+					</c:when>
+					<c:when test='${fn:contains(listaOpzioniUtenteSys, "ou237#")}'>
+ 						${account.listaTextSelOp[3]}
+					</c:when>
+ 					<c:otherwise>
+ 						${account.listaTextSelOp[0]}
+ 					</c:otherwise>
+ 				</c:choose>
+		</td>
+  	</tr>
 </c:if>
 <c:set var="integrazioneLavori" value='${gene:isTable(pageContext,"APPA")}' />
 <c:if test='${moduloAttivo eq "PL" || (moduloAttivo eq "PG" && integrazioneLavori eq true)}'>

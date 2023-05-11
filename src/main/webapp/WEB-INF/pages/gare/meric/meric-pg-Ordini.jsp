@@ -134,7 +134,7 @@
 			href += "&comunicazioniVis=0";
 			openPopUpCustom(href, "verificaDocumentiRichiesti", 1100, 550, "yes", "yes");
 			*/
-			verificaDocumentiRichiesti(chiave,"CONSULTAZIONE",0,"false", "{autorizzatoModifiche}");
+			verificaDocumentiRichiesti(chiave,"CONSULTAZIONE",0,"false", "${autorizzatoModifiche}");
 		}
 		
 	function controlloOrdineMinimo(idRicerca,ditta,ragSociale){

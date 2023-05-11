@@ -55,8 +55,9 @@
 	<gene:setString name="titoloMaschera" value="Ricerca destinatari da ditte ${testoTipoGara }" />
 		
 	<gene:redefineInsert name="corpo">
-		<gene:formTrova entita="DITG" filtro="${filtroGaraLotto1}" gestisciProtezioni="true"
-			lista="geneweb/w_invcomdes/w_invcomdes-lista-ditte-popup.jsp">
+		<gene:formTrova entita="DITG"  gestisciProtezioni="true"
+			lista="geneweb/w_invcomdes/w_invcomdes-lista-ditte-popup.jsp"
+			gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.trova.gestori.RicercaDitteW_INVCOMDESGestoreTrova">
 			<gene:campoTrova campo="NOMIMO" />
 			<gene:campoTrova campo="CFIMP" entita="IMPR" where="DITG.DITTAO = IMPR.CODIMP"/>
 			<gene:campoTrova campo="PIVIMP" entita="IMPR" where="DITG.DITTAO = IMPR.CODIMP"/>
@@ -112,7 +113,7 @@
 				<td class="etichetta-dato">Visualizza solo ditte non ancora inserite tra i destinatari?</td>
 				<td class="operatore-trova"/>
 				<td class="valore-dato-trova">
-					<select id="CampoFitt" name="CampoFitt" title="Visualizza ditte non inserite tra i destinatari" onchange="javascript:impostaFiltro(this.options[this.selectedIndex].value);"   >
+					<select id="CampoFitt" name="CampoFitt" title="Visualizza ditte non inserite tra i destinatari">
 						<option value="1" selected="selected">Si</option>
 						<option value="2" >No</option>
 					</select>
@@ -143,27 +144,9 @@
 	
 				setValue("Campo5",tipoAppalto);
 			}
-						
-			function impostaFiltro(valore){
-				
-				var filtro1 = "${filtroGaraLotto1}";
-				var filtro2 = "${filtroGaraLotto2}";
-				if(valore==1)
-					document.forms[0].filtro.value = filtro1;
-				else
-					document.forms[0].filtro.value = filtro2;
-				
-			}
-			
-			
-			
 		</gene:javaScript>
-		
-		
   	</gene:redefineInsert>
-	
 </gene:template>
-
 </div>
 
 

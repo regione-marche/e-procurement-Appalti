@@ -85,9 +85,26 @@
 			</c:otherwise>
 		</c:choose>
 		
+		<c:choose>
+			<c:when test='${not empty param.anonima}'>
+				<c:set var="anonima" value="${param.anonima}" />
+			</c:when>
+			<c:otherwise>
+				<c:set var="anonima" value="${anonima}" />
+			</c:otherwise>
+		</c:choose>
+		
 		<gene:redefineInsert name="addHistory" />
 		<gene:redefineInsert name="gestioneHistory" />
-		<gene:setString name="titoloMaschera" value='Acquisizione busta ${msgSez}' />
+		<c:choose>
+			<c:when test='${anonima eq "1"}'>
+				<gene:setString name="titoloMaschera" value='Acquisizione buste tecniche in forma anonima' />
+			</c:when>
+			<c:otherwise>
+				<gene:setString name="titoloMaschera" value='Acquisizione busta ${msgSez}' />
+			</c:otherwise>
+		</c:choose>
+		
 				
 		<c:choose>
 			<c:when test='${not empty param.dittao}'>
@@ -138,6 +155,34 @@
 			
 		</c:if>
 		
+		<c:if test='${anonima eq "1"}'>
+			<c:set var="garaInversa" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetInversaFunction", pageContext, codgar)}' />	
+			<c:set var="compreq" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetCompreqFunction", pageContext, codgar)}' />
+			<c:set var="esisteBloccoFasi2" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteBloccoCondizioniFasiAcquisizioniFunction",  pageContext, ngara, "2")}'/>
+			<c:set var="esisteBloccoFasi3" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteBloccoCondizioniFasiAcquisizioniFunction",  pageContext, ngara, "3")}'/>
+			<c:set var="esisteBloccoFasi4" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteBloccoCondizioniFasiAcquisizioniFunction",  pageContext, ngara, "4")}'/>
+			<c:if test="${esisteBloccoFasi2 eq 'true' && esisteBloccoFasi3 eq 'true' && esisteBloccoFasi4 eq 'true'}">
+				<c:set var="esisteBloccoFasi" value='true'/>
+			</c:if>
+			
+			<c:if test="${garaInversa ne '1' }">
+				<c:set var="esistonoDitteAmmissioneNulla" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsistonoDitteAmmissioneNullaFunction", pageContext, ngara, "35" )}' />
+			</c:if>
+			<c:set var="esistonoDitteAmmissioneSoccorso" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsistonoDitteAmmissioneSoccorsoIstruttorioFunction", pageContext, ngara, "35","false" )}' />
+			
+			
+			<c:if test="${garaInversa ne '1' }">
+				<c:set var="esistonoAcquisizioniOfferteDaElaborare" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsistonoAcquisizioniOfferteDaElaborareFunction", pageContext, ngara, "FS11A" )}' />
+			</c:if>
+			
+			
+			<c:set var="esistonoDitteInGara" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsistonoDitteInGaraFunction", pageContext, "NGARA5", ngara," and (fasgar > 2 or fasgar is null)")}' />
+			<c:if test="${compreq eq '1' and garaInversa ne '1'  }">
+				<c:set var="esistonoDitteEstimpValorizzato" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsistonoDitteEstimpValorizzatoFunction", pageContext, ngara )}' />
+			</c:if>
+			
+		</c:if>
+		
 		<gene:redefineInsert name="corpo">
 		
 			<input type="hidden" id="ngara" value="${ngara}" />
@@ -145,12 +190,55 @@
 			<input type="hidden" id="codgar" value="${codgar}" />
 			<input type="hidden" id="dittao" value="${dittao}" />
 			<input type="hidden" id="sez" value="${sez}" />
+			<input type="hidden" id="anonima" value="${anonima}" />
 			
 			<table class="dettaglio-notab">
 				<tr id="sezioneIniziale">
 					<td class="valore-dato" colspan="2">
 						<br>
 						<c:choose>
+							<c:when test="${anonima eq '1' && (esisteBloccoFasi eq 'true' ||  esistonoDitteAmmissioneNulla eq 'true' || esistonoAcquisizioniOfferteDaElaborare eq 'true'
+								|| esistonoDitteInGara eq 'false' || esistonoDitteEstimpValorizzato eq 'false' || esistonoDitteAmmissioneSoccorso eq 'true')}">
+								<c:set var="bloccoSalvataggio" value='true'/>
+								<c:choose>
+									<c:when test="${esisteBloccoFasi eq 'true'}">
+										<br>
+										Non &egrave; possibile procedere all'acquisizione delle buste perch&egrave; la fase corrente non &egrave; quella di apertura doc. amministrativa. 
+										<br>
+										<br>
+									</c:when>
+									<c:when test="${esistonoDitteAmmissioneNulla eq 'true'}">
+										<br>
+										Non &egrave; possibile procedere all'acquisizione delle buste perch&egrave; deve essere specificato lo stato di ammissione per ogni ditta in gara. 
+										<br>
+										<br>
+									</c:when>
+									<c:when test="${esistonoDitteAmmissioneSoccorso eq 'true'}">
+										<br>
+										 Non &egrave; possibile procedere all'acquisizione delle buste perch&egrave; ci sono delle ditte in gara con soccorso istruttorio in corso.
+										<br>
+										<br>
+									</c:when>
+									<c:when test="${esistonoAcquisizioniOfferteDaElaborare eq 'true'}">
+										<br>
+										Non &egrave; possibile procedere all'acquisizione delle buste perch&egrave; devono essere prima acquisite tutte le buste amministrative. 
+										<br>
+										<br>
+									</c:when>
+									<c:when test="${ esistonoDitteInGara eq 'false'}">
+										<br>
+										Non &egrave; possibile procedere all'acquisizione delle buste perch&egrave; non ci sono ditte in gara. 
+										<br>
+										<br>
+									</c:when>
+									<c:when test="${ esistonoDitteEstimpValorizzato eq 'false'}">
+										<br>
+										Non &egrave; possibile procedere all'acquisizione delle buste perch&egrave; deve essere prima fatto il sorteggio sulle ditte in gara per la verifica requisiti. 
+										<br>
+										<br>
+									</c:when>
+								</c:choose>
+							</c:when>
 							<c:when test="${bloccoBuste}">
 								Non è possibile procedere all'acquisizione della busta tecnico-quantitativa della ditta '${nomimo}' perch&egrave; deve essere prima acquisita la busta tecnico-qualitativa per ogni ditta nella lista. 
 							</c:when>
@@ -159,6 +247,11 @@
 							</c:when>
 							<c:when test="${esitoControlloCriteri eq 'nok'}">
 								Non è possibile procedere all'acquisizione della busta tecnico-quantitativa della ditta '${nomimo}' perch&egrave; deve essere prima completata la compilazione del dettaglio valutazione dei criteri tecnico-qualitativi per tutte le ditte in gara 
+							</c:when>
+							<c:when test="${anonima eq '1'}">
+								Mediante questa funzione &egrave; possibile procedere all'acquisizione in forma anonima delle buste tecniche di tutte le ditte in gara.
+								<br><br>
+								Confermi l'operazione ?
 							</c:when>
 							<c:otherwise>
 								Mediante questa funzione &egrave; possibile procedere all'acquisizione della busta ${msgSez} della ditta '${nomimo}'.
@@ -173,7 +266,7 @@
 				</tr>
 				
 				
-				<c:if test="${bloccoBuste ne 'true' and esitoControlloCriteri ne 'nok' and esitoControlloCriteri ne 'nok-commissione'}">
+				<c:if test="${bloccoBuste ne 'true' and esitoControlloCriteri ne 'nok' and esitoControlloCriteri ne 'nok-commissione' and bloccoSalvataggio ne 'true'}">
 					<c:if test="${cifraturaBuste eq 'true'}">
 							<tr id="rowPWD">
 								<td id="etichettaPassword" class="etichetta-dato">Password per la decifratura della busta (*)</td>
@@ -251,7 +344,7 @@
 		
 				<tr id="sezioneComandiIniziali">
 					<td colspan="2" class="comandi-dettaglio">
-						<c:if test="${bloccoBuste ne 'true'  and esitoControlloCriteri ne 'nok' and esitoControlloCriteri ne 'nok-commissione'}">
+						<c:if test="${bloccoBuste ne 'true'  and esitoControlloCriteri ne 'nok' and esitoControlloCriteri ne 'nok-commissione' and bloccoSalvataggio ne 'true'}">
 							<INPUT type="button" class="bottone-azione" value="Conferma" title="Conferma" onclick="javascript:attivaAJAX('${ngara}');">
 						</c:if>
 						<INPUT type="button" class="bottone-azione" value="Annulla"	title="Annulla" onclick="javascript:chiudi();">&nbsp;&nbsp;
@@ -271,6 +364,11 @@
 		</gene:redefineInsert>
 		
 		<gene:javaScript>
+			
+			<c:if test="${anonima eq '1' }">
+				$("#selezionetutteDitte").hide();
+				$("#tutteDitte").val('1');
+			</c:if>
 			
 			document.getElementById("PWDcryptata").addEventListener("input", function(e){
 				$("#overlay").hide();
@@ -383,7 +481,11 @@
 				$("#selezionetutteDitte").hide();
 				$("#rowPWD").hide();
 				$("#rowPWDcryptata").hide();
-								
+				
+				var anonima=$("#anonima").val();	
+				var action=	"pg/AttivaApTecAJAX.do";
+				if(anonima==1)
+					action=	"pg/AttivaApMassivaTecAnonimeAJAX.do";			
 				$.ajax({
 					type: "POST",
 					dataType: "json",
@@ -393,7 +495,7 @@
 							x.overrideMimeType("application/json;charset=UTF-8");
 						}
 					},
-					url: "pg/AttivaApTecAJAX.do?ngara=" + ngara + "&dittao=" + dittao + "&password=" + encodeURIComponent(pwd) + "&pswCryptata=" + pswCryptata + "&sez=" + sez,
+					url: action + "?ngara=" + ngara + "&dittao=" + dittao + "&password=" + encodeURIComponent(pwd) + "&pswCryptata=" + pswCryptata + "&sez=" + sez + "&anonima=" + anonima,
 					success: function(res){
 						esito= res.Esito;
 						msgEsito = res.MsgErrore;
@@ -429,7 +531,9 @@
                         	if(esito=="ErrorePwdNonCorretta"){
                         		$("#sezioneIniziale").show();
 								$("#sezioneComandiIniziali").show();
-								$("#selezionetutteDitte").show();
+								<c:if test="${anonima ne '1' }">
+									$("#selezionetutteDitte").show();
+								</c:if>
 								$("#rowPWD").show();
 								$("#rowPWDcryptata").hide();
 								$("#PWDcryptata").val("");

@@ -16,6 +16,7 @@ import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.AggiudicazioneManager;
+import it.eldasoft.sil.pg.bl.GestioneProgrammazioneManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
@@ -77,6 +78,10 @@ public class GestorePopupAnnullaAggiudicazioneDefinitiva extends
 						AggiudicazioneManager.class);
 		 PgManagerEst1 pgManagerEst1 = (PgManagerEst1) UtilitySpring.getBean("pgManagerEst1",
 		     this.getServletContext(), PgManagerEst1.class);
+		 
+		 GestioneProgrammazioneManager gestioneProgrammazioneManager = (GestioneProgrammazioneManager) UtilitySpring.getBean("gestioneProgrammazioneManager",
+             this.getServletContext(), GestioneProgrammazioneManager.class);
+		 
 
 		String oggEvento = "";
 
@@ -107,6 +112,11 @@ public class GestorePopupAnnullaAggiudicazioneDefinitiva extends
               if("TRUE".equals(pubblicazioneBandoPortale) || "TRUE".equals(pubblicazioneEsitoPortale)){
                 java.util.Date oggi = UtilityDate.getDataOdiernaAsDate();
                 this.sqlManager.update("update TORN set DULTAGG = ? where CODGAR=?",new Object[]{oggi,codiceGara});
+              }
+              
+              //Integrazione programmazione
+              if(gestioneProgrammazioneManager.isAttivaIntegrazioneProgrammazione()){
+                gestioneProgrammazioneManager.aggiornaRdaGara(codiceGara,ngara,null);
               }
 
               //this.getRequest().setAttribute("NGARA", ngara);

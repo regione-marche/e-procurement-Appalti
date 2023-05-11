@@ -10,6 +10,16 @@
  */
 package it.eldasoft.sil.pg.bl;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+
+import javax.servlet.ServletContext;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
+import org.apache.struts.upload.FormFile;
+
 import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.bl.system.MailManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
@@ -19,17 +29,6 @@ import it.eldasoft.utils.sicurezza.CriptazioneException;
 import it.eldasoft.utils.sign.DigitalSignatureChecker;
 import it.eldasoft.utils.sign.DigitalSignatureException;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-
-import javax.servlet.ServletContext;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
-import org.apache.struts.upload.FormFile;
 
 /**
  * Classe di gestione delle funzionalita' inerenti il Mercato Elettronico
@@ -46,6 +45,10 @@ public class ValidatorManager {
 	private MailManager mailManager;
 
 	private static final String ESTENSIONE_FILE_FIRMATO = "P7M";
+
+	private static final String ESTENSIONE_FILE_PDF = "PDF";
+
+	private static final String ESTENSIONI_FILE[] = {ESTENSIONE_FILE_PDF,ESTENSIONE_FILE_FIRMATO} ;
 
 	/**
 	 * Set MailManager
@@ -123,50 +126,57 @@ public class ValidatorManager {
       return dimMaxTotaleFiles;
     }
 
-	public void validateFileFirmato(ServletContext context, FormFile file) throws GestoreException {
 
-		validateFile(context, file);
-		checkExtensionFileFirmato(file.getFileName());
-		InputStream fileFirmato = null;
-		try {
-			DigitalSignatureChecker checker = new DigitalSignatureChecker();
-			fileFirmato = file.getInputStream();
-			boolean signVerified = checker.verifySignature(IOUtils.toByteArray(fileFirmato));
-			if (!signVerified) {
-				throw new GestoreException("Il file" + file.getFileName() + " non risulta firmato digitalmente o le firme non sono valide",
-								"upload.validate.invaliSignature", new String[]{file.getFileName()}, null);
-			}
-		} catch (FileNotFoundException ex) {
-			throw new GestoreException("Impossibile trovare il file " + file.getFileName(),
-							"upload.validate.fileNotFound", new String[]{file.getFileName()}, ex);
-		} catch (DigitalSignatureException ex) {
-			throw new GestoreException("Non e' stato possibile verificare la fima digitale del file",
-							"upload.validate.unableToValidate", ex);
-		} catch (IOException ex) {
-			throw new GestoreException("Si è verificato un errore durante la scrittura del buffer", "upload.bufferError", ex);
-		} finally {
-			if (fileFirmato != null) {
-				try {
-					fileFirmato.close();
-				} catch (IOException ex) {
-				}
-			}
+	/**
+	 * Viene controllato se il file ha una delle estensioni consentite
+	 * @param fileName
+	 * @return String
+	 * @throws GestoreException
+	 */
+	private String checkExtensionFile(String fileName)  {
+	  String estensioneFileTrovata = null;
+	  if (fileName != null) {
+		for (String estensione : ESTENSIONI_FILE) {
+		  if (fileName.toUpperCase().endsWith(estensione)) {
+			  estensioneFileTrovata = estensione;
+			  break;
+		  }
 		}
+	  }
+	  return estensioneFileTrovata;
 	}
 
-	private void checkExtensionFileFirmato(String fileName) throws GestoreException {
-
-		if (fileName != null) {
-			String[] estensioni = StringUtils.split(ESTENSIONE_FILE_FIRMATO, ',');
-			boolean trovato = false;
-			for (String estensione : estensioni) {
-				if (fileName.toUpperCase().endsWith(estensione)) {
-					trovato = true;
-				}
-			}
-			if (!trovato) {
-				throw new GestoreException("Per poter inserire il riepilogo firmato occorre allegare un file con estensione .p7m", "upload.validate.wrongExtension", null);
-			}
-		}
-	}
+	public void validateFormatoFile(ServletContext context, FormFile file) throws GestoreException {
+	  String nomeFile = file.getFileName();
+	  String estensioneFileAllegatoAccettata = checkExtensionFile(nomeFile);
+	  if(estensioneFileAllegatoAccettata == null ) {
+          throw new GestoreException("Per poter trasmettere l'ordine occorre allegare un file con estensione .p7m o .pdf", "upload.validate.wrongExtensions", null);
+      } else if(ESTENSIONE_FILE_FIRMATO.equals(estensioneFileAllegatoAccettata)) {
+        InputStream fileFirmato = null;
+        try {
+            DigitalSignatureChecker checker = new DigitalSignatureChecker();
+            fileFirmato = file.getInputStream();
+            boolean signVerified = checker.verifySignature(IOUtils.toByteArray(fileFirmato));
+            if (!signVerified) {
+                throw new GestoreException("Il file" + file.getFileName() + " non risulta firmato digitalmente o le firme non sono valide",
+                                "upload.validate.invaliSignature", new String[]{file.getFileName()}, null);
+            }
+        } catch (FileNotFoundException ex) {
+            throw new GestoreException("Impossibile trovare il file " + file.getFileName(),
+                            "upload.validate.fileNotFound", new String[]{file.getFileName()}, ex);
+        } catch (DigitalSignatureException ex) {
+            throw new GestoreException("Non e' stato possibile verificare la fima digitale del file",
+                            "upload.validate.unableToValidate", ex);
+        } catch (IOException ex) {
+            throw new GestoreException("Si è verificato un errore durante la scrittura del buffer", "upload.bufferError", ex);
+        } finally {
+            if (fileFirmato != null) {
+                try {
+                    fileFirmato.close();
+                } catch (IOException ex) {
+                }
+            }
+        }
+	 }
+  }
 }

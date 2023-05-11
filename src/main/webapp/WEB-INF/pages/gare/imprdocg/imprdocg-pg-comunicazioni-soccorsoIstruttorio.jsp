@@ -17,6 +17,17 @@
 <c:set var="codiceDitta" value='${gene:getValCampo(key, "DITG.DITTAO")}' />
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 
+<c:set var="digitalSignatureUrlCheck" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-check-url")}'/>
+<c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:choose>
+	<c:when test="${!empty digitalSignatureUrlCheck && !empty digitalSignatureProvider && (digitalSignatureProvider eq 1 || digitalSignatureProvider eq 2)}">
+		<c:set var="digitalSignatureWsCheck" value='1'/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="digitalSignatureWsCheck" value='0'/>
+	</c:otherwise>
+</c:choose>
+
 <c:choose>
 	<c:when test='${not empty param.stepWizard}'>
 		<c:set var="stepWizard" value="${param.stepWizard}" />
@@ -63,7 +74,7 @@
 	<gene:redefineInsert name="gestioneHistory" />
 	<gene:redefineInsert name="addHistory" />
 	<gene:redefineInsert name="head" >
-		<script type="text/javascript" src="${contextPath}/js/jquery.comunicazioni.ditta.js"></script>
+		<script type="text/javascript" src="${contextPath}/js/jquery.comunicazioni.ditta.js?v=${sessionScope.versioneModuloAttivo}"></script>
 		<script type="text/javascript" src="${contextPath}/js/common-gare.js"></script>	
 		
 		<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/jquery/comunicazioniditta/jquery.comunicazioni.ditta.css" >
@@ -81,9 +92,9 @@
 		<input type="hidden" name="comunicazioniVis" id="comunicazioniVis" value="${comunicazioniVis }" />
 		<input type="hidden" name="soccorsoIstruttorio" id="soccorsoIstruttorio" value="1" />
 		<input type="hidden" name="stepWizard" id="stepWizard" value="${stepWizard }" />
-		<input type="hidden" name="whereBusteAttiveWizard" id="whereBusteAttiveWizard" value="${whereBusteAttiveWizard }" />
 		<input type="hidden" name="aut" id="aut" value="${aut }" />
-						
+		<input type="hidden" id="digitalSignatureWsCheck" name="digitalSignatureWsCheck" value="${digitalSignatureWsCheck}" />
+		
 		<table class="lista" style="height: 100%">
 			<tr>
 				<td colSpan="2">

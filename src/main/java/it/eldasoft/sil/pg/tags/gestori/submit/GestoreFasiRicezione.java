@@ -10,31 +10,6 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
-import it.eldasoft.gene.bl.GeneManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.bl.TabellatiManager;
-import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
-import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
-import it.eldasoft.gene.db.datautils.DataColumn;
-import it.eldasoft.gene.db.datautils.DataColumnContainer;
-import it.eldasoft.gene.db.domain.LogEvento;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.gene.utils.LogEventiUtils;
-import it.eldasoft.gene.web.struts.tags.UtilityStruts;
-import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
-import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntita;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.AurManager;
-import it.eldasoft.sil.pg.bl.ElencoOperatoriManager;
-import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiGaraFunction;
-import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiRicezioneFunction;
-import it.eldasoft.sil.pg.tags.gestori.plugin.GestorePopupFasiGara;
-import it.eldasoft.utils.properties.ConfigManager;
-import it.eldasoft.utils.spring.UtilitySpring;
-import it.eldasoft.utils.utility.UtilityDate;
-import it.eldasoft.utils.utility.UtilityNumeri;
-import it.eldasoft.utils.utility.UtilityStringhe;
-
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -50,9 +25,32 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
 
-import pc_nicola.aur.WebServices.WsAURSoapProxy;
-
 import com.lowagie.text.DocumentException;
+
+import it.eldasoft.gene.bl.GeneManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.bl.TabellatiManager;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
+import it.eldasoft.gene.db.datautils.DataColumn;
+import it.eldasoft.gene.db.datautils.DataColumnContainer;
+import it.eldasoft.gene.db.domain.LogEvento;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.utils.LogEventiUtils;
+import it.eldasoft.gene.web.struts.tags.UtilityStruts;
+import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.AurManager;
+import it.eldasoft.sil.pg.bl.ElencoOperatoriManager;
+import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiGaraFunction;
+import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiRicezioneFunction;
+import it.eldasoft.sil.pg.tags.gestori.plugin.GestorePopupFasiGara;
+import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityDate;
+import it.eldasoft.utils.utility.UtilityNumeri;
+import it.eldasoft.utils.utility.UtilityStringhe;
+import pc_nicola.aur.WebServices.WsAURSoapProxy;
 
 /**
  * Gestore non standard delle occorrenze dell'entita DITG presenti piu' volte
@@ -73,6 +71,8 @@ public class GestoreFasiRicezione extends GestoreDITG {
   private ElencoOperatoriManager elencoOperatoriManager;
 
   private TabellatiManager tabellatiManager;
+
+  private AbstractGestoreEntita gestoreDITG;
 
 
   /** Logger */
@@ -162,12 +162,19 @@ public class GestoreFasiRicezione extends GestoreDITG {
       DataColumnContainer dataColumnContainer) throws GestoreException {
 
   	// Gestione dell'inserimento di una ditta in una gara
-    DefaultGestoreEntita gestoreDITG = new DefaultGestoreEntita("DITG",
-        this.getRequest());
+    //DefaultGestoreEntita gestoreDITG = new DefaultGestoreEntita("DITG", this.getRequest());
+    if(this.getRequest()!=null)
+      gestoreDITG = new GestoreEntita("DITG", this.getRequest());
+    else
+      gestoreDITG = new GestoreEntita("DITG", this.sqlManager,this.geneManager);
 
     String numeroGara =  dataColumnContainer.getString("DITG.NGARA5");
-    Long numeroFaseAttiva = new Long(UtilityStruts.getParametroString(
-        this.getRequest(), GestioneFasiGaraFunction.PARAM_WIZARD_PAGINA_ATTIVA));
+
+    //Long numeroFaseAttiva = new Long(UtilityStruts.getParametroString(this.getRequest(), GestioneFasiGaraFunction.PARAM_WIZARD_PAGINA_ATTIVA));
+    Long numeroFaseAttiva = null;
+    if(this.getRequest()!=null)
+      numeroFaseAttiva = new Long(UtilityStruts.getParametroString(this.getRequest(), GestioneFasiGaraFunction.PARAM_WIZARD_PAGINA_ATTIVA));
+
 
     if(dataColumnContainer.isColumn("DPRDOM_FIT_NASCOSTO") && dataColumnContainer.getColumn("DPRDOM_FIT_NASCOSTO").isModified()){
       String dprdomFit = dataColumnContainer.getString("DPRDOM_FIT_NASCOSTO");
@@ -190,6 +197,12 @@ public class GestoreFasiRicezione extends GestoreDITG {
       }
     }
 
+    boolean saltareTracciatura=false;
+    if(dataColumnContainer.isColumn("SALTARE_TRACCIATURA")) {
+      if("true".equals(dataColumnContainer.getString("SALTARE_TRACCIATURA")))
+        saltareTracciatura=true;
+    }
+
     Long genere = null;
     Long iterga = null;
     try {
@@ -207,6 +220,9 @@ public class GestoreFasiRicezione extends GestoreDITG {
     Long acquisiz=null;
     if(dataColumnContainer.isColumn("DITG.ACQUISIZIONE")){
       acquisiz = dataColumnContainer.getLong("DITG.ACQUISIZIONE");
+      if(new Long(9).equals(acquisiz)) {
+        dataColumnContainer.addColumn("DITG.AMMGAR", JdbcParametro.TIPO_TESTO, "2");
+      }
     }
     String dittainv= null;
     if(dataColumnContainer.isColumn("DITG.DITTAINV")){
@@ -217,11 +233,12 @@ public class GestoreFasiRicezione extends GestoreDITG {
     super.preInsert(status, dataColumnContainer);
 
 
-
-    String inserimentoDitteIterSemplificato = this.getRequest().getParameter("inserimentoDitteIterSemplificato");
-    if(inserimentoDitteIterSemplificato == null)
-      inserimentoDitteIterSemplificato = (String) this.getRequest().getAttribute("inserimentoDitteIterSemplificato");
-
+    String inserimentoDitteIterSemplificato="";
+    if(this.getRequest()!=null) {
+      inserimentoDitteIterSemplificato = this.getRequest().getParameter("inserimentoDitteIterSemplificato");
+      if(inserimentoDitteIterSemplificato == null)
+        inserimentoDitteIterSemplificato = (String) this.getRequest().getAttribute("inserimentoDitteIterSemplificato");
+    }
 
 
     if ("SI".equals(inserimentoDitteIterSemplificato)){
@@ -241,6 +258,8 @@ public class GestoreFasiRicezione extends GestoreDITG {
     String errMsgEvento = "";
     if(new Long(8).equals(acquisiz))
       descrEvento += ". Inserimento successivo alla fase di prequalifica";
+    else if(new Long(9).equals(acquisiz))
+      descrEvento += ". Inserimento a gara in corso";
 
     if(dataColumnContainer.isColumn("GARARILANCIO")){
       codEvento = "GA_AGGIUNGI_DITTA_RIL";
@@ -304,14 +323,20 @@ public class GestoreFasiRicezione extends GestoreDITG {
       }
     }
 
-    String offertaRT = UtilityStruts.getParametroString(this.getRequest(), "offertaRT");
+    //String offertaRT = UtilityStruts.getParametroString(this.getRequest(), "offertaRT");
+    String offertaRT = "";
+    if(this.getRequest()!=null)
+      offertaRT = UtilityStruts.getParametroString(this.getRequest(), "offertaRT");
 
 	// Se la gara e' di tipo 'a lotti con offerta unica' bisogna associare la
     // ditta ad ogni lotto esistente, oltre alla occorrenza complementare in GARE
     boolean isGaraLottiConOffertaUnica = false;
-    String tmp = this.getRequest().getParameter("isGaraLottiConOffertaUnica");
-    if(tmp == null)
-    	tmp = (String) this.getRequest().getAttribute("isGaraLottiConOffertaUnica");
+    String tmp ="";
+    if(this.getRequest()!=null) {
+      tmp = this.getRequest().getParameter("isGaraLottiConOffertaUnica");
+      if(tmp == null)
+      	tmp = (String) this.getRequest().getAttribute("isGaraLottiConOffertaUnica");
+    }
 
     if("true".equals(tmp))
     	isGaraLottiConOffertaUnica = true;
@@ -365,7 +390,9 @@ public class GestoreFasiRicezione extends GestoreDITG {
 		    		if("1".equals(offertaRT)){
 		    		  //Nel caso di presentazione offerta in RT si devono riportare nei lotti i valori di
 		              //PARTGAR, AMMGAR e FASGAR della ditta del lotto corrispondente
-		              String mandataria = UtilityStruts.getParametroString(this.getRequest(), "codiceDitta");
+		    		  String mandataria ="";
+		    		  if(this.getRequest()!=null)
+		    		    mandataria = UtilityStruts.getParametroString(this.getRequest(), "codiceDitta");
 		              Vector datiDitta = this.sqlManager.getVector("select partgar, ammgar, fasgar, invgar from ditg where ngara5=? and codgar5=? and dittao=?",
 		                  new Object[]{tmpCodiceLotto, codiceGara, mandataria});
 		              invgar = null;
@@ -383,7 +410,13 @@ public class GestoreFasiRicezione extends GestoreDITG {
 		              }
 
 		    		}else{
-		    		  dataColumnContainer.addColumn("DITG.INVGAR", "1");
+		    		  String invito="1";
+		    		  if(new Long(9).equals(acquisiz)) {
+		    		    invito = "2";
+		    		    dataColumnContainer.addColumn("DITG.AMMGAR", "2");
+		    		    dataColumnContainer.addColumn("DITG.ACQUISIZIONE", new Long(9));
+		    		  }
+		    		  dataColumnContainer.addColumn("DITG.INVGAR", invito);
 		    		}
 		    		gestoreDITG.inserisci(status, dataColumnContainer);
 		    		/*
@@ -406,7 +439,9 @@ public class GestoreFasiRicezione extends GestoreDITG {
 
     //Gestione Presentazione offerta in RT
     if("1".equals(offertaRT)){
-      String mandataria = UtilityStruts.getParametroString(this.getRequest(), "codiceDitta");
+      String mandataria = "";
+      if(this.getRequest()!=null)
+        mandataria = UtilityStruts.getParametroString(this.getRequest(), "codiceDitta");
       if(mandataria!=null && !"".equals(mandataria)){
         Double faseGara = new Double(Math.floor(GestioneFasiRicezioneFunction.FASE_RICEZIONE_PLICHI/10));
         Long faseGaraLong = new Long(faseGara.longValue());
@@ -496,26 +531,38 @@ public class GestoreFasiRicezione extends GestoreDITG {
 
     // Aggiornamento GARE.FASGAR e GARE.STEPGAR, solo se non si è già passati
     // alle fasi di gara, ovvero solo se FASGAR.GARE < 2
-    pgManager.aggiornaFaseGara(numeroFaseAttiva, numeroGara, true);
+    if(!new Long(9).equals(acquisiz))
+      pgManager.aggiornaFaseGara(numeroFaseAttiva, numeroGara, true);
 
     // Se l'operazione di insert e' andata a buon fine (cioe' nessuna
     // eccezione) inserisco nel request l'attributo RISULTATO valorizzato con
     // "OK", che permettera' alla popup di inserimento ditta di richiamare
     // il refresh della finestra padre e di chiudere se stessa
-    this.getRequest().setAttribute("RISULTATO", "OK");
+    if(this.getRequest()!=null)
+      this.getRequest().setAttribute("RISULTATO", "OK");
+    }catch(Exception e) {
+      String msg=e.getMessage();
+      throw e;
     }finally{
       boolean traccia = true;
-      if(acquisiz != null && (acquisiz.intValue() == 3)){
+      if((acquisiz != null && (acquisiz.intValue() == 3)) || saltareTracciatura){
         traccia = false;
       }
       if(traccia){
-        LogEvento logEvento = LogEventiUtils.createLogEvento(this.getRequest());
+        LogEvento logEvento = null;
+        if(this.getRequest()!=null)
+          logEvento = LogEventiUtils.createLogEvento(this.getRequest());
+        else {
+          logEvento = new LogEvento();
+          logEvento.setCodApplicazione("PG");
+        }
         logEvento.setLivEvento(livEvento);
         logEvento.setOggEvento(oggEvento);
         logEvento.setCodEvento(codEvento);
         logEvento.setDescr(descrEvento);
         logEvento.setErrmsg(errMsgEvento);
         LogEventiUtils.insertLogEventi(logEvento);
+
       }
     }
   }
@@ -527,8 +574,11 @@ public class GestoreFasiRicezione extends GestoreDITG {
     //PgManager pgManager = (PgManager) UtilitySpring.getBean("pgManager",
     //    this.getServletContext(), PgManager.class);
 
-    AbstractGestoreEntita gestoreDITG = new DefaultGestoreEntita(
-        this.getEntita(), this.getRequest());
+    //AbstractGestoreEntita gestoreDITG = new DefaultGestoreEntita(this.getEntita(), this.getRequest());
+    if(this.getRequest()!=null)
+      gestoreDITG = new GestoreEntita(this.getEntita(), this.getRequest());
+    else
+      gestoreDITG = new GestoreEntita(this.getEntita(),this.sqlManager,this.geneManager);
     // Osservazione: si e' deciso di usare la classe DefaultGestoreEntita,
     // invece di creare la classe GestoreDITG come apposito gestore di entita',
     // perche' essa non avrebbe avuto alcuna logica di business
@@ -985,14 +1035,17 @@ public class GestoreFasiRicezione extends GestoreDITG {
         datiWSDM.put("nomeRup",this.getRequest().getParameter("nomeRup"));
         datiWSDM.put("acronimoRup",this.getRequest().getParameter("acronimoRup"));
         datiWSDM.put("sottotipo",this.getRequest().getParameter("sottotipo"));
-
+        datiWSDM.put("tipofirma",this.getRequest().getParameter("tipofirma"));
+        datiWSDM.put("idunitaoperativamittenteDesc",this.getRequest().getParameter("idunitaoperativamittenteDesc"));
+        datiWSDM.put("uocompetenza",this.getRequest().getParameter("uocompetenza"));
+        datiWSDM.put("uocompetenzadescrizione",this.getRequest().getParameter("uocompetenzadescrizione"));
       }
       try {
         ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
             CostantiGenerali.PROFILO_UTENTE_SESSIONE);
         boolean isOp114 = GeneManager.checkOP(this.getServletContext(), CostantiGenerali.OPZIONE_GESTIONE_PORTALE);
         int res = elencoOperatoriManager.inviaComunicazioneAbilitazione(profilo,codiceGara,listaOperatoriAbilitati, numeroOperatoriAbilitati,
-            flagMailPec, oggettoMail, testoMail, mittenteMail,idcfg,isOp114, integrazioneWSDM, datiWSDM  );
+            flagMailPec, oggettoMail, testoMail, mittenteMail,idcfg,isOp114, integrazioneWSDM, datiWSDM,  this.getRequest());
 
       } catch (SQLException e) {
         throw new GestoreException("Errore nella procedura di abilitazione degli operatori",null,e);

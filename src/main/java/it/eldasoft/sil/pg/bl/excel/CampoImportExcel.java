@@ -103,7 +103,7 @@ public class CampoImportExcel {
   }
 
 
-  public CampoImportExcel(String nomeFisicoCampo,Long tipoFornitura) {
+  public CampoImportExcel(String nomeFisicoCampo,Long tipoFornitura,TabellatiManager tabellatiManager) {
     super();
     if (nomeFisicoCampo != null) {
       if (nomeFisicoCampo.length() > 0) {

@@ -14,6 +14,7 @@ $(window).ready(function (){
 	var _comdatsca = null;
 	var _comorasca = null;
 	var _commsgtes = null;
+	var primoAllegatoFirmato = null;
 		
     /*
      * Gestione utente ed attributi per il collegamento remoto
@@ -45,6 +46,7 @@ $(window).ready(function (){
 	_controlloPresenzaFascicolazione();
 	_controlloFascicoliAssociati();
 	_popolaTabellato("sottotipo","sottotipo");
+	_popolaTabellato("tipofirma","tipofirma");
 	//_inizializzazioni();
 		
 	
@@ -71,6 +73,7 @@ $(window).ready(function (){
 		$("#richiestainserimentoprotocollo").validate({
 			rules: {
 				classificadocumento: "required",
+				classdoc_filtro: "required",
 				codiceregistrodocumento: "required",
 				tipodocumento: "required",
 				mittenteinterno: "required",
@@ -115,10 +118,14 @@ $(window).ready(function (){
 				codiceaoo_filtro: "required",
 				strutturaonuovo: "required",
 				codiceufficio_filtro: "required",
-				sottotipo: "required"
+				sottotipo: "required",
+				tipofirma: "required",
+				listafascicoli: "required",
+				uocompetenzaTxt: "required"
 			},
 			messages: {
 				classificadocumento: "Specificare la classifica",
+				classdoc_filtro: "Specificare la classifica",
 				codiceregistrodocumento: "Specificare il codice registro",
 				tipodocumento: "Specificare il tipo documento",
 				mittenteinterno: "Specificare il mittente interno",
@@ -163,12 +170,15 @@ $(window).ready(function (){
 				codiceaoo_filtro:"Specificare il codice AOO",
 				strutturaonuovo:"Specificare la struttura",
 				codiceufficio_filtro:"Specificare il codice ufficio",
-				sottotipo:"Specificare il sottotipo"
+				sottotipo:"Specificare il sottotipo",
+				tipofirma: "Specificare il tipo firma",
+				listafascicoli: "Specificare il fascicolo",
+				uocompetenzaTxt: "Specificare l'unit&agrave; operativa di competenza"
 			},
 			errorPlacement: function (error, element) {
 				error.insertAfter($(element));
 				//Nel caso di TITULUS, il campo codiceaoo_filtro è seguito da un elemento <a>, quindi per il messaggio di errore serve del margine  
-				if($(element).attr('id') == 'codiceaoo_filtro'  || $(element).attr('id') == 'codiceufficio_filtro'){
+				if($(element).attr('id') == 'codiceaoo_filtro'  || $(element).attr('id') == 'codiceufficio_filtro' || $(element).attr('id') == 'classdoc_filtro'){
 					   error.css("margin-left","25px");
 				}                    
 				error.css("margin-right","5px");
@@ -188,10 +198,10 @@ $(window).ready(function (){
 		if(_tipoWSDM != "JIRIDE" && _tipoWSDM != "IRIDE"){
 			$( "#mezzoinvio" ).rules( "remove" );
 		}
-		if(_tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "JDOC"){
+		if(_tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "JDOC" && _tipoWSDM != "NUMIX"){
 			$( "#mezzo" ).rules( "remove" );
 		}
-		if(_tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "PRISMA" && _tipoWSDM != "JIRIDE"){
+		if(_tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "PRISMA" && _tipoWSDM != "JIRIDE" && _tipoWSDM != "INFOR"){
 			$( "#supporto" ).rules( "remove" );
 			$( "#strutturaonuovo" ).rules( "remove" );
 		}
@@ -322,6 +332,24 @@ $(window).ready(function (){
 
 		}
 		
+		if(_tipoWSDM == "ITALPROT"){
+			$( "#classificafascicolonuovoItalprot" ).rules( "add", {
+				required: true,
+				  messages: {
+					  required: "Specificare la classifica del fascicolo"
+				  }
+			});
+		}
+		
+		if(_tipoWSDM == "ENGINEERINGDOC" && _fascicoliPresenti >0){
+			$( "#uocompetenzaTxt" ).rules( "remove" );
+			$( "#uocompetenzaTxt" ).rules( "add", {
+				  required: true,
+				  messages: {
+					  required: "Specificare l'unit&agrave; operativa di competenza.<br>Utilizzare la funzione 'Modifica U.O. di competenza' disponibile nella scheda della procedura",
+				  }
+				});
+		}
 		
 	}
 	
@@ -486,6 +514,7 @@ $(window).ready(function (){
 					$("#numeroallegatiattesafirma").addClass("readonly");
 				}
 				tuttiAllegatiFormatoValido=json.tuttiAllegatiFormatoValido;
+				primoAllegatoFirmato = json.primoAllegatoFirmato;
 				
 			},
 			error: function(e){
@@ -655,13 +684,19 @@ $(window).ready(function (){
 				nomeRup: $("#nomeRup").text(),
 				acronimoRup: $("#acronimoRup").text(),
 				sottotipo: $("#sottotipo option:selected").val(),
-				posAllegato: $("#posAllegato option:selected").val()
+				posAllegato: $("#posAllegato option:selected").val(),
+				idunitaoperativamittenteDesc: $( "#idunitaoperativamittente option:selected" ).text(),
+				tipofirma:$("#tipofirma option:selected").val(),
+				uocompetenza:$("#uocompetenza").val(),
+				uocompetenzadescrizione:$("#uocompetenzadescrizione").val()
 			},
     		success: function(json) {
     			if (json) {
 					if (json.esito == true) {
 						_nowait();
-						var messaggio = "La comunicazione e' stata protocollata con il numero " + json.numeroprotocollo + " del " + json.annoprotocollo; 
+						var messaggio = "La comunicazione e' stata protocollata con il numero " + json.numeroprotocollo ; 
+						if(json.annoprotocollo!=null && json.annoprotocollo != "")
+							messaggio += " del " + json.annoprotocollo; 
 						
 						if (json.inserimentoinfascicolo == 'SI_FASCICOLO_ESISTENTE') {
 							messaggio = messaggio + " ed inserita nel fascicolo indicato.";
@@ -773,6 +808,10 @@ $(window).ready(function (){
 			alert("Non e' possibile procedere perche' ci sono degli allegati con formato non valido.");
 			return;
 		}
+		if(_tipoWSDM == "LAPISOPERA" && !primoAllegatoFirmato){
+			alert(messaggioLapisoperaAllegati);
+			return;
+		}
 		if(_commodello == '1'){
 			if(_comdatsca == null && _comorasca == null){
 				alert("Non e' possibile procedere perche' non e' stata specificata la data e l'ora di termine presentazione documentazione.");
@@ -868,12 +907,18 @@ $(window).ready(function (){
 			}
 			caricamentoStrutturaJIRIDE();
 		}
+		if (_tipoWSDM == "NUMIX"){
+			caricamentoClassificaNumix();
+		}
     });
 	
 	$('#password').change(function() {
 		if (_tipoWSDM == "TITULUS"){
 			caricamentoCodiceAooTITULUS();
 			_popolaTabellatoClassificaTitulus();
+		}
+		if (_tipoWSDM == "NUMIX"){
+			caricamentoClassificaNumix();
 		}
     });
 	
@@ -894,6 +939,10 @@ $(window).ready(function (){
 		if (_tipoWSDM == "PRISMA"){
 			gestionemodificacampoannofascicolo();
 		}
+		if (_tipoWSDM == "ITALPROT"){
+			$('#listafascicoli').empty();
+			$('#codicefascicolo').val(); 
+		}
 	});
 	
 	$('#numerofascicolo').change(function() {
@@ -911,6 +960,19 @@ $(window).ready(function (){
 			caricamentoStrutturaJIRIDE();
 		}
     });
+    
+    $('#classificafascicolonuovoItalprot').change(function() {
+		$('#listafascicoli').empty();
+		$('#codicefascicolo').val(); 
+		
+	});
+    
+	$('#listafascicoli').on('change',  function () {
+		var str = this.value;
+		gestioneSelezioneFascicolo(str);
+		
+	});
+		
 });
 
 

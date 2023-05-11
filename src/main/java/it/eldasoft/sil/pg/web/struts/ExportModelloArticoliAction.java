@@ -39,7 +39,7 @@ import org.apache.struts.action.ActionMapping;
 public class ExportModelloArticoliAction extends ActionBaseNoOpzioni {
 
 	static Logger logger = Logger.getLogger(ExportModelloArticoliAction.class);
-	private static final String MODELLO_ARTICOLI = "articoli.xls";
+	private static final String MODELLO_ARTICOLI = "articoli.xlsx";
 
 	private FileManager fileManager;
 
@@ -63,7 +63,7 @@ public class ExportModelloArticoliAction extends ActionBaseNoOpzioni {
 		String messageKey;
 		String logMessageKey;
 		String idGaraCatalogo = request.getParameter("chiave");
-		String percorsoFile = request.getSession().getServletContext().getRealPath("/") + "xls/";
+		String percorsoFile = request.getSession().getServletContext().getRealPath("/") + "xlsx/";
 
 		try {
 			fileManager.download(percorsoFile, MODELLO_ARTICOLI, response);

@@ -10,19 +10,6 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
-import it.eldasoft.gene.bl.FileAllegatoManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
-import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
-import it.eldasoft.gene.db.datautils.DataColumnContainer;
-import it.eldasoft.gene.db.domain.BlobFile;
-import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.MEPAManager;
-import it.eldasoft.sil.pg.bl.ValidatorManager;
-import it.eldasoft.utils.spring.UtilitySpring;
-import it.eldasoft.utils.utility.UtilityStringhe;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -33,6 +20,20 @@ import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
 
 import com.lowagie.text.DocumentException;
+
+import it.eldasoft.gene.bl.FileAllegatoManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
+import it.eldasoft.gene.db.datautils.DataColumnContainer;
+import it.eldasoft.gene.db.domain.BlobFile;
+import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.sil.pg.bl.MEPAManager;
+import it.eldasoft.sil.pg.bl.ValidatorManager;
+import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityStringhe;
 
 /**
  * Gestore popup per la trasmissione di un ordine di acquisto
@@ -142,7 +143,7 @@ public class GestorePopupTrasmettiOrdine extends AbstractGestoreEntita {
             }
             dimTotaleAllegati +=this.getForm().getSelezioneFile().getFileSize();
             validatorManager.validateFiles(idcfg,dimTotaleAllegati);
-    		validatorManager.validateFileFirmato(this.getServletContext(), this.getForm().getSelezioneFile());
+    		validatorManager.validateFormatoFile(this.getServletContext(), this.getForm().getSelezioneFile());
 
 
     		byte[] file = null;
@@ -226,13 +227,15 @@ public class GestorePopupTrasmettiOrdine extends AbstractGestoreEntita {
 		        datiWSDM.put("nomeRup",this.getRequest().getParameter("nomeR"));
 		        datiWSDM.put("acronimoRup",this.getRequest().getParameter("acronimoR"));
 		        datiWSDM.put("sottotipo",this.getRequest().getParameter("sottotipo"));
+		        datiWSDM.put(GestioneWSDMManager.LABEL_UOCOMPETENZA,this.getRequest().getParameter("uocompetenza"));
+		        datiWSDM.put(GestioneWSDMManager.LABEL_DESCRIZIONE_UOCOMPETENZA,this.getRequest().getParameter("uocompetenzadescrizione"));
 		    }
 
 			mepaManager.inviaComunicazioneOrdine(profilo, nGara, codgar, nomeEntita, nCont,
 							codImpr, ragioneSocialeOperatore, destinatarioMail, oggettoMail,
 							abilitaIntestazioneVariabile, testoInHtml, testoMail,
 							mittenteMail, idcfg, flagMailPec, nomeFile, file,
-							integrazioneWSDM, datiWSDM, listaDocumenti);
+							integrazioneWSDM, datiWSDM, listaDocumenti, this.getRequest());
 
 			this.getRequest().setAttribute("ordineTrasmesso", "SI");
 

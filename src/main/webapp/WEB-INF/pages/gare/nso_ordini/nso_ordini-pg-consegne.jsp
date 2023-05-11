@@ -21,13 +21,23 @@
 <c:set var="tmp" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GestioneDatiNsoFunction", pageContext, id)}'/>
 <gene:redefineInsert name="head">
 		<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>
-		<script type="text/javascript" src="${pageContext.request.contextPath}/js/nso-ordini.js"></script>
+		<script type="text/javascript" src="${pageContext.request.contextPath}/js/nso-ordini.js?t=<%=System.currentTimeMillis()%>"></script>
 </gene:redefineInsert>
 
 <%/* Dati generali della gara */%>
 <gene:formScheda entita="NSO_ORDINI" gestisciProtezioni="true"  gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreOrdiniNso">
-
+		<c:if test='${(requestScope.statoOrdine ne 1 && requestScope.statoOrdine ne 2)}'>
+				<gene:redefineInsert name="schedaModifica" />
+				<gene:redefineInsert name="pulsanteModifica" />
+		 </c:if>
 	<gene:redefineInsert name="addToAzioni" >
+		<c:if test='${(requestScope.statoOrdine eq 4 || requestScope.statoOrdine eq 5 || requestScope.statoOrdine eq 6) && requestScope.isPeriodoVariazione eq 1}' >
+			<tr>
+				<td class="vocemenulaterale">
+						<a href="javascript:revocaOrdineNso();" id="menuValidaOrdine" title="Revoca Ordine" tabindex="1510">Revoca Ordine</a>
+				</td>
+			</tr>
+		</c:if>
 		<c:if test="${(requestScope.statoOrdine eq 1) || (requestScope.statoOrdine eq 2)}">
 			<tr>
 				<td class="vocemenulaterale">
@@ -42,6 +52,13 @@
 	<c:if test='${requestScope.statoOrdine eq 3 || requestScope.statoOrdine eq 4}'>
 		<gene:redefineInsert name="schedaModifica" />
 		<gene:redefineInsert name="pulsanteModifica" />
+	</c:if>
+	<c:if test="${requestScope.statoOrdine eq 8}">
+		<%/*
+			se l'ordine è revocato non devo permettere alcuna modifica
+		*/ %>
+		<gene:redefineInsert name="schedaModifica"></gene:redefineInsert>
+		<gene:redefineInsert name="pulsanteModifica"></gene:redefineInsert>
 	</c:if>
 
 	<gene:campoScheda campo="ID" visibile="false"   />
@@ -70,6 +87,7 @@
 			 scheda=''
 			 schedaPopUp=''
 			 campi="V_NSO_CONSEGNE.CODCONS_NSO;V_NSO_CONSEGNE.INDIRIZZO;V_NSO_CONSEGNE.LOCALITA;V_NSO_CONSEGNE.CAPEIN;V_NSO_CONSEGNE.CITEIN;V_NSO_CONSEGNE.CODNAZ"
+			 functionId="skip"
 			 chiave="NSO_PUNTICONS_COD_PUNTO_CONS"
 			 inseribile="false">
 			 <gene:campoScheda campo="COD_PUNTO_CONS"  entita="NSO_PUNTICONS" where="NSO_PUNTICONS.NSO_ORDINI.ID=NSO_ORDINI.ID"  />
@@ -137,29 +155,34 @@
   	
   </p>
 </div>
+<div id="nso-dialog-revocation" title="Revoca Ordine NSO" style="display:none">
+			  <p id="nso-dialog-revocation-content">
+			  	Vuoi revocare l&#39;ordine?<br>Questa operazione non si pu&ograve; annullare.
+			  </p>
+			</div>
 
 <gene:javaScript>
 
-	<c:if test="${modo eq 'VISUALIZZA' && (requestScope.statoOrdine ne 3 && requestScope.statoOrdine ne 4)}">
+	<c:if test="${modo eq 'VISUALIZZA' && (requestScope.statoOrdine eq 1 || requestScope.statoOrdine eq 2)}">
+		function modificaPuntoConsegna() {
+				var idOrdine = "${id}";
+				var comando = "href=gare/nso_puntico/popup-modificaPuntoConsegna.jsp&idOrdine=" + idOrdine;
+			 	openPopUpCustom(comando, "modificaPuntoConsegna", 700, 350, "yes", "yes");
+		
+		};
+			
+		function addHrefConsegna() {
+			var _span = $("<span/>");
+			_span.css("float", "right");
+			_span.css("vertical-align", "top");
+			var _href = "javascript:modificaPuntoConsegna();";
+			var _a = $("<a/>",{"text": "Modifica punto di consegna", "href": _href});
+			_span.append(_a);
+			_span.appendTo($("#NSO_PUNTICONS_COD_PUNTO_CONSview").parent());
+		};
+	
 		addHrefConsegna();
 	</c:if>
-	
-	function modificaPuntoConsegna() {
-			var idOrdine = "${id}";
-			var comando = "href=gare/nso_puntico/popup-modificaPuntoConsegna.jsp&idOrdine=" + idOrdine;
-		 	openPopUpCustom(comando, "modificaPuntoConsegna", 700, 350, "yes", "yes");
-	
-	};
-		
-	function addHrefConsegna() {
-		var _span = $("<span/>");
-		_span.css("float", "right");
-		_span.css("vertical-align", "top");
-		var _href = "javascript:modificaPuntoConsegna();";
-		var _a = $("<a/>",{"text": "Modifica punto di consegna", "href": _href});
-		_span.append(_a);
-		_span.appendTo($("#NSO_PUNTICONS_COD_PUNTO_CONSview").parent());
-	};
 
 </gene:javaScript>
 

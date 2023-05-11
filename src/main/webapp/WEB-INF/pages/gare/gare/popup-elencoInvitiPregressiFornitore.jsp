@@ -55,6 +55,8 @@
 
 <c:set var="nomimo" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetNOMIMOFunction", pageContext, codiceElenco, codiceGara, codiceDitta)}' />
 
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, codiceElenco, "SC", "20")}
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, codiceDitta, "SC", "10")}
 <c:set var="where" value="DITG.NGARA5 = GARE.NGARA AND GARE.ELENCOE = '${codiceElenco}' AND DITG.ACQUISIZIONE = 3"/> 
 
 <gene:template file="popup-template.jsp" gestisciProtezioni="false" schema="GARE">
@@ -67,19 +69,19 @@
 			<gene:formLista entita="GARE" where="${where} ${filtro}" pagesize="25" tableclass="datilista" gestisciProtezioni="false" sortColumn="-2" >
 
 					<gene:campoLista campo="GENERE" ordinabile="false" visibile="false"/>
-					<gene:campoLista campo="NGARA5" entita="DITG" where="GARE.NGARA = DITG.NGARA5 and DITTAO = '${codiceDitta}'" />
-					<gene:campoLista campo="CODCIG" value="${gene:callFunction3('it.eldasoft.sil.pg.tags.funzioni.GetCodcigInvitiPregressiFunction', pageContext, datiRiga.V_GARE_TORN_GENERE, datiRiga.DITG_NGARA5)}" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoCigListaGare"/>
-					<gene:campoLista campo="OGGETTO" entita="V_GARE_TORN" where="V_GARE_TORN.CODGAR=GARE.CODGAR1" />
-					<gene:campoLista campo="INVGAR" entita="DITG" where="GARE.NGARA = DITG.NGARA5 and DITTAO = '${codiceDitta}'" />
+					<gene:campoLista campo="NGARA5" entita="DITG" where="GARE.NGARA = DITG.NGARA5 and DITTAO = '${codiceDitta}'" ordinabile="false"/>
+					<gene:campoLista campo="CODCIG" value="${gene:callFunction3('it.eldasoft.sil.pg.tags.funzioni.GetCodcigInvitiPregressiFunction', pageContext, datiRiga.V_GARE_TORN_GENERE, datiRiga.DITG_NGARA5)}" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoCigListaGare" ordinabile="false"/>
+					<gene:campoLista campo="OGGETTO" entita="V_GARE_TORN" where="V_GARE_TORN.CODGAR=GARE.CODGAR1" ordinabile="false"/>
+					<gene:campoLista campo="INVGAR" entita="DITG" where="GARE.NGARA = DITG.NGARA5 and DITTAO = '${codiceDitta}'" ordinabile="false"/>
 					<gene:campoLista campo="DITTAO" entita="DITG" where="GARE.NGARA = DITG.NGARA5 and DITTAO = '${codiceDitta}'" visibile="false"/>
 					<gene:campoLista campo="RTOFFERTA" entita="DITG" where="GARE.NGARA = DITG.NGARA5 and DITTAO = '${codiceDitta}'" visibile="false"/>
 					
 					<gene:campoLista campo="CODGAR1" ordinabile="false" visibile="false"/>
-					<gene:campoLista campo="DINVIT" title="Data invito" entita="TORN" where="torn.codgar = gare.codgar1" visibile="true"/>
+					<gene:campoLista campo="DINVIT" title="Data invito" entita="TORN" where="torn.codgar = gare.codgar1" visibile="true" ordinabile="false"/>
 					
-					<gene:campoLista campo="INVOFF" title="Inviato offerta?" campoFittizio="true" definizione="A2;" visibile="true" value="" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoInvoffDittaGara"/>
+					<gene:campoLista campo="INVOFF" title="Inviato offerta?" campoFittizio="true" definizione="A2;" visibile="true" value="" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoInvoffDittaGara" />
 					<gene:campoLista campo="AGGIUDICATARIA" visibile="true" title="Aggiudicataria ?" campoFittizio="true" definizione="N10;" value="" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoDittaAggiudicatariaGara"/>
-					<gene:campoLista campo="GENERE" entita="V_GARE_TORN" where="V_GARE_TORN.CODICE=GARE.NGARA" visibile="true" title="Gara in lotti?"/>
+					<gene:campoLista campo="GENERE" entita="V_GARE_TORN" where="V_GARE_TORN.CODICE=GARE.NGARA" visibile="true" title="Gara in lotti?" ordinabile="false"/>
 
 				</gene:formLista>
 				</td>

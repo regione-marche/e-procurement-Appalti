@@ -41,7 +41,7 @@
 				<gene:campoScheda campo="IDARTCAT"   visibile='false'/>
 								
 				<c:if test="${!empty idArticolo and modo eq 'VISUALIZZA'}">
-					<c:set var="result" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetValoriMEALLARTCATFunction", pageContext, idArticolo)}' />
+					<c:set var="result" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetValoriMEALLARTCATFunction", pageContext, idArticolo, "1")}' />
 					<c:if test="${!empty datiMEALLARTCAT }">
 						<gene:campoScheda addTr="false" >
 							<tbody id="sezioneMultiplaMEALLARTCAT">

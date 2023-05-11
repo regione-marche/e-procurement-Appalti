@@ -51,7 +51,7 @@
 		
 		<gene:javaScript>	
 			document.forms[0].jspPathTo.value="gare/commons/popup-filtro.jsp";
-			document.forms[0].action+= "?tipo=Nominativi";
+			document.forms[0].action+= "?tipo=Nominativi&entFiltro=COMMNOMIN";
 			
 			var nominativiPerPagina="${nominativiPerPagina}";
 			var indiceSelezionato =  document.getElementById('risultatiPerPagina').selectedIndex;

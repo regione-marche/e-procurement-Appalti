@@ -89,6 +89,10 @@
 <c:set var="integrazioneWSERP" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSERPFunction", pageContext)}' />
 
 <c:if test='${integrazioneWSERP eq "1"}'>
+
+	<c:set var="isPresenzaInvioERP" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.GetWSERPPresenzaInvioERPFunction", pageContext, codiceGara, numeroGara, requestScope.tipoWSERP, "AGGDEF")}' />
+
+
 	<c:set var="presenzaRda" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetWSERPPresenzaRdaFunction", pageContext, codiceGara, numeroGara, requestScope.tipoWSERP)}' />
 	<c:set var="tipoWSERP" value='${requestScope.tipoWSERP}' />
 	<c:if test='${tipoWSERP eq "UGOVPA"}'>
@@ -101,15 +105,18 @@
         <c:when test='${tipoWSERP eq "AVM"}'>
         	<c:set var="comunicaEsitoTitle" value='Invia aggiudicazione ad ERP' />
         </c:when>
+        <c:when test='${tipoWSERP eq "RAIWAY"}'>
+        	<c:set var="comunicaEsitoTitle" value='Aggiorna aggiudicazione/fase gara su ERP' />
+        </c:when>
         <c:when test='${(tipoWSERP eq "TPER")}'>
         	<c:if test='${!empty ditta}'>
         		<c:set var="nazione" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetNazioneDittaFunction", pageContext, ditta)}' />
         	</c:if>
             <c:set var="comunicaEsitoTitle" value='Invia aggiudicazione ad ERP' />
         </c:when>
-        <c:when test='${tipoWSERP eq "CAV"}'>
-        	<c:set var="comunicaEsitoTitle" value='Invia dati contratto ad ERP' />
-        </c:when>
+		<c:when test='${tipoWSERP eq "ATAC"}'>
+			<c:set var="comunicaEsitoTitle" value='Invia aggiudicazione ad ERP' />
+		</c:when>
         <c:otherwise>
         <c:set var="tipoWSERP" value='' />
         </c:otherwise>
@@ -117,9 +124,6 @@
 	<c:choose>        
         <c:when test='${tipoWSERP eq "AVM"}'>
         	<c:set var="comunicaEsitoMsg" value='Riferimento Rdo ERP' />
-        </c:when>
-        <c:when test='${tipoWSERP eq "CAV"}'>
-        	<c:set var="comunicaEsitoMsg" value='Invio dati contratto ERP' />
         </c:when>
         <c:otherwise>
         </c:otherwise>
@@ -168,7 +172,7 @@
 		<gene:redefineInsert name="addToAzioni" >
 		<c:if test='${autorizzatoModifiche ne "2" and (gene:checkProtFunz(pageContext, "ALT", "SelezionaDittaAggDef") or gene:checkProtFunz(pageContext, "ALT", "AnnullaAggDef") or (gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE-scheda.FASIGARA.VisualizzaDettaglioPrezzi") and not empty datiRiga.GARE_DITTA and (datiRiga.GARE_MODLICG eq "5" or datiRiga.GARE_MODLICG eq "14" or datiRiga.GARE_MODLICG eq "16")))}' >
 		
-			<c:if test='${gene:checkProtFunz(pageContext, "ALT", "SelezionaDittaAggDef") and (!isProceduraTelematica or (isProceduraTelematica and meruolo eq 1)) and esisteODADefinito ne "SI" and empty datiRiga.GARE_DITTA }'>
+			<c:if test='${gene:checkProtFunz(pageContext, "ALT", "SelezionaDittaAggDef") and (!isProceduraTelematica or (isProceduraTelematica and (meruolo eq 1 or meruolo eq 3))) and esisteODADefinito ne "SI" and empty datiRiga.GARE_DITTA }'>
 				<tr>
 					<td class="vocemenulaterale">
 						<c:if test='${isNavigazioneDisattiva ne "1"}'><a href="javascript:aggiudicazioneDefinitiva();" title="Aggiudicazione definitiva" tabindex="1502"></c:if>
@@ -177,7 +181,7 @@
 					</td>
 				</tr>
 			</c:if>
-			<c:if test='${gene:checkProtFunz(pageContext, "ALT", "AnnullaAggDef") and (!isProceduraTelematica or (isProceduraTelematica and meruolo eq 1)) and esisteODADefinito ne "SI"}'>
+			<c:if test='${gene:checkProtFunz(pageContext, "ALT", "AnnullaAggDef") and (!isProceduraTelematica or (isProceduraTelematica and (meruolo eq 1 or meruolo eq 3))) and esisteODADefinito ne "SI"}'>
 				<c:if test='${!(integrazioneWSERP eq "1" && not empty datiRiga.GARE1_NUMRDO && requestScope.tipoWSERP ne "FNM")}'>
 					<tr>
 						<td class="vocemenulaterale">
@@ -193,8 +197,8 @@
 			<tr>
 				<td class="vocemenulaterale">
 					<c:if test='${isNavigazioneDisattiva ne "1"}'><a href="javascript:apriListaCauzioneDitte();"
-					 title="Svincolo cauzione provvisoria" tabindex="1505"></c:if>
-						Svincolo cauzione provvisoria
+					 title="Svincolo garanzia provvisoria" tabindex="1505"></c:if>
+						Svincolo garanzia provvisoria
 					<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
 				</td>
 			</tr>
@@ -210,7 +214,7 @@
 				</td>
 		</c:if>
 		
-		<c:if test='${autorizzatoModifiche ne "2" and (((tipoWSERP eq "SMEUP" || (tipoWSERP eq "UGOVPA" && empty datiRiga.GARE1_NUMRDO && isDatiContratto eq "true")|| (tipoWSERP eq "AVM" && empty datiRiga.GARE1_NUMRDO) || tipoWSERP eq "CAV" && empty datiRiga.GARE1_NUMRDO) and (presenzaRda eq "1" || presenzaRda eq "2")) || (tipoWSERP eq "TPER" && empty datiRiga.GARE1_NUMRDO && nazione eq "1"))}'>
+		<c:if test='${autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.AggiornaFasiGaraERP") and (((tipoWSERP eq "SMEUP" || (tipoWSERP eq "UGOVPA" && empty datiRiga.GARE1_NUMRDO && isDatiContratto eq "true")|| (tipoWSERP eq "AVM" && empty datiRiga.GARE1_NUMRDO) ) and (presenzaRda eq "1" || presenzaRda eq "2")) || (tipoWSERP eq "RAIWAY" and presenzaRda eq "1") || (tipoWSERP eq "TPER" && empty datiRiga.GARE1_NUMRDO && nazione eq "1") || (isPresenzaInvioERP eq "true"))}'>
 			<tr>
 				<td class="vocemenulaterale">
 					<a href="javascript:comunicaEsitoRdaInGara('${key}','${requestScope.tipoWSERP}');" title='${comunicaEsitoTitle}' tabindex="1507">
@@ -265,6 +269,7 @@
 	<gene:campoScheda campo="ITERGA" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="false"/>
 	<gene:campoScheda campo="OFFAUM" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="false"/>
 	<gene:campoScheda campo="STATO" entita="GARECONT" where="GARE.NGARA = GARECONT.NGARA and GARECONT.NCONT=1" visibile="false"/>
+	<gene:campoScheda campo="CODSTIPULA" entita="G1STIPULA" where="GARE.NGARA = G1STIPULA.NGARA and G1STIPULA.NCONT=1" visibile="false"/>
 
 	<gene:gruppoCampi idProtezioni="AGGPROV" >
 		<gene:campoScheda visibile='${isGaraLottiConOffertaUnica ne "true"}'>
@@ -319,10 +324,12 @@
 			<c:otherwise>
 				<c:choose>
 					<c:when test="${isGaraLottiConOffertaUnica eq 'true'}">
-						<c:set var="whereArchivio" value="DITG.CODGAR5='${datiRiga.GARE_CODGAR1}' AND DITG.NGARA5 = DITG.CODGAR5 AND(DITG.INVOFF <> '2' or DITG.INVOFF is null) AND (DITG.AMMGAR <> '2' or DITG.AMMGAR is null)"/>
+						<c:set var="parametriWhere" value="T:${datiRiga.GARE_CODGAR1}" />
+						<c:set var="functionId" value="garaLottiConOffertaUnica" />
 					</c:when>
 					<c:otherwise>
-						<c:set var="whereArchivio" value="DITG.NGARA5='${datiRiga.GARE_NGARA}' AND DITG.CODGAR5='${datiRiga.GARE_CODGAR1}' AND(DITG.INVOFF <> '2' or DITG.INVOFF is null) AND (DITG.AMMGAR <> '2' or DITG.AMMGAR is null)"/>
+						<c:set var="parametriWhere" value="T:${datiRiga.GARE_NGARA};T:${datiRiga.GARE_CODGAR1}" />
+						<c:set var="functionId" value="garaLottiSenzaOffertaUnica"/>
 					</c:otherwise>
 				</c:choose>
 				<c:choose>
@@ -332,15 +339,18 @@
 							scheda=""
 							schedaPopUp=""
 							campi="DITG.DITTAO;DITG.NOMIMO;DITG.RIBAUO;DITG.IMPOFF"
+							functionId="${functionId}"
+							parametriWhere="${parametriWhere}"
 							chiave=""
-							where="${whereArchivio}"
 							inseribile="false"
 							formName="formArchivioDitte" >
 							<gene:campoScheda campo="DITTA"  visibile="${aqoper ne 2 }">
 								<gene:checkCampoScheda funzione='checkEsineg()' obbligatorio="true" messaggio="Non e' possibile selezionare la ditta. La gara risulta conclusa con esito negativo" onsubmit="false"/>
+								<gene:checkCampoScheda funzione='checkStipula()' obbligatorio="true" messaggio="Non e' possibile modificare la ditta. Esiste un contratto in fase di stipula o già attivo" onsubmit="false"/>
 							</gene:campoScheda>
 							<gene:campoScheda campo="NOMIMA"  visibile="${aqoper ne 2 }">
 								<gene:checkCampoScheda funzione='checkEsineg()' obbligatorio="true" messaggio="Non e' possibile selezionare la ditta. La gara risulta conclusa con esito negativo" onsubmit="false"/>
+								<gene:checkCampoScheda funzione='checkStipula()' obbligatorio="true" messaggio="Non e' possibile modificare la ditta. Esiste un contratto in fase di stipula o già attivo" onsubmit="false"/>
 							</gene:campoScheda>
 							<gene:campoScheda title="Ribasso" campo="RIBASSO_FIT" campoFittizio="true" visibile = "false" definizione="F13.9;0;;PRC"/>
 							<gene:campoScheda title="Importo" campo="IMPORTO_FIT" campoFittizio="true" visibile = "false" definizione="F24.5;0;;"/>
@@ -353,7 +363,8 @@
 							schedaPopUp=""
 							campi="DITG.DITTAO;DITG.NOMIMO"
 							chiave=""
-							where="${whereArchivio}"
+							functionId="${functionId}"
+							parametriWhere="${parametriWhere}"
 							inseribile="false"
 							formName="formArchivioDitte" >
 							<gene:campoScheda campo="DITTA"  visibile="${aqoper ne 2 }"/>
@@ -413,7 +424,7 @@
 			</c:otherwise>
 		</c:choose>
 		<gene:campoScheda title="Punteggio di aggiudicazione" campo="PUNTEGGIO" campoFittizio="true" modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.GARE.RIBAGG")}' definizione="F13.9;0" value="${datiRiga.GARE_RIBAGG}" visibile="${aqoper ne 2 }"/>
-		<gene:campoScheda campo="RIBOEPV" visibile="${modlicg eq 6 && aqoper ne 2}" />
+		<gene:campoScheda campo="RIBOEPV" visibile="${modlicg eq 6 && aqoper ne 2}" modificabile="false"/>
 		<c:choose>
 			<c:when test="${iaggiuinivalorizzato eq 'SI'}" >
 				<gene:campoScheda campo="IAGGIU" visibile="${aqoper ne 2 }"/>
@@ -543,7 +554,7 @@
 		<gene:campoScheda campo="IMPPERM" title="di cui importo per permuta" modificabile="false" entita="DITG" where="DITG.NGARA5 = GARE.NGARA AND DITG.CODGAR5 = GARE.CODGAR1 AND DITG.DITTAO = GARE.DITTA" visibile="${ (datiRiga.GARE1_ULTDETLIC eq 1 or datiRiga.GARE1_ULTDETLIC eq 3) and aqoper ne 2}"/>
 		<gene:campoScheda campo="IMPCANO" title="di cui importo per canone assistenza" modificabile="false" entita="DITG" where="DITG.NGARA5 = GARE.NGARA AND DITG.CODGAR5 = GARE.CODGAR1 AND DITG.DITTAO = GARE.DITTA" visibile="${ (datiRiga.GARE1_ULTDETLIC eq 2 or datiRiga.GARE1_ULTDETLIC eq 3) and aqoper ne 2 }"/>
 		<gene:campoScheda campo="NOTDEFI"  entita="GARE1" where="GARE1.NGARA = GARE.NGARA" />
-		<gene:campoScheda campo="NUMRDO" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" title="${comunicaEsitoMsg}" visibile='${integrazioneWSERP eq "1" && (tipoWSERP eq "AVM" || tipoWSERP eq "CAV")}' modificabile='false' />	
+		<gene:campoScheda campo="NUMRDO" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" title="${comunicaEsitoMsg}" visibile='${integrazioneWSERP eq "1" && (tipoWSERP eq "AVM" || tipoWSERP eq "RAIWAY")}' modificabile='false' />	
 		<c:if test='${bustalotti eq "1" || bustalotti eq "2"}'>
 			<gene:campoScheda campo="ESINEG" visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false" title="Esito lotto non aggiudicato"/>
 			<gene:campoScheda campo="DATNEG" visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false"/>
@@ -592,7 +603,6 @@
 		<gene:fnJavaScriptScheda funzione='sbiancaValoriIni()' elencocampi='GARE_DITTA' esegui="false" />
 	</c:if>
 	
-<c:if test='${isGaraLottiConOffertaUnica ne "true"}'>
 	<gene:gruppoCampi idProtezioni="ATTOAGG" >
 	<gene:campoScheda addTr="false">
 		<tr id="rowTITOLO_ATTO_AGGIUDICAZIONE">
@@ -606,6 +616,7 @@
 	<gene:campoScheda campo="DPROAA" />
 	</gene:gruppoCampi>
 	
+<c:if test='${isGaraLottiConOffertaUnica ne "true"}'>	
 	<c:if test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.AGGDEF-scheda.AGGDEF.attiMultipli")}'>
 	<c:set var="tipoRelazione" value="GARE" />
 		<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.GestioneAttiGaraFunction" parametro='${tipoRelazione};${gene:getValCampo(key, "NGARA")}' />
@@ -626,7 +637,7 @@
 	</c:if>
 	<gene:gruppoCampi idProtezioni="COMDITTE" >
 		<c:if test='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.GAROFF")}'>
-			<c:set var="dicituraCauzione" value="e svincolo cauzione provvisoria"/>
+			<c:set var="dicituraCauzione" value="e svincolo garanzia provvisoria"/>
 		</c:if>
 		<gene:campoScheda>
 			<td colspan="2"><b>Comunicazione alle ditte dell'aggiudicazione definitiva ${dicituraCauzione}</b></td>
@@ -644,7 +655,7 @@
 	
 	<gene:gruppoCampi idProtezioni="CAUZDEF" visibile="${aqoper ne 2 }">
 		<gene:campoScheda nome="CAUZDEF">
-			<td colspan="2"><b>Cauzione definitiva</b></td>
+			<td colspan="2"><b>Garanzia definitiva</b></td>
 		</gene:campoScheda>
 		<gene:campoScheda campo="RIDISO" />
 		<gene:campoScheda campo="IMPGAR"  >
@@ -694,6 +705,7 @@
 	<c:if test='${gene:checkProt(pageContext, "COLS.MOD.GARE.GARE.DITTA") and gene:checkProt(pageContext, "COLS.MOD.GARE.GARE.NOMIMA")}'>
 		<input type="hidden" name=profiloSemplificato id="profiloSemplificato" value="1" />
 	</c:if>
+	<input type="hidden" name="entitaPrincipaleModificabile" id="entitaPrincipaleModificabile" value="${sessionScope.entitaPrincipaleModificabile}" />
 	<gene:campoScheda>
 		<td class="comandi-dettaglio" colSpan="2">
 			<c:choose>
@@ -705,7 +717,7 @@
 					<c:if test='${isGaraLottiConOffertaUnica eq "true"}'>	
 						<INPUT type="button"  class="bottone-azione" value='Torna a elenco lotti' title='Torna a elenco lotti' onclick="javascript:historyVaiIndietroDi(1);">&nbsp;&nbsp;&nbsp;
 					</c:if>
-					<c:if test='${(autorizzatoModifiche ne "2") and gene:checkProtFunz(pageContext, "ALT", "SelezionaDittaAggDef") and (!isProceduraTelematica or (isProceduraTelematica and meruolo eq 1)) and esisteODADefinito ne "SI" and empty datiRiga.GARE_DITTA}' >
+					<c:if test='${(autorizzatoModifiche ne "2") and gene:checkProtFunz(pageContext, "ALT", "SelezionaDittaAggDef") and (!isProceduraTelematica or (isProceduraTelematica and (meruolo eq 1 or meruolo eq 3))) and esisteODADefinito ne "SI" and empty datiRiga.GARE_DITTA}' >
 						<INPUT type="button" class="bottone-azione" value='Aggiudicazione definitiva' title='Aggiudicazione definitiva' onclick="javascript:aggiudicazioneDefinitiva();" id="btnAggiudicazioneDef">
 					</c:if>
 					<c:if test='${(autorizzatoModifiche ne "2") and gene:checkProtFunz(pageContext,"MOD","SCHEDAMOD")}'>
@@ -734,7 +746,11 @@
 	function archivioListaCustom(nomeArchivio) {		
 		if (nomeArchivio == "formArchivioDitte") {
 			if (!checkEsineg()) {
-				alert("Non e' possibile selezionare la ditta. La gara risulta conclusa con esito negativo");
+				alert("Non e' possibile selezionare la ditta. La gara risulta conclusa con esito negativo.");
+				return;
+			}
+			if (!checkStipula()) {
+				alert("Non e' possibile modificare la ditta. Esiste un contratto in fase di stipula o già attivo.");
 				return;
 			}
 		}
@@ -751,6 +767,14 @@
 		return true;
 	} 
 	
+	function checkStipula() {
+		var codstipula = getValue("G1STIPULA_CODSTIPULA");
+		if (codstipula == null || (codstipula != null && codstipula != "")){
+			return false;
+		}
+		return true;
+	} 
+
 	function archivioImpresaAggDef(){
 		var codiceImpresa = getValue("GARE_DITTA");
 		var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);

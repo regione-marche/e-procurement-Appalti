@@ -10,31 +10,6 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
-import it.eldasoft.gene.bl.FileAllegatoManager;
-import it.eldasoft.gene.bl.GenChiaviManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.bl.TabellatiManager;
-import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
-import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
-import it.eldasoft.gene.db.datautils.DataColumn;
-import it.eldasoft.gene.db.datautils.DataColumnContainer;
-import it.eldasoft.gene.db.domain.BlobFile;
-import it.eldasoft.gene.db.domain.LogEvento;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.gene.utils.LogEventiUtils;
-import it.eldasoft.gene.web.struts.tags.UtilityStruts;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.PgManager;
-import it.eldasoft.sil.pg.tags.funzioni.ControlloVariazioniAggiornamentoDaPortaleFunction;
-import it.eldasoft.sil.portgare.datatypes.AggiornamentoAnagraficaImpresaDocument;
-import it.eldasoft.sil.portgare.datatypes.AggiornamentoIscrizioneImpresaElencoOperatoriDocument;
-import it.eldasoft.sil.portgare.datatypes.CategoriaType;
-import it.eldasoft.sil.portgare.datatypes.IscrizioneImpresaElencoOperatoriDocument;
-import it.eldasoft.sil.portgare.datatypes.ListaCategorieIscrizioneType;
-import it.eldasoft.sil.portgare.datatypes.RecapitiType;
-import it.eldasoft.utils.spring.UtilitySpring;
-import it.eldasoft.utils.utility.UtilityDate;
-
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Calendar;
@@ -51,6 +26,34 @@ import org.apache.log4j.Logger;
 import org.apache.xmlbeans.XmlException;
 import org.springframework.transaction.TransactionStatus;
 
+import it.eldasoft.gene.bl.FileAllegatoManager;
+import it.eldasoft.gene.bl.GenChiaviManager;
+import it.eldasoft.gene.bl.GeneManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.bl.TabellatiManager;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
+import it.eldasoft.gene.db.datautils.DataColumn;
+import it.eldasoft.gene.db.datautils.DataColumnContainer;
+import it.eldasoft.gene.db.domain.BlobFile;
+import it.eldasoft.gene.db.domain.LogEvento;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.utils.LogEventiUtils;
+import it.eldasoft.gene.web.struts.tags.UtilityStruts;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.PgManager;
+import it.eldasoft.sil.pg.bl.PgManagerEst1;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
+import it.eldasoft.sil.pg.tags.funzioni.ControlloVariazioniAggiornamentoDaPortaleFunction;
+import it.eldasoft.sil.portgare.datatypes.AggiornamentoAnagraficaImpresaDocument;
+import it.eldasoft.sil.portgare.datatypes.AggiornamentoIscrizioneImpresaElencoOperatoriDocument;
+import it.eldasoft.sil.portgare.datatypes.CategoriaType;
+import it.eldasoft.sil.portgare.datatypes.IscrizioneImpresaElencoOperatoriDocument;
+import it.eldasoft.sil.portgare.datatypes.ListaCategorieIscrizioneType;
+import it.eldasoft.sil.portgare.datatypes.RecapitiType;
+import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityDate;
+
 
 /**
  * Gestore non standard (in quanto è implementato il costruttore in modo da non
@@ -62,10 +65,6 @@ import org.springframework.transaction.TransactionStatus;
 public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
 
   static Logger               logger                              = Logger.getLogger(GestorePopupAcquisisciDaPortale.class);
-  private static final String nomeFileXML_Iscrizione              = "dati_iscele.xml";
-  private static final String nomeFileXML_Aggiornamento           = "dati_aggisc.xml";
-  //private static final String nomeFileXML_IscrizioneImpresa       = "dati_reg.xml";
-  private static final String nomeFileXML_AggiornamentoAnagrafica = "dati_agganag.xml";
 
   private FileAllegatoManager fileAllegatoManager;
   private GenChiaviManager genChiaviManager;
@@ -92,6 +91,33 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
 
     this.tabellatiManager = (TabellatiManager) UtilitySpring.getBean("tabellatiManager",
         this.getServletContext(), TabellatiManager.class);
+
+    this.pgManager = (PgManager) UtilitySpring.getBean("pgManager",
+        this.getServletContext(), PgManager.class);
+  }
+
+  public void setSqlManager(SqlManager sqlManager) {
+    this.sqlManager = sqlManager;
+  }
+
+  public void setPgManager(PgManager pgManager) {
+    this.pgManager = pgManager;
+  }
+
+  public void setTabellatiManager(TabellatiManager tabellatiManager) {
+    this.tabellatiManager = tabellatiManager;
+  }
+
+  public void setGenChiaviManager(GenChiaviManager genChiaviManager) {
+    this.genChiaviManager = genChiaviManager;
+  }
+
+  public void setFileAllegatoManager(FileAllegatoManager fileAllegatoManager) {
+    this.fileAllegatoManager = fileAllegatoManager;
+  }
+
+  public void setGeneManager(GeneManager geneManager) {
+    this.geneManager = geneManager;
   }
 
   @Override
@@ -226,7 +252,8 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
 
 
   /**
-   * Viene eseguito l'iscrizione dell'elenco iscritto
+   * Viene eseguito l'iscrizione dell'elenco iscritto.
+   * Viene restituito il codice della ditta inserita in gara
    *
    * @param ngara
    * @param codiceDitta
@@ -237,16 +264,21 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
    * @param user
    * @param fileAllegatoManager
    * @param aggAnagrafica, true viene eseguito l'aggiornamento dell'anagrafica, false non viene eseguito l'aggiornamento
+   * @param saltareTracciatura
+   * @return String
    *
    * @throws GestoreException
    *
    *
    */
-  public void iscrizioneElencoOperatori(String ngara, String codiceDitta, TransactionStatus status,
-      String xml,PgManager pgManager, Long idcom, String user,FileAllegatoManager fileAllegatoManager, boolean aggAnagrafica) throws GestoreException{
+  public String iscrizioneElencoOperatori(String ngara, String codiceDitta, TransactionStatus status,
+      String xml,PgManager pgManager, Long idcom, String user,FileAllegatoManager fileAllegatoManager, boolean aggAnagrafica, boolean calcoloInviti, boolean saltareTracciatura) throws GestoreException{
 
     IscrizioneImpresaElencoOperatoriDocument document;
     try {
+
+      java.sql.Date comDataStato = (java.sql.Date)sqlManager.getObject("select comdatastato from w_invcom where idprg=? and idcom=?", new Object[]{"PA",idcom});
+
       document = IscrizioneImpresaElencoOperatoriDocument.Factory.parse(xml);
       String ragioneSociale = document.getIscrizioneImpresaElencoOperatori().getDatiImpresa().getImpresa().getRagioneSociale();
 
@@ -290,12 +322,16 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
 
       //Inserimento delle componenti del consorzio/RTI
       if(gestioneComponenti && document.getIscrizioneImpresaElencoOperatori().isSetPartecipantiRaggruppamento()){
-        ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
+        int idProfilo =-1;
+        if(this.getRequest()!=null) {
+          ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
             CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+          idProfilo = profilo.getId();
+        }
         Long tipoImpresa = new Long(2);
         if(document.getIscrizioneImpresaElencoOperatori().isSetDenominazioneRTI())
           tipoImpresa = new Long(3);
-        pgManager.gestionePartecipanti(document.getIscrizioneImpresaElencoOperatori().getPartecipantiRaggruppamento(),codiceRaggruppamento,tipoImpresa,profilo.getId(),ngara, codiceDitta);
+        pgManager.gestionePartecipanti(document.getIscrizioneImpresaElencoOperatori().getPartecipantiRaggruppamento(),codiceRaggruppamento,tipoImpresa,idProfilo,ngara, codiceDitta);
       }
       if(document.getIscrizioneImpresaElencoOperatori().isSetDenominazioneRTI()){
         //Nel caso in cui si ha la gestione della RTI, nella DITG devo inserire i dati della RTI appena creata
@@ -353,6 +389,21 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
         elencoCampi.add(new DataColumn("DITG.COORDSIC",
             new JdbcParametro(JdbcParametro.TIPO_TESTO, coordsic)));
       }
+
+      if(document.getIscrizioneImpresaElencoOperatori().isSetRequisitiAscesaTorre()){
+        String reqtorre="1";
+        if(!document.getIscrizioneImpresaElencoOperatori().getRequisitiAscesaTorre())
+        	reqtorre="2";
+        elencoCampi.add(new DataColumn("DITG.REQTORRE",
+            new JdbcParametro(JdbcParametro.TIPO_TESTO, reqtorre)));
+       }
+
+      String saltareTracciaturaString="false";
+      if(saltareTracciatura)
+        saltareTracciaturaString="true";
+      elencoCampi.add(new DataColumn("SALTARE_TRACCIATURA",
+          new JdbcParametro(JdbcParametro.TIPO_TESTO, saltareTracciaturaString)));
+
       DataColumnContainer containerDITG = new DataColumnContainer(elencoCampi);
 
       super.preInsert(status, containerDITG);
@@ -368,12 +419,18 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
       }
 
       //Inserimento su ISCRIZCAT
+      String msgCategorie="";
       ListaCategorieIscrizioneType listaCategorieIscrizione = document.getIscrizioneImpresaElencoOperatori().getCategorieIscrizione();
-      if(listaCategorieIscrizione!=null){
+      if(listaCategorieIscrizione!=null && listaCategorieIscrizione.sizeOfCategoriaArray()>0){
+        String descat=null;
+        msgCategorie="Categorie a cui si è iscritto l'operatore:\r\n";
         String tipoImpresa = document.getIscrizioneImpresaElencoOperatori().getDatiImpresa().getImpresa().getTipoImpresa();
         String classificaMinString = null;
         String classificaMaxString = null;
         String ultinf = null;
+        Vector<?> datiCais =null;
+        Long tiplavg=null;
+        String codiceTabellato=null;
         for (int j = 0; j < listaCategorieIscrizione.sizeOfCategoriaArray(); j++) {
           CategoriaType datoCodificato = listaCategorieIscrizione.getCategoriaArray(j);
           String categoria = datoCodificato.getCategoria();
@@ -394,6 +451,24 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
           }
 
           if(categoria!=null){
+            datiCais = this.sqlManager.getVector("select descat,tiplavg from CAIS where CAISIM = ?", new Object[] {categoria});
+            if(datiCais != null && datiCais.size()>0) {
+              descat = SqlManager.getValueFromVectorParam(datiCais, 0).stringValue();
+              tiplavg = SqlManager.getValueFromVectorParam(datiCais, 1).longValue();
+            }
+            codiceTabellato = PgManagerEst1.getTabellatoClassifica(tiplavg);
+
+            msgCategorie+= categoria + " - " + descat;
+            if((classificaMinString!=null && !"".equals(classificaMinString)) || (classificaMaxString!=null && !"".equals(classificaMaxString)))
+              msgCategorie+=", ";
+            if(classificaMinString!=null && !"".equals(classificaMinString)) {
+              msgCategorie+=" classifica minima : " + this.tabellatiManager.getDescrTabellato(codiceTabellato, classificaMinString);
+            }
+            if(classificaMaxString!=null && !"".equals(classificaMaxString)) {
+              msgCategorie+=" classifica massima : " + this.tabellatiManager.getDescrTabellato(codiceTabellato, classificaMaxString);
+            }
+            msgCategorie+="\r\n";
+
             ultinf = null;
             if(datoCodificato.isSetNota())
               ultinf = datoCodificato.getNota();
@@ -405,7 +480,6 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
 
             if("1".equals(isfoglia)){
               //Inserimento in ISCRIZCLASSI
-              Long tiplavg = (Long)sqlManager.getObject("select TIPLAVG from CAIS where CAISIM = ?",new Object[]{categoria});
               /*
               Long classificaMinLong = new Long(classificaMin);
               if(classificaMinLong.longValue()==0)
@@ -414,22 +488,26 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
               if(classificaMaxLong.longValue()==0)
                 classificaMaxLong = null;
               */
-              pgManager.updateIscrizclassi("INS", "$" + ngara, ngara, codiceDitta, categoria, tiplavg, classificaMin, classificaMax, false);
+              pgManager.updateIscrizclassi("INS", "$" + ngara, ngara, codiceDitta, categoria, tiplavg, classificaMin, classificaMax, calcoloInviti);
             }
 
           }
         }
+      }else {
+        msgCategorie="Nessuna categoria a cui l'operatore si è iscritto";
       }
 
       //Aggiornamento Stazione appaltante
       //this.aggiornaStazioneAppaltante(document, "$" + ngara);
 
       //Inserimento documenti
+      String msgElencoDoc =null;
       try {
 				//String numeroProtocollo = pgManager.insertDocumenti(document, "$" + ngara, codiceDitta, ngara, campoData, oraConSecondi, idcom);
-                Object datiProtocollo[] = pgManager.insertDocumenti(document, "$" + ngara, codiceDitta, ngara, campoData, oraConSecondi, idcom);
+                Object datiProtocollo[] = pgManager.insertDocumenti(document, "$" + ngara, codiceDitta, ngara, campoData, oraConSecondi, idcom, false);
                 String numeroProtocollo = (String)datiProtocollo[0];
 				Timestamp dataProtocollo = (Timestamp)datiProtocollo[1];
+				msgElencoDoc = (String)datiProtocollo[2];
                 this.sqlManager.update("update ditg set nprdom=?, dprdom=? where ngara5=? and codgar5=? and dittao=?",
 				    new Object[]{numeroProtocollo, dataProtocollo, ngara,"$" + ngara, codiceDitta});
 			} catch (GestoreException e) {
@@ -440,19 +518,42 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
       //Aggiornamento dello stato delle occorrenze per le quali in w_invcom è richiesta l' Iscrizione in elenco
       this.aggiornaStatoW_INVOCM(idcom,"6");
 
+      //Scrittura su G_NOTEAVVISI
+      String messaggioVariazioni=msgCategorie + "\r\n" + msgElencoDoc;
+      ProfiloUtente profilo = null;
+      if(this.getRequest()!=null)
+        profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
+            CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+      Long genere = this.getGenere(ngara);
+      String testoNota="Notifica iscrizione a elenco operatori " + ngara;
+      if(new Long(20).equals(genere))
+        testoNota="Notifica iscrizione a catalogo elettronico " + ngara;
+
+      this.pgManager.InserisciVariazioni(messaggioVariazioni, codiceDitta,"INS",profilo,comDataStato,false,testoNota);
+
+
     } catch (XmlException e) {
-      this.getRequest().setAttribute("erroreAcquisizione", "1");
+      if(this.getRequest()!=null)
+        this.getRequest().setAttribute("erroreAcquisizione", "1");
       throw new GestoreException("Errore nella lettura del file XML", null, e);
     } catch (SQLException e){
-      this.getRequest().setAttribute("erroreAcquisizione", "1");
+      if(this.getRequest()!=null)
+        this.getRequest().setAttribute("erroreAcquisizione", "1");
+      throw new GestoreException("Errore nella lettura dei dati delle categorie", null, e);
+    }catch(Exception e) {
+      if(this.getRequest()!=null)
+        this.getRequest().setAttribute("erroreAcquisizione", "1");
       throw new GestoreException("Errore nella lettura dei dati delle categorie", null, e);
     }
 
-
+    return codiceDitta;
   }
 
   /**
-   * Viene eseguito l'aggiornamento dell'elenco iscritto
+   * Viene eseguito l'aggiornamento dell'elenco iscritto. Il parametro aggCategorie assume i seguenti valori:
+   * 1  Si effettua l'aggiornamento delle categorie
+   * 2  Non si effettua l'aggiornamento delle categorie perchè non vi sono variazioni alle categorie
+   * 3  Non si effettua l'aggiornamento delle categorie perchè viene rimandato in un secondo momento
    *
    * @param ngara
    * @param codiceDitta
@@ -464,7 +565,7 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
    * @param user
    * @param fileAllegatoManager
    * @param aggAnagrafica, true viene eseguito l'aggiornamento dell'anagrafica, false non viene eseguito l'aggiornamento
-   * @param aggCategorie, true viene eseguito l'aggiornamento delle categorie, false non viene eseguito l'aggiornamento
+   * @param aggCategorie
    *
    * @throws GestoreException
    *
@@ -472,11 +573,30 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
    */
   public void aggiornamentoIscrizioneElencoOperatori(String ngara, String codiceDitta, String codiceDittaUser, TransactionStatus status,
       String xml,PgManager pgManager, Long idcom, String user,FileAllegatoManager fileAllegatoManager,
-      boolean aggAnagrafica, boolean aggCategorie) throws GestoreException{
+      boolean aggAnagrafica, int aggCategorie, String msgAnteprima) throws GestoreException{
 
     //IscrizioneImpresaElencoOperatoriDocument document;
     AggiornamentoIscrizioneImpresaElencoOperatoriDocument document;
     try {
+
+      java.sql.Date comDataStato;
+      try {
+        comDataStato = (java.sql.Date)sqlManager.getObject("select comdatastato from w_invcom where idprg=? and idcom=?", new Object[]{"PA",idcom});
+      } catch (SQLException e) {
+        if(this.getRequest()!=null)
+          this.getRequest().setAttribute("erroreAcquisizione", "1");
+        throw new GestoreException("Errore nella lettura di comdatastato della comunicazione " + idcom, null, e);
+      }
+
+      Long genere;
+      try {
+        genere = this.getGenere(ngara);
+      } catch (SQLException e) {
+        if(this.getRequest()!=null)
+          this.getRequest().setAttribute("erroreAcquisizione", "1");
+        throw new GestoreException("Errore nella lettura dell'elenco/catalogo " + ngara, null, e);
+      }
+
       document = AggiornamentoIscrizioneImpresaElencoOperatoriDocument.Factory.parse(xml);
       //String ragioneSociale = document.getAggiornamentoIscrizioneImpresaElencoOperatori().getDatiImpresa().getImpresa().getRagioneSociale();
 
@@ -493,7 +613,7 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
       }
 
       //Gestione ISCRIZCAT
-      if(aggCategorie)
+      if(aggCategorie==1)
         this.gestioneCategorie(document, ngara, codiceDitta, pgManager, status);
 
       //Aggiornamento Stazione appaltante
@@ -514,11 +634,15 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
       }
 
       try {
-				pgManager.insertDocumenti(document, "$" + ngara, codiceDitta, ngara, campoData, ora, idcom);
-			} catch (GestoreException e) {
-				this.getRequest().setAttribute("erroreAcquisizione", "1");
+        boolean posticipareAcqQform = false;
+        if(aggCategorie==3)
+          posticipareAcqQform=true;
+        pgManager.insertDocumenti(document, "$" + ngara, codiceDitta, ngara, campoData, ora, idcom, posticipareAcqQform);
+      } catch (GestoreException e) {
+        if(this.getRequest()!=null)
+          this.getRequest().setAttribute("erroreAcquisizione", "1");
         throw new GestoreException("Errore nell'acquisizione della documentazione", null, e);
-			}
+      }
 
       //Aggiornamento campo coordinatore sicurezza
       String coordsic=null;
@@ -531,13 +655,42 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
       try {
         this.sqlManager.update("update ditg set coordsic=? where ngara5=? and dittao=?", new Object[]{coordsic,ngara,codiceDitta});
       } catch (SQLException e) {
-        this.getRequest().setAttribute("erroreAcquisizione", "1");
+        if(this.getRequest()!=null)
+          this.getRequest().setAttribute("erroreAcquisizione", "1");
         throw new GestoreException("Errore nell'acquisizione deli requisiti del coordinatore sicurezza per la ditta " + codiceDitta + " della gara " + ngara, null, e);
+      }
+
+      //Aggiornamento campo requisiti ascesa torre
+      String reqtorre=null;
+      if(document.getAggiornamentoIscrizioneImpresaElencoOperatori().isSetRequisitiAscesaTorre()){
+        if(document.getAggiornamentoIscrizioneImpresaElencoOperatori().getRequisitiAscesaTorre())
+          reqtorre="1";
+        else
+          reqtorre="2";
+      }
+      try {
+        this.sqlManager.update("update ditg set reqtorre=? where ngara5=? and dittao=?", new Object[]{reqtorre,ngara,codiceDitta});
+      } catch (SQLException e) {
+        if(this.getRequest()!=null)
+          this.getRequest().setAttribute("erroreAcquisizione", "1");
+        throw new GestoreException("Errore nell'acquisizione dei requisiti ascesa torre per la ditta " + codiceDitta + " della gara " + ngara, null, e);
       }
 
 
       //Aggiornamento dello stato delle occorrenze per le quali in w_invcom è richiesta l' Iscrizione in elenco
       this.aggiornaStatoW_INVOCM(idcom,"6");
+
+      //Scrittura su G_NOTEAVVISI
+      ProfiloUtente profilo = null;
+      if(this.getRequest()!=null)
+        profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
+            CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+
+      String testoNota="Notifica aggiornamento iscrizione a elenco operatori  " + ngara;
+      if(new Long(20).equals(genere))
+        testoNota="Notifica aggiornamento iscrizione a catalogo elettronico " + ngara;
+
+      this.pgManager.InserisciVariazioni(msgAnteprima, codiceDitta,"INS",profilo,comDataStato,false,testoNota);
 
     } catch (XmlException e) {
       this.getRequest().setAttribute("erroreAcquisizione", "1");
@@ -597,12 +750,16 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
     int idGaraquisiz=0;
     String messaggioCategorie="";
     String codiceDittaUser=null;
-
+    int sintesiAggCategorie=0;
+    String xml=null;
+    ControlloVariazioniAggiornamentoDaPortaleFunction functionControlloVariazioni = null;
+    String messaggioDoc ="";
     for(int indice = 0; indice <2; indice++){
       select="select IDCOM,COMKEY1 from w_invcom where idprg = ? and comstato = ? and comtipo = ? and comkey2 = ? order by IDCOM";
-      if(indice==1)
+      if(indice==1) {
         comtipo = "FS4";
-
+        functionControlloVariazioni = new ControlloVariazioniAggiornamentoDaPortaleFunction();
+      }
 
       List listaIDCOM = null;
       try {
@@ -620,19 +777,14 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
         String descrEventoParteComune="";
         if(comtipo == "FS2"){
           codEvento = "GA_ACQUISIZIONE_ISCRIZIONE";
-          if("PG_GARE_ELEDITTE".equalsIgnoreCase(profiloAttivo))
-            descrEventoParteComune = "Acquisizione iscrizione a elenco operatori da portale Appalti";
-          else
-            descrEventoParteComune = "Acquisizione iscrizione a catalogo da portale Appalti";
+          descrEventoParteComune = "Acquisizione iscrizione a elenco operatori o catalogo da portale Appalti";
         }else{
           codEvento = "GA_ACQUISIZIONE_INTEGRAZIONE";
-          if("PG_GARE_ELEDITTE".equalsIgnoreCase(profiloAttivo))
-            descrEventoParteComune = "Acquisizione integrazione dati/documenti a iscrizione elenco operatori da portale Appalti";
-          else
-            descrEventoParteComune = "Acquisizione integrazione dati/documenti a iscrizione catalogo da portale Appalti";
+          descrEventoParteComune = "Acquisizione integrazione dati/documenti a iscrizione in elenco operatori o catalogo da portale Appalti";
         }
         oggEvento = ngara;
         for (int i = 0; i < listaIDCOM.size(); i++) {
+          xml="";
           try{
             livEvento = 1;
             errMsgEvento ="";
@@ -669,7 +821,7 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
 
             }
 
-            descrEvento = descrEventoParteComune + "(cod. ditta " + codiceDitta + ")";
+            descrEvento = descrEventoParteComune + "(cod. ditta " + codiceDitta + ", id.comunicazione " + idcom + ")";
 
             //Vengono letti i documenti associati ad ogni occorrenza di di W_INVCOM
             select="select idprg,iddocdig from w_docdig where DIGENT = ? and digkey1 = ? and idprg = ? and dignomdoc = ? ";
@@ -680,10 +832,10 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
             try {
               if(indice==0){
                 datiW_DOCDIG = sqlManager.getVector(select,
-                    new Object[]{digent, idcom.toString(), idprgW_DOCDIG, nomeFileXML_Iscrizione});
+                    new Object[]{digent, idcom.toString(), idprgW_DOCDIG, CostantiAppalti.nomeFileXML_Iscrizione});
               }else{
                 datiW_DOCDIG = sqlManager.getVector(select,
-                    new Object[]{digent, idcom.toString(), idprgW_DOCDIG, nomeFileXML_Aggiornamento});
+                    new Object[]{digent, idcom.toString(), idprgW_DOCDIG, CostantiAppalti.nomeFileXML_Aggiornamento});
               }
             } catch (SQLException e) {
               this.getRequest().setAttribute("erroreAcquisizione", "1");
@@ -707,12 +859,12 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
                 this.getRequest().setAttribute("erroreAcquisizione", "1");
                 throw new GestoreException("Errore nella lettura del file allegato presente nella tabella W_DOCDIG", null, e);
               }
-              String xml=null;
+
               if(fileAllegato!=null && fileAllegato.getStream()!=null){
                 xml = new String(fileAllegato.getStream());
                 if (indice==0){
                   //Acquisizione FS2
-                  this.iscrizioneElencoOperatori(ngara, codiceDitta, status, xml, pgManager, idcom, user,fileAllegatoManager,true);
+                  this.iscrizioneElencoOperatori(ngara, codiceDitta, status, xml, pgManager, idcom, user,fileAllegatoManager,true,false,false);
                 }else{
                   //Acquisizione FS4
                   //Condizioni per la gestione dell'acquisizione posticipate delle variazioni delle categorie
@@ -733,6 +885,17 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
                   saltareAcquisizione=false;
                   inserimentoGaracquisiz=false;
                   aggiornareCategorie = true;
+
+                  try {
+                    document = AggiornamentoIscrizioneImpresaElencoOperatoriDocument.Factory.parse(xml);
+                    messaggioCategorie = functionControlloVariazioni.controlloCategorie(document, ngara, codiceDitta, sqlManager, tabellatiManager, pgManager);
+                    messaggioDoc = functionControlloVariazioni.controlloDocumenti(document);
+                  } catch (JspException e) {
+                    throw new GestoreException("Errore nella creazione del log delle variazioni per le categorie dell'operatore " + codiceDitta + " dell'elenco " + ngara, null, e);
+                  } catch (XmlException e) {
+                    throw new GestoreException("Errore nella creazione del log delle variazioni per le categorie dell'operatore " + codiceDitta + " dell'elenco " + ngara, null, e);
+                  }
+
                   if(condizioniSaltoAggCategorie){
                     try {
                       //Controllo presenza FS4 precedenti non processate, eventualmente si salta l'acquisizione
@@ -740,14 +903,13 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
                       if(numOccorrenzeFs4!= null && numOccorrenzeFs4.longValue()>0){
                         saltareAcquisizione=true;
                       }else{
-                        datiComunicazioneGaracquisiz = sqlManager.getVector(selectW_docdig, new Object[]{"W_INVCOM", "PA",nomeFileXML_Aggiornamento,ngara, codiceDitta, new Long(1)});
+                        datiComunicazioneGaracquisiz = sqlManager.getVector(selectW_docdig, new Object[]{"W_INVCOM", "PA",CostantiAppalti.nomeFileXML_Aggiornamento,ngara, codiceDitta, new Long(1)});
                         if(datiComunicazioneGaracquisiz!= null && datiComunicazioneGaracquisiz.size()>0){
                           iddocdigGaracquisiz = ((JdbcParametro) datiComunicazioneGaracquisiz.get(0)).longValue();
                           try {
                             fileAllegatoGaracquisiz = fileAllegatoManager.getFileAllegato(idprgW_INVCOM,iddocdigGaracquisiz);
                             if(fileAllegatoGaracquisiz!=null && fileAllegatoGaracquisiz.getStream()!=null){
                               xmlGarecquisiz = new String(fileAllegatoGaracquisiz.getStream());
-                              document = AggiornamentoIscrizioneImpresaElencoOperatoriDocument.Factory.parse(xml);
                               documentGareacquisiz = AggiornamentoIscrizioneImpresaElencoOperatoriDocument.Factory.parse(xmlGarecquisiz);
                               listaCategorieIscrizione = document.getAggiornamentoIscrizioneImpresaElencoOperatori().getCategorieIscrizione();
                               listaCategorieIscrizioneAcquisiz = documentGareacquisiz.getAggiornamentoIscrizioneImpresaElencoOperatori().getCategorieIscrizione();
@@ -768,18 +930,8 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
                           saltareAcquisizione=false;
                           aggiornareCategorie=false;
                           //Nel caso in cui nel file xml non ci sono variazioni nelle categorie allora non si deve fare l'inserimento in GARACQUISIZ
-                          try {
-                            document = AggiornamentoIscrizioneImpresaElencoOperatoriDocument.Factory.parse(xml);
-                            ControlloVariazioniAggiornamentoDaPortaleFunction functionControlloVariazioni = new ControlloVariazioniAggiornamentoDaPortaleFunction();
-                            messaggioCategorie = functionControlloVariazioni.controlloCategorie(document, ngara, codiceDitta, sqlManager, tabellatiManager, pgManager);
-                            if(messaggioCategorie!=null && !"".equals(messaggioCategorie))
-                              inserimentoGaracquisiz=true;
-                          } catch (JspException e) {
-                            throw new GestoreException("Errore nella creazione del log delle variazioni per le categorie dell'operatore " + codiceDitta + " dell'elenco " + ngara, null, e);
-                          } catch (XmlException e) {
-                            throw new GestoreException("Errore nella creazione del log delle variazioni per le categorie dell'operatore " + codiceDitta + " dell'elenco " + ngara, null, e);
-                          }
-
+                          if(messaggioCategorie!=null && !"".equals(messaggioCategorie))
+                            inserimentoGaracquisiz=true;
                         }
                       }
                     } catch (SQLException e) {
@@ -787,24 +939,34 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
                     }
                   }
                   if(!saltareAcquisizione){
-                    this.aggiornamentoIscrizioneElencoOperatori(ngara, codiceDitta, codiceDittaUser, status, xml, pgManager, idcom, user,fileAllegatoManager,true,aggiornareCategorie);
+                    if(aggiornareCategorie)
+                      sintesiAggCategorie = 1;
+                    else {
+                      if(inserimentoGaracquisiz)
+                        sintesiAggCategorie = 3;
+                      else
+                        sintesiAggCategorie = 2;
+                    }
+                    this.aggiornamentoIscrizioneElencoOperatori(ngara, codiceDitta, codiceDittaUser, status, xml, pgManager, idcom, user,fileAllegatoManager,true,sintesiAggCategorie,messaggioCategorie + "\r\n" + messaggioDoc);
                     if(inserimentoGaracquisiz){
                       //Si deve popolare la tabella GARACQUISIZ
-                      try {
-                        document = AggiornamentoIscrizioneImpresaElencoOperatoriDocument.Factory.parse(xml);
-                        ControlloVariazioniAggiornamentoDaPortaleFunction functionControlloVariazioni = new ControlloVariazioniAggiornamentoDaPortaleFunction();
-                        messaggioCategorie = functionControlloVariazioni.controlloCategorie(document, ngara, codiceDitta, sqlManager, tabellatiManager, pgManager);
-                      } catch (JspException e) {
-                        throw new GestoreException("Errore nella creazione del log delle variazioni per le categorie dell'operatore " + codiceDitta + " dell'elenco " + ngara, null, e);
-                      } catch (XmlException e) {
-                        throw new GestoreException("Errore nella creazione del log delle variazioni per le categorie dell'operatore " + codiceDitta + " dell'elenco " + ngara, null, e);
-                      }
                       idGaraquisiz = genChiaviManager.getNextId("GARACQUISIZ");
                       descrEvento = descrEvento.replace("(cod. ditta", ", con elaborazione delle categorie posticipata (cod. ditta");
                       try {
                         sqlManager.update(insertGaraquisiz, new Object[]{new Long(idGaraquisiz),ngara,codiceDitta,idprgW_DOCDIG,idcom,new Long(1),messaggioCategorie});
                       } catch (SQLException e) {
                         throw new GestoreException("Errore nella scrittura sulla tabella GARACQUISIZ",null, e);
+                      }
+                      //Se esiste l'occorrenza in DITGQFORM in stato = 1, si valorizza il riferimento a GARACQUISIZ
+                      try {
+                        Long conteggioQform = (Long)this.sqlManager.getObject("select count(*) from ditgqform where ngara=? and codgar=? and dittao=? and stato=?",
+                            new Object[] {ngara, "$" + ngara, codiceDitta, new Long(CostantiAppalti.statoDITGQFORMDaAttivare)});
+                        if(conteggioQform!=null && conteggioQform.intValue()>0) {
+                          this.sqlManager.update("update ditgqform set idacquisiz=? where ngara= ? and codgar =? and dittao = ? and stato = ?",
+                              new Object[] {new Long(idGaraquisiz), ngara, "$" + ngara, codiceDitta, new Long(CostantiAppalti.statoDITGQFORMDaAttivare)});
+                        }
+                      } catch (SQLException e) {
+                        throw new GestoreException("Errore nella scrittura sulla tabella DITGQFORM",null, e);
                       }
 
                     }
@@ -830,6 +992,16 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
             throw e;
           }finally {
             //Tracciatura eventi
+            if(xml != null && !"".equals(xml)) {
+              if(indice==0){
+                xml = CostantiAppalti.nomeFileXML_Iscrizione + "\r\n" + xml;
+              }else{
+                xml = CostantiAppalti.nomeFileXML_Aggiornamento + "\r\n" + xml;
+              }
+              if(errMsgEvento!="")
+                errMsgEvento+="\r\n\r\n";
+              errMsgEvento+= xml;
+            }
             try {
               if(!saltareAcquisizione){
                 LogEvento logEvento = LogEventiUtils.createLogEvento(this.getRequest());
@@ -927,16 +1099,16 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
     Long idcom = null;
     boolean errori=false;
     Timestamp comDataStato = null;
-    
+
     //variabili per tracciatura eventi
     int livEvento = 1;
     String codEvento = "GA_ACQUISIZIONE_AGGANAG";
     String oggEvento = "";
     String descrEvento = "Acquisizione aggiornamento anagrafico da portale Appalti";
     String errMsgEvento = "";
-    
+
     try{
-    select="select IDCOM,comdatastato from w_invcom where idprg = ? and comstato = ? and comtipo = ? and COMKEY1 = ?";
+      select="select IDCOM,comdatastato from w_invcom where idprg = ? and comstato = ? and comtipo = ? and COMKEY1 = ?";
 
     try {
       Vector datiW_INVCOM = sqlManager.getVector(select, new Object[] { idprg, comstato,comtipo, codiceUtente});
@@ -963,7 +1135,7 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
         Vector datiW_DOCDIG = null;
         try {
           datiW_DOCDIG = sqlManager.getVector(select,
-                new Object[]{digent, idcom.toString(), idprgW_DOCDIG, nomeFileXML_AggiornamentoAnagrafica});
+                new Object[]{digent, idcom.toString(), idprgW_DOCDIG, CostantiAppalti.nomeFileXML_AggiornamentoAnagrafica});
 
         } catch (SQLException e) {
           livEvento = 3;
@@ -1056,7 +1228,7 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
               ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
                   CostantiGenerali.PROFILO_UTENTE_SESSIONE);
               java.sql.Date campoData = new java.sql.Date(comDataStato.getTime());
-              pgManager.InserisciVariazioni(msg, codiceDitta,"INS",profilo,campoData,impostaStatoAperta);
+              pgManager.InserisciVariazioni(msg, codiceDitta,"INS",profilo,campoData,impostaStatoAperta,null);
             }
 
             this.aggiornaStatoW_INVOCM(idcom,"6");
@@ -1327,6 +1499,11 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
       throw new GestoreException("Errore nell'aggiornamento delle categorie d'iscrizione", null, e);
     }
 
+  }
+
+  private Long getGenere(String codice) throws SQLException {
+    Long ret=(Long)this.sqlManager.getObject("select genere from v_gare_genere where codice=? ", new Object[] {codice});
+    return ret;
   }
 
 }

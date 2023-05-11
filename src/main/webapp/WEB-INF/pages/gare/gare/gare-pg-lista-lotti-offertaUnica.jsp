@@ -63,7 +63,7 @@
 		<td>
 			<gene:formLista entita="GARE" where="GARE.CODGAR1 = #TORN.CODGAR# AND GARE.NGARA <>#TORN.CODGAR# ${filtroLotti}" sortColumn="2" tableclass="datilista" pagesize="25" gestisciProtezioni="true" >
 				<gene:redefineInsert name="addToAzioni" >
-					<c:if test="${isProceduraTelematica eq 'true' && meruolo eq '1'  && autorizzatoModifiche ne 2 && gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIGARA.AnnullaAperturaOfferte')}">
+					<c:if test="${isProceduraTelematica eq 'true' && (meruolo eq '1' or meruolo eq '3') && autorizzatoModifiche ne 2 && gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIGARA.AnnullaAperturaOfferte')}">
 						<tr>
 							<td class="vocemenulaterale">
 								<a href="javascript:AnnullaAperturaOfferte('${key}','${bustalotti }');" title='Annulla apertura offerte' tabindex="1511">
@@ -124,6 +124,6 @@
 
 <gene:javaScript>
 	function aperturaOfferte(){
-		document.location.href=contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/gare/gare-pg-aperturaOffAggiudProvLotti.jsp&key=" + chiaveRiga + "&paginaFasiGara=aperturaOffAggProvLottoOffUnica&LottoplicoUnico=true&idconfi=${idconfi}";
+		document.location.href=contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/gare/gare-pg-aperturaOffAggiudProvLotti.jsp&key=" + chiaveRiga + "&paginaFasiGara=aperturaOffAggProvLottoOffUnica&LottoplicoUnico=true&logAccessoFasiGara=1&idconfi=${idconfi}";
 	}
 </gene:javaScript>

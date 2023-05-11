@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Documento" pageWidth="595" pageHeight="842" columnWidth="483" leftMargin="56" rightMargin="56" topMargin="17" bottomMargin="22">
+<!-- Created with Jaspersoft Studio version 6.18.1.final utlizzo versione della libreria JasperReports6.18.1-9d75d1969e774d4f179fb3be8401e98a0e6d1611  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Documento" pageWidth="595" pageHeight="842" columnWidth="483" leftMargin="56" rightMargin="56" topMargin="17" bottomMargin="22" uuid="e5e0c9aa-d5d9-4ea5-80d4-cae6ccdb4917">
 	<property name="ireport.zoom" value="1.4641000000000008"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
@@ -36,7 +37,7 @@ LEFT JOIN GARE G1 ON G1.NGARA = GARE.NGARA AND G1.MODLICG = 6
 LEFT JOIN GOEV ON GOEV.NGARA = G1.NGARA
 LEFT JOIN GARE G2 ON G2.NGARA = GARE.NGARA AND G2.MODLICG IN (5,14,6)
 LEFT JOIN GCAP ON GCAP.NGARA = G2.NGARA
-LEFT JOIN G_PERMESSI ON GARE.CODGAR1 = G_PERMESSI.CODGAR AND G_PERMESSI.MERUOLO = 2 AND G_PERMESSI.AUTORI = 1 AND G_PERMESSI.PROPRI = '1'
+LEFT JOIN G_PERMESSI ON GARE.CODGAR1 = G_PERMESSI.CODGAR AND (G_PERMESSI.MERUOLO = 2 OR G_PERMESSI.MERUOLO = 3) AND G_PERMESSI.AUTORI = 1 AND G_PERMESSI.PROPRI = '1'
 LEFT JOIN USRSYS ON USRSYS.SYSCON = G_PERMESSI.SYSCON
 LEFT JOIN V_GARE_CATEGORIE C1 ON C1.NGARA = GARE.NGARA AND C1.ISPREV = '1' AND C1.ISCATGARA = '1'
 LEFT JOIN V_GARE_CATEGORIE C2 ON C2.NGARA = GARE.NGARA AND C2.ISPREV = '2' AND C2.ISCATGARA = '1'
@@ -53,14 +54,14 @@ GROUP BY GARE.CRITLICG, GARE.DETLICG]]>
 	<detail>
 		<band height="193" splitType="Immediate">
 			<image scaleImage="RealSize" hAlign="Center" isUsingCache="true">
-				<reportElement x="0" y="0" width="483" height="40" isRemoveLineWhenBlank="true"/>
+				<reportElement x="0" y="0" width="483" height="40" isRemoveLineWhenBlank="true" uuid="0c0f584c-e162-483c-b527-d7f233343831"/>
 				<graphicElement>
 					<pen lineWidth="0.0" lineStyle="Solid"/>
 				</graphicElement>
-				<imageExpression class="java.lang.String"><![CDATA[$P{IMAGES_DIR} + "/logo_mercato_elettronico.png"]]></imageExpression>
+				<imageExpression><![CDATA[$P{IMAGES_DIR} + "/logo_mercato_elettronico.png"]]></imageExpression>
 			</image>
 			<subreport>
-				<reportElement positionType="Float" x="0" y="40" width="483" height="17"/>
+				<reportElement positionType="Float" x="0" y="40" width="483" height="17" uuid="29bf6745-f021-48c7-a519-eb57baf8d563"/>
 				<subreportParameter name="SUBREPORT_DIR">
 					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
 				</subreportParameter>
@@ -71,10 +72,10 @@ GROUP BY GARE.CRITLICG, GARE.DETLICG]]>
 					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
 				</subreportParameter>
 				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
-				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "/INV01_Testata.jasper"]]></subreportExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "/INV01_Testata.jasper"]]></subreportExpression>
 			</subreport>
 			<subreport>
-				<reportElement positionType="Float" x="0" y="57" width="483" height="17"/>
+				<reportElement positionType="Float" x="0" y="57" width="483" height="17" uuid="3e3fa2eb-f7e7-4909-9421-7296c8bd810e"/>
 				<subreportParameter name="SUBREPORT_DIR">
 					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
 				</subreportParameter>
@@ -91,10 +92,10 @@ GROUP BY GARE.CRITLICG, GARE.DETLICG]]>
 					<subreportParameterExpression><![CDATA[$F{NUM_ULT_PRESTA}]]></subreportParameterExpression>
 				</subreportParameter>
 				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
-				<subreportExpression class="java.lang.String"><![CDATA[$P{CUSTOM_SUBREPORT_DIR} + "/INV01_DatiDellaGara.jasper"]]></subreportExpression>
+				<subreportExpression><![CDATA[$P{CUSTOM_SUBREPORT_DIR} + "/INV01_DatiDellaGara.jasper"]]></subreportExpression>
 			</subreport>
 			<subreport>
-				<reportElement positionType="Float" x="0" y="74" width="483" height="17"/>
+				<reportElement positionType="Float" x="0" y="74" width="483" height="17" uuid="a21d5149-d460-4835-ae01-f359c2c6dd52"/>
 				<subreportParameter name="SUBREPORT_DIR">
 					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
 				</subreportParameter>
@@ -111,10 +112,10 @@ GROUP BY GARE.CRITLICG, GARE.DETLICG]]>
 					<subreportParameterExpression><![CDATA[$F{NUM_ULT_PRESTA}]]></subreportParameterExpression>
 				</subreportParameter>
 				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
-				<subreportExpression class="java.lang.String"><![CDATA[$P{CUSTOM_SUBREPORT_DIR} + "/INV01_DatiDellaGara2.jasper"]]></subreportExpression>
+				<subreportExpression><![CDATA[$P{CUSTOM_SUBREPORT_DIR} + "/INV01_DatiDellaGara2.jasper"]]></subreportExpression>
 			</subreport>
 			<subreport>
-				<reportElement positionType="Float" x="0" y="91" width="483" height="17"/>
+				<reportElement positionType="Float" x="0" y="91" width="483" height="17" uuid="cb660dad-63fd-468f-bdbf-cb6ce62077a6"/>
 				<subreportParameter name="SUBREPORT_DIR">
 					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
 				</subreportParameter>
@@ -122,10 +123,10 @@ GROUP BY GARE.CRITLICG, GARE.DETLICG]]>
 					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
 				</subreportParameter>
 				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
-				<subreportExpression class="java.lang.String"><![CDATA[$P{CUSTOM_SUBREPORT_DIR} + "/INV01_UlterioriDatiDellaGara.jasper"]]></subreportExpression>
+				<subreportExpression><![CDATA[$P{CUSTOM_SUBREPORT_DIR} + "/INV01_UlterioriDatiDellaGara.jasper"]]></subreportExpression>
 			</subreport>
 			<subreport>
-				<reportElement positionType="Float" x="0" y="108" width="483" height="16" isRemoveLineWhenBlank="true">
+				<reportElement positionType="Float" x="0" y="108" width="483" height="16" isRemoveLineWhenBlank="true" uuid="e88fdf75-b5db-40b1-a994-9e4dacd8952a">
 					<printWhenExpression><![CDATA[$F{NUM_CRITERI} > 0]]></printWhenExpression>
 				</reportElement>
 				<subreportParameter name="SUBREPORT_DIR">
@@ -135,10 +136,10 @@ GROUP BY GARE.CRITLICG, GARE.DETLICG]]>
 					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
 				</subreportParameter>
 				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
-				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "/INV01_CriteriDiValutazione.jasper"]]></subreportExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "/INV01_CriteriDiValutazione.jasper"]]></subreportExpression>
 			</subreport>
 			<subreport>
-				<reportElement positionType="Float" x="0" y="142" width="483" height="16" isRemoveLineWhenBlank="true">
+				<reportElement positionType="Float" x="0" y="142" width="483" height="16" isRemoveLineWhenBlank="true" uuid="93397b0f-e2f8-465e-a7a9-f6a612ea264a">
 					<printWhenExpression><![CDATA[$F{NUM_LAV_FORN} > 0]]></printWhenExpression>
 				</reportElement>
 				<subreportParameter name="SUBREPORT_DIR">
@@ -148,10 +149,10 @@ GROUP BY GARE.CRITLICG, GARE.DETLICG]]>
 					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
 				</subreportParameter>
 				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
-				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "/INV01_LavorazioniEForniture.jasper"]]></subreportExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "/INV01_LavorazioniEForniture.jasper"]]></subreportExpression>
 			</subreport>
 			<subreport runToBottom="false">
-				<reportElement positionType="Float" x="0" y="124" width="483" height="18" isRemoveLineWhenBlank="true">
+				<reportElement positionType="Float" x="0" y="124" width="483" height="18" isRemoveLineWhenBlank="true" uuid="3c8bf38d-d4cc-423e-83b9-95f4e28e7b2e">
 					<printWhenExpression><![CDATA[$F{NUM_CRITERI} > 0]]></printWhenExpression>
 				</reportElement>
 				<subreportParameter name="SUBREPOT_DIR">
@@ -161,25 +162,25 @@ GROUP BY GARE.CRITLICG, GARE.DETLICG]]>
 					<subreportParameterExpression><![CDATA[$P{NUMERO_GARA}]]></subreportParameterExpression>
 				</subreportParameter>
 				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
-				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "/INV01_CriteriDiValutazione_eco.jasper"]]></subreportExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "/INV01_CriteriDiValutazione_eco.jasper"]]></subreportExpression>
 			</subreport>
 		</band>
 	</detail>
 	<pageFooter>
 		<band height="22" splitType="Stretch">
 			<textField>
-				<reportElement x="161" y="1" width="80" height="20"/>
+				<reportElement x="161" y="1" width="80" height="20" uuid="fea8815a-8f43-4f15-ba4e-c6d501ca7848"/>
 				<textElement textAlignment="Right">
 					<font fontName="Times New Roman"/>
 				</textElement>
-				<textFieldExpression class="java.lang.String"><![CDATA["pag. "+$V{PAGE_NUMBER}+" di"]]></textFieldExpression>
+				<textFieldExpression><![CDATA["pag. "+$V{PAGE_NUMBER}+" di"]]></textFieldExpression>
 			</textField>
 			<textField evaluationTime="Report">
-				<reportElement x="241" y="1" width="40" height="20"/>
+				<reportElement x="241" y="1" width="40" height="20" uuid="b2863117-cb42-4a1a-a2be-d7a9c00a00ed"/>
 				<textElement>
 					<font fontName="Times New Roman"/>
 				</textElement>
-				<textFieldExpression class="java.lang.String"><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
 			</textField>
 		</band>
 	</pageFooter>

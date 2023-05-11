@@ -5,6 +5,7 @@ import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
 
 import java.io.PrintWriter;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -89,7 +90,8 @@ public class GestioneAlberoCpvVPAction extends Action {
       throws SQLException {
 
     String selectTABCPV = "";
-
+    List<Object> parameters;
+    
     switch (livello.intValue()) {
     case 0:
       // Gruppi di divisioni
@@ -99,11 +101,13 @@ public class GestioneAlberoCpvVPAction extends Action {
         JSONArray jsonArrayDiv = jsonArrayGrpDiv.getJSONObject(i).getJSONArray("grpdiv");
 
         String selectCPV = "select count(*) from tabcpv where (";
+        parameters = new ArrayList<Object>();
 
         // Lista delle divisioni afferenti al gruppo
         for (int j = 0; j < jsonArrayDiv.size(); j++) {
           if (j > 0) selectCPV += " or ";
-          selectCPV += " cpvcod4 like '" + jsonArrayDiv.getString(j) + "%' ";
+          selectCPV += " cpvcod4 like ? ";
+          parameters.add(jsonArrayDiv.getString(j)+ "%");
         }
         selectCPV += ") ";
 
@@ -116,7 +120,9 @@ public class GestioneAlberoCpvVPAction extends Action {
             cpvdescsearch = StringUtils.replace(cpvdescsearch, "%", "#%");
             cpvdescsearch = "%" + cpvdescsearch.toUpperCase() + "%";
             if (w > 0) selectCPV += " and ";
-            selectCPV += " (upper(cpvdesc) like '" + cpvdescsearch + "' escape '#' or cpvcod4 like '" + cpvdescsearch + "' escape '#')";
+            selectCPV += " (upper(cpvdesc) like '? escape '#' or cpvcod4 like ? escape '#')";
+            parameters.add(cpvdescsearch);
+            parameters.add(cpvdescsearch);
           }
           selectCPV += " )";
         }
@@ -141,6 +147,7 @@ public class GestioneAlberoCpvVPAction extends Action {
     case 1:
       // Divisioni
       selectTABCPV = "select cpvcod4, cpvdesc from tabcpv where ";
+      parameters = new ArrayList<Object>();
       
       // Se il livello 1 - Divisioni viene caricato partendo dal livello 0 - Gruppi di divisioni
       // bisogna controllare quali divisioni sono contenute nel gruppo identificato da "id".
@@ -152,7 +159,8 @@ public class GestioneAlberoCpvVPAction extends Action {
             JSONArray jsonArrayDiv = jsonArrayGrpDiv.getJSONObject(i).getJSONArray("grpdiv");
             for (int j = 0; j < jsonArrayDiv.size(); j++) {
               if (j > 0) selectTABCPV += " or ";
-              selectTABCPV += " cpvcod4 like '" + jsonArrayDiv.getString(j) + "000000-_' ";
+              selectTABCPV += " cpvcod4 like ? ";
+              parameters.add(jsonArrayDiv.getString(j)+ "000000-_");
             }
           }
         }
@@ -160,7 +168,7 @@ public class GestioneAlberoCpvVPAction extends Action {
         selectTABCPV += " cpvcod4 like '__000000-_' ";
       }
       selectTABCPV += " order by cpvcod4";
-      this.popolaCpvVP(livello, textsearch, jsonArray, selectTABCPV);
+      this.popolaCpvVP(livello, textsearch, jsonArray, selectTABCPV, parameters.toArray());
       break;
 
     case 2:
@@ -170,12 +178,14 @@ public class GestioneAlberoCpvVPAction extends Action {
     case 6:
     case 7:
       String wherecpvvp = StringUtils.rightPad(cpvvpcod.substring(0, livello.intValue()) + "_", 8, "0") + "-_";
-      selectTABCPV = "select cpvcod4, cpvdesc from tabcpv where (cpvcod4 like '" + wherecpvvp + "'";
+      selectTABCPV = "select cpvcod4, cpvdesc from tabcpv where (cpvcod4 like ? ";
+      parameters = new ArrayList<Object>();
+      parameters.add(wherecpvvp);
       if ("601".equals(cpvvpcod.substring(0, 3))) {
         selectTABCPV += " or cpvcod4 like '6011_000-_'";
       }
       selectTABCPV += ") and cpvcod4 <> '" + cpvvpcod + "' order by cpvcod4";
-      this.popolaCpvVP(livello, textsearch, jsonArray, selectTABCPV);
+      this.popolaCpvVP(livello, textsearch, jsonArray, selectTABCPV, parameters.toArray());
       break;
 
     default:
@@ -194,8 +204,11 @@ public class GestioneAlberoCpvVPAction extends Action {
    * @param selectTABCPV
    * @throws SQLException
    */
-  private void popolaCpvVP(Long livello, String textsearch, JSONArray jsonArray, String selectTABCPV) throws SQLException {
-    List<?> datiTABCPV = this.sqlManager.getListVector(selectTABCPV, new Object[] {});
+  private void popolaCpvVP(Long livello, String textsearch, JSONArray jsonArray, String selectTABCPV, Object[] params) throws SQLException {
+    List<?> datiTABCPV = this.sqlManager.getListVector(selectTABCPV, params);
+    List<Object> parameters;
+    List<Object> dynaParameters;
+    
     if (datiTABCPV != null && datiTABCPV.size() > 0) {
       for (int i = 0; i < datiTABCPV.size(); i++) {
 
@@ -204,6 +217,7 @@ public class GestioneAlberoCpvVPAction extends Action {
 
         // Filtro di ricerca per descrizione anche parziale e multipla
         String addsearch = "";
+        dynaParameters = new ArrayList<Object>();
         if (textsearch != null && !"".equals(textsearch.trim())) {
           addsearch = " and (";
           String[] words = textsearch.split(" ");
@@ -212,18 +226,27 @@ public class GestioneAlberoCpvVPAction extends Action {
             cpvdescsearch = StringUtils.replace(cpvdescsearch, "%", "#%");
             cpvdescsearch = "%" + cpvdescsearch.toUpperCase() + "%";
             if (w > 0) addsearch += " and ";
-            addsearch += " (upper(cpvdesc) like '" + cpvdescsearch + "' escape '#' or cpvcod4 like '" + cpvdescsearch + "' escape '#')";
+            addsearch += " (upper(cpvdesc) like ? escape '#' or cpvcod4 like ? escape '#')";
+            dynaParameters.add(cpvdescsearch);
+            dynaParameters.add(cpvdescsearch);
           }
           addsearch += " )";
         }
 
         String selectCPVFigli = "select count(*) from tabcpv where cpvcod4 like ? and cpvcod4 <> ?";
+        parameters = new ArrayList<Object>();
+        parameters.add(cpvcod4search);
+        parameters.add(cpvcod4);
+        parameters.addAll(dynaParameters);
         if (addsearch != null && !"".equals(addsearch.trim())) selectCPVFigli += addsearch;
-        Long cntCPVFigli = (Long) this.sqlManager.getObject(selectCPVFigli, new Object[] { cpvcod4search, cpvcod4 });
+        Long cntCPVFigli = (Long) this.sqlManager.getObject(selectCPVFigli, parameters.toArray());
 
         if (addsearch != null && !"".equals(addsearch.trim())) {
           String selectCPVRicerca = "select count(*) from tabcpv where cpvcod4 like ? " + addsearch;
-          Long cntCPVRicerca = (Long) this.sqlManager.getObject(selectCPVRicerca, new Object[] { cpvcod4search });
+          parameters = new ArrayList<Object>();
+          parameters.add(cpvcod4search);
+          parameters.addAll(dynaParameters);
+          Long cntCPVRicerca = (Long) this.sqlManager.getObject(selectCPVRicerca, parameters.toArray());
           if (cntCPVRicerca != null && cntCPVRicerca.longValue() > 0) {
             Object[] rowCpvVP = new Object[6];
             rowCpvVP[0] = new Long(livello.longValue() + 1);

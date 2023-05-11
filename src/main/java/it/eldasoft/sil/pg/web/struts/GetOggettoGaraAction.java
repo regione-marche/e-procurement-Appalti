@@ -1,8 +1,5 @@
 package it.eldasoft.sil.pg.web.struts;
 
-import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
-import it.eldasoft.sil.pg.bl.PgManagerEst1;
-
 import java.io.PrintWriter;
 import java.sql.SQLException;
 
@@ -10,12 +7,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspException;
 
-import net.sf.json.JSONObject;
-
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
+
+import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
+import it.eldasoft.sil.pg.bl.PgManagerEst1;
+import net.sf.json.JSONObject;
 
 public class GetOggettoGaraAction extends Action {
 
@@ -44,15 +43,16 @@ public class GetOggettoGaraAction extends Action {
     try {
       String chiave1 = request.getParameter("chiave1");
       String codgar = request.getParameter("codiceGara");
-      Long genereGara = new Long(request.getParameter("genereGara"));
+      String isStipula = request.getParameter("isStipula");
+      String genere = request.getParameter("genereGara");
+      Long genereGara = null;
+      if(genere!=null && !"".equals(genere))
+        genereGara = new Long(genere);
+      boolean stipula= false;
+      if("true".equals(isStipula))
+        stipula=true;
+      String oggetto = this.pgManagerEst1.getOggettoGara(chiave1, codgar, genereGara,stipula);
 
-      String oggetto = this.pgManagerEst1.getOggettoGara(chiave1, codgar, genereGara);
-      /*
-      if(genereGara.longValue()==1 || genereGara.longValue()==3)
-        oggetto= codgar + " - " + oggetto;
-      else
-        oggetto= chiave1 + " - " + oggetto;
-      */
 
       result.put("oggettoGara", oggetto);
 

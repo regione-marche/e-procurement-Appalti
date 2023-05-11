@@ -10,19 +10,14 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import java.sql.SQLException;
+import javax.servlet.ServletContext;
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.PageContext;
 
-import it.eldasoft.gene.bl.GeneManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import javax.servlet.http.HttpSession;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 /**
  * Viene letto il tabellato 'A1z03' di tab2 per costruire il filtro
@@ -40,12 +35,16 @@ public class GetFiltroTipoGaraFunction extends AbstractFunzioneTag {
   
   public String function(PageContext pageContext, Object[] params)
       throws JspException {
-    
-    
-    String filtro = "";
     String profiloAttivo = (String) pageContext.getSession().getAttribute("profiloAttivo");
-    PgManager pgManager = (PgManager) UtilitySpring.getBean("pgManager",
-        pageContext, PgManager.class);  
+    
+    return getFiltroTipoGara(profiloAttivo, pageContext.getServletContext());
+  }
+  
+  public static String getFiltroTipoGara(String profiloAttivo, ServletContext ctx) 
+      throws JspException {
+    String filtro = "";
+    PgManager pgManager = (PgManager) UtilitySpring.getBean("pgManager", ctx, PgManager.class); 
+    
     try {
       String descTab = pgManager.getFiltroTipoGara(profiloAttivo);
       if (descTab!=null)

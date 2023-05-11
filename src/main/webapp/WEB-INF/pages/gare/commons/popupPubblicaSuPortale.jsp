@@ -46,13 +46,29 @@
 					<c:set var="cifraturaBuste" value="${cifraturaBuste}" />
 				</c:otherwise>
 			</c:choose>
+			<c:choose>
+				<c:when test="${bando eq 5 }">
+					<gene:setString name="titoloMaschera" value='Invio inviti a gara in corso' />
+				</c:when>
+				<c:otherwise>
+					<gene:setString name="titoloMaschera" value='Pubblica su portale Appalti' />
+				</c:otherwise>
+			</c:choose>
 			<gene:redefineInsert name="corpo">
-			<gene:setString name="titoloMaschera" value='Pubblica su portale Appalti' />
+			
 			<c:set var="contextPath" value="${pageContext.request.contextPath}" />
 			<tr>
 				<td colSpan="2">
 					<br>
-							Pubblicazione su portale completata.
+							<c:choose>
+								<c:when test="${bando eq 5 }">
+									Invio invito completato.
+								</c:when>
+								<c:otherwise>
+									Pubblicazione su portale completata.
+								</c:otherwise>
+							</c:choose>
+							
 							<c:if test='${cifraturaBuste eq "1"}'>
 							<br>
 							<p>Cliccando 'Scarica PDF promemoria password' è possibile scaricare un PDF che riporta le password inserite in precedenza da utilizzare come promemoria al momento dell'apertura delle buste digitali.</p>
@@ -121,7 +137,8 @@
 		
 	<script type="text/javascript" src="${contextPath}/js/jquery.wsdmsupporto.js?v=${sessionScope.versioneModuloAttivo}"></script>
 	<script type="text/javascript" src="${contextPath}/js/jquery.wsdmfascicoloprotocollo.js?v=${sessionScope.versioneModuloAttivo}"></script>
-	<script type="text/javascript" src="${contextPath}/js/common-gare.js"></script>		
+	<script type="text/javascript" src="${contextPath}/js/common-gare.js?v=${sessionScope.versioneModuloAttivo}"></script>		
+	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmuffici.js?v=${sessionScope.versioneModuloAttivo}"></script>
 </gene:redefineInsert>
 
 
@@ -245,7 +262,7 @@
 		<c:set var="integrazioneWSDM" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNFunction", pageContext, codgar,idconfi)}' />
 	</c:if>
 		
-	<c:if test="${integrazioneWSDM eq 1 && bando=='3'}" >
+	<c:if test="${integrazioneWSDM eq 1 && (bando=='3' || bando=='5')}" >
 		<c:set var="abilitatoInvioMailDocumentale" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.AbilitatoInvioMailDocumentaleFunction", pageContext, idconfi)}'/>
 	</c:if>	
 	
@@ -259,21 +276,26 @@
 			<c:set var="offertaUnica" value="false" />
 		</c:otherwise>
 	</c:choose>
-	<c:set var="controlloPresenzaOffertaTecnica" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.ControlloPresenzaOffertaTecnicaFunction",  pageContext, valoreChiave, offertaUnica)}'/>
+	
+	
 	
 	<c:set var="modelloMailPec" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetMailPecModelloFunction", pageContext, "53","false",valoreChiave)}' />
 	
-	<c:set var="tipoPubSitoIstituzionale" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", tipoPubblicazioneSitoIstituzionale)}'/>
-	<c:if test="${tipoPubSitoIstituzionale eq '2' }">
-		<c:choose>
-			<c:when test="${bando eq '1' }">
-				<c:set var="tipoUuid" value="BANDO" />
-			</c:when>
-			<c:when test="${bando eq '0' }">
-				<c:set var="tipoUuid" value="ESITO" />
-			</c:when>
-		</c:choose>
-		<c:set var="uuid" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetUuidFunction",  pageContext, codgar,tipoUuid)}' scope="request"/>
+	<c:if test="${bando!='5'}">
+		<c:set var="controlloPresenzaOffertaTecnica" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.ControlloPresenzaOffertaTecnicaFunction",  pageContext, valoreChiave, offertaUnica)}'/>
+	
+		<c:set var="tipoPubSitoIstituzionale" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", tipoPubblicazioneSitoIstituzionale)}'/>
+		<c:if test="${tipoPubSitoIstituzionale eq '2' }">
+			<c:choose>
+				<c:when test="${bando eq '1' }">
+					<c:set var="tipoUuid" value="BANDO" />
+				</c:when>
+				<c:when test="${bando eq '0' }">
+					<c:set var="tipoUuid" value="ESITO" />
+				</c:when>
+			</c:choose>
+			<c:set var="uuid" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetUuidFunction",  pageContext, codgar,tipoUuid)}' scope="request"/>
+		</c:if>
 	</c:if>
 	
 	<c:choose>
@@ -292,6 +314,12 @@
 	<c:if test="${isProceduraTelematica && bando=='3'}">
 		<gene:setString name="titoloMaschera" value='Invia invito e pubblica su portale Appalti' />
 	</c:if>
+	<c:if test="${isProceduraTelematica && bando=='5'}">
+		<gene:setString name="titoloMaschera" value='Invia invito a gara in corso' />
+	</c:if>
+	
+	<c:set var="htmlSupport" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "comunicazione.supportoHtml")}'/>
+	<c:set var="generaPdf" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetTab2d1Function", pageContext,"A1z16","1")}' />
 	
 	<gene:redefineInsert name="corpo">
 	<gene:formScheda entita="${entita }" gestisciProtezioni="false" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestorePubblicaSuPortale" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePubblicaSuPortale">
@@ -320,7 +348,7 @@
 		<gene:campoScheda campo="NGARA" campoFittizio="true" defaultValue="${param.ngara}" visibile="false" definizione="T20;0"/>
 		<gene:campoScheda campo="LOTTODIGARA" campoFittizio="true" defaultValue="${param.lottoDiGara}" visibile="false" definizione="T1;0"/>
 		
-		<c:if test="${isProceduraTelematica && bando=='3' && requestScope.visualizzaDettaglioComunicazione && requestScope.controlloSuperato ne 'NO'}">
+		<c:if test="${isProceduraTelematica && (bando=='3' || bando=='5') && requestScope.visualizzaDettaglioComunicazione && requestScope.controlloSuperato ne 'NO'}">
 			<gene:campoScheda nome="TitoloComunicazione">
 				<td colspan="2"><b>Comunicazione invito</b></td>
 			</gene:campoScheda>
@@ -331,7 +359,7 @@
 				<td class="valore-dato">Spett.le <i>Ragione Sociale</i>
 				</td>
 			</gene:campoScheda>
-			<gene:campoScheda campo="COMMSGTIP" campoFittizio="true" definizione="T2;0;;SN;COMMSGTIP" defaultValue="2" />
+			<gene:campoScheda campo="COMMSGTIP" campoFittizio="true" definizione="T2;0;;SN;COMMSGTIP" defaultValue="2" visibile='${htmlSupport eq "1"}'/>
 			<gene:campoScheda campo="COMMSGTES" campoFittizio="true" definizione="T2000;0;;CLOB;COMMSGTES" obbligatorio="true" value="${requestScope.testoMail}" gestore="it.eldasoft.gene.tags.gestori.decoratori.GestoreCampoTestoComunicazioneHTML"/>
 			<gene:campoScheda campo="COMMITT" campoFittizio="true" definizione="T60;0;;;COMMITT" value="${requestScope.mittenteMail}" visibile="${ abilitatoInvioMailDocumentale ne 'true'}"/>
 			
@@ -420,7 +448,20 @@
 					<td>
 				<tr>
 			</gene:campoScheda>		
-			<c:if test='${requestScope.controlloSuperato ne "NO"}' >
+			
+			<c:if test="${generaPdf eq '1' and isRicercaMercatoNegoziata}">
+				<gene:campoScheda addTr="false">
+				<tr id="tr_generaPdf">
+					<td class="etichetta-dato">Genera e pubblica report lavorazioni e forniture?</td>
+					<td class="valore-dato">
+					<select name="generaPDFLavorazioni" id="generaPDFLavorazioni">
+						<option value="on" selected>Si</option>
+						<option value="off">No</option>
+					</select>
+				</tr>
+				</gene:campoScheda>
+			</c:if>
+			<c:if test='${requestScope.controlloSuperato ne "NO" and bando ne "5"}' >
 				<gene:campoScheda nome="Pubblicazione">
 					<td colspan="2"><b>Pubblicazione</b></td>
 				</gene:campoScheda>
@@ -448,33 +489,33 @@
 		</c:if>
 		
 		<c:if test='${requestScope.controlloSuperato ne "NO"}' >
-			
-			<gene:campoScheda campo="DATPUB" campoFittizio="true" definizione="D;0;;;DATPUB" obbligatorio="true"/>
+			<c:set var = "condizioneItergaCifratura" value="${(iterga==2 || iterga==4 || iterga==7) && bando == '1' }"/>
+			<gene:campoScheda campo="DATPUB" campoFittizio="true" definizione="D;0;;;DATPUB" obbligatorio="true" visibile="${bando ne '5' }"/>
 			<c:if test="${cifraturaBuste eq '1' }">
-					<gene:campoScheda nome="PASSWORDA0" visibile="${(iterga==2 || iterga==4) && bando == '1' }">
+					<gene:campoScheda nome="PASSWORDA0" visibile="${condizioneItergaCifratura}">
 						<td colspan="2"><br><b>Password per la cifratura delle buste</b>
 						<br>Inserire una stringa di almeno 8 caratteri, composta da numeri o lettere.
 						<br>Tale password verrà richiesta al momento dell'acquisizione delle buste</td>
 					</gene:campoScheda>
-					<gene:campoScheda campo="PWD_A0" title="Password busta prequalifica" campoFittizio="true" definizione="T100" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" obbligatorio="true" visibile="${(iterga==2 || iterga==4) && bando == '1'}"/>
-					<gene:campoScheda campo="PWD_A01" title="Conferma password" campoFittizio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" definizione="T100" obbligatorio="true" visibile="${(iterga==2 || iterga==4) && bando == '1'}"/>
-					<gene:campoScheda nome="PASSWORDA" visibile="${!((iterga==2 || iterga==4) && bando == '1' ) }">
+					<gene:campoScheda campo="PWD_A0" title="Password busta prequalifica" campoFittizio="true" definizione="T100" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" obbligatorio="true" visibile="${condizioneItergaCifratura}"/>
+					<gene:campoScheda campo="PWD_A01" title="Conferma password" campoFittizio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" definizione="T100" obbligatorio="true" visibile="${condizioneItergaCifratura}"/>
+					<gene:campoScheda nome="PASSWORDA" visibile="${!condizioneItergaCifratura}">
 						<td colspan="2"><br><b>Password per la cifratura delle buste</b>
 						<br>Inserire una stringa di almeno 8 caratteri, composta da numeri o lettere.
 						<br>Tale password verrà richiesta al momento dell'acquisizione delle buste. E' prevista una password distinta per ogni tipologia di busta</td>
 					</gene:campoScheda>
-					<gene:campoScheda campo="PWD_A" title="Password busta amministrativa" campoFittizio="true" definizione="T100" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" obbligatorio="true" visibile="${!((iterga==2 || iterga==4) && bando == '1' )}"/>
-					<gene:campoScheda campo="PWD_A1" title="Conferma password" campoFittizio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" definizione="T100" obbligatorio="true" visibile="${!((iterga==2 || iterga==4) && bando == '1' )}"/>
-					<gene:campoScheda nome="PASSWORDB" visibile="${controlloPresenzaOffertaTecnica eq 'true' && !((iterga==2 || iterga==4) && bando == '1' )}">
+					<gene:campoScheda campo="PWD_A" title="Password busta amministrativa" campoFittizio="true" definizione="T100" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" obbligatorio="true" visibile="${!condizioneItergaCifratura  && nobustamm ne '1'}"/>
+					<gene:campoScheda campo="PWD_A1" title="Conferma password" campoFittizio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" definizione="T100" obbligatorio="true" visibile="${!condizioneItergaCifratura  && nobustamm ne '1'}"/>
+					<gene:campoScheda nome="PASSWORDB" visibile="${controlloPresenzaOffertaTecnica eq 'true' && !condizioneItergaCifratura  && nobustamm ne '1'}">
 						<td colspan="2"><br></td>
 					</gene:campoScheda>
-					<gene:campoScheda campo="PWD_B" title="Password busta tecnica" campoFittizio="true" definizione="T100" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" obbligatorio="${controlloPresenzaOffertaTecnica eq 'true' }"   visibile="${controlloPresenzaOffertaTecnica eq 'true' && !((iterga==2 || iterga==4) && bando == '1' )}"/>
-					<gene:campoScheda campo="PWD_B1" title="Conferma password" campoFittizio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" definizione="T100" obbligatorio="${controlloPresenzaOffertaTecnica eq 'true' }" visibile="${controlloPresenzaOffertaTecnica eq 'true' && !((iterga==2 || iterga==4) && bando == '1' )}"/>
-					<gene:campoScheda nome="PASSWORDC" visibile="${!((iterga==2 || iterga==4) && bando == '1' ) && (empty soloPunteggiTec || soloPunteggiTec ne 'true') }">
+					<gene:campoScheda campo="PWD_B" title="Password busta tecnica" campoFittizio="true" definizione="T100" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" obbligatorio="${controlloPresenzaOffertaTecnica eq 'true' }"   visibile="${controlloPresenzaOffertaTecnica eq 'true' && !condizioneItergaCifratura}"/>
+					<gene:campoScheda campo="PWD_B1" title="Conferma password" campoFittizio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" definizione="T100" obbligatorio="${controlloPresenzaOffertaTecnica eq 'true' }" visibile="${controlloPresenzaOffertaTecnica eq 'true' && !condizioneItergaCifratura}"/>
+					<gene:campoScheda nome="PASSWORDC" visibile="${!condizioneItergaCifratura && (empty soloPunteggiTec || soloPunteggiTec ne 'true') }">
 						<td colspan="2"><br></td>
 					</gene:campoScheda>
-					<gene:campoScheda campo="PWD_C" title="Password busta economica" campoFittizio="true" definizione="T100" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" obbligatorio="true" visibile="${!((iterga==2 || iterga==4) && bando == '1' ) && (empty soloPunteggiTec || soloPunteggiTec ne 'true')}"/>
-					<gene:campoScheda campo="PWD_C1" title="Conferma password" campoFittizio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" definizione="T100" obbligatorio="true" visibile="${!((iterga==2 || iterga==4) && bando == '1' ) && (empty soloPunteggiTec || soloPunteggiTec ne 'true')}"/>
+					<gene:campoScheda campo="PWD_C" title="Password busta economica" campoFittizio="true" definizione="T100" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" obbligatorio="true" visibile="${!condizioneItergaCifratura && (empty soloPunteggiTec || soloPunteggiTec ne 'true')}"/>
+					<gene:campoScheda campo="PWD_C1" title="Conferma password" campoFittizio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoPassword100Caratteri" definizione="T100" obbligatorio="true" visibile="${!condizioneItergaCifratura && (empty soloPunteggiTec || soloPunteggiTec ne 'true')}"/>
 					
 			</c:if>
 			<c:if test="${(bando=='1' || (bando == '3' && !isProceduraTelematica)) && integrazioneWSDM =='1'}">
@@ -585,7 +626,7 @@
 		<input type="hidden" name="genereGara" id="genereGara" value="${tipologiaGara }" />
 		
 		
-		<c:if test="${(bando=='3' || bando=='1') &&  integrazioneWSDM =='1' && requestScope.visualizzaDettaglioComunicazione}">
+		<c:if test="${(bando=='3' || bando=='1' || bando=='5') &&  integrazioneWSDM =='1' && requestScope.visualizzaDettaglioComunicazione}">
 			<input type="hidden" name="step" id="step" value="${step}" />
 			<input id="servizio" name="servizio" type="hidden" value="FASCICOLOPROTOCOLLO" />
 			<input id="syscon" type="hidden" value="${profiloUtente.id}" /> 
@@ -608,7 +649,8 @@
 			<input id="tipoPagina" type="hidden" name="tipoPagina" value="PUBBLICAZIONE" />
 			<input id="modoapertura" type="hidden" value="MODIFICA" />
 			<input id="nomeR" name="nomeR"  type="hidden" value="" />
-			<input id="acronimoR" name="acronimoR"  type="hidden" value="" />			
+			<input id="acronimoR" name="acronimoR"  type="hidden" value="" />
+			
 			<c:choose>
 				<c:when test="${ngara!= '' and !empty ngara}">
 					<c:set var="chiaveOriginale" value="${ngara }"/>
@@ -631,10 +673,10 @@
 
 	
 	<c:choose>
-		<c:when test="${isProceduraTelematica && bando=='3' &&  integrazioneWSDM =='1'}">
+		<c:when test="${isProceduraTelematica && (bando=='3' || bando=='5') &&  integrazioneWSDM =='1'}">
 			<c:set var="testoBottone" value="Protocolla e invia"/>
 		</c:when>
-		<c:when test="${isProceduraTelematica && bando=='3' }">
+		<c:when test="${isProceduraTelematica && (bando=='3' || bando=='5') }">
 			<c:set var="testoBottone" value="Invia"/>
 		</c:when>
 		<c:otherwise>
@@ -675,21 +717,34 @@
 			</c:if>
 		</c:if>
 		
+		<c:if test="${ integrazioneWSDM =='1'}">
+		function apriListaUffici() {
+			_ctx = "${pageContext.request.contextPath}";
+			$("#finestraListaUffici").dialog('option','width',700);
+			$("#finestraListaUffici").dialog("open");
+			_creaContainerListaUffici();
+		}
+		</c:if>
+		
 		<c:choose>
-			<c:when test="${isProceduraTelematica && bando=='3' && integrazioneWSDM =='1'}">
+			<c:when test="${isProceduraTelematica && (bando=='3' || bando=='5') && integrazioneWSDM =='1'}">
+								
 				function conferma() {
 					var step= $("#step").val();
+					var bando = "${bando }";
 					if(step==1){
-						var dataPubblicazione = getValue("DATPUB");
-						if(dataPubblicazione== null || dataPubblicazione==""){
-							alert("Specificare la data di pubblicazione");
-							return;
-						}else{
-							var d = new Date();
-							var oggi = d.getDate()  + "/" + (d.getMonth()+1) + "/" + d.getFullYear();
-							if(dataPubblicazione > oggi){
-								alert("la data inserita non può essere precedente a quella attuale");
+						if(bando != '5'){
+							var dataPubblicazione = getValue("DATPUB");
+							if(dataPubblicazione== null || dataPubblicazione==""){
+								alert("Specificare la data di pubblicazione");
 								return;
+							}else{
+								var d = new Date();
+								var oggi = d.getDate()  + "/" + (d.getMonth()+1) + "/" + d.getFullYear();
+								if(dataPubblicazione > oggi){
+									alert("la data inserita non può essere precedente a quella attuale");
+									return;
+								}
 							}
 						}
 						//Controllo presenza oggetto e testo della comunicazione
@@ -698,8 +753,9 @@
 						<c:choose>
 						<c:when test="${cifraturaBuste eq '1' }">
 							var iterga = "${iterga }";
-							var bando = "${bando }";
-							if((iterga==2 || iterga==4) && bando == '1'){
+							
+							var nobustamm = "${nobustamm}";
+							if((iterga==2 || iterga==4 || iterga==7) && bando == '1'){
 								var pwd = getValue("PWD_A0");
 								var pwd1 = getValue("PWD_A01");
 								if(verificaPassword(pwd,pwd1,"A0")<0)
@@ -707,7 +763,8 @@
 							}else{
 								var pwd = getValue("PWD_A");
 								var pwd1 = getValue("PWD_A1");
-								if(verificaPassword(pwd,pwd1,"A")<0)
+								if(nobustamm != '1')
+									if(verificaPassword(pwd,pwd1,"A")<0)
 										return;
 								<c:if test="${controlloPresenzaOffertaTecnica eq 'true' }" >
 									pwd = getValue("PWD_B");
@@ -754,6 +811,16 @@
 						mostraParametriUtente(true);
 						//Controlli sulla valorizzazione dei campi obbligatori
 						var errori = controlloCampiObbligatori();
+					
+						if(!errori && "LAPISOPERA" == $("#tiposistemaremoto").val() ){
+							var nomePrimoAllegato = getValue("NOME_0");
+							var esito=controlloFormatoAllegato(nomePrimoAllegato);
+							if(!esito){
+								var msg="ATTENZIONE:  il sistema di protocollo accetta solo comunicazioni che abbiano un allegato principale (il primo allegato) firmato digitalmente  nel formato '.pdf.p7m'. Per procedere all'invio degli inviti, occore adeguare la documentazione allegata all'invito stesso dalla sezione 'Documenti dell'invito'.";
+								alert(msg);
+								errori=true;
+							}
+						}	
 						
 						if(!errori){
 							_setWSLogin();
@@ -790,13 +857,14 @@
 			</c:when>
 			<c:otherwise>
 				function conferma() {
-
+					<c:if test="${ bando ne '5'}">					
 					var dataPubblicazione = getValue("DATPUB");
 					if(dataPubblicazione== null || dataPubblicazione==""){
 						alert("Specificare la data di pubblicazione");
 						return;
 					}
-					<c:if test="${isProceduraTelematica && bando=='3'}">
+					</c:if>
+					<c:if test="${isProceduraTelematica && (bando=='3' || bando=='5')}">
 						//Controllo presenza oggetto e testo della comunicazione
 						if(controlloOggettoTestoLettera() == "NOK")
 							return;
@@ -837,7 +905,8 @@
 					<c:if test="${cifraturaBuste eq '1' }">
 						var iterga = "${iterga }";
 						var bando = "${bando }";
-						if((iterga==2 || iterga==4) && bando == '1'){
+						var nobustamm = "${nobustamm}";
+						if((iterga==2 || iterga==4 || iterga==7) && bando == '1'){
 							var pwd = getValue("PWD_A0");
 							var pwd1 = getValue("PWD_A01");
 							if(verificaPassword(pwd,pwd1,"A0")<0)
@@ -845,7 +914,8 @@
 						}else{
 							var pwd = getValue("PWD_A");
 							var pwd1 = getValue("PWD_A1");
-							if(verificaPassword(pwd,pwd1,"A")<0)
+							if(nobustamm != '1')
+								if(verificaPassword(pwd,pwd1,"A")<0)
 									return;
 							<c:if test="${controlloPresenzaOffertaTecnica eq 'true' }" >
 								pwd = getValue("PWD_B");
@@ -939,7 +1009,7 @@
 		
 		
 		
-		<c:if test="${isProceduraTelematica && bando=='3' }">
+		<c:if test="${isProceduraTelematica && (bando=='3' || bando=='5') }">
 		
 			document.forms[0].encoding="multipart/form-data";
 			
@@ -1014,7 +1084,14 @@
 						
 				mostraElementiListaDestinatariNascosti(!visibile);
 			} 
-			mostraElementiListaDestinatariNascosti(false);
+			
+			var listaEspansa=false;
+			<c:if test="${isProceduraTelematica && bando=='5' }">
+				listaEspansa=true;
+				showObj("offDestinatari",true);
+				showObj("onDestinatari",false);
+			</c:if>
+			mostraElementiListaDestinatariNascosti(listaEspansa);
 			
 			
 			function showDoc(){
@@ -1074,6 +1151,9 @@
 							$("#oggettodocumento").val(testoOggettoDocumento);
 						}else if (_tipoWSDM == "TITULUS" ){
 							oggettoDocumentoTitulus();
+						}else if (_tipoWSDM == "ENGINEERINGDOC" ){
+							var testoOggettoDocumento= "${valoreChiave} - " + $('#oggettodocumento').val();
+							$("#oggettodocumento").val(testoOggettoDocumento);
 						}
 						$("#rowPASSWORDA").hide();
 						$("#rowPASSWORDB").hide();
@@ -1084,6 +1164,10 @@
 						$("#rowPWD_B1").hide();
 						$("#rowPWD_C").hide();
 						$("#rowPWD_C1").hide();
+						$("#tr_generaPdf").hide();
+						if(_fascicoliPresenti==0 && "LAPISOPERA" == _tipoWSDM){
+							$("#pulsanteConferma").hide();
+						}
 					}
 				}
 				
@@ -1212,7 +1296,7 @@
                             $("#obblmezzoinvio").hide();
                         }
                         
-                        if(_tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "JDOC" ){
+                        if(_tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "JDOC" && _tipoWSDM != "NUMIX"){
                         	$("#mezzo").hide();
 							$("#mezzo").closest('tr').hide();
                         }
@@ -1260,7 +1344,12 @@
 					if(_docTuttiNonProtocollati)
 						procollazioneTitulus =true;
 				}	
-				if(_fascicolazioneAbilitata==1 && (_fascicoliPresenti==0 || procollazioneTitulus)){
+				
+				if(_fascicoliPresenti==0 && "LAPISOPERA" == _tipoWSDM){
+					$("#pulsanteConferma").hide();
+				}
+				
+				if(_fascicolazioneAbilitata==1 && (_fascicoliPresenti==0 || procollazioneTitulus || (_fascicoliPresenti > 0 && _tipoWSDM == "LAPISOPERA"))){
 					
 					$("#datiWSDM").show();
 					/*
@@ -1353,7 +1442,7 @@
 					showObj("rigaIdUtente",vis);
 					showObj("rigaIdUtenteUnitaOperativa",vis);
 				}else if(tipoWSDM == "TITULUS" || tipoWSDM == "ARCHIFLOW" || tipoWSDM == "SMAT" || tipoWSDM == "FOLIUM" || tipoWSDM == "ARCHIFLOWFA" 
-					|| tipoWSDM == "EASYDOC" || tipoWSDM == "ITALPROT" || tipoWSDM == "URBI" || tipoWSDM == "JDOC"){
+					|| tipoWSDM == "EASYDOC" || tipoWSDM == "ITALPROT" || tipoWSDM == "URBI" || tipoWSDM == "JDOC" || tipoWSDM == "ENGINEERINGDOC" || tipoWSDM == "NUMIX"){
 					showObj("rigaPassword",vis);
 					showObj("rigaRuolo",false);
 				}else if (tipoWSDM == "PRISMA") {
@@ -1362,6 +1451,10 @@
 					showObj("rigaPassword",false);
 					showObj("rigaRuolo",false);
 				}else if (tipoWSDM == "URBI" || tipoWSDM == "PROTSERVICE" || tipoWSDM == "JPROTOCOL") {
+					showObj("rigaRuolo",false);
+				}else if (tipoWSDM == "LAPISOPERA") {
+					showObj("rigaPassword",vis);
+					showObj("rigaCognome",vis);
 					showObj("rigaRuolo",false);
 				}else{
 					showObj("rigaRuolo",vis);
@@ -1400,9 +1493,7 @@
 				if (_tipoWSDM == "TITULUS"){
 					caricamentoCodiceAooTITULUS();
 					_popolaTabellatoClassificaTitulus();
-				}
-				
-				if (_tipoWSDM == "JIRIDE"){
+				}else if (_tipoWSDM == "JIRIDE"){
 					if(_letturaMittenteDaServzio){
 						$('#mittenteinterno').empty();
 						_popolaTabellatoJirideMittente("mittenteinterno");
@@ -1412,6 +1503,8 @@
 						}
 					}
 					caricamentoStrutturaJIRIDE();
+				}else if (_tipoWSDM == "NUMIX"){
+					caricamentoClassificaNumix();
 				}
 			});
 			
@@ -1420,6 +1513,8 @@
 				if (_tipoWSDM == "TITULUS"){
 					caricamentoCodiceAooTITULUS();
 					_popolaTabellatoClassificaTitulus();
+				}else if (_tipoWSDM == "NUMIX"){
+					caricamentoClassificaNumix();
 				}
 		    });
 		    
@@ -1439,6 +1534,10 @@
 				if (_tipoWSDM == "PRISMA"){
 					gestionemodificacampoannofascicolo();
 				}
+				if (_tipoWSDM == "ITALPROT"){
+					$('#listafascicoli').empty();
+					$('#codicefascicolo').val(); 
+				}
 			});
 			
 			$('#numerofascicolo').change(function() {
@@ -1456,7 +1555,19 @@
 					caricamentoStrutturaJIRIDE();
 				}
 		    });
+		    
+		    $('#classificafascicolonuovoItalprot').change(function() {
+				$('#listafascicoli').empty();
+				$('#codicefascicolo').val(); 
+				
+			});
+    
 			
+			$('#listafascicoli').on('change',  function () {
+				var str = this.value;
+				gestioneSelezioneFascicolo(str);
+				
+			});
 		</c:if>
 		
 		$(":password").bind("cut copy paste",function(e) {e.preventDefault();});

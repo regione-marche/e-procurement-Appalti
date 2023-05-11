@@ -40,6 +40,10 @@ public class AggiungiDestinatariAnagraficaAction extends ActionBaseNoOpzioni {
     String idprg = new String(request.getParameter("idprg"));
     Long idcom = new Long(request.getParameter("idcom"));
     String entita = new String(request.getParameter("entitaRicerca"));
+    String destinatarioInCC = request.getParameter("descc");
+    if("".equals(destinatarioInCC)) {
+      destinatarioInCC=null;
+    }
 
     String[] tipoIndirizzo={"Pec", "Email"};
 
@@ -47,8 +51,8 @@ public class AggiungiDestinatariAnagraficaAction extends ActionBaseNoOpzioni {
     String messageKey = null;
 
     String insertW_INVCOMDES = "insert into w_invcomdes (idprg, idcom, idcomdes, descodent, "
-    	+ "descodsog, desmail, desintest, comtipma)"
-        + " values (?,?,?,?,?,?,?,?)";
+    	+ "descodsog, desmail, desintest, comtipma, descc)"
+        + " values (?,?,?,?,?,?,?,?,?)";
 
     TransactionStatus status = null;
     boolean commit = true;
@@ -85,7 +89,7 @@ public class AggiungiDestinatariAnagraficaAction extends ActionBaseNoOpzioni {
                   }
                 }
                 this.sqlManager.update(insertW_INVCOMDES, new Object[] {idprg, idcom, maxId, descodent, valoriDittaSelezionata[0],
-                    valoriDittaSelezionata[2], valoriDittaSelezionata[1], new Long(j + 1) });
+                    valoriDittaSelezionata[2], valoriDittaSelezionata[1], new Long(j + 1),destinatarioInCC});
 
 
               }

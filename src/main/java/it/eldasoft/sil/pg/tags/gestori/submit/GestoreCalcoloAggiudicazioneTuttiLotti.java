@@ -195,7 +195,7 @@ public GestoreCalcoloAggiudicazioneTuttiLotti(boolean isGestoreStandard) {
           metsoglia = impl.getLong("METSOGLIA");
           metcoeff = impl.getDouble("METCOEFF");
         }else {
-          Object valori[] = aggiudicazioneManager.getMetodoCalcoloSoglia(isGaraDLGS2017);
+          Object valori[] = aggiudicazioneManager.getMetodoCalcoloSoglia(isGaraDLGS2017,"",new Long("0"));
           metsoglia = (Long)valori[0];
           if(valori[1]!=null)
             metcoeff = (Double)valori[1];
@@ -241,7 +241,7 @@ public GestoreCalcoloAggiudicazioneTuttiLotti(boolean isGestoreStandard) {
 
           try {
             if("true".equals(isGaraDLGS2016) || "true".equals(isGaraDLGS2017) || "true".equals(isGaraDL2019) || "1".equals(legregsicLotto)){
-              valoreRitornoControllo = (Boolean)aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(lotto,"A1135", numeroVoceParametroA1135)[0];
+              valoreRitornoControllo = (Boolean)aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(lotto,"A1135", numeroVoceParametroA1135, "")[0];
               DLG2016CalcoloGraduatoria = new Boolean(!valoreRitornoControllo.booleanValue());
             }
            } catch (SQLException e) {

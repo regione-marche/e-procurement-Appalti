@@ -41,7 +41,7 @@ public class AutorizzatoModificaComunicazioneFunction extends
 
     try {
       List datiW_INVCOM = sqlManager.getListVector(
-          "select coment, comkey1, comkey2 from w_invcom where idprg = ? and idcom = ?",
+          "select coment, comkey1, comkey2, comtipo from w_invcom where idprg = ? and idcom = ?",
           new Object[] { idprg, idcom });
 
       if (datiW_INVCOM != null && datiW_INVCOM.size() > 0) {
@@ -51,6 +51,9 @@ public class AutorizzatoModificaComunicazioneFunction extends
             datiW_INVCOM.get(0), 1).getValue();
         String comkey2 = (String) SqlManager.getValueFromVectorParam(
             datiW_INVCOM.get(0), 2).getValue();
+        String comtipo = (String) SqlManager.getValueFromVectorParam(
+                datiW_INVCOM.get(0), 3).getValue();
+        comtipo=StringUtils.stripToEmpty(comtipo);
         // Codice della tornata: se l'entità è GARE devo ricavarla
         // prima di utilizzarla per interrogare la G_PERMESSI
         String codgar = "";
@@ -86,6 +89,14 @@ public class AutorizzatoModificaComunicazioneFunction extends
           // si tratta di una comunicazione da inviare che parte dai una ODA
           Long idric = (Long) sqlManager.getObject("select idric from v_oda where ngara = ?", new Object[] {comkey1 });
           codgar=idric.toString();
+        } else if ("G1STIPULA".equals(coment)) {
+        	Long idStipula = null;
+        	if("FS12".equals(comtipo)) {
+        		idStipula = (Long) sqlManager.getObject("select id from g1stipula where codstipula = ?", new Object[] {comkey2 });	
+        	}else {
+        		idStipula = (Long) sqlManager.getObject("select id from g1stipula where codstipula = ?", new Object[] {comkey1 });
+        	}
+            codgar=idStipula.toString();
         } else {
           // si tratta di una comunicazione da inviare che parte dalla tornata (offerta unica)
           codgar = comkey1;

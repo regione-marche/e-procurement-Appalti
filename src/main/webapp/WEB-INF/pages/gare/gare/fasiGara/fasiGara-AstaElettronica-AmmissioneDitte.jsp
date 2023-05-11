@@ -190,6 +190,7 @@
 					<input type="hidden" name="numeroDitteTotali" id="numeroDitteTotali" value="" />
 					<input type="hidden" name="isGaraLottiConOffertaUnica" id="isGaraLottiConOffertaUnica" value="${isGaraLottiConOffertaUnica}" />
 					<input type="hidden" id="pgAsta" name="pgAsta" value="${pgAsta }" />
+					<input type="hidden" name="entitaPrincipaleModificabile" id="entitaPrincipaleModificabile" value="${sessionScope.entitaPrincipaleModificabile}" />
 				</gene:formLista>
 			</td>
 		</tr>

@@ -55,8 +55,9 @@
 							scheda=''
 							schedaPopUp=''
 							campi="GARE.NGARA"
+							functionId="default_0"
+							parametriWhere="T:${codiceGara}"
 							chiave=""
-							where="GARE.CODGAR1 = '${codiceGara}' and GARE.CODGAR1 != GARE.NGARA"
 							formName="formLotti_${param.contatore}">
 							<gene:campoScheda campo="NGARA_${param.contatore}" entita="DOCUMGARA" title="Codice lotto ${gene:if(modo eq 'MODIFICA' or modo eq 'NUOVO','(valorizzare solo se documento specifico del lotto)','') }" campoFittizio="true" visibile="${genereGara eq '1'}" definizione="T10;0;;;NGARADG" value="${item[1]}" modificabile='${campiEsistentiModificabiliDaProfilo }'/>
 						</gene:archivio>
@@ -80,8 +81,9 @@
 					scheda=''
 					schedaPopUp=''
 					campi="GARE.NGARA"
+					functionId="default_0"
+					parametriWhere="T:${codiceGara}"
 					chiave=""
-					where="GARE.CODGAR1 = '${codiceGara}' and GARE.CODGAR1 != GARE.NGARA"
 					formName="formLotti_${param.contatore}">
 					<gene:campoScheda campo="NGARA_${param.contatore}" entita="DOCUMGARA" title="Codice lotto ${gene:if(modo eq 'MODIFICA' or modo eq 'NUOVO','(valorizzare solo se documento specifico del lotto)','') }" campoFittizio="true" visibile="${genereGara eq '1'}" definizione="T10;0;;;NGARADG"  value="${numeroGara}"/>
 				</gene:archivio>

@@ -67,9 +67,8 @@ public class GetNsoDatiListaOrdiniFunction extends AbstractFunzioneTag {
           Date dataOggi = UtilityDate.getDataOdiernaAsDate();
           if(dataScadenza!=null && dataOggi.before(dataScadenza)){
             isPeriodoVariazione = "1";
-            if(dataLimiteMod!=null && dataOggi.after(dataLimiteMod)) {
-              isPeriodoVariazione = "0";
-            }
+          } else if(dataLimiteMod!=null && dataOggi.before(dataLimiteMod)) {
+            isPeriodoVariazione = "1";
           }
           pageContext.setAttribute("isPeriodoVariazione",isPeriodoVariazione,PageContext.REQUEST_SCOPE);
         }

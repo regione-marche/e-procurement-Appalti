@@ -74,7 +74,10 @@
 		</c:choose>
 	</c:if>
 	
-	
+	${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, codgar, "SC", "21")}
+	<c:set var="parametri" value="T:${codgar}"/>
+	<c:set var="where" value="GARE.CODGAR1 = ? AND MODLICG = 6 AND (GARE.GENERE is null)"/>
+	${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunction", pageContext, "GARE", where, parametri)}
 	
 	<gene:setString name="titoloMaschera" value="Importazione dei punteggi ${tipoPunteggio } assegnati alle ditte di uno o pi&ugrave; lotti della gara ${codgar}" />
 
@@ -163,8 +166,8 @@
 			<table class="dettaglio-notab">	
 				<tr>
 					<td colspan="2">
-						<c:set var="filtroLotti" value="GARE.CODGAR1 = '${codgar}' AND MODLICG = 6 AND (GARE.GENERE is null)" />
-						<gene:formLista entita="GARE" sortColumn="3" where="${filtroLotti}">
+						
+						<gene:formLista entita="GARE" sortColumn="3" >
 								<gene:campoLista title="&nbsp;" width="20">
 									<a href="javascript:importa('${datiRiga.GARE_NGARA}');" title="Importa i punteggi nel lotto" >
 										<img align="middle"  width="16" height="16" title="Importa i punteggi ${tipoPunteggio } nel lotto" alt="Importa i punteggi ${tipoPunteggio } nel lotto" src="${pageContext.request.contextPath}/img/import.gif"/>

@@ -260,8 +260,8 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 						scheda=''
 						schedaPopUp=''
 						campi="V_IMPR_SMAT.CODIMP;V_IMPR_SMAT.NOMIMP;V_IMPR_SMAT.CFIMP;V_IMPR_SMAT.PIVIMP;V_IMPR_SMAT.ID_SEDE;V_IMPR_SMAT.ID_FORNITORE;V_IMPR_SMAT.IS_IMPRESA_OA"
+						functionId="default"
 						chiave=""
-						where="(V_IMPR_SMAT.TIPIMP <>3 and V_IMPR_SMAT.TIPIMP <>10) or V_IMPR_SMAT.TIPIMP is null"
 						formName="formDitteSMATGara"
 						inseribile="false">
 						<gene:campoScheda campo="DITTAO_SMAT" campoFittizio="true" definizione="T20;;;;DITTAO" obbligatorio="true" />
@@ -280,8 +280,8 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 						scheda=''
 						schedaPopUp=''
 						campi="IMPR.CODIMP;IMPR.NOMEST;IMPR.CFIMP;IMPR.PIVIMP;IMPR.CGENIMP"
+						functionId="ditteDitg"
 						chiave=""
-						where="(IMPR.TIPIMP <>3 and IMPR.TIPIMP <>10) or IMPR.TIPIMP is null"
 						formName="formDitteGara"
 						inseribile="true">
 						<gene:campoScheda campo="DITTAO" entita="DITG" obbligatorio="true" />
@@ -294,7 +294,7 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 				<c:when test='${inserimentoDitteSMAT eq "SI" and raggruppamentoSelezionato ne "SI"}'>
 					<gene:campoScheda campo="DITTAO" keyCheck="true" title="Codice raggruppamento temporaneo" entita="DITG" obbligatorio="${isCodificaAutomatica eq 'false'}"  />
 							<gene:campoScheda campo="DITTAO_FIT" title="Codice raggruppamento temporaneo" campoFittizio="true" definizione="T10;;;;CODIMP" modificabile="false" />
-							<gene:campoScheda title="Ragione sociale" campo="NOMEST" speciale="true" campoFittizio="true" definizione="T2000;;;NOTE;NOMIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.NOMEST")}'  >
+							<gene:campoScheda title="Ragione sociale" campo="NOMEST" speciale="true" campoFittizio="true" definizione="T2000;;;;NOMIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.NOMEST")}'  >
 								<gene:popupCampo titolo="Selezione raggruppamento da archivio ditte" href="archivioRTI('IMPR')" />
 							</gene:campoScheda>
 							<gene:archivio titolo="ditte"
@@ -302,8 +302,8 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 								scheda=''
 								schedaPopUp=''
 								campi="V_IMPR_SMAT.CODIMP;V_IMPR_SMAT.NOMEST;V_IMPR_SMAT.CFIMP;V_IMPR_SMAT.PIVIMP;V_IMPR_SMAT.ID_SEDE;V_IMPR_SMAT.ID_FORNITORE;V_IMPR_SMAT.IS_IMPRESA_OA"
+								functionId="default"
 								chiave=""
-								where="(V_IMPR_SMAT.TIPIMP <>3 and V_IMPR_SMAT.TIPIMP <>10) or V_IMPR_SMAT.TIPIMP is null"
 								formName="formDitteGara"
 								inseribile="true">
 								<gene:campoScheda title="Codice ditta mandataria" campo="CODDIC_SMAT" campoFittizio="true" definizione="T10;;;;CODDIC" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.RAGIMP.CODDIC")}' value="${codiceDitta}" modificabile="${offertaRT ne '1' }"/>
@@ -325,7 +325,7 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 						<c:when test='${raggruppamentoSelezionato ne "SI"}'>
 							<gene:campoScheda campo="DITTAO" keyCheck="true" title="Codice raggruppamento temporaneo" entita="DITG" obbligatorio="${isCodificaAutomatica eq 'false'}"  />
 							<gene:campoScheda campo="DITTAO_FIT" title="Codice raggruppamento temporaneo" campoFittizio="true" definizione="T10;;;;CODIMP" modificabile="false" />
-							<gene:campoScheda title="Ragione sociale" campo="NOMEST" speciale="true" campoFittizio="true" definizione="T2000;;;NOTE;NOMIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.NOMEST")}'  >
+							<gene:campoScheda title="Ragione sociale" campo="NOMEST" speciale="true" campoFittizio="true" definizione="T2000;;;;NOMIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.NOMEST")}'  >
 								<gene:popupCampo titolo="Selezione raggruppamento da archivio ditte" href="archivioRTI('IMPR')" />
 							</gene:campoScheda>
 							<gene:archivio titolo="ditte"
@@ -333,8 +333,8 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 								scheda=''
 								schedaPopUp=''
 								campi="IMPR.CODIMP;IMPR.NOMEST;IMPR.CFIMP;IMPR.PIVIMP;IMPR.CGENIMP"
+								functionId="ditteDitg"
 								chiave=""
-								where="(IMPR.TIPIMP <>3 and IMPR.TIPIMP <>10) or IMPR.TIPIMP is null"
 								formName="formDitteGara"
 								inseribile="true">
 								<gene:campoScheda title="Codice ditta mandataria" campo="CODDIC" campoFittizio="true" definizione="T10;;;;CODDIC" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.RAGIMP.CODDIC")}' value="${codiceDitta}" modificabile="${offertaRT ne '1' }"/>
@@ -492,7 +492,7 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 			<input type="hidden" name="offertaRT" id="offertaRT" value="${offertaRT }" />
 			<input type="hidden" name="codiceGara" id="codiceGara" value="${codiceGara }" />
 			<input type="hidden" name="isOfferteDistinte" id="isOfferteDistinte" value="${isOfferteDistinte }" />	
-			<input type="hidden" name="initAcquisizione" id="initAcquisizione" value="${initAcquisizione }" />													
+			<input type="hidden" name="initAcquisizione" id="initAcquisizione" value="${initAcquisizione }" />		
 			<gene:campoScheda>
 				<td class="comandi-dettaglio" colSpan="2">
 					<INPUT type="button" class="bottone-azione" value="Salva" title="Salva modifiche" onclick="javascript:schedaConfermaSalvataggio();">
@@ -617,11 +617,15 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 </c:choose>
 
 	<c:if test='${not empty RISULTATO and RISULTATO eq "OK"}' >
+		/*
 		window.opener.document.forms[0].pgSort.value = "";
 		window.opener.document.forms[0].pgLastSort.value = "";
 		window.opener.document.forms[0].pgLastValori.value = "";
 		window.opener.bloccaRichiesteServer();
+		window.opener.document.pagineForm.entitaPrincipaleModificabile.value="${sessionScope.entitaPrincipaleModificabile}";
 		window.opener.listaVaiAPagina(0);
+		*/
+		window.opener.selezionaPagina(window.opener.document.pagineForm.activePage.value);
 		window.close();
 	</c:if>
 	
@@ -837,54 +841,41 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 	</c:if>
 	
 	function archivioRTI(tipo){
-		var nomest= getValue("NOMEST");
-		var dittao = getValue("DITG_DITTAO");
+		
 		var href ="href=gene/impr/impr-listaRaggruppamento.jsp";
 		if(tipo=="SMAT")
 			href ="href=gare/v_impr_smat/v_impr_smat-listaRaggruppamento.jsp";
+		
+		var nomest= getValue("NOMEST");
+		if(nomest==null)
+			nomest="";
+		nomest = escape(nomest);
+		href += "&denom=" + nomest; 
+
+		var dittao = getValue("DITG_DITTAO");		
+		if(dittao==null)
+			dittao="";	
+		href += "&ditta=" + dittao; 
 			
 		var tipoRTI = "${tipoRTI }";
 		if(tipoRTI!=null && tipoRTI!="")
 			href += "&tipoRTI=" + tipoRTI; 
+			
 		var raggruppamentoSelezionato = "${raggruppamentoSelezionato }";
-		if(raggruppamentoSelezionato != "SI" ){
-			var filtroNomest="";
-			var filtro ="";
-			if(nomest!= null && nomest !=""){
-				nomest ="'%" + nomest + "%'";
-				nomest = nomest.toUpperCase();
-				filtroNomest = "${fnucase}( IMPR.NOMEST ) like " + nomest;
-				filtroNomest += " OR ${fnucase}( IMPR.CODIMP ) like " + nomest;
-				filtroNomest = "(" + filtroNomest + ")";
-			}
-			
-			if(dittao!= null && dittao !=""){
-				dittao ="'%" + dittao + "%'";
-				dittao = dittao.toUpperCase();
-				var filtroCodimp = "${fnucase}( IMPR.CODIMP ) like " + dittao;
-				filtro = filtroCodimp;	
-			}
-			
-			if(filtroNomest!=""){
-				if(filtro!="")
-					filtro += " AND ";
-				filtro += filtroNomest;
-			}
-			
-			<c:if test="${offertaRT eq '1' }">
-				var codiceDitta = "${codiceDitta}";
-				if(filtro!="")
-					filtro += " AND ";
-				filtro += " exists( select codime9 from ragimp where codime9=IMPR.CODIMP and coddic='" + codiceDitta + "' and impman='1')";
-			</c:if>
-			
-			if(filtro!="" && filtro!=""){
-				filtro = escape(filtro);
-				href += "&filtroNomest=" + filtro;
-			}
-			
-			 
-		}
+		if(raggruppamentoSelezionato==null)
+			raggruppamentoSelezionato="";	
+		href += "&raggSel=" + raggruppamentoSelezionato; 
+		
+		var offertaRT = "${offertaRT }";
+		if(offertaRT==null)
+			offertaRT="";	
+		href += "&offertaRT=" + offertaRT;
+		
+		var codiceDitta = "${codiceDitta}";
+		if(codiceDitta==null)
+			codiceDitta="";	
+		href += "&codiceDitta=" + codiceDitta;
+		
 		openPopUpCustom(href, "formDitteGaraRTI", 700, 500, 1, 1);
 	}
 	

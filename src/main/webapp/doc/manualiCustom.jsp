@@ -8,6 +8,7 @@
 
 <jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
 <c:set var="urlWsArt80" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", urlWsArt80)}'/>
+<c:set var="urlCOS" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "cos.sftp.url")}'/>
 
 <c:if test='${fn:contains(listaOpzioniDisponibili, "OP114#")}'>
 	<br>
@@ -64,9 +65,18 @@
 	</td>
 </tr>
 
+<tr id="rowManualeUsoConcorsi">
+	<td>
+		<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/concorsi-progettazione-idee.pdf');" tabindex="2024">
+						Manuale d'uso Appalti - Concorsi di progettazione e di idee</a></b><br>
+			<br>
+					Il documento descrive la modalità di utilizzo dell'applicativo Appalti per l'espletamento dei concorsi di progettazione e di idee.
+	</td>
+</tr>
+
 <tr id="rowManualeUsoAppalti190">
 	<td>
-		<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/manuale_usoAppalti190.pdf');" tabindex="2024">
+		<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/manuale_usoAppalti190.pdf');" tabindex="2025">
 						Manuale d'uso Appalti - Adempimenti L.190/2012</a></b><br>
 			<br>
 					Il documento descrive il modulo dell'applicativo Appalti per la compilazione e pubblicazione dei dati ai sensi dell'art. 1 comma 32 Legge n. 190/2012 "Legge anticorruzione".
@@ -74,7 +84,7 @@
 </tr>
 <tr id="rowNoteCalcoloSogliaAnomalia">
 	<td>
-			<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/calcoloSogliaAnomalia_note.pdf');" tabindex="2025">
+			<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/calcoloSogliaAnomalia_note.pdf');" tabindex="2026">
 							Manuale d'uso Appalti - Note calcolo soglia d'anomalia</a></b><br>
 				<br>
 					Il documento descrive le modalità del calcolo soglia d'anomalia nell'applicativo Appalti.
@@ -96,12 +106,25 @@
 <c:if test='${not empty urlWsArt80 and urlWsArt80 ne ""}'>
 	<tr id="rowManualeUsoAppaltiart80">
 		<td>
-			<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/manuale_verificaDitteArt80.pdf');" tabindex="2035>
+			<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/manuale_verificaDitteArt80.pdf');" tabindex="2035">
 							Manuale d'uso Appalti - Verifica requisiti operatori art.80 DLgs.50/2016</a></b><br>
 				<br>
 					Il documento descrive le funzionalità dell'applicativo Appalti per la verifica requisiti generali degi operatori di cui all'art. 80 del DLgs 50/2016
 		</td>
 	</tr>
+</c:if>
+
+<c:if test='${not empty urlCOS and urlCOS ne ""}'>
+	
+	<tr id="rowCos">
+		<td>
+			<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/guida_conservazione_COS.pdf');" tabindex="2036">
+							Manuale d'uso Appalti - Invio documenti al servizio di Conservazione COS Maggioli</a></b><br>
+				<br>
+					Il documento descrive la funzionalità dell'applicativo Appalti per l'invio dei documenti delle procedure al servizio di Conservazione COS Maggioli.
+	</td>
+	</tr>
+	
 </c:if>
 
 <gene:javaScript>
@@ -113,7 +136,8 @@
 		$("#rowManualeUsoOEPV").insertAfter("#rowManualeUsoAppalti");
 		$("#rowManualeEspletamento").insertAfter("#rowManualeUsoOEPV");
 		$("#rowManualeUsoOEPVCommissioni").insertAfter("#rowManualeEspletamento");
-		$("#rowManualeUsoAppalti190").insertAfter("#rowManualeUsoOEPVCommissioni");
+		$("#rowManualeUsoConcorsi").insertAfter("#rowManualeUsoOEPVCommissioni");
+		$("#rowManualeUsoAppalti190").insertAfter("#rowManualeUsoConcorsi");
 		$("#rowNoteCalcoloSogliaAnomalia").insertAfter("#rowManualeUsoAppalti190");
 		
 			
@@ -131,6 +155,24 @@
 				</c:otherwise>
 			</c:choose>
 			
+		</c:if>
+		
+		<c:if test='${not empty urlCOS and urlCOS ne ""}'>
+			<c:choose>
+				<c:when test='${not empty urlWsArt80 and urlWsArt80 ne ""}'>
+					$("#rowCos").insertAfter("#rowManualeUsoAppaltiart80");		
+				</c:when>
+				<c:otherwise>
+					<c:choose>
+						<c:when test='${titulusConfigurato eq "SI"}'>
+							$("#rowCos").insertAfter("#rowTitulus");		
+						</c:when>
+						<c:otherwise>
+							$("#rowCos").insertAfter("#rowNoteCalcoloSogliaAnomalia");
+						</c:otherwise>
+					</c:choose>	
+				</c:otherwise>
+			</c:choose>
 		</c:if>
 		
 	</gene:javaScript>

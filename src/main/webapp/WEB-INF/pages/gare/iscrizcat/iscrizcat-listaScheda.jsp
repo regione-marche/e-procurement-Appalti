@@ -13,11 +13,15 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<% // Validazione parametri tramite regex %>
+<c:if test='${not empty param.aggCategorie and gene:matches(param.aggCategorie, "^0|1$", true)}' />
+<c:if test='${not empty param.modifica and gene:matches(param.modifica, "^SI|NO$", true)}' />
+<c:if test='${not empty param.paginaAttivaWizard and gene:matches(param.paginaAttivaWizard, "^-?[0-9]+$", true)}' />
+
 <c:set var="codiceGara" value='${gene:getValCampo(key, "DITG.CODGAR5")}' />
 <c:set var="numeroGara" value='${gene:getValCampo(key, "DITG.NGARA5")}' />
 <c:set var="codiceDitta" value='${gene:getValCampo(key, "DITG.DITTAO")}' />
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
-
 
 <gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.InizializzaUpdateListaFunction" parametro="${key}" />
 
@@ -646,14 +650,12 @@
 			var codiceGara="${codiceGara }";
 			var numeroGara="${numeroGara}";
 			var codiceDitta="${codiceDitta }";
-			var key = "CODGAR5=T:" + codiceGara + ";DITTAO=T:" + codiceDitta + ";NGARA5=T:" + numeroGara;
+			var key = "V_ISCRIZCAT_CLASSI.CODGAR=T:" + codiceGara + ";V_ISCRIZCAT_CLASSI.CODIMP=T:" + codiceDitta + ";V_ISCRIZCAT_CLASSI.NGARA=T:" + numeroGara;
+			key+=";V_ISCRIZCAT_CLASSI.CAISIM=T:A;V_ISCRIZCAT_CLASSI.TIPLAVG=N:0" 
 						
-			//var href = contextPath + "/ApriPagina.do?href=gare/v_iscrizcat_classi/v_iscrizcat_classi-listaPopup.jsp";
 			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/v_iscrizcat_classi/v_iscrizcat_classi-lista.jsp";
 			href += "&key=" + key;
 			
-			//var modifica="${modifica }";
-			//href += "&modifica=" + modifica;
 			var paginaAttivaWizard = "${paginaAttivaWizard}";
 			href += "&paginaAttivaWizard=" + paginaAttivaWizard;
 			bloccaRichiesteServer();

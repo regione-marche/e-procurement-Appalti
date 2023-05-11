@@ -11,9 +11,16 @@
 	<ref bean="acquisisciWSERPDatiL190Trigger" />
 	<ref bean="controlloDati190ManagerTrigger" />
 	<ref bean="acquisizioneAggiornamentoAnagraficoTrigger" />
+	<ref bean="consultazioneDellePubblicazioniSIMAPTrigger" />
 	<ref bean="acquisisciRegistrazioniInErroreManagerTrigger" />
 	<ref bean="aggiornaERPStatoGaraTrigger" />
+	<ref bean="aggiornaERPAnagraficheTrigger" />
 	<ref bean="generazioneInvioIndiceCOSTrigger" />
 	<ref bean="protocollaComunicazioneSchedulerTrigger" />     
 	<ref bean="condivisioneGaraComponentiCommisioneTrigger" />
+	<ref bean="dgueProcessamentoAsyncTrigger" />
+	<ref bean="verificaFirmaWSDMSchedulerTrigger" />
+	<ref bean="acquisisciIscrizioniElencoManagerTrigger" />
+	<ref bean="acquisisciAggiornamentiElencoManagerTrigger" />
+	<ref bean="letturaProtocolloWSDMSchedulerTrigger" />
 </list>

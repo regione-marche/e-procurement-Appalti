@@ -13,7 +13,7 @@ package it.eldasoft.sil.pg.web.struts;
 import it.eldasoft.gene.bl.FileManager;
 import it.eldasoft.gene.bl.FileManagerException;
 import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.struts.DispatchActionBaseNoOpzioni;
+import it.eldasoft.gene.commons.web.struts.DispatchActionAjaxLogged;
 import it.eldasoft.gene.db.domain.LogEvento;
 import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.sil.pg.bl.ScaricaDocumentiManager;
@@ -38,7 +38,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 
-public class ScaricaTuttiDocumentiBustaAction  extends DispatchActionBaseNoOpzioni{
+public class ScaricaTuttiDocumentiBustaAction  extends DispatchActionAjaxLogged{
 
   static Logger logger = Logger.getLogger(ScaricaTuttiDocumentiBustaAction.class);
 

@@ -10,6 +10,14 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Vector;
+
+import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
@@ -24,14 +32,6 @@ import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityNumeri;
-
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore della copia di una gara a lotti e a lotto unico
@@ -216,9 +216,9 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
                          listLotti.get(j), 0).getValue();
                      String flag = (String) sqlManager.getObject(selectFormatoDefinito,new Object[] { ngaraLottoSorgente });
                      if(flag != null){
-                     this.sqlManager.update("insert into documgara(codgar, ngara, norddocg, busta, gruppo, tipodoc, descrizione, obbligatorio, modfirma, valenza, gentel, numord) " +
-                         "values(?,?,?,?,?,?,?,?,?,?,?,?)", new Object[]{codiceGaraDestinazione, ngaraLottoDestinazione, new Long(j+2+maxNorddocg), new Long(2), new Long(3), new Long(1),
-                         "Offerta tecnica", "1", new Long(1), new Long(0), "1", new Long(1) });
+                     this.sqlManager.update("insert into documgara(codgar, ngara, norddocg, busta, gruppo, tipodoc, descrizione, obbligatorio, modfirma, valenza, gentel, numord, seztec) " +
+                         "values(?,?,?,?,?,?,?,?,?,?,?,?,?)", new Object[]{codiceGaraDestinazione, ngaraLottoDestinazione, new Long(j+2+maxNorddocg), new Long(2), new Long(3), new Long(1),
+                         "Offerta tecnica", "1", new Long(1), new Long(0), "1", new Long(1), new Long(2) });
                      }
                    }
                  }
@@ -442,9 +442,9 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
                 List ngaraLotti = sqlManager.getListVector(SelectLottiFormatoDef,new Object[] { codiceGaraSorgente });
 
                 if (ngaraLotti != null && ngaraLotti.size() > 0) {
-                  this.sqlManager.update("insert into documgara(codgar, ngara, norddocg, busta, gruppo, tipodoc, descrizione, obbligatorio, modfirma, valenza, gentel, numord) " +
-                      "values(?,?,?,?,?,?,?,?,?,?,?,?)", new Object[]{codiceGaraDestinazione, nGaraDestinazione, new Long(2), new Long(2), new Long(3), new Long(1),
-                      "Offerta tecnica", "1", new Long(1), new Long(0), "1", new Long(1) });
+                  this.sqlManager.update("insert into documgara(codgar, ngara, norddocg, busta, gruppo, tipodoc, descrizione, obbligatorio, modfirma, valenza, gentel, numord, seztec) " +
+                      "values(?,?,?,?,?,?,?,?,?,?,?,?,?)", new Object[]{codiceGaraDestinazione, nGaraDestinazione, new Long(2), new Long(2), new Long(3), new Long(1),
+                      "Offerta tecnica", "1", new Long(1), new Long(0), "1", new Long(1), new Long(2) });
                   }
               }
 
@@ -615,9 +615,9 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
               Long maxNorddocg = new Long(0);
               Long norddocg = (Long) sqlManager.getObject(selectMaxNord,new Object[] { codiceGaraSorgente });
               if(norddocg != null){maxNorddocg = norddocg;}
-              this.sqlManager.update("insert into documgara(codgar, ngara, norddocg, busta, gruppo, tipodoc, descrizione, obbligatorio, modfirma, valenza, gentel, numord) " +
-                  "values(?,?,?,?,?,?,?,?,?,?,?,?)", new Object[]{codiceGaraDestinazione, nGaraDestinazione, maxNorddocg+1, new Long(2), new Long(3), new Long(1),
-                  "Offerta tecnica", "1", new Long(1), new Long(0), "1", new Long(1) });
+              this.sqlManager.update("insert into documgara(codgar, ngara, norddocg, busta, gruppo, tipodoc, descrizione, obbligatorio, modfirma, valenza, gentel, numord, seztec) " +
+                  "values(?,?,?,?,?,?,?,?,?,?,?,?,?)", new Object[]{codiceGaraDestinazione, nGaraDestinazione, maxNorddocg+1, new Long(2), new Long(3), new Long(1),
+                  "Offerta tecnica", "1", new Long(1), new Long(0), "1", new Long(1) , new Long(2)});
               }
           }
 

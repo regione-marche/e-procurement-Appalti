@@ -10,15 +10,6 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
-import it.eldasoft.gene.bl.GenChiaviManager;
-import it.eldasoft.gene.db.datautils.DataColumnContainer;
-import it.eldasoft.gene.web.struts.tags.UtilityStruts;
-import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.utils.spring.UtilitySpring;
-
-import it.eldasoft.sil.pg.bl.PgManager;
-
 import java.sql.SQLException;
 import java.util.Date;
 
@@ -26,6 +17,14 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang.StringUtils;
 import org.springframework.transaction.TransactionStatus;
+
+import it.eldasoft.gene.bl.GenChiaviManager;
+import it.eldasoft.gene.db.datautils.DataColumnContainer;
+import it.eldasoft.gene.web.struts.tags.UtilityStruts;
+import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.PgManager;
+import it.eldasoft.utils.spring.UtilitySpring;
 
 /**
  * Gestore non standard per valorizzare i campi GARE.CODCIG e GARE.DACQCIG
@@ -35,11 +34,11 @@ import org.springframework.transaction.TransactionStatus;
 public class GestorePopupIntegraCodiceCig extends AbstractGestoreEntita {
 
   private GenChiaviManager genChiaviManager = null;
-  
+
   /** Manager di PG */
   private PgManager        pgManager        = null;
-  
-  
+
+
   public GestorePopupIntegraCodiceCig() {
     super(false);
   }
@@ -52,15 +51,15 @@ public class GestorePopupIntegraCodiceCig extends AbstractGestoreEntita {
   @Override
   public void setRequest(HttpServletRequest request) {
     super.setRequest(request);
-    
+
     genChiaviManager = (GenChiaviManager) UtilitySpring.getBean("genChiaviManager",
         this.getServletContext(), GenChiaviManager.class);
-    
+
     // Estraggo il manager di Piattaforma Gare
     pgManager = (PgManager) UtilitySpring.getBean("pgManager",
         this.getServletContext(), PgManager.class);
   }
-  
+
   @Override
   public void postDelete(DataColumnContainer datiForm) throws GestoreException {
   }
@@ -91,13 +90,14 @@ public class GestorePopupIntegraCodiceCig extends AbstractGestoreEntita {
     Date dacqcig = datiForm.getData("DACQCIG");
     String codcigPerUpdate = null;
     String sql = null;
-    
+    Long motesentecig = datiForm.getLong("MOTESENTECIG");
+
     try {
       // Gestione del codice CIG fittizio
       if ("1".equals(esenteCig)) {
         int nextId = this.genChiaviManager.getNextId("GARE.CODCIG");
         String codCigFittizio = "#".concat(StringUtils.leftPad("" + nextId, 9, "0"));
-        codcigPerUpdate = codCigFittizio;          
+        codcigPerUpdate = codCigFittizio;
       } else {
         //codice CIG Duplicato
         if (StringUtils.isNotEmpty(codcig)) {
@@ -114,22 +114,25 @@ public class GestorePopupIntegraCodiceCig extends AbstractGestoreEntita {
             }
           }
         }
-        
+
       }
       if(StringUtils.isNotEmpty(numavcp)){
         String updateAnac = "update torn set NUMAVCP = ? where codgar = ? and NUMAVCP is null";
-        this.getSqlManager().update(updateAnac, new Object[] { numavcp, codgar1 });   
+        this.getSqlManager().update(updateAnac, new Object[] { numavcp, codgar1 });
       }
-      
+
       if ("No".equals(plicoUnico)) {
         sql = "update gare set CODCIG=?, DACQCIG=?  where NGARA = ?";
-        this.getSqlManager().update(sql, new Object[] { codcigPerUpdate, dacqcig, ngara });       
+        this.getSqlManager().update(sql, new Object[] { codcigPerUpdate, dacqcig, ngara });
+
       }else{
         sql = "update gare set CODCIG=? where NGARA = ?";
-        this.getSqlManager().update(sql, new Object[] { codcigPerUpdate, ngara });    
+        this.getSqlManager().update(sql, new Object[] { codcigPerUpdate, ngara });
         sql = "update gare set DACQCIG=? where NGARA = ?";
         this.getSqlManager().update(sql, new Object[] {dacqcig, codgar1 });
       }
+      sql = "update gare1 set MOTESENTECIG=?  where NGARA = ?";
+      this.getSqlManager().update(sql, new Object[] { motesentecig, ngara });
     } catch (SQLException e) {
       throw new GestoreException(
           "Errore durante l'aggiornamento del campo GARE.CODCIG", null,  e);

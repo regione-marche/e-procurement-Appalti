@@ -10,6 +10,26 @@
  */
 package it.eldasoft.sil.pg.web.struts;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.Vector;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.log4j.Logger;
+import org.apache.struts.action.Action;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
@@ -24,32 +44,14 @@ import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.sil.pg.bl.MEPAManager;
 import it.eldasoft.sil.pg.bl.PgManager;
+import it.eldasoft.sil.pg.bl.PgManagerEst1;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiRicezioneFunction;
 import it.eldasoft.sil.pg.tags.gestori.submit.GestoreDITG;
 import it.eldasoft.sil.portgare.datatypes.TipoPartecipazioneDocument;
 import it.eldasoft.sil.portgare.datatypes.TipoPartecipazioneType;
 import it.eldasoft.utils.utility.UtilityDate;
-
-import java.io.PrintWriter;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.ResourceBundle;
-import java.util.Vector;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import net.sf.json.JSONObject;
-
-import org.apache.log4j.Logger;
-import org.apache.struts.action.Action;
-import org.apache.struts.action.ActionForm;
-import org.apache.struts.action.ActionForward;
-import org.apache.struts.action.ActionMapping;
-import org.springframework.transaction.TransactionStatus;
 
 public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
 
@@ -64,6 +66,8 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
   private MEPAManager         mepaManager;
 
   private GestioneWSDMManager gestioneWSDMManager;
+  
+  private PgManagerEst1 pgManagerEst1;
 
   public void setSqlManager(SqlManager sqlManager) {
     this.sqlManager = sqlManager;
@@ -84,6 +88,10 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
   public void setGestioneWSDMManager(GestioneWSDMManager gestioneWSDMManager) {
     this.gestioneWSDMManager = gestioneWSDMManager;
   }
+  
+  public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
+	    this.pgManagerEst1 = pgManagerEst1;
+	  }
 
   @Override
   public final ActionForward execute(final ActionMapping mapping, final ActionForm form, final HttpServletRequest request,
@@ -115,7 +123,7 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
         new String[] { "comdatprot" });
     String selectW_INVCOM = "select idprg, idcom, comkey1, comnumprot, " + dbFunctionDateToString + ", comkey3 from w_invcom where comkey2 = ? and comstato = '5' and comtipo = 'FS10' order by comdatastato";
     String selectW_PUSER = "select userkey1 from w_puser where usernome = ?";
-    String selectW_DOCDIG = "select idprg, iddocdig from w_docdig where digent = ? and idprg = ? and digkey1 = ?";
+    String selectW_DOCDIG = "select idprg, iddocdig from w_docdig where digent = ? and idprg = ? and digkey1 = ? and lower(dignomdoc) = '" + CostantiAppalti.nomeFileDatiPartecipazione + "'";
     String updateW_INVCOM = "update w_invcom set comstato = ? where idprg = ? and idcom = ?";
     String comkey3 = null;
 
@@ -163,6 +171,15 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
         messaggioPerLog = messaggioPerLog.replace("{1}", esitoControllo[2]);
         throw new GestoreException("Non é possibile procedere con l'acquisizione delle domande di partecipazione da portale Appalti perché termini non scaduti.","acquisizione.DomandePartecipazioneDaPortale.TerminiNonScaduti", new Object[]{esitoControllo[1],esitoControllo[2]} , new Exception());
       }
+      
+      //Controllo che la gara non sia sospesa
+      boolean isGaraSospesa = pgManagerEst1.isGaraSospesa(codgar1);
+      if(isGaraSospesa){
+        erroreGestito=true;
+        messageKey ="errors.gestoreException.*.acquisizione.DomandePartecipazioneDaPortale.GaraSospesa";
+        messaggioPerLog = resBundleGenerale.getString(messageKey);
+        throw new GestoreException("Non é possibile procedere con l'acquisizione delle offerte da portale Appalti perché gara sospesa.","acquisizione.OfferteDaPortale.GaraSospesa", new Object[]{} , new Exception());
+      }
 
       List<?> datiW_INVCOM = this.sqlManager.getListVector(selectW_INVCOM, new Object[] { ngara });
       if (datiW_INVCOM != null && datiW_INVCOM.size() > 0) {
@@ -171,13 +188,16 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
         Date dataCorrente=null;
         int esitoAquisizione=1;
         Long iterga = (Long)this.sqlManager.getObject("select iterga from torn where codgar=?", new Object[]{ngara});
+        String msgErrSingolaAcquisizione = "";
         for (int i = 0; i < datiW_INVCOM.size(); i++) {
+
           try {
             //variabili per tracciatura eventi
             livEvento = 3;
             errMsgEvento = genericMsgErr;
             status = this.sqlManager.startTransaction();
             boolean acquisito = false;
+            msgErrSingolaAcquisizione = "";
 
             String w_invcom_idprg = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 0).getValue();
             Long w_invcom_idcom = (Long) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 1).getValue();
@@ -202,8 +222,14 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
                 // Se l'impresa si presenta come RTI se ne deve gestire
                 // l'inserimento in anagrafica
                 codimp = userkey1;
-                TipoPartecipazioneDocument document = mepaManager.estrazioneDocumentMessaggioFS10_FS11(selectW_DOCDIG, w_invcom_idprg,
+                TipoPartecipazioneDocument document = null;
+                try {
+                  document = mepaManager.estrazioneDocumentMessaggioFS10_FS11(selectW_DOCDIG, w_invcom_idprg,
                     w_invcom_idcom.toString());
+                }catch(Exception e) {
+                  logger.error(this.erroreStackToString(e));
+                  msgErrSingolaAcquisizione =e.getMessage();
+                }
                 if (document != null) {
                   String ragioneSociale = (String) sqlManager.getObject("select nomest from impr where codimp=?", new Object[] { codimp });
                   if (ragioneSociale.length() > 61) ragioneSociale = ragioneSociale.substring(0, 60);
@@ -315,7 +341,7 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
               logEvento.setOggEvento(ngara);
               logEvento.setCodEvento("GA_ACQUISIZIONE_DOMANDE");
               logEvento.setDescr("Acquisizione domanda partecipazione ditta " + codimp + " (cod.operatore " + comkey1 + ", id.comunicazione " + w_invcom_idcom + ")" );
-              logEvento.setErrmsg("");
+              logEvento.setErrmsg(msgErrSingolaAcquisizione);
               LogEventiUtils.insertLogEventi(logEvento);
 
 
@@ -381,6 +407,15 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
     return null;
   }
 
+  private String erroreStackToString(Exception e) {
+    String errore="";
+    StringWriter writer = new StringWriter();
+    PrintWriter printWriter = new PrintWriter( writer );
+    e.printStackTrace( printWriter );
+    printWriter.flush();
 
+    errore = writer.toString();
+    return errore;
+  }
 
 }

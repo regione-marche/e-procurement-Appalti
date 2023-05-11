@@ -41,7 +41,7 @@
 			<tr>
 				<td>
   	<gene:formLista entita="V_GARE_PROFILO" gestisciProtezioni="true" pagesize="20" tableclass="datilista" sortColumn="-2" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreTORN"
-  		where="${filtroUffint }">
+  		where="${filtroUffint }" >
   	
   	<c:set var='visualizzaPopUp' value='${gene:checkProt(pageContext, "MASC.VIS.GARE.GARE-scheda") || gene:checkProtFunz(pageContext, "MOD","MOD") || gene:checkProtFunz(pageContext, "DEL","DEL") }'/>
 	
@@ -53,7 +53,9 @@
 			<c:set var="cenint" value='${datiRiga.V_GARE_PROFILO_CENINT}'/>
 			<c:set var="codprofilo" value='${datiRiga.V_GARE_PROFILO_CODPROFILO}'/>
 			<c:set var="genere" value='${datiRiga.V_GARE_PROFILO_GENERE}'/>
-			<c:set var="link" value="javascript:visualizzaGara('${chiaveRigaJava}','${codice}','${cenint}','${codprofilo}','${genere}')" />
+			<c:set var="link" value="javascript:visualizzaGara('${codice}', '${cenint}', '${codprofilo}', '${genere}')" />
+			<input type="hidden" name="codice" value="${codice}" />
+			<input type="hidden" name="genere" value="${genere}" />
 			
 			<gene:campoLista title="TEST" visibile="false">
 				<c:choose>
@@ -143,19 +145,16 @@
 	<c:set var="GestioneGareALottoUnico" value='true'/>
 	
 	// Visualizzazione del dettaglio
-	function visualizzaGara(chiaveRiga,codice,cenint,codprofilo,genere){
-		var link =  '${pageContext.request.contextPath}/SetProfilo.do?'+csrfToken+'&profilo='+ codprofilo;
-		if("${uffintAbilitati}" == 1){link =  link + '&uffint=' + cenint;}
-		var trovaParameter = "T:" + codice;
-		var trovaAddWhere = '';
+	function visualizzaGara(codice,cenint,codprofilo,genere){
+		var link = '${pageContext.request.contextPath}/pg/VisualizzaGareProfilo.do?codice=' + codice + '&profilo=' + codprofilo + '&genere=' + genere;
+		if ("${uffintAbilitati}" == 1) {
+			link =  link + '&uffint=' + cenint;
+		}
 		if(genere=='11'){
-			trovaAddWhere = "GAREAVVISI.NGARA = ?";
 			link =  link + '&href=gare/gareavvisi/gareavvisi-lista.jsp';
 		}else{
-			trovaAddWhere = "V_GARE_TORN.CODICE = ?";
 			link =  link + '&href=gare/v_gare_torn/v_gare_torn-lista.jsp';
 		}
-		link =  link + '&trovaParameter=' + trovaParameter + '&trovaAddWhere=' + trovaAddWhere;
 		document.location.href = link;
 	}
   </gene:javaScript>

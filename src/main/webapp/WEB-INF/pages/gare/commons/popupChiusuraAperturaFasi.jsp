@@ -110,8 +110,34 @@
 	</c:choose>
 	
 	<c:choose>
+		<c:when test='${not empty param.isConcProg}'>
+			<c:set var="isConcProg" value="${param.isConcProg}" />
+		</c:when>
+		<c:otherwise>
+			<c:set var="isConcProg" value="${isConcProg}" />
+		</c:otherwise>
+	</c:choose>
+	
+	<c:choose>
+		<c:when test='${not empty param.gestioneConcProg}'>
+			<c:set var="gestioneConcProg" value="${param.gestioneConcProg}" />
+		</c:when>
+		<c:otherwise>
+			<c:set var="gestioneConcProg" value="${gestioneConcProg}" />
+		</c:otherwise>
+	</c:choose>
+	
+	<c:choose>
 		<c:when test='${operazione eq "ATTIVA" && (isGaraLottiConOffertaUnica ne "true" || (isGaraLottiConOffertaUnica eq "true" && bustalotti=="1"))}'>
-			<gene:setString name="titoloMaschera" value='Attiva apertura offerte' />
+			<c:choose>
+				<c:when test="${gestioneConcProg eq 'true' }">
+					<gene:setString name="titoloMaschera" value='Procedi a inserimento punteggi' />
+				</c:when>
+				<c:otherwise>
+					<gene:setString name="titoloMaschera" value='Attiva apertura offerte' />
+				</c:otherwise>
+			</c:choose>
+			
 		</c:when>
 		<c:when test='${operazione eq "ATTIVA" && isGaraLottiConOffertaUnica eq "true" && bustalotti=="2" && (paginaAttivaWizard eq "45" || paginaAttivaWizard eq "35")}'>
 			<gene:setString name="titoloMaschera" value='Attiva apertura offerte tecniche' />
@@ -163,6 +189,16 @@
 				<c:set var="esistonoDitteEstimpValorizzato" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsistonoDitteEstimpValorizzatoFunction", pageContext, ngara )}' />
 			</c:if>
 		</c:if>
+		<c:if test="${isConcProg eq '1' || gestioneConcProg eq 'true'}">
+			<c:set var="valoriStato" value="'5','7'"/>		
+			<c:set var="esistonoAcquisizioniTecDaElaborare" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsistonoAcquisizioniOfferteInStatoDaElaborareFunction", pageContext, ngara, "FS11B" ,valoriStato)}' />
+			<c:if test="${gestioneConcProg ne 'true'}">
+				<c:set var="esistonoAcquisizioniTecDaElaborare" value="false"/>
+			</c:if>
+			<c:if test="${gestioneConcProg eq 'true'}">
+				<c:set var="esistonoDitteInGaraSenzaIdAnonimo" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsistonoDitteInGaraFunction", pageContext, "NGARA5", ngara," and (fasgar > 2 or fasgar is null) and idanonimo is null")}' />
+			</c:if>
+		</c:if>
 	</c:if>
 
 	<c:if test="${attivoCalcoloAggiudicazione eq 'true' }">
@@ -183,6 +219,10 @@
 		<c:set var="esistonoDitteAmmissioneSoccorso" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsistonoDitteAmmissioneSoccorsoIstruttorioFunction", pageContext, ngara, paginaAttivaWizard, "true" )}' />
 	</c:if>
 	
+	<c:if test="${attivoCalcoloAggiudicazione ne 'true' and operazione eq 'ATTIVA'}">
+		<c:set var="esitoControlloCommissione" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.ControlliComponentiCommissioneFunction", pageContext, ngara,"false", ngara,isGaraLottiConOffertaUnica)}' />
+	</c:if>
+	
 	<c:set var="modo" value="NUOVO" scope="request" />
 
 	<gene:redefineInsert name="corpo">
@@ -194,7 +234,7 @@
 						<c:when test="${(isProceduraTelematica eq 'true' && (esisteBloccoFasi eq 'true' ||  esistonoDitteAmmissioneNulla eq 'true' || esistonoDittePartecipazioneNulla eq 'true' || esistonoAcquisizioniOfferteDaElaborare eq 'true'
 							|| esistonoAcquisizioniOfferteDaElaborareFS11C eq 'true')) || esistonoDitteSenzaPunteggioEconomico eq 'true' || !empty messaggioControlloEco || !empty messaggioControlloTec || !empty messaggioControlloImporti 
 							||  !empty messaggioControlloPunteggiLottiOEPV || esistonoDitteSenzaPunteggioTecnico eq 'true' || esitocontrolloRiparametrazioneEco eq 'NOK' || esitocontrolloRiparametrazioneTec eq 'NOK' || esistonoDitteInGara eq 'false'
-							|| esistonoDitteEstimpValorizzato eq 'false' || esistonoDitteAmmissioneSoccorso eq 'true'}">
+							|| esistonoDitteEstimpValorizzato eq 'false' || esistonoDitteAmmissioneSoccorso eq 'true' || esistonoAcquisizioniTecDaElaborare eq 'true' || esistonoDitteInGaraSenzaIdAnonimo eq 'true'}">
 							<c:set var="bloccoSalvataggio" value='true'/>
 							<c:choose>
 								<c:when test="${isProceduraTelematica eq 'true' && esisteBloccoFasi eq 'true'}">
@@ -318,13 +358,39 @@
 									${messaggioControlloPunteggiLottiOEPV}
 									<br>
 									<br>
-								</c:when>	
+								</c:when>
+								<c:when test="${esistonoAcquisizioniTecDaElaborare eq 'true'}">
+									<br>
+									Non &egrave; possibile procedere all'inserimento dei punteggi di valutazione tecnica perch&egrave; devono essere prima acquisite le buste tecniche.
+									<br>Attivare la funzione "Acquisisci buste tecniche in forma anonima" nella pagina corrente. 
+									<br>
+									<br>
+								</c:when>
+								<c:when test="${esistonoDitteInGaraSenzaIdAnonimo eq 'true'}">
+									<br>
+									Non &egrave; possibile procedere all'inserimento dei punteggi di valutazione tecnica perch&egrave; deve essere prima fatto lo scarico su file zip dei documenti delle buste tecniche in forma anonima.
+									<br>Attivare la funzione "Scarica zip buste tecniche anonime" nella pagina corrente.
+									<br>
+									<br>
+								</c:when>		
 							</c:choose>
 						</c:when>
 						<c:when test='${operazione eq "ATTIVA" && (isGaraLottiConOffertaUnica ne "true" || (isGaraLottiConOffertaUnica eq "true" && bustalotti=="1"))}'>		
 							<br>
-							Mediante questa funzione &egrave; possibile procedere alla fase di apertura delle offerte.
-							<br><br>
+							<c:choose>
+								<c:when test="${gestioneConcProg eq 'true' }">
+								Mediante questa funzione &egrave; possibile procedere all'inserimento dei punteggi di valutazione tecnica assegnati in forma anonima.
+								<br><br><b>ATTENZIONE:</b> Procedere solo dopo aver assegnato i punteggi.
+								</c:when>
+								<c:otherwise>
+								Mediante questa funzione &egrave; possibile procedere alla fase di apertura delle offerte.
+								</c:otherwise>
+							</c:choose>
+							<c:if test="${ esitoControlloCommissione eq 'NOK'}">
+								${msgCommissione}
+							</c:if>
+							<br>
+							<br>
 							Confermi l'operazione ?
 							<br>
 							<br>
@@ -332,7 +398,11 @@
 						<c:when test='${operazione eq "ATTIVA" && isGaraLottiConOffertaUnica eq "true" && bustalotti=="2" && (paginaAttivaWizard eq "45" || paginaAttivaWizard eq "35")}'>
 							<br>
 							Mediante questa funzione &egrave; possibile procedere alla fase di apertura delle offerte tecniche.
-							<br><br>
+							<c:if test="${ esitoControlloCommissione eq 'NOK'}">
+								${msgCommissione}
+							</c:if>
+							<br>
+							<br>
 							Confermi l'operazione ?
 							<br>
 							<br>
@@ -364,6 +434,8 @@
 			<c:if test='${operazione eq "ATTIVA" && isGaraLottiConOffertaUnica eq "true" && bustalotti=="2" && (paginaAttivaWizard eq "45" || paginaAttivaWizard eq "35")}'>
 				<input type="hidden" name="faseDaImpostare" id="faseDaImpostare" value="TEC" />		
 			</c:if>
+			<input type="hidden" name="isConcProg" id="isConcProg" value="${isConcProg}" />
+			<input type="hidden" name="gestioneConcProg" id="gestioneConcProg" value="${gestioneConcProg}" />
 		</gene:formScheda>
   </gene:redefineInsert>
   <c:if test='${requestScope.operazioneEseguita eq "ERRORI" or bloccoSalvataggio eq "true"}' >

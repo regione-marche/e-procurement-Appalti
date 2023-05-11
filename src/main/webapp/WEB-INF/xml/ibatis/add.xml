@@ -3,4 +3,6 @@
 	<!-- sqlMap resource="it/eldasoft/....xml" / -->
 	<sqlMap resource="it/eldasoft/sil/pg/db/dao/ibatis/maps/Scadenze.xml" />
 	<sqlMap resource="it/eldasoft/sil/pg/db/dao/ibatis/maps/NsoOrdini.xml" />
+	<sqlMap resource="it/eldasoft/sil/pg/db/dao/ibatis/maps/Dgue.xml" />
+	<sqlMap resource="it/eldasoft/sil/w3/db/dao/ibatis/maps/DocumentoAllegato.xml"/>
 </sqlMapConfig>

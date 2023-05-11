@@ -64,8 +64,6 @@ Lista categorie d'iscrizione
 </c:choose>
 
 
-<c:set var="esistonoComunicazioni" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsistonoComunicazioniIscrAggFunction", pageContext)}' />
-
 <gene:template file="lista-template.jsp" gestisciProtezioni="true" schema="GENE" idMaschera="CAIS-lista" >
 	<gene:setString name="titoloMaschera" value="Lista categorie d'iscrizione"/>
 	
@@ -156,8 +154,6 @@ Lista categorie d'iscrizione
 
 	<gene:javaScript>
 	function cambiaTipoCategoria(tipo) {
-		var trovaAddWhere="${trovaAddWhere}";
-		var trovaParameter="${trovaParameter }";
 		document.location.href="ApriPagina.do?"+csrfToken+"&href=gene/cais/cais-lista.jsp?TIPO="+tipo+"&filtroArchiviata="+${filtroArchiviata };
 	}
 	 
@@ -186,30 +182,15 @@ Lista categorie d'iscrizione
 	}
 	
 	function rinominaCategoria(){
-	 	var esistonoComunicazioni = "${esistonoComunicazioni }";
-	 	if(esistonoComunicazioni == "true"){
-	 		var msg="Per procedere alla rinominazione è necessario prima elaborare le richieste di iscrizione e aggiornamento a elenco o catalogo da portale";
-	 		alert(msg);
-	 	}else{
-	 		var href = "href=gene/cais/popup-rinomina.jsp&chiaveRiga="+chiaveRiga;
-			win = openPopUpCustom(href, "rinominaCategoria", 500, 300, "no", "yes");
-		
-			if(win!=null)
-				win.focus();	
-	 	}
+	 	var href = "href=gene/cais/popup-rinomina.jsp&chiaveRiga="+chiaveRiga;
+		win = openPopUpCustom(href, "rinominaCategoria", 500, 300, "no", "yes");
+	
+		if(win!=null)
+			win.focus();
 	 	
 	}
 	
 	function cambiaFiltroArchiata(cb){
-		/*
-		if(cb.checked){
-			document.forms[0].trovaAddWhere.value="UPPER(CAIS.ISARCHI ) = ? ";
-			document.forms[0].trovaParameter.value="T:1";
-		}else{
-			document.forms[0].trovaAddWhere.value="( CAIS.ISARCHI = ? or CAIS.ISARCHI = ? or CAIS.ISARCHI is null ) ";
-			document.forms[0].trovaParameter.value="T:2;T:0";
-		}
-		*/
 		var filtroArchiviata="";
 		if(cb.checked){
 			filtroArchiviata="1";

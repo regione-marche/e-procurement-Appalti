@@ -17,10 +17,7 @@
 	<gene:setString name="titoloMaschera" value="Lista conversazioni"/>
 	<gene:redefineInsert name="corpo">
 
-		<c:if test='${not gene:checkProtFunz(pageContext, "INS","LISTANUOVO") or sessionScope.entitaPrincipaleModificabile ne "1"}' >
-			<gene:redefineInsert name="pulsanteListaInserisci" />
-			<gene:redefineInsert name="listaNuovo" />
-		</c:if>
+
 
 		<gene:set name="titoloMenu">
 			<jsp:include page="/WEB-INF/pages/commons/iconeCheckUncheck.jsp" />
@@ -58,17 +55,43 @@
 		</c:if>
 				
   		<gene:campoLista title="Opzioni<br><center>${titoloMenu}</center>" width="50">
+		
+			<c:choose>
+			<c:when test='${datiRiga.W_DISCUSS_P_DISCENT eq "GARE"}' >
+				<c:set var="entita" value="V_GARE_TORN"/>
+				<c:set var="inputFiltro" value="CODGAR=T:$${datiRiga.W_DISCUSS_P_DISCKEY1}"/>
+				<c:set var="filtroCampoEntita" value="codgar=#CODGAR#"/>
+			</c:when>
+			<c:otherwise>
+				<c:set var="entita" value="V_GARE_STIPULA"/>
+				<c:set var="inputFiltro" value="IDSTIPULA=T:${datiRiga.W_DISCUSS_P_DISCKEY1}"/>
+				<c:set var="filtroCampoEntita" value="idstipula=#IDSTIPULA#"/>
+			</c:otherwise>
+			</c:choose>
+		
+			<c:set var="filtroLivelloUtente" value='${gene:callFunction2("it.eldasoft.gene.tags.utils.functions.FiltroLivelloUtenteFunction", pageContext, entita)}' />
+			<c:set var="autorizzatoModifiche" value="1" scope="request" />
+			<c:if test='${!empty (filtroLivelloUtente)}'>
+				<gene:sqlSelect nome="autori" parametri="${inputFiltro}" tipoOut="VectorString" >
+					select autori from g_permessi where ${filtroCampoEntita} and g_permessi.syscon = ${profiloUtente.id}
+				</gene:sqlSelect>
+				<c:if test='${!empty autori}'>
+					<c:set var="autorizzatoModifiche" value="${autori[0]}" scope="request" />
+				</c:if>
+			</c:if>
+		
+		
   				<c:set var="risultato" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetDiscussioneAltriDatiFunction",pageContext,datiRiga.W_DISCUSS_P_DISCID_P)}'/>
   				<c:if test="${currentRow >= 0}" >
 					<gene:PopUp variableJs="rigaPopUpMenu${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'">
 						<gene:PopUpItemResource resource="popupmenu.tags.lista.visualizza" title="Visualizza"/>
-						<c:if test='${sessionScope.entitaPrincipaleModificabile eq "1" and sessionScope.profiloUtente.id eq datiRiga.W_DISCUSS_P_DISCMESSOPE and gene:checkProt(pageContext, "MASC.VIS.GENEWEB.W_DISCUSS_P-scheda") and gene:checkProt(pageContext, "MASC.MOD.GENEWEB.W_DISCUSS_P-scheda") and gene:checkProtFunz(pageContext, "MOD","MOD")}' >
+						<c:if test='${(autorizzatoModifiche ne "2" and sessionScope.profiloUtente.id eq datiRiga.W_DISCUSS_P_DISCMESSOPE )and gene:checkProt(pageContext, "MASC.VIS.GENEWEB.W_DISCUSS_P-scheda") and gene:checkProt(pageContext, "MASC.MOD.GENEWEB.W_DISCUSS_P-scheda") and gene:checkProtFunz(pageContext, "MOD","MOD")}' >
 							<gene:PopUpItemResource resource="popupmenu.tags.lista.modifica" title="Modifica"/>
 						</c:if>
-						<c:if test='${sessionScope.entitaPrincipaleModificabile eq "1" and sessionScope.profiloUtente.id eq datiRiga.W_DISCUSS_P_DISCMESSOPE and gene:checkProtFunz(pageContext, "DEL", "LISTADEL")}' >
+						<c:if test='${(autorizzatoModifiche ne "2" and sessionScope.profiloUtente.id eq datiRiga.W_DISCUSS_P_DISCMESSOPE) and gene:checkProtFunz(pageContext, "DEL", "LISTADEL")}' >
 							<gene:PopUpItemResource resource="popupmenu.tags.lista.elimina" title="Elimina" />
 						</c:if>
-						<c:if test='${sessionScope.entitaPrincipaleModificabile eq "1" and sessionScope.profiloUtente.id eq datiRiga.W_DISCUSS_P_DISCMESSOPE}' >
+						<c:if test='${(autorizzatoModifiche ne "2" and sessionScope.profiloUtente.id eq datiRiga.W_DISCUSS_P_DISCMESSOPE)}' >
 							<input type="checkbox" name="keys" value="${chiaveRigaJava}" />
 						</c:if>
 					</gene:PopUp>
@@ -83,13 +106,22 @@
 			<gene:campoLista title="Oggetto" campo="DISCOGGETTO" ordinabile="true" href="${gene:if(visualizzaLink, link, '')}"/>
 			<gene:campoLista title="Creata da" campo="SYSUTE" entita="USRSYS" definizione="T" where="USRSYS.SYSCON=W_DISCUSS_P.DISCMESSOPE" ordinabile="true" />
 			<gene:campoLista title="Data inserimento" campo="DISCMESSINS" ordinabile="true" />
-			<gene:campoLista campoFittizio="true" title="Numero messaggi<br>pubblicati" campo="NUMEROMESSAGGI" definizione="N3;0" value="${numeroMessaggi}"/>
-			<gene:campoLista campoFittizio="true" title="Numero messaggi<br>pubblicati non letti" campo="NUMEROMESSAGGINONLETTI" definizione="N3;0" value="${numeroMessaggioNonLettiUtente}"/>
+			<gene:campoLista campoFittizio="true" title="N.messaggi<br>pubblicati" campo="NUMEROMESSAGGI" definizione="N3;0" value="${numeroMessaggi}"/>
+			<gene:campoLista campoFittizio="true" title="N.messaggi<br>pubblicati non letti" campo="NUMEROMESSAGGINONLETTI" definizione="N3;0" value="${numeroMessaggioNonLettiUtente}"/>
 			<gene:campoLista campoFittizio="true" title="Data ultimo<br>messaggio pubblicato" campo="DATAGGIORNAMENTO" definizione="T20;0" value="${dataAggiornamento}"/>
+			<gene:campoLista campo="DISCENT" visibile="false" />
+			<gene:campoLista campo="DISCKEY1" visibile="false" />
+			
 		</gene:formLista>
 				</td>
 			</tr>
-			<c:if test='${sessionScope.entitaPrincipaleModificabile ne "1" and gene:checkProtFunz(pageContext, "DEL", "LISTADELSEL")}'>
+			
+			<c:if test='${not (gene:checkProtFunz(pageContext, "INS","LISTANUOVO") and autorizzatoModifiche ne "2")}' >
+				<gene:redefineInsert name="pulsanteListaInserisci" />
+				<gene:redefineInsert name="listaNuovo" />
+			</c:if>
+			
+			<c:if test='${not (gene:checkProtFunz(pageContext, "DEL", "LISTADELSEL") and autorizzatoModifiche ne "2")}'>
 				<gene:redefineInsert name="pulsanteListaEliminaSelezione" />
 				<gene:redefineInsert name="listaEliminaSelezione" />
 			</c:if>
@@ -101,7 +133,6 @@
 	<gene:javaScript>
 	<c:if test='${not empty param.chiave}'>
 		document.forms[0].keyParent.value="${param.chiave}";
-		document.forms[0].trovaAddWhere.value="${whereKey}";
 	</c:if>
 	</gene:javaScript>
 </gene:template>

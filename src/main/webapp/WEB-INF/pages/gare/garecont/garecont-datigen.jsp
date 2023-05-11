@@ -27,13 +27,26 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 <script type="text/javascript" src="${contextPath}/js/jquery.documenti.gara.js"></script>
 <script type="text/javascript" src="${contextPath}/js/common-gare.js"></script>
 
+<c:set var="digitalSignatureUrlCheck" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-check-url")}'/>
+<c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:choose>
+	<c:when test="${!empty digitalSignatureUrlCheck && !empty digitalSignatureProvider && (digitalSignatureProvider eq 1 || digitalSignatureProvider eq 2)}">
+		<c:set var="digitalSignatureWsCheck" value='1'/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="digitalSignatureWsCheck" value='0'/>
+	</c:otherwise>
+</c:choose>
+
 <c:set var="listaOpzioniDisponibili" value="${fn:join(opzDisponibili,'#')}#"/>
 
 <c:set var="ngara" value='${gene:getValCampo(key, "GARECONT.NGARA")}' />
 <c:set var="codiceGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetCodiceGaraFunction", pageContext)}' />
 <c:set var="stato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetStatoGarecontFunction",pageContext,ngara,"1")}' />
-<c:set var="firmaRemota" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "firmaremota.auto.url")}'/>
-
+<c:set var="firmaProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:if test='${firmaProvider eq 2}'>
+	<c:set var="firmaRemota" value="true"/>
+</c:if>
 <c:choose>
 	<c:when test='${not empty param.id}'>
 		<c:set var="id" value="${param.id}" />
@@ -80,7 +93,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			</tr>
 		</c:if>
 		
-		<c:if test='${modo eq "VISUALIZZA" && datiRiga.GARECONT_STATO == 2 && autorizzatoModifiche ne "2" && ruoloUtente eq "1" && gene:checkProtFunz(pageContext,"ALT","ImpostaOrdineDef")}'>
+		<c:if test='${modo eq "VISUALIZZA" && datiRiga.GARECONT_STATO == 2 && autorizzatoModifiche ne "2" && (ruoloUtente eq "1" || ruoloUtente eq "3") && gene:checkProtFunz(pageContext,"ALT","ImpostaOrdineDef")}'>
 			<tr>
 				<td class="vocemenulaterale">
 							<c:if test='${isNavigazioneDisattiva ne "1" }'>
@@ -91,7 +104,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				</td>
 			</tr>
 		</c:if>
-		<c:if test='${modo eq "VISUALIZZA" && datiRiga.GARECONT_STATO == 3 && autorizzatoModifiche ne "2" && ruoloUtente eq "1" && gene:checkProtFunz(pageContext,"ALT","TrasmettiOrdine")}'>
+		<c:if test='${modo eq "VISUALIZZA" && datiRiga.GARECONT_STATO == 3 && autorizzatoModifiche ne "2" && (ruoloUtente eq "1" || ruoloUtente eq "3") && gene:checkProtFunz(pageContext,"ALT","TrasmettiOrdine")}'>
 			<tr>
 				<td class="vocemenulaterale">
 						<c:if test='${isNavigazioneDisattiva ne "1" }'>
@@ -296,6 +309,8 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			scheda=''
 			schedaPopUp="gene/punticon/punticon-scheda-popup.jsp"
 			campi="PUNTICON.CODEIN;PUNTICON.NUMPUN;PUNTICON.NOMPUN" 
+			functionId="default"
+			parametriWhere="T:${initCENINT}"
 			chiave="GARECONT_PCOESE;CENINT_PCOESE"
 			formName="formPuntiConsegnaOrdine"
 			inseribile="false">
@@ -321,6 +336,8 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			scheda=''
 			schedaPopUp="gene/punticon/punticon-scheda-popup.jsp"
 			campi="PUNTICON.CODEIN;PUNTICON.NUMPUN;PUNTICON.NOMPUN" 
+			functionId="default"
+			parametriWhere="T:${initCENINT}"
 			chiave="GARECONT_PCOFAT;CENINT_PCOFAT"
 			formName="formPuntiFatturazione"
 			inseribile="false">
@@ -435,10 +452,10 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 						<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' onclick="javascript:schedaModifica()">
 					</c:if>
 				</gene:insert>
-				<c:if test='${modo eq "VISUALIZZA" && datiRiga.GARECONT_STATO eq "2" && autorizzatoModifiche ne "2" && ruoloUtente eq "1" && gene:checkProtFunz(pageContext,"ALT","ImpostaOrdineDef")}'>
+				<c:if test='${modo eq "VISUALIZZA" && datiRiga.GARECONT_STATO eq "2" && autorizzatoModifiche ne "2" && (ruoloUtente eq "1" || ruoloUtente eq "3") && gene:checkProtFunz(pageContext,"ALT","ImpostaOrdineDef")}'>
 					<INPUT type="button" class="bottone-azione" value="Imposta ordine definito" title="Imposta ordine definito" onclick="javascript:impostaOrdine()">
 				</c:if>
-				<c:if test='${modo eq "VISUALIZZA" && datiRiga.GARECONT_STATO == 3 && autorizzatoModifiche ne "2" && ruoloUtente eq "1" && gene:checkProtFunz(pageContext,"ALT","TrasmettiOrdine")}'>
+				<c:if test='${modo eq "VISUALIZZA" && datiRiga.GARECONT_STATO == 3 && autorizzatoModifiche ne "2" && (ruoloUtente eq "1" || ruoloUtente eq "3") && gene:checkProtFunz(pageContext,"ALT","TrasmettiOrdine")}'>
 					<INPUT type="button" class="bottone-azione" value="Trasmetti ordine" title="Trasmetti ordine" onclick="javascript:trasmettiOrdine()">
 				</c:if>
 			</c:otherwise>
@@ -608,15 +625,6 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				return false;
 		}
 		return true;
-	}
-	
-	var cenint = "${initCENINT }";
-	if(cenint!=""){
-		if(document.formPuntiConsegnaOrdine!=null)
-			document.formPuntiConsegnaOrdine.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		if(document.formPuntiFatturazione!=null)
-			document.formPuntiFatturazione.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		
 	}
 	
 	function showCampiContatto(valore,nomeCampo,nomeCampoFit){
@@ -857,16 +865,30 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	
 	 function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 		var vet = dignomdoc.split(".");
-			var ext = vet[vet.length-1];
-			ext = ext.toUpperCase();
-			if(ext=='P7M' || ext=='TSD'){
-				document.formVisFirmaDigitale.idprg.value = idprg;
-				document.formVisFirmaDigitale.iddocdig.value = iddocdig;
-				document.formVisFirmaDigitale.submit();
-			}else{
-				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-			document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
-			}
+		var ext = vet[vet.length-1];
+		ext = ext.toUpperCase();
+		<c:choose>
+			<c:when test="${digitalSignatureWsCheck eq 0}">
+				if(ext=='P7M' || ext=='TSD'){
+					document.formVisFirmaDigitale.idprg.value = idprg;
+					document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+					document.formVisFirmaDigitale.submit();
+				}else{
+					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				}
+			</c:when>
+			<c:otherwise>
+				if(ext=='P7M' || ext=='TSD' || ext=='XML' || ext=='PDF'){
+					document.formVisFirmaDigitale.idprg.value = idprg;
+					document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+					document.formVisFirmaDigitale.submit();
+				}else{
+					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				}
+			</c:otherwise>
+		</c:choose>
 	}
 	
 	function gestioneEsenteCIG() {

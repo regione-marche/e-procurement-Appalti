@@ -10,18 +10,18 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
+import java.sql.SQLException;
+import java.util.Vector;
+
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.PageContext;
+
 import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
-
-import java.sql.SQLException;
-import java.util.Vector;
-
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 /**
  * Si controlla se in GAREALBO esiste una sola occorrenza con la condizione:
@@ -86,8 +86,6 @@ public class ValorizzaCatalogoElettronicoFunction extends AbstractFunzioneTag {
         }
       }
     }
-
-    pageContext.setAttribute("whereGarealbo", where, PageContext.REQUEST_SCOPE);
 
     return null;
   }

@@ -162,7 +162,10 @@ public class GestorePopupAggiudicazioneProvvisoria extends
                 UtilityStruts.addMessage(this.getRequest(), "warning",
                     "warnings.gare.aggiudicazioneFaseA.ControlloNumeroDitteAmmesse",
                     new Object[] { new Long(esito[1]) });
-
+            } else if("ControlloRibassoDitteNonSuperato".equals(esito[0])){
+              livEvento = 2;
+              messageKey = "warnings.gare.aggiudicazioneFaseA.ControlloRibassoDitteAmmesse";
+              errMsgEvento = this.resBundleGenerale.getString(messageKey);
             } else if("ControlloNumeroDitteImportoNonSuperato".equals(esito[0])){
               Long tipgen = new Long(esito[2]);
               Boolean isSogliaEstremoEscluso = new Boolean(esito[4]);

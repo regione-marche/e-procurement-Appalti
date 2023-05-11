@@ -183,9 +183,19 @@
 							<span id="punteggioVal"></span>
 						</td>
 					</tr>
+					<tr>
+						<td width="25%">
+							Note
+						</td>
+						<td id="tdNote" >
+							<textarea id="Inputnote" name="Inputnote" title="Note" type="text" cols="50" rows="4" value="" maxlength="2000"></textarea>
+							<br><span id="errorMessage"></span>
+						</td>
+					</tr>
 				</table>
 				<input type="hidden" id= "maxpunG1cridef" value="">
 				<input type="hidden" id= "coeffImpostato" value="">
+				<input type="hidden" id= "noteImpostato" value="">
 			</form>
 		</div>
 		

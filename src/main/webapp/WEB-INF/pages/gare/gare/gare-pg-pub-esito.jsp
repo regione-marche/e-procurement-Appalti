@@ -50,6 +50,8 @@
 
 	<gene:redefineInsert name="pulsanteNuovo"></gene:redefineInsert>
 	<gene:redefineInsert name="schedaNuovo"></gene:redefineInsert>
+	<gene:redefineInsert name="documentiAssociati"></gene:redefineInsert>
+	<gene:redefineInsert name="noteAvvisi"></gene:redefineInsert>
 
 	<c:choose>
 		<c:when test='${tipologiaGara eq "1"}'>
@@ -78,7 +80,7 @@
 		<jsp:param name="nomeAttributoLista" value='pubblicazioniEsito' />
 		<jsp:param name="idProtezioni" value="PUBESITO" />
 		<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/pubg/pubblicazione-esito.jsp"/>
-		<jsp:param name="arrayCampi" value="'PUBG_NGARA_', 'PUBG_NPUBG_', 'PUBG_TIPPUBG_', 'PUBG_TESPUBG_', 'PUBG_DINPUBG_', 'PUBG_DFIPUBG_', 'PUBG_IMPPUB_', 'PUBG_DINVPUBG_', 'PUBG_NPRPUB_'"/>		
+		<jsp:param name="arrayCampi" value="'PUBG_NGARA_', 'PUBG_NPUBG_', 'PUBG_TIPPUBG_', 'PUBG_TESPUBG_', 'PUBG_DINPUBG_', 'PUBG_DFIPUBG_', 'PUBG_IMPPUB_', 'PUBG_DINVPUBG_', 'PUBG_NPRPUB_', 'PUBG_TITPUB_', 'PUBG_NAVPUB_', 'PUBG_NAVNUM_', 'PUBG_URLPUB_' "/>		
 		<jsp:param name="titoloSezione" value="Pubblicazione" />
 		<jsp:param name="titoloNuovaSezione" value="Nuova pubblicazione" />
 		<jsp:param name="descEntitaVociLink" value="pubblicazione" />

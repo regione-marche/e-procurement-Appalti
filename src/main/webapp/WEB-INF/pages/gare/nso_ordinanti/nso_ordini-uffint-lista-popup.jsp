@@ -31,7 +31,8 @@
 
 <c:set var="listaOpzioniUtenteAbilitate" value="${fn:join(profiloUtente.funzioniUtenteAbilitate,'#')}#" />
 
-<c:set var="tmp" value='${trovaAddWhere}' /> 
+<c:set var="nomeContainerFiltri" value="deftrovaUFFINT-${empty param.numeroPopUp ? 0 : param.numeroPopUp}"/> 
+<c:set var="tmp" value="${sessionScope[nomeContainerFiltri].trovaAddWhere}" /> 
 
 <c:choose>
 	<c:when test='${(!empty tmp) and fn:contains(tmp, "IS NOT NULL")}' >
@@ -88,27 +89,15 @@
   <gene:javaScript>
   
 	function cambiaAbilitazione(abilitazione){
-					
-		var condizioneWhere = "";
-		if(abilitazione == 2){
-			condizioneWhere = "UFFINT.DATFIN IS NOT NULL";
-		}else{
-			condizioneWhere = "UFFINT.DATFIN IS NULL";
-		}
-		var parentFormName = eval('window.opener.activeArchivioForm');
-		if(parentFormName =="formUFFINTTORNAltriSogg" || parentFormName =="formUFFINTGareAltriSogg")
-			condizioneWhere += " and (UFFINT.ISCUC is null or UFFINT.ISCUC <>'1')";
-			
-		if(parentFormName =="formUFFINTG1AQSPESA"){
-			var condizioneWhereOriginale = eval("window.opener.document." + parentFormName + ".archWhereLista").value;
-			var posFiltroGARALTSOG = condizioneWhereOriginale.indexOf("and UFFINT.CODEIN IN");
-			if(posFiltroGARALTSOG > 0) {
-				condizioneWhere += " " + condizioneWhereOriginale.substring(posFiltroGARALTSOG);
-			}
-		}
+		var functionId = "special";
 		
-		eval("window.opener.document." + parentFormName + ".archWhereLista").value = condizioneWhere;
-    	
+		functionId += abilitazione + "_";
+		
+		var parentFormName = eval('window.opener.activeArchivioForm');
+		var substrIndex = parentFormName.indexOf("formUFFINT") + 1;
+		functionId += parentFormName.substring(substrIndex);
+		
+		eval("window.opener.document." + parentFormName + ".archFunctionId").value = functionId;
     	
     	var nomeCampoArchivio = null;
 		if(parentFormName == "formUFFINTGare"){

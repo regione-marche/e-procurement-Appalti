@@ -43,6 +43,7 @@ public class GetNumComunicazioniRicevuteDaLeggereFunction extends AbstractFunzio
 
     String codice = (String) params[1];
     String select = "select count(idcom) from w_invcom where idprg=? and coment is null and comkey2=? and comtipo=? and comdatlet is null and comstato='3' ";
+    String selEntSpecializzata = "select count(idcom) from w_invcom where idprg=? and coment = ? and comkey2=? and comtipo=? and comdatlet is null and comstato='3' ";
 
     PgManagerEst1 pgManagerEst1 = (PgManagerEst1) UtilitySpring.getBean("pgManagerEst1",
         pageContext, PgManagerEst1.class);
@@ -59,7 +60,11 @@ public class GetNumComunicazioniRicevuteDaLeggereFunction extends AbstractFunzio
 
     Long conteggio = null;
     try {
-      conteggio = (Long) sqlManager.getObject(select, new Object[] {"PA", codice, "FS12" });
+    	if (gestoreProfili.checkProtec(profiloAttivo, "FUNZ", "VIS", "ALT.GARE.GestioneStipulaContratti")) {
+    		conteggio = (Long) sqlManager.getObject(selEntSpecializzata, new Object[] {"PA", "G1STIPULA", codice, "FS12" });	
+    	}else {
+    		conteggio = (Long) sqlManager.getObject(select, new Object[] {"PA", codice, "FS12" });
+    	}
     } catch (SQLException e) {
       throw new JspException("Errore nel conteggio di comunicazioni ricevute non ancora lette per il record con chiave " + codice, e);
     }

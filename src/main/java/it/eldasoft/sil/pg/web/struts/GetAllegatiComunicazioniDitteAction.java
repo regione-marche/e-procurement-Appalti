@@ -58,11 +58,23 @@ public class GetAllegatiComunicazioniDitteAction extends Action {
       // 1 - Nome allegato
       // 2 - Progressivo allegato
 
+      /*
+       * dato che non siamo in grado di leggere i campi
+       * di tipo TIMESTAMP come effettivamente TIMESTAMP (DATE + TIME)
+       * dobbiamo forzare l'uso delle funzioni per trasformare il campo in stringa
+       */
+    	//Comunicazioni inviate
+        String desdatinvString = sqlManager.getDBFunction("DATETIMETOSTRING",
+            new String[] { "FIRMACHECKTS" });
+    	
+    	
       String select = "select DIGDESDOC, "
           + "DIGNOMDOC,"
           + "IDDOCDIG,"
-          + "IDPRG "
-          + "from W_DOCDIG where DIGENT = ? ";
+          + "IDPRG,"
+          + "FIRMACHECK,"
+          + desdatinvString
+          + " from W_DOCDIG where DIGENT = ? ";
 
       Object par[] = null;
       if("FS12".equals(comtipo)){
@@ -83,6 +95,8 @@ public class GetAllegatiComunicazioniDitteAction extends Action {
           hMapAllegati.put("nome", SqlManager.getValueFromVectorParam(allegati.get(i), 1).getValue());
           hMapAllegati.put("iddocdig", SqlManager.getValueFromVectorParam(allegati.get(i), 2).getValue());
           hMapAllegati.put("idprg", SqlManager.getValueFromVectorParam(allegati.get(i), 3).getValue());
+          hMapAllegati.put("firmacheck", SqlManager.getValueFromVectorParam(allegati.get(i), 4).getValue());
+          hMapAllegati.put("firmacheckts", SqlManager.getValueFromVectorParam(allegati.get(i), 5).getStringValue());
           hMap.add(hMapAllegati);
         }
       }

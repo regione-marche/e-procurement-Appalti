@@ -197,7 +197,7 @@ function _popolaTabellaRilanciDitta(numeroTotale, rilanci) {
 	var ribauoVisibile = (modlicg!=6 || (modlicg==6 && formato==51));
 	var impoffVisibile = ((modlicg!=6 && ribcal==2) || (modlicg==6 && (formato==50 || formato==52)));
 	var ribauoTooltip =  "Ribasso offerto";
-	if(modlic == 17){
+	if(modlicg == 17){
 		ribauoTooltip = "Rialzo offerto";
 	}
 	

@@ -32,6 +32,9 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 <c:set var="listaOpzioniDisponibili" value="${fn:join(opzDisponibili,'#')}#"/>
 
 <c:set var="genere" value="${param.genere}" />
+<c:set var="filtroLivelloUtente" value='${gene:callFunction2("it.eldasoft.gene.tags.utils.functions.FiltroLivelloUtenteFunction", pageContext, "V_GARE_ELEDITTE")}' />
+<c:set var="isPersonalizzazioneGenovaAttiva" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsPersonalizzazioneGenovaAttivaFunction",pageContext)}' scope="request" />
+
 
 <c:if test='${modo ne "MODIFICA" && modo ne "NUOVO"}'>
 	<c:choose>
@@ -93,6 +96,28 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	</gene:redefineInsert>
 
 	<gene:redefineInsert name="addToAzioni" >
+	<c:if test='${gene:checkProtFunz(pageContext, "ALT","Condividi-gara") && modo eq "VISUALIZZA"}'> 
+	  <tr>    
+	      <td class="vocemenulaterale">
+	     		<c:choose>
+	     			<c:when test='${isPersonalizzazioneGenovaAttiva eq "1"}'>
+	     				<a href="javascript:apriGestionePermessi('${datiRiga.GARE_CODGAR1}','${genere}',${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})" />
+	     			</c:when>
+	     			<c:otherwise>
+	     				<a href="javascript:apriGestionePermessiStandard('${datiRiga.GARE_CODGAR1}','${genere}',${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})" />
+	     			</c:otherwise>
+	     		</c:choose>
+				<c:if test="${ genere == '10'}">
+				  Condividi e proteggi elenco
+				</c:if>
+				<c:if test="${ genere == '20'}">
+				  Condividi e proteggi catalogo
+				</c:if>
+				<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>			  
+			</td>
+		</tr>
+	</c:if>
+
 	<c:if test='${modo eq "VISUALIZZA" and ((fn:contains(listaOpzioniDisponibili, "OP114#") and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.RiceviComunicazioni")) || (gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.InviaComunicazioni")))}'>
 		<tr>
 			<td>&nbsp;</td>
@@ -172,21 +197,37 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		<c:if test='${modo eq "VISUALIZZA"  and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.CreaFascicolo")  and integrazioneWSDM eq "1" and creaFascicolo eq "1"}'>
 			<c:set var="esisteFascicoloAssociato" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteFascicoloAssociatoFunction", pageContext, "GARE", datiRiga.GARE_NGARA,idconfi)}' scope="request"/>
 			<c:set var="tipoWSDM" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetTipoWSDMFunction", pageContext, "FASCICOLOPROTOCOLLO", "NO",idconfi)}' />
-			<c:if test='${esisteFascicoloAssociato ne "true" and  (tipoWSDM eq "IRIDE" or tipoWSDM eq "JIRIDE" or tipoWSDM eq "ENGINEERING" 
-				or tipoWSDM eq "ARCHIFLOW" or tipoWSDM eq "INFOR" or tipoWSDM eq "JPROTOCOL" or tipoWSDM eq "JDOC")}' >
-			
+			<c:if test="${ esisteFascicoloAssociato eq 'true' and tipoWSDM eq 'LAPISOPERA'}">
+				<c:set var="esisteDocumentoAssociato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteDocumentoAssociatoFunction", pageContext, "GARE", datiRiga.GARE_NGARA)}' scope="request"/>
+			</c:if>
+			<c:if test='${(esisteFascicoloAssociato ne "true" and  (tipoWSDM eq "IRIDE" or tipoWSDM eq "JIRIDE" or tipoWSDM eq "ENGINEERING" 
+				or tipoWSDM eq "ARCHIFLOW" or tipoWSDM eq "INFOR" or tipoWSDM eq "JPROTOCOL" or tipoWSDM eq "JDOC" or tipoWSDM eq "ENGINEERINGDOC" or tipoWSDM eq "ITALPROT" or tipoWSDM eq "LAPISOPERA")) || 
+				(tipoWSDM eq "LAPISOPERA" and esisteDocumentoAssociato ne "true")}' >
+				
+				<c:choose>
+					<c:when test='${tipoWSDM eq "ITALPROT" or tipoWSDM eq "LAPISOPERA" }'>
+						<c:set var="titoloMessaggio" value="Associa fascicolo"/>
+						<c:if test="${tipoWSDM eq 'LAPISOPERA' and esisteFascicoloAssociato eq 'true' and esisteDocumentoAssociato ne 'true' }">
+							<c:set var="fascicoloEsistente" value="1"/>
+						</c:if>
+ 					</c:when>
+					<c:otherwise>
+						<c:set var="titoloMessaggio" value="Crea fascicolo"/>
+					</c:otherwise>
+				</c:choose>
+				
 				<tr>
 					<c:choose>
 						<c:when test='${isNavigazioneDisattiva ne "1"}'>
 							<td class="vocemenulaterale">
-								<a href="javascript:apriCreaFascicolo('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','${idconfi}',${genere });" title="Crea fascicolo" tabindex="1515">
-									Crea fascicolo
+								<a href="javascript:apriCreaFascicolo('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','${idconfi}',${genere },'${fascicoloEsistente}');" title="${titoloMessaggio }" tabindex="1515">
+									${titoloMessaggio }
 								</a>
 							</td>
 						</c:when>
 						<c:otherwise>
 							<td>
-								Crea fascicolo
+								${titoloMessaggio }
 							</td>
 						</c:otherwise>
 					</c:choose>
@@ -339,7 +380,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			 schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda-popup.jsp","")}'
 			 campi="UFFINT.CODEIN;UFFINT.NOMEIN"
 			 chiave="TORN_CENINT"
-			 where="UFFINT.DATFIN IS NULL"
+			 functionId="skip|abilitazione:1_parentFormName:formUFFINTElenchi"
 			 formName="formUFFINTElenchi">
 				<gene:campoScheda campo="CENINT" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" obbligatorio="true" defaultValue="${requestScope.initCENINT}" modificabile="${empty sessionScope.uffint }"/>
 				<gene:campoScheda campo="NOMEIN" title="Denominazione" entita="UFFINT" from="TORN" where="GARE.CODGAR1=TORN.CODGAR and TORN.CENINT=UFFINT.CODEIN" 
@@ -353,6 +394,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			 scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda.jsp","")}'
 			 schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda-popup.jsp","")}'
 			 campi="TECNI.CODTEC;TECNI.NOMTEC"
+			 functionId="skip"
 			 chiave="TORN_CODRUP"
 			 inseribile="true">
 				<gene:campoScheda campo="CODRUP" title="Codice responsabile ${msg }" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" />
@@ -401,9 +443,53 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	</gene:campoScheda>
 	
 	<input type="hidden" name="genere" value="${genere}" />
+	
+	<c:choose>
+	<c:when test="${!empty (filtroLivelloUtente)}">
+		<gene:campoScheda campo="AUTORI" entita="G_PERMESSI" where="G_PERMESSI.CODGAR = GARE.CODGAR1 AND G_PERMESSI.SYSCON = ${profiloUtente.id}" visibile="false"/>
+		<gene:campoScheda campo="PROPRI" entita="G_PERMESSI" where="G_PERMESSI.CODGAR = GARE.CODGAR1 AND G_PERMESSI.SYSCON = ${profiloUtente.id}" visibile="false"/>
+	</c:when>
+	<c:otherwise>
+		<gene:campoScheda campo="AUTORI" entita="G_PERMESSI" campoFittizio="true" value="1" visibile="false"/>
+		<gene:campoScheda campo="PROPRI" entita="G_PERMESSI" campoFittizio="true" value="1" visibile="false"/>
+	</c:otherwise>
+	</c:choose>
+	
 </gene:formScheda>
 
+		<form name="formVisualizzaPermessiUtenti" action="${pageContext.request.contextPath}/pg/VisualizzaPermessiUtenti.do" method="post">
+			<input type="hidden" name="metodo" id="metodo" value="apri" />
+			<input type="hidden" name="codgar" id="codgar" value="" />
+			<input type="hidden" name="genereGara" id="genereGara" value="" />
+			<input type="hidden" name="permessimodificabili" id="permessimodificabili" value="" />
+			<input type="hidden" name="codein" id="codein" value="${sessionScope.uffint}" />
+		</form> 
+		
+		<form name="formVisualizzaPermessiUtentiStandard" action="${pageContext.request.contextPath}/pg/VisualizzaPermessiUtentiStandard.do" method="post">
+			<input type="hidden" name="metodo" id="metodo" value="apri" />
+			<input type="hidden" name="codgar" id="codgar" value="" />
+			<input type="hidden" name="genereGara" id="genereGara" value="" />
+			<input type="hidden" name="permessimodificabili" id="permessimodificabili" value="" />
+			<input type="hidden" name="codein" id="codein" value="${sessionScope.uffint}" />
+		</form>
+
 <gene:javaScript>
+	
+	function apriGestionePermessi(codgar, genereGara, permessoModifica) {
+		bloccaRichiesteServer();
+		formVisualizzaPermessiUtenti.codgar.value = codgar;
+		formVisualizzaPermessiUtenti.genereGara.value = genereGara;
+		formVisualizzaPermessiUtenti.permessimodificabili.value = permessoModifica;
+		formVisualizzaPermessiUtenti.submit();
+	}
+
+	function apriGestionePermessiStandard(codgar, genereGara, permessoModifica) {
+		bloccaRichiesteServer();
+		formVisualizzaPermessiUtentiStandard.codgar.value = codgar;
+		formVisualizzaPermessiUtentiStandard.genereGara.value = genereGara;
+		formVisualizzaPermessiUtentiStandard.permessimodificabili.value = permessoModifica;
+		formVisualizzaPermessiUtentiStandard.submit();
+	}
 	
 	var idconfi = "${idconfi}";
 	

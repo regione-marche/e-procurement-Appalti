@@ -134,6 +134,7 @@
 				<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/jquery/wsdm/jquery.wsdm.css" >
 				<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmsupporto.js?v=${sessionScope.versioneModuloAttivo}"></script>
 				<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmfascicoloprotocollo.js?v=${sessionScope.versioneModuloAttivo}"></script>
+				<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmuffici.js?v=${sessionScope.versioneModuloAttivo}"></script>
 			</gene:redefineInsert>
 		</c:if>
 		<gene:setString name="titoloMaschera"	value="Trasmetti ordine di acquisto" />
@@ -143,6 +144,7 @@
 		<c:set var="esitoControlloMail" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetMailPecImpresaFunction", pageContext, ditta)}' />
 		
 		<c:set var="esitoDomentiAttesaFirma" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsistonoDocumentiAttesaFirmaFunction", pageContext, codgar, "11")}' />
+		<c:set var="htmlSupport" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "comunicazione.supportoHtml")}'/>
 
 			<gene:redefineInsert name="corpo">		
 				<c:choose>
@@ -213,7 +215,7 @@
 									</gene:campoScheda>
 									<gene:campoScheda campo="FCOMMSGOGG" obbligatorio="true" value="${requestScope.oggettoMail}" campoFittizio="true" definizione="T300;0;;;COMMSGOGG"/>
 									<gene:campoScheda campo="FCOMINTEST" value="${gene:if(abilitatoInvioMailDocumentale eq 'true', '2', requestScope.abilitaIntestazioneVariabile) }" campoFittizio="true" definizione="T2;0;;SN;COMINTEST" visibile="${ abilitatoInvioMailDocumentale ne 'true'}"/>
-									<gene:campoScheda campo="FCOMMSGTIP" value="2" campoFittizio="true" definizione="T2;0;;SN;COMMSGTIP"/>
+									<gene:campoScheda campo="FCOMMSGTIP" value="2" campoFittizio="true" definizione="T2;0;;SN;COMMSGTIP" visibile='${htmlSupport eq "1"}'/>
 									<gene:campoScheda campo="FCOMMSGTES" obbligatorio="true" value="${requestScope.testoMail}" campoFittizio="true" gestore="it.eldasoft.gene.tags.gestori.decoratori.GestoreCampoTestoComunicazioneHTML" definizione="T2000;0;;CLOB;COMMSGTES"/>
 									<gene:campoScheda campo="FCOMMITT" value="${gene:if(abilitatoInvioMailDocumentale eq 'true', '', requestScope.mittenteMail)}" campoFittizio="true" definizione="T60;0;;;COMMITT" visibile="${ abilitatoInvioMailDocumentale ne 'true'}"/>
 								</gene:gruppoCampi>
@@ -272,7 +274,7 @@
 									<table class="arealayout" id='tabellaTrasmettiOrdine'>
 										<tr>
 											<td class="comandi-dettaglio" colSpan="2">
-												<INPUT type="button" class="bottone-azione" value='${testoBottone }' title='${testoBottone }' onclick="javascript:trasmettiOrdine();">
+												<INPUT type="button" id="confermaInvio" class="bottone-azione" value='${testoBottone }' title='${testoBottone }' onclick="javascript:trasmettiOrdine();">
 												<INPUT type="button" class="bottone-azione" value="Annulla" title="Annulla modifiche" onclick="javascript:annulla();">
 											</td>
 										</tr>
@@ -306,7 +308,8 @@
 						<c:choose>
 						<c:when test="${ integrazioneWSDM =='1'}">
 							_controlloDelegaInvioMailAlDocumentale();
-							if(_delegaInvioMailDocumentaleAbilitata == 1 && (_tipoWSDM == "PALEO" || _tipoWSDM == "JIRIDE" || _tipoWSDM == "ENGINEERING" || _tipoWSDM == "TITULUS" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "SMAT")){
+							if(_delegaInvioMailDocumentaleAbilitata == 1 && (_tipoWSDM == "PALEO" || _tipoWSDM == "JIRIDE" || _tipoWSDM == "ENGINEERING" 
+								|| _tipoWSDM == "ENGINEERINGDOC" || _tipoWSDM == "TITULUS" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "SMAT")){
 								var esitoControlloMail = "${ esitoControlloMail}";
 								if(esitoControlloMail ==0 || esitoControlloMail == 1){
 									alert("E' necessario specificare l'indirizzo pec di destinazione.");
@@ -328,6 +331,8 @@
 							controlliOk = false;
 						}
 						<c:if test="${ integrazioneWSDM =='1'}">
+							
+							
 							if (controlliOk) {
 								var step= $("#step").val();
 								if(step==1){
@@ -341,6 +346,15 @@
 								}else{
 									//Controlli sulla valorizzazione dei campi obbligatori
 									var errori = controlloCampiObbligatori();
+									if(!errori && "LAPISOPERA" == $("#tiposistemaremoto").val() ){
+										var nomePrimoAllegato = getValue("FDIGNOMDOC");
+										var esito=controlloFormatoAllegato(nomePrimoAllegato);
+										if(!esito){
+											var msg="ATTENZIONE:  il sistema di protocollo accetta solo comunicazioni che abbiano un allegato firmato digitalmente  nel formato '.pdf.p7m'.\r\nPer procedere alla trasmissione dell'ordine, occorre selezionare un file valido.";
+											alert(msg);
+											errori=true;
+										}
+									}
 									if(errori)
 										controlliOk = false;
 									else{
@@ -383,6 +397,14 @@
 					}
 					
 					<c:if test="${ integrazioneWSDM =='1' && !empty cig}">
+						
+						function apriListaUffici() {
+								_ctx = "${pageContext.request.contextPath}";
+								$("#finestraListaUffici").dialog('option','width',700);
+								$("#finestraListaUffici").dialog("open");
+								_creaContainerListaUffici();
+							}
+						
 						function inizializzazionePagina(step){
 							if(step=="1"){
 								$("#datiLogin").hide();
@@ -410,6 +432,11 @@
 									$("#oggettodocumento").val(testoOggettoDocumento);
 								}else if (_tipoWSDM == "TITULUS" ){
 									oggettoDocumentoTitulus();
+								}else if (_tipoWSDM == "ENGINEERINGDOC" ){
+									var testoOggettoDocumento= "${ngara} - " + $('#oggettodocumento').val();
+									$("#oggettodocumento").val(testoOggettoDocumento);
+								}else if(_fascicoliPresenti==0 && "LAPISOPERA" == _tipoWSDM){
+									$("#confermaInvio").hide();
 								}
 							}
 						}
@@ -544,7 +571,7 @@
 	                            $("#obblmezzoinvio").hide();
 	                        }	
 							
-							if(_tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "JDOC"){
+							if(_tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "JDOC" && _tipoWSDM != "NUMIX"){
 	                        	$("#mezzo").hide();
 								$("#mezzo").closest('tr').hide();
 								
@@ -552,7 +579,8 @@
 									_setDescrizioneCodiceTabellato("classificafascicolo",$("#classificafascicolonuovo").val(),"classificafascicolodescrizione",2);
 	                        }
 														
-							if(_delegaInvioMailDocumentaleAbilitata == 1 && (_tipoWSDM == "JIRIDE" || _tipoWSDM == "PALEO" || _tipoWSDM == "ENGINEERING" || _tipoWSDM == "TITULUS" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "SMAT")){
+							if(_delegaInvioMailDocumentaleAbilitata == 1 && (_tipoWSDM == "JIRIDE" || _tipoWSDM == "PALEO" || _tipoWSDM == "ENGINEERING" 
+								|| _tipoWSDM == "ENGINEERINGDOC" || _tipoWSDM == "TITULUS" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "SMAT")){
 								setValue("FCOMINTEST","2");
 								//showObj("rowFCOMINTEST",false);
 								setValue("FCOMMITT","");
@@ -591,9 +619,7 @@
 							if (_tipoWSDM == "TITULUS"){
 								caricamentoCodiceAooTITULUS();
 								_popolaTabellatoClassificaTitulus();
-							}
-							
-							if (_tipoWSDM == "JIRIDE"){
+							}else if (_tipoWSDM == "JIRIDE"){
 								if(_letturaMittenteDaServzio){
 									$('#mittenteinterno').empty();
 									_popolaTabellatoJirideMittente("mittenteinterno");
@@ -603,6 +629,8 @@
 									}
 								}
 								caricamentoStrutturaJIRIDE();
+							}else if (_tipoWSDM == "NUMIX"){
+								caricamentoClassificaNumix();
 							}
 						});
 						
@@ -610,6 +638,8 @@
 							if (_tipoWSDM == "TITULUS"){
 								caricamentoCodiceAooTITULUS();
 								_popolaTabellatoClassificaTitulus();
+							}else if (_tipoWSDM == "NUMIX"){
+								caricamentoClassificaNumix();
 							}
 					    });
 					    
@@ -629,6 +659,10 @@
 							if (_tipoWSDM == "PRISMA"){
 								gestionemodificacampoannofascicolo();
 							}
+							if (_tipoWSDM == "ITALPROT"){
+								$('#listafascicoli').empty();
+								$('#codicefascicolo').val(); 
+							}
 						});
 						
 						$('#numerofascicolo').change(function() {
@@ -643,6 +677,17 @@
 							}
 					    });
 						
+						$('#classificafascicolonuovoItalprot').change(function() {
+							$('#listafascicoli').empty();
+							$('#codicefascicolo').val(); 
+							
+						});
+    
+						$('#listafascicoli').on('change',  function () {
+							var str = this.value;
+							gestioneSelezioneFascicolo(str);
+							
+						});
 					</c:if>
 					
 					function annulla(){

@@ -1,15 +1,5 @@
 package it.eldasoft.sil.pg.web.struts;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
-import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
-import it.eldasoft.utils.properties.ConfigManager;
-import it.eldasoft.utils.utility.UtilityDate;
-import it.eldasoft.utils.utility.UtilityStringhe;
-import it.maggioli.eldasoft.ws.dm.WSDMInviaMailResType;
-import it.maggioli.eldasoft.ws.dm.WSDMInviaMailType;
-import it.maggioli.eldasoft.ws.dm.WSDMMailFormatoType;
-
 import java.io.PrintWriter;
 import java.sql.Timestamp;
 import java.util.List;
@@ -19,13 +9,22 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import net.sf.json.JSONObject;
-
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 import org.springframework.transaction.TransactionStatus;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
+import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.utility.UtilityDate;
+import it.eldasoft.utils.utility.UtilityStringhe;
+import it.maggioli.eldasoft.ws.dm.WSDMInviaMailResType;
+import it.maggioli.eldasoft.ws.dm.WSDMInviaMailType;
+import it.maggioli.eldasoft.ws.dm.WSDMMailFormatoType;
+import net.sf.json.JSONObject;
 
 public class ReinviaMailIcCaricoDocumentaleAction extends Action {
 
@@ -114,8 +113,8 @@ public class ReinviaMailIcCaricoDocumentaleAction extends Action {
           parametriMailIn.setFormatoMail(WSDMMailFormatoType.TEXT);
 
 
-        if ("PALEO".equals(tipoWSDM) || "ARCHIFLOW".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM)) {
-          if(("ARCHIFLOW".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM)) && datiW_INVCOMDES.size() >0){
+        if ("PALEO".equals(tipoWSDM) || "ARCHIFLOW".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM)) {
+          if("ARCHIFLOW".equals(tipoWSDM) && datiW_INVCOMDES.size() >0){
             //Si deve impostare il vettore dei destinatari
             String destinatari[] = new String[datiW_INVCOMDES.size()];
             for (int i = 0; i < datiW_INVCOMDES.size(); i++) {
@@ -137,7 +136,7 @@ public class ReinviaMailIcCaricoDocumentaleAction extends Action {
           result.put("esitoInviaMail", wsdmInviaMailResType.isEsito());
           result.put("messaggioInviaMail", msgErroreInvioMail);
 
-        }else if ("JIRIDE".equals(tipoWSDM) || "EASYDOC".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM) || "JPROTOCOL".equals(tipoWSDM)) {
+        }else if ("JIRIDE".equals(tipoWSDM) || "EASYDOC".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM) || "JPROTOCOL".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM)) {
           //JIRIDE si deve inviare una mail per ogni destinatario
           //anche per EAS_YDOC
           boolean invioMailOk = true;

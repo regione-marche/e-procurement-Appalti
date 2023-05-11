@@ -16,18 +16,6 @@
 
 <gene:template file="scheda-template.jsp" gestisciProtezioni="true" schema="GENEWEB" idMaschera="W_DISCUSS-scheda" >
 	
-	<gene:redefineInsert name="head" >
-		<style type="text/css">
-			input.bottone-azione-messaggio {
-				background-color: #C40000;
-				color: #FFFFFF;
-				font: 12px Verdana, Arial, Helvetica, sans-serif;
-				vertical-align: middle;
-				font-weight: bold;
-			}
-		</style>
-	</gene:redefineInsert>
-	
 	<c:set var="discid_p" value='${gene:getValCampo(key,"DISCID_P")}' scope="request"/>
 	<c:if test='${discid_p eq ""}'>
 		<c:set var="discid_p" value='${gene:getValCampo(keyParent,"DISCID_P")}' scope="request"/>
@@ -43,11 +31,25 @@
    	
 	<c:set var="titoloCompleto" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTitleDiscussioniFunction",pageContext,"W_DISCUSS")}'/>
 	<c:choose>
-		<c:when test='${fn:length(titoloCompleto) > 120}'>
-			<gene:setString name="titoloMaschera" value='${fn:substring(titoloCompleto,0,120)}...'/>
+		<c:when test="${modo eq 'NUOVO'}">
+			<c:choose>
+				<c:when test='${fn:length(titoloCompleto) > 100}'>
+					<gene:setString name="titoloMaschera" value='${fn:substring(titoloCompleto,0,100)}...'/>
+				</c:when>
+				<c:otherwise>
+					<gene:setString name="titoloMaschera" value='${titoloCompleto}' /> 
+				</c:otherwise>
+			</c:choose>
 		</c:when>
 		<c:otherwise>
-			<gene:setString name="titoloMaschera" value='${titoloCompleto}' /> 
+			<c:choose>
+			<c:when test='${fn:length(titoloCompleto) > 100}'>
+				<gene:setString name="titoloMaschera" value='Messaggio ${fn:substring(titoloCompleto,0,100)}...'/>
+			</c:when>
+			<c:otherwise>
+				<gene:setString name="titoloMaschera" value='Messaggio ${titoloCompleto}' /> 
+			</c:otherwise>
+			</c:choose>
 		</c:otherwise>
 	</c:choose>
 
@@ -61,24 +63,28 @@
 					<gene:campoScheda title="Messaggio" campo="DISCMESSTESTO" obbligatorio="true"/>
 					<gene:campoScheda campo="DISCMESSOPE" visibile="false" defaultValue='${sessionScope.profiloUtente.id}' />
 					<gene:campoScheda campo="SYSUTE" entita="USRSYS"  title="Mittente" definizione="T" where="USRSYS.SYSCON = W_DISCUSS.DISCMESSOPE" modificabile="false" defaultValue="${sessionScope.profiloUtente.nome}"/>
-					<gene:campoScheda title="Data" campo="DISCMESSINS" modificabile="false" visibile="${modo ne 'NUOVO'}"/>
+					<gene:campoScheda campo="DISCMESSINS" modificabile="false" visibile="${modo ne 'NUOVO'}"/>
 					<gene:campoScheda title="Pubblicato?" campo="DISCMESSPUBBL" visibile="false" />
 		
 					<input type="hidden" name="keyAdd" value="${param.keyAdd}" />
 					
 					<gene:campoScheda>
-						<c:if test='${not (gene:checkProtFunz(pageContext, "MOD","SCHEDAMOD") and datiRiga.W_DISCUSS_DISCMESSPUBBL ne "1" and sessionScope.entitaPrincipaleModificabile eq "1" and (sessionScope.profiloUtente.id eq datiRiga.W_DISCUSS_DISCMESSOPE))}' >
+						<gene:redefineInsert name="schedaNuovo" />
+						<gene:redefineInsert name="pulsanteNuovo" />
+						
+						<c:if test='${not (gene:checkProtFunz(pageContext, "MOD","SCHEDAMOD") and datiRiga.W_DISCUSS_DISCMESSPUBBL ne "1" and (sessionScope.profiloUtente.id eq datiRiga.W_DISCUSS_DISCMESSOPE))}' >
 							<gene:redefineInsert name="pulsanteModifica" />
 							<gene:redefineInsert name="schedaModifica" />
 						</c:if>
-						<c:if test='${not (gene:checkProtFunz(pageContext, "INS","SCHEDANUOVO") and sessionScope.entitaPrincipaleModificabile eq "1")}' >
-							<gene:redefineInsert name="pulsanteNuovo" />
-							<gene:redefineInsert name="schedaNuovo" />
-						</c:if>
-						<c:if test='${not (gene:checkProtFunz(pageContext, "MOD","SCHEDAMOD") and datiRiga.W_DISCUSS_DISCMESSPUBBL ne "1" and sessionScope.entitaPrincipaleModificabile eq "1" and (sessionScope.profiloUtente.id eq datiRiga.W_DISCUSS_DISCMESSOPE))}' >
+
+						<c:if test='${not (gene:checkProtFunz(pageContext, "MOD","SCHEDAMOD") and datiRiga.W_DISCUSS_DISCMESSPUBBL ne "1" and (sessionScope.profiloUtente.id eq datiRiga.W_DISCUSS_DISCMESSOPE))}' >
 							<gene:redefineInsert name="pulsantePubblicaMessaggio" />
 						</c:if>
 						
+						<gene:redefineInsert name="modelliPredisposti" />
+						<gene:redefineInsert name="documentiAssociati" />
+						<gene:redefineInsert name="noteAvvisi" />
+	
 						<td class="comandi-dettaglio" colSpan="2">
 							<gene:insert name="addPulsanti"/>
 							<c:choose>
@@ -92,16 +98,11 @@
 								</c:when>
 								<c:otherwise>
 									<gene:insert name="pulsantePubblicaMessaggio" >
-										<input type="button" class="bottone-azione-messaggio" value='Pubblica messaggio' title='Pubblica messaggio' onclick="javascript:pubblicaMessaggio(${datiRiga.W_DISCUSS_DISCID_P}, ${datiRiga.W_DISCUSS_DISCID})">
+										<input type="button" class="bottone-azione" value='Invia messaggio' title='Invia messaggio' onclick="javascript:pubblicaMessaggio(${datiRiga.W_DISCUSS_DISCID_P}, ${datiRiga.W_DISCUSS_DISCID}, ${sessionScope.profiloUtente.id})">
 									</gene:insert>
 									<gene:insert name="pulsanteModifica">
 										<c:if test='${gene:checkProtFunz(pageContext,"MOD","SCHEDAMOD")}'>
 											<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' onclick="javascript:schedaModifica()">
-										</c:if>
-									</gene:insert>
-									<gene:insert name="pulsanteNuovo">
-										<c:if test='${gene:checkProtFunz(pageContext,"INS","SCHEDANUOVO")}'>
-											<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.lista.listaNuovo")}' title='${gene:resource("label.tags.template.lista.listaNuovo")}' onclick="javascript:schedaNuovo()" id="btnNuovo">
 										</c:if>
 									</gene:insert>
 								</c:otherwise>
@@ -131,8 +132,8 @@
 							}
 						</c:if>
 					
-						function pubblicaMessaggio(discid_p, discid) {
-							if (confirm("Pubblicare il messaggio ? Dopo la pubblicazione tutti i dati, i destinatari e gli allegati verranno bloccati.")) {
+						function pubblicaMessaggio(discid_p, discid, syscon) {
+							if (confirm("Inviare il messaggio ? Dopo l'invio tutti i dati e gli allegati saranno bloccati.")) {
 								$.ajax({
 							        type: "GET",
 							        async: false,
@@ -142,71 +143,26 @@
 								       }
 									},
 							        url: "${pageContext.request.contextPath}" + "/pg/EseguiOperazioniConversazione.do",
-							        data: "discid_p=" + discid_p + "&discid=" + discid + "&operazione=pubblicaMessaggio",
+							        data: "discid_p=" + discid_p + "&discid=" + discid + "&syscon=" + syscon + "&operazione=pubblicaMessaggio",
 							        complete: function(e){
-							        	historyReload();
-							        	selezionaPagina(pagina);
+							        	historyVaiIndietroDi(1);
 							        }
 							    });
 							  }
 						}
 
 					</gene:javaScript>
-					
+					<c:if test='${modo eq "VISUALIZZA" and pubblicato eq "false"}'>
+						<gene:redefineInsert name="addToAzioni" >
+							<tr>
+								<td class="vocemenulaterale" >
+									<a href="javascript:pubblicaMessaggio(${datiRiga.W_DISCUSS_DISCID_P}, ${datiRiga.W_DISCUSS_DISCID}, ${sessionScope.profiloUtente.id});" title="Invia messaggio">
+										Invia messaggio</a>
+								</td>
+							</tr>
+						</gene:redefineInsert>
+					</c:if>
 				</gene:formScheda>
-			</gene:pagina>
-			<gene:pagina title="Destinatari notifica email" idProtezioni="destinatari" >
-				<table class="dettaglio-tab-lista">
-					<tr>
-						<td>
-							<gene:formLista entita="W_DISCDEST" where='W_DISCDEST.DISCID_P = #W_DISCUSS.DISCID_P# AND W_DISCDEST.DISCID = #W_DISCUSS.DISCID#' sortColumn="2" tableclass="datilista" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreW_DISCDEST">
-								<gene:campoLista title="Opzioni <br><center>${titoloMenu}</center>" width="50" visibile="${pubblicato eq 'false'}">
-									<c:if test="${currentRow >= 0 and pubblicato eq 'false'}" >
-										<gene:PopUp variableJs="rigaPopUpMenu${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'">
-											<c:if test='${gene:checkProtFunz(pageContext, "DEL","DEL") and pubblicato eq "false" and sessionScope.profiloUtente.id eq operatore}' >
-												<gene:PopUpItemResource resource="popupmenu.tags.lista.elimina" title="Elimina" />
-											</c:if>
-										</gene:PopUp>
-										<c:if test='${gene:checkProtFunz(pageContext, "DEL","LISTADELSEL") and pubblicato eq "false" and sessionScope.profiloUtente.id eq operatore}' >
-											<input type="checkbox" name="keys" value="${chiaveRiga}"  />
-										</c:if>
-									</c:if>
-								</gene:campoLista>
-								<c:set var="link" value="javascript:chiaveRiga='${chiaveRigaJava}';listaVisualizza();" />
-								<gene:campoLista campo="DISCID_P" visibile="false" />
-								<gene:campoLista campo="DISCID" visibile="false" />
-								<gene:campoLista campo="DESTNUM" visibile="false" />
-								<gene:campoLista campo="DESTID" visibile="false" />
-								<gene:campoLista title="Destinatario" campo="DESTNAME" visibile="true" />
-								<gene:campoLista title="Indirizzo email" campo="DESTMAIL" ordinabile="true" />
-								<gene:campoLista title="Diagnostica invio notifica" campo="DESTINVMESS" />
-							</gene:formLista>
-						</td>
-					</tr>
-					<c:choose>
-						<c:when test="${sessionScope.profiloUtente.id eq operatore and pubblicato eq 'false'}">
-							<gene:redefineInsert name="listaNuovo" />
-							<tr>
-								<td class="comandi-dettaglio" colSpan="2">
-									<c:if test='${gene:checkProtFunz(pageContext,"DEL","LISTADELSEL")}'>
-										<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.lista.listaEliminaSelezione")}' title='${gene:resource("label.tags.template.lista.listaEliminaSelezione")}' onclick="javascript:listaEliminaSelezione()">
-									</c:if>
-									&nbsp;
-								</td>
-							</tr>
-						</c:when>
-						<c:otherwise>
-							<gene:redefineInsert name="listaNuovo" />
-							<gene:redefineInsert name="listaEliminaSelezione" />
-							
-							<tr>
-								<td class="comandi-dettaglio" colSpan="2">
-									&nbsp;
-								</td>
-							</tr>
-						</c:otherwise>
-					</c:choose>
-				</table>
 			</gene:pagina>
 			<gene:pagina title="Allegati" idProtezioni="allegati" >
 				<table class="dettaglio-tab-lista">
@@ -268,6 +224,15 @@
 									</c:if>
 								</td>
 							</tr>
+							
+							<gene:redefineInsert name="addToAzioni" >
+								<tr>
+									<td class="vocemenulaterale" >
+										<a href="javascript:pubblicaMessaggio(${discid_p}, ${discid}, ${sessionScope.profiloUtente.id});" title="Invia messaggio">
+											Invia messaggio</a>
+									</td>
+								</tr>
+							</gene:redefineInsert>
 						</c:when>
 						<c:otherwise>
 							<gene:redefineInsert name="listaNuovo" />
@@ -289,6 +254,25 @@
 						var href = "${pageContext.request.contextPath}/pg/VisualizzaDocumentoWDISCALL.do";
 						document.location.href=href + "?" + csrfToken + "&discid_p=" + discid_p + "&discid=" + discid + "&allnum=" + allnum + "&allname=" + allname;
 					}	
+					
+					function pubblicaMessaggio(discid_p, discid, syscon) {
+						if (confirm("Inviare il messaggio ? Dopo l'invio tutti i dati e gli allegati saranno bloccati.")) {
+							$.ajax({
+						        type: "GET",
+						        async: false,
+						        beforeSend: function(x) {
+								if(x && x.overrideMimeType) {
+									x.overrideMimeType("application/json;charset=UTF-8");
+							       }
+								},
+						        url: "${pageContext.request.contextPath}" + "/pg/EseguiOperazioniConversazione.do",
+						        data: "discid_p=" + discid_p + "&discid=" + discid + "&syscon=" + syscon + "&operazione=pubblicaMessaggio",
+						        complete: function(e){
+						        	historyVaiIndietroDi(1);
+						        }
+						    });
+						  }
+					}
 				
 				</gene:javaScript>
 								

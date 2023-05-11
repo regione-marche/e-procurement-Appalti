@@ -44,7 +44,7 @@
 					lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GENE.RAGIMP.CODDIC") and gene:checkProt(pageContext, "COLS.MOD.GENE.RAGIMP.NOMDIC"),"gene/impr/impr-lista-popup.jsp?abilitaNuovo=1","")}'
 					scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda.jsp","")}'
 					schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
-					where="(IMPR.TIPIMP <>3 and IMPR.TIPIMP <>10) or IMPR.TIPIMP is null"
+					functionId="ditteDitg"
 					campi="IMPR.CODIMP;IMPR.NOMIMP;IMPR.CGENIMP;IMPR.CFIMP;IMPR.PIVIMP"
 					inseribile="true"
 					chiave="RAGIMP_CODDIC_${param.contatore}">
@@ -71,7 +71,7 @@
 						lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GENE.RAGIMP.CODDIC") and gene:checkProt(pageContext, "COLS.MOD.GENE.RAGIMP.NOMDIC"),"gene/impr/impr-lista-popup.jsp?abilitaNuovo=1","")}'
 						scheda=''
 						schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
-						where="(IMPR.TIPIMP <>3 and IMPR.TIPIMP <>10) or IMPR.TIPIMP is null"
+						functionId="ditteDitg"
 						campi="IMPR.CODIMP;IMPR.NOMIMP;IMPR.CGENIMP;IMPR.CFIMP;IMPR.PIVIMP"
 						inseribile="true"
 						chiave="RAGIMP_CODDIC_${param.contatore}">
@@ -92,7 +92,7 @@
 					lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GENE.RAGIMP.CODDIC") and gene:checkProt(pageContext, "COLS.MOD.GENE.RAGIMP.NOMDIC"),"gene/impr/impr-lista-popup.jsp?abilitaNuovo=1","")}'
 					scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda.jsp","")}'
 					schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
-					where="(IMPR.TIPIMP <>3 and IMPR.TIPIMP <>10) or IMPR.TIPIMP is null"
+					functionId="ditteDitg"
 					campi="IMPR.CODIMP;IMPR.NOMIMP;IMPR.CGENIMP;IMPR.CFIMP;IMPR.PIVIMP"
 					inseribile="true"
 					chiave="RAGIMP_CODDIC_${param.contatore}">
@@ -114,8 +114,8 @@
 					lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GENE.RAGIMP.CODDIC") and gene:checkProt(pageContext, "COLS.MOD.GENE.RAGIMP.NOMDIC"),"gare/v_impr_smat/v_impr_smat-lista-popup.jsp","")}'
 					scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda.jsp","")}'
 					schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
-					where="(V_IMPR_SMAT.TIPIMP <>3 and V_IMPR_SMAT.TIPIMP <>10) or V_IMPR_SMAT.TIPIMP is null"
 					campi="V_IMPR_SMAT.CODIMP;V_IMPR_SMAT.NOMIMP;V_IMPR_SMAT.ID_SEDE;V_IMPR_SMAT.ID_FORNITORE;V_IMPR_SMAT.IS_IMPRESA_OA"
+					functionId="default"
 					inseribile="true"
 					chiave="RAGIMP_CODDIC_${param.contatore}">
 					<gene:campoScheda title="Codice ditta" entita="RAGIMP" campo="CODDIC_${param.contatore}" campoFittizio="true" definizione="T10;1;;;CODDIC" value="${item[1]}" obbligatorio="true" />
@@ -138,8 +138,8 @@
 						lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GENE.RAGIMP.CODDIC") and gene:checkProt(pageContext, "COLS.MOD.GENE.RAGIMP.NOMDIC"),"gare/v_impr_smat/v_impr_smat-lista-popup.jsp","")}'
 						scheda=''
 						schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
-						where="(V_IMPR_SMAT.TIPIMP <>3 and V_IMPR_SMAT.TIPIMP <>10) or V_IMPR_SMAT.TIPIMP is null"
 						campi="V_IMPR_SMAT.CODIMP;V_IMPR_SMAT.NOMIMP;V_IMPR_SMAT.ID_SEDE;V_IMPR_SMAT.ID_FORNITORE;V_IMPR_SMAT.IS_IMPRESA_OA"
+						functionId="default"
 						inseribile="true"
 						chiave="RAGIMP_CODDIC_${param.contatore}">
 						<gene:campoScheda title="Codice ditta" entita="RAGIMP" campo="CODDIC_${param.contatore}" campoFittizio="true" definizione="T10;1;;;CODDIC" value="${item[1]}" obbligatorio="true" modificabile="false"/>
@@ -158,8 +158,8 @@
 					lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GENE.RAGIMP.CODDIC") and gene:checkProt(pageContext, "COLS.MOD.GENE.RAGIMP.NOMDIC"),"gare/v_impr_smat/v_impr_smat-lista-popup.jsp","")}'
 					scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda.jsp","")}'
 					schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
-					where="(V_IMPR_SMAT.TIPIMP <>3 and V_IMPR_SMAT.TIPIMP <>10) or V_IMPR_SMAT.TIPIMP is null"
 					campi="V_IMPR_SMAT.CODIMP;V_IMPR_SMAT.NOMIMP;V_IMPR_SMAT.ID_SEDE;V_IMPR_SMAT.ID_FORNITORE;V_IMPR_SMAT.IS_IMPRESA_OA"
+					functionId="default"
 					inseribile="true"
 					chiave="RAGIMP_CODDIC_${param.contatore}">
 					<gene:campoScheda title="Codice ditta" entita="RAGIMP" campo="CODDIC_${param.contatore}" campoFittizio="true" definizione="T10;1;;;CODDIC" obbligatorio="true" />

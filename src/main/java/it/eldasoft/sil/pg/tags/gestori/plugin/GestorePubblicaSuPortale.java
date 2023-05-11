@@ -32,6 +32,7 @@ import intra.regionemarche.StrutturaClass;
 import intra.regionemarche.TemiRegionaliClass;
 import intra.regionemarche.TipiProceduraClass;
 import it.eldasoft.gene.bl.FileAllegatoManager;
+import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
@@ -44,6 +45,7 @@ import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestorePreload;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.ControlliOepvManager;
 import it.eldasoft.sil.pg.bl.GestioneATCManager;
+import it.eldasoft.sil.pg.bl.GestioneProgrammazioneManager;
 import it.eldasoft.sil.pg.bl.GestioneRegioneMarcheManager;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.sil.pg.bl.GestioneWSERPManager;
@@ -85,6 +87,8 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
   ControlliOepvManager controlliOepvManager = null;
   GestioneATCManager gestioneATCManager=null;
   InviaDatiRichiestaCigManager inviaDatiRichiestaCigManager=null;
+  GeneManager geneManager = null;
+  GestioneProgrammazioneManager gestioneProgrammazioneManager = null;
 
   private static final String pattern_Formato_Ora = "[0-9][0-9]:[0-9][0-9]";
   private static final String pattern_Ora = "([01]?[0-9]|2[0-3]):[0-5][0-9]";
@@ -138,9 +142,132 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
 
     inviaDatiRichiestaCigManager = (InviaDatiRichiestaCigManager)UtilitySpring.getBean("inviaDatiRichiestaCigManager",
         page, InviaDatiRichiestaCigManager.class);
+
+    geneManager = (GeneManager) UtilitySpring.getBean("geneManager",
+        page, GeneManager.class);
+    
+    gestioneProgrammazioneManager = (GestioneProgrammazioneManager) UtilitySpring.getBean("gestioneProgrammazioneManager",
+        page, GestioneProgrammazioneManager.class);
   }
 
+  class Soggetto {
+    private String dittao;
+    private String codComponente;
+    private String nomimo;
+    private String nomeComposto;
+    private String codfisc;
+    private String indimp;
+    private String nciimp;
+    private String locimp;
+    private String codcit;
+    private String piva;
+    private Long nazimp;
+    private String proimp;
+    private String capimp;
+    private String isgruppoiva;
 
+    public void setDittao(String dittao) {
+      this.dittao=dittao;
+    }
+
+    public void setCodComponente(String codComponente) {
+      this.codComponente=codComponente;
+    }
+
+    public void setNomimo(String nomimo) {
+      this.nomimo=nomimo;
+    }
+    public void setNomeComposto(String nomeComposto) {
+      this.nomeComposto=nomeComposto;
+    }
+    public void setCodfisc(String codfisc) {
+      this.codfisc=codfisc;
+    }
+    public void setIndimp(String indimp) {
+      this.indimp=indimp;
+    }
+    public void setNciimp(String nciimp) {
+      this.nciimp=nciimp;
+    }
+    public void setLocimp(String locimp) {
+      this.locimp=locimp;
+    }
+    public void setCodcit(String codcit) {
+      this.codcit=codcit;
+    }
+    public void setPiva(String piva) {
+      this.piva=piva;
+    }
+    public void setNazimp(Long nazimp) {
+      this.nazimp=nazimp;
+    }
+    public void setProimp(String proimp) {
+      this.proimp=proimp;
+    }
+    public void setCapimp(String capimp) {
+      this.capimp=capimp;
+    }
+    public void setIsgruppoiva(String isgruppoiva) {
+      this.isgruppoiva=isgruppoiva;
+    }
+
+    public String getDittao() {
+      return this.dittao;
+    }
+
+    public String getCodComponente() {
+      return this.codComponente;
+    }
+
+    public String getNomimo() {
+      return this.nomimo;
+    }
+
+    public String getNomeComposto() {
+      return this.nomeComposto;
+    }
+
+    public String getCodfisc() {
+      return this.codfisc;
+    }
+
+    public String getIndimp() {
+      return this.indimp;
+    }
+
+    public String getNciimp() {
+      return this.nciimp;
+    }
+
+    public String getLocimp() {
+      return this.locimp;
+    }
+
+    public String getCodcit() {
+      return this.codcit;
+    }
+
+    public String getPiva() {
+      return this.piva;
+    }
+
+    public Long getNazimp() {
+      return this.nazimp;
+    }
+
+    public String getProimp() {
+      return this.proimp;
+    }
+
+    public String getCapimp() {
+      return this.capimp;
+    }
+
+    public String getIsgruppoiva() {
+      return this.isgruppoiva;
+    }
+
+  }
   @Override
   public void doBeforeBodyProcessing(PageContext page, String modoAperturaScheda)
       throws JspException {
@@ -197,6 +324,12 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
     String profilo = (String) page.getSession().getAttribute(CostantiGenerali.PROFILO_ATTIVO);
     Long bustalotti=null;
     boolean sezionitec = false;
+    String nobustamm = null;
+    Long modlic = null;
+    boolean moduloQFORMAttivo = geneManager.getProfili().checkProtec(profilo, "FUNZ", "VIS", "ALT.GENEWEB.QuestionariQForm");
+    boolean formularioCompletoAbilitato = false;
+    boolean noDocInvito = false;
+    boolean isRicercaMercatoNegoziata = false;
 
     try {
       boolean isIntegrazioneWSDMAttivaValida = gestioneWSDMManager.isIntegrazioneWSDMAttivaValida(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO,idconfi);
@@ -238,8 +371,9 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
     //bando = 1 --> pubblicazione bando
     //bando = 3 --> pubblicazione area riservata (procedura negoziata)
     //bando = 0 --> pubblicazione esito
+    //bando = 5 --> invio invito a gara in corso
 
-    if ("1".equals(bando) || "3".equals(bando) || "0".equals(bando)){
+    if ("1".equals(bando) || "3".equals(bando) || "0".equals(bando) || "5".equals(bando)){
       //Determino il tipo di gara
       if (ngara == null || "".equals(ngara)){
         try {
@@ -264,12 +398,23 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
           gartel = SqlManager.getValueFromVectorParam(datiTorn,0).getStringValue();
           offtel = SqlManager.getValueFromVectorParam(datiTorn,1).longValue();
           iterga = SqlManager.getValueFromVectorParam(datiTorn,2).longValue();
+          if(Long.valueOf(8).equals(iterga)) {
+        	  isRicercaMercatoNegoziata=true;
+          }
+
           ricastae = SqlManager.getValueFromVectorParam(datiTorn,3).getStringValue();
         }
       } catch (SQLException e) {
         throw new JspException("Errore durante la lettura dei campi gartel,offtel,iterga della gara ", e);
       } catch (GestoreException e) {
         throw new JspException("Errore durante la lettura dei campi gartel,offtel,iterga della gara ", e);
+      }
+    }
+
+    if ("1".equals(bando) || "3".equals(bando) || "0".equals(bando) ){
+      boolean formularioCompletoAttivo = geneManager.getProfili().checkProtec(profilo, "FUNZ", "VIS", PgManagerEst1.QFORM_VOCEPROFILO_TUTTE_BUSTE);
+      if(moduloQFORMAttivo && formularioCompletoAttivo && new Long(3).equals(offtel)) {
+        formularioCompletoAbilitato = true;
       }
 
       boolean pubBandoATC=false;
@@ -348,7 +493,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
         }
 
 
-         String desctabA1153 = tabellatiManager.getDescrTabellato("A1153", "1");
+        String desctabA1153 = tabellatiManager.getDescrTabellato("A1153", "1");
         if(desctabA1153!=null && !"".equals(desctabA1153) && !new Long(10).equals(genere) && !new Long(20).equals(genere) && !new Long(11).equals(genere))
           desctabA1153 = desctabA1153.substring(0,1);
         if(("1".equals(gartel) || "1".equals(desctabA1153)) && ("1".equals(bando) || "3".equals(bando))){
@@ -369,6 +514,8 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
             desc = desc.substring(0,1);
             page.setAttribute("cifraturaBuste", desc, PageContext.REQUEST_SCOPE);
           }
+          nobustamm = (String) this.sqlManager.getObject("select nobustamm from torn where codgar=?",new Object[] {codgar});
+          page.setAttribute("nobustamm", nobustamm, PageContext.REQUEST_SCOPE);
         }
 
         if("1".equals(integrazioneWSDM)){
@@ -390,7 +537,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
         if(ngara==null)
           bustalotti=(Long)this.sqlManager.getObject("select bustalotti from gare where ngara=?", new Object[]{codgar});
 
-        if("3".equals(bando) && (new Long(2).equals(iterga) || new Long(4).equals(iterga))){
+        if("3".equals(bando) && (new Long(2).equals(iterga) || new Long(4).equals(iterga) || new Long(7).equals(iterga))){
           String chiaveTmp = ngara;
           if (ngara==null)
             chiaveTmp = codgar;
@@ -445,6 +592,18 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
               controlloSuperato = "NO";
               messaggio += "<br>Non è possibile integrare documenti relativi alla busta di prequalifica perchè la fase di prequalifica è conclusa";
             }
+            //Controllo sui documenti di prequalifica nel caso di qform
+            if(formularioCompletoAbilitato) {
+              String chiaveQform = ngara;
+              Long conteggioQuestionari=null;
+
+              conteggioQuestionari = (Long)this.sqlManager.getObject("select count(*) from qform where entita='GARE' and key1=? and busta=? and stato = 7", new Object[] {chiaveQform, new Long(4)});
+              if(conteggioQuestionari!=0 && conteggioQuestionari.longValue()>0){
+                controlloSuperato = "NO";
+                messaggio += "<br>Non è possibile rettificare q-form relativi alla busta di prequalifica perchè la fase di prequalifica è conclusa";
+              }
+            }
+
 
             if("NO".equals(controlloSuperato)){
               page.setAttribute("controlloSuperato", "NO", PageContext.REQUEST_SCOPE);
@@ -486,7 +645,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
           chiave = ngara;
         }
         valore = (String) sqlManager.getObject(select, new Object[]{chiave});
-        if (valore == null) {
+        if (valore == null || "".equals(valore.trim())) {
           controlloSuperato = "NO";
           messaggio += "<br>Non è stato inserito l'oggetto" + messaggioDet;
         }
@@ -501,7 +660,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
           if(listaOggetti!=null && listaOggetti.size()>0){
             for (int i = 0; i < listaOggetti.size(); i++) {
               String oggettoLotto = SqlManager.getValueFromVectorParam(listaOggetti.get(i),0).getStringValue();
-              if(oggettoLotto==null || "".equals(oggettoLotto)){
+              if(oggettoLotto==null || "".equals(oggettoLotto.trim())){
                 controlloSuperato = "NO";
                 String codiceLotto = SqlManager.getValueFromVectorParam(listaOggetti.get(i),1).getStringValue();
                 messaggio += "<br>Non è stato inserito l'oggetto del lotto " + codiceLotto +".";
@@ -510,7 +669,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
           }
         }
 
-        Long modlic = null;
+
         if(!"0".equals(bando) && !new Long(10).equals(genere) && !new Long(20).equals(genere) && !new Long(11).equals(genere)){ // Si escludono dal controllo gli elenchi, i cataloghi e gli avvisi
           if (ngara == null || (gentip != null && gentip.longValue() == 1) || (genere!=null && genere.longValue()==3)){ //Gara divisa a lotti con offerte distinte o offerta unica
             select="select TIPGAR, CRITLIC, MODLIC from torn where codgar = ?";
@@ -529,7 +688,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
             //controllo sul criterio di aggiudicazione della gara
             Long critlic = SqlManager.getValueFromVectorParam(datiGara, 1).longValue();
             modlic = SqlManager.getValueFromVectorParam(datiGara, 2).longValue();
-            if ((critlic == null || modlic==null) && "1".equals(gartel)) {
+            if ((critlic == null || modlic==null) && "1".equals(gartel) && !new Long(7).equals(iterga)) {
               controlloSuperato = "NO";
               messaggio += "<br>Non è stato inserito il criterio di aggiudicazione della gara.";
             }
@@ -558,7 +717,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
                 }
                 critlicLotto = SqlManager.getValueFromVectorParam(listaOggetti.get(i),1).longValue();
                 modlicLotto = SqlManager.getValueFromVectorParam(listaOggetti.get(i),2).longValue();
-                if((critlicLotto==null || modlicLotto ==null) && "1".equals(gartel) ){
+                if(((critlicLotto==null || modlicLotto ==null) && "1".equals(gartel) ) && !new Long(7).equals(iterga)){
                   controlloSuperato = "NO";
                   codiceLotto = SqlManager.getValueFromVectorParam(listaOggetti.get(i),3).getStringValue();
                   msgCriterioAgg += "<br>Non è stato inserito il tipo criterio di aggiudicazione del lotto " + codiceLotto +".";
@@ -674,49 +833,49 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
 
         boolean lottoUnico = false;
         if(!(genere!=null && genere.longValue()==11)){
-          if(ngara==null  || (gentip != null && gentip.longValue() == 1) || (genere!=null && genere.longValue()==3)){//Gara divisa a lotti con offerte distinte o offerta unica
-            //importo = imptor;
-            importo = new Double(1);
-          }else if( ngara!=null && genere!=null && (genere.longValue()==10 || genere.longValue()==20)){//gare ad elenco
-            importo = new Double(1);
-          }else{ //gara a lotto unico
-            select="select IMPAPP from gare where ngara = ?";
-            importo = (Double) sqlManager.getObject(select, new Object[]{ngara});
-            lottoUnico=true;
-          }
-
-          //controllo sull'importo
-          if(importo==null){
-            controlloSuperato = "NO";
-            messaggio += "<br>Non è stato inserito l'importo a base di gara.";
-          }else{
-            if(lottoUnico == true && (new Long(1)).equals(offtel) && importo.longValue()<=0 && ("1".equals(bando) || "3".equals(bando))){
-              controlloSuperato = "NO";
-              messaggio += "<br>Non è stato inserito l'importo a base di gara (specificare un valore maggiore di 0).";
+            if(ngara==null  || (gentip != null && gentip.longValue() == 1) || (genere!=null && genere.longValue()==3)){//Gara divisa a lotti con offerte distinte o offerta unica
+              //importo = imptor;
+              importo = new Double(1);
+            }else if( ngara!=null && genere!=null && (genere.longValue()==10 || genere.longValue()==20)){//gare ad elenco
+              importo = new Double(1);
+            }else{ //gara a lotto unico
+              select="select IMPAPP from gare where ngara = ?";
+              importo = (Double) sqlManager.getObject(select, new Object[]{ngara});
+              lottoUnico=true;
             }
-          }
+          //Se indagine di mercato, non fa il controllo sull'importo
+          if (!(Long.valueOf(7).equals(iterga))){
+            //controllo sull'importo
+            if(importo==null){
+              controlloSuperato = "NO";
+              messaggio += "<br>Non è stato inserito l'importo a base di gara.";
+            }else{
+              if(lottoUnico == true && (new Long(1)).equals(offtel) && importo.longValue()<=0 && ("1".equals(bando) || "3".equals(bando)) ){
+                controlloSuperato = "NO";
+                messaggio += "<br>Non è stato inserito l'importo a base di gara (specificare un valore maggiore di 0).";
+              }
+            }
 
+            //Nel caso di lotto di gara e di gara ad offerta unica si controlla anche l'importo di tutti i lotti
+            if (ngara == null || (gentip != null && (gentip.longValue() == 1 || gentip.longValue() == 3))){
+              select="select impapp,ngara from gare where codgar1 = ?";
+              if(gentip != null && gentip.longValue() == 3)
+                select += " and ngara <> codgar1";
 
-
-          //Nel caso di lotto di gara e di gara ad offerta unica si controlla anche l'importo di tutti i lotti
-          if (ngara == null || (gentip != null && (gentip.longValue() == 1 || gentip.longValue() == 3))){
-            select="select impapp,ngara from gare where codgar1 = ?";
-            if(gentip != null && gentip.longValue() == 3)
-              select += " and ngara <> codgar1";
-
-            List listaOggetti = sqlManager.getListVector(select, new Object[]{codgar});
-            if(listaOggetti!=null && listaOggetti.size()>0){
-              for (int i = 0; i < listaOggetti.size(); i++) {
-                Double importoLotto = SqlManager.getValueFromVectorParam(listaOggetti.get(i),0).doubleValue();
-                if(importoLotto==null ){
-                  controlloSuperato = "NO";
-                  String codiceLotto = SqlManager.getValueFromVectorParam(listaOggetti.get(i),1).getStringValue();
-                  messaggio += "<br>Non è stato inserito l'importo a base di gara del lotto " + codiceLotto +".";
-                }else{
-                  if((new Long(1)).equals(offtel) && importoLotto.longValue()<=0){
+              List listaOggetti = sqlManager.getListVector(select, new Object[]{codgar});
+              if(listaOggetti!=null && listaOggetti.size()>0){
+                for (int i = 0; i < listaOggetti.size(); i++) {
+                  Double importoLotto = SqlManager.getValueFromVectorParam(listaOggetti.get(i),0).doubleValue();
+                  if(importoLotto==null ){
                     controlloSuperato = "NO";
                     String codiceLotto = SqlManager.getValueFromVectorParam(listaOggetti.get(i),1).getStringValue();
-                    messaggio += "<br>Non è stato inserito l'importo a base di gara del lotto " + codiceLotto +" (specificare un valore maggiore di 0).";
+                    messaggio += "<br>Non è stato inserito l'importo a base di gara del lotto " + codiceLotto +".";
+                  }else{
+                    if(((new Long(1)).equals(offtel) && importoLotto.longValue()<=0)) {
+                      controlloSuperato = "NO";
+                      String codiceLotto = SqlManager.getValueFromVectorParam(listaOggetti.get(i),1).getStringValue();
+                      messaggio += "<br>Non è stato inserito l'importo a base di gara del lotto " + codiceLotto +" (specificare un valore maggiore di 0).";
+                    }
                   }
                 }
               }
@@ -733,7 +892,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
             }
 
             if(iterga != null) {
-              if(iterga.longValue()==3 || iterga.longValue()==5 || iterga.longValue()==6 )
+              if(iterga.longValue()==3 || iterga.longValue()==5 || iterga.longValue()==6 || isRicercaMercatoNegoziata)
                 iterga= new Long(3);
 
               //condizioni per la visibilità di DTEOFF - procedura aperta o negoziata senza bando
@@ -899,7 +1058,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
           }
         }
 
-        if ("1".equals(gartel) && (("1".equals(bando)  && new Long(1).equals(iterga)) || "3".equals(bando))){
+        if ("1".equals(gartel) && (("1".equals(bando)  && (Long.valueOf(1).equals(iterga) || isRicercaMercatoNegoziata)) || "3".equals(bando))){
           //Controllo presenza lista lavorazioni (non si applica ad offerte distinte in quanto non gestite come gare telematiche)
           String desc = tabellatiManager.getDescrTabellato("A1110", "1");
           if(desc!=null && !"".equals(desc))
@@ -919,7 +1078,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
               conteggio = (Long)this.sqlManager.getObject("select count(*) from GCAP where GCAP.NGARA = ? and GCAP.DITTAO is null",
             		  new Object[]{ngara});
               if (conteggio==null || conteggio.longValue()==0){
-            	  if((new Long(5).equals(modlic) || new Long(14).equals(modlic)) && ("1".equals(desc) || (new Long(3)).equals(ribcal) )){
+            	  if((new Long(5).equals(modlic) || new Long(14).equals(modlic)) && ("1".equals(desc) || isRicercaMercatoNegoziata || (Long.valueOf(3)).equals(ribcal) )){
                     controlloSuperato = "NO";
                     messaggio +=  "<br>Non sono state definite le lavorazioni e forniture oggetto dell'offerta a prezzi unitari.";
                 }
@@ -931,6 +1090,26 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
 	                    controlloSuperato = "NO";
 	                    messaggio +=  controlliGCAP[1];
 	                  }
+	              }
+	              if(isRicercaMercatoNegoziata) {
+                   Long countDateConsegna = null;
+                   countDateConsegna = (Long)this.sqlManager.getObject("select count(*) from GCAP where GCAP.NGARA = ? and GCAP.DATACONS is null",
+	                		  new Object[]{ngara});
+
+	        	    if(countDateConsegna!=null && countDateConsegna.longValue()>0){
+	                    controlloSuperato = "NO";
+	                    messaggio +=  "<br>Non sono state definite le date di consegna per tutte le lavorazioni.";
+	        	    }
+
+                   Long countPrezziUnitari = null;
+                   countPrezziUnitari = (Long)this.sqlManager.getObject("select count(*) from GCAP where GCAP.NGARA = ? and GCAP.PREZUN is null",
+	                		  new Object[]{ngara});
+
+	        	    if(countPrezziUnitari!=null && countPrezziUnitari.longValue()>0){
+	                    controlloSuperato = "NO";
+	                    messaggio +=  "<br>Non sono stati definiti i prezzi unitari a base di gara per tutte le lavorazioni.";
+	        	    }
+
 	              }
               }
             }else{
@@ -1082,6 +1261,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
         if ("1".equals(bando) || "3".equals(bando)  || "0".equals(bando)){
           //Controllo tabellato A1108 per la gestione dell'url nei documenti di gara
 
+
           String desc = tabellatiManager.getDescrTabellato("A1108", "1");
           if(desc!=null && !"".equals(desc))
             desc = desc.substring(0,1);
@@ -1109,8 +1289,10 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
            controlloSuperato = "NO";
             if("0".equals(bando))
               messaggio += "<br>Non è stato inserito nessun documento relativo all'esito di gara.";
-            else if("3".equals(bando))
+            else if("3".equals(bando)) {
               messaggio += "<br>Non è stato inserito nessun documento relativo all'invito.";
+              noDocInvito = true;
+            }
             else{
               if(genere!=null && genere.longValue()==11)
                 messaggio += "<br>Non è stato inserito nessun documento relativo al bando o avviso.";
@@ -1127,8 +1309,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
             messaggio+=esito[1];
           }
 
-          String richiestaFirma = ConfigManager.getValore(CostantiAppalti.PROP_RICHIESTA_FIRMA);
-          if("1".equals(richiestaFirma) && ("1".equals(bando) || "0".equals(bando) || "3".equals(bando))){
+          if("1".equals(bando) || "0".equals(bando) || "3".equals(bando)){
             //Controllo sulla richiesta di firma degli allrgati
             select="select count(codgar) from documgara, w_docdig where codgar= ? and " + condizioneGruppo + codizioneTipologie + " and documgara.idprg=w_docdig.idprg and documgara.iddocdg=w_docdig.iddocdig and digfirma ='1'";
             numOccorrenze = (Long) sqlManager.getObject(select, new Object[]{codgar});
@@ -1161,6 +1342,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
           String formatoAllegati = ConfigManager.getValore(CostantiAppalti.FORMATO_ALLEGATI);
           if(formatoAllegati!=null && !"".equals(formatoAllegati) && "3".equals(bando)){
             select="select dignomdoc from documgara, w_docdig where codgar= ? and GRUPPO = 6 and documgara.idprg=w_docdig.idprg and documgara.iddocdg=w_docdig.iddocdig";
+            select += " and (idstampa != 'DGUE' or idstampa is null)";
             List listaFileAllegati=this.sqlManager.getListVector(select, new Object[]{codgar});
             /*
             int numFormatoCorretto=0;
@@ -1186,161 +1368,272 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
             }
           }
 
+          //Se attiva l'integrazione MDGUE e ci sono dei documenti con IDSTAMPA='DGUE', gli allegati posso essere solo xml
+          String urlMDGUE = ConfigManager.getValore(CostantiAppalti.PROP_INTEGRAZIONE_MDGUE_URL);
+          if(urlMDGUE!=null && !"".equals(urlMDGUE) ) {
+            Long gruppoDGUE= new Long(1);
+            if("3".equals(bando))
+              gruppoDGUE = new Long(6);
+            select="select dignomdoc from documgara, w_docdig where codgar= ? and GRUPPO = ? and documgara.idprg=w_docdig.idprg and documgara.iddocdg=w_docdig.iddocdig";
+              select +=" and idstampa = 'DGUE' and (isarchi='2' or isarchi is null)";
+            List<?> listaFileAllegati=this.sqlManager.getListVector(select, new Object[]{codgar,gruppoDGUE});
+            if(!this.pgManagerEst1.controlloAllegatiFormatoValido(listaFileAllegati,0,"xml")){
+              controlloSuperato = "NO";
+              messaggio += "<br>Ci sono dei documenti di gara con integrazione M-DGUE che hanno un formato non valido, non hanno estensione xml.";
+            }
+          }
 
+          //Controllo documenti allegati (Solo in caso di pubblicazione area riservata)
+          if ("1".equals(gartel) && "3".equals(bando)) {
+        	  String inizializzaAllmail = tabellatiManager.getDescrTabellato("A1173", "1");
+        	  if(inizializzaAllmail!=null && !"".equals(inizializzaAllmail))
+        		  inizializzaAllmail = inizializzaAllmail.substring(0,1);
+        	  if("1".equals(inizializzaAllmail) && !noDocInvito) {
+        		  //Deve esserci almeno un documento dell'invito da allegare alla mail
+        		  Long nDocInvitoAllegatoMail=new Long(0);
+        		  select="select count(*) from documgara where codgar=? and allmail='1' and gruppo=6";
+        		  nDocInvitoAllegatoMail=(Long)this.sqlManager.getObject(select, new Object[]{codgar});
+        		  if(nDocInvitoAllegatoMail<new Long(1)){
+        			  controlloSuperato = "NO";
+        			  messaggio += "<br>Non ci sono documenti relativi all'invito che vengono allegati alla comunicazione. Indicarne almeno uno da allegare";
+        		  }
+          }}
 
           //Controlli sui documenti per gare telematiche
           if("1".equals(gartel) && (("1".equals(bando) && iterga.longValue()==1) || "3".equals(bando))){
-            Object parametri[]=null;
-            Object parametriTec[]=null;
-            modlic = null;
-            boolean controlloDocTecSuperto=true;
-            //Controllo documenti per la busta tecnica
-            if(lottoUnico){
-              select="select count(codgar) from DOCUMGARA where CODGAR=? and NGARA = ? and gruppo=? and busta=? ";
-              parametri = new Object[] { codgar,ngara, new Long(3), new Long(2) };
-              parametriTec = new Object[] { codgar,ngara, new Long(3), new Long(2) };
-              modlic = (Long)sqlManager.getObject("select modlicg from gare where ngara=?", new Object[]{ngara});
-            }else{
-              select="select count(codgar) from DOCUMGARA where CODGAR=? and gruppo=? and busta=? ";
-              parametri = new Object[] { codgar, new Long(3), new Long(2) };
-              parametriTec = new Object[] { codgar, new Long(3), new Long(2) };
-              modlic = (Long)sqlManager.getObject("select modlic from torn where codgar=?", new Object[]{codgar});
-            }
-            select+=" and (isarchi is null or isarchi <>'1') ";
-            String selectSenzaContesto = select;
-            String selectDocumenti = select + " and CONTESTOVAL is null";
-            if(!(new Long(1)).equals(bustalotti)){
-              selectSenzaContesto+= " and CONTESTOVAL is null ";
-              if(new Long(6).equals(modlic) || "1".equals(valtec)){
-                Long conteggio = (Long)sqlManager.getObject(selectSenzaContesto, parametri);
-                if(conteggio==null || (conteggio!=null && conteggio.longValue()==0)){
-                  controlloSuperato = "NO";
-                  conteggio = (Long)sqlManager.getObject(select, parametri);
+            if(!formularioCompletoAbilitato) {
+              Object parametri[]=null;
+              Object parametriTec[]=null;
+              modlic = null;
+              boolean controlloDocTecSuperto=true;
+              //Controllo documenti per la busta tecnica
+              if(lottoUnico){
+                select="select count(codgar) from DOCUMGARA where CODGAR=? and NGARA = ? and gruppo=? and busta=? ";
+                parametri = new Object[] { codgar,ngara, new Long(3), new Long(2) };
+                parametriTec = new Object[] { codgar,ngara, new Long(3), new Long(2) };
+                modlic = (Long)sqlManager.getObject("select modlicg from gare where ngara=?", new Object[]{ngara});
+              }else{
+                select="select count(codgar) from DOCUMGARA where CODGAR=? and gruppo=? and busta=? ";
+                parametri = new Object[] { codgar, new Long(3), new Long(2) };
+                parametriTec = new Object[] { codgar, new Long(3), new Long(2) };
+                modlic = (Long)sqlManager.getObject("select modlic from torn where codgar=?", new Object[]{codgar});
+              }
+              select+=" and (isarchi is null or isarchi <>'1') ";
+              String selectSenzaContesto = select;
+              String selectDocumenti = select + " and CONTESTOVAL is null";
+              if(!(new Long(1)).equals(bustalotti)){
+                selectSenzaContesto+= " and CONTESTOVAL is null ";
+                if(new Long(6).equals(modlic) || "1".equals(valtec)){
+                  Long conteggio = (Long)sqlManager.getObject(selectSenzaContesto, parametri);
                   if(conteggio==null || (conteggio!=null && conteggio.longValue()==0)){
-                    messaggio +=  "<br>Non è stato inserito nessun documento richiesto ai concorrenti per la busta tecnica.";
-                    controlloDocTecSuperto=false;
-                  }else{
-                    messaggio +=  "<br>Tutti i documenti richiesti ai concorrenti per la busta tecnica hanno l'indicazione del contesto di validità. Deve esserne inserito almeno uno valido per qualsiasi tipo di operatore.";
+                    controlloSuperato = "NO";
+                    conteggio = (Long)sqlManager.getObject(select, parametri);
+                    if(conteggio==null || (conteggio!=null && conteggio.longValue()==0)){
+                      messaggio +=  "<br>Non è stato inserito nessun documento richiesto ai concorrenti per la busta tecnica.";
+                      controlloDocTecSuperto=false;
+                    }else{
+                      messaggio +=  "<br>Tutti i documenti richiesti ai concorrenti per la busta tecnica hanno l'indicazione del contesto di validità. Deve esserne inserito almeno uno valido per qualsiasi tipo di operatore.";
+                    }
                   }
                 }
-              }
-              if(lottoUnico)
-                parametri[3]=new Long(3);
-              else
-                parametri[2]=new Long(3);
-              Long conteggio = (Long)sqlManager.getObject(selectSenzaContesto, parametri);
-              if((conteggio==null || (conteggio!=null && conteggio.longValue()==0)) && !costofisso){
-                controlloSuperato = "NO";
-                conteggio = (Long)sqlManager.getObject(select, parametri);
-                if((conteggio==null || (conteggio!=null && conteggio.longValue()==0))){
-                  messaggio +=  "<br>Non è stato inserito nessun documento richiesto ai concorrenti per la busta economica.";
-                }else{
-                  messaggio +=  "<br>Tutti i documenti richiesti ai concorrenti per la busta economica hanno l'indicazione del contesto di validità. Deve esserne inserito almeno uno valido per qualsiasi tipo di operatore.";
+                //Controllo per le gare con valutazione tecnica anonima
+                if(lottoUnico && new Long(6).equals(modlic)) {
+                  String anonimatec= (String)sqlManager.getObject("select anonimatec from gare1 where ngara=?", new Object[]{ngara});
+                  if("1".equals(anonimatec)) {
+                    String selectDocumentiGareAnonime = select + " and MODFIRMA = 1";
+                    Long conteggio = (Long)sqlManager.getObject(selectDocumentiGareAnonime, parametri);
+                    if(conteggio!=null && conteggio.longValue() > 0){
+                      controlloSuperato = "NO";
+                      messaggio +=  "<br>Ci sono dei documenti richiesti per la busta tecnica per cui è prevista la firma digitale. Essendo prevista la valutazione anonima della busta tecnica, non è possibile indicare tale formato";
+                    }
+                  }
                 }
-              }
-            }else{
-              //nel caso di bustalotti=1 si devono controllare i documenti sia a livello di gara che di lotto
-              select="select count(codgar) from DOCUMGARA where CODGAR=? and gruppo=? and busta=? and ngara is null and (isarchi is null or isarchi <>'1')";
-              selectSenzaContesto = select + " and CONTESTOVAL is null ";
-              //busta tecnica
-              parametri = new Object[] { codgar, new Long(3), new Long(2) };
-              if(new Long(6).equals(modlic) || "1".equals(valtec)){
-                Long conteggio = (Long)sqlManager.getObject(select, parametri);
-                if(conteggio==null || (conteggio!=null && conteggio.longValue()==0)){
-                  //Si deve ciclare a livello di lotti
-                  if(!pgManager.controlloDocumentazioneLotti(codgar, true, new Long(2),true, false,false)){
-                    controlloSuperato = "NO";
-                    messaggio +=  "<br>Non è stato inserito nessun documento richiesto ai concorrenti per la busta tecnica (oppure non è stato inserito per tutti i lotti della gara).";
-                    controlloDocTecSuperto = false;
+                if(lottoUnico)
+                  parametri[3]=new Long(3);
+                else
+                  parametri[2]=new Long(3);
+                Long conteggio = (Long)sqlManager.getObject(selectSenzaContesto, parametri);
+                if((conteggio==null || (conteggio!=null && conteggio.longValue()==0)) && !costofisso){
+                  controlloSuperato = "NO";
+                  conteggio = (Long)sqlManager.getObject(select, parametri);
+                  if((conteggio==null || (conteggio!=null && conteggio.longValue()==0))){
+                    messaggio +=  "<br>Non è stato inserito nessun documento richiesto ai concorrenti per la busta economica.";
                   }else{
-                    if(!pgManager.controlloDocumentazioneLotti(codgar, true, new Long(2),true, false,true)){
+                    messaggio +=  "<br>Tutti i documenti richiesti ai concorrenti per la busta economica hanno l'indicazione del contesto di validità. Deve esserne inserito almeno uno valido per qualsiasi tipo di operatore.";
+                  }
+                }
+              }else{
+                //nel caso di bustalotti=1 si devono controllare i documenti sia a livello di gara che di lotto
+                select="select count(codgar) from DOCUMGARA where CODGAR=? and gruppo=? and busta=? and ngara is null and (isarchi is null or isarchi <>'1')";
+                selectSenzaContesto = select + " and CONTESTOVAL is null ";
+                //busta tecnica
+                parametri = new Object[] { codgar, new Long(3), new Long(2) };
+                if(new Long(6).equals(modlic) || "1".equals(valtec)){
+                  Long conteggio = (Long)sqlManager.getObject(select, parametri);
+                  if(conteggio==null || (conteggio!=null && conteggio.longValue()==0)){
+                    //Si deve ciclare a livello di lotti
+                    if(!pgManager.controlloDocumentazioneLotti(codgar, true, new Long(2),true, false,false)){
+                      controlloSuperato = "NO";
+                      messaggio +=  "<br>Non è stato inserito nessun documento richiesto ai concorrenti per la busta tecnica (oppure non è stato inserito per tutti i lotti della gara).";
+                      controlloDocTecSuperto = false;
+                    }else{
+                      if(!pgManager.controlloDocumentazioneLotti(codgar, true, new Long(2),true, false,true)){
+                        controlloSuperato = "NO";
+                        messaggio +=  "<br>Tutti i documenti richiesti ai concorrenti per la busta tecnica (oppure tutti i documenti relativi a qualche lotto), hanno l'indicazione del contesto di validità. Deve esserne inserito almeno uno valido per qualsiasi tipo di operatore.";
+                      }
+                    }
+                  }else{
+                    Long conteggioSenzaContesto = (Long)sqlManager.getObject(selectSenzaContesto, parametri);
+                    if(conteggioSenzaContesto==null || (conteggioSenzaContesto!=null && conteggioSenzaContesto.longValue()==0)){
                       controlloSuperato = "NO";
                       messaggio +=  "<br>Tutti i documenti richiesti ai concorrenti per la busta tecnica (oppure tutti i documenti relativi a qualche lotto), hanno l'indicazione del contesto di validità. Deve esserne inserito almeno uno valido per qualsiasi tipo di operatore.";
                     }
                   }
-                }else{
-                  Long conteggioSenzaContesto = (Long)sqlManager.getObject(selectSenzaContesto, parametri);
-                  if(conteggioSenzaContesto==null || (conteggioSenzaContesto!=null && conteggioSenzaContesto.longValue()==0)){
-                    controlloSuperato = "NO";
-                    messaggio +=  "<br>Tutti i documenti richiesti ai concorrenti per la busta tecnica (oppure tutti i documenti relativi a qualche lotto), hanno l'indicazione del contesto di validità. Deve esserne inserito almeno uno valido per qualsiasi tipo di operatore.";
-                  }
                 }
-              }
-              //busta economica
-              //Se tutti i lotti sono senza criteri economici si salta il controllo sulla busta economica
-              if(!costofisso){
-                parametri = new Object[] { codgar, new Long(3), new Long(3) };
-                Long conteggio = (Long)sqlManager.getObject(select, parametri);
-                if(conteggio==null || (conteggio!=null && conteggio.longValue()==0)){
-                  //Si deve controllare che per i lotti che hanno criteri economici sia presente la busta economica
-                  if(!pgManager.controlloDocumentazioneLotti(codgar, false, new Long(3), true, true, false)){
-                    controlloSuperato = "NO";
-                    messaggio +=  "<br>Non è stato inserito nessun documento richiesto ai concorrenti per la busta economica (oppure non è stato inserito per tutti i lotti della gara).";
+                //busta economica
+                //Se tutti i lotti sono senza criteri economici si salta il controllo sulla busta economica
+                if(!costofisso){
+                  parametri = new Object[] { codgar, new Long(3), new Long(3) };
+                  Long conteggio = (Long)sqlManager.getObject(select, parametri);
+                  if(conteggio==null || (conteggio!=null && conteggio.longValue()==0)){
+                    //Si deve controllare che per i lotti che hanno criteri economici sia presente la busta economica
+                    if(!pgManager.controlloDocumentazioneLotti(codgar, false, new Long(3), true, true, false)){
+                      controlloSuperato = "NO";
+                      messaggio +=  "<br>Non è stato inserito nessun documento richiesto ai concorrenti per la busta economica (oppure non è stato inserito per tutti i lotti della gara).";
+                    }else{
+                      if(!pgManager.controlloDocumentazioneLotti(codgar, false, new Long(3), true, true, true)){
+                        controlloSuperato = "NO";
+                        messaggio +=  "<br>Tutti i documenti richiesti ai concorrenti per la busta economica (oppure tutti i documenti relativi a qualche lotto), hanno l'indicazione del contesto di validità. Deve esserne inserito almeno uno valido per qualsiasi tipo di operatore.";
+                      }
+                    }
                   }else{
-                    if(!pgManager.controlloDocumentazioneLotti(codgar, false, new Long(3), true, true, true)){
+                    Long conteggioSenzaContesto = (Long)sqlManager.getObject(selectSenzaContesto, parametri);
+                    if(conteggioSenzaContesto==null || (conteggioSenzaContesto!=null && conteggioSenzaContesto.longValue()==0)){
                       controlloSuperato = "NO";
                       messaggio +=  "<br>Tutti i documenti richiesti ai concorrenti per la busta economica (oppure tutti i documenti relativi a qualche lotto), hanno l'indicazione del contesto di validità. Deve esserne inserito almeno uno valido per qualsiasi tipo di operatore.";
                     }
                   }
-                }else{
-                  Long conteggioSenzaContesto = (Long)sqlManager.getObject(selectSenzaContesto, parametri);
-                  if(conteggioSenzaContesto==null || (conteggioSenzaContesto!=null && conteggioSenzaContesto.longValue()==0)){
-                    controlloSuperato = "NO";
-                    messaggio +=  "<br>Tutti i documenti richiesti ai concorrenti per la busta economica (oppure tutti i documenti relativi a qualche lotto), hanno l'indicazione del contesto di validità. Deve esserne inserito almeno uno valido per qualsiasi tipo di operatore.";
-                  }
                 }
               }
-            }
 
-            //Controlli sezioni busta tecnica
-            if (sezionitec && controlloDocTecSuperto) {
-              //Controllo che tutti i documenti abbiano SEZTEC valorizzato
+              //Controlli sezioni busta tecnica
+              if (sezionitec && controlloDocTecSuperto) {
+                //Controllo che tutti i documenti abbiano SEZTEC valorizzato
 
-              String selectSeztec = selectDocumenti + " and seztec is null";
-              Long conteggioDoc = (Long) sqlManager.getObject(selectSeztec, parametriTec);
-              if (conteggioDoc != null && conteggioDoc.longValue() > 0) {
-                controlloSuperato = "NO";
-                messaggio +=  "<br>Non è stata specificata la sezione, qualitativa o quantitativa, in tutti i documenti richiesti ai concorrenti per la busta tecnica.";
-              } else {
-                //Controllo che ci sia almeno un documento con SEZTEC = 1 e almeno uno con SEZTEC =2
-                if (lottoUnico) {
-                  selectSeztec = selectDocumenti + " and seztec = 1";
-                  Long conteggiosez1 = (Long) sqlManager.getObject(selectSeztec, parametriTec);
-                  selectSeztec = selectDocumenti + " and seztec = 2";
-                  Long conteggiosez2 = (Long) sqlManager.getObject(selectSeztec, parametriTec);
-                  if (conteggiosez1 == null || new Long(0).equals(conteggiosez1)) {
-                    controlloSuperato = "NO";
-                    messaggio +=  "<br>Non è stato inserito nessun documento richiesto ai concorrenti per la sezione qualitativa della busta tecnica.";
-                  }
-                  if (conteggiosez2 == null || new Long(0).equals(conteggiosez2)) {
-                    controlloSuperato = "NO";
-                    messaggio +=  "<br>Non è stato inserito nessun documento richiesto ai concorrenti per la sezione quantitativa della busta tecnica.";
-                  }
+                String selectSeztec = selectDocumenti + " and seztec is null";
+                Long conteggioDoc = (Long) sqlManager.getObject(selectSeztec, parametriTec);
+                if (conteggioDoc != null && conteggioDoc.longValue() > 0) {
+                  controlloSuperato = "NO";
+                  messaggio +=  "<br>Non è stata specificata la sezione, qualitativa o quantitativa, in tutti i documenti richiesti ai concorrenti per la busta tecnica.";
                 } else {
-                  //Controllo su documenti definiti a livello di gara
-                  selectSeztec = selectDocumenti + " and seztec = 1 and ngara is null";
-                  Long conteggiosez1 = (Long) sqlManager.getObject(selectSeztec, parametriTec);
-                  if (conteggiosez1 == null || new Long(0).equals(conteggiosez1)) {
-                    selectSeztec = selectDocumenti + " and seztec = 1 and ngara in (select g1.ngara from gare1 g1 where g1.ngara = ngara and sezionitec='1')";
-                    conteggiosez1 = (Long) sqlManager.getObject(selectSeztec, parametriTec);
+                  //Controllo che ci sia almeno un documento con SEZTEC = 1 e almeno uno con SEZTEC =2
+                  if (lottoUnico) {
+                    selectSeztec = selectDocumenti + " and seztec = 1";
+                    Long conteggiosez1 = (Long) sqlManager.getObject(selectSeztec, parametriTec);
+                    selectSeztec = selectDocumenti + " and seztec = 2";
+                    Long conteggiosez2 = (Long) sqlManager.getObject(selectSeztec, parametriTec);
                     if (conteggiosez1 == null || new Long(0).equals(conteggiosez1)) {
                       controlloSuperato = "NO";
                       messaggio +=  "<br>Non è stato inserito nessun documento richiesto ai concorrenti per la sezione qualitativa della busta tecnica.";
                     }
-                  }
-                  selectSeztec = selectDocumenti + " and seztec = 2 and ngara is null";
-                  Long conteggiosez2 = (Long) sqlManager.getObject(selectSeztec, parametriTec);
-                  if (conteggiosez2 == null || new Long(0).equals(conteggiosez2)) {
-                    selectSeztec = selectDocumenti + " and seztec = 2 and ngara in (select g1.ngara from gare1 g1 where g1.ngara = ngara and sezionitec='1')";
-                    conteggiosez2 = (Long) sqlManager.getObject(selectSeztec, parametriTec);
                     if (conteggiosez2 == null || new Long(0).equals(conteggiosez2)) {
                       controlloSuperato = "NO";
                       messaggio +=  "<br>Non è stato inserito nessun documento richiesto ai concorrenti per la sezione quantitativa della busta tecnica.";
                     }
+                  } else {
+                    //Controllo su documenti definiti a livello di gara
+                    selectSeztec = selectDocumenti + " and seztec = 1 and ngara is null";
+                    Long conteggiosez1 = (Long) sqlManager.getObject(selectSeztec, parametriTec);
+                    if (conteggiosez1 == null || new Long(0).equals(conteggiosez1)) {
+                      selectSeztec = selectDocumenti + " and seztec = 1 and ngara in (select g1.ngara from gare1 g1 where g1.ngara = ngara and sezionitec='1')";
+                      conteggiosez1 = (Long) sqlManager.getObject(selectSeztec, parametriTec);
+                      if (conteggiosez1 == null || new Long(0).equals(conteggiosez1)) {
+                        controlloSuperato = "NO";
+                        messaggio +=  "<br>Non è stato inserito nessun documento richiesto ai concorrenti per la sezione qualitativa della busta tecnica.";
+                      }
+                    }
+                    selectSeztec = selectDocumenti + " and seztec = 2 and ngara is null";
+                    Long conteggiosez2 = (Long) sqlManager.getObject(selectSeztec, parametriTec);
+                    if (conteggiosez2 == null || new Long(0).equals(conteggiosez2)) {
+                      selectSeztec = selectDocumenti + " and seztec = 2 and ngara in (select g1.ngara from gare1 g1 where g1.ngara = ngara and sezionitec='1')";
+                      conteggiosez2 = (Long) sqlManager.getObject(selectSeztec, parametriTec);
+                      if (conteggiosez2 == null || new Long(0).equals(conteggiosez2)) {
+                        controlloSuperato = "NO";
+                        messaggio +=  "<br>Non è stato inserito nessun documento richiesto ai concorrenti per la sezione quantitativa della busta tecnica.";
+                      }
+                    }
                   }
                 }
               }
+            }else {
+              //Controlli qfrom
+              String chiaveQform = ngara;
+              Long conteggioQuestionari=null;
+              if(!lottoUnico)
+                chiaveQform =codgar;
+
+              String selectBuste = "select count(*) from qform where entita='GARE' and key1=? and busta=? and (stato = 1 or stato = 5)";
+
+              //Controlli sulla presenza del qform per la busta amministrativa
+              if(!"1".equals(nobustamm)) {
+                conteggioQuestionari = (Long)this.sqlManager.getObject(selectBuste, new Object[] {chiaveQform, new Long(1)});
+                if(new Long(0).equals(conteggioQuestionari) || conteggioQuestionari == null) {
+                  controlloSuperato = "NO";
+                  messaggio +=  "<br>Non è stato associato un q-form nei documenti richiesti ai concorrenti per la busta amministrativa.";
+                }
+              }
+
+
+              //Controlli sulla presenza del qform per la busta tecnica
+              if(new Long(6).equals(modlic) || "1".equals(valtec)){
+                if(new Long(3).equals(genere)) {
+                  //Si devono controllare i qform dei lotti
+                  String esitoControllo[] = this.controlloQformLotti(chiaveQform, new Long(2));
+                  if("NO".equals(esitoControllo[0]) ) {
+                    controlloSuperato = "NO";
+                    messaggio += esitoControllo[1];
+                  }
+                }else {
+                  conteggioQuestionari = (Long)this.sqlManager.getObject(selectBuste, new Object[] {chiaveQform, new Long(2)});
+                  if(new Long(0).equals(conteggioQuestionari) || conteggioQuestionari == null) {
+                    controlloSuperato = "NO";
+                    messaggio +=  "<br>Non è stato associato un q-form nei documenti richiesti ai concorrenti per la busta tecnica.";
+                  }
+                }
+              }
+
+              //Controlli sulla presenza del qform per la busta economica
+              if(!costofisso){
+                if(new Long(3).equals(genere)) {
+                  //Si devono controllare i qform dei lotti
+                  String esitoControllo[] = this.controlloQformLotti(chiaveQform, new Long(3));
+                  if("NO".equals(esitoControllo[0]) ) {
+                    controlloSuperato = "NO";
+                    messaggio += esitoControllo[1];
+                  }
+                }else {
+                  conteggioQuestionari = (Long)this.sqlManager.getObject(selectBuste, new Object[] {chiaveQform, new Long(3)});
+                  if(new Long(0).equals(conteggioQuestionari) || conteggioQuestionari == null) {
+                    controlloSuperato = "NO";
+                    messaggio +=  "<br>Non è stato associato un q-form nei documenti richiesti ai concorrenti per la busta economica.";
+                  }
+                }
+              }
+
             }
+          }else if(formularioCompletoAbilitato && "1".equals(gartel) && ("1".equals(bando) && (iterga.longValue()==2) || iterga.longValue()==4 || iterga.longValue()==7)){
+            //Controlli sulla presenza del qform per la busta di prequalifica
+            String chiaveQform = ngara;
+            Long conteggioQuestionari=null;
+            if(!lottoUnico)
+              chiaveQform =codgar;
+
+            conteggioQuestionari = (Long)this.sqlManager.getObject("select count(*) from qform where entita='GARE' and key1=? and busta=? and (stato = 1 or stato = 5)", new Object[] {chiaveQform, new Long(4)});
+            if(new Long(0).equals(conteggioQuestionari) || conteggioQuestionari == null) {
+              controlloSuperato = "NO";
+              messaggio +=  "<br>Non è stato associato un q-form nei documenti richiesti ai concorrenti per la busta di prequalifica.";
+            }
+
           }
 
           //Controllo sull'esistenza di ditte in gara con INVGAR=1
@@ -1381,12 +1674,13 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
               if(valoreWSDM!=null && "1".equals(valoreWSDM))
                 delegaInvioMailDocumentaleAbilitata=true;
 
-              if(delegaInvioMailDocumentaleAbilitata && ("PALEO".equals(tipoWSDM) || "JIRIDE".equals(tipoWSDM) || "ENGINEERING".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM)))
+              if(delegaInvioMailDocumentaleAbilitata && ("PALEO".equals(tipoWSDM) || "JIRIDE".equals(tipoWSDM) || "ENGINEERING".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM)
+                  || "SMAT".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM)))
                 delegaInvioDocumentale= true;
             }
             HttpSession session = page.getSession();
             String uffint = (String) session.getAttribute("uffint");
-            HashMap gestioneDestinatari = this.gestioneDestinatari(ngara, codgar, genere, pgManager, delegaInvioDocumentale);
+            HashMap gestioneDestinatari = this.gestioneDestinatari(ngara, codgar, genere, pgManager, delegaInvioDocumentale, false);
             if("NO".equals(gestioneDestinatari.get("controlloSuperato"))){
               controlloSuperato = "NO";
               messaggio += (String)gestioneDestinatari.get("messaggio");
@@ -1427,6 +1721,23 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
               messaggio += (String)controlloDimensioneAllegati.get("messaggio");
             }
           }
+          
+          //Integrazione programmazione: nel caso di lotto di gara e di gara ad offerta unica si controlla anche il collegamento delle RdA
+          if (gentip != null && (gentip.longValue() == 1 || gentip.longValue() == 3) && gestioneProgrammazioneManager.isAttivaIntegrazioneProgrammazione()){
+            select="select numrda from garerda where codgar = ? and ngara is null and numrda not in (select numrda from garerda where codgar = ? and ngara is not null)";
+
+            boolean rdaCollegate = true;
+            List<?> listaRdA = sqlManager.getListVector(select, new Object[]{codgar,codgar});
+            if(listaRdA!=null && listaRdA.size()>0){
+              for (int i = 0; i < listaRdA.size(); i++) {
+                //String numrda = (String) SqlManager.getValueFromVectorParam(listaRdA.get(i), 0).getValue();
+                controlloSuperato = "NO";
+                rdaCollegate=false;
+                }
+              if(!rdaCollegate)
+                messaggio += "<br>Ci sono RdA/RdI associate alla gara che non sono state collegate ad alcun lotto.";
+              }
+            }
 
 
        }
@@ -1500,7 +1811,6 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
           //Controlli non bloccanti
           messaggio="";
 
-
           if("0".equals(bando)){
             if( gentip!= null && (gentip.longValue()==3 || gentip.longValue() == 1)){
               Long lottiNonAggiudicati = (Long)sqlManager.getObject("select count(codgar1) from gare where codgar1=? and ngara!=codgar1 and ditta is null and esineg is null", new Object[]{codgar});
@@ -1517,20 +1827,136 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
               }
             }
           }
+
+          if("1".equals(gartel) && ("1".equals(bando) || "3".equals(bando)  || "0".equals(bando))){
+            //Si controlla l'esistenza delle occorrenze di qform se il modulo risulta attivo
+
+            if(moduloQFORMAttivo) {
+              String esito[] = this.controlloQform(ngara, codgar, bando, iterga, formularioCompletoAbilitato, nobustamm, modlic, valtec, costofisso, genere);
+              if(esito!=null) {
+                controlloSuperato = esito[0];
+                messaggio += esito[1];
+              }
+            }
+
+          }
+
           if("WARNING".equals(controlloSuperato)){
             messaggio = "<br><br><font color='#0000FF'><b>ATTENZIONE:</b>" + messaggio + "</font>";
             page.setAttribute("controlloSuperato", controlloSuperato, PageContext.REQUEST_SCOPE);
             page.setAttribute("msg", messaggio, PageContext.REQUEST_SCOPE);
           }
 
-        }catch (SQLException e) {
+        }catch (Exception e) {
           throw new JspException("Errore durante la lettura del campo DITTA ", e);
         }
       }
       page.setAttribute("visualizzaDettaglioComunicazione", new Boolean(visualizzaDettaglioComunicazione), PageContext.REQUEST_SCOPE);
       page.setAttribute("iterga", iterga, PageContext.REQUEST_SCOPE);
       page.setAttribute("soloPunteggiTec", costofisso, PageContext.REQUEST_SCOPE);
-    }
+      page.setAttribute("isRicercaMercatoNegoziata", isRicercaMercatoNegoziata ,PageContext.REQUEST_SCOPE);
+    }else if("5".equals(bando)) {
+      //if("5".equals(bando) && visualizzaDettaglioComunicazione && "1".equals(gartel)){
+      MsgConferma="Confermi l'invio dell'invito alle ditte inserite in gara successivamente alla pubblicazione in area riservata?"
+          + "<br>A tali ditte viene inviata una comunicazione secondo i dettagli riportati di seguito.";
+
+      page.setAttribute("MsgConferma", MsgConferma, PageContext.REQUEST_SCOPE);
+
+      messaggio = "<b>Non è possibile procedere con l'invio dell'invito alle ditte inserite in gara successivamente alla pubblicazione in area riservata.</b><br>";
+
+      try {
+
+        String chiaveTmp = ngara;
+        if (ngara==null)
+          chiaveTmp = codgar;
+        String esitoControllo [] = mepaManager.controlloDataConDataAttuale(chiaveTmp, "DTEOFF", "OTEOFF");
+        if(esitoControllo[0]=="true"){
+          messaggio += "<br>Sono superati i termini di presentazione dell'offerta ";
+          page.setAttribute("controlloSuperato", "NO", PageContext.REQUEST_SCOPE);
+          page.setAttribute("msg", messaggio, PageContext.REQUEST_SCOPE);
+          return;
+        }
+        boolean delegaInvioMailDocumentaleAbilitata = false;
+
+        boolean delegaInvioDocumentale = false;
+        if("1".equals(integrazioneWSDM)){
+
+          String tipoWSDM=null;
+
+
+          WSDMConfigurazioneOutType configurazione = gestioneWSDMManager.wsdmConfigurazioneLeggi("FASCICOLOPROTOCOLLO",idconfi);
+          if (configurazione.isEsito()){
+            tipoWSDM = configurazione.getRemotewsdm();
+            page.setAttribute("tipoWSDM", tipoWSDM, PageContext.REQUEST_SCOPE);
+          }
+
+
+          valoreWSDM = ConfigManager.getValore("pg.wsdm.invioMailPec."+idconfi);
+          if(valoreWSDM!=null && "1".equals(valoreWSDM))
+            delegaInvioMailDocumentaleAbilitata=true;
+
+          if(delegaInvioMailDocumentaleAbilitata && ("PALEO".equals(tipoWSDM) || "JIRIDE".equals(tipoWSDM) || "ENGINEERING".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM)
+              || "SMAT".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM)))
+            delegaInvioDocumentale= true;
+        }
+        HttpSession session = page.getSession();
+        String uffint = (String) session.getAttribute("uffint");
+        HashMap gestioneDestinatari = this.gestioneDestinatari(ngara, codgar, genere, pgManager, delegaInvioDocumentale, true);
+        if("NO".equals(gestioneDestinatari.get("controlloSuperato"))){
+          controlloSuperato = "NO";
+          messaggio += (String)gestioneDestinatari.get("messaggio");
+        }
+
+        List listaDestinatari = (List)gestioneDestinatari.get("listaDestinatari");
+        if(listaDestinatari==null || (listaDestinatari!=null && listaDestinatari.size()==0)) {
+          controlloSuperato = "NO";
+          messaggio += "<br>Non vi sono ditte inserite a gara in corso.";
+        }
+        page.setAttribute("listaDestinatari", listaDestinatari, PageContext.REQUEST_SCOPE);
+
+        //Caricamento dei documenti di gruppo=6
+        List listaDocumenti = this.getListaDocumenti(genere, ngara, codgar, new Long(6));
+        if(listaDocumenti!=null && listaDocumenti.size()>0){
+          page.setAttribute("listaDocumenti", listaDocumenti, PageContext.REQUEST_SCOPE);
+        }
+
+        //Si controlla che la dimensione totale dei documenti non superi il limite consentito
+
+        String idcfg = null;
+        cenint = null;
+        //Valorizzazione di IDCFG
+        try {
+          if(ngara==null || "".equals(ngara) || (genere!=null && genere.longValue()==3)){
+            cenint = (String)sqlManager.getObject("select t.cenint from torn t where t.codgar = ?", new Object[]{codgar});
+          }else{
+            cenint = (String)sqlManager.getObject("select t.cenint from gare g,torn t where g.codgar1 = t.codgar and ngara = ?", new Object[]{ngara});
+          }
+          cenint = UtilityStringhe.convertiNullInStringaVuota(cenint);
+          if(!"".equals(cenint)){
+            idcfg = cenint;
+          }else{
+            idcfg = uffint;
+          }
+        } catch (SQLException sqle) {
+          throw new GestoreException("Errore nella lettura di TORN.CENINT",null, sqle);
+        }
+
+        HashMap controlloDimensioneAllegati = this.controlloDimensioneAllegati(listaDocumenti, idcfg, fileAllegatoManager);
+        if("NO".equals(controlloDimensioneAllegati.get("controlloSuperato"))){
+          controlloSuperato = "NO";
+          messaggio += (String)controlloDimensioneAllegati.get("messaggio");
+        }
+      }catch (Exception sqle) {
+        throw new JspException("Errore nei controlli preliminari dell'invio invito a gara in corso", sqle);
+      }
+        page.setAttribute("visualizzaDettaglioComunicazione", new Boolean(visualizzaDettaglioComunicazione), PageContext.REQUEST_SCOPE);
+        page.setAttribute("iterga", iterga, PageContext.REQUEST_SCOPE);
+        if("NO".equals(controlloSuperato)){
+          page.setAttribute("controlloSuperato", controlloSuperato, PageContext.REQUEST_SCOPE);
+          page.setAttribute("msg", messaggio, PageContext.REQUEST_SCOPE);
+        }
+      }
+    //}
   }
 
   /**
@@ -1560,9 +1986,26 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
    * @return boolean true se una ditta non ha ne mail ne pec valorizzati
    * @throws GestoreException,SQLException
    */
-  private HashMap gestioneSoggDest(String dittao ,String codComponente, String nomimo , String nomeComposto, String codfisc, String indimp,
-      String nciimp, String locimp, String codcit, String piva, boolean saltareControlloPivaNulla,Long nazimp, String proimp, String capimp,
+  private HashMap gestioneSoggDest(Soggetto soggetto, boolean saltareControlloPivaNulla,
       PgManager pgManager , HashMap hm, List listaDestinatari, boolean abilitazioneInvioMailDocumentale ) throws GestoreException, SQLException {
+
+    String dittao = soggetto.getDittao();
+    String codComponente = soggetto.getCodComponente();
+    String nomimo =soggetto.getNomimo();
+    String nomeComposto = soggetto.getNomeComposto();
+    String codfisc = soggetto.getCodfisc();
+    String indimp = soggetto.getIndimp();
+    String nciimp = soggetto.getNciimp();
+    String locimp = soggetto.getLocimp();
+    String codcit = soggetto.getCodcit();
+    String piva = soggetto.getPiva();
+    Long nazimp = soggetto.getNazimp();
+    String proimp = soggetto.getProimp();
+    String capimp = soggetto.getCapimp();
+    String isgruppoiva = soggetto.getIsgruppoiva();
+
+    if("1".equals(isgruppoiva))
+      saltareControlloPivaNulla=false;
 
     HashMap esitoControlli = new HashMap();
     String style = "<li style=\"list-style-type: disc;margin-left: 30px;\" >";
@@ -1747,17 +2190,19 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
         }
 
         //Controllo unicità partita iva
-        Long conteggioPiva = (Long)this.sqlManager.getObject("select count(codimp) from impr where pivimp=? and codimp<>?", new Object[]{piva,chiaveImpr});
-        if(conteggioPiva!=null && conteggioPiva.longValue()>0){
-          pivaUnica=false;
-          bufPivaDuplicata.append(style);
-          bufPivaDuplicata.append(dittao);
-          bufPivaDuplicata.append(" - ");
-          if(mandataria)
-            bufPivaDuplicata.append(nomeComposto);
-          else
-            bufPivaDuplicata.append(nomimo);
-          bufPivaDuplicata.append("</li>");
+        if(!"1".equals(isgruppoiva)) {
+          Long conteggioPiva = (Long)this.sqlManager.getObject("select count(codimp) from impr where pivimp=? and codimp<>?", new Object[]{piva,chiaveImpr});
+          if(conteggioPiva!=null && conteggioPiva.longValue()>0){
+            pivaUnica=false;
+            bufPivaDuplicata.append(style);
+            bufPivaDuplicata.append(dittao);
+            bufPivaDuplicata.append(" - ");
+            if(mandataria)
+              bufPivaDuplicata.append(nomeComposto);
+            else
+              bufPivaDuplicata.append(nomimo);
+            bufPivaDuplicata.append("</li>");
+          }
         }
       }
 
@@ -1965,7 +2410,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
           }
 
           //Si deve fare il controllo per i soli criteri economici che non siano tutti di tipo 'altri elementi' (ISNOPRZ.GOEV= '1'), solo per LIVPAR.GOEV = 1,3
-          if (!pgManagerEst1.esistonoCriteriEconomiciPrezzo(codiceLotto)) {
+          if(!"1".equals(costofisso) && !pgManagerEst1.esistonoCriteriEconomiciPrezzo(codiceLotto)) {
             if (genere != null && genere.longValue() == 3) {
               msgRitorno += "<br>Non è stato specificato nessun criterio di valutazione economico per il lotto " + codiceLotto + " che, ai fini del calcolo soglia anomalia, sia relativo al prezzo.";
             } else {
@@ -2070,7 +2515,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
 
         //if(importoGaraObj!=null)
         //  importoGara= pgManagerEst1.getImportoDaObject(importoGaraObj);
-        if(UtilityNumeri.confrontaDouble(importoSoggRibasso.doubleValue(), importoGara.doubleValue(), 2) != 0){
+        if(importoGara == null || UtilityNumeri.confrontaDouble(importoSoggRibasso.doubleValue(), importoGara.doubleValue(), 2) != 0){
           controlloSuperato = "NO";
           if(lotto)
             msg +=  "<br>L'importo totale soggetto a ribasso derivante dai prezzi unitari delle lavorazioni e forniture del lotto " + gara + " non è pari a quello posto a base di gara.";
@@ -2106,7 +2551,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
     return listaDocumenti;
   }
 
-  public HashMap gestioneDestinatari(String ngara, String codgar, Long genere, PgManager pgManager, boolean delegaInvioDocumentale) throws SQLException, GestoreException{
+  public HashMap gestioneDestinatari(String ngara, String codgar, Long genere, PgManager pgManager, boolean delegaInvioDocumentale, boolean garaPubblicata) throws SQLException, GestoreException{
 
     HashMap risultato =  new HashMap();
     String controlloSuperato ="SI";
@@ -2114,8 +2559,12 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
 
     if( genere!= null&& genere.longValue()==3)
       ngara=codgar;
-    String select="select dittao,nomimp,tipimp,cfimp,indimp,nciimp,locimp,codcit,pivimp,nazimp,proimp,capimp from ditg,impr where codgar5=? and ngara5=? and dittao = codimp and (ammgar=? or ammgar is null)";
-    List listaDittao = sqlManager.getListVector(select, new Object[]{codgar,ngara,"1"});
+    String select="select dittao,nomimp,tipimp,cfimp,indimp,nciimp,locimp,codcit,pivimp,nazimp,proimp,capimp,isgruppoiva from ditg,impr where codgar5=? and ngara5=? and dittao = codimp ";
+    if(!garaPubblicata)
+      select += "and (ammgar='1' or ammgar is null)";
+    else
+      select += "and ammgar='2' and acquisizione=9";
+    List listaDittao = sqlManager.getListVector(select, new Object[]{codgar,ngara});
     List listaDestinatari = new Vector();
     if(listaDittao!=null && listaDittao.size()>0){
       HashMap hashMapBufferMessaggi =  new HashMap();
@@ -2164,6 +2613,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
       Long nazimp = null;
       String proimp = null;
       String capimp=null;
+      String isgruppoiva=null;
 
       boolean controlloPresenzaMailSupertato=true;
       boolean ragioneSocialePresente=true;
@@ -2177,6 +2627,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
       boolean controlloMailUnicaSuperato=true;
       boolean controlloPecUnicaSuperato=true;
       boolean saltareControlloPivaNulla = false;
+      Soggetto soggetto=null;
 
       boolean bt=false;
       for(int i=0;i<listaDittao.size();i++){
@@ -2192,6 +2643,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
         nazimp = SqlManager.getValueFromVectorParam(listaDittao.get(i), 9).longValue();
         proimp = SqlManager.getValueFromVectorParam(listaDittao.get(i), 10).stringValue();
         capimp = SqlManager.getValueFromVectorParam(listaDittao.get(i), 11).stringValue();
+        isgruppoiva = SqlManager.getValueFromVectorParam(listaDittao.get(i), 12).stringValue();
 
         if(tipologiaImpresa==null)
           tipologiaImpresa= new Long(0);
@@ -2203,7 +2655,7 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
         //if ("3".equals(tipologiaImpresa) || "10".equals(tipologiaImpresa)) {
         if (tipologiaImpresa.longValue()==3 || tipologiaImpresa.longValue() == 10) {
           //int numMandatarie=0;
-          String selectComponenti= "select CODDIC, nomimp, tipimp, CFIMP, indimp,nciimp,locimp,codcit,pivimp,nazimp,proimp,capimp  from RAGIMP,IMPR where CODIME9 = ? and CODDIC=CODIMP and IMPMAN='1'";
+          String selectComponenti= "select CODDIC, nomimp, tipimp, CFIMP, indimp,nciimp,locimp,codcit,pivimp,nazimp,proimp,capimp,isgruppoiva  from RAGIMP,IMPR where CODIME9 = ? and CODDIC=CODIMP and IMPMAN='1'";
           List listaComponenti = sqlManager.getListVector(selectComponenti,new Object[]{ dittao });
           //Si deve controllare la ragione sociale anche del raggruppamento
           if(nomimp==null || "".equals(nomimp)){
@@ -2225,12 +2677,28 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
               nazimp = SqlManager.getValueFromVectorParam(listaComponenti.get(k), 9).longValue();
               proimp = SqlManager.getValueFromVectorParam(listaComponenti.get(k), 10).stringValue();
               capimp = SqlManager.getValueFromVectorParam(listaComponenti.get(k), 11).stringValue();
+              isgruppoiva = SqlManager.getValueFromVectorParam(listaComponenti.get(k), 12).stringValue();
 
               saltareControlloPivaNulla=this.saltareControlloObbligPiva(tipimpMan, descTabellatoTipo1, descTabellatoTipo2);
 
               String nomeComposto = nomimp+" - "+nomeComponente+" - Mandataria";
               //numMandatarie += 1;
-              hashMapEsitoControlli=gestioneSoggDest(dittao ,codComponente,nomeComponente ,nomeComposto, codfisc, indimp, nciimp, locimp, codcit, piva, saltareControlloPivaNulla, nazimp, proimp, capimp, pgManager ,hashMapBufferMessaggi, listaDestinatari,delegaInvioDocumentale  );
+              soggetto = new Soggetto();
+              soggetto.setDittao(dittao);
+              soggetto.setCodComponente(codComponente);
+              soggetto.setNomimo(nomeComponente);
+              soggetto.setNomeComposto(nomeComposto);
+              soggetto.setCodfisc(codfisc);
+              soggetto.setIndimp(indimp);
+              soggetto.setNciimp(nciimp);
+              soggetto.setLocimp(locimp);
+              soggetto.setCodcit(codcit);
+              soggetto.setPiva(piva);
+              soggetto.setNazimp(nazimp);
+              soggetto.setProimp(proimp);
+              soggetto.setCapimp(capimp);
+              soggetto.setIsgruppoiva(isgruppoiva);
+              hashMapEsitoControlli=gestioneSoggDest(soggetto, saltareControlloPivaNulla, pgManager ,hashMapBufferMessaggi, listaDestinatari,delegaInvioDocumentale  );
               bt=((Boolean)hashMapEsitoControlli.get("mailValorizzata")).booleanValue();
               if(!bt)
                 controlloPresenzaMailSupertato=false;
@@ -2282,11 +2750,27 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
             controlloPresenzaMandatarie=false;
           }
         }else{
-          saltareControlloPivaNulla = this.saltareControlloObbligPiva(tipologiaImpresa, descTabellatoTipo1, descTabellatoTipo2);
+           saltareControlloPivaNulla = this.saltareControlloObbligPiva(tipologiaImpresa, descTabellatoTipo1, descTabellatoTipo2);
 
           //per le ditte singole
           //if( gestioneSoggDest(dittao ,"" ,nomimp ,"", "", codfisc, indimp, nciimp, locimp, codcit, piva, saltareControlloPivaNulla, nazimp, pgManager ,hashMapBufferMessaggi, listaDestinatari, delegaInvioDocumentale  ))
-          hashMapEsitoControlli=gestioneSoggDest(dittao ,"" ,nomimp ,"", codfisc, indimp, nciimp, locimp, codcit, piva, saltareControlloPivaNulla, nazimp, proimp, capimp, pgManager ,hashMapBufferMessaggi, listaDestinatari, delegaInvioDocumentale );
+          soggetto = new Soggetto();
+          soggetto.setDittao(dittao);
+          soggetto.setCodComponente("");
+          soggetto.setNomimo(nomimp);
+          soggetto.setNomeComposto("");
+          soggetto.setCodfisc(codfisc);
+          soggetto.setIndimp(indimp);
+          soggetto.setNciimp(nciimp);
+          soggetto.setLocimp(locimp);
+          soggetto.setCodcit(codcit);
+          soggetto.setPiva(piva);
+          soggetto.setNazimp(nazimp);
+          soggetto.setProimp(proimp);
+          soggetto.setCapimp(capimp);
+          soggetto.setIsgruppoiva(isgruppoiva);
+
+          hashMapEsitoControlli=gestioneSoggDest(soggetto, saltareControlloPivaNulla,  pgManager ,hashMapBufferMessaggi, listaDestinatari, delegaInvioDocumentale );
           bt=((Boolean)hashMapEsitoControlli.get("mailValorizzata")).booleanValue();
           if(!bt)
             controlloPresenzaMailSupertato=false;
@@ -2643,5 +3127,148 @@ public class GestorePubblicaSuPortale extends AbstractGestorePreload {
       response = " and (TIPOLOGIA is null or TIPOLOGIA in (" + tipologie + "))";
     }
     return response;
+  }
+
+  /**
+   * Viene eseguito il controllo sulla modifica del modello associato al qform
+   * @param ngara
+   * @param codgar
+   * @param bando
+   * @param iterga
+   * @param controlloCompleto
+   * @param nobustamm
+   * @param modlic
+   * @param valtec
+   * @param costofisso
+   * @param genere
+   * @return String[]
+   * @throws SQLException
+   * @throws GestoreException
+   */
+  private String[] controlloQform(String ngara, String codgar, String bando, Long iterga, boolean controlloCompleto, String nobustamm, Long modlic, String valtec, boolean costofisso, Long genere) throws SQLException, GestoreException {
+    String ret[] =  new String[]{"",""};
+    String chiaveQform = ngara;
+    if(ngara==null || "".equals(ngara))
+      chiaveQform=codgar;
+    String dbDultaggString = sqlManager.getDBFunction("DATETIMETOSTRING",
+        new String[] { "l.dultagg" });
+    String dbdultaggmodString = sqlManager.getDBFunction("DATETIMETOSTRING",
+        new String[] { "q.dultaggmod" });
+    //String selectQform="select " + dbDultaggString + ", " + dbdultaggmodString + ", q.key1 from qformlib l, qform q where q.entita='GARE' and q.key1=? and q.busta=? and q.idmodello=l.id  and q.stato=1";
+    Long bustaVet[]=null;
+    if("3".equals(bando) || (!"3".equals(bando) && !new Long(2).equals(iterga) && !new Long(4).equals(iterga) && !new Long(7).equals(iterga))) {
+      if(controlloCompleto) {
+        boolean bustaAmm= true;
+        boolean bustaTec= true;
+        boolean bustaEco= true;
+        int dim=3;
+        if(costofisso) {
+          bustaEco= false;
+          dim--;
+        }
+        if("1".equals(nobustamm)) {
+          bustaAmm = false;
+          dim--;
+        }
+        if(!new Long(6).equals(modlic) && !"1".equals(valtec)) {
+          bustaTec = false;
+          dim--;
+        }
+        bustaVet = new Long[dim];
+
+        if(bustaAmm)
+          bustaVet[0]=new Long(1);
+        if(bustaTec) {
+          int indice=0;
+          if(bustaAmm)
+            indice=1;
+          bustaVet[indice]=new Long(2);
+        }
+        if(bustaEco) {
+          int indice=0;
+          if(bustaAmm && bustaTec)
+            indice = 2;
+          else if(bustaAmm || bustaTec)
+            indice = 1;
+          bustaVet[indice]=new Long(3);
+        }
+        //bustaVet = new Long[] {new Long(1), new Long(2), new Long(3)};
+      }else
+        bustaVet = new Long[] {new Long(1)};
+
+    }else {
+      bustaVet = new Long[] {new Long(4)};
+
+    }
+    Long busta= null;
+    String descBusta = "";
+    for(int i=0; i < bustaVet.length;i++) {
+      busta = bustaVet[i];
+      List<?> datiQform= null;
+      if(new Long(3).equals(genere) && (new Long(2).equals(busta) || new Long(3).equals(busta))) {
+        //qform associati ai lotti
+        String selectQform="select " + dbDultaggString + ", " + dbdultaggmodString + ", q.key1 from qformlib l, qform q where q.entita='GARE' and q.key1 like ? and q.busta=? and q.idmodello=l.id  and q.stato=1";
+        selectQform += "order by q.key1";
+        datiQform= this.sqlManager.getListVector(selectQform, new Object[] {codgar + "%", busta});
+      }else {
+        String selectQform="select " + dbDultaggString + ", " + dbdultaggmodString + ", q.key1 from qformlib l, qform q where q.entita='GARE' and q.key1=? and q.busta=? and q.idmodello=l.id  and q.stato=1";
+        datiQform= this.sqlManager.getListVector(selectQform, new Object[] {chiaveQform, busta});
+      }
+      if(datiQform!=null && datiQform.size()>0) {
+        for(int j=0; j < datiQform.size(); j++) {
+          String dultaggStringValue = SqlManager.getValueFromVectorParam(datiQform.get(j), 0).getStringValue();
+          String dultaggmodStringValue = SqlManager.getValueFromVectorParam(datiQform.get(j), 1).getStringValue();
+          String lotto= "";
+          if(dultaggStringValue!=null && !"".equals(dultaggStringValue) && dultaggmodStringValue!=null && !"".equals(dultaggmodStringValue)) {
+            Date dultagg = UtilityDate.convertiData(dultaggStringValue, UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS);
+            Date dultaggmod = UtilityDate.convertiData(dultaggmodStringValue, UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS);
+            if(dultagg.after(dultaggmod)){
+              descBusta = tabellatiManager.getDescrTabellato("A1013", busta.toString());
+              String dultaggString = UtilityDate.convertiData(new Date(dultagg.getTime()), UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS);
+              if(new Long(3).equals(genere) && (new Long(2).equals(busta) || new Long(3).equals(busta))) {
+                lotto = SqlManager.getValueFromVectorParam(datiQform.get(j), 2).getStringValue();
+                lotto = "del lotto " + lotto + " ";
+              }
+              ret[0] = "WARNING";
+              ret[1] += "<br>Il modello da  cui deriva il Q-form associato alla busta '" + descBusta + "' " + lotto + "è stato aggiornato successivamente alla creazione del Q-form " + dultaggString;
+            }
+          }
+        }
+      }
+    }
+    return ret;
+  }
+
+  /**
+   * Si verifica se esiste il qform per tutti i lotti della gara per la busta specificata
+   * Viene restituito un vettore, che in posizione 0 ha "SI" o "No" a seconda che l'esito si positivo o meno.
+   * In posizione 1 c'è l'eventuale messaggio
+   * @param chiave
+   * @param busta
+   * @return String[]
+   * @throws SQLException
+   */
+  private String[] controlloQformLotti(String chiave, Long busta) throws SQLException {
+    String controlloSuperato = "SI";
+    String messaggio = "";
+    String bustaStringa = "economica";
+    if(new Long(2).equals(busta))
+      bustaStringa = "tecnica";
+    String selectBuste = "select ngara from gare where codgar1=? and ngara!=codgar1 and not exists(select id from qform where entita='GARE' and key1=ngara and busta=? and (stato = 1 or stato = 5))";
+    if(new Long(2).equals(busta))
+      selectBuste += " and (modlicg=6 or not exists(select gare1.valtec from gare1 where  gare1.ngara=gare.ngara))";
+    else
+      selectBuste += " and not exists(select gare1.costofisso from gare1 where gare1.ngara=gare.ngara and gare1.costofisso='1')";
+    selectBuste += " order by ngara";
+    List<?> LottiSenzaQform = this.sqlManager.getListVector(selectBuste, new Object[] {chiave, busta});
+    if(LottiSenzaQform!=null && LottiSenzaQform.size()>0) {
+      controlloSuperato = "NO";
+      String lotto = null;
+      for(int i=0;i<LottiSenzaQform.size();i++) {
+        lotto = SqlManager.getValueFromVectorParam(LottiSenzaQform.get(i), 0).getStringValue();
+        messaggio +=  "<br>Non è stato associato un q-form nei documenti richiesti ai concorrenti per la busta " + bustaStringa + " del lotto " + lotto + ".";
+      }
+    }
+    return new String[]{controlloSuperato,messaggio};
   }
 }

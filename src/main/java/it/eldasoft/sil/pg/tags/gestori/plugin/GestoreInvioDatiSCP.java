@@ -10,6 +10,15 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.plugin;
 
+import java.sql.Date;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.PageContext;
+
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.tags.BodyTagSupportGene;
@@ -20,15 +29,6 @@ import it.eldasoft.sil.pg.bl.ScpManager;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityFiscali;
-
-import java.sql.Date;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 /**
  * Gestore che effettua i controlli preliminari e popola la popup per
@@ -644,24 +644,29 @@ public class GestoreInvioDatiSCP extends AbstractGestorePreload {
         //Controlli non bloccanti
         String messaggio="";
 
+        ArrayList<String> errori= null;
         //CUPPRG
-        ArrayList<String> errori= this.inviaDatiRichiestaCigManager.getControlloCUPCUI(codiceGara, ngara, genere, profilo, "CUPPRG");
-        if(errori!=null && errori.size()>0){
-          controlloSuperato = "WARNING";
-          Iterator iter =errori.iterator();
-          while (iter.hasNext())
-            messaggio+="<li>" + iter.next();
+        if(!"11".equals(genere) && !"10".equals(genere) && !"20".equals(genere)) {
+          errori= this.inviaDatiRichiestaCigManager.getControlloCUPCUI(codiceGara, ngara, genere, profilo, "CUPPRG");
+          if(errori!=null && errori.size()>0){
+            controlloSuperato = "WARNING";
+            Iterator iter =errori.iterator();
+            while (iter.hasNext())
+              messaggio+="<li>" + iter.next();
 
+          }
+
+          //CODCUI
+          errori= this.inviaDatiRichiestaCigManager.getControlloCUPCUI(codiceGara, ngara, genere, profilo, "CODCUI");
+          if(errori!=null && errori.size()>0){
+            controlloSuperato = "WARNING";
+            Iterator iter =errori.iterator();
+            while (iter.hasNext())
+              messaggio+="<li>" + iter.next();
+          }
         }
 
-        //CODCUI
-        errori= this.inviaDatiRichiestaCigManager.getControlloCUPCUI(codiceGara, ngara, genere, profilo, "CODCUI");
-        if(errori!=null && errori.size()>0){
-          controlloSuperato = "WARNING";
-          Iterator iter =errori.iterator();
-          while (iter.hasNext())
-            messaggio+="<li>" + iter.next();
-        }
+
 
         if("WARNING".equals(controlloSuperato)){
           page.setAttribute("controlloSuperato", controlloSuperato, PageContext.REQUEST_SCOPE);

@@ -53,8 +53,50 @@
 		<c:set var="genere" value="${genere}" />
 	</c:otherwise>
 </c:choose>
+<c:choose>
+	<c:when test='${!empty param.idstipula}'>
+		<c:set var="idstipula" value="${param.idstipula}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="idstipula" value="${idstipula}" />
+	</c:otherwise>
+</c:choose>
+<c:choose>
+	<c:when test='${!empty param.codStipula}'>
+		<c:set var="codStipula" value="${param.codStipula}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="codStipula" value="${codStipula}" />
+	</c:otherwise>
+</c:choose>
+<c:choose>
+	<c:when test='${!empty param.garaStipula}'>
+		<c:set var="garaStipula" value="${param.garaStipula}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="garaStipula" value="${garaStipula}" />
+	</c:otherwise>
+</c:choose>
+<c:choose>
+	<c:when test='${!empty param.fascicoloEsistente}'>
+		<c:set var="fascicoloEsistente" value="${param.fascicoloEsistente}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="fascicoloEsistente" value="${fascicoloEsistente}" />
+	</c:otherwise>
+</c:choose>
+
+<c:set var="chiave1" value="${ngara }"/>
+<c:set var="chiave2" value="${codiceGara }"/>
 
 <c:choose>
+	<c:when test='${!empty idstipula and idstipula!=""}'>
+		<c:set var="entita" value="G1STIPULA" />
+		<c:set var="key1" value="${idstipula}" />
+		<c:set var="valoreChiaveRiservatezza" value="${codiceGara}" />
+		<c:set var="chiave1" value="${idstipula }"/>
+		<c:set var="chiave2" value="${garaStipula }"/>
+	</c:when>
 	<c:when test='${genere eq "1"}'>
 		<c:set var="entita" value="TORN" />
 		<c:set var="key1" value="${codiceGara}" />
@@ -74,22 +116,28 @@
 	
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmsupporto.js?v=${sessionScope.versioneModuloAttivo}"></script>
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmfascicoloprotocollo.js?v=${sessionScope.versioneModuloAttivo}"></script>
-	
+	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmuffici.js?v=${sessionScope.versioneModuloAttivo}"></script>
 </gene:redefineInsert>
 
 <gene:redefineInsert name="corpo">
 
 	<gene:setString name="titoloMaschera" value='Crea fascicolo documentale' />
 	
-	<c:set var="controlloSuperato" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ControlliCreaFascicoloFunction",  pageContext, ngara, codiceGara,genere)}'/>
+	
+	
+	
+	<c:set var="controlloSuperato" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.ControlliCreaFascicoloFunction",  pageContext, chiave1, chiave2,genere, entita)}'/>
 	
 	<br>
 		<div id="info">
 			<c:if test="${controlloSuperato ne 'NO' }">
 			<c:set var='msgTipo' value="la gara"/>
 			<c:choose>
+				<c:when test="${entita eq 'G1STIPULA'}">
+					<c:set var='msgTipo' value="la stipula"/>
+				</c:when>
 				<c:when test="${genere eq '10'}">
-					<c:set var='msgTipo' value="l'elenco"/>
+					<c:set var='msgTipo' value="l'elenco operatori"/>
 				</c:when>
 				<c:when test="${genere eq '20'}">
 					<c:set var='msgTipo' value="il catalogo"/>
@@ -98,8 +146,9 @@
 					<c:set var='msgTipo' value="l'avviso"/>
 				</c:when>
 			</c:choose>
-			Confermi la creazione del fascicolo documentale per ${msgTipo }?
+			Confermi <span id="tipoOp">la creazione</span> del fascicolo documentale per ${msgTipo }?
 			<br>
+			<c:if test="${fascicoloEsistente eq '1' }"><br><b>ATTENZIONE</b>: Esiste già un fascicolo associato. Mediante questa funzione e' possibile modificare l'associazione.</c:if>
 			<div id="msgInfoErr" style="display: none;"><b>Si è presentato un errore durante l'operazione.<br><span id="messaggioErr" style="color: red;"></span></b>
 			<br>
 			<br>
@@ -110,6 +159,11 @@
 				<br>
 				<br>
 				</div>
+				<form id="parametririchiestafascicolo">
+					<input id="servizio" type="hidden" value="FASCICOLOPROTOCOLLO" />
+					<input id="tiposistemaremoto" type="hidden" value="" />
+					<input id="idconfi" name="idconfi" type="hidden" value="${idconfi }"/>
+				</form>
 			</c:if>
 		</div>
 		<div id="msgesito" style="display: none;">
@@ -136,7 +190,19 @@
 			<input id="codiceGara" name="codiceGara" type="hidden" value="${codiceGara }"/>
 			<input id="idconfi" name="idconfi" type="hidden" value="${idconfi }"/>
 			<input id="genere" name="genere" type="hidden" value="${genere }"/>
-			<input id="chiaveOriginale" name="chiaveOriginale" type="hidden" value="${ngara }"/>
+			<input id="codStipula" name="codStipula" type="hidden" value="${codStipula }"/>
+			<input id="idstipula" name="idstipula" type="hidden" value="${idstipula }"/>
+			<input id="fascicoloEsistente" name="fascicoloEsistente" type="hidden" value="${fascicoloEsistente }"/>
+			
+			<c:choose>
+				<c:when test="${entita eq 'G1STIPULA' }">
+					<c:set var ="valoreChiaveOriginale" value="${codStipula }"/>
+				</c:when>
+				<c:otherwise>
+					<c:set var ="valoreChiaveOriginale" value="${ngara }"/>
+				</c:otherwise>
+			</c:choose>
+			<input id="chiaveOriginale" name="chiaveOriginale" type="hidden" value="${valoreChiaveOriginale }"/>
 			<input id="tabellatiInDB" type="hidden" value="" />
 			
 			<jsp:include page="/WEB-INF/pages/gare/wsdm/wsdm-login.jsp">
@@ -144,9 +210,62 @@
 				<jsp:param name="contextPath" value="${pageContext.request.contextPath}"/>
 			</jsp:include>
 		</table>
-			<jsp:include page="/WEB-INF/pages/gare/wsdm/wsdm-internoDati.jsp">
-				<jsp:param name="valoreChiaveRiservatezza" value="${valoreChiaveRiservatezza}" />
-			</jsp:include>
+		<div id="divDatiRicerca" style="display: none;">
+		<table class="dettaglio-notab" id="tabellaDatiRicerca">
+			<tr >
+				<td colspan="2">
+					<b><br>Parametri di ricerca del fascicolo</b>
+					<div style="display: none;" class="error" id="messaggioDatiRicerca"></div>
+				</td>
+			</tr>
+			<tr>
+				<td class="etichetta-dato">Codice</td>
+				<td class="valore-dato"><input id="codicefascicoloRic" name="codicefascicoloRic" title="Codice fascicolo" class="testo" type="text" size="47" value="" maxlength="100"></td>
+			</tr>
+			<tr>
+				<td class="etichetta-dato">Classifica</td>
+				<td class="valore-dato">
+					<select id="classificafascicoloRic" name="classificafascicoloRic"></select>
+				</td>
+			</tr>
+			<tr>
+				<td class="etichetta-dato">Oggetto</td>
+				<td class="valore-dato">
+					<textarea id="oggettofascicoloRic" name="oggettofascicoloRic" title="Oggetto fascicolo" class="testo" rows="4" cols="45"></textarea>
+				</td>
+			</tr>
+			<tr >
+				<td class="etichetta-dato">Struttura</td>
+				<td class="valore-dato">
+					<select id="strutturaRic" name="strutturaRic" style="max-width:450px"></select>
+				</td>
+			</tr>
+			<tr>
+				<td class="etichetta-dato">Codice procedura</td>
+				<td class="valore-dato"><input id="codiceproceduraRic" name="codiceproceduraRic" title="Codice procedura" class="testo" type="text" size="47" value="" maxlength="100"></td>
+			</tr>
+			<c:if test="${genere eq '1' or  genere eq '2' or genere eq '3'}">
+			<tr >
+				<td class="etichetta-dato">Cig</td>
+				<td class="valore-dato"><input id="cigRic" name="cigRic" title="Cig" class="testo" type="text" size="47" value="" maxlength="100"></td>
+			</tr>
+			</c:if>
+			<tr >
+				<td colspan="2">
+					<b><br>Selezione fascicolo</b>
+				</td>
+			</tr>
+			<tr >
+				<td class="etichetta-dato">Fascicolo</td>
+				<td class="valore-dato"><select id="listafascicoliLapis" name="listafascicoliLapis" style="min-width:450px;max-width:450px"></select>
+				<a href="javascript:gestioneletturafascicoliLapisopera();" id="linkleggifascicoliLapisopera" >Carica fascicoli</a>
+				</td>
+			</tr>
+		</table>
+		</div>	
+		<jsp:include page="/WEB-INF/pages/gare/wsdm/wsdm-internoDati.jsp">
+			<jsp:param name="valoreChiaveRiservatezza" value="${valoreChiaveRiservatezza}" />
+		</jsp:include>
 		
 	</form>
 </c:if>
@@ -163,23 +282,38 @@
 
 	<gene:javaScript>
 	
+	var fascicoloGiaAssociato="${fascicoloEsistente }";
+	var codiceFascicoloOrig = "";
+	
 	function annulla(){
 			window.close();
 	}
 	
 	$("#pulsanteChiudi").hide();
 	
+	$(window).on("load", function (){
+		_getWSTipoSistemaRemoto();
+		_tipoWSDM = $("#tiposistemaremoto").val();
+		if(_tipoWSDM == "LAPISOPERA" || _tipoWSDM == "ITALPROT"){
+			$(".titolomaschera").text("Associa fascicolo documentale");
+			$("#tipoOp").text("l'associazione");
+		}
+	});
+	
 	<c:if test="${controlloSuperato eq 'SI' }">
 		$(window).on("load", function (){
+			_associaCreaFunz=true;
 			
-			_getWSTipoSistemaRemoto();
-			_tipoWSDM = $("#tiposistemaremoto").val();
+				
 			_popolaTabellato("ruolo","ruolo");
 			_popolaTabellato("codiceuo","codiceuo");
 			_getWSLogin();
 			_gestioneWSLogin();
 			_codiceGara = "${codiceGara }";
 			_genereGara = "${genere }";
+			if(_tipoWSDM == "LAPISOPERA"){
+				window.resizeTo(800,800);
+			}
 			
 			
 			
@@ -199,8 +333,15 @@
 			$('#inserimentoinfascicolo').change(function() {
 						_gestioneInserimentoInFascicolo();
 				    });
+			
 							
-			_fascicoliPresenti=0;		
+			
+			if(fascicoloGiaAssociato=="1"){
+				_fascicoliPresenti=1;
+			}else {
+				_fascicoliPresenti=0;
+			}
+					
 			_inizializzazioni();
 			$("#TitoloDatiDocumento").hide();
 			$("#classificaDocumento").hide();
@@ -216,6 +357,15 @@
 			$("#idUnitaoperativaMittente").hide();
 			$("#mezzo").closest('tr').hide();
 			$("#rigaSottotipo").hide();
+			codiceFascicoloOrig = $("#codicefascicolo").val();
+						
+			if(_tipoWSDM == "LAPISOPERA"){
+				_popolaTabellato("classifica","classificafascicoloRic");
+				_popolaTabellato("struttura","strutturaRic");
+				$("#divDatiRicerca").show();
+				$("#oggettofascicolonuovo").val("");
+				$("#descrizionefascicolonuovo").val("");
+			}
 			
 			$('#username').change(function() {
 				if (_tipoWSDM == "JIRIDE"){
@@ -236,17 +386,107 @@
 					caricamentoStrutturaJIRIDE();
 				}
 		    });
+		    
+		    $('#annofascicolo').change(function() {
+				if (_tipoWSDM == "ITALPROT"){
+					$('#listafascicoli').empty();
+					$('#codicefascicolo').val(); 
+				}
+			});
+		    
+		    $('#classificafascicolonuovoItalprot').change(function() {
+				$('#listafascicoli').empty();
+				$('#codicefascicolo').val(); 
+				
+			});
+		    
+			$('#listafascicoli').on('change',  function () {
+				var str = this.value;
+				gestioneSelezioneFascicolo(str, _tipoWSDM);
+				
+			});
+			
+			$('#codicefascicoloRic').change(function() {
+				sbiancaFascicolo();
+			});
+			
+			$('#classificafascicoloRic').change(function() {
+				sbiancaFascicolo();
+			});
+			
+			$('#oggettofascicoloRic').change(function() {
+				sbiancaFascicolo();
+			});
+			
+			$('#strutturaRic').change(function() {
+				sbiancaFascicolo();
+			});
+			
+			$('#codiceproceduraRic').change(function() {
+				sbiancaFascicolo();
+			});
+			
+			$('#cigRic').change(function() {
+				sbiancaFascicolo();
+			});
+			
+			$('#listafascicoliLapis').on('change',  function () {
+				var str = this.value;
+				gestioneSelezioneFascicolo(str, _tipoWSDM);
+				
+			});
+			
 		});
+		
+		function sbiancaFascicolo(){
+			$('#listafascicoliLapis').empty();
+			$('#codicefascicolo').val('');
+			$('#annofascicolo').val(''); 
+			$("#classificafascicolonuovo").empty();
+			$('#oggettofascicolonuovo').val('');
+			$('#numerofascicolo').val('');
+			$("#strutturaonuovo").empty();
+			$("#struttura").text('');
+			$('#classificafascicolodescrizione').text('');
+			$('#oggettofascicolo').text('');
+		}
 		
 		_gestioneWSLoginContratto(false);
 		
 		function conferma(){
 			var tempo = 400;
-			var errori = controlloCampiObbligatori();
+			var errori = false;
+			
+			/*
+			var codiceFascicoloOrig = $("#codicefascicolo").val();				
+			var fascicoloGiaAssociato="${fascicoloEsistente }";
+			if(fascicoloGiaAssociato=="1"){
+			*/
+			
+			if(_tipoWSDM == "LAPISOPERA"){
+				var codicefascicolo = $("#codicefascicolo").val();
+				if(codicefascicolo==null || codicefascicolo == ""){
+					errori=true;
+					alert("Per procedere si deve selezionare un fascicolo");
+				}
+				if(fascicoloGiaAssociato=="1"){
+					if(codiceFascicoloOrig!=codicefascicolo){
+						if(!confirm("E' stato variato il fascicolo associato.\nProcedere ugualmente?"))
+						 errori=true;
+					}else{
+						//Il fascicolo non è stato variato, quindi si può chiudere la popup senza fare nulla
+						window.close();
+					}
+				}
+			} else {
+				errori = controlloCampiObbligatori();
+			}
+			
 			if ( !errori) {
 				
 				_wait();
 				_setWSLogin();
+				
 				$.ajax({
 		    		type: "POST",
 		    		async: true,
@@ -261,11 +501,15 @@
 						codiceuo : $("#codiceuo option:selected").val(),
 						idutente : $("#idutente").val(),
 						idutenteunop : $("#idutenteunop").val(),
+						codicefascicolo : $("#codicefascicolo").val(),
 						oggettofascicolo : $("#oggettofascicolonuovo").val(),
 						classificafascicolo : $("#classificafascicolonuovo").val(),
+						classificadescrizione : $("#classificadescrizione").val(),
 						tipofascicolo : $("#tipofascicolonuovo").val(),
+						annofascicolo : $("#annofascicolo").val(),
 						descrizionefascicolo : $("#descrizionefascicolonuovo").val(),
 						struttura: $("#strutturaonuovo option:selected").val(),
+						numerofascicolo : $("#numerofascicolo").val(),
 						nomeRup: $("#nomeRup").text(),
 						acronimoRup: $("#acronimoRup").text(),
 						tipowsdm : _tipoWSDM,
@@ -273,7 +517,9 @@
 						entita : $("#entita").val(),
 						key1 : $("#key1").val(),
 						servizio : $("#servizio").val(),
-						genereGara : ${genere }
+						genereGara : '${genere }',
+						uocompetenza:$("#uocompetenza").val(),
+						uocompetenzadescrizione:$("#uocompetenzadescrizione").val()
 							},
 		    		success: function(json) {
 		    			if (json) {
@@ -313,6 +559,13 @@
 			showObj("offParametriUtente",!visibile);
 			showObj("onParametriUtente",visibile);
 			_gestioneWSLoginContratto(!visibile);
+		}
+		
+		function apriListaUffici() {
+			_ctx = "${pageContext.request.contextPath}";
+			$("#finestraListaUffici").dialog('option','width',700);
+			$("#finestraListaUffici").dialog("open");
+			_creaContainerListaUffici();
 		}
 	</c:if>
 	

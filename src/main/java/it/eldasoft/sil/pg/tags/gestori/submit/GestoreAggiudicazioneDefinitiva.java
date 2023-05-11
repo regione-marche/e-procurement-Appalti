@@ -22,6 +22,7 @@ import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.AggiudicazioneManager;
+import it.eldasoft.sil.pg.bl.GestioneProgrammazioneManager;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiGaraFunction;
 import it.eldasoft.utils.properties.ConfigManager;
@@ -50,6 +51,8 @@ public class GestoreAggiudicazioneDefinitiva extends AbstractGestoreEntita {
 	private CinecaWSManager cinecaWSManager;
 
 	private PgManager pgManager;
+	
+	private GestioneProgrammazioneManager gestioneProgrammazioneManager;
 
 	@Override
   public String getEntita() {
@@ -65,6 +68,9 @@ public class GestoreAggiudicazioneDefinitiva extends AbstractGestoreEntita {
 
     pgManager = (PgManager) UtilitySpring.getBean("pgManager",
         this.getServletContext(), PgManager.class);
+    
+    gestioneProgrammazioneManager = (GestioneProgrammazioneManager) UtilitySpring.getBean("gestioneProgrammazioneManager",
+        this.getServletContext(), GestioneProgrammazioneManager.class);
   }
 
 	@Override
@@ -79,8 +85,18 @@ public class GestoreAggiudicazioneDefinitiva extends AbstractGestoreEntita {
 
 	@Override
   public void postUpdate(DataColumnContainer datiForm)
-			throws GestoreException {
+			throws GestoreException { 
 	}
+
+	@Override
+	public void afterUpdateEntita(TransactionStatus status, DataColumnContainer datiForm)
+	        throws GestoreException { 
+	  
+	//Integrazione programmazione
+	  if(gestioneProgrammazioneManager.isAttivaIntegrazioneProgrammazione())
+	    this.gestioneProgrammazioneManager.aggiornaRdaGara(datiForm.getString("GARE.CODGAR1"),datiForm.getString("GARE.NGARA"),null);
+	 }
+	
 
 	@Override
   public void preDelete(TransactionStatus status, DataColumnContainer datiForm)

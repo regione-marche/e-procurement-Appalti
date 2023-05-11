@@ -1,8 +1,5 @@
 package it.eldasoft.sil.pg.web.struts;
 
-import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
-import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
-
 import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -11,12 +8,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspException;
 
-import net.sf.json.JSONObject;
-
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
+
+import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
+import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import net.sf.json.JSONObject;
 
 public class GetCodiceGenereGaraAction extends Action {
 

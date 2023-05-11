@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
 
 /**
  * Manager che raccoglie alcune funzionalità per Autovie
@@ -76,12 +77,19 @@ public class AutovieManager {
     HashMap result = new HashMap();
     String codiceGara = null;
     String numeroGara = null;
+    boolean resetChiave = false;
 
     if (entita != null && entita.length() > 0) {
-      Long contatoreCodgarcli = new Long(genChiaviManager.getNextId("TORN.CODGARCLI"));
       GregorianCalendar dataOdierna = new GregorianCalendar();
       Integer anno = new Integer(dataOdierna.get(Calendar.YEAR));
       String annoString = anno.toString();
+      resetChiave = resetGenchiave(annoString.substring(2));
+      Long contatoreCodgarcli;
+      if(resetChiave) {
+      	contatoreCodgarcli = new Long(1);
+      }else {
+    	contatoreCodgarcli = new Long(genChiaviManager.getNextId("TORN.CODGARCLI"));
+      }
       String codiceCodgarcli = contatoreCodgarcli.toString() + "/" + annoString.substring(2);
 
       if ("GARE".equals(entita.toUpperCase())) {
@@ -102,7 +110,7 @@ public class AutovieManager {
             		"select max(coalesce(to_number(substr(ngara, length(ngara)-2,length(ngara)),'999'),0))" +
             		" from gare where codgar1 = ? and codgar1<>ngara", new Object[]{codiceGaraLotti});
           } catch (SQLException e1) {
-            logger.info("Non risulta possibile determinare il max suffisso per un lotto della gara!");
+            logger.warn("Non risulta possibile determinare il max suffisso per un lotto della gara!", e1);
           }
           if (maxSuffix ==  null){
             maxSuffix = new Long(0);
@@ -145,6 +153,32 @@ public class AutovieManager {
 
     return result;
   }
+  
+	private boolean resetGenchiave(String anno2C) throws GestoreException {
+		
+		String select = "";
+		String update = "";
+		Object par[] = null;
+		boolean reset=false;
+		
+		try {
+
+			select = "select count(*) from gare where ngara like ?";
+			Long cambioAnno = (Long) sqlManager.getObject(select, new Object[] { "%/" + anno2C });
+			if (cambioAnno.equals(new Long(0))) {
+				update = "update W_GENCHIAVI set CHIAVE =? where TABELLA=?";
+				par = new Object[] { Long.valueOf(1), "TORN.CODGARCLI" };
+				this.sqlManager.update(update, par);
+				reset=true;
+			}
+
+		} 	  
+		catch (SQLException e) {
+			throw new GestoreException("Errore nel reset della genchiave TORN.CODGARCLI", null, e);
+		}
+		
+		return reset;
+	}
 
   public void verificaEsistenzaNumeroGara(String nGaraInserito)
     throws GestoreException {

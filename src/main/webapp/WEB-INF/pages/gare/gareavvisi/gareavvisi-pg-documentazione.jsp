@@ -31,6 +31,8 @@
 
 	<gene:redefineInsert name="pulsanteNuovo"></gene:redefineInsert>
 	<gene:redefineInsert name="schedaNuovo"></gene:redefineInsert>
+	<gene:redefineInsert name="documentiAssociati"></gene:redefineInsert>
+	<gene:redefineInsert name="noteAvvisi"></gene:redefineInsert>
 	
 	<jsp:include page="/WEB-INF/pages/commons/bloccaModifica-scheda.jsp">
 		<jsp:param name="entita" value="V_GARE_TORN"/>
@@ -92,6 +94,7 @@ function pubblicaSuPortaleAppalti(){
 	if(idconfi){
 		href = href + "&idconfi="+idconfi;
 	}
+	href = href + "&garavviso=1";
 	openPopUpCustom(href, "insDocumentiPredefiniti", 800, 650, "no", "yes");
 }
 

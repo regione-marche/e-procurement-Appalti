@@ -234,7 +234,7 @@
 		if(document.importOffertaPrezzi.selezioneFile) {
 			var nomeCompletoFile = "" + document.importOffertaPrezzi.selezioneFile.value;
 			if(nomeCompletoFile != ""){
-				if(nomeCompletoFile.substr(nomeCompletoFile.lastIndexOf('.')+1).toUpperCase() == "XLS") {
+				if(nomeCompletoFile.substr(nomeCompletoFile.lastIndexOf('.')+1).toUpperCase() == "XLS" || nomeCompletoFile.substr(nomeCompletoFile.lastIndexOf('.')+1).toUpperCase() == "XLSX") {
 					bloccaRichiesteServer();
 					setTimeout("document.importOffertaPrezzi.submit()", 150);
 				} else {

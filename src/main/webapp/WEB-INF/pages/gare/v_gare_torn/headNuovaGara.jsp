@@ -75,11 +75,16 @@
 			<c:when test='${gene:checkProt(pageContext, "COLS.VIS.GARE.TORN.OFFTEL")}'>
 				if(proceduraTelematica==1){
 					var radioModalitaPresentazione = document.formRadioBut.modalitaPresentazione;
-					for(var i = 0; i < radioModalitaPresentazione.length; i++) { 
+					var mpNonValorizzato = true;
+					for(var i = 0; i < radioModalitaPresentazione.length; i++) {
 						if(radioModalitaPresentazione[i].checked) { 
-							modalitaPresentazione = radioModalitaPresentazione[i].value; 
+							modalitaPresentazione = radioModalitaPresentazione[i].value;
+							mpNonValorizzato = false;
 							break;
 						}
+					}
+					if(mpNonValorizzato){
+						modalitaPresentazione = radioModalitaPresentazione.value;
 					}
 				}
 			</c:when>
@@ -91,7 +96,7 @@
 		
 		if(tipoGara == '1'){
 				<c:choose>
-					<c:when test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.AssociaGaraAppalto") && esisteIntegrazioneLavori eq "TRUE"}'>
+					<c:when test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.AssociaGaraAppalto") && esisteIntegrazioneLavori eq "TRUE" && empty param.arrRda}'>
 						bloccaRichiesteServer();
 						document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/gare/trovaAppalto/associaAppalto.jsp&tipoGara=garaLottoUnico&modo=NUOVO&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione;
 					</c:when>
@@ -105,19 +110,19 @@
 							bloccaRichiesteServer();
 							document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/garerda/associaRda.jsp&tipoGara=garaLottoUnico&modo=NUOVO&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione;
 						</c:when>
-						<c:when test='${integrazioneERPvsWSDM eq "1"}'>
+						<c:when test='${integrazioneERPvsWSDM eq "1" || tipoWSERP eq "AMIU"}'>
 							bloccaRichiesteServer();
 							document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/garerda/associa-rda-wsdm.jsp&tipoGara=garaLottoUnico&modo=NUOVO&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione+"&idconfi=${idconfi}";
 						</c:when>
 						<c:when test='${integrazioneWSERP eq "1" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GestioneUnicaERP")}'>
 							<c:set var="scProfilo" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetSceltaContraenteProfiloFunction", pageContext)}' />
 							bloccaRichiesteServer();
-							document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/commons/lista-rda-scheda.jsp&tipoGara=garaLottoUnico&modo=NUOVO&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione+"&scProfilo=${scProfilo}";
+							document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/commons/lista-rda-scheda.jsp&tipoGara=garaLottoUnico&modo=NUOVO&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione+"&scProfilo=${scProfilo}"+"&uffint=${sessionScope.uffint}";
 						</c:when>
 						<c:otherwise>
 							listaNuovo.jspPathTo.value = "/WEB-INF/gare/gare/gare-scheda.jsp"
 							listaNuovo.entita.value = "GARE";
-							listaNuovo.action = document.listaNuovo.action + "&tipoGara=garaLottoUnico&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione;
+							listaNuovo.action = document.listaNuovo.action + "&tipoGara=garaLottoUnico&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione+"&arrRda=${param.arrRda}";
 							bloccaRichiesteServer();
 							listaNuovo.submit();
 						</c:otherwise>
@@ -131,10 +136,14 @@
 					bloccaRichiesteServer();
 					document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/gare/trovaGaraRilancio/associaGara.jsp&tipoGara=garaLottoUnico&modo=NUOVO&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione;
 				</c:when>
-				<c:otherwise>	
+                <c:when test='${integrazioneWSERP eq "1" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GestioneUnicaERP") && tipoWSERP eq "RAIWAY"}'>
+                    bloccaRichiesteServer();
+                    document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/commons/lista-rda-scheda.jsp&tipoGara=garaDivisaLotti&modo=NUOVO&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione+"&scProfilo=${scProfilo}";
+                </c:when>
+				<c:otherwise>
 					listaNuovo.jspPathTo.value = "/WEB-INF/gare/torn/torn-scheda.jsp"
 					listaNuovo.entita.value = "TORN";
-					listaNuovo.action = document.listaNuovo.action + "&tipoGara=garaDivisaLotti&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione;
+					listaNuovo.action = document.listaNuovo.action + "&tipoGara=garaDivisaLotti&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione+"&arrRda=${param.arrRda}";
 					bloccaRichiesteServer();
 					listaNuovo.submit();
 				</c:otherwise>
@@ -150,10 +159,14 @@
 					bloccaRichiesteServer();
 					document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/gare/trovaGaraRilancio/associaGara.jsp&tipoGara=garaLottoUnico&modo=NUOVO&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione;
 				</c:when>
+                <c:when test='${integrazioneWSERP eq "1" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GestioneUnicaERP") && tipoWSERP eq "RAIWAY"}'>
+                    bloccaRichiesteServer();
+                    document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/commons/lista-rda-scheda.jsp&tipoGara=garaDivisaLottiOffUnica&modo=NUOVO&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione+"&scProfilo=${scProfilo}";
+                </c:when>
 				<c:otherwise>
 					listaNuovo.jspPathTo.value = "/WEB-INF/gare/torn/torn-scheda.jsp"
 					listaNuovo.entita.value = "TORN";
-					listaNuovo.action = document.listaNuovo.action + "&tipoGara=garaDivisaLottiOffUnica&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione;
+					listaNuovo.action = document.listaNuovo.action + "&tipoGara=garaDivisaLottiOffUnica&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione+"&arrRda=${param.arrRda}";
 					bloccaRichiesteServer();
 					listaNuovo.submit();
 				</c:otherwise>
@@ -227,8 +240,12 @@
 			if(document.getElementById("presentazione")!=null)
 				document.getElementById("presentazione").style.display="none";
 			</c:if>
-		} 
-	}
+			
+			
+		}
 		
+	}
+	
+	
 -->
 </script>

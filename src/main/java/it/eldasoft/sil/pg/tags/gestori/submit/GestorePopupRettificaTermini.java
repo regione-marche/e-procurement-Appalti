@@ -10,11 +10,32 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
+import java.util.Vector;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
+
 import intra.regionemarche.BandoClass;
 import intra.regionemarche.ResultClass;
 import it.eldasoft.gene.bl.GenChiaviManager;
 import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.struts.CostantiGeneraliStruts;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.domain.LogEvento;
 import it.eldasoft.gene.utils.LogEventiUtils;
@@ -36,30 +57,6 @@ import it.eldasoft.utils.sicurezza.CriptazioneException;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
 import it.internetsoluzioni.www.WebService.ResponseWS;
-
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.TimeZone;
-import java.util.Vector;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
-import org.springframework.transaction.TransactionStatus;
 
 
 /**
@@ -83,7 +80,7 @@ public class GestorePopupRettificaTermini extends
   private SqlManager sqlManager = null;
 
   private ScpManager scpManager;
-  
+
   @Override
   public void setRequest(HttpServletRequest request) {
     super.setRequest(request);
@@ -174,9 +171,9 @@ public class GestorePopupRettificaTermini extends
       gestioneATCManager = (GestioneATCManager) UtilitySpring.getBean("gestioneATCManager",
           this.getServletContext(), GestioneATCManager.class);
     }
-    
+
     try {
-      
+
       codGara = codgar;
       String genere = null;
       Vector datiGenerali = sqlManager.getVector("select genere, codice from V_GARE_GENERE where codgar = ?", new Object[]{codgar});
@@ -188,7 +185,7 @@ public class GestorePopupRettificaTermini extends
         }
       }
       Response risultatoScp;
-      
+
       switch (termineVisualizzatoIntero) {
       case 1:
         //Termini presentazione domanda di partecipazione
@@ -201,7 +198,7 @@ public class GestorePopupRettificaTermini extends
         data1_orig = datiForm.getData("DTERMRICHCDP_ORIG");
         data2 =datiForm.getData("DTERMRISPCDP");
         data2_orig =datiForm.getData("DTERMRISPCDP_ORIG");
-        if("2".equals(iterga) || "4".equals(iterga)){
+        if("2".equals(iterga) || "4".equals(iterga) || "7".equals(iterga)){
           if(gestioneRegioneMarche){
             ResultClass risposta=gestioneAggiornamentoBando(codgar,tipoGara,data,data_orig,ora,ora_orig);
             if(risposta!=null && !risposta.isResult()){
@@ -401,15 +398,15 @@ public class GestorePopupRettificaTermini extends
     }
     return risposta;
   }
-  
-  
+
+
   private Response gestioneAggiornamentoScp(String codgar, String tipologie, String genere, int termineVisualizzatoIntero, DataColumnContainer datiForm) throws GestoreException, SQLException{
-    
+
     String select = "select tipologia from GARATTISCP where CODGAR = '" + codgar + "' and TIPOLOGIA in (" + tipologie + ")";
     Long tipologia = (Long) sqlManager.getObject(select, new Object[]{});
     String entita = "pubblicazioni";
     String url = ConfigManager.getValore(ScpManager.PROP_WS_PUBBLICAZIONI_URL);
-    Response risultato = null; 
+    Response risultato = null;
     Response accesso;
     if(tipologia != null){
     try {
@@ -419,27 +416,27 @@ public class GestorePopupRettificaTermini extends
           String token = resultAccesso.getToken();
           PubblicaAttoEntry pubblicazione = new PubblicaAttoEntry();
           scpManager.valorizzaAtto(pubblicazione, codgar, "", tipologia, genere);
-          
+
           String date = null;
           if(termineVisualizzatoIntero == 1){
             Timestamp time = datiForm.getData("DTEPAR");
-            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");  
-            date = formatter.format(new Date(time.getTime()));  
+            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+            date = formatter.format(new Date(time.getTime()));
           }else{
             Timestamp time = datiForm.getData("DTEOFF");
-            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");  
-            date = formatter.format(new Date(time.getTime()));  
+            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+            date = formatter.format(new Date(time.getTime()));
           }
           if(scpManager.verificaEsistenzaValore(date)){
             pubblicazione.setDataScadenza(date);
-            
+
             Client client = ClientBuilder.newClient();
             WebTarget webTarget = client.target(url).path("Atti/Pubblica").queryParam("token", token).queryParam("modalitaInvio", "2");
             risultato = webTarget.request(MediaType.APPLICATION_JSON).post(Entity.json(pubblicazione), Response.class);
           }
       }
       return risultato;
-      
+
     } catch (CriptazioneException e) {
       throw new GestoreException("Si e' verificato un errore nella decifratura delle credenziali SCP" , null,  e);
     } catch (ParseException e) {
@@ -447,10 +444,10 @@ public class GestorePopupRettificaTermini extends
     } catch (GestoreException e) {
       throw new GestoreException("Verificare i parametri per la connessione al servizio di pubblicazione" , null,  e);
     }
-    
+
   }
     return null;
-  
+
   }
-  
+
 }

@@ -19,7 +19,7 @@
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 <script type="text/javascript" src="${contextPath}/js/jquery.storico.variazioni.prezzo.js"></script>
 
-<c:set var="codiceGara" value='${gene:getValCampo(keyParent, "DITG.CODGAR5")}' />
+<c:set var="codiceGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetCodiceGaraFunction", pageContext)}' />
 <c:set var="numeroGara" value='${gene:getValCampo(key, "V_GCAP_DPRE.NGARA")}' />
 <c:set var="ditta" value='${gene:getValCampo(key, "V_GCAP_DPRE.COD_DITTA")}' />
 <c:if test='${numeroGara eq ""}'>
@@ -134,6 +134,17 @@
 	</c:otherwise>
 </c:choose>
 
+<c:choose>
+	<c:when test='${not empty param.isRicercaMercatoNegoziata}'>
+		<c:set var="isRicercaMercatoNegoziata" value="${param.isRicercaMercatoNegoziata}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="isRicercaMercatoNegoziata" value="${isRicercaMercatoNegoziata}" />
+	</c:otherwise>
+</c:choose>
+
+
+
 <c:set var="whereCampiGCAP" value='GCAP.NGARA = V_GCAP_DPRE.NGARA and GCAP.CONTAF = V_GCAP_DPRE.CONTAF' />
 <c:set var="whereCampiDPRE" value='DPRE.NGARA = V_GCAP_DPRE.NGARA and DPRE.CONTAF = V_GCAP_DPRE.CONTAF and DPRE.DITTAO = V_GCAP_DPRE.COD_DITTA' />
 
@@ -157,8 +168,9 @@
 						 scheda=''
 						 schedaPopUp=''
 						 campi="V_GCAP_LOTTI.NGARA;V_GCAP_LOTTI.CODIGA;V_GCAP_LOTTI.NORVOC_MAX"
-						 chiave="V_GCAP_DPRE_NGARA"
-						 where="V_GCAP_LOTTI.CODGAR = '${codiceGara }'">
+						 functionId="default"
+						 parametriWhere="T:${codiceGara}"
+						 chiave="V_GCAP_DPRE_NGARA" >
 							<gene:campoScheda campo="NGARA" title="Codice lotto" obbligatorio="true" modificabile='${modo eq "NUOVO" }'/>
 							<gene:campoScheda campo="CODIGA" title="Lotto" obbligatorio='${campoObbligatorio eq true}' entita="GARE" modificabile='${modo eq "NUOVO" }' where="GARE.NGARA = V_GCAP_DPRE.NGARA"/>
 							<gene:campoScheda campo="NORVOC_MAX" campoFittizio="true" visibile='false' definizione="F8.3"/>
@@ -213,9 +225,12 @@
 			<gene:campoScheda campo="IMPORTO_GCAP" campoFittizio="true" definizione="F24.2;0;;MONEY5;G1_IMPOFD" modificabile="false" value="${importo}" visibile='${datiRiga.GCAP_SOLSIC eq "1" or datiRiga.GCAP_SOGRIB eq "1"}'/>
 			<gene:campoScheda campo="PESO" entita="GCAP" where="${whereCampiGCAP}" modificabile='false' visibile='${RIBCAL eq "3" && datiRiga.GCAP_SOGRIB eq "2"}'/>
 			<gene:campoScheda campo="RIBPESO" entita="DPRE" where="${whereCampiDPRE}" modificabile='false' visibile='${RIBCAL eq "3" && datiRiga.GCAP_SOGRIB eq "2"}'/>
+			<gene:campoScheda campo="TIPOLOGIA"  where="${whereCampiDPRE}" visibile='${isRicercaMercatoNegoziata}' />
 			<gene:campoScheda campo="LUOGOCONS" entita="GCAP" where="${whereCampiGCAP}" visibile='${integrazioneWSERP eq "1" && tipoWSERP eq "AVM"}' modificabile="true"/>
-			<gene:campoScheda campo="DATACONS"  entita="GCAP" where="${whereCampiGCAP}" title="Data prevista consegna" visibile='${integrazioneWSERP eq "1" && tipoWSERP eq "AVM"}' modificabile="true"/>
+			<gene:campoScheda campo="DATACONS"  entita="GCAP" where="${whereCampiGCAP}" title="Data prevista consegna" visibile='${(integrazioneWSERP eq "1" && tipoWSERP eq "AVM") || isRicercaMercatoNegoziata}' modificabile="true"/>
+			<gene:campoScheda campo="DATACONSOFF"  where="${whereCampiDPRE}" title="Data consegna garantita" visibile='${isRicercaMercatoNegoziata}' />
 			<gene:campoScheda campo="REQMIN"  entita="DPRE" where="${whereCampiDPRE}" visibile="${(isPrequalifica && genereGara eq 3) || stepWizard eq step6Wizard}" />
+			<gene:campoScheda campo="NOTE"  where="${whereCampiDPRE}" visibile='${isRicercaMercatoNegoziata}' />
 
 			<input type="hidden" name="PREQUALIFICA" id="PREQUALIFICA" value="${PREQUALIFICA}" />
 			<input type="hidden" name="BLOCCO_AGG" id="BLOCCO_AGG" value="${BLOCCO_AGG}" />	

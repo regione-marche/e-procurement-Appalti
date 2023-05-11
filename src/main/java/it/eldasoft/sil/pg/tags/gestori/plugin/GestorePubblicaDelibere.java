@@ -10,16 +10,6 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.plugin;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
-import it.eldasoft.gene.tags.BodyTagSupportGene;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.PgManagerEst1;
-import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
-import it.eldasoft.utils.properties.ConfigManager;
-import it.eldasoft.utils.spring.UtilitySpring;
-import it.eldasoft.utils.utility.UtilityDate;
-
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -29,6 +19,16 @@ import java.util.Vector;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.tags.BodyTagSupportGene;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.PgManagerEst1;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
+import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityDate;
 
 /**
  * Gestore che effettua i controlli preliminari e popola la popup per
@@ -61,7 +61,7 @@ public class GestorePubblicaDelibere extends GestorePubblicaSuPortale {
     "OR  (GRUPPO = 2 AND EXISTS (SELECT * FROM PUBBLI WHERE CODGAR9 = DOCUMGARA.CODGAR AND (TIPPUB = 13 OR TIPPUB = 11))) OR  (GRUPPO = 4 AND EXISTS (SELECT * FROM PUBG WHERE NGARA = DOCUMGARA.CODGAR AND TIPPUBG = 12)))";
     */
     String queryDocumentiDaPubblicare = "SELECT IDDOCDG, URLDOC, NORDDOCG, IDPRG FROM DOCUMGARA WHERE CODGAR = ? AND GRUPPO = 15 AND STATODOC IS NULL";
-    String queryGARE = "select TIPGARG, NOT_GAR from GARE where CODGAR1 = ?";
+    String queryGARE = "select TIPGARG, NOT_GAR, NGARA from GARE where CODGAR1 = ?";
     String queryTORN = "select DESTOR, CENINT, CODRUP, TIPGAR from TORN where codgar = ?";
     String titoloMessaggio = "<b>Non è possibile procedere con la pubblicazione della delibera a contrarre sul portale Appalti.</b><br>";
     String messaggio = "";
@@ -136,7 +136,7 @@ public class GestorePubblicaDelibere extends GestorePubblicaSuPortale {
           }
           String destor = SqlManager.getValueFromVectorParam(
               datiTorn, 0).getStringValue();
-          if(garaLotti && (destor == null || "".equals(destor))){
+          if(garaLotti && (destor == null || "".equals(destor.trim()))){
             controlloSuperato = "NO";
             messaggio += "<br>Non è stato inserito l'oggetto della gara.";
           }
@@ -157,23 +157,27 @@ public class GestorePubblicaDelibere extends GestorePubblicaSuPortale {
       if(garaLotti){queryGARE = queryGARE + " and NGARA <> CODGAR1";}
       List listaDatiGare= this.sqlManager.getListVector(queryGARE, new Object[]{codgar});
       if (listaDatiGare != null && listaDatiGare.size() > 0) {
+        String lotto=null;
         for(int i=listaDatiGare.size()-1;i>=0;i--){
           Long tipgarg = SqlManager.getValueFromVectorParam(
               listaDatiGare.get(i), 0).longValue();
+          lotto = SqlManager.getValueFromVectorParam(
+              listaDatiGare.get(i), 2).getStringValue();
           if(tipgarg == null || "".equals(tipgarg)){
             controlloSuperato = "NO";
             if(garaLotti){
-              messaggio += "<br>Non è stato inserito il tipo procedura del lotto " + ngara + ".";
+              messaggio += "<br>Non è stato inserito il tipo procedura del lotto " + lotto + ".";
             }else{
               messaggio += "<br>Non è stato inserito il tipo procedura della gara.";
             }
           }
           String notgar = SqlManager.getValueFromVectorParam(
               listaDatiGare.get(i), 1).getStringValue();
-          if(notgar == null || "".equals(notgar)){
+          if(notgar == null || "".equals(notgar.trim())){
             controlloSuperato = "NO";
             if(garaLotti){
-              messaggio += "<br>Non è stato inserito l'oggetto del lotto " + ngara + ".";
+
+              messaggio += "<br>Non è stato inserito l'oggetto del lotto " + lotto + ".";
             }else{
               messaggio += "<br>Non è stato inserito l'oggetto della gara.";
             }

@@ -55,6 +55,7 @@
 		<gene:setString name="titoloMaschera" value='Acquisisci domande di partecipazione da portale Appalti' />
 		
 		<c:set var="isSuperataDataTerminePresentazione" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.IsSuperataDataTerminePresentazioneFunction", pageContext, ngara, "2")}' />
+		<c:set var="codStatoGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetStatoGaraFunction", pageContext, codiceGara)}' />	
 				
 		<gene:redefineInsert name="corpo">
 		
@@ -67,6 +68,12 @@
 				<tr id="sezioneIniziale">
 					<td class="valore-dato" colspan="2">
 						<c:choose>
+							<c:when test="${codStatoGara == '4'}">
+								<br>
+								Non &egrave; possibile procedere con l'acquisizione delle domande di partecipazione da portale Appalti perch&egrave; la gara risulta sospesa.
+								<br>
+								<br>
+							</c:when>
 							<c:when test="${isSuperataDataTerminePresentazione == 'false'}">
 								<br>
 								Non &egrave; possibile procedere con l'acquisizione delle domande di partecipazione da portale Appalti perch&egrave; non &egrave; ancora scaduto il termine di presentazione.
@@ -124,7 +131,7 @@
 				
 				<tr id="sezioneComandiIniziali">
 					<td colspan="2" class="comandi-dettaglio">
-						<c:if test="${isSuperataDataTerminePresentazione == 'true'}">
+						<c:if test="${isSuperataDataTerminePresentazione == 'true' && codStatoGara !='4' }">
 							<INPUT type="button" class="bottone-azione" value="Conferma" title="Conferma" onclick="javascript:acquisisciAJAX('${ngara}');">
 						</c:if>
 						<INPUT type="button" class="bottone-azione" value="Annulla"	title="Annulla" onclick="javascript:chiudi();">&nbsp;&nbsp;

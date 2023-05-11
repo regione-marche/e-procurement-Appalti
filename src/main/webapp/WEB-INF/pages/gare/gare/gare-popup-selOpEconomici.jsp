@@ -165,15 +165,6 @@
 </c:choose>
 
 <c:choose>
-	<c:when test='${not empty param._csrf}'>
-		<c:set var="_csrf" value="${param._csrf}" />
-	</c:when>
-	<c:otherwise>
-		<c:set var="_csrf" value="${_csrf}" />
-	</c:otherwise>
-</c:choose>
-
-<c:choose>
 	<c:when test='${not empty param.selezioneAutomaticaDitte}'>
 		<c:set var="selezioneAutomaticaDitte" value="${param.selezioneAutomaticaDitte}" />
 	</c:when>
@@ -234,7 +225,6 @@
 			<br/><br/>
 			<gene:formLista entita="DITG" pagesize="${selezioneAutomaticaDitte eq 'false' ? 20 : 0}" tableclass="datilista" gestisciProtezioni="false" sortColumn="1" where="1<>1" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAssociaOperatoriEconomici">
 				<gene:campoLista campo="NGARA5"  visibile="false"/>
-				<input type="hidden" name="where" id="where" value="${where}" />
 				<input type="hidden" name="ngara" id="ngara" value="${ngara}" />
                    <input type="hidden" name="garaElenco" id="garaElenco" value="${garaElenco}" />
                    <input type="hidden" name="categoriaPrev" id="categoriaPrev" value="${categoriaPrev}" />
@@ -254,7 +244,7 @@
 				<input type="hidden" name="tipoalgo" id="tipoalgo" value="${tipoalgo }" />
 				<input type="hidden" name="stazioneAppaltante" id="stazioneAppaltante" value="${stazioneAppaltante }" />
 				<input type="hidden" name="ctrlaggiu" id="ctrlaggiu" value="${ctrlaggiu}" />
-				<input type="hidden" name="_csrf" id="_csrf" value="${_csrf}" />
+				<jsp:include page="/WEB-INF/pages/commons/csrf.jsp" />
 				<input type="hidden" name="selezioneAutomaticaDitte" id="selezioneAutomaticaDitte" value="${selezioneAutomaticaDitte}" />
 				<input type="hidden" name="modalitaSelezioneMista" id="modalitaSelezioneMista" value="${modalitaSelezioneMista}" />
 			</gene:formLista>
@@ -287,7 +277,6 @@
 			<br/><br/>
 			<gene:formLista entita="DITG" pagesize="${selezioneAutomaticaDitte eq 'false' ? 20 : 0}" tableclass="datilista" gestisciProtezioni="false" sortColumn="1" where="1<>1" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAssociaOperatoriEconomici">
 				<gene:campoLista campo="NGARA5"  visibile="false"/>
-				<input type="hidden" name="where" id="where" value="${where}" />
 				<input type="hidden" name="ngara" id="ngara" value="${ngara}" />
                    <input type="hidden" name="garaElenco" id="garaElenco" value="${garaElenco}" />
                    <input type="hidden" name="categoriaPrev" id="categoriaPrev" value="${categoriaPrev}" />
@@ -307,7 +296,7 @@
 				<input type="hidden" name="tipoalgo" id="tipoalgo" value="${tipoalgo }" />
 				<input type="hidden" name="stazioneAppaltante" id="stazioneAppaltante" value="${stazioneAppaltante }" />
 				<input type="hidden" name="ctrlaggiu" id="ctrlaggiu" value="${ctrlaggiu}" />
-				<input type="hidden" name="_csrf" id="_csrf" value="${_csrf}" />
+				<jsp:include page="/WEB-INF/pages/commons/csrf.jsp" />
 				<input type="hidden" name="selezioneAutomaticaDitte" id="selezioneAutomaticaDitte" value="${selezioneAutomaticaDitte}" />
 				<input type="hidden" name="modalitaSelezioneMista" id="modalitaSelezioneMista" value="${modalitaSelezioneMista}" />
 			</gene:formLista>
@@ -363,9 +352,20 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetImportoGaraFunction", 
 		</gene:set>
 		
 		<c:if test="${selezioneAutomaticaDitte eq 'false'}">
+			<c:choose>
+				<c:when test="${sessionScope.modalitaFiltroCategorie eq '2' }">
+					<c:set var="labelFiltro" value="<b>per almeno una</b> delle"/>
+				</c:when>
+				<c:when test="${sessionScope.modalitaFiltroCategorie eq '1' }">
+					<c:set var="labelFiltro" value="<b>per tutte</b> le"/>
+				</c:when>
+				<c:otherwise>
+					<c:set var="labelFiltro" value="per le"/>
+				</c:otherwise>
+			</c:choose>
 			<br/>
 			Nella lista sottostante sono riportate le ditte abilitate all'elenco operatori economici 
-			a cui è stato assegnato un numero ordine e qualificate per le seguenti categorie o prestazioni della gara corrente:<br>
+			a cui è stato assegnato un numero ordine e qualificate ${labelFiltro} seguenti categorie o prestazioni della gara corrente:<br>
 			${tableCategorie }
 			<c:if test="${tableFiltriAggiuntiviObbl ne '' || tableFiltriAggiuntivi ne '' || tableZoneAttivita ne ''}">
 				<br/>Gli operatori sono ulteriormente filtrati in base ai seguenti criteri:<br/>
@@ -425,8 +425,19 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetImportoGaraFunction", 
 			</font>			
 			<br/>
 			<br/>
+			<c:choose>
+				<c:when test="${sessionScope.modalitaFiltroCategorie eq '2' }">
+					<c:set var="labelFiltro" value="<b>per almeno una</b> delle"/>
+				</c:when>
+				<c:when test="${sessionScope.modalitaFiltroCategorie eq '1' }">
+					<c:set var="labelFiltro" value="<b>per tutte</b> le"/>
+				</c:when>
+				<c:otherwise>
+					<c:set var="labelFiltro" value="per le"/>
+				</c:otherwise>
+			</c:choose>
 			Vengono considerate le ditte abilitate all'elenco operatori economici 
-			a cui è stato assegnato un numero ordine e qualificate per le seguenti categorie o prestazioni della gara corrente:<br/>
+			a cui è stato assegnato un numero ordine e qualificate ${labelFiltro} seguenti categorie o prestazioni della gara corrente:<br/>
 			${tableCategorie }
 			<c:if test="${tableFiltriAggiuntiviObbl ne '' || tableFiltriAggiuntivi ne '' || tableZoneAttivita ne ''}">
 				<br/>Gli operatori sono ulteriormente filtrati in base ai seguenti criteri:<br/>
@@ -626,13 +637,19 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetImportoGaraFunction", 
 					</c:if>
 					<c:set var="impresaRegistrata" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.ImpresaRegistrataSuPortaleFunction",  pageContext, dittaoIcona )}'/>
 					<c:if test="${impresaRegistrata == 'SI'}">
-							<img width="16" height="16" title="Ditta registrata su portale" alt="Ditta registrata su portale" src="${pageContext.request.contextPath}/img/ditta_acquisita.png"/>
+						<c:choose>
+						<c:when test="${requestScope.registrazioneImpPortaleNonCompleta == 'SI'}">
+							<img width="16" height="16" title="Impresa con registrazione non completa su portale" alt="Impresa con registrazione non completa su portale" src="${pageContext.request.contextPath}/img/ditta_acquisita_noncompleta.png"/>
+						</c:when>
+						<c:otherwise>
+							<img width="16" height="16" title="Impresa registrata su portale" alt="Impresa registrata su portale" src="${pageContext.request.contextPath}/img/ditta_acquisita.png"/>	
+						</c:otherwise>
+						</c:choose>
 					</c:if>
 					</gene:campoLista >
 					
 					
 					
-					<input type="hidden" name="where" id="where" value="${where}" />
 					<input type="hidden" name="entita" id="entita" value="${entita}" />
 					<input type="hidden" name="ngara" id="ngara" value="${ngara}" />
                     <input type="hidden" name="garaElenco" id="garaElenco" value="${garaElenco}" />
@@ -666,7 +683,7 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetImportoGaraFunction", 
 					<input type="hidden" name="ctrlimpValorePeriodo" id="ctrlimpValorePeriodo" value="${ctrlimpValorePeriodo}" />
 					<input type="hidden" name="modalitaSelezioneMista" id="modalitaSelezioneMista" value="${modalitaSelezioneMista}" />
 					<input type="hidden" name="elencoIdFiltriSpecificiObbl" id="elencoIdFiltriSpecificiObbl" value="${elencoIdFiltriSpecificiObbl}" />
-					
+					<input type="hidden" name="modalitaFiltroCategorie" id="modalitaFiltroCategorie" value="${sessionScope.modalitaFiltroCategorie}" />
 				</gene:formLista></td>
 			</tr>
 			<tr>

@@ -98,7 +98,8 @@
 	//21	-b		wsdm.tabellatiJiride.letdir
 	//22    -b		wsdm.tabellatiJiride.pecUffint
 	//23    -bPos	wsdm.posizioneAllegatoComunicazione, ho definito un tipo proprietà specifica per il campo, in quanto non è un campo si/no, ma assume i valori "prima degli altri allegati"/"in coda agli altri allegati" 
-	
+	//24    -b      wsdm.firmaDocumenti
+	//25    -b      wsdm.firmaDocumenti.destinatario
 	
 	arrayProprieta = [[idconfi,"wsdm.fascicoloprotocollo.url" ],[idconfi,"wsdmconfigurazione.fascicoloprotocollo.url"],[idconfi,"pg.wsdm.invioMailPec"],
 	                  [idconfi,"wsdm.protocolloSingoloInvito"],[idconfi,"wsdm.documentale.url"],[idconfi,"wsdmconfigurazione.documentale.url"],
@@ -107,9 +108,10 @@
 	                  [idconfi,"wsdm.associaDocumentiProtocollo"],[idconfi,"wsdm.invioMailPec.delay"],[idconfi,"wsdm.documentiDaProtocollo"],
 	                  [idconfi,"wsdm.gestioneERP"],[idconfi,"wsdm.accediCreaFascicolo"],[idconfi,"wsdm.obbligoClassificaFascicolo"],
 	                  [idconfi,"wsdm.obbligoUfficioFascicolo"],[idconfi,"wsdm.accediFascicoloDocumentaleCommessa"],[idconfi,"wsdm.tabellatiJiride.letdir"],
-	                  [idconfi,"wsdm.tabellatiJiride.pecUffint"],[idconfi,"wsdm.posizioneAllegatoComunicazione"]];
+	                  [idconfi,"wsdm.tabellatiJiride.pecUffint"],[idconfi,"wsdm.posizioneAllegatoComunicazione"],[idconfi,"wsdm.firmaDocumenti"],
+	                  [idconfi,"wsdm.firmaDocumenti.destinatario"]];
 	                                                                                                                                                                    											
-	tipoProprieta = [ "urlf","urlfc","-b","-b","urld","urldc","-b", "b","-b","-b","b","-b","assAll","other","-b","-b","-b","-b","-b","-b","-b","-b","-bPos"];	
+	tipoProprieta = [ "urlf","urlfc","-b","-b","urld","urldc","-b", "b","-b","-b","b","-b","assAll","other","-b","-b","-b","-b","-b","-b","-b","-b","-bPos","-b","other"];	
 
 	var tabAbilitati = false;
 		
@@ -313,7 +315,7 @@
 						if($("#urlServizioProtAttivo").val()==1 && $("#urlServizioConfProtAttivo").val()==1){
 							getWSTipoSistemaRemoto($("#urlServizioConfProt").val());
 							if(($("#prop3").html()=="No") || $("#tiposistemaremoto").val()!="EASYDOC" && $("#tiposistemaremoto").val()!="JIRIDE" &&
-									$("#tiposistemaremoto").val()!="PRISMA" && $("#tiposistemaremoto").val()!="JPROTOCOL"){
+									$("#tiposistemaremoto").val()!="PRISMA" && $("#tiposistemaremoto").val()!="JPROTOCOL" && $("#tiposistemaremoto").val()!="ARCHIFLOWFA"){
 								$("#delayMailDoc").hide();
 							}
 						}else{
@@ -357,14 +359,33 @@
 					$("#obblUfficio").show();
 				}
 				if($("#tiposistemaremoto").val()=="IRIDE" || $("#tiposistemaremoto").val()=="JIRIDE" || $("#tiposistemaremoto").val()=="ENGINEERING" ||  $("#tiposistemaremoto").val()=="ARCHIFLOW" || $("#tiposistemaremoto").val()=="INFOR"
-						|| $("#tiposistemaremoto").val()=="JPROTOCOL" ||  $("#tiposistemaremoto").val()=="JDOC"){
+						|| $("#tiposistemaremoto").val()=="JPROTOCOL" ||  $("#tiposistemaremoto").val()=="JDOC" ||  $("#tiposistemaremoto").val()=="ENGINEERINGDOC" ||  $("#tiposistemaremoto").val()=="ITALPROT"
+						||  $("#tiposistemaremoto").val()=="LAPISOPERA"){
 					$("#accessoFunzCreaFascicolo").show();
+				}
+				if($("#tiposistemaremoto").val()=="ITALPROT" ){
+					$("#firmaDocumento").show();
+					if($("#prop24").html()=="Si")
+						$("#destinatarioFirma").show();
+				}
+				if($("#tiposistemaremoto").val()=="INFOR"){
+					$("#strutturaCompetente").show();
 				}
 			}
 		}
-		
+		if(($("#urlServizioProtAttivo").val()==1 && $("#urlServizioConfProtAttivo").val()==1) || ($("#urlServizioDocAttivo").val()==1 && $("#urlServizioConfDocAttivo").val()==1)){
+			if($("#tiposistemaremoto").val()=="ENGINEERINGDOC" ){
+				$("#creaFascicoloPregresso").show();	
+			}
+		}
 		
 	});
+	
+	function apriCreaFascicolo(idconfi){
+		var href = "href=geneweb/wsdmconfipro/popupCreaFascicoloPregresso.jsp";
+		href += "?idconfi="+ idconfi;
+		openPopUpCustom(href, "creaFascicoloPregresso", 800, 550, "no", "no");
+	}
 	
 -->
 </script>
@@ -626,7 +647,7 @@
 			</tr>
 			<tr id="accessoFunzCreaFascicolo" style="display:none;">
 				<td class="etichetta-dato">
-					<span id="titleProp17" >Accesso alla funzione 'Crea fascicolo'?</span>
+					<span id="titleProp17" >Accesso alla funzione 'Crea/Associa fascicolo'?</span>
 				</td>
 				<td class="valore-dato">
 					<span id="prop17" ></span>
@@ -720,7 +741,22 @@
 					<span id="prop16" ></span>
 				</td>
 			</tr>
-			
+			<tr id="firmaDocumento" style="display:none;">
+				<td class="etichetta-dato">
+					<span id="titleProp24" >Attiva funzione 'Firma documento'?</span>
+				</td>
+				<td class="valore-dato">
+					<span id="prop24" ></span>
+				</td>
+			</tr>
+			<tr id="destinatarioFirma" style="display:none;">
+				<td class="etichetta-dato">
+					<span id="titleProp25" >Intestazione destinatario fittizio per firma</span>
+				</td>
+				<td class="valore-dato">
+					<span id="prop25" ></span>
+				</td>
+			</tr>
 			
 			<input id="tiposistemaremoto" type="hidden" value="" />
 			<input id="servizio" type="hidden" value="" />
@@ -743,6 +779,7 @@
 				</td>
 			</tr>
 			<gene:redefineInsert name="addToAzioni" >
+			 <tr>
 			 <td class="vocemenulaterale">
 				<c:if test='${gene:checkProtFunz(pageContext,"MOD","SCHEDAMOD")}'>
 	     				<a href="javascript:modifica();" value='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' >
@@ -750,5 +787,15 @@
 						</a>
 				</c:if>	
 			</td>
+			</tr>
+			<tr>
+			<td class="vocemenulaterale" >
+				
+    			<a href="javascript:apriCreaFascicolo('${idconfi}');" value='Crea fascicolo su pregresso' title='Crea fascicolo su pregresso' id="creaFascicoloPregresso" style="display: none;">
+				Crea fascicolo su pregresso
+				</a>
+				
+			</td>
+			</tr>
 			</gene:redefineInsert>
 	

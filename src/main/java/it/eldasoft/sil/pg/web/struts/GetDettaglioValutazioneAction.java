@@ -94,6 +94,7 @@ public class GetDettaglioValutazioneAction extends Action {
     //      idCridef
     //      necvan
     //      modmanu
+    //      esponente
 
 
     String ngara = request.getParameter("ngara");
@@ -218,7 +219,7 @@ public class GetDettaglioValutazioneAction extends Action {
 
       String commissarioAttivo = null;
       if(attivaCommissione){
-        List<?> commissarioAssAccount = sqlManager.getListVector("select tecni.codtec from tecni, usrsys where tecni.cftec = usrsys.syscf and usrsys.syscon = ?", new Object[] { new Long(profiloUtente.getId()) });
+        List<?> commissarioAssAccount = sqlManager.getListVector("select tecni.codtec from tecni, usrsys where upper(tecni.cftec) = upper(usrsys.syscf) and usrsys.syscon = ?", new Object[] { new Long(profiloUtente.getId()) });
         if (commissarioAssAccount != null && commissarioAssAccount.size() == 1) {
           commissarioAttivo = SqlManager.getValueFromVectorParam(commissarioAssAccount.get(0), 0).getStringValue();
         }
@@ -244,8 +245,10 @@ public class GetDettaglioValutazioneAction extends Action {
         Double valnum = null;
         Long numdeci = null;
         Long idcrival = null;
+        String note =null;
         Long seztec = null;
         String seztecstring = null;
+        Double esponente = null;
         for (int i = 0; i < datiCriteri.size(); i++) {
           HashMap<String, Object> hMapCriterio = new HashMap<String, Object>();
           hMapCriterio.put("norpar", SqlManager.getValueFromVectorParam(datiCriteri.get(i), 0).getValue());
@@ -272,7 +275,9 @@ public class GetDettaglioValutazioneAction extends Action {
           valdat = null;
           valnum = null;
           idcrival = null;
+          note = null;
           seztecstring = "";
+          esponente = null;
           if ((new Long(1)).equals(livpar) || (new Long(3)).equals(livpar)) {
             seztec=(Long)SqlManager.getValueFromVectorParam(datiCriteri.get(i), 9).getValue();
             if (seztec != null) {
@@ -286,7 +291,8 @@ public class GetDettaglioValutazioneAction extends Action {
             necvan=(Long)SqlManager.getValueFromVectorParam(datiCriteri.get(i), 8).getValue();
 
 
-            Vector<?> sottoDati = sqlManager.getVector("select d.maxpun, d.modpunti, v.coeffi, v.punteg, d.id, d.modmanu, d.formato, d.formula, v.valstg, v.valdat, v.valnum, v.id from g1cridef d LEFT JOIN G1CRIVAL v on d.id=v.idcridef and v.dittao=? "
+            Vector<?> sottoDati = sqlManager.getVector("select d.maxpun, d.modpunti, v.coeffi, v.punteg, d.id, d.modmanu, d.formato, d.formula, v.valstg, v.valdat, v.valnum, v.id, "
+                + "v.note, d.esponente from g1cridef d LEFT JOIN G1CRIVAL v on d.id=v.idcridef and v.dittao=? "
                 + "where d.ngara=?  and d.necvan=? ", new Object[]{ditta, ngara, necvan});
             if(sottoDati!=null && sottoDati.size()>0){
               maxpun= (Double)SqlManager.getValueFromVectorParam(sottoDati, 0).getValue();
@@ -303,12 +309,14 @@ public class GetDettaglioValutazioneAction extends Action {
               valdat = (Date)SqlManager.getValueFromVectorParam(sottoDati, 9).getValue();
               valnum = (Double)SqlManager.getValueFromVectorParam(sottoDati, 10).getValue();
               idcrival = (Long)SqlManager.getValueFromVectorParam(sottoDati, 11).getValue();
+              note = (String)SqlManager.getValueFromVectorParam(sottoDati, 12).getValue();
+              esponente = (Double)SqlManager.getValueFromVectorParam(sottoDati, 13).getValue();
             }
 
           }
 
 
-          if(modpunti != null && maxpun !=null && modpunti.intValue() == 1 && maxpun.doubleValue()>0){
+          if(modpunti != null && maxpun !=null && (modpunti.intValue() == 1 || modpunti.intValue() == 3) && maxpun.doubleValue()>0){
 
             String codice = ngara;
             Long genere = (Long)sqlManager.getObject("select genere from v_gare_genere where codgar=?", new Object[]{codgar});
@@ -330,7 +338,8 @@ public class GetDettaglioValutazioneAction extends Action {
               + "G.CODFOF, " //1
               + "G.NOMFOF, " //2
               + "V.ID AS IDCRIVAL, " //3
-              + "V.COEFFI " //4
+              + "V.COEFFI, " //4
+              + "V.NOTE " //5
               + "FROM GFOF G LEFT JOIN G1CRIVALCOM V ON G.ID=V.IDGFOF AND V.IDCRIVAL = ? "
               + "WHERE G.NGARA2 = ? AND G.ESPGIU = '1' order by id asc";
               datiVal = sqlManager.getListVector(selectComm, new Object[] { idcrival,codice });
@@ -347,9 +356,11 @@ public class GetDettaglioValutazioneAction extends Action {
                 if(idcrival == null || idcrival.equals("null")){
                   hMapCommissione.put("idcrivalcom", null);
                   hMapCommissione.put("coeffi", null);
+                  hMapCommissione.put("note", null);
                 }else{
                   hMapCommissione.put("idcrivalcom", SqlManager.getValueFromVectorParam(datiVal.get(j), 3).getValue());
                   hMapCommissione.put("coeffi", SqlManager.getValueFromVectorParam(datiVal.get(j), 4).getValue());
+                  hMapCommissione.put("note", SqlManager.getValueFromVectorParam(datiVal.get(j), 5).getValue());
                 }
                 list.add(hMapCommissione);
               }
@@ -373,6 +384,7 @@ public class GetDettaglioValutazioneAction extends Action {
           hMapCriterio.put("formula",formula );
           hMapCriterio.put("descFormula",descFormula );
           hMapCriterio.put("idCrival",idcrival );
+          hMapCriterio.put("note",note );
           if(valstg != null){
             hMapCriterio.put("valstg",valstg );
           }
@@ -384,6 +396,7 @@ public class GetDettaglioValutazioneAction extends Action {
           if(valnum != null){
             hMapCriterio.put("valnum",valnum );
           }
+          hMapCriterio.put("esponente",esponente );
           hMap.add(hMapCriterio);
         }
         result.put("riptec", riptec);

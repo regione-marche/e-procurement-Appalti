@@ -13,51 +13,35 @@ package it.eldasoft.sil.pg.bl.tasks;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
-import javax.servlet.jsp.PageContext;
+import org.apache.log4j.Logger;
+import org.apache.xmlbeans.XmlException;
 
 import it.eldasoft.gene.bl.FileAllegatoManager;
-import it.eldasoft.gene.bl.GenChiaviManager;
 import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.bl.admin.AccountManager;
-import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
-import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.db.domain.BlobFile;
 import it.eldasoft.gene.db.domain.LogEvento;
-import it.eldasoft.gene.db.domain.admin.Account;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.utils.LogEventiUtils;
-import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.ControlloDati190Manager;
 import it.eldasoft.sil.pg.bl.PgManager;
-import it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAcquisisciDaPortale;
 import it.eldasoft.sil.portgare.datatypes.AggiornamentoAnagraficaImpresaDocument;
 import it.eldasoft.sil.portgare.datatypes.RecapitiType;
-import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
-
-import org.apache.log4j.Logger;
-import org.apache.xmlbeans.XmlException;
 
 
 public class AcquisizioneAggiornamentoAnagraficoBatchManager {
 
   static Logger      logger = Logger.getLogger(ControlloDati190Manager.class);
   static String     nomeFileXML_Aggiornamento = "dati_agganag.xml";
-  
+
   private SqlManager sqlManager;
-  private PgManager pgManager;  
+  private PgManager pgManager;
   private FileAllegatoManager fileAllegatoManager;
-  
+
   /**
   *
   * @param fileAllegatoDao
@@ -81,16 +65,16 @@ public class AcquisizioneAggiornamentoAnagraficoBatchManager {
  public void setPgManager(PgManager pgManager) {
    this.pgManager = pgManager;
  }
-  
+
  public void acquisizioneAggiornamentoAnagrafico() throws SQLException, GestoreException{
-    
+
    //variabili per tracciatura eventi
    int livEvento = 1;
    String codEvento = "GA_ACQUISIZIONE_AGGANAG";
    String oggEvento = "";
    String descrEvento = "Acquisizione aggiornamento anagrafico da portale Appalti";
    String errMsgEvento = "";
-   
+
    String idprg="PA";
    String comstato= "5";
    String comtipo="FS5";
@@ -100,17 +84,17 @@ public class AcquisizioneAggiornamentoAnagraficoBatchManager {
    String nomeDitta = null;
    if (logger.isDebugEnabled())
         logger.debug("AcquisizioneAggiornamentoAnagrafico: inizio metodo");
-   
-   
+
+
    String select = "select IDCOM, COMKEY1 from W_INVCOM where IDPRG = ? and COMTIPO = ? AND COMSTATO = ?";
    List AggiornamentiDaEseguire = sqlManager.getListVector(select,
        new Object[]{idprg,comtipo,comstato});
    if(AggiornamentiDaEseguire != null && AggiornamentiDaEseguire.size()>0){
      for(int i = 0; i < AggiornamentiDaEseguire.size(); i++ ){
        try{
-       idcom = (Long) SqlManager.getValueFromVectorParam(AggiornamentiDaEseguire.get(i), 0).longValue();
-       nomeDitta = (String) SqlManager.getValueFromVectorParam(AggiornamentiDaEseguire.get(i), 1).stringValue();
-       
+       idcom = SqlManager.getValueFromVectorParam(AggiornamentiDaEseguire.get(i), 0).longValue();
+       nomeDitta = SqlManager.getValueFromVectorParam(AggiornamentiDaEseguire.get(i), 1).stringValue();
+
        select="select USERKEY1 from w_puser where USERNOME = ? ";
        String codiceDitta;
        try {
@@ -121,7 +105,7 @@ public class AcquisizioneAggiornamentoAnagraficoBatchManager {
          livEvento = 3;
          throw new GestoreException("Errore nella lettura della tabella W_PUSER ",null, e);
        }
-       
+
        //Vengono letti i documenti associati ad ogni occorrenza di di W_INVCOM
        select="select idprg,iddocdig from w_docdig where DIGENT = ? and digkey1 = ? and idprg = ? and dignomdoc = ? ";
        String digent="W_INVCOM";
@@ -138,10 +122,10 @@ public class AcquisizioneAggiornamentoAnagraficoBatchManager {
          errMsgEvento = e.getMessage();
          throw new GestoreException("Errore nella lettura della tabella W_DOCDIG ",null, e);
        }
-       
+
        String idprgW_INVCOM = null;
        Long iddocdig = null;
-       
+
        if(datiW_DOCDIG != null ){
          if(((JdbcParametro)datiW_DOCDIG.get(0)).getValue() != null)
            idprgW_INVCOM = ((JdbcParametro) datiW_DOCDIG.get(0)).getStringValue();
@@ -172,7 +156,7 @@ public class AcquisizioneAggiornamentoAnagraficoBatchManager {
            AggiornamentoAnagraficaImpresaDocument document;
            try {
              document = AggiornamentoAnagraficaImpresaDocument.Factory.parse(xml);
-             
+
              String msgImpresa=pgManager.controlloDatiImpresa(document, codiceDitta);
 
              //Controllo Legale Rappresentante
@@ -214,14 +198,14 @@ public class AcquisizioneAggiornamentoAnagraficoBatchManager {
              boolean impostareStatoNota = false;
              if(!pecMsg.equals(pecDb) || !"".equals(msgLegale) || !"".equals(msgDirettore) || !"".equals(msgAltreCariche) || !"".equals(msgCollaboratore))
                impostareStatoNota = true;
-             
+
              pgManager.aggiornaDitta(document,codiceDitta,"UPDATE");
 
              //Viene popolata la G_NOTEAVVISI
              if(messaggioVariazioni!=null && !"".equals(messaggioVariazioni)){
-               
+
                //La variabile contiene l'informazione se è stata modificata la pec o i referenti.
-               pgManager.InserisciVariazioni(messaggioVariazioni, codiceDitta,"INS",null,comDataStato,impostareStatoNota);
+               pgManager.InserisciVariazioni(messaggioVariazioni, codiceDitta,"INS",null,comDataStato,impostareStatoNota,null);
              }
 
              //Aggiornamento dello stato a processata
@@ -260,13 +244,13 @@ public class AcquisizioneAggiornamentoAnagraficoBatchManager {
            logger.error("Errore inaspettato durante la tracciatura su w_logeventi", le);
          }
        }
-       
+
      }
    }
    if (logger.isDebugEnabled())
       logger.debug("AcquisizioneAggiornamentoAnagrafico: fine metodo");
   }
-  
+
  public void aggiornaStatoW_INVOCM(Long idcom, String stato) throws GestoreException{
    //Aggiornamento dello stato delle occorrenze per le quali in w_invcom è richiesta l' Iscrizione in elenco
    try {
@@ -277,5 +261,5 @@ public class AcquisizioneAggiornamentoAnagraficoBatchManager {
      throw new GestoreException("Errore nell'aggiornamento dell'entità W_INVCOM", null, e);
    }
  }
-  
+
 }

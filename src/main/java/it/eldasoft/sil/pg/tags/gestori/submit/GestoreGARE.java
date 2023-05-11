@@ -10,6 +10,21 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Vector;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.GenChiaviManager;
 import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
@@ -34,6 +49,7 @@ import it.eldasoft.sil.pg.bl.GestioneWSERPManager;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.sil.pg.bl.SmatManager;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.sil.pl.struts.gestori.GestoreAPPA;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
@@ -42,21 +58,6 @@ import it.eldasoft.utils.utility.UtilityStringhe;
 import it.maggioli.eldasoft.ws.conf.WSERPConfigurazioneOutType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaResType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaType;
-
-import java.math.BigDecimal;
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Vector;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore dell'entita' GARE: insert, update, delete
@@ -140,16 +141,21 @@ public class GestoreGARE extends AbstractGestoreEntita {
       if(configurazione.isEsito()){
         String tipoWSERP = configurazione.getRemotewserp();
         String codiceLotto = datiForm.getString("GARE.NGARA");
-        String codiceGara;
+        String codiceGara = null;
+        Long esineg = null;
         try {
-          codiceGara = (String)this.sqlManager.getObject("select codgar1 from gare where ngara=?", new Object[]{codiceLotto});
+        	Vector<?> datiLotto = this.sqlManager.getVector("select codgar1,esineg from gare where ngara=?", new Object[]{codiceLotto});
+        	if(datiLotto!=null && datiLotto.size()>0){
+        		codiceGara = SqlManager.getValueFromVectorParam(datiLotto, 0).getStringValue();
+        		esineg =  (Long) SqlManager.getValueFromVectorParam(datiLotto, 1).getValue();
+        	}
         } catch (SQLException sqle) {
           throw new GestoreException("Errore nella gestione della cancellazione delle occorrenze in GARE",null, sqle);
         }
         String linkrda = "";
         if("SMEUP".equals(tipoWSERP)){
           linkrda = "2";
-        }else if("AVM".equals(tipoWSERP) || "FNM".equals(tipoWSERP)){
+        }else if("AVM".equals(tipoWSERP) || "FNM".equals(tipoWSERP) || "AMIU".equals(tipoWSERP)){
           Long countRda;
           try {
             countRda = (Long) sqlManager.getObject(
@@ -165,11 +171,26 @@ public class GestoreGARE extends AbstractGestoreEntita {
           }
         }//if tipoWSERP
 
-        int res = this.gestioneWSERPManager.scollegaRda(codiceGara, codiceLotto, linkrda, null, null, this.getRequest());
-        if(res < 0){
-          throw new GestoreException(
-              "Errore durante l'operazione di scollegamento delle RdA dalla gara",
-              "scollegaRdaGara", null);
+        if(esineg != null) {
+        	;
+        }else {
+            String[] res = this.gestioneWSERPManager.scollegaRda(codiceGara, codiceLotto, linkrda, null, null, this.getRequest());
+            String ris = res[0];
+            int intRis = 0;
+            if(ris!=null) {
+            	 intRis=Long.valueOf(ris).intValue();
+            }
+            if(intRis < 0){
+            	if("AMIU".equals(tipoWSERP) && res[1]!=null) {
+                    throw new GestoreException(
+                            "Errore durante l'operazione di scollegamento delle RdA dalla gara",
+                            "scollegaRdaGaraMsg",new Object[] {res[1]}, null);
+            	}else {
+                    throw new GestoreException(
+                            "Errore durante l'operazione di scollegamento delle RdA dalla gara",
+                            "scollegaRdaGara", null);
+            	}
+            }
         }
       }
     }
@@ -258,6 +279,8 @@ public class GestoreGARE extends AbstractGestoreEntita {
       String nuovoNGARA = null;
       Long nuovoCODIGA = null;
 
+      //il campo offaum nel caso di offtel=3 non è visibile, quindi non è possibile impostare i valori via javascript nella pagina
+      this.setOffaum(datiForm);
 
       //Controllo importo manodopera
       this.controlloImpmano(datiForm);
@@ -378,26 +401,25 @@ public class GestoreGARE extends AbstractGestoreEntita {
           "GARE.GARE.CRITLICG") && this.getGeneManager().getProfili().checkProtec(
               (String) this.getRequest().getSession().getAttribute(
                   CostantiGenerali.PROFILO_ATTIVO), "COLS", "VIS",
-              "GARE.GARE.DETLICG") && this.getGeneManager().getProfili().checkProtec(
-                  (String) this.getRequest().getSession().getAttribute(
-                      CostantiGenerali.PROFILO_ATTIVO), "COLS", "VIS",
-                  "GARE.GARE.CALCSOANG")) {
-        //Calcolo di MODLICG
-        Long modlicg = datiForm.getLong("GARE.MODLICG");
-        if (modlicg == null) {
-          Long critlicg = datiForm.getLong("GARE.CRITLICG");
-          Long detlicg = datiForm.getLong("GARE.DETLICG");
-          String calcsoang = datiForm.getString("GARE.CALCSOANG");
-          Long applegregg = datiForm.getLong("GARE.APPLEGREGG");
-          if (critlicg == null || ("1".equals(critlicg) && detlicg == null && (calcsoang == null || "".equals(calcsoang)))) {
-            if(tipoGara != null && tipoGara.equalsIgnoreCase("garaLottoUnico")){
-              livEvento = 3;
-              errMsgEvento = this.resBundleGenerale.getString("errors.gestoreException.*.criterioAggiudicazionegNoDati");
+              "GARE.GARE.DETLICG")) {
+        if (datiForm.isColumn("GARE.MODLICG")){
+          //Calcolo di MODLICG
+          Long modlicg = datiForm.getLong("GARE.MODLICG");
+          if (modlicg == null) {
+            Long critlicg = datiForm.getLong("GARE.CRITLICG");
+            Long detlicg = datiForm.getLong("GARE.DETLICG");
+            String calcsoang = datiForm.getString("GARE.CALCSOANG");
+            Long applegregg = datiForm.getLong("GARE.APPLEGREGG");
+            if (critlicg == null || ("1".equals(critlicg) && detlicg == null && (calcsoang == null || "".equals(calcsoang)))) {
+              if(tipoGara != null && tipoGara.equalsIgnoreCase("garaLottoUnico")){
+                livEvento = 3;
+                errMsgEvento = this.resBundleGenerale.getString("errors.gestoreException.*.criterioAggiudicazionegNoDati");
+              }
+              throw new GestoreException("I dati per determinare il criterio di aggiudicazione non sono completi","criterioAggiudicazionegNoDati");
             }
-            throw new GestoreException("I dati per determinare il criterio di aggiudicazione non sono completi","criterioAggiudicazionegNoDati");
+            modlicg = pgManager.getMODLICG(critlicg, detlicg, calcsoang, applegregg);
+            datiForm.setValue("GARE.MODLICG", modlicg);
           }
-          modlicg = pgManager.getMODLICG(critlicg, detlicg, calcsoang, applegregg);
-          datiForm.setValue("GARE.MODLICG", modlicg);
         }
       }
 
@@ -422,27 +444,6 @@ public class GestoreGARE extends AbstractGestoreEntita {
             errMsgEvento = "Errore nel calcolo di TORN.ITERGA";
             throw new GestoreException(
                 "Errore nel calcolo di TORN.ITERGA",null, e);
-          }
-        }
-      }
-
-      // Controllo tipo di procedura per le gare telematiche
-      if (datiForm.isColumn("TORN.ITERGA") && datiForm.isColumn("TORN.GARTEL")) {
-        Long iterga = datiForm.getLong("TORN.ITERGA");
-        String gartel = datiForm.getString("TORN.GARTEL");
-
-        if (gartel != null && "1".equals(gartel)) {
-          if (iterga != null) {
-            if (iterga.longValue() == 1 || iterga.longValue() == 2 || iterga.longValue() == 3 || iterga.longValue() == 4 || iterga.longValue() == 5 || iterga.longValue() == 6) {
-              // Procedure ammesse
-            } else {
-              // Procedure non ammesse
-              if(tipoGara != null && tipoGara.equalsIgnoreCase("garaLottoUnico")){
-                livEvento = 3;
-                errMsgEvento = this.resBundleGenerale.getString("errors.gestoreException.*.noTipoProceduraTelematica");
-              }
-              throw new GestoreException("Il tipo procedura non è disponibile nella modalità telematica", "noTipoProceduraTelematica");
-            }
           }
         }
       }
@@ -753,7 +754,11 @@ public class GestoreGARE extends AbstractGestoreEntita {
           datiForm.getColumn("GARE1.IMPALTRO").setOriginalValue(new JdbcParametro(JdbcParametro.TIPO_DECIMALE, null));
         if (datiForm.isColumn("GARE1.CODCUI"))
           datiForm.getColumn("GARE1.CODCUI").setOriginalValue(new JdbcParametro(JdbcParametro.TIPO_TESTO, null));
-
+          String gartel = datiForm.getString("TORN.GARTEL");
+          if (gartel != null && "1".equals(gartel)) {
+              if (datiForm.isColumn("GARE1.ESPLPORT"))
+                  datiForm.getColumn("GARE1.ESPLPORT").setOriginalValue(new JdbcParametro(JdbcParametro.TIPO_TESTO, null));
+	      }
 
         try {
           gestoreGARE1.update(status, datiForm);
@@ -866,12 +871,6 @@ public class GestoreGARE extends AbstractGestoreEntita {
         this.gestisciAggiornamentiRecordSchedaMultipla(status, datiForm,
             gestoreGARCPV, "CPVCOMP",
             new DataColumn[] { datiForm.getColumn("GARE.NGARA") }, null);
-        // Gestione delle sezioni 'Ordini di acquisto'
-        AbstractGestoreChiaveIDAutoincrementante gestoreMultiploGARERDA = new DefaultGestoreEntitaChiaveIDAutoincrementante(
-            "GARERDA", "ID", this.getRequest());
-        this.gestisciAggiornamentiRecordSchedaMultiplaRda(status, datiForm,
-            gestoreMultiploGARERDA, "GARERDA",
-            new DataColumn[] {datiForm.getColumn("GARE.CODGAR1"),datiForm.getColumn("GARE.NGARA")}, null,null);
 
       }else if(!isInsertConCollegamentoAppalto && "SI".equalsIgnoreCase(lottoOffertaUnica)){
         // Gestione CPV
@@ -898,7 +897,7 @@ public class GestoreGARE extends AbstractGestoreEntita {
           WSERPConfigurazioneOutType configurazione = this.gestioneWSERPManager.wserpConfigurazioneLeggi("WSERP");
           if(configurazione.isEsito()){
             String tipoWSERP = configurazione.getRemotewserp();
-            if("FNM".equals(tipoWSERP)){
+            if("FNM".equals(tipoWSERP) || "RAIWAY".equals(tipoWSERP)){
               if (tipoGara != null && tipoGara.equalsIgnoreCase("garaLottoUnico")) {
                 String codcpv = this.getRequest().getParameter("codCPV");
                 codcpv = UtilityStringhe.convertiNullInStringaVuota(codcpv);
@@ -1117,7 +1116,7 @@ public class GestoreGARE extends AbstractGestoreEntita {
           new JdbcParametro(JdbcParametro.TIPO_DECIMALE, percentuale));
     } catch (SQLException e) {
       throw new GestoreException(
-          "Errore durante l'individuazione della percentuale della cauzione provvisoria",
+          "Errore durante l'individuazione della percentuale della garanzia provvisoria",
           "getPercCauzProvv", e);
     }
   }
@@ -1200,6 +1199,18 @@ public class GestoreGARE extends AbstractGestoreEntita {
         gestoreGARE1.update(status, datiForm);
       }
     }
+    
+    //se non e' gara lotto unico faccio l'associazione(nel lotto unico lo fa il gestore di TORN)
+    String tipoGara = UtilityStruts.getParametroString(this.getRequest(), "tipoGara");
+    if (!(tipoGara != null && tipoGara.equalsIgnoreCase("garaLottoUnico"))) {
+        // Gestione delle sezioni 'Rda'
+        AbstractGestoreChiaveIDAutoincrementante gestoreMultiploGARERDA = new DefaultGestoreEntitaChiaveIDAutoincrementante(
+            "GARERDA", "ID", this.getRequest());
+        this.gestisciAggiornamentiRecordSchedaMultiplaRda(status, datiForm,
+            gestoreMultiploGARERDA, "GARERDA",
+            new DataColumn[] {datiForm.getColumn("GARE.CODGAR1"),datiForm.getColumn("GARE.NGARA")}, null,null);
+    }    
+    
   }
 
   @Override
@@ -1253,6 +1264,8 @@ public class GestoreGARE extends AbstractGestoreEntita {
         throw new GestoreException("Errore nella lettura della campo tabellato A1151",null,e1);
     }
 
+    //il campo offaum nel caso di offtel=3 non è visibile, quindi non è possibile impostare i valori via javascript nella pagina
+    this.setOffaum(datiForm);
 
     this.controlloAccordoQuadro(datiForm,true);
 
@@ -1282,10 +1295,7 @@ public class GestoreGARE extends AbstractGestoreEntita {
         "GARE.GARE.CRITLICG") && this.getGeneManager().getProfili().checkProtec(
             (String) this.getRequest().getSession().getAttribute(
                 CostantiGenerali.PROFILO_ATTIVO), "COLS", "VIS",
-            "GARE.GARE.DETLICG") && this.getGeneManager().getProfili().checkProtec(
-                (String) this.getRequest().getSession().getAttribute(
-                    CostantiGenerali.PROFILO_ATTIVO), "COLS", "VIS",
-                "GARE.GARE.CALCSOANG")) {
+            "GARE.GARE.DETLICG") ) {
       //Calcolo di MODLICG
       if (datiForm.isColumn("GARE.MODLICG") && datiForm.isColumn("GARE.CRITLICG") && datiForm.isColumn("GARE.DETLICG") && datiForm.isColumn("GARE.CALCSOANG")
           && datiForm.isColumn("GARE.APPLEGREGG")){
@@ -1323,23 +1333,6 @@ public class GestoreGARE extends AbstractGestoreEntita {
         } catch (SQLException e) {
           throw new GestoreException(
               "Errore nel calcolo di TORN.ITERGA",null, e);
-        }
-      }
-    }
-
-    // Controllo tipo di procedura per le gare telematiche
-    if (datiForm.isColumn("TORN.ITERGA") && datiForm.isColumn("TORN.GARTEL")) {
-      Long iterga = datiForm.getLong("TORN.ITERGA");
-      String gartel = datiForm.getString("TORN.GARTEL");
-
-      if (gartel != null && "1".equals(gartel)) {
-        if (iterga != null) {
-          if (iterga.longValue() == 1 || iterga.longValue() == 2 || iterga.longValue() == 3 || iterga.longValue() == 4 || iterga.longValue() == 5 || iterga.longValue() == 6) {
-            // Procedure ammesse
-          } else {
-            // Procedure non ammesse
-            throw new GestoreException("Il tipo procedura non è disponibile nella modalità telematica", "noTipoProceduraTelematica");
-          }
         }
       }
     }
@@ -1415,6 +1408,14 @@ public class GestoreGARE extends AbstractGestoreEntita {
                 new Object[]{msgTipoElencoCatalogo}, new Exception());
           }
         }
+        String urlMDGUE = ConfigManager.getValore(CostantiAppalti.PROP_INTEGRAZIONE_MDGUE_URL);
+        if(urlMDGUE!=null && !"".equals(urlMDGUE) && datiForm.isColumn("GARE.TIPGARG") && datiForm.isModifiedColumn("GARE.TIPGARG")) {
+          boolean esistonoDoc = pgManagerEst1.esistonoDitteDGUE(codgar1.getValue().stringValue(), new Long(3));
+          if(esistonoDoc) {
+            throw new GestoreException("Non è possibile modificare il tipo procedura poichè risultano già definiti dei documenti richiesti ai concorrenti integrati con M-DGUE",
+                "modificaTipgar.ditteDGUEInGara", null, new Exception());
+          }
+        }
      }else{
 		//Gestione delle sezioni n cup
 		 AbstractGestoreChiaveIDAutoincrementante gestoreGARECUP = new DefaultGestoreEntitaChiaveIDAutoincrementante(
@@ -1435,7 +1436,7 @@ public class GestoreGARE extends AbstractGestoreEntita {
         controlloCodiga(datiForm, lottoOffertaUnica, codgar1);
     }
 
-    String garaLottoUnico = UtilityStruts.getParametroString(this.getRequest(),"tipoGara");
+    String garaLottoUnico = UtilityStruts.getParametroString(this.getRequest(),"garaLottoUnico");
     if (garaLottoUnico == null || !garaLottoUnico.equalsIgnoreCase("true")){
       if( datiForm.isColumn("GARE.MODLICG")){
         Long modlicg = datiForm.getLong("GARE.MODLICG");
@@ -1491,6 +1492,23 @@ public class GestoreGARE extends AbstractGestoreEntita {
       gestoreGARECONT.update(status, datiForm);
     }
 
+    //Aggiornamento GARESOSP
+    if(datiForm.isModifiedTable("GARSOSPE")){
+      Object[] params = new Object[2];
+      params[0] = datiForm.getString("GARSOSPE.NOTE");
+      params[1] = datiForm.getLong("GARSOSPE.ID");
+
+	  try {
+		this.sqlManager.update(
+			  			"update GARSOSPE set NOTE = ? " +
+			  			 "where ID = ?",
+			  			params);
+	  } catch (SQLException e) {
+			throw new GestoreException(
+					"Errore nell'aggiornamento note di sospensione gara ", null,e);
+	  }
+    }
+
     //Gestione entita GARALTSOG
     pgManagerEst1.gestioneGaraltSog(datiForm);
 
@@ -1511,10 +1529,10 @@ public class GestoreGARE extends AbstractGestoreEntita {
             //Campi che contengono nei nomi le stringhe: "NGARA","TIPCPV","TIPLAVG","IMPAPP","CIG","NUMCPV"
             if(pair.getKey().indexOf("FIT")>=0 || pair.getKey().indexOf("INDICE_")>=0 || pair.getKey().indexOf("MOD_")>=0  ||
                 pair.getKey().indexOf("NGARA")>=0 || pair.getKey().indexOf("TIPCPV")>=0 || pair.getKey().indexOf("TIPLAVG")>=0 ||
-                pair.getKey().indexOf("IMPAPP")>=0 || pair.getKey().indexOf("CIG")>=0 ||
+                (pair.getKey().indexOf("IMPAPP")>=0 && !"GARE.IMPAPP".equals(pair.getKey())) || (pair.getKey().indexOf("CIG")>=0 && !"GARE1.MOTESENTECIG".equals(pair.getKey())) ||
                 pair.getKey().indexOf("IMPPER")>=0 || pair.getKey().indexOf("IMPCOR_RIB")>=0 || pair.getKey().indexOf("IMPMIS_RIB")>=0 ||
-                pair.getKey().indexOf("NUMCPV")>=0 || pair.getKey().indexOf("GARE.GAROFF")>=0 || pair.getKey().indexOf("STATOGARA")>=0 
-                || pair.getKey().indexOf("OGGCONT_")>=0 || pair.getKey().indexOf("_CAT_PRE_")>=0)
+                pair.getKey().indexOf("NUMCPV")>=0 || pair.getKey().indexOf("GARE.GAROFF")>=0 || pair.getKey().indexOf("STATOGARA")>=0
+                || pair.getKey().indexOf("OGGCONT_")>=0 || pair.getKey().indexOf("_CAT_PRE_")>=0 || pair.getKey().indexOf("OPES.PERCEN_CATEG")>=0)
               tracciareCampo=false;
             else
               tracciareCampo=true;
@@ -1575,6 +1593,18 @@ public class GestoreGARE extends AbstractGestoreEntita {
     if(impl.isColumn("TORN.NGARAAQ") && impl.isModifiedColumn("TORN.NGARAAQ") && impl.getObject("TORN.NGARAAQ")!=null){
       this.insertDittaAccordoQuadro(status, impl);
     }
+    String lottoOffertaUnica = UtilityStruts.getParametroString(this.getRequest(), "LOTTO_OFFERTAUNICA");
+    if(lottoOffertaUnica==null){
+    	;
+    }else {
+        // Gestione delle sezioni 'Rda'
+        AbstractGestoreChiaveIDAutoincrementante gestoreMultiploGARERDA = new DefaultGestoreEntitaChiaveIDAutoincrementante(
+            "GARERDA", "ID", this.getRequest());
+        this.gestisciAggiornamentiRecordSchedaMultiplaRda(status, impl,
+            gestoreMultiploGARERDA, "GARERDA",
+            new DataColumn[] {impl.getColumn("GARE.CODGAR1"),impl.getColumn("GARE.NGARA")}, null,null);
+    }
+
   }
 
   /**
@@ -1584,7 +1614,7 @@ public class GestoreGARE extends AbstractGestoreEntita {
    * @param datiForm
    * @throws GestoreException
    */
-  private void updateGARCPV(TransactionStatus status,
+  public void updateGARCPV(TransactionStatus status,
       DataColumnContainer datiForm) throws GestoreException {
     // Aggiornamento dell'occorrenza principale
     if (datiForm.isModifiedColumn("GARCPV.CODCPV")) {
@@ -2208,18 +2238,21 @@ public class GestoreGARE extends AbstractGestoreEntita {
       Double impnrl=datiForm.getDouble("GARE.IMPNRL");
       Double impsic=datiForm.getDouble("GARE.IMPSIC");
 
-      if(impmano==null)
-        impmano= new Double(0);
-      if(impapp==null)
-        impapp= new Double(0);
-      if(impnrl==null)
-        impnrl= new Double(0);
-      if(impsic==null)
-        impsic= new Double(0);
+      if(impmano!=null) {
 
-      if(impmano.doubleValue() > impapp.doubleValue() - impnrl.doubleValue() - impsic.doubleValue()){
-        throw new GestoreException("Il costo manodopera non deve superare l'importo a base di gara soggetto a ribasso","controlloImportoManodopera",
-            null, new Exception());
+        if(impapp==null)
+          impapp= new Double(0);
+        if(impnrl==null)
+          impnrl= new Double(0);
+        if(impsic==null)
+          impsic= new Double(0);
+
+        BigDecimal bdImpmano = BigDecimal.valueOf(impmano.doubleValue()).setScale(5, BigDecimal.ROUND_HALF_UP);
+        BigDecimal bdImpgara = BigDecimal.valueOf(impapp.doubleValue() - impnrl.doubleValue() - impsic.doubleValue()).setScale(5, BigDecimal.ROUND_HALF_UP);
+        if(bdImpmano.compareTo(bdImpgara)==1){
+          throw new GestoreException("Il costo manodopera non deve superare l'importo a base di gara soggetto a ribasso","controlloImportoManodopera",
+              null, new Exception());
+        }
       }
     }
   }
@@ -2294,11 +2327,36 @@ public class GestoreGARE extends AbstractGestoreEntita {
         }
 
         if (deleteOccorrenza) {
-          // Se è stata richiesta l'eliminazione e il campo chiave ID incrementante e'
-          // diverso da null eseguo l'effettiva eliminazione del record
+            if("AVM".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "CAV".equals(tipoWSERP) || "AMIU".equals(tipoWSERP)){
                 if (newDataColumnContainer.getLong(gestore.getCampoNumericoChiave()) != null){
-                  gestore.elimina(status, newDataColumnContainer);
+                  String codgar  = newDataColumnContainer.getString("GARERDA.CODGAR");
+                  String ngara  = newDataColumnContainer.getString("GARERDA.NGARA");
+                  String codiceRda  = newDataColumnContainer.getString("GARERDA.NUMRDA");
+                  String posizioneRda  = newDataColumnContainer.getString("GARERDA.POSRDA");
+                  String[] res = this.gestioneWSERPManager.scollegaRda(codgar, ngara, "1", codiceRda, posizioneRda, this.getRequest());
+                  String ris = res[0];
+                  int intRis = 0;
+                  if(ris!=null) {
+                  	 intRis=Long.valueOf(ris).intValue();
+                  }
+                  if(intRis < 0){
+                      throw new GestoreException(
+                              "Errore durante l'operazione di scollegamento delle RdA dalla gara",
+                              "scollegaRdaGara", null);
+                  }else{
+                      gestore.elimina(status, newDataColumnContainer);
+                  }
                 }
+              }else{//non c'e' integrazione WSERP
+                  // Se è stata richiesta l'eliminazione e il campo chiave ID incrementante e'
+                  // diverso da null eseguo l'effettiva eliminazione del record
+	                if (newDataColumnContainer.getLong(gestore.getCampoNumericoChiave()) != null){
+	                  gestore.elimina(status, newDataColumnContainer);
+	                }
+              }
+
+
+
 
           // altrimenti e' stato eliminato un nuovo record non ancora inserito
           // ma predisposto nel form per l'inserimento
@@ -2307,13 +2365,20 @@ public class GestoreGARE extends AbstractGestoreEntita {
             if (newDataColumnContainer.getLong(gestore.getCampoNumericoChiave()) == null){
               newDataColumnContainer.setValue("GARERDA.NGARA", dataColumnContainer.getString("GARE.NGARA"));
               gestore.inserisci(status, newDataColumnContainer);
-              if("CAV".equals(tipoWSERP)){
+              if("CAV".equals(tipoWSERP) || "AMIU".equals(tipoWSERP)){
 
                 String codgar  = newDataColumnContainer.getString("GARERDA.CODGAR");
                 String codiceRda  = newDataColumnContainer.getString("GARERDA.NUMRDA");
                 String codiceCarrello  = newDataColumnContainer.getString("GARERDA.CODCARR");
                 String esercizio  = newDataColumnContainer.getString("GARERDA.ESERCIZIO");
-                String codiceLotto = "";
+                String codiceLotto = newDataColumnContainer.getString("GARERDA.NGARA");
+                WSERPRdaType rdaDatiAggiuntivi = new WSERPRdaType();
+                //solo per AMIU
+                if("AMIU".equals(tipoWSERP)) {
+                	String codiceCig  = dataColumnContainer.getString("GARE.CODCIG");
+                    rdaDatiAggiuntivi.setCodiceCig(codiceCig);
+                    rdaDatiAggiuntivi.setCodiceGara(codgar);
+                }
 
                 String servizio = "WSERP";
                 ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
@@ -2323,22 +2388,30 @@ public class GestoreGARE extends AbstractGestoreEntita {
                 String username = credenziali[0];
                 String password = credenziali[1];
 
-                WSERPRdaResType wserpRdaRes = this.gestioneWSERPManager.wserpAssociaRdaGara(username, password, servizio, codiceCarrello, codiceRda, null, codiceLotto, true);
+                WSERPRdaResType wserpRdaRes = this.gestioneWSERPManager.wserpAssociaRdaGara(username, password, servizio, codiceCarrello, codiceRda, null, codiceLotto, rdaDatiAggiuntivi, true);
 
                 if(wserpRdaRes.isEsito()){
                     Long idRda  = newDataColumnContainer.getLong("GARERDA.ID");
-                    //lettura deal ws
-                    WSERPRdaType rdaSearch = new WSERPRdaType();
-                    rdaSearch.setCodiceRda(codiceRda);
-                    rdaSearch.setTipoRdaErp(esercizio);
-                    WSERPRdaResType dettaglioRdares= this.gestioneWSERPManager.wserpDettaglioRda(username, password, servizio, rdaSearch);
-                    if(dettaglioRdares.isEsito()){
-                      this.gestioneWSERPManager.insPosizioniRda(username, password, servizio, codgar, codiceLotto, idRda, dettaglioRdares.getRdaArray());
+                    if("CAV".equals(tipoWSERP)) {
+                        //lettura dal ws
+                        WSERPRdaType rdaSearch = new WSERPRdaType();
+                        rdaSearch.setCodiceRda(codiceRda);
+                        rdaSearch.setTipoRdaErp(esercizio);
+                        WSERPRdaResType dettaglioRdares= this.gestioneWSERPManager.wserpDettaglioRda(username, password, servizio, rdaSearch);
+                        if(dettaglioRdares.isEsito()){
+                          this.gestioneWSERPManager.insPosizioniRda(username, password, servizio, codgar, codiceLotto, idRda, dettaglioRdares.getRdaArray());
+                        }
                     }
                 }else{
-                  throw new GestoreException(
-                      "Errore durante l'operazione di collegamento delle RdA alla gara",
-                      "collegaRdaGara", null);
+                	if("AMIU".equals(tipoWSERP)) {
+                        throw new GestoreException(
+                                "Errore durante l'operazione di collegamento delle RdA alla gara",
+                                "collegaRdaGaraMsg",new Object[] {wserpRdaRes.getMessaggio()}, null);
+                	}else {
+                        throw new GestoreException(
+                                "Errore durante l'operazione di collegamento delle RdA alla gara",
+                                "collegaRdaGara", null);
+                	}
                 }
               }//FNM
             }
@@ -2352,7 +2425,27 @@ public class GestoreGARE extends AbstractGestoreEntita {
     }
   }
 
-
+  private void setOffaum(DataColumnContainer datiForm) throws GestoreException {
+    Long offtel = null;
+    if (datiForm.isColumn("TORN.OFFTEL"))
+      offtel = datiForm.getLong("TORN.OFFTEL");
+    if(new Long(3).equals(offtel)) {
+      if(datiForm.isColumn("GARE.CRITLICG") && datiForm.isModifiedColumn("GARE.CRITLICG")) {
+        Long critlicg = datiForm.getLong("GARE.CRITLICG");
+        if(new Long(3).equals(critlicg)) {
+          if (datiForm.isColumn("TORN.OFFAUM"))
+            datiForm.setValue("TORN.OFFAUM", "1");
+          else
+            datiForm.addColumn("TORN.OFFAUM", JdbcParametro.TIPO_TESTO, "1");
+        }else {
+          if (datiForm.isColumn("TORN.OFFAUM"))
+            datiForm.setValue("TORN.OFFAUM", "2");
+          else
+            datiForm.addColumn("TORN.OFFAUM", JdbcParametro.TIPO_TESTO, "2");
+        }
+      }
+    }
+  }
 }
 
 

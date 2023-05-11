@@ -10,6 +10,13 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.plugin;
 
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Vector;
+
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.PageContext;
+
 import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
@@ -18,13 +25,6 @@ import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.tags.BodyTagSupportGene;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestorePreload;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Vector;
-
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 /**
  * Gestore che effettua i controlli preliminari e popola la popup per
@@ -94,7 +94,7 @@ public class GestorePopUpPubblicaSuPortale extends AbstractGestorePreload {
       }
       if("1".equals(gartel)){
         Long meruolo = (Long) this.sqlManager.getObject(queryMeruolo, new Object[]{codgar,syscon});
-        if(!new Long(1).equals(meruolo)){
+        if(!(new Long(1).equals(meruolo) ||  new Long(3).equals(meruolo))){
           page.setAttribute("error",
               "true", PageContext.REQUEST_SCOPE);
           page.setAttribute("errorMsg",
@@ -155,7 +155,8 @@ public class GestorePopUpPubblicaSuPortale extends AbstractGestorePreload {
         page.setAttribute("deliberaDisabilitata",
             "true", PageContext.REQUEST_SCOPE);
       }
-      if((new Long(10).equals(genere) || new Long(11).equals(genere) || new Long(20).equals(genere)) || new Long(1).equals(iterga) || new Long(2).equals(iterga) || new Long(4).equals(iterga) ){
+      if((new Long(10).equals(genere) || new Long(11).equals(genere) || new Long(20).equals(genere)) || new Long(1).equals(iterga) || new Long(2).equals(iterga)
+          || new Long(4).equals(iterga) || new Long(7).equals(iterga) ){
         page.setAttribute("bandoVisibile",
             "true", PageContext.REQUEST_SCOPE);
       }
@@ -163,7 +164,7 @@ public class GestorePopUpPubblicaSuPortale extends AbstractGestorePreload {
         page.setAttribute("bandoDisabilitato",
             "true", PageContext.REQUEST_SCOPE);
       }
-      if(!new Long(1).equals(iterga) && !"1".equals(gartel) && !new Long(10).equals(genere) && !new Long(11).equals(genere) && !new Long(20).equals(genere)){
+      if(!new Long(1).equals(iterga) && !new Long(7).equals(iterga) && !"1".equals(gartel) && !new Long(10).equals(genere) && !new Long(11).equals(genere) && !new Long(20).equals(genere)){
         page.setAttribute("invitoVisibile",
             "true", PageContext.REQUEST_SCOPE);
       }
@@ -171,7 +172,7 @@ public class GestorePopUpPubblicaSuPortale extends AbstractGestorePreload {
         page.setAttribute("invitoDisabilitato",
             "true", PageContext.REQUEST_SCOPE);
       }
-      if(!new Long(1).equals(iterga) && "1".equals(gartel) && !new Long(10).equals(genere) && !new Long(11).equals(genere) && !new Long(20).equals(genere)){
+      if(!new Long(1).equals(iterga) && "1".equals(gartel) && !new Long(10).equals(genere) && !new Long(11).equals(genere) && !new Long(20).equals(genere)  && !new Long(7).equals(iterga)){
         page.setAttribute("invitoComunicazioneVisibile",
             "true", PageContext.REQUEST_SCOPE);
       }
@@ -179,7 +180,7 @@ public class GestorePopUpPubblicaSuPortale extends AbstractGestorePreload {
         page.setAttribute("invitoComunicazioneDisabilitato",
             "true", PageContext.REQUEST_SCOPE);
       }
-      if(!new Long(10).equals(genere) && !new Long(11).equals(genere) && !new Long(20).equals(genere)){
+      if(!new Long(10).equals(genere) && !new Long(11).equals(genere) && !new Long(20).equals(genere) && !new Long(7).equals(iterga)){
         page.setAttribute("esitoVisibile",
             "true", PageContext.REQUEST_SCOPE);
       }
@@ -191,7 +192,7 @@ public class GestorePopUpPubblicaSuPortale extends AbstractGestorePreload {
         page.setAttribute("integrazioneDisabilitata",
             "true", PageContext.REQUEST_SCOPE);
       }
-      if(GeneManager.checkOP(page.getServletContext(), "OP129") && !new Long(10).equals(genere) && !new Long(11).equals(genere) && !new Long(20).equals(genere)){
+      if(GeneManager.checkOP(page.getServletContext(), "OP129") && !new Long(10).equals(genere) && !new Long(11).equals(genere) && !new Long(20).equals(genere) && !new Long(7).equals(iterga)){
         page.setAttribute("trasparenzaVisibile",
             "true", PageContext.REQUEST_SCOPE);
       }

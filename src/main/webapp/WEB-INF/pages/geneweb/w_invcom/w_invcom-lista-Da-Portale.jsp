@@ -89,10 +89,10 @@
 			//Viene aperta direttamente la pagina "Iscrizione operatori economici"
 			<c:choose>
 				<c:when test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.V_GARE_ELEDITTE-lista.ApriGare")}'>
-					href += "&activePage=5"; 
+					href += "&activePage=4"; 
 				</c:when>
 				<c:when test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.V_GARE_CATALDITTE-lista.ApriGare")}'>
-					href += "&activePage=6"; 
+					href += "&activePage=5"; 
 				</c:when>
 			</c:choose>
 			document.location.href = href;

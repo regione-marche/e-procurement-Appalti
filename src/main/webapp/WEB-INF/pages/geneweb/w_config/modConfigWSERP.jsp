@@ -82,6 +82,7 @@
 			
 	function reset_ga_Password() {
 		document.getElementById("ga_password").value = "";
+		document.getElementById("modifica_ga_password").value = "1";
 	}
 	
 	function resetModifica_ga_Password() {
@@ -90,6 +91,7 @@
 
 	function reset_L190_Password() {
 		document.getElementById("L190_password").value = "";
+		document.getElementById("modifica_L190_password").value = "1";
 	}
 	
 	function resetModifica_L190_Password() {
@@ -141,13 +143,13 @@
 			</tr>
 			<tr id="">
 				<td class="etichetta-dato">Utente</td>
-				<td class="valore-dato"><input id="ga_username" name="username" title="Utente" class="testo" type="text" size="24" value="" maxlength="100"
-				 onfocus="javascript:reset_ga_Password();" onclick="javascript:reset_ga_Password();"/></td>
+				<td class="valore-dato"><input autocomplete="off" id="ga_username" name="username" title="Utente" class="testo" type="text" size="24" value="" maxlength="100"
+				  onchange="javascript:reset_ga_Password();"/></td>
 			</tr>
 			<tr id="">
 				<td class="etichetta-dato">Password</td>
 				<td class="valore-dato"><input id="ga_password" name="password" title="Password" class="testo" type="password" size="24" value="" maxlength="100"
-				 onfocus="javascript:reset_ga_Password();" onclick="javascript:reset_ga_Password();" onchange="javascript:resetModifica_ga_Password();"/></td>
+				  onclick="javascript:reset_ga_Password();" onchange="javascript:resetModifica_ga_Password();"/></td>
 			</tr>
 			
 			<tr>
@@ -157,13 +159,13 @@
 			</tr>
 			<tr id="">
 				<td class="etichetta-dato">Utente</td>
-				<td class="valore-dato"><input id="L190_username" name="username" title="Utente" class="testo" type="text" size="24" value="" maxlength="100"
-				 onfocus="javascript:reset_L190_Password();" onclick="javascript:reset_L190_Password();"/></td>
+				<td class="valore-dato"><input autocomplete="off" id="L190_username" name="username" title="Utente" class="testo" type="text" size="24" value="" maxlength="100"
+				 onchange="javascript:reset_L190_Password();"/></td>
 			</tr>
 			<tr id="">
 				<td class="etichetta-dato">Password</td>
 				<td class="valore-dato"><input id="L190_password" name="password" title="Password" class="testo" type="password" size="24" value="" maxlength="100"
-				 onfocus="javascript:reset_L190_Password();" onclick="javascript:reset_L190_Password();" onchange="javascript:resetModifica_L190_Password();"/></td>
+				 onclick="javascript:reset_L190_Password();" onchange="javascript:resetModifica_L190_Password();"/></td>
 			</tr>
 			
 			 <input type="hidden" name="modifica_ga_password" id="modifica_ga_password" value="0" />

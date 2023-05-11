@@ -94,6 +94,8 @@
 
 <c:set var="esisteVariazionePrezzo" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.EsistonoVariazioniPrezzoFunction",  pageContext, ngara, contaf, "","2")}'/>
 
+<c:set var="iterga" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetITERGAFunction", pageContext, codiceGara)}' />
+
 <gene:template file="scheda-template.jsp" gestisciProtezioni="true" schema="GARE" idMaschera="GCAP-scheda">
 	
 	<c:choose>
@@ -130,8 +132,9 @@
 						 scheda=''
 						 schedaPopUp=''
 						 campi="V_GCAP_LOTTI.NGARA;V_GCAP_LOTTI.CODIGA;V_GCAP_LOTTI.NORVOC_MAX"
-						 chiave="GCAP_NGARA"
-						 where="V_GCAP_LOTTI.CODGAR = '${codiceGara }'">
+						 functionId="default"
+						 parametriWhere="T:${codiceGara}"
+						 chiave="GCAP_NGARA" >
 							<gene:campoScheda campo="NGARA" title="Codice lotto" obbligatorio="true" modificabile='${modo eq "NUOVO" }'/>
 							<gene:campoScheda campo="CODIGA" title="Lotto" obbligatorio='${campoObbligatorio eq true}' entita="GARE" modificabile='${modo eq "NUOVO" }' where="GARE.NGARA = GCAP.NGARA"/>
 							<gene:campoScheda campo="NORVOC_MAX" campoFittizio="true" visibile='false' definizione="F8.3"/>
@@ -150,13 +153,22 @@
 			<gene:campoScheda campo="VOCE"  modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq}'/>
 			<gene:campoScheda campo="DESEST"  entita="GCAP_EST" where="GCAP_EST.NGARA = GCAP.NGARA and GCAP_EST.CONTAF=GCAP.CONTAF" modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq}'/>
 			
+			<c:choose>
+				<c:when test="${modoAperturaScheda ne 'VISUALIZZA' and (empty datiRiga.GCAP_CODCAT or empty datiRiga.CAIS_TIPLAVG)}">
+					<c:set var="parametriWhere" value="T:${tipoAppalto}" />
+				</c:when>
+				<c:otherwise>
+					<c:set var="parametriWhere" value="T:${datiRiga.CAIS_TIPLAVG}" />
+				</c:otherwise>
+			</c:choose>
 			<gene:archivio titolo="Categorie d'iscrizione"
 				 lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GARE.GCAP.CODCAT"),"gene/cais/lista-categorie-iscrizione-popup.jsp","")}'
 				 scheda=''
 				 schedaPopUp=''
 				 campi="V_CAIS_TIT.CAISIM;V_CAIS_TIT.DESCAT;V_CAIS_TIT.TIPLAVG"
 				 chiave="GCAP_CODCAT"
-				 where="" 
+				 functionId="default"
+				 parametriWhere="${parametriWhere}"
 				 formName="formCategoriaMerceologica"
 				 inseribile="false">
 				 
@@ -173,6 +185,9 @@
 			<gene:campoScheda campo="SOGRIB_FIT" entita="TORN" campoFittizio="true" title="Soggetto a ribasso?" definizione="T2;0;;SN;G1SOGRIB" value="${datiRiga.GCAP_SOGRIB}" visibile='${tipoForniture ne 98}' modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq}' gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoSiNoInvertitoSenzaNull"/>
 			<gene:campoScheda campo="UNIMIS"  obbligatorio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoUnitaMisura" modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq}'/>
 			<gene:campoScheda campo="QUANTI"  obbligatorio="true" modificabile='${ esisteGaraOLIAMM ne "true" }'/>
+			<gene:campoScheda campo="CODCARR"  visibile='${integrazioneWSERP eq "1" && tipoWSERP eq "ATAC"}' modificabile='false'/>
+			<gene:campoScheda  campo="CODRDA"  visibile='${integrazioneWSERP eq "1" && tipoWSERP eq "ATAC"}' modificabile='false'/>
+			<gene:campoScheda campo="POSRDA"  visibile='${integrazioneWSERP eq "1" && tipoWSERP eq "ATAC"}' modificabile='false'/>
 			<gene:campoScheda campo="PREZUN"  modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq}'/>
 			<gene:campoScheda campo="IMPORTO" entita="TORN" title="Importo" campoFittizio="true" definizione="F24.2;0;;MONEY5" modificabile="false" value="${importo}" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GCAP.PREZUN")}'/>
 			<gene:campoScheda campo="PERCIVA" visibile='${(tipoForniture eq "3" or tipoForniture eq "")}' />
@@ -180,7 +195,7 @@
 			<gene:campoScheda campo="NUNICONF"  visibile='${tipoForniture eq 98}'/>
 			<gene:campoScheda campo="CONTAFAQ"  visibile="false"/>
 			<gene:campoScheda campo="LUOGOCONS" visibile='${integrazioneWSERP eq "1" && tipoWSERP eq "AVM"}'/>
-			<gene:campoScheda campo="DATACONS"  title="Data prevista consegna" visibile='${integrazioneWSERP eq "1" && tipoWSERP eq "AVM"}'/>
+			<gene:campoScheda campo="DATACONS"  title="Data prevista consegna" visibile='${(integrazioneWSERP eq "1" && tipoWSERP eq "AVM") || (iterga eq 8)}'/>
 			<gene:campoScheda campo="PESO" visibile='${ribcal eq "3"}' />
 						
 			<gene:fnJavaScriptScheda funzione='aggiornaImporto()' elencocampi='GCAP_QUANTI;GCAP_PREZUN' esegui="false" />
@@ -346,10 +361,7 @@
 			function setTipoCategoriaPerArchivio(tipoCategoria){
 				if(document.forms[0].modo.value != "VISUALIZZA"){
 					if(getValue("GCAP_CODCAT") == "" || getValue("CAIS_TIPLAVG") == ""){
-						document.formCategoriaMerceologica.archWhereLista.value = "V_CAIS_TIT.TIPLAVG=" + tipoCategoria;
 						setValue("CAIS_TIPLAVG", "" + tipoCategoria);
-					} else {
-						document.formCategoriaMerceologica.archWhereLista.value = "V_CAIS_TIT.TIPLAVG=" + getValue("CAIS_TIPLAVG");
 					}
 				}
 			}

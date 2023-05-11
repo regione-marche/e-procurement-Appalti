@@ -90,6 +90,7 @@
 <gene:formScheda entita="W_INVCOM" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreW_INVCOM">
 	<gene:campoScheda campo="IDPRG" visibile="false"/>
 	<gene:campoScheda campo="IDCOM" visibile="false"/>
+	<gene:campoScheda campo="COMPUB" visibile="false"/>
 			
 	<gene:redefineInsert name="pulsanteNuovo"></gene:redefineInsert>
 	<gene:redefineInsert name="schedaNuovo"></gene:redefineInsert>

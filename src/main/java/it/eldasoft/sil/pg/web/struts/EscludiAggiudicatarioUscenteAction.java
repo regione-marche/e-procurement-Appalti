@@ -19,6 +19,7 @@ public class EscludiAggiudicatarioUscenteAction extends ActionBaseNoOpzioni {
 
   protected static final String FORWARD_ERRORE  = "esclagguscerror";
   protected static final String FORWARD_SUCCESS = "esclagguscsuccess";
+  protected static final String REGEXP = "^[a-zA-Z0-9-_\\\\./ \\\\$@]+$";
 
   static Logger                 logger          = Logger.getLogger(EscludiAggiudicatarioUscenteAction.class);
 
@@ -41,14 +42,14 @@ public class EscludiAggiudicatarioUscenteAction extends ActionBaseNoOpzioni {
     String elencoAffidatariEsclusi = null;
 
     String dittaEsclusa = request.getParameter("dittaEsclusa");
-    String listaElencoAffidatariEsclusi = request.getParameter("elencoAffidatariEsclusi");
+    String listaElencoAffidatariEsclusi = (String) request.getSession().getAttribute("elencoAffidatariEsclusi");
 
     String creaRigeneraFiltro =  request.getParameter("creaRigeneraFiltro");
     String ngara = request.getParameter("ngara");
     String garaElenco = request.getParameter("garaElenco");
 
 
-    if(dittaEsclusa != null && dittaEsclusa != ""){
+    if(dittaEsclusa != null && dittaEsclusa != "" && dittaEsclusa.matches(REGEXP)){
       filtroAffidatariEsclusi = " codice not in (";
       elencoAffidatariEsclusi="";
 

@@ -18,10 +18,30 @@
 
 <gene:template file="scheda-template.jsp">
 
-<gene:redefineInsert name="head">
-	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmsupporto.js?v=${sessionScope.versioneModuloAttivo}"></script>
-	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmfascicoloprotocollo.js?v=${sessionScope.versioneModuloAttivo}"></script>
-</gene:redefineInsert>
+<c:set var="integrazioneWSERP" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSERPFunction", pageContext)}' />
+	
+<c:choose>
+	<c:when test='${requestScope.tipoWSERP eq "AMIU"}'>
+		<c:set var="integrazioneERPvsWSDM" value="false"/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="integrazioneERPvsWSDM" value="true"/>
+	</c:otherwise>
+</c:choose>
+
+<c:if test='${integrazioneERPvsWSDM eq "true"}'>
+	<gene:redefineInsert name="head">
+		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmsupporto.js?v=${sessionScope.versioneModuloAttivo}"></script>
+		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmfascicoloprotocollo.js?v=${sessionScope.versioneModuloAttivo}"></script>
+	</gene:redefineInsert>
+</c:if>
+
+<c:if test='${integrazioneERPvsWSDM eq "false"}'>
+	<gene:redefineInsert name="head">
+		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wserpsupporto.js"></script>
+	</gene:redefineInsert>
+</c:if>
+
 
 <c:set var="isCodificaAutomatica" value='${gene:callFunction3("it.eldasoft.gene.tags.functions.IsCodificaAutomaticaFunction", pageContext, "TECNI", "CODTEC")}'/>
 
@@ -123,33 +143,34 @@
 					</td>						
 				</tr>
 			</gene:campoScheda>
-			
-			<gene:campoScheda addTr="false" >
-				<tr>
-					<td class="etichetta-dato">Tipo documento</td>
-					<td class="valore-dato">
-						<span id="tipodocumentodescrizione"></span>
-					</td>						
-				</tr>
-			</gene:campoScheda>
-			
-			<gene:campoScheda addTr="false" >
-				<tr>
-					<td class="etichetta-dato">Anno fascicolo</td>
-					<td class="valore-dato">
-						<span id="annofascicolo"></span>
-					</td>						
-				</tr>
-			</gene:campoScheda>
-			
-			<gene:campoScheda addTr="false" >
-				<tr>
-					<td class="etichetta-dato">Numero fascicolo</td>
-					<td class="valore-dato">
-						<span id="numerofascicolo"></span>
-					</td>						
-				</tr>
-			</gene:campoScheda>
+			<c:if test='${integrazioneERPvsWSDM eq "true"}'>
+				<gene:campoScheda addTr="false" >
+					<tr>
+						<td class="etichetta-dato">Tipo documento</td>
+						<td class="valore-dato">
+							<span id="tipodocumentodescrizione"></span>
+						</td>						
+					</tr>
+				</gene:campoScheda>
+				
+				<gene:campoScheda addTr="false" >
+					<tr>
+						<td class="etichetta-dato">Anno fascicolo</td>
+						<td class="valore-dato">
+							<span id="annofascicolo"></span>
+						</td>						
+					</tr>
+				</gene:campoScheda>
+				
+				<gene:campoScheda addTr="false" >
+					<tr>
+						<td class="etichetta-dato">Numero fascicolo</td>
+						<td class="valore-dato">
+							<span id="numerofascicolo"></span>
+						</td>						
+					</tr>
+				</gene:campoScheda>
+			</c:if>
 
 			<gene:campoScheda>
 				<td class="comandi-dettaglio" colSpan="2">
@@ -161,9 +182,11 @@
 				</td>
 			</gene:campoScheda>
 			
-			<table class="dettaglio-notab" id="datiLogin">
-				<jsp:include page="/WEB-INF/pages/gare/wsdm/wsdm-login.jsp"/>
-			</table>
+			<c:if test='${integrazioneERPvsWSDM eq "true"}'>
+				<table class="dettaglio-notab" id="datiLogin">
+					<jsp:include page="/WEB-INF/pages/gare/wsdm/wsdm-login.jsp"/>
+				</table>
+			</c:if>
 
 			<input type="hidden" name="step" id="step" value="${step}" />
 			<input type="hidden" id="servizio"  value="DOCUMENTALE" />
@@ -189,15 +212,21 @@
 
 <gene:javaScript>
 
-		/*
-	     * Gestione utente ed attributi per il collegamento remoto
-	     */
-		_getWSTipoSistemaRemoto();
-		_popolaTabellato("ruolo","ruolo");
-		_getWSLogin();
-		_gestioneWSLogin();
-		
-		$("#datiLogin").hide();
+		var ERPvsWSDM = "2";
+		var tipoWSERP = "${tipoWSERP}";
+		<c:if test='${integrazioneERPvsWSDM eq "true"}'>
+			ERPvsWSDM = "1";
+			/*
+		     * Gestione utente ed attributi per il collegamento remoto
+		     */
+			_getWSTipoSistemaRemoto();
+			_popolaTabellato("ruolo","ruolo");
+			_getWSLogin();
+			_gestioneWSLogin();
+			
+			$("#datiLogin").hide();
+		</c:if>
+
 		
 		associaFunzioniEventoOnchange();
 		
@@ -218,17 +247,33 @@
 			if(nrda == ""){
 				alert('Valorizzare il numero RdA per la lettura!')
 			}else{
+			<c:if test='${integrazioneERPvsWSDM eq "true"}'>
 				readRda(nrda);
+			</c:if>
+			<c:if test='${integrazioneERPvsWSDM eq "false"}'>
+				readRda(nrda);
+			</c:if>
 			}
 		
 		}
 
 		function readRda(nrda) {
-			_getWSDMDocumento(nrda,function(esito){
-				if(esito==false){
-				   alert('RdA non trovata!');
+			<c:if test='${integrazioneERPvsWSDM eq "true"}'>
+				_getWSDMDocumento(nrda,function(esito){
+					if(esito==false){
+					   alert('RdA non trovata!');
+					}
+				});
+			</c:if>
+			<c:if test='${integrazioneERPvsWSDM eq "false"}'>
+				if(tipoWSERP == "AMIU"){
+					_getWSERPDettaglioRda(nrda,function(esito){
+						if(esito==false){
+						   alert('RdA non trovata!');
+						}
+					});
 				}
-			});
+			</c:if>
 		}
 
 		function annullaCreazione(){
@@ -259,8 +304,10 @@
 				
 				var tdp = $("#tipoDatiPersonalizzati").val();
 				if(tdp != "RDA"){
+				<c:if test='${integrazioneERPvsWSDM eq "true"}'>
 					alert('Elemento documentale non di tipo Rda!');
 					return -1;
+				</c:if>								
 				}else{
 					//verifico presenza rda in banca dati
 					if (_verificaPresenzaRda(nrda) == true) {
@@ -271,8 +318,10 @@
 			}
 			
 			
-			
 			var tipoAppalto = ${param.tipoAppalto};
+			<c:if test='${integrazioneERPvsWSDM eq "true"}'>
+				var idconfi = ${param.idconfi};
+			</c:if>	
 			<c:choose>
 			<c:when test='${param.tipoGara=="garaDivisaLottiOffUnica"}'>
 				document.forms[0].activePage.value = 0;
@@ -287,11 +336,12 @@
 			</c:choose>
 
 			if(tipoAppalto == '1'){
-				document.forms[0].action+="&tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&chiaveRiga=${param.chiaveRiga}&livpro=${param.livpro}&numeroRda=" + getValue("NUMERO_RDA")+"&integrazioneERPvsWSDM=1";
+				document.forms[0].action+="&tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&chiaveRiga=${param.chiaveRiga}&livpro=${param.livpro}&numeroRda=" + getValue("NUMERO_RDA")+"&integrazioneERPvsWSDM="+ERPvsWSDM;
 			}else
-				document.forms[0].action+="&tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&numeroRda=" + getValue("NUMERO_RDA")+"&integrazioneERPvsWSDM=1";
-			
-			document.forms[0].action+="&idconfi=" + ${idconfi};
+				document.forms[0].action+="&tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&numeroRda=" + getValue("NUMERO_RDA")+"&integrazioneERPvsWSDM="+ERPvsWSDM;
+			<c:if test='${integrazioneERPvsWSDM eq "true"}'>
+			document.forms[0].action+="&idconfi=" + idconfi;
+			</c:if>
 			bloccaRichiesteServer();
 			document.forms[0].submit();
 		}
@@ -326,6 +376,11 @@
 	<c:if test='${not empty param.chiavePadre}'>
 		document.forms[0].keyParent.value = ${param.chiavePadre};
 	</c:if>
+	
+	
+	$(document).on("keydown", "input", function(e) {
+		if (e.which==13) e.preventDefault();
+	});
 
 	</gene:javaScript>
 </gene:template>

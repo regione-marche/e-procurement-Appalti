@@ -46,17 +46,37 @@
          </gene:redefineInsert>
 		
 
+<c:choose>
+	<c:when test="${genere eq '3' }" >
+		<c:set var="chiaveGara" value="${codgar}" />
+		<c:set var="garaOffUnica" value="true" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="chiaveGara" value="${numeroGara}" />
+		<c:set var="garaOffUnica" value="false" />
+	</c:otherwise>
+</c:choose>
 
+<c:set var="esitoControlloCommissione" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.ControlliComponentiCommissioneFunction", pageContext, chiaveGara,"true", numeroGara,garaOffUnica)}' />
 
-<c:set var="msgSwitchGaraLotto" value="la gara risulta conclusa"/>
+<c:set var="msgSwitchGaraLotto" value="La gara risulta conclusa"/>
 <c:if test="${genere ne '2'}">
-	<c:set var="msgSwitchGaraLotto" value="il lotto risulta concluso"/>
+	<c:set var="msgSwitchGaraLotto" value="Il lotto risulta concluso"/>
 </c:if>		
 
+
+
 <c:choose>
-	<c:when test='${!empty requestScope.esineg}' >
+	<c:when test="${!empty requestScope.esineg or (esitoControlloCommissione eq 'NOK' && tipoMsgCommissione eq 'B')}" >
 		<br>
-			Non é possibile procedere perchè ${msgSwitchGaraLotto} con esito negativo.<br>
+			<b>ATTENZIONE</b>
+			<br>Non é possibile procedere.<br>
+			<c:if test="${!empty requestScope.esineg}">
+			 ${msgSwitchGaraLotto} con esito negativo.<br>
+			</c:if>
+			<c:if test="${esitoControlloCommissione eq 'NOK' && tipoMsgCommissione eq 'B' }">
+			${msgCommissione}<br>
+			</c:if>
 		<br>
 		
 			<table class="ricerca"> 
@@ -97,6 +117,11 @@
 										<b>Numero massimo operatori dell'accordo quadro:</b> non definito
 									</c:otherwise>
 								</c:choose>
+							</c:if>
+							
+							<c:if test="${esitoControlloCommissione eq 'NOK' && tipoMsgCommissione eq 'NB' }">
+								${msgCommissione}
+								<br><br>
 							</c:if>
 												
 							<gene:formLista entita="DITG"	where="DITG.NGARA5 = '${ngara1}' AND ${condizione}" tableclass="datilista" sortColumn="6;7;4" pagesize="0" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAggiudicazioneDefinitiva">

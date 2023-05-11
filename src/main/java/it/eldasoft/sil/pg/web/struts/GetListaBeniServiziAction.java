@@ -43,10 +43,10 @@ public class GetListaBeniServiziAction extends Action {
 
     String codbs = request.getParameter("codbs");
 
-    String selectBS = "select distinct(cod_bs),des_bs from t_ubuy_beniservizi where cod_bs like '" + codbs + "%' order by cod_bs";
+    String selectBS = "select distinct(cod_bs),des_bs from t_ubuy_beniservizi where cod_bs like ? order by cod_bs";
 
     List<?> datiBS = null;
-    datiBS = sqlManager.getListVector(selectBS, new Object[] {});
+    datiBS = sqlManager.getListVector(selectBS, new Object[] {codbs + "%"});
     if (datiBS.size() > 20) {
     	datiBS = datiBS.subList(0, 20);
     }

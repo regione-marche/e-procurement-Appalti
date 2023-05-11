@@ -12,6 +12,7 @@
 %>
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 
 <gene:redefineInsert name="head">
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>		
@@ -20,6 +21,8 @@
 <gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.GetTIPGENFunction" parametro='${gene:getValCampo(key, "TORN.CODGAR")}' />
 
 <c:set var="esisteIntegrazioneLavori" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneLavoriFunction", pageContext)}' />
+
+<c:set var="integrazioneWSERP" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSERPFunction", pageContext)}' />
 
 <c:set var="tipgarTornata" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTIPGARFunction", pageContext, gene:getValCampo(key, "TORN.CODGAR"))}'/>
 
@@ -191,7 +194,7 @@
 		
 	function eliminaLotto(){
 		var href = "href=gare/commons/conferma-eliminazione.jsp&chiaveRiga=" + chiaveRiga + "&numeroPopUp=1";
-		win = openPopUpCustom(href, "confermaEliminaGara", 500, 200, "no", "no");
+		win = openPopUpCustom(href, "confermaEliminaGara", 500, 250, "no", "no");
 
 		if(win!=null)
 			win.focus();
@@ -213,6 +216,18 @@
 	
 	function listaNuovaGaraLotto() {
 		<c:choose>
+			<c:when test='${tipoWSERP eq "AMIU"}'>
+				document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/garerda/associa-rda-wsdm.jsp&modo=NUOVO&tipoAppalto=${tipoAppalto}&chiavePadre='"+getValue("keyParent")+"'";
+				<c:choose>
+					<c:when test="${tipologiaGara eq '1' }">
+						href += "&lottoOfferteDistinte=1";
+					</c:when>
+					<c:otherwise>
+						href += "&lottoOffertaUnica=SI";
+					</c:otherwise>
+				</c:choose>
+				document.location.href = href;
+			</c:when>
 			<c:when test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.AssociaGaraAppalto") and (tipologiaGara eq "1" || (tipologiaGara eq "3" and modcont eq "1")) and esisteIntegrazioneLavori eq "TRUE"}' >
 				var href="${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&"+csrfToken+"&href=gare/gare/trovaAppalto/associaAppalto.jsp&modo=NUOVO&tipoAppalto=${tipoAppalto}&chiavePadre='"+getValue("keyParent")+"'";
 				if(idconfi){

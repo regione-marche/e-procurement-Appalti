@@ -29,7 +29,7 @@
 		<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/jquery/wsdm/jquery.wsdm.css" >
 		<script type="text/javascript" src="${contextPath}/js/jquery.validate.min.js"></script>
 		<script type="text/javascript" src="${contextPath}/js/jquery.easytabs.js"></script>
-		<script type="text/javascript" src="${contextPath}/js/jquery.nso.ordini.js"></script>
+		<script type="text/javascript" src="${contextPath}/js/jquery.nso.ordini.js?t=<%=System.currentTimeMillis()%>"></script>
 		<script type="text/javascript" src="${contextPath}/js/jquery.cookie.js"></script>
 				
 		<style type="text/css">

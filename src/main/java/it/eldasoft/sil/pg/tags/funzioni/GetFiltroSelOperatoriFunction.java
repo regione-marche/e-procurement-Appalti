@@ -10,19 +10,20 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Vector;
+
+import javax.servlet.http.HttpSession;
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.PageContext;
+
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.tags.functions.EsisteClassificaCategoriaFunction;
 import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityStringhe;
-
-import java.sql.SQLException;
-import java.util.List;
-
-import javax.servlet.http.HttpSession;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 /**
  * Funzione che costruisce il filtro per la pagina gare-popup-selOpEconomici.jsp.
@@ -33,7 +34,7 @@ import javax.servlet.jsp.PageContext;
  */
 public class GetFiltroSelOperatoriFunction extends AbstractFunzioneTag {
 
-
+  protected static final String REGEXP = "^[a-zA-Z0-9-_\\\\./ \\\\$@]+$";
 
   public GetFiltroSelOperatoriFunction() {
     super(1, new Class[] { PageContext.class});
@@ -60,8 +61,9 @@ public class GetFiltroSelOperatoriFunction extends AbstractFunzioneTag {
     String where="";
     String entita = "";
     String categoriaPrev = pageContext.getRequest().getParameter("categoriaPrev");
-    String garaElenco = pageContext.getRequest().getParameter("garaElenco");
+//    String garaElenco = pageContext.getRequest().getParameter("garaElenco");
     String classifica = pageContext.getRequest().getParameter("classifica");
+    String garaElenco= "";
     String ngara = pageContext.getRequest().getParameter("ngara");
     String filtroUltCategorie = (String)sessione.getAttribute("filtro");
     String filtroSpecifico = (String)sessione.getAttribute("filtroSpecifico");
@@ -88,8 +90,29 @@ public class GetFiltroSelOperatoriFunction extends AbstractFunzioneTag {
     String arrayElencoNumcla[] = null;
     String prevalenteSelezionata = (String)sessione.getAttribute("prevalenteSelezionata");
     String tipoalgo =  pageContext.getRequest().getParameter("tipoalgo");
-    String stazioneAppaltante =  pageContext.getRequest().getParameter("stazioneAppaltante");
-    String tipoGara = pageContext.getRequest().getParameter("tipoGara");
+//    String stazioneAppaltante =  pageContext.getRequest().getParameter("stazioneAppaltante");
+//    String tipoGara = pageContext.getRequest().getParameter("tipoGara");
+    String stazioneAppaltante =  "";
+    String tipoGara = "";
+    Boolean applicatoFiltroInOr = (Boolean)sessione.getAttribute("applicatoFiltroInOr");
+    if(applicatoFiltroInOr==null)
+      applicatoFiltroInOr = new Boolean(false);
+
+    //Controlli per Sql injection
+    // classifica deve essere un numero
+    if(classifica!=null && !"".equals(classifica)) {
+      try {
+        new Long(classifica);
+      }catch(NumberFormatException e) {
+        throw new JspException(
+            "Errore di validazione dei parametri");
+      }
+    }
+    if(categoriaPrev!= null && !"".equals(categoriaPrev) && !categoriaPrev.matches(REGEXP)) {
+      throw new JspException(
+          "Errore di validazione dei parametri");
+    }
+
 
     if(filtroUltCategorie!= null && !"".equals(filtroUltCategorie))
       isFiltroUltCategorie = true;
@@ -105,8 +128,33 @@ public class GetFiltroSelOperatoriFunction extends AbstractFunzioneTag {
 
     if(elencoNumcla!=null && !",".equals(elencoNumcla)){
       arrayElencoNumcla = elencoNumcla.split(",");
-      classifica = arrayElencoNumcla[0];
+      if(arrayElencoNumcla[0]!=null)
+        classifica = arrayElencoNumcla[0];
+      else
+        classifica = null;
     }
+
+    try {
+      Vector<?> datiGara = sqlManager.getVector("select g.elencoe, c.catiga, c.numcla, t.cenint, t.tipgen from gare g left join catg c on g.ngara=c.ngara "
+          + "left join torn t on g.codgar1 = t.codgar where g.ngara = ?", new Object[] {ngara});
+      if(datiGara!=null && datiGara.size()>0){
+        if(pageContext.getRequest().getParameter("garaElenco")!=null && !pageContext.getRequest().getParameter("garaElenco").isEmpty())
+        garaElenco   =      SqlManager.getValueFromVectorParam(datiGara, 0).getValue().toString();
+
+        if(pageContext.getRequest().getParameter("stazioneAppaltante")!=null && !pageContext.getRequest().getParameter("stazioneAppaltante").isEmpty())
+        stazioneAppaltante= SqlManager.getValueFromVectorParam(datiGara, 3).getValue().toString();
+
+        if(pageContext.getRequest().getParameter("tipoGara")!=null &&  !pageContext.getRequest().getParameter("tipoGara").isEmpty())
+        tipoGara  =         SqlManager.getValueFromVectorParam(datiGara, 4).getValue().toString();
+      }else {
+        throw new JspException(
+            "Errore durante il prelievo delle informazioni della gara");
+      }
+     }
+     catch(SQLException ex) {
+       throw new JspException(
+           "Errore durante la validazione", ex);
+     }
 
     String condizioneIn = "(select DITTAO from DITG,GARE where GARE.NGARA='" + ngara + "' and  GARE.NGARA=DITG.NGARA5 and GARE.CODGAR1=DITG.CODGAR5)";
     if(categoriaPrev!=null && !"".equals(categoriaPrev)){
@@ -115,20 +163,21 @@ public class GetFiltroSelOperatoriFunction extends AbstractFunzioneTag {
         entita = "V_DITTE_ELECAT_SA";
 
       Long tipoCatPrev = this.getTipoCategoria(categoriaPrev, sqlManager);
+      if(!applicatoFiltroInOr.booleanValue()) {
 
-      if((prevalenteSelezionata == null) || (prevalenteSelezionata!=null && "si".equals(prevalenteSelezionata))){
-        where = entita + ".GARA = '" + garaElenco + "' ";
-        where+= " and " + entita + ".CODCAT = '" + categoriaPrev + "'";
-        if("V_DITTE_ELECAT_SA".equals(entita))
-          where+= " and " + entita + ".CENINT = '" + stazioneAppaltante + "'";
-        if(classifica != null && !"".equals(classifica)){
-          where += " and (" + entita + ".NUMCLASS = " + classifica + " or " + entita + ".NUMCLASS is null)";
-        }else{
-          where += " and (" + entita + ".NUMCLASS = (select min(a.NUMCLASS) from " + entita + " a where a.GARA = '" + garaElenco + "' and a.CODCAT = '" + categoriaPrev + "'";
-          where += " and a.codice = " + entita + ".codice) or " + entita + ".NUMCLASS is null)";
+        if((prevalenteSelezionata == null) || (prevalenteSelezionata!=null && "si".equals(prevalenteSelezionata))){
+          where = entita + ".GARA = '" + garaElenco + "' ";
+          where+= " and " + entita + ".CODCAT = '" + categoriaPrev + "'";
+          if("V_DITTE_ELECAT_SA".equals(entita))
+            where+= " and " + entita + ".CENINT = '" + stazioneAppaltante + "'";
+          if(classifica != null && !"".equals(classifica)){
+            where += " and (" + entita + ".NUMCLASS = " + classifica + " or " + entita + ".NUMCLASS is null)";
+          }else{
+            where += " and (" + entita + ".NUMCLASS = (select min(a.NUMCLASS) from iscrizclassi a where a.NGARA = '" + garaElenco + "' and a.CODCAT = '" + categoriaPrev + "'";
+            where += " and a.codimp = " + entita + ".codice) or " + entita + ".NUMCLASS is null)";
+          }
         }
       }
-
 
       if(isFiltroUltCategorie){
         where += filtroUltCategorie;
@@ -181,7 +230,10 @@ public class GetFiltroSelOperatoriFunction extends AbstractFunzioneTag {
               || ("5".equals(arrayTiplavgUltCategorie[i]) && "true".equals(esisteClassificaServiziProfessionali))){
             html.append("- ");
             html.append("Classifica: <b>");
-            classifica= arrayElencoNumcla[i+1];
+            if(arrayElencoNumcla[i+1]!=null)
+              classifica= arrayElencoNumcla[i+1];
+            else
+              classifica= null;
             if(classifica!= null && !" ".equals(classifica))
               descClassifica = pgManager.getDescCampoClassifica(classifica, arrayTiplavgUltCategorie[i]);
             else
@@ -232,7 +284,7 @@ public class GetFiltroSelOperatoriFunction extends AbstractFunzioneTag {
       int countFiltroSpecifico = 0;
       int countFiltroSpecificoObbl = 0;
       int countFiltroEsclAffUsc = 0;
-      
+
       List<?> listaFiltriSpecifici = sqlManager.getListVector("select tipofiltro,filtroatt,filtroman,queryfiltro,msgfiltro,id from G1FILTRIELE" +
       		" where tipofiltro is not null and (((applicaele is null or applicaele like ? )" +
       		" and (tipoele is null or tipoele in (" + tipoelecases + ")) and tipofiltro = 1)" +
@@ -271,7 +323,7 @@ public class GetFiltroSelOperatoriFunction extends AbstractFunzioneTag {
         	  elencoMsgFiltriSpecificiObbl+=msgfiltro;
         	  elencoIdFiltriSpecificiObbl+=idfiltro;
           }
-          
+
         }
       }
 
@@ -300,7 +352,7 @@ public class GetFiltroSelOperatoriFunction extends AbstractFunzioneTag {
     if(!"".equals(filtroSpecificoObbl)){
         where += filtroSpecificoObbl;
     }
-    
+
     if(isFiltroSpecifico){
       where += filtroSpecifico;
     }
@@ -312,7 +364,7 @@ public class GetFiltroSelOperatoriFunction extends AbstractFunzioneTag {
     if(isFiltroAffidatariEsclusi){
       where += filtroAffidatariEsclusi;
     }
-    
+
     if(!"".equals(filtroSpecificoObbl)){
       //Contiene i messaggi di riferimento per i filtri specifici obbligatori
       String arrayElencoFiltriSpecificiObbl[] = elencoMsgFiltriSpecificiObbl.split(",");
@@ -323,7 +375,7 @@ public class GetFiltroSelOperatoriFunction extends AbstractFunzioneTag {
         filtriUlterioriObbl+="\n"+arrayElencoFiltriSpecificiObbl[i];
       }
     }
-    
+
 
     if(isFiltroSpecifico){
       String elencoMsgFiltriSpecifici = (String)sessione.getAttribute("elencoMsgFiltriSpecifici");

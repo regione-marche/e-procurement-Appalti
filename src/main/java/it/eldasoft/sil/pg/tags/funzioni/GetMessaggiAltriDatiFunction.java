@@ -40,12 +40,22 @@ public class GetMessaggiAltriDatiFunction extends AbstractFunzioneTag {
           // Messaggio letto per l'utente corrente
           String messaggioLetto = "false";
           ProfiloUtente profiloUtente = (ProfiloUtente) pageContext.getSession().getAttribute(CostantiGenerali.PROFILO_UTENTE_SESSIONE);
-          Long cnt = (Long) sqlManager.getObject("select count(*) from w_discread where discid_p = ? and discid = ? and discmessope = ?",
+          Long cnt_letto = (Long) sqlManager.getObject("select count(*) from w_discread where discid_p = ? and discid = ? and discmessope = ?",
               new Object[] { discid_p, discid, new Long(profiloUtente.getId()) });
-          if (cnt != null && cnt.longValue() > 0) {
+          if (cnt_letto != null && cnt_letto.longValue() > 0) {
             messaggioLetto = "true";
           }
           pageContext.setAttribute("messaggioLetto", messaggioLetto, PageContext.REQUEST_SCOPE);
+          
+          // Messaggio pubblicato ?
+          String messaggioPubblicato = "false";
+          Long cnt_pubblicato = (Long) sqlManager.getObject("select count(*) from w_discuss where discid_p = ? and discid = ? and discmesspubbl = ?",
+              new Object[] { discid_p, discid, "1" });
+          if (cnt_pubblicato != null && cnt_pubblicato.longValue() > 0) {
+            messaggioPubblicato = "true";
+          }
+          pageContext.setAttribute("messaggioPubblicato", messaggioPubblicato, PageContext.REQUEST_SCOPE);
+          
         } catch (SQLException e) {
           throw new JspException("Errore nella lettura di altri dati del messaggio", e);
         }

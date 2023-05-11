@@ -115,8 +115,8 @@
 		<c:set var="titoloCatPrevalente" value="Prestazione principale"  />
         <c:set var="titoloUltCategorie" value="Prestazioni secondarie"  />
 	</c:otherwise>
-</c:choose>	
-
+</c:choose>
+	
 <c:set var="where" value="V_GARE_CATEGORIE.NGARA='${ngara}'" scope="request" />
 
 <c:set var="modo" value="MODIFICA" scope="request" />
@@ -134,10 +134,7 @@
 	<gene:setString name="entita" value="${entita}" />
 	<gene:redefineInsert name="corpo">
 	
-		<gene:set name="titoloMenu">
-			<jsp:include page="/WEB-INF/pages/commons/iconeCheckUncheck.jsp" />
-		</gene:set>
-		
+				
 		<br>
 		
 		<table class="lista">
@@ -149,6 +146,15 @@
 								Selezionare le categorie o prestazioni della gara per cui gli operatori dell'elenco devono essere qualificati.
 							</td>
 						</tr>
+						<c:if test="${criterioRotazione ne '1' && criterioRotazione ne '3' && criterioRotazione ne '4' && criterioRotazione ne '5' 
+							&& criterioRotazione ne '11' && criterioRotazione ne '12' && criterioRotazione ne '14' && criterioRotazione ne '15'}">
+						<tr>
+							<td>
+								L'operatore deve essere qualificato per: <input type="radio" value="1"  name="modoFiltroCategorie" id="and" <c:if test='${sessionScope.modalitaFiltroCategorie eq "1" or empty sessionScope.modalitaFiltroCategorie }'>checked="checked"</c:if> onclick="javascript:cambiaModalitaFiltroCategorie('1');"/> <b>tutte le categorie selezionate</b> 
+								<input type="radio" value="2" name="modoFiltroCategorie" id="or"<c:if test='${sessionScope.modalitaFiltroCategorie eq "2" }'>checked="checked"</c:if> onclick="javascript:cambiaModalitaFiltroCategorie('2');"/> <b>almeno una delle categorie selezionate</b>
+							</td>
+						</tr>
+						</c:if>
 					</table>
 				</td>
 			</tr>
@@ -176,7 +182,7 @@
 					</c:if>
 				</gene:campoLista>
 					
-					<gene:campoLista title="Opzioni <br><center>${titoloMenu}</center>"	width="50">												 
+					<gene:campoLista title=""	width="25">												 
 						<c:if test="${currentRow >= 0}">
 						<input type="checkbox" name="keys" id="keys-${currentRow}" value="${datiRiga.V_GARE_CATEGORIE_CATIGA};${currentRow}" onClick="bloccoSbloccoClassifica(this,${currentRow})"/>
 						
@@ -203,7 +209,7 @@
 					<gene:campoLista campo="QUAOBB" ordinabile="false" visibile="false"/>
 					<gene:campoLista campo="CATIGA_FIT" visibile ="false" edit="true" campoFittizio="true" value="${datiRiga.V_GARE_CATEGORIE_CATIGA}" definizione="T30"/>
 					<gene:campoLista campo="TIPLAVG" visibile="false" edit="true"/>
-					
+										
 					<%/* La variabile numCambi serve per poter mantendere il layout */%>
 					<c:set var="indiceRiga" value="${indiceRiga + 1}"/>
 					
@@ -252,6 +258,7 @@
                     <input type="hidden" name="criterioRotazione" id="criterioRotazione" value="${criterioRotazione }" />
                     <input type="hidden" name="garaElenco" id="garaElenco" value="${garaElenco }" />
                     <input type="hidden" name="stazioneAppaltante" id="stazioneAppaltante" value="${stazioneAppaltante }" />
+                     <input type="hidden" name="modalitaFiltroCategorie" id="modalitaFiltroCategorie" value="${sessionScope.modalitaFiltroCategorie}" />
                 </gene:formLista></td>
 			</tr>
 			<tr>
@@ -279,6 +286,15 @@
 	      	} else if(numeroOggetti > 10){
 	      		 alert("Non è possibile selezionare più di 10 categorie nella lista");
 	      	} else {
+	      		var criterioRotazione = "${criterioRotazione }";
+	      		if (criterioRotazione != 1 && criterioRotazione !=3 && criterioRotazione !=4 && criterioRotazione !=5 && criterioRotazione !=11 
+	      			 && criterioRotazione !=12 && criterioRotazione !=14 && criterioRotazione !=15) {
+	      			var modalitaFiltroCategorie = $('#modalitaFiltroCategorie').val();
+	      			if(modalitaFiltroCategorie == null || modalitaFiltroCategorie == ""){
+	      				var radioValue = $("input[name='modoFiltroCategorie']:checked").val();
+	      				$('#modalitaFiltroCategorie').val(radioValue);
+	      			}
+	      		}
 	      		if(document.getElementById("V_GARE_CATEGORIE_NUMCLA_1")!=null)
 	      			document.getElementById("V_GARE_CATEGORIE_NUMCLA_1").disabled = false;
 	      		if(document.getElementById("keys-0")!=null)
@@ -310,51 +326,19 @@
 				prevalenteSelezionata="si";
 			var criterioRotazione ="${criterioRotazione }";
 			
-			if(elencoUlterioriCategorie!=null && elencoUlterioriCategorie!=""){
-				var vetCatSelezionate = elencoUlterioriCategorie.split(',');
-								
-				for(var t=0; t < numeroCategorie; t++){
-					var check = document.getElementById("keys-" + t).value;
-					var vetValoriCheck = check.split(';');
-                    var codiceCheck = vetValoriCheck[0];
-                    var i = t + 1;
-					var isprev = document.getElementById("V_GARE_CATEGORIE_ISPREV_" + i).value;
-					if(isprev == 1){
-						if(prevalenteSelezionata == "" || prevalenteSelezionata == "si")
-							document.getElementById("keys-" + t).checked = "checked";
-						
-						
-												
-						if(vetElencoNumcla!= null && vetElencoNumcla.length>0 && prevalenteSelezionata == "si"){
-							document.getElementById("V_GARE_CATEGORIE_NUMCLA_" + i).value = vetElencoNumcla[0];
-						}else
-							document.getElementById("V_GARE_CATEGORIE_NUMCLA_" + i).value = "";
-						
-						if(criterioRotazione == "1" || criterioRotazione == "3" || criterioRotazione== "4" || criterioRotazione== "5" || criterioRotazione== "11" || criterioRotazione== "12" || prevalenteSelezionata == "")
-							document.getElementById("keys-" + t).disabled = true;
-						
-						
-						document.getElementById("numclaCatPrev").value = document.getElementById("V_GARE_CATEGORIE_NUMCLA_" + i).value;
-					}else{
-						for(var j=0;j<vetCatSelezionate.length;j++){
-							if(codiceCheck == vetCatSelezionate[j]){
-								document.getElementById("keys-" + t).checked = "checked";
-								if(vetElencoNumcla!= null && vetElencoNumcla.length>0){
-									document.getElementById("V_GARE_CATEGORIE_NUMCLA_" + i).value = vetElencoNumcla[j+1];
-								}
-								break;
-							}	
-						}
-					} 
-				}
-			}else{
-				//E' selezionata solo la categoria prevalente
+			//All'apertura della pagina si sbiancano i valori della classifica di tutte le categorie
+			//Le classifiche verranno popolate nei cicli successivi
+			$('[id^="V_GARE_CATEGORIE_NUMCLA_"]').val("");
+			
+			//Gestione della categoria prevalente
+			if(prevalenteSelezionata == "si" || prevalenteSelezionata == ""){
 				for(var t=0; t < numeroCategorie; t++){
 					var i = t + 1;
 					var isprev = document.getElementById("V_GARE_CATEGORIE_ISPREV_" + i).value;
 					if(isprev == 1){
 						document.getElementById("keys-" + t).checked = "checked";
-						if(criterioRotazione == "1" || criterioRotazione == "3" || criterioRotazione== "4" || criterioRotazione== "5" || criterioRotazione== "11" || criterioRotazione== "12" || prevalenteSelezionata == "no") 
+						if(criterioRotazione == "1" || criterioRotazione == "3" || criterioRotazione== "4" || criterioRotazione== "5" || criterioRotazione== "11" 
+							|| criterioRotazione== "12" || criterioRotazione== "14" || criterioRotazione== "15" || prevalenteSelezionata == "no") 
 							document.getElementById("keys-" + t).disabled = true;
 						
 						//Si deve controllare se è stata variato il valore di numcla rispetto al valore in db
@@ -368,29 +352,35 @@
 					}
 				}
 			}
+			
+			if(elencoUlterioriCategorie!=null && elencoUlterioriCategorie!=""){
+				var vetCatSelezionate = elencoUlterioriCategorie.split(',');
+																
+				for(var t=0; t < numeroCategorie; t++){
+					var check = document.getElementById("keys-" + t).value;
+					var vetValoriCheck = check.split(';');
+                    var codiceCheck = vetValoriCheck[0];
+                    var i = t + 1;
+					var isprev = document.getElementById("V_GARE_CATEGORIE_ISPREV_" + i).value;
+					for(var j=0;j<vetCatSelezionate.length;j++){
+						if(codiceCheck == vetCatSelezionate[j]){
+							document.getElementById("keys-" + t).checked = "checked";
+							if(vetElencoNumcla!= null && vetElencoNumcla.length>0){
+								document.getElementById("V_GARE_CATEGORIE_NUMCLA_" + i).value = vetElencoNumcla[j+1];
+							}else
+								document.getElementById("V_GARE_CATEGORIE_NUMCLA_" + i).value = "";
+							break;
+						}	
+					}
+					
+				}
+			}
 			inizilizzaBloccoSbloccoClassifica(numeroCategorie);
 			associaFunzioniEventoOnchange();
 		}
 		
 		inizializzaLista();
-		
-		//Dalla funzione che deseleziona tutti i check si deve eliminare la
-		//gestione della categoria prevalente
-		function deselezionaTutti(objArrayCheckBox){
-			for (i = 0; i < objArrayCheckBox.length; i++) {
-		      var t = i + 1;
-			  var isprev = document.getElementById("V_GARE_CATEGORIE_ISPREV_" + t).value;
-			  var tiplavg = document.getElementById("V_GARE_CATEGORIE_TIPLAVG_" + t).value;
-			  
-			  if(isprev != 1){
-		      	objArrayCheckBox[i].checked = false;
-		      	if(tiplavg == 1 || (tiplavg == 2 && ${esisteClassificaForniture}) 
-		      		|| (tiplavg == 3 && ${esisteClassificaServizi}) || (tiplavg == 4 && ${esisteClassificaLavori150})
-		      		|| (tiplavg == 5 && ${esisteClassificaServiziProfessionali}))
-		      		document.getElementById("V_GARE_CATEGORIE_NUMCLA_" + t).disabled = true;
-		      }
-		    }
-		}
+				
 		
 		function inizilizzaBloccoSbloccoClassifica(numeroCategorie){
 			for(var t=0; t < numeroCategorie; t++){
@@ -432,22 +422,12 @@
 				document.getElementById("V_GARE_CATEGORIE_NUMCLA_" + i).disabled = true;
 			
 		}
-		
-		function selezionaTutti(objArrayCheckBox) {
-	    	for (i = 0; i < objArrayCheckBox.length; i++) {
-	      		objArrayCheckBox[i].checked = true;
-	      		var t = i + 1;
-	      		var tiplavg = document.getElementById("V_GARE_CATEGORIE_TIPLAVG_" + t).value;
-	      		if((tiplavg == 1 || (tiplavg == 2 && ${esisteClassificaForniture})
-	      			 || (tiplavg == 3 && ${esisteClassificaServizi}) || (tiplavg == 4 && ${esisteClassificaLavori150}))
-	      			 || (tiplavg == 5 && ${esisteClassificaServiziProfessionali}))
-	      			document.getElementById("V_GARE_CATEGORIE_NUMCLA_" + t).disabled = false;
-	    	}
-	    }
-	    
+					    
 	    function associaFunzioniEventoOnchange(){
+			var categoriaPrev ="${categoriaPrev }";
 			for(var i=1; i <= ${currentRow}+1; i++){
-				document.getElementById("V_GARE_CATEGORIE_NUMCLA_" + i).onchange = aggiornaNumclaHidden;
+				if(categoriaPrev == document.getElementById("CATIGA_FIT_" + i).value)
+					document.getElementById("V_GARE_CATEGORIE_NUMCLA_" + i).onchange = aggiornaNumclaHidden;
 			}
 		}
  		
@@ -462,6 +442,9 @@
 			
  		}
  		
+ 		function cambiaModalitaFiltroCategorie(modo){
+ 			document.getElementById("modalitaFiltroCategorie").value=modo;
+ 		}
 	</gene:javaScript>
 </gene:template>
 </c:otherwise>

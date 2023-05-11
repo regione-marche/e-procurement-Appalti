@@ -19,8 +19,6 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
-
-
 <div style="width:97%;">
 
 <gene:template file="popup-template.jsp">
@@ -33,6 +31,8 @@
 		<c:otherwise>
 			<c:set var="lottoSorgente" value="${param.lottoSorgente}" />
 			<c:set var="codiceGara" value='${param.codiceGara}' />
+			${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, codiceGara, "SC", "21")}
+			${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, lottoSorgente, "SC", "20")}
 		</c:otherwise>
 	</c:choose>
 	

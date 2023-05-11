@@ -125,13 +125,13 @@
 	<gene:setString name="titoloMaschera" value='Rettifica importo di aggiudicazione' />
 	<c:choose>
 		<c:when test="${aqoper eq 2 }">
-			<c:set var="messaggio" value="Oltre a impostare il nuovo importo di aggiudicazione è possibile allineare il ${ribasso}, dove previsto, e l'importo della cauzione per ogni aggiudicatario dell'accordo quadro." />
+			<c:set var="messaggio" value="Oltre a impostare il nuovo importo di aggiudicazione è possibile allineare il ${ribasso}, dove previsto, e l'importo della garanzia per ogni aggiudicatario dell'accordo quadro." />
 		</c:when>
 		<c:otherwise>
 			<c:set var="messaggio" value="Oltre a impostare il nuovo importo di aggiudicazione è possibile allineare" />
 			<c:choose>
 				<c:when test="${cauzVis eq 'true' }">
-					<c:set var="messaggio" value="${messaggio } il ${ribasso}, dove previsto, e l'importo della cauzione." />
+					<c:set var="messaggio" value="${messaggio } il ${ribasso}, dove previsto, e l'importo della garanzia." />
 				</c:when>
 				<c:otherwise>
 					<c:set var="messaggio" value="${messaggio }, dove previsto, il ${ribasso}." />
@@ -175,7 +175,7 @@
 		
 		<gene:gruppoCampi  visibile="${aqoper ne 2 and cauzVis eq 'true'}">
 			<gene:campoScheda >
-				<td colspan="2"><b>Cauzione definitiva</b></td>
+				<td colspan="2"><b>Garanzia definitiva</b></td>
 			</gene:campoScheda>
 			<gene:campoScheda campo="RIDISO" modificabile="false"/>
 			<gene:campoScheda campo="IMPGAR" />

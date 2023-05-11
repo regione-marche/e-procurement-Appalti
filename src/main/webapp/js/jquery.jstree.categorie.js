@@ -145,6 +145,12 @@ $(window).on("load", function (){
      * Popola le variabili con le checkbox selezionate/deselezionate.
      */
 	$("#categorietree").bind('uncheck_node.jstree', function (e, data) {
+	    //var id = data.rslt.obj[0].id;
+	    //if(id.indexOf("/")>0){
+	    //	alert("Il codice della categoria contiene il carattere '/' che non e' ammesso");
+	    //	return;
+	    //}
+	    
 	    setCheckedUnchecked();
 	});
 
@@ -511,6 +517,18 @@ $(window).on("load", function (){
     	var items;
     	if(menuSelezioneArchivio!="true"){
         	items = {
+					operatoriItem: {
+                		label: "Operatori",
+                		"separator_before"  : true, 
+                		_disabled : $("#ABILITALISTAOPERATORI").val() == "false",
+                		"submenu" : {
+                 			listaItemOperatori: {
+                        		label: "Apri lista operatori iscritti",
+                        		action: function (obj) { _apriListaOperatori(node); },
+                        		_disabled : false
+                        	}
+                		}
+                	},
                 	articoliItem: {
                 		label: "Articoli",
                 		"separator_before"  : true, 
@@ -563,7 +581,7 @@ $(window).on("load", function (){
         	        	items.articoliItem.submenu.listaItem._disabled = true;
         	        	items.articoliItem.submenu.schedaItem._disabled = true;
         	        	items.categoriaItem._disabled = true;
-        	        	items.categoriaItem.submenu.ordineMinimoItem._disabled = true;
+        	        	items.categoriaItem.submenu.ordineMinimoItem._disabled = true;	
         	        }
                 } else {
                 	items.articoliItem._disabled = true;
@@ -573,6 +591,11 @@ $(window).on("load", function (){
                 	items.categoriaItem.submenu.ordineMinimoItem._disabled = true;
                 }
                 
+				if ($("#MODOAPERTURA").val() != "VISUALIZZA" || (node.attr("tiponodo") == "ART" || !node.attr("caisim"))){
+					items.operatoriItem._disabled = true;
+                	items.operatoriItem.submenu.listaItemOperatori._disabled = true;	
+				}
+				
                 /*
                  * Controllo autorizzazione alla modifiche
                  */
@@ -606,6 +629,13 @@ $(window).on("load", function (){
 		var caisim = node.attr("caisim");
 		var descat = node.attr("descrizione");
 		apriListaArticoli($("#GARE_NGARA").val(),nopega,caisim,descat);
+    }
+    
+    function _apriListaOperatori(node) {
+		var nopega = node.attr("keydb");
+		var caisim = node.attr("caisim");
+		var descat = node.attr("descrizione");
+		apriListaOperatori($("#GARE_NGARA").val(),$("#GARE_CODGAR1").val(),nopega,caisim,descat,$("#GARE_GENERE").val());
     }
     
     function _apriSchedaArticolo(node) {
@@ -719,16 +749,26 @@ $(window).on("load", function (){
 	 * Apre la lista degli articoli associati alla categoria.
 	 */
 	function apriListaArticoli(ngara, nopega, caisim, descat) {
-		var where = "MEARTCAT.NGARA = ? AND MEARTCAT.NOPEGA = ?";
-		var parametri = "T:" + ngara + ";N:" + nopega + ";";
-		document.formListaArticoli.trovaAddWhere.value=where;
-		document.formListaArticoli.trovaParameter.value=parametri;
 		document.formListaArticoli.opes_ngara.value=ngara;
 		document.formListaArticoli.opes_nopega.value=nopega;
 		document.formListaArticoli.cais_caisim.value=caisim;
 		document.formListaArticoli.cais_descat.value=descat;
 		bloccaRichiesteServer();
 		document.formListaArticoli.submit();
+	}
+	
+	/*
+	 * Apre la lista degli operatori iscritti alla categoria.
+	 */
+	function apriListaOperatori(ngara, codgar, nopega, caisim, descat, genere) {
+		document.formListaOperatoriIscritti.opes_ngara.value=ngara;
+		document.formListaOperatoriIscritti.opes_codgar.value=codgar;
+		document.formListaOperatoriIscritti.opes_nopega.value=nopega;
+		document.formListaOperatoriIscritti.cais_caisim.value=caisim;
+		document.formListaOperatoriIscritti.cais_descat.value=descat;
+		document.formListaOperatoriIscritti.genere.value=genere;
+		bloccaRichiesteServer();
+		document.formListaOperatoriIscritti.submit();
 	}
 	
 	/*

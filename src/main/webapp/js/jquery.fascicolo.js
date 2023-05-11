@@ -104,7 +104,9 @@ $(window).ready(function (){
 	 * Avvia il caricamento dei dati del fascicolo
 	 */
 	function _caricaWSDM() {
-		_getWSFascicolo($('#tiposistemaremoto').val());
+		_tipoWSDM = $('#tiposistemaremoto').val();
+		
+		_getWSFascicolo(_tipoWSDM);
 		_gestioneWSFascicolo();		
 		
 		_isWSDocumentoPopolato();
@@ -112,9 +114,10 @@ $(window).ready(function (){
 			_tableDocumentiFascicolo.destroy(true);
 		}
 				
-		
+				
 		$("#oggettofascicolo").text("");
-		$("#classificafascicolodescrizione").text("");
+		if($('#tiposistemaremoto').val()!='DOCER' && $('#tiposistemaremoto').val()!='LAPISOPERA')
+			$("#classificafascicolodescrizione").text("");
 		$("#descrizionefascicolo").text("");
 		
 		var codice = $("#codicefascicolo").val();
@@ -138,13 +141,28 @@ $(window).ready(function (){
 			$("#classificafascicolodescrizione").hide();
 			$("#descrizionefascicolo").closest('tr').hide();
 			$("#descrizionefascicolo").hide();
+		}else if($('#tiposistemaremoto').val()=='DOCER'){
+			$("#codicefascicolo").closest('tr').hide();
+			$("#codicefascicolo").hide();
+			$("#oggettofascicolo").closest('tr').hide();
+			$("#oggettofascicolo").hide();
+			$("#descrizionefascicolo").closest('tr').hide();
+			$("#descrizionefascicolo").hide();
+			
+		}else if($('#tiposistemaremoto').val()=='LAPISOPERA'){
+			$("#linkleggiDatiFascicolo").show();
+			$("#descrizionefascicolo").closest('tr').hide();
+			$("#descrizionefascicolo").hide();
+			$("#oggettofascicolo").closest('tr').hide();
+			$("#oggettofascicolo").hide();
 		}
 		
 		//Se non c'è il fascicolo o il fasciolo è presente ma non ci sono elementi documentali
 		//è presente la funzione "Associa fascicolo esistente", altrimenti la funzione
 		//"Imposta credenziali"
 		if(!fascicoloAssociato || (fascicoloAssociato && !isWSDocumentoPopolato)){
-			if($("#autorizzatoModifiche").val() != "2" && $("#autorizzatoAssociaFascicolo").val() == "true" && $('#tiposistemaremoto').val()!='ENGINEERING' && $('#tiposistemaremoto').val()!='JPROTOCOL'){
+			if($("#autorizzatoModifiche").val() != "2" && $("#autorizzatoAssociaFascicolo").val() == "true" && $('#tiposistemaremoto').val()!='ENGINEERINGDOC' && $('#tiposistemaremoto').val()!='JPROTOCOL' 
+				&& $('#tiposistemaremoto').val()!='DOCER' && $('#tiposistemaremoto').val()!='LAPISOPERA'){
 				$("#wsdmModificaPulsante").show();
 				$("#wsdmModificaMenu").show();
 			}else{
@@ -233,7 +251,7 @@ $(window).ready(function (){
 		_removeTabsDettaglioDocumento();
 		$("#wsdmSalvaPulsante").hide();
 		$("#wsdmAnnullaPulsante").hide();
-		if($('#tiposistemaremoto').val()!="ENGINEERING" && $('#tiposistemaremoto').val()!="JPROTOCOL"){
+		if($('#tiposistemaremoto').val()!="ENGINEERINGDOC" && $('#tiposistemaremoto').val()!="JPROTOCOL"){
 			$("#wsdmModificaPulsante").show();
 			$("#wsdmModificaMenu").show();
 		}

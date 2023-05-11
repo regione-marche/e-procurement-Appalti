@@ -48,10 +48,10 @@
 		 			</c:if>
 		 			
 		 			<c:choose>
-		 				<c:when test="${defaultModalitaPresentazione eq '1'}">
+		 				<c:when test="${(defaultModalitaPresentazione eq '1'&& gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.garaTelematicaInserimentoImporti')) || (defaultModalitaPresentazione eq '2'&& !gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.garaTelematicaSoloUpload'))}">
 		 					<c:set var="defaultmodalitaPresentazione1" value='checked="checked"' />
 		 				</c:when>
-		 				<c:when test="${defaultModalitaPresentazione eq '2'}">
+		 				<c:when test="${(defaultModalitaPresentazione eq '2' && gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.garaTelematicaSoloUpload')) || (defaultModalitaPresentazione eq '1' && !gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.garaTelematicaInserimentoImporti'))}">
 		 					<c:set var="defaultmodalitaPresentazione2" value='checked="checked"' />
 		 				</c:when>
 		 			</c:choose>
@@ -66,12 +66,21 @@
 							<br>
 							<div id="presentazione" ${modalitaPresentazioneNascosta }>
 							<br>
-							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Offerta economica presentata su portale mediante:</b>
+							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Compilazione su portale mediante:</b>
 							<br>
-							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="modalitaPresentazione" value="1" ${defaultmodalitaPresentazione1 }  ${modalitaPresentazionedisabled }/>&nbsp;Inserimento importi o ribassi offerti e upload di documenti
+							<c:if test="${gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.garaTelematicaInserimentoImporti')}">
+							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="modalitaPresentazione" value="1" ${defaultmodalitaPresentazione1 }  ${modalitaPresentazionedisabled }  />&nbsp;Inserimento importi o ribassi offerti e upload di documenti
 							<br>
-							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="modalitaPresentazione" value="2"  ${defaultmodalitaPresentazione2 } ${modalitaPresentazionedisabled }/>&nbsp;Solo upload di documenti
-							<br><br>
+							</c:if>
+							<c:if test="${gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.garaTelematicaSoloUpload')}">
+							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="modalitaPresentazione" value="2"  ${defaultmodalitaPresentazione2 } ${modalitaPresentazionedisabled }  />&nbsp;Solo upload di documenti
+							<br>
+							</c:if>
+							<c:if test="${gene:checkProt(pageContext,'FUNZ.VIS.ALT.GENEWEB.QuestionariQForm') && gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.QuestionariQForm.associazioneBusta.tutte') && fn:contains(listaOpzioniDisponibili, 'OP135#')}">
+							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="modalitaPresentazione" value="3"  ${modalitaPresentazionedisabled } />&nbsp;Compilazione guidata con Q-Form
+							<br>
+							</c:if>
+							<br>
 							</div>
 							&nbsp;<input type="radio" name="proceduraTelematica" value="2" onclick="javascript:aggiornaTelematica(2);" ${proceduraTelematicadisabled}/>&nbsp;Telematica in altre piattaforme o cartacea
 							<br>
@@ -81,12 +90,20 @@
 							<br>
 							<div id="presentazione" style="display:none;">
 							<br>
-							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Offerta economica presentata su portale mediante:</b>
+							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Compilazione su portale mediante:</b>
 							<br>
+							<c:if test="${gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.garaTelematicaInserimentoImporti')}">
 							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="modalitaPresentazione" value="1" ${defaultmodalitaPresentazione1 }  ${modalitaPresentazionedisabled } />&nbsp;Inserimento importi o ribassi offerti e upload di documenti
 							<br>
+							</c:if>
+							<c:if test="${gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.garaTelematicaSoloUpload')}">
 							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="modalitaPresentazione" value="2"  ${defaultmodalitaPresentazione2 } ${modalitaPresentazionedisabled } />&nbsp;Solo upload di documenti
 							<br>
+							</c:if>
+							<c:if test="${gene:checkProt(pageContext,'FUNZ.VIS.ALT.GENEWEB.QuestionariQForm') && gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.QuestionariQForm.associazioneBusta.tutte') && fn:contains(listaOpzioniDisponibili, 'OP135#')}">
+							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="modalitaPresentazione" value="3"  ${modalitaPresentazionedisabled }  />&nbsp;Compilazione guidata con Q-Form
+							<br>
+							</c:if>
 							</div>
 							&nbsp;<input type="radio" name="proceduraTelematica" value="2" checked="checked" onclick="javascript:aggiornaTelematica(2);" ${proceduraTelematicadisabled}/>&nbsp;Telematica in altre piattaforme o cartacea
 							<br>
@@ -97,12 +114,20 @@
 							<c:if test="${empty proceduraTelematicadisabled }">
 								<div id="presentazione" ${modalitaPresentazioneNascosta }>
 								<br>
-								&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Offerta economica presentata su portale mediante:</b>
+								&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Compilazione su portale mediante:</b>
 								<br>
-								&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="modalitaPresentazione" value="1" ${defaultmodalitaPresentazione1 } ${modalitaPresentazionedisabled }/>&nbsp;Inserimento importi o ribassi offerti e upload di documenti
+								<c:if test="${gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.garaTelematicaInserimentoImporti')}">
+								&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="modalitaPresentazione" value="1" ${defaultmodalitaPresentazione1 } ${modalitaPresentazionedisabled }  />&nbsp;Inserimento importi o ribassi offerti e upload di documenti
 								<br>
-								&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="modalitaPresentazione" value="2"  ${defaultmodalitaPresentazione2 } ${modalitaPresentazionedisabled }/>&nbsp;Solo upload di documenti
+								</c:if>
+								<c:if test="${gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.garaTelematicaSoloUpload')}">
+								&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="modalitaPresentazione" value="2"  ${defaultmodalitaPresentazione2 } ${modalitaPresentazionedisabled }  />&nbsp;Solo upload di documenti
 								<br>
+								</c:if>
+								<c:if test="${gene:checkProt(pageContext,'FUNZ.VIS.ALT.GENEWEB.QuestionariQForm') && gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.QuestionariQForm.associazioneBusta.tutte') && fn:contains(listaOpzioniDisponibili, 'OP135#')}">
+								&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="modalitaPresentazione" value="3"  ${modalitaPresentazionedisabled }  />&nbsp;Compilazione guidata con Q-Form
+								<br>
+								</c:if>
 								</div>
 							</c:if>
 							&nbsp;<input type="radio" name="proceduraTelematica" value="2" onclick="javascript:aggiornaTelematica(2);" ${proceduraTelematicadisabled}/>&nbsp;Telematica in altre piattaforme o cartacea
@@ -135,6 +160,7 @@
 							<i>Gara singola o a lotto unico.</i>
 						</div>
 						<c:if test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.GARE.GestioneGareLottiOffUnica")}' >
+							<div id="divOffUnica" >
 							<br>
 							&nbsp;<input type="radio" name="gara" id="radiogara3" value="3" />&nbsp;Gara divisa in lotti
 							<br>
@@ -142,6 +168,7 @@
 								<i>Gara suddivisa in pi&ugrave; lotti. Ogni concorrente presenta un unico plico, indipendentemente
 								dal numero di lotti per cui concorre, contenente la busta amministrativa 
 								e una o più buste tecniche ed economiche.</i>
+							</div>
 							</div>
 						</c:if> 
 						<c:if test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.GARE.GestioneGareALotti")}' >

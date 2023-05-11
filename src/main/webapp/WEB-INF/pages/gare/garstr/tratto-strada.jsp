@@ -24,8 +24,8 @@
 				scheda=""
 				schedaPopUp=""
 				campi="ASTRA.CODVIA;ASTRA.VIAPIA"
+				functionId="skip"
 				chiave=""
-				where=""
 				inseribile="false" >
 				<gene:campoScheda campo="CODVIA_${param.contatore}" entita="GARSTR" campoFittizio="true" definizione="T20;0;;;G1CODVIA" value="${item[2]}" modificabile="${param.datiModificabili }"/>
 				<gene:campoScheda title="Denominazione" campo="VIAPIA_${param.contatore}" entita="ASTRA" campoFittizio="true" definizione="T60;0;;;VIAPIA" value="${item[3]}" 
@@ -49,8 +49,8 @@
 				scheda=""
 				schedaPopUp=""
 				campi="ASTRA.CODVIA;ASTRA.VIAPIA"
+				functionId="skip"
 				chiave=""
-				where=""
 				inseribile="false" >
 				<gene:campoScheda campo="CODVIA_${param.contatore}" entita="GARSTR" campoFittizio="true" definizione="T20;0;;;G1CODVIA" modificabile="${param.datiModificabili }"/>
 				<gene:campoScheda title="Denominazione" campo="VIAPIA_${param.contatore}" entita="ASTRA" campoFittizio="true" definizione="T60;0;;;VIAPIA" 

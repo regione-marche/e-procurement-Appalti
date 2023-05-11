@@ -10,6 +10,14 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.integrazioni.Art80Manager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
@@ -19,14 +27,6 @@ import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore non standard per la richiesta massiva della verifica art.80 di tutti gli operatori
@@ -72,6 +72,7 @@ public class GestorePopupVerificaOperatoriArt80 extends AbstractGestoreEntita {
 
     String ngara = UtilityStruts.getParametroString(this.getRequest(),"ngara");
     String statoAbilitazione = datiForm.getString("ABILITAZ");
+    String status_service = UtilityStruts.getParametroString(this.getRequest(),"status_service");
     String esitoFunzione="OK";
     Art80Manager art80Manager = (Art80Manager) UtilitySpring.getBean("art80Manager", this.getServletContext(), Art80Manager.class);
     StringBuffer msg = new StringBuffer("Non e' possibile procedere perchè i seguenti operatori non hanno valorizzato il codice fiscale o la ragione sociale:<br><ul>");
@@ -83,7 +84,7 @@ public class GestorePopupVerificaOperatoriArt80 extends AbstractGestoreEntita {
     try {
       String codein=(String) this.getRequest().getSession().getAttribute(CostantiGenerali.UFFICIO_INTESTATARIO_ATTIVO);
       boolean art80Gateway=false;
-      if(codein!=null && !"".equals(codein)  && "1".equals(ConfigManager.getValore("art80.ws.url.gateway")))
+      if(codein!=null && !"".equals(codein)  && "1".equals(ConfigManager.getValore("art80.ws.url.gateway")) && "1".equals(ConfigManager.getValore("art80.gateway.multiuffint")))
         art80Gateway=true;
       String selectStato="select dittao from ditg,impr where ngara5=? and dittao=codimp and abilitaz=? and art80_stato is null";
       Object par[] = null;
@@ -103,7 +104,7 @@ public class GestorePopupVerificaOperatoriArt80 extends AbstractGestoreEntita {
         for (int i=0;i<listaOperatori.size();i++){
           codiceDitta=SqlManager.getValueFromVectorParam(listaOperatori.get(i), 0).stringValue();
 
-          listaEsito = art80Manager.art80CreaOE(codiceDitta,codein);
+          listaEsito = art80Manager.art80CreaOE(codiceDitta,codein,status_service);
           if(listaEsito!=null && listaEsito.size()>0){
             for(int j=0; j< listaEsito.size();j++){
               Object esito[] = (Object[])listaEsito.get(j);

@@ -5,21 +5,6 @@
  */
 package it.eldasoft.sil.pg.bl;
 
-import it.eldasoft.gene.bl.GenChiaviManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.excel.DizionarioStiliExcel;
-import it.eldasoft.sil.pg.bl.excel.ExcelUtils;
-import it.eldasoft.sil.pg.bl.excel.bean.ImportAdempimenti190Bean;
-import it.eldasoft.sil.pg.bl.excel.bean.ImportAdempimenti190ConfigBean;
-import it.eldasoft.sil.pg.bl.excel.bean.ImportAdempimenti190ResultBean;
-import it.eldasoft.utils.utility.UtilityDate;
-import it.eldasoft.utils.utility.UtilityExcel;
-import it.eldasoft.utils.utility.UtilityFiscali;
-import it.eldasoft.utils.utility.UtilityNumeri;
-
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -41,12 +26,16 @@ import java.util.Vector;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
-import org.apache.poi.hssf.usermodel.DVConstraint;
-import org.apache.poi.hssf.usermodel.HSSFCellStyle;
-import org.apache.poi.hssf.usermodel.HSSFDataValidation;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
+
+import org.apache.poi.ss.usermodel.DataValidation;
+import org.apache.poi.ss.usermodel.DataValidationConstraint;
+import org.apache.poi.ss.usermodel.DataValidationHelper;
+import org.apache.poi.ss.usermodel.Drawing;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddressList;
@@ -56,6 +45,23 @@ import org.odftoolkit.odfdom.doc.OdfDocument;
 import org.odftoolkit.odfdom.doc.OdfSpreadsheetDocument;
 import org.odftoolkit.odfdom.doc.table.OdfTable;
 import org.springframework.transaction.TransactionStatus;
+
+import it.eldasoft.gene.bl.GenChiaviManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.excel.DizionarioStiliExcelX;
+import it.eldasoft.sil.pg.bl.excel.ExcelUtils;
+import it.eldasoft.sil.pg.bl.excel.ExcelUtilsX;
+import it.eldasoft.sil.pg.bl.excel.bean.ImportAdempimenti190Bean;
+import it.eldasoft.sil.pg.bl.excel.bean.ImportAdempimenti190ConfigBean;
+import it.eldasoft.sil.pg.bl.excel.bean.ImportAdempimenti190ResultBean;
+import it.eldasoft.utils.utility.UtilityDate;
+import it.eldasoft.utils.utility.UtilityExcel;
+import it.eldasoft.utils.utility.UtilityExcelX;
+import it.eldasoft.utils.utility.UtilityFiscali;
+import it.eldasoft.utils.utility.UtilityNumeri;
 
 /**
  *
@@ -67,7 +73,7 @@ public class Adempimenti190Manager {
 	private SqlManager sqlManager;
 	private PgManager pgManager;
 	private GenChiaviManager genChiaviManager;
-	public static final String MODELLO_ADEMPIMENTI_LEGGE_190 = "datilegge190.xls";
+	public static final String MODELLO_ADEMPIMENTI_LEGGE_190 = "datilegge190.xlsx";
 	public static final String FOGLIO_MODELLO_ADEMPIMENTI_LEGGE_190 = "Gare";
 	private static final int START_ROW = 2;
 	private static final int COL_CODICE_FISCALE_PROP = 1;
@@ -89,7 +95,7 @@ public class Adempimenti190Manager {
 	private static final int COL_CODICE_FISCALE_RSPONSABILE = 17;
 	private static final int COL_NOME_COGNOME_RESPONSABILE = 18;
 	private static final int INDEX_LAST_EXAMPLE_ROW = 12;
-	private static final String DV_SCELTA_CONTRAENTE = "'Scelta Contraente'!$A$1:$A$28";
+	private static final String DV_SCELTA_CONTRAENTE = "'Scelta Contraente'!$A$1:$A$29";
 	private static final String DV_RUOLO = "'Ruolo'!$A$1:$A$5";
 	private static final int CIG_MIN_LENGHT = 10;
 	private static final String CODICE_SCELTA = "A2044";
@@ -111,7 +117,9 @@ public class Adempimenti190Manager {
 					+ "VALUES(?,?,?,?,?,?)";
 	private static String SQL_SET_ANTICORLOTTO_AGGIUDICATO = "UPDATE anticorlotti SET stato = ? WHERE id = ? ";
 	private static String SQL_GET_CIG_LOTTO_BY_IDCONTRATTO = "select cig,id from anticorlotti where idanticor=? and idcontratto=?";
-	private static String SQL_CONTROLLO_LOTTI_CIG = "select count(*) from anticorlotti where idanticor=? and ((idcontratto=? and (cig is null or cig <> ?)) or (cig = ? and (idcontratto is null or idcontratto <> ?)))";
+	//private static String SQL_CONTROLLO_LOTTI_CIG = "select count(*) from anticorlotti where idanticor=? and ((idcontratto=? and (cig is null or cig <> ?)) or (cig = ? and (idcontratto is null or idcontratto <> ?)))";
+	private static String SQL_CONTROLLO_LOTTI_CIG = "select count(*) from anticorlotti where idanticor=? and cig = ? and (idcontratto is null or idcontratto <> ?)";
+	private static String SQL_CONTROLLO_LOTTI_IDCONTRATTO = "select count(*) from anticorlotti where idanticor=? and idcontratto=? and (cig is null or cig <> ?)";
 	private static String SQL_CONTROLLO_LOTTI_CIG_ANNOPREC = "select count(*) from anticorlotti where idanticor=? and idcontratto=? and cig = ? and daannoprec=?";
 	private static String SQL_UPDATE_SAP = "UPDATE ANTICORLOTTI SET DATAINIZIO=?, DATAULTIMAZIONE=?, IMPSOMMELIQ=?, IDCONTRATTO=? WHERE ID=?";
 	private static String SQL_CONTROLLO_AGGIUDICATARIE = "select tipo,  p.id from anticorlotti l, anticorpartecip p where l.idanticor=? and l.idcontratto=? and l.id= p.idanticorlotti and aggiudicataria='1'";
@@ -170,19 +178,20 @@ public class Adempimenti190Manager {
 	 * @param profiloUtente
 	 * @return il byte array dell'excel da passare all'output stream
 	 * @throws GestoreException eccezione sollevata dal manager
+	 * @throws InvalidFormatException 
 	 */
-	public byte[] createExcel(String percorsoExcel, long idAnticor, ProfiloUtente profiloUtente) throws GestoreException {
+	public byte[] createExcel(String percorsoExcel, long idAnticor, ProfiloUtente profiloUtente) throws GestoreException, InvalidFormatException {
 
 		if (percorsoExcel == null || percorsoExcel.equals("")) {
 			throw new GestoreException("Modello non definito", "importaesportaexcel.modellonondefinito");
 		}
 
-		HSSFWorkbook wb = null;
+		XSSFWorkbook wb = null;
 
 		try {
 			FileInputStream file = new FileInputStream(percorsoExcel);
-			POIFSFileSystem fs = new POIFSFileSystem(file);
-			wb = new HSSFWorkbook(fs);
+			//POIFSFileSystem fs = new POIFSFileSystem(file);
+			wb = new XSSFWorkbook(OPCPackage.open(file));
 			file.close();
 		} catch (FileNotFoundException e) {
 			throw new GestoreException("File del modello non trovato", "importaesportaexcel.modellonontrovato", new Object[]{percorsoExcel}, e);
@@ -191,7 +200,7 @@ public class Adempimenti190Manager {
 		}
 
 		// Creazione del dizionario degli stili delle celle dell'intero file Excel
-		DizionarioStiliExcel dizStiliExcel = new DizionarioStiliExcel(wb);
+		DizionarioStiliExcelX dizStiliExcel = new DizionarioStiliExcelX(wb);
 
 		if ("U".equals(profiloUtente.getAbilitazioneGare()) && StringUtils.isNotEmpty(profiloUtente.getCodiceFiscale())) {
 			// Scrittura della pagina dei dati generali e dei criteri di valutazione
@@ -225,7 +234,7 @@ public class Adempimenti190Manager {
 	 * @param ngara
 	 * @throws GestoreException
 	 */
-	private void populateExcel(HSSFWorkbook wb, long idAnticor, DizionarioStiliExcel dizStiliExcel, String codiceFiscaleResponsabile) throws GestoreException {
+	private void populateExcel(XSSFWorkbook wb, long idAnticor, DizionarioStiliExcelX dizStiliExcel, String codiceFiscaleResponsabile) throws GestoreException {
 
 		//Recupero i dati dei lotti
 		StringBuilder sbQuery;
@@ -233,7 +242,7 @@ public class Adempimenti190Manager {
 		List<?> datiAntiCorLotti;
 		List<?> datiAntiCorPartecip;
 
-		HSSFSheet sheet = wb.getSheet(FOGLIO_MODELLO_ADEMPIMENTI_LEGGE_190);
+		Sheet sheet = wb.getSheet(FOGLIO_MODELLO_ADEMPIMENTI_LEGGE_190);
 		if (sheet == null) {
 			throw new GestoreException("Non trovato il foglio " + FOGLIO_MODELLO_ADEMPIMENTI_LEGGE_190,
 					"importaesportaexcel.foglionontrovato", new Object[]{FOGLIO_MODELLO_ADEMPIMENTI_LEGGE_190},
@@ -270,17 +279,21 @@ public class Adempimenti190Manager {
 			if (datiAntiCorLotti == null) {
 				datiAntiCorLotti = new ArrayList<Vector>();
 			}
+			//rimuovo i commenti, danno problemi in lettura del file
+			for(int i=0; i<sheet.getRow(0).getLastCellNum();i++) {
+			  sheet.getRow(0).getCell(i).removeCellComment();
+			}
 
 			int indiceRigaCorrente = START_ROW;
 			boolean rigaCreataDaLotto;
-			Map<Integer, HSSFCellStyle> styleMap = new HashMap<Integer, HSSFCellStyle>();
+			Map<Integer, CellStyle> styleMap = new HashMap<Integer, CellStyle>();
 
 			for (int i=0; i < datiAntiCorLotti.size(); i++) {
 				rigaCreataDaLotto = false;
 
 				//Se sto inserendo il nono record, copio la riga precedente e così via con i successivi
 				if (indiceRigaCorrente > INDEX_LAST_EXAMPLE_ROW) {
-					ExcelUtils.copyRow(sheet, indiceRigaCorrente - 1, indiceRigaCorrente, styleMap);
+					ExcelUtilsX.copyRow(sheet, indiceRigaCorrente - 1, indiceRigaCorrente, styleMap);
 					rigaCreataDaLotto = true;
 				}
 
@@ -302,7 +315,7 @@ public class Adempimenti190Manager {
 
 					//Se sto inserendo il nono record, copio la riga precedente e così via con i successivi
 					if (indiceRigaCorrente > INDEX_LAST_EXAMPLE_ROW && !rigaCreataDaLotto) {
-						ExcelUtils.copyRow(sheet, indiceRigaCorrente - 1, indiceRigaCorrente, styleMap);
+						ExcelUtilsX.copyRow(sheet, indiceRigaCorrente - 1, indiceRigaCorrente, styleMap);
 						rigaCreataDaLotto = false;
 					}
 					fillLottiData(sheet, indiceRigaCorrente, datiAnticor, datiAntiCorLotti, i, dizStiliExcel);
@@ -362,94 +375,96 @@ public class Adempimenti190Manager {
 		return datiAntiCorPartecip;
 	}
 
-	private void fillLottiData(HSSFSheet sheet, int indiceRigaCorrente, Vector<?> datiAnticor, List<?> datiAntiCorLotti,
-					int indiceRecordLotti, DizionarioStiliExcel dizStiliExcel) throws GestoreException {
+	private void fillLottiData(Sheet sheet, int indiceRigaCorrente, Vector<?> datiAnticor, List<?> datiAntiCorLotti,
+					int indiceRecordLotti, DizionarioStiliExcelX dizStiliExcel) throws GestoreException {
 
 		String daAnnoPrecedente = SqlManager.getValueFromVectorParam(datiAntiCorLotti.get(indiceRecordLotti), 10).stringValue();
 		Long anno = ((JdbcParametro) datiAnticor.get(0)).longValue();
 		if (anno != null && daAnnoPrecedente != null) {
-			UtilityExcel.scriviCella(sheet, COL_ANNO_RIF, indiceRigaCorrente, anno, dizStiliExcel.getStileExcel(DizionarioStiliExcel.INTERO_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_ANNO_RIF, indiceRigaCorrente, anno, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.INTERO_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_ANNO_RIF, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.INTERO_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_ANNO_RIF, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.INTERO_ALIGN_CENTER_FRAMED));
 		}
 
 		String cig = SqlManager.getValueFromVectorParam(datiAntiCorLotti.get(indiceRecordLotti), 1).getStringValue();
 		if (cig != null) {
-			UtilityExcel.scriviCella(sheet, COL_CIG, indiceRigaCorrente, cig, dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_CIG, indiceRigaCorrente, cig, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_CIG, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_CIG, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		}
 
 		String oggettoLotto = SqlManager.getValueFromVectorParam(datiAntiCorLotti.get(indiceRecordLotti), 4).getStringValue();
 		if (oggettoLotto != null ) {
 			//UtilityExcel.scriviCella(sheet, COL_OGGETTO_LOTTO, indiceRigaCorrente, oggettoLotto, dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
-		  UtilityExcel.scriviCella(sheet, COL_OGGETTO_LOTTO, indiceRigaCorrente, oggettoLotto, dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_GENERAL_FORMAT));
+		  UtilityExcelX.scriviCella(sheet, COL_OGGETTO_LOTTO, indiceRigaCorrente, oggettoLotto, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_GENERAL_FORMAT));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_OGGETTO_LOTTO, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_OGGETTO_LOTTO, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		}
 
 		String sceltaContraente = SqlManager.getValueFromVectorParam(datiAntiCorLotti.get(indiceRecordLotti), 5).getStringValue();
 		if (sceltaContraente != null) {
-			UtilityExcel.scriviCella(sheet, COL_PROCEDURA_SCELTA_CONTR, indiceRigaCorrente, sceltaContraente, dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_PROCEDURA_SCELTA_CONTR, indiceRigaCorrente, sceltaContraente, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_PROCEDURA_SCELTA_CONTR, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_PROCEDURA_SCELTA_CONTR, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		}
 		CellRangeAddressList cralSceltaContraente = new CellRangeAddressList(indiceRigaCorrente, indiceRigaCorrente, COL_PROCEDURA_SCELTA_CONTR - 1, COL_PROCEDURA_SCELTA_CONTR - 1);
-		DVConstraint dvcSceltaContraente = DVConstraint.createFormulaListConstraint(DV_SCELTA_CONTRAENTE);
-		HSSFDataValidation dvSceltaContraente = new HSSFDataValidation(cralSceltaContraente, dvcSceltaContraente);
+		
+		DataValidationHelper dvHelper = sheet.getDataValidationHelper();
+	    DataValidationConstraint dvcSceltaContraente = dvHelper.createFormulaListConstraint(DV_SCELTA_CONTRAENTE);
+	    DataValidation dvSceltaContraente = dvHelper.createValidation(dvcSceltaContraente, cralSceltaContraente);
+	    dvSceltaContraente.setSuppressDropDownArrow(true);
+	    dvSceltaContraente.setShowErrorBox(true);
 		dvSceltaContraente.setEmptyCellAllowed(true);
-		dvSceltaContraente.setErrorStyle(HSSFDataValidation.ErrorStyle.STOP);
-		dvSceltaContraente.setShowErrorBox(true);
+		dvSceltaContraente.setErrorStyle(DataValidation.ErrorStyle.STOP);
 		dvSceltaContraente.createErrorBox("Errore", "Valore di Scelta contraente non valido");
-		dvSceltaContraente.setSuppressDropDownArrow(false);
 		sheet.addValidationData(dvSceltaContraente);
 
 		String codFiscProp = SqlManager.getValueFromVectorParam(datiAntiCorLotti.get(indiceRecordLotti), 2).getStringValue();
 		if (codFiscProp != null) {
-			UtilityExcel.scriviCella(sheet, COL_CODICE_FISCALE_PROP, indiceRigaCorrente, codFiscProp, dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_CODICE_FISCALE_PROP, indiceRigaCorrente, codFiscProp, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_CODICE_FISCALE_PROP, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_CODICE_FISCALE_PROP, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		}
 
 		String ragSocialeProp = SqlManager.getValueFromVectorParam(datiAntiCorLotti.get(indiceRecordLotti), 3).getStringValue();
 		if (ragSocialeProp != null) {
-			UtilityExcel.scriviCella(sheet, COL_RAGIONE_SOCIALE_PROP, indiceRigaCorrente, ragSocialeProp, dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_RAGIONE_SOCIALE_PROP, indiceRigaCorrente, ragSocialeProp, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_RAGIONE_SOCIALE_PROP, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_RAGIONE_SOCIALE_PROP, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		}
 
 		Double importoAgg = SqlManager.getValueFromVectorParam(datiAntiCorLotti.get(indiceRecordLotti), 6).doubleValue();
 		if (importoAgg != null) {
 			//String importoAggString = UtilityNumeri.convertiDouble(importoAgg);
-			UtilityExcel.scriviCella(sheet, COL_IMPORTO_AGGIUDICAZIONE, indiceRigaCorrente, importoAgg, dizStiliExcel.getStileExcel(DizionarioStiliExcel.DECIMALE2_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_IMPORTO_AGGIUDICAZIONE, indiceRigaCorrente, importoAgg, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.DECIMALE2_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_IMPORTO_AGGIUDICAZIONE, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.DECIMALE2_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_IMPORTO_AGGIUDICAZIONE, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.DECIMALE2_ALIGN_CENTER_FRAMED));
 		}
 
 		Timestamp dataInizioTime = SqlManager.getValueFromVectorParam(datiAntiCorLotti.get(indiceRecordLotti), 7).dataValue();
 		if (dataInizioTime != null) {
 			GregorianCalendar dataInizio = new GregorianCalendar();
 			dataInizio.setTimeInMillis(dataInizioTime.getTime());
-			UtilityExcel.scriviCella(sheet, COL_DATA_INIZIO, indiceRigaCorrente, UtilityDate.convertiData(dataInizio.getTime(), UtilityDate.FORMATO_GG_MM_AAAA), dizStiliExcel.getStileExcel(DizionarioStiliExcel.DATA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_DATA_INIZIO, indiceRigaCorrente, UtilityDate.convertiData(dataInizio.getTime(), UtilityDate.FORMATO_GG_MM_AAAA), dizStiliExcel.getStileExcel(DizionarioStiliExcelX.DATA_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_DATA_INIZIO, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.DATA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_DATA_INIZIO, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.DATA_ALIGN_CENTER_FRAMED));
 		}
 
 		Timestamp dataUltimazioneTime = SqlManager.getValueFromVectorParam(datiAntiCorLotti.get(indiceRecordLotti), 8).dataValue();
 		if (dataUltimazioneTime != null) {
 			GregorianCalendar dataUltimazione = new GregorianCalendar();
 			dataUltimazione.setTimeInMillis(dataUltimazioneTime.getTime());
-			UtilityExcel.scriviCella(sheet, COL_DATA_ULTIMAZIONE, indiceRigaCorrente, UtilityDate.convertiData(dataUltimazione.getTime(), UtilityDate.FORMATO_GG_MM_AAAA), dizStiliExcel.getStileExcel(DizionarioStiliExcel.DATA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_DATA_ULTIMAZIONE, indiceRigaCorrente, UtilityDate.convertiData(dataUltimazione.getTime(), UtilityDate.FORMATO_GG_MM_AAAA), dizStiliExcel.getStileExcel(DizionarioStiliExcelX.DATA_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_DATA_ULTIMAZIONE, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.DATA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_DATA_ULTIMAZIONE, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.DATA_ALIGN_CENTER_FRAMED));
 		}
 
 		Double importoSomme = SqlManager.getValueFromVectorParam(datiAntiCorLotti.get(indiceRecordLotti), 9).doubleValue();
 		if (importoSomme != null) {
 			//String importoSommeString = UtilityNumeri.convertiDouble(importoSomme);
-			UtilityExcel.scriviCella(sheet, COL_IMPORTO_SOMME_LIQUIDATE, indiceRigaCorrente, importoSomme, dizStiliExcel.getStileExcel(DizionarioStiliExcel.DECIMALE2_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_IMPORTO_SOMME_LIQUIDATE, indiceRigaCorrente, importoSomme, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.DECIMALE2_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_IMPORTO_SOMME_LIQUIDATE, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.DECIMALE2_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_IMPORTO_SOMME_LIQUIDATE, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.DECIMALE2_ALIGN_CENTER_FRAMED));
 		}
 
 		String codiceFiscaleResponsabile = null;
@@ -459,9 +474,9 @@ public class Adempimenti190Manager {
 		}
 
 		if (StringUtils.isNotEmpty(codiceFiscaleResponsabile)) {
-			UtilityExcel.scriviCella(sheet, COL_CODICE_FISCALE_RSPONSABILE, indiceRigaCorrente, codiceFiscaleResponsabile, dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_CODICE_FISCALE_RSPONSABILE, indiceRigaCorrente, codiceFiscaleResponsabile, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_CODICE_FISCALE_RSPONSABILE, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_CODICE_FISCALE_RSPONSABILE, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		}
 
 		tmpJdbcParametro = null;
@@ -472,74 +487,78 @@ public class Adempimenti190Manager {
 		}
 
 		if (StringUtils.isNotEmpty(nomeRespesponsabile)) {
-			UtilityExcel.scriviCella(sheet, COL_NOME_COGNOME_RESPONSABILE, indiceRigaCorrente, nomeRespesponsabile, dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_NOME_COGNOME_RESPONSABILE, indiceRigaCorrente, nomeRespesponsabile, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_NOME_COGNOME_RESPONSABILE, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_NOME_COGNOME_RESPONSABILE, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		}
 	}
 
-	private void fillDitteData(HSSFSheet sheet, int indiceRigaCorrente, List<?> datiAntiCorPartecip, int indiceRecordPartecip,
-					DizionarioStiliExcel dizStiliExcel) throws GestoreException {
+	private void fillDitteData(Sheet sheet, int indiceRigaCorrente, List<?> datiAntiCorPartecip, int indiceRecordPartecip,
+					DizionarioStiliExcelX dizStiliExcel) throws GestoreException {
 
 		String codFiscOpITA = SqlManager.getValueFromVectorParam(datiAntiCorPartecip.get(indiceRecordPartecip), 4).getStringValue();
 		if (codFiscOpITA != null) {
-			UtilityExcel.scriviCella(sheet, COL_CODICE_FISCALE_OPE_ITA, indiceRigaCorrente, codFiscOpITA, dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_CODICE_FISCALE_OPE_ITA, indiceRigaCorrente, codFiscOpITA, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_CODICE_FISCALE_OPE_ITA, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_CODICE_FISCALE_OPE_ITA, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		}
 
 		String codFiscOpEST = SqlManager.getValueFromVectorParam(datiAntiCorPartecip.get(indiceRecordPartecip), 5).getStringValue();
 		if (codFiscOpEST != null) {
-			UtilityExcel.scriviCella(sheet, COL_CODICE_FISCALE_OPE_ESTERO, indiceRigaCorrente, codFiscOpEST, dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_CODICE_FISCALE_OPE_ESTERO, indiceRigaCorrente, codFiscOpEST, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_CODICE_FISCALE_OPE_ESTERO, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_CODICE_FISCALE_OPE_ESTERO, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		}
 
 		String ragSocOperatore = SqlManager.getValueFromVectorParam(datiAntiCorPartecip.get(indiceRecordPartecip), 2).getStringValue();
 		if (codFiscOpEST != null) {
-			UtilityExcel.scriviCella(sheet, COL_RAGIONE_SOCIALE_OPE, indiceRigaCorrente, ragSocOperatore, dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_RAGIONE_SOCIALE_OPE, indiceRigaCorrente, ragSocOperatore, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_RAGIONE_SOCIALE_OPE, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_RAGIONE_SOCIALE_OPE, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		}
 
 		String ruolo = SqlManager.getValueFromVectorParam(datiAntiCorPartecip.get(indiceRecordPartecip), 3).getStringValue();
 		if (codFiscOpEST != null) {
-			UtilityExcel.scriviCella(sheet, COL_RUOLO_OPE, indiceRigaCorrente, ruolo, dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_RUOLO_OPE, indiceRigaCorrente, ruolo, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_RUOLO_OPE, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_RUOLO_OPE, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		}
 		CellRangeAddressList cralRuolo = new CellRangeAddressList(indiceRigaCorrente, indiceRigaCorrente, COL_RUOLO_OPE - 1, COL_RUOLO_OPE - 1);
-		DVConstraint dvcRuolo = DVConstraint.createFormulaListConstraint(DV_RUOLO);
-		HSSFDataValidation dvRuolo = new HSSFDataValidation(cralRuolo, dvcRuolo);
+		
+		DataValidationHelper dvHelper = sheet.getDataValidationHelper();
+	    DataValidationConstraint dvcRuolo = dvHelper.createFormulaListConstraint(DV_RUOLO);
+	    DataValidation dvRuolo = dvHelper.createValidation(dvcRuolo, cralRuolo);
+	    dvRuolo.setSuppressDropDownArrow(true);
+	    dvRuolo.setShowErrorBox(true);
 		dvRuolo.setEmptyCellAllowed(true);
-		dvRuolo.setErrorStyle(HSSFDataValidation.ErrorStyle.STOP);
-		dvRuolo.setShowErrorBox(true);
+		dvRuolo.setErrorStyle(DataValidation.ErrorStyle.STOP);
 		dvRuolo.createErrorBox("Errore", "Valore di Ruolo non valido");
-		dvRuolo.setSuppressDropDownArrow(false);
 		sheet.addValidationData(dvRuolo);
 
 		Long tipoImpresa = SqlManager.getValueFromVectorParam(datiAntiCorPartecip.get(indiceRecordPartecip), 6).longValue();
 		String denGruppo = SqlManager.getValueFromVectorParam(datiAntiCorPartecip.get(indiceRecordPartecip), 1).getStringValue();
 		if (denGruppo != null && tipoImpresa != null && tipoImpresa == ImportAdempimenti190Bean.RAGGRUPPAMENTO_IMPRESE) {
-			UtilityExcel.scriviCella(sheet, COL_DEN_RAGGRUPPAMENTO, indiceRigaCorrente, denGruppo, dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_DEN_RAGGRUPPAMENTO, indiceRigaCorrente, denGruppo, dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_DEN_RAGGRUPPAMENTO, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_DEN_RAGGRUPPAMENTO, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		}
 
 		String aggiudicatario = (SqlManager.getValueFromVectorParam(datiAntiCorPartecip.get(indiceRecordPartecip), 0)).stringValue();
 		if (aggiudicatario != null) {
-			UtilityExcel.scriviCella(sheet, COL_AGGIUDICATARIO, indiceRigaCorrente, aggiudicatario.equals("1") ? "SI" : "NO", dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_AGGIUDICATARIO, indiceRigaCorrente, aggiudicatario.equals("1") ? "SI" : "NO", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		} else {
-			UtilityExcel.scriviCella(sheet, COL_AGGIUDICATARIO, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_CENTER_FRAMED));
+			UtilityExcelX.scriviCella(sheet, COL_AGGIUDICATARIO, indiceRigaCorrente, "", dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_CENTER_FRAMED));
 		}
 		CellRangeAddressList cralAggiudicataria = new CellRangeAddressList(indiceRigaCorrente, indiceRigaCorrente, COL_AGGIUDICATARIO - 1, COL_AGGIUDICATARIO - 1);
-		DVConstraint dvcAggiudicataria = DVConstraint.createExplicitListConstraint(new String[]{"SI", "NO"});
-		HSSFDataValidation dvAggiudicataria = new HSSFDataValidation(cralAggiudicataria, dvcAggiudicataria);
+		
+        DataValidationConstraint dvcAggiudicataria = dvHelper.createExplicitListConstraint(new String[]{"SI", "NO"});
+        DataValidation dvAggiudicataria = dvHelper.createValidation(dvcAggiudicataria, cralAggiudicataria);
+        dvAggiudicataria.setSuppressDropDownArrow(true);
+        dvAggiudicataria.setShowErrorBox(true);
 		dvAggiudicataria.setEmptyCellAllowed(true);
-		dvAggiudicataria.setErrorStyle(HSSFDataValidation.ErrorStyle.STOP);
+		dvAggiudicataria.setErrorStyle(DataValidation.ErrorStyle.STOP);
 		dvAggiudicataria.setShowErrorBox(true);
 		dvAggiudicataria.createErrorBox("Errore", "Valore di Aggiudicataria non valido");
-		dvAggiudicataria.setSuppressDropDownArrow(false);
 		sheet.addValidationData(dvAggiudicataria);
 	}
 
@@ -1504,7 +1523,7 @@ public class Adempimenti190Manager {
     try {
       String subStringPrimi2Caratteri = sqlManager.getDBFunction("substr",
           new String[] { "tab1desc", "1", "2" });
-      String SQL_SCELTA_CONTRAENTE = "select " + subStringPrimi2Caratteri + ",tab1tip from tab1 where tab1cod='A2044' and tab1tip<89 and tab1tip>50 order by tab1tip desc";
+      String SQL_SCELTA_CONTRAENTE = "select " + subStringPrimi2Caratteri + ",tab1tip from tab1 where tab1cod='A2044' and tab1tip<90 and tab1tip>50 order by tab1tip desc";
       listaSceltaContraente = this.sqlManager.getListVector(SQL_SCELTA_CONTRAENTE, null);
     } catch (SQLException e) {
       throw new GestoreException("Errore inaspettato accorso durante il recupero informazioni sul lotto", "importaesportaexcel.erroreinaspettato", e);
@@ -1611,9 +1630,14 @@ public class Adempimenti190Manager {
                         erroriRiga.add(resBundleGenerale.getString("errors.gestoreException.*.legge190.lottoannoprec"));
                         controlliPrecAgg= false;
                       }else{
-                        conteggioLotti = (Long)this.sqlManager.getObject(SQL_CONTROLLO_LOTTI_CIG,new Object[]{new Long(idAnticor), idcontratto, cig, cig, idcontratto });
+                        conteggioLotti = (Long)this.sqlManager.getObject(SQL_CONTROLLO_LOTTI_CIG,new Object[]{new Long(idAnticor), cig, idcontratto });
                         if(conteggioLotti!=null && conteggioLotti.longValue() >0){
-                          erroriRiga.add(resBundleGenerale.getString("errors.gestoreException.*.legge190.idcontrattoduplicato"));
+                          erroriRiga.add(resBundleGenerale.getString("errors.gestoreException.*.legge190.idcontrattoduplicato.SAP"));
+                          controlliPrecAgg= false;
+                        }
+                        conteggioLotti = (Long)this.sqlManager.getObject(SQL_CONTROLLO_LOTTI_IDCONTRATTO,new Object[]{new Long(idAnticor), idcontratto, cig});
+                        if(conteggioLotti!=null && conteggioLotti.longValue() >0){
+                          erroriRiga.add(resBundleGenerale.getString("errors.gestoreException.*.legge190.idcontrattoduplicato.CIG"));
                           controlliPrecAgg= false;
                         }
                       }
@@ -1637,7 +1661,7 @@ public class Adempimenti190Manager {
                       if(cigIdAnticorlotti!=null && cigIdAnticorlotti.size()>0){
                         cigLotto = SqlManager.getValueFromVectorParam(cigIdAnticorlotti, 0).getStringValue();
                         if(cigLotto!=null && !"".equals(cigLotto)){
-                          erroriRiga.add(resBundleGenerale.getString("errors.gestoreException.*.legge190.idcontrattoduplicato"));
+                          erroriRiga.add(resBundleGenerale.getString("errors.gestoreException.*.legge190.idcontrattoduplicato.CIG"));
                           controlliPrecAgg= false;
                         }
                       }

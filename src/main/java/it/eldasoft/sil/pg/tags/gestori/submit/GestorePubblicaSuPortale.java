@@ -10,9 +10,16 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -20,14 +27,31 @@ import java.util.List;
 import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.log4j.Logger;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.jdbc.core.support.SqlLobValue;
 import org.springframework.jdbc.support.lob.DefaultLobHandler;
 import org.springframework.jdbc.support.lob.LobHandler;
 import org.springframework.transaction.TransactionStatus;
 
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Chunk;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.Font.FontFamily;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
 import com.lowagie.text.DocumentException;
 
 import intra.regionemarche.ResultClass;
@@ -50,8 +74,11 @@ import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveNumeri
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.ControlliOepvManager;
 import it.eldasoft.sil.pg.bl.GestioneATCManager;
+import it.eldasoft.sil.pg.bl.GestioneProgrammazioneManager;
 import it.eldasoft.sil.pg.bl.GestioneRegioneMarcheManager;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.sil.pg.bl.ImportExportOffertaPrezziManager;
+import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.sil.pg.bl.cifrabuste.CifraturaBusteManager;
 import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.utils.properties.ConfigManager;
@@ -65,6 +92,7 @@ import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAnagraficaType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoInType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoResType;
+import it.maggioli.eldasoft.ws.dm.WSDMTipoVoceRubricaType;
 
 
 /**
@@ -96,6 +124,12 @@ public class GestorePubblicaSuPortale extends
 
   private GenChiaviManager genChiaviManager;
 
+  private GestioneProgrammazioneManager gestioneProgrammazioneManager;
+
+  private ImportExportOffertaPrezziManager importExportOffertaPrezziManager;
+
+  private PgManagerEst1 pgManagerEst1;
+
   public GestorePubblicaSuPortale() {
     super(false);
   }
@@ -125,6 +159,15 @@ public class GestorePubblicaSuPortale extends
 
     genChiaviManager = (GenChiaviManager) UtilitySpring.getBean("genChiaviManager",
         this.getServletContext(), GenChiaviManager.class);
+
+    gestioneProgrammazioneManager = (GestioneProgrammazioneManager) UtilitySpring.getBean("gestioneProgrammazioneManager",
+        this.getServletContext(), GestioneProgrammazioneManager.class);
+
+    importExportOffertaPrezziManager = (ImportExportOffertaPrezziManager) UtilitySpring.getBean("importExportOffertaPrezziManager",
+        this.getServletContext(), ImportExportOffertaPrezziManager.class);
+
+    pgManagerEst1 = (PgManagerEst1) UtilitySpring.getBean("pgManagerEst1",
+        this.getServletContext(), PgManagerEst1.class);
 
   }
 
@@ -165,6 +208,7 @@ public class GestorePubblicaSuPortale extends
     String messageKey = "";
     String idconfi = UtilityStruts.getParametroString(this.getRequest(),"idconfi");
     String riservatezzaAttiva = ConfigManager.getValore("wsdm.applicaRiservatezza."+idconfi);
+    String integrazioneWSDM = null;
 
     try{
 
@@ -188,6 +232,9 @@ public class GestorePubblicaSuPortale extends
         String iterga = UtilityStruts.getParametroString(this.getRequest(),"iterga");
         String soloPunteggiTec = UtilityStruts.getParametroString(this.getRequest(),"soloPunteggiTec");
         String uuid = UtilityStruts.getParametroString(this.getRequest(),"uuid");
+
+        Long genere = (Long) sqlManager.getObject("select genere from V_GARE_TORN where codgar = ?", new Object[]{codgar});
+        boolean formularioCompletoAbilitato = false;
 
         ngara = UtilityStringhe.convertiNullInStringaVuota(ngara);
         int index_genere;
@@ -250,7 +297,7 @@ public class GestorePubblicaSuPortale extends
                     errMsgEvento = this.resBundleGenerale.getString(messageKey);
                     throw new GestoreException("La data di pubblicazione deve essere precedente o uguale alla data termine per la presentazione dell'offerta ", "erroreDataPubbl.presOfferta", new Exception());
                   }
-                }else if("2".equals(iterga) || "4".equals(iterga)){
+                }else if("2".equals(iterga) || "4".equals(iterga) || "7".equals(iterga)){
                   Date data2 = new Date(dtepar.getTime());
                   if(data1.compareTo(data2)>0){
                     livEvento = 3;
@@ -277,7 +324,20 @@ public class GestorePubblicaSuPortale extends
             throw new GestoreException("Errore nella lettura della data TORN.DTEOFF ", null, e);
           }
 
+          Date datsca = null;
           garavviso = UtilityStruts.getParametroString(this.getRequest(),"garavviso");
+          if("1".equals(garavviso)) {
+            datsca = (Date)this.sqlManager.getObject("select datsca from gareavvisi where ngara=?", new Object[]{ngara});
+            if(datsca != null && datpub != null){
+              Date data1 = new Date(datpub.getTime());
+              if(data1.compareTo(datsca)>0) {
+                livEvento = 3;
+                messageKey = "errors.gestoreException.*.erroreDataPubbl.presPartecipazione";
+                errMsgEvento = this.resBundleGenerale.getString(messageKey);
+                throw new GestoreException("La data di pubblicazione deve essere precedente o uguale alla data scadenza", "erroreDataPubbl.dataScadenza", new Exception());
+              }
+            }
+          }
           //if(!"1".equals(garavviso)){
             gestioneFascicoloWSDM = UtilityStruts.getParametroString(this.getRequest(),"gestioneFascicoloWSDM");
             if("1".equals(gestioneFascicoloWSDM)){
@@ -286,7 +346,6 @@ public class GestorePubblicaSuPortale extends
                 if(!"1".equals(garavviso))
                   data = this.getData(iterga, dteoff, dtepar);
                 else{
-                  Date datsca = (Date)this.sqlManager.getObject("select datsca from gareavvisi where ngara=?", new Object[]{ngara});
                   if(datsca!=null)
                     data =  new Timestamp(datsca.getTime());
                 }
@@ -417,7 +476,7 @@ public class GestorePubblicaSuPortale extends
                 gara=codgar;
               Long fasgar = new Long(1);
               Long stepgar = new Long(10);
-              if("2".equals(iterga) || "4".equals(iterga)){
+              if("2".equals(iterga) || "4".equals(iterga) || "7".equals(iterga)){
                 fasgar = new Long(-5);
                 stepgar = new Long(-50);
               }
@@ -428,6 +487,12 @@ public class GestorePubblicaSuPortale extends
             }
           }
           this.cancellazioneDatiNonUtilizzati(ngara, codgar, genPubblicazione, iterga);
+
+          //Integrazione programmazione
+          if(gestioneProgrammazioneManager.isAttivaIntegrazioneProgrammazione()){
+            this.gestioneProgrammazioneManager.aggiornaRdaGara(codgar,null,null);
+          }
+
 
 
           break;
@@ -532,7 +597,7 @@ public class GestorePubblicaSuPortale extends
           gestore2.inserisci(status, container2);
           break;
         case 3:
-          String integrazioneWSDM = UtilityStruts.getParametroString(this.getRequest(),"integrazioneWSDM");
+          integrazioneWSDM = UtilityStruts.getParametroString(this.getRequest(),"integrazioneWSDM");
           codEvento = "GA_PUBBLICA_INVITO";
           descrEvento = "Pubblicazione gara su area riservata di Portale Appalti";
 
@@ -578,6 +643,170 @@ public class GestorePubblicaSuPortale extends
                 errMsgEvento = this.resBundleGenerale.getString(messageKey);
                 throw new GestoreException("La data di pubblicazione deve essere successiva o uguale alla data corrente", "erroreDataPubbl.dataCorrente", new Exception());
               }
+            }
+          }
+
+          //APPALTI-1172: se flag su Procedere con la generazione del pdf delle lavorazioni creare documento con lista lavorazioni e forniture
+          if("on".equals(this.getRequest().getParameter("generaPDFLavorazioni"))) {
+            String nomeFileExcel;
+            try {
+              nomeFileExcel = importExportOffertaPrezziManager.exportOffertaPrezzi(ngara, true, false,false,this.getRequest().getSession(),"2");
+              if(nomeFileExcel != null && nomeFileExcel.length() > 0){
+                File tempExcelFile = new File(System.getProperty("java.io.tmpdir") +
+                        File.separator + nomeFileExcel);
+                FileInputStream file = new FileInputStream(tempExcelFile);
+                XSSFWorkbook workbook = new XSSFWorkbook(file);
+                XSSFSheet sheet = workbook.getSheetAt(1);
+
+                //creazione documento
+                Document iText_xls_2_pdf = new Document();
+                iText_xls_2_pdf.setPageSize(PageSize.A4.rotate());
+
+                ByteArrayOutputStream pdfFile = new ByteArrayOutputStream();
+
+                PdfWriter.getInstance(iText_xls_2_pdf, pdfFile);
+                iText_xls_2_pdf.open();
+
+                PdfPTable my_table = new PdfPTable(new float[] {1,2,3,1,1,1,1,1,1,1});
+                my_table.setWidthPercentage(95);
+
+                int index_date = -1;
+                PdfPCell table_cell;
+                BaseColor color = new BaseColor(153, 204, 238); // or red, green, blue, alpha
+                Font head=new Font(FontFamily.HELVETICA,8.0f,Font.BOLD,BaseColor.BLUE);
+                Font data=new Font(FontFamily.HELVETICA,8.0f,Font.NORMAL,BaseColor.BLACK);
+                DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+                FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+                for(int i=0; i<sheet.getLastRowNum()-importExportOffertaPrezziManager.FOGLIO_LAVORAZIONE_E_FORNITURE_ULTERIORI_RIGHE_DA_FORMATTARE;i++) {
+                  if(i==0 || i >importExportOffertaPrezziManager.FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE-2) {
+                    Chunk c = new Chunk("", data);
+                    Row row = sheet.getRow(i);
+                    for(int j=0; j<sheet.getRow(0).getLastCellNum();j++) {
+                      Cell cell = row.getCell(j);
+                      if(cell!=null) {
+                        String datoT = "";
+                        switch(evaluator.evaluateInCell(cell).getCellType()) {
+                          case Cell.CELL_TYPE_STRING:
+                            datoT=cell.getStringCellValue();
+                            if(i==0 && datoT.contains("Data"))
+                              index_date = j;
+                            break;
+                          case Cell.CELL_TYPE_NUMERIC:
+                            Double datoN = cell.getNumericCellValue();
+                            datoT = new DecimalFormat("#,##0.00").format(datoN);
+                            if(j==index_date) {
+                              Date datoD = cell.getDateCellValue();
+                              datoT = df.format(datoD);
+                            }
+                            break;
+                        }
+                        if(i==0)
+                          c = new Chunk(datoT, head);
+                        else
+                          c = new Chunk(datoT, data);
+                      }
+
+                      table_cell=new PdfPCell(new Phrase(c));
+
+                      if(cell!=null) {
+                        int alignment=cell.getCellStyle().getAlignment();
+                        if(i!=0 && (alignment>0 && alignment<4))
+                          table_cell.setHorizontalAlignment(alignment-1);
+                      }
+                      if(i==0) {
+                        table_cell.setBackgroundColor(color);
+                        table_cell.setHorizontalAlignment(1);
+                        table_cell.setVerticalAlignment(5);
+                      }
+                      my_table.addCell(table_cell);
+                     }
+                   }
+                }
+
+                Font f=new Font(FontFamily.HELVETICA,16.0f,Font.BOLD,BaseColor.BLACK);
+                Paragraph p = new Paragraph("Report lavorazioni e forniture della gara "+ngara, f);
+                p.setSpacingAfter(20);
+                p.setAlignment(1);
+                iText_xls_2_pdf.add(p);
+                iText_xls_2_pdf.add(my_table);
+                iText_xls_2_pdf.close();
+
+                file.close();
+
+                //inserimento in db
+                Long gruppo = 6L;
+                Long tipologia = 6L;
+                String descrizione = "Report lavorazioni e forniture";
+                String allmail = "2";
+                String dignomdoc = ngara+"_LavorazioniForniture.pdf";
+                Long statodoc = 5L;
+                Date datarilascio = data1;
+
+                String insert ="insert into DOCUMGARA(CODGAR, NGARA, NORDDOCG, GRUPPO, TIPOLOGIA, DESCRIZIONE, ALLMAIL, NUMORD, IDPRG, IDDOCDG, STATODOC, DATARILASCIO) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )";
+
+                Long nProgressivoW_DOCDIG = null;
+                Vector<DataColumn> elencoCampiW_DOCDIG =null;
+
+                String digkey1 = codgar;
+                //Inserimento in ws_docdig
+                String select = "SELECT MAX(iddocdig) FROM w_docdig WHERE idprg = 'PG'";
+                nProgressivoW_DOCDIG = (Long) this.sqlManager.getObject(select, null);
+
+                if (nProgressivoW_DOCDIG == null) {
+                  nProgressivoW_DOCDIG = new Long(0);
+                }
+
+                nProgressivoW_DOCDIG++;
+
+                elencoCampiW_DOCDIG = new Vector<DataColumn>();
+
+                elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.IDPRG",
+                    new JdbcParametro(JdbcParametro.TIPO_TESTO, "PG")));
+                elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.IDDOCDIG",
+                                new JdbcParametro(JdbcParametro.TIPO_NUMERICO, nProgressivoW_DOCDIG)));
+                elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGENT",
+                                new JdbcParametro(JdbcParametro.TIPO_TESTO, "DOCUMGARA")));
+                elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGNOMDOC",
+                                new JdbcParametro(JdbcParametro.TIPO_TESTO, dignomdoc)));
+                elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGOGG",
+                                new JdbcParametro(JdbcParametro.TIPO_BINARIO, pdfFile)));
+
+                DataColumnContainer containerW_DOCDIG = new DataColumnContainer(elencoCampiW_DOCDIG);
+
+                containerW_DOCDIG.insert("W_DOCDIG", sqlManager);
+
+                //Inserimento in DOCUMGARA
+                Long iddocdg= nProgressivoW_DOCDIG;   //iddocdg
+
+                select="select max(NORDDOCG) from DOCUMGARA where CODGAR = ?";
+                Long norddocg = (Long)this.sqlManager.getObject(select, new Object[]{codgar});
+                if (norddocg == null) {
+                  norddocg = new Long(0);
+                }
+                norddocg = new Long(norddocg.longValue() + 1);
+
+                select="select max(NUMORD) from DOCUMGARA where CODGAR = ?";
+                Long numord = (Long)this.sqlManager.getObject(select, new Object[]{codgar});
+                if (numord == null) {
+                  numord = new Long(0);
+                }
+                numord = new Long(numord.longValue() + 1);
+
+                this.sqlManager.update(insert, new Object[] {codgar,ngara,norddocg,gruppo,tipologia,descrizione,allmail,numord,"PG",iddocdg,statodoc,datarilascio});
+
+                this.sqlManager.update(
+                    "update W_DOCDIG set DIGKEY1=?, DIGKEY2=? where IDPRG=? and IDDOCDIG=?",
+                    new Object[] {digkey1,  norddocg.toString(), "PG", nProgressivoW_DOCDIG });
+              }
+
+              pgManagerEst1.ricalcNumordDocGara(codgar, new Long(6));
+
+
+            } catch (Exception e) {
+              this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
+              livEvento = 3;
+              errMsgEvento = e.getMessage();
+              throw new GestoreException("Errore nella generazione del report di lavorazioni e forniture ", null, e);
             }
           }
 
@@ -674,6 +903,11 @@ public class GestorePubblicaSuPortale extends
             }
           }
           this.cancellazioneDatiNonUtilizzati(ngara, codgar, genPubblicazione, iterga);
+
+          if(gestioneProgrammazioneManager.isAttivaIntegrazioneProgrammazione()){
+            this.gestioneProgrammazioneManager.aggiornaRdaGara(codgar,null,null);
+          }
+
           break;
         case 4:
           Vector<DataColumn> elencoCampi4 = new Vector<DataColumn>();
@@ -695,127 +929,271 @@ public class GestorePubblicaSuPortale extends
                  new JdbcParametro(JdbcParametro.TIPO_NUMERICO, null));
              gestore4.inserisci(status, container4);
              break;
-        }
+        case 5:
+          integrazioneWSDM = UtilityStruts.getParametroString(this.getRequest(),"integrazioneWSDM");
+          codEvento = "GA_PUBBLICA_INVITO_INCORSO";
+          descrEvento = "Invio invito a gara in corso";
+          livEvento = 1;
+          errMsgEvento = "";
 
-        // TODO: va gestito inserendo le opportune condizioni per ogni busta prevista, eventualmente anche differenziando le buste per i singoli lotti
-		String descTabellato = null;
-        if("1".equals(gartel)){
-          descTabellato = tabellatiManager.getDescrTabellato("A1122", "1");
-          if(descTabellato== null || "".equals(descTabellato))
-            descTabellato="2";
-          else
-            descTabellato = descTabellato.substring(0, 1);
-          if("1".equals(descTabellato)){
-            //Si inserisce una sola occorrenza in CHIAVIBUSTE per ogni tipo di busta
+          //Si deve inviare la comunicazione
 
-            String chiaveTmp = ngara;
-            if(ngara==null || "".equals(ngara))
-              chiaveTmp=codgar;
-            if("1".equals(bando) && ("2".equals(iterga) || "4".equals(iterga))){
-              String pwd = datiForm.getString("PWD_A0");
-              String pin = pwd + chiaveTmp;
-              cifraturaBusteManager.inserisciBustaInChiavibuste(chiaveTmp, pin, "FS10A");
-            }else{
-              String pwdA = datiForm.getString("PWD_A");
-              String pinA = pwdA + chiaveTmp;
-              String pwdB = datiForm.getString("PWD_B");
-              String pinB = null;
-              if(pwdB!=null && !"".equals(pwdB))
-                pinB = pwdB + chiaveTmp;
-              String pwdC = datiForm.getString("PWD_C");
-              String pinC = null;
-              if(!"true".equals(soloPunteggiTec))
-                pinC = pwdC + chiaveTmp;
+          ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
+              CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+          String numDestinatari = UtilityStruts.getParametroString(this.getRequest(),"numElementiListaDestinatari");
+          String numAllegati = UtilityStruts.getParametroString(this.getRequest(),"numElementiListaDoc");
 
-              cifraturaBusteManager.popolaChiavibuste(chiaveTmp, pinA, pinB, pinC);
+          try {
+
+            datiTorn = this.sqlManager.getVector("select dteoff,gartel,dtepar from torn where codgar=?", new Object[]{codgar});
+            if(datiTorn!=null && datiTorn.size()>0){
+              dteoff = SqlManager.getValueFromVectorParam(datiTorn, 0).dataValue();
+              gartel = SqlManager.getValueFromVectorParam(datiTorn, 1).getStringValue();
+              dtepar = SqlManager.getValueFromVectorParam(datiTorn, 2).dataValue();
             }
+
+            boolean gestioneTramiteTask= false;
+            if("1".equals(integrazioneWSDM))
+              gestioneTramiteTask=true;
+            if(numDestinatari!=null && !"".equals(numDestinatari)){
+              int numDest = (new Long(numDestinatari)).intValue();
+              descrEvento += " (cod.: ";
+              for(int i= 0; i < numDest; i++){
+                descrEvento += datiForm.getString("DITTA_" + i);
+                if(i < numDest-1)
+                  descrEvento +=", ";
+              }
+              if(descrEvento.length()>=500)
+                descrEvento = descrEvento.substring(0, 499);
+              descrEvento += ")";
+            }
+
+            this.invioInvito(datiForm, profilo, numDestinatari, numAllegati, integrazioneWSDM,riservatezzaAttiva,gestioneTramiteTask,genPubblicazione,ngara,codgar,iterga,idconfi);
+          } catch (Exception e) {
+            this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
+            livEvento = 3;
+            errMsgEvento = e.getMessage();
+            throw new GestoreException("Errore nell'invio dell'invito", null, e);
           }
 
+
+          try {
+            this.sqlManager.update("update DITG set AMMGAR = null, INVGAR = '1' where CODGAR5 = ? and ACQUISIZIONE = 9 and AMMGAR = 2",new Object[]{codgar});
+          } catch (SQLException e) {
+            this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
+            livEvento = 3;
+            errMsgEvento = e.getMessage();
+            throw new GestoreException("Errore nell'aggiornamento della gara", null, e);
+          }
         }
 
 
-        //Si deve aggiornare lo stato della documentazione di gara, impostando
-        // STATODOC.DOCUMGARA=5
-        try {
-          String filtro="";
-          Object[] parametri=null;
-          if("0".equals(bando)){
-              parametri =new Object[]{codgar,new Long(4),new Long(10),new Long(15)};
-              filtro="where CODGAR=? and (GRUPPO = ? or GRUPPO = ? or GRUPPO = ?)";
-              this.sqlManager.update("update DOCUMGARA set STATODOC = 5 " + filtro, parametri);
-          }else if("3".equals(bando)){
+        //Quando non si è nel caso di invio invito con gara in corso, va popolata CHIAVIBUSTE e gestire l'aggiornamento dello stato della documentazione
+        if(!"5".equals(bando)) {
+          // TODO: va gestito inserendo le opportune condizioni per ogni busta prevista, eventualmente anche differenziando le buste per i singoli lotti
+          String descTabellato = null;
+          boolean esisteQform = false;
+
+          String chiaveTmp = ngara;
+          if(ngara==null || "".equals(ngara))
+            chiaveTmp=codgar;
+
+          HttpSession session = this.getRequest().getSession();
+          String profiloAttivo = (String) session.getAttribute("profiloAttivo");
+          boolean moduloQFORMAttivo = geneManager.getProfili().checkProtec(profiloAttivo, "FUNZ", "VIS", "ALT.GENEWEB.QuestionariQForm");
+
+          if("1".equals(gartel)){
+            descTabellato = tabellatiManager.getDescrTabellato("A1122", "1");
+            if(descTabellato== null || "".equals(descTabellato))
+              descTabellato="2";
+            else
+              descTabellato = descTabellato.substring(0, 1);
+
+            if("1".equals(descTabellato)){
+              //Si inserisce una sola occorrenza in CHIAVIBUSTE per ogni tipo di busta
+
+              if("1".equals(bando) && ("2".equals(iterga) || "4".equals(iterga) || "7".equals(iterga))){
+                String pwd = datiForm.getString("PWD_A0");
+                String pin = pwd + chiaveTmp;
+                cifraturaBusteManager.inserisciBustaInChiavibuste(chiaveTmp, pin, "FS10A");
+              }else{
+                String pwdA = datiForm.getString("PWD_A");
+                String pinA = null;
+                if(pwdA!=null && !"".equals(pwdA))
+                  pinA = pwdA + chiaveTmp;
+                String pwdB = datiForm.getString("PWD_B");
+                String pinB = null;
+                if(pwdB!=null && !"".equals(pwdB))
+                  pinB = pwdB + chiaveTmp;
+                String pwdC = datiForm.getString("PWD_C");
+                String pinC = null;
+                if(!"true".equals(soloPunteggiTec))
+                  pinC = pwdC + chiaveTmp;
+
+                cifraturaBusteManager.popolaChiavibuste(chiaveTmp, pinA, pinB, pinC);
+              }
+            }
+
+            //Si controlla l'esistenza delle occorrenze di qform se il modulo risulta attivo
+
+
+            if(moduloQFORMAttivo) {
+              boolean formularioCompletoAttivo = geneManager.getProfili().checkProtec(profiloAttivo, "FUNZ", "VIS", PgManagerEst1.QFORM_VOCEPROFILO_TUTTE_BUSTE);
+              if(moduloQFORMAttivo && formularioCompletoAttivo ) {
+                Long offtel =(Long)this.sqlManager.getObject("select offtel from torn where codgar=?", new Object[]{codgar});
+                if(new Long(3).equals(offtel))
+                  formularioCompletoAbilitato = true;
+              }
+              Long conteggio = null;
+              String selectQfrom = "select count(*) from qform where entita='GARE' and key1=? and busta=? and stato = 1";
+              if(("2".equals(iterga) || "4".equals(iterga) || "7".equals(iterga)) && !"3".equals(bando)){
+                conteggio = (Long)this.sqlManager.getObject(selectQfrom, new Object[] {chiaveTmp, new Long(4)});
+              }else {
+                if(!formularioCompletoAbilitato)
+                  conteggio = (Long)this.sqlManager.getObject(selectQfrom, new Object[] {chiaveTmp, new Long(1)});
+                else {
+
+                  if(new Long(3).equals(genere)) {
+                    selectQfrom = "select count(*) from qform where entita='GARE' and key1=? and busta = ? and stato = 1";
+                    Long conteggioAmm = (Long)this.sqlManager.getObject(selectQfrom, new Object[] {codgar, new Long(1)});
+                    if(conteggioAmm!=null) {
+                      conteggio = new Long(conteggioAmm.longValue());
+                    }else {
+                      selectQfrom = "select count(*) from qform where entita='GARE' and key1 like ? and busta in (?,?) and stato = 1";
+                      Long conteggioTecEco = (Long)this.sqlManager.getObject(selectQfrom, new Object[] {codgar + "%", new Long(2), new Long(3)});
+                      if(conteggioTecEco!=null)
+                        conteggio = new Long(conteggioTecEco.longValue());
+                    }
+                  }else {
+                    selectQfrom = "select count(*) from qform where entita='GARE' and key1=? and busta in (?,?,?) and stato = 1";
+                    conteggio = (Long)this.sqlManager.getObject(selectQfrom, new Object[] {chiaveTmp, new Long(1), new Long(2), new Long(3)});
+                  }
+                }
+              }
+              if(conteggio !=null && conteggio.longValue()>0)
+                esisteQform = true;
+            }
+          }else if((index_genere == 10 || index_genere==20) && moduloQFORMAttivo) {
+            String selectQfrom = "select count(*) from qform where entita='GARE' and key1=? and stato = 1";
+            Long conteggio = (Long)this.sqlManager.getObject(selectQfrom, new Object[] {chiaveTmp});
+            if(conteggio !=null && conteggio.longValue()>0)
+              esisteQform = true;
+          }
+
+
+          //Si deve aggiornare lo stato della documentazione di gara, impostando
+          // STATODOC.DOCUMGARA=5
+          try {
+            String filtro="";
+            Object[] parametri=null;
+            if("0".equals(bando)){
+                parametri =new Object[]{codgar,new Long(4),new Long(10),new Long(15)};
+                filtro="where CODGAR=? and (GRUPPO = ? or GRUPPO = ? or GRUPPO = ?)";
+                this.sqlManager.update("update DOCUMGARA set STATODOC = 5 " + filtro, parametri);
+            }else if("3".equals(bando)){
               parametri =new Object[]{codgar,new Long(6), new Long(15),new Long(10),new Long(3)};
               filtro="where CODGAR=? and (GRUPPO = ? or GRUPPO = ? or GRUPPO = ? or GRUPPO = ?)";
               this.sqlManager.update("update DOCUMGARA set STATODOC = 5 " + filtro,parametri);
-          }else{
+              if(esisteQform) {
+                if(formularioCompletoAbilitato && new Long(3).equals(genere)) {
+                  //Si devono considerare i lotti per il qform tecnico e quello economico
+                  this.sqlManager.update("update QFORM set STATO = 5, datpub=? where entita='GARE' and key1=? and busta=1 and stato = 1",new Object[] {datpub, codgar});
+                  this.sqlManager.update("update QFORM set STATO = 5, datpub=? where entita='GARE' and key1 like ? and (busta=2 or busta=3 ) and stato = 1",new Object[] {datpub, codgar + "%"});
+                }else
+                  this.sqlManager.update("update QFORM set STATO = 5, datpub=? where entita='GARE' and key1=? and (busta=1 or busta=2 or busta=3) and stato = 1",new Object[] {datpub, chiaveTmp});
+              }
+            }else{
               parametri =new Object[]{codgar,new Long(1),new Long(2),new Long(10),new Long(15),new Long(3)};
-              if("2".equals(iterga) || "4".equals(iterga)){
+              if("2".equals(iterga) || "4".equals(iterga) || "7".equals(iterga)){
                 filtro="where CODGAR=? and (GRUPPO = ? or GRUPPO = ? or GRUPPO = ? or GRUPPO = ? or (GRUPPO = ? and BUSTA = 4))";
               }else{
-                filtro="where CODGAR=? and (GRUPPO = ? or GRUPPO = ? or GRUPPO = ? or GRUPPO = ? or GRUPPO = ?)";
+                  filtro="where CODGAR=? and (GRUPPO = ? or GRUPPO = ? or GRUPPO = ? or GRUPPO = ? or GRUPPO = ?)";
               }
               this.sqlManager.update("update DOCUMGARA set STATODOC = 5 " + filtro, parametri);
+              if(esisteQform) {
+                String updateQform = "update QFORM set STATO = 5, datpub=? where entita='GARE' and key1=? and busta=?";
+                if("2".equals(iterga) || "4".equals(iterga) || "7".equals(iterga)){
+                  this.sqlManager.update(updateQform,new Object[] {datpub, chiaveTmp, new Long(4)});
+                }else {
+                  if(formularioCompletoAbilitato && new Long(3).equals(genere)) {
+                    //Si devono considerare i lotti per il qform tecnico e quello economico
+                    this.sqlManager.update("update QFORM set STATO = 5, datpub=? where entita='GARE' and key1=? and busta = 1",new Object[] {datpub, codgar});
+                    this.sqlManager.update("update QFORM set STATO = 5, datpub=? where entita='GARE' and key1 like ? and (busta=2 or busta=3 ) ",new Object[] {datpub, codgar + "%"});
+                  }else if(index_genere == 10 || index_genere==20) {
+                    updateQform = "update QFORM set STATO = 5, datpub=? where entita='GARE' and key1=?";
+                    this.sqlManager.update(updateQform,new Object[] {datpub, chiaveTmp});
+                  }else {
+                    updateQform = "update QFORM set STATO = 5, datpub=? where entita='GARE' and key1=? and busta in (?,?,?)";
+                    this.sqlManager.update(updateQform,new Object[] {datpub, chiaveTmp, new Long(1), new Long(2), new Long(3)});
+                  }
+                }
+              }
+            }
+            filtro+=" and DATARILASCIO is null";
+            Object[] newParametri = new Object[parametri.length + 1];
+            newParametri[0]= datpub;
+            for(int i=0;i<parametri.length;i++)
+              newParametri[i+1]=parametri[i];
+            this.sqlManager.update("update DOCUMGARA set DATARILASCIO = ? " + filtro, newParametri);
+
+          } catch (SQLException e) {
+            throw new GestoreException("Errore nell'aggiornamento dello stato dei documenti della gara", null, e);
           }
-          filtro+=" and DATARILASCIO is null";
-          Object[] newParametri = new Object[parametri.length + 1];
-          newParametri[0]= datpub;
-          for(int i=0;i<parametri.length;i++)
-            newParametri[i+1]=parametri[i];
-          this.sqlManager.update("update DOCUMGARA set DATARILASCIO = ? " + filtro, newParametri);
 
-        } catch (SQLException e) {
-          throw new GestoreException("Errore nell'aggiornamento dello stato dei documenti della gara", null, e);
-        }
+          try {
+            this.sqlManager.update("update TORN set DULTAGG = ? where CODGAR=?",new Object[]{datpub,codgar});
+          } catch (SQLException e) {
+            throw new GestoreException("Errore nell'aggiornamento del campo TORN.DULTAGG", null, e);
+          }
 
-        try {
-          this.sqlManager.update("update TORN set DULTAGG = ? where CODGAR=?",new Object[]{datpub,codgar});
-        } catch (SQLException e) {
-          throw new GestoreException("Errore nell'aggiornamento del campo TORN.DULTAGG", null, e);
-        }
+          //Se gara non OEPV si deve resettare il valore di GARE1.COSTOFISSO
+          this.sqlManager.update("update gare1 set costofisso=null where gare1.ngara in (select g.ngara from gare g where gare1.ngara=g.ngara and g.codgar1=? and g.ngara!=g.codgar1 and g.modlicg!=6)", new Object[] {codgar});
 
-        livEvento = 1;
-        errMsgEvento = "";
-        // setta l'operazione a completata, in modo da scatenare il reload della
-        // pagina principale
-        String chiave = codgar;
-        if(ngara != null && ngara.length() > 0){
-          chiave = ngara;
+          livEvento = 1;
+          errMsgEvento = "";
+          // setta l'operazione a completata, in modo da scatenare il reload della
+          // pagina principale
+          String chiave = codgar;
+          if(ngara != null && ngara.length() > 0){
+            chiave = ngara;
+          }
+          //this.getRequest().setAttribute("pubblicazioneEseguita", "1");
+          if("1".equals(gartel) && "1".equals(descTabellato)){
+            this.getRequest().setAttribute("codiceGara", chiave);
+            ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
+                CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+            this.getRequest().setAttribute("username", profilo.getNome());
+            this.getRequest().setAttribute("usernameId", profilo.getId());
+            String oggettoGara = (String) sqlManager.getObject("SELECT oggetto FROM v_gare_torn WHERE codgar=?", new Object[] {codgar});
+            this.getRequest().setAttribute("oggettoGara", oggettoGara);
+            String nomeTecnico = (String) sqlManager.getObject("SELECT NOMTEC FROM TECNI,TORN WHERE TORN.CODGAR = ? AND  CODTEC = TORN.CODRUP", new Object[] {codgar});
+            this.getRequest().setAttribute("nomeTecnico", nomeTecnico);
+            if(datiForm.isColumn("PWD_A0")){
+              String pwdA0 = datiForm.getString("PWD_A0");
+              this.getRequest().setAttribute("PWD_A0", pwdA0);
+            }
+            if(datiForm.isColumn("PWD_A")){
+              String pwdA = datiForm.getString("PWD_A");
+              this.getRequest().setAttribute("PWD_A", pwdA);
+            }
+            if(datiForm.isColumn("PWD_B")){
+              String pwdB = datiForm.getString("PWD_B");
+              this.getRequest().setAttribute("PWD_B", pwdB);
+            }
+            if(datiForm.isColumn("PWD_C")){
+              String pwdC = datiForm.getString("PWD_C");
+              this.getRequest().setAttribute("PWD_C", pwdC);
+            }
+            String url = this.getRequest().getRequestURL().toString();
+            this.getRequest().setAttribute("url", url.substring(0, url.lastIndexOf("/")));
+          }
         }
         this.getRequest().setAttribute("pubblicazioneEseguita", "1");
-        if("1".equals(gartel) && "1".equals(descTabellato)){
-          this.getRequest().setAttribute("codiceGara", chiave);
-          ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
-              CostantiGenerali.PROFILO_UTENTE_SESSIONE);
-          this.getRequest().setAttribute("username", profilo.getNome());
-          this.getRequest().setAttribute("usernameId", profilo.getId());
-          String oggettoGara = (String) sqlManager.getObject("SELECT oggetto FROM v_gare_torn WHERE codgar=?", new Object[] {codgar});
-          this.getRequest().setAttribute("oggettoGara", oggettoGara);
-          String nomeTecnico = (String) sqlManager.getObject("SELECT NOMTEC FROM TECNI,TORN WHERE TORN.CODGAR = ? AND  CODTEC = TORN.CODRUP", new Object[] {codgar});
-          this.getRequest().setAttribute("nomeTecnico", nomeTecnico);
-          if(datiForm.isColumn("PWD_A0")){
-            String pwdA0 = datiForm.getString("PWD_A0");
-            this.getRequest().setAttribute("PWD_A0", pwdA0);
-          }
-          if(datiForm.isColumn("PWD_A")){
-            String pwdA = datiForm.getString("PWD_A");
-            this.getRequest().setAttribute("PWD_A", pwdA);
-          }
-          if(datiForm.isColumn("PWD_B")){
-            String pwdB = datiForm.getString("PWD_B");
-            this.getRequest().setAttribute("PWD_B", pwdB);
-          }
-          if(datiForm.isColumn("PWD_C")){
-            String pwdC = datiForm.getString("PWD_C");
-            this.getRequest().setAttribute("PWD_C", pwdC);
-          }
-          String url = this.getRequest().getRequestURL().toString();
-          this.getRequest().setAttribute("url", url.substring(0, url.lastIndexOf("/")));
-        }
     } catch (SQLException e) {
       // TODO Auto-generated catch block
       throw new GestoreException("Errore nell'aggiornamento dello stato dei documenti della gara", null, e);
     } finally{
-      if(index_bando==0 || index_bando==1 || index_bando==3){
+      if(index_bando==0 || index_bando==1 || index_bando==3 || index_bando == 5){
         //Tracciatura eventi
         try {
           LogEvento logEvento = LogEventiUtils.createLogEvento(this.getRequest());
@@ -840,7 +1218,8 @@ public class GestorePubblicaSuPortale extends
   }
 
   //Viene inserita la comunicazione con stato=2
-  public void invioInvito(DataColumnContainer datiForm, ProfiloUtente profilo, String numDestinatari, String numAllegati, String integrazioneWSDM, String riservatezzaAttiva, boolean gestioneTramiteTask,Long genereGara, String ngara,String codgar, String iterga, String idconfi) throws GestoreException, SQLException, IOException, DocumentException {
+  public void invioInvito(DataColumnContainer datiForm, ProfiloUtente profilo, String numDestinatari, String numAllegati, String integrazioneWSDM, String riservatezzaAttiva,
+      boolean gestioneTramiteTask,Long genereGara, String ngara,String codgar, String iterga, String idconfi) throws GestoreException, SQLException, IOException, DocumentException {
 
     String tipoWSDM = null;
     boolean abilitatoInvioMailDocumentale = false;
@@ -872,6 +1251,7 @@ public class GestorePubblicaSuPortale extends
       if(numDestinatari!=null && !"".equals(numDestinatari)){
         int numDest = (new Long(numDestinatari)).intValue();
         boolean insDocGareInWsallegati= true;
+        Long idOccorrenzaTask=null;
         //L'occorrenza in GARPRO_WSDM va creata una sola volta
         boolean creazioneOccorrenzaTask=true;
         for(int i=0; i<numDest; i++){
@@ -882,24 +1262,52 @@ public class GestorePubblicaSuPortale extends
             creazioneOccorrenzaTask=false;
           }
 
-          gestioneInvioInvito(datiForm,profilo,"1",i,numAllegati,integrazioneWSDM, tipoWSDM, abilitatoInvioMailDocumentale, abilitatoInvioSingolo,insDocGareInWsallegati,riservatezzaAttiva, gestioneTramiteTask,creazioneOccorrenzaTask,idconfi);
+          idOccorrenzaTask=gestioneInvioInvito(datiForm,profilo,"1",i,numAllegati,integrazioneWSDM, tipoWSDM, abilitatoInvioMailDocumentale, abilitatoInvioSingolo,insDocGareInWsallegati,
+              riservatezzaAttiva, gestioneTramiteTask,creazioneOccorrenzaTask,idconfi,idOccorrenzaTask);
         }
       }
     }else{
       if(gestioneTramiteTask && "1".equals(gestioneFascicoloWSDM))
         this.associazioneFascicoloWSDM(genereGara, ngara, codgar, iterga, null, null, riservatezzaAttiva,oggettoDocumentoFittizio,idconfi);
 
-      gestioneInvioInvito(datiForm,profilo,numDestinatari,0,numAllegati,integrazioneWSDM, tipoWSDM, abilitatoInvioMailDocumentale, abilitatoInvioSingolo,true,riservatezzaAttiva,gestioneTramiteTask, true,idconfi);
+      gestioneInvioInvito(datiForm,profilo,numDestinatari,0,numAllegati,integrazioneWSDM, tipoWSDM, abilitatoInvioMailDocumentale, abilitatoInvioSingolo,true,riservatezzaAttiva,gestioneTramiteTask, true,idconfi,null);
     }
   }
 
-
-  private void gestioneInvioInvito(DataColumnContainer datiForm, ProfiloUtente profilo, String numDestinatari, int indiceDestinatario, String numAllegati,
+  /**
+   * Il metodo effettua l'invio invito. Nel caso in cui sia attiva l'integrazione col WSDM, si fa distinzione fra invio tramite task o invio diretto.
+   * Nel caso di invio tramite task i dati necessari all'invio da parte del task vengono memorizzati nella tabella garpro_wsdm ed il riferimento alle
+   * occorrenze di questa tabella vanno memorizzati nel campo idgarpro di W_INVCOM.
+   * Nel caso di invio per singolo destinatario, si deve inserire una sola occorrenza in GARPRO_WSDM e tutte le occorrenze di W_INVCOM devono puntare
+   * a questa unica occorrenza. Per mantenere l'informazione dell'id di GARPRO_WSDM per tutti i destinatari il metodo restituisce tale id
+   * @param datiForm
+   * @param profilo
+   * @param numDestinatari
+   * @param indiceDestinatario
+   * @param numAllegati
+   * @param integrazioneWSDM
+   * @param tipoWSDM
+   * @param abilitatoInvioMailDocumentale
+   * @param abilitatoInvioSingolo
+   * @param insDocGareInWsallegati
+   * @param riservatezzaAttiva
+   * @param gestioneTask
+   * @param creazioneOccorrenzaTask
+   * @param idconfi
+   * @return Long
+   * @throws SQLException
+   * @throws GestoreException
+   * @throws IOException
+   * @throws DocumentException
+   */
+  private Long gestioneInvioInvito(DataColumnContainer datiForm, ProfiloUtente profilo, String numDestinatari, int indiceDestinatario, String numAllegati,
       String integrazioneWSDM, String tipoWSDM, boolean abilitatoInvioMailDocumentale, boolean abilitatoInvioSingolo, boolean insDocGareInWsallegati,  String riservatezzaAttiva,
-      boolean gestioneTask, boolean creazioneOccorrenzaTask, String idconfi) throws SQLException, GestoreException, IOException, DocumentException{
+      boolean gestioneTask, boolean creazioneOccorrenzaTask, String idconfi, Long idOccorrenzaTask) throws SQLException, GestoreException, IOException, DocumentException{
 
     FileAllegatoManager fileAllegatoManager = (FileAllegatoManager) UtilitySpring.getBean("fileAllegatoManager",
         this.getServletContext(), FileAllegatoManager.class);
+
+    Long idRet=null;
 
     //Inserimento in W_INVCOM
     Object[] parametri = new Object[15];
@@ -999,6 +1407,8 @@ public class GestorePubblicaSuPortale extends
     String nomeRup = null;
     String acronimoRup = null;
     String cig = null;
+    String uocompetenza = null;
+    String uocompetenzadescrizione = null;
     if("1".equals(integrazioneWSDM)){
       //Popolamento Documento WSDM
       classificadocumento = UtilityStruts.getParametroString(this.getRequest(),"classificadocumento");
@@ -1040,6 +1450,8 @@ public class GestorePubblicaSuPortale extends
       RUP = UtilityStruts.getParametroString(this.getRequest(),"RUP");
       nomeRup = UtilityStruts.getParametroString(this.getRequest(),"nomeR");
       acronimoRup = UtilityStruts.getParametroString(this.getRequest(),"acronimoR");
+      uocompetenza = UtilityStruts.getParametroString(this.getRequest(),"uocompetenza");
+      uocompetenzadescrizione = UtilityStruts.getParametroString(this.getRequest(),"uocompetenzadescrizione");
 
       if("TITULUS".equals(tipoWSDM) && !abilitatoInvioMailDocumentale)
         tipodocumento=GestioneWSDMManager.TIPO_DOCUMENTO_GARA;
@@ -1135,6 +1547,7 @@ public class GestorePubblicaSuPortale extends
       par.put(GestioneWSDMManager.LABEL_NOME_RUP, nomeRup);
       par.put(GestioneWSDMManager.LABEL_ACRONIMO_RUP, acronimoRup);
       par.put(GestioneWSDMManager.LABEL_SOTTOTIPO, sottotipo);
+      par.put(GestioneWSDMManager.LABEL_UOCOMPETENZA, uocompetenza);
 
       if("JIRIDE".equals(tipoWSDM) && "1".equals(riservatezzaAttiva)){
         if("SI_FASCICOLO_NUOVO".equals(inserimentoinfascicolo) || "SI_FASCICOLO_ESISTENTE".equals(inserimentoinfascicolo)){
@@ -1226,6 +1639,7 @@ public class GestorePubblicaSuPortale extends
           destinatari[indiceArrayDestinatari].setEmailAggiuntiva(datiForm.getString("MAIL_AGGIUNTIVA_" + i));
           destinatari[indiceArrayDestinatari].setProvinciaResidenza(datiForm.getString("PROVINCIA_RES_" + i));
           destinatari[indiceArrayDestinatari].setCapResidenza(datiForm.getString("CAP_RES_" + i));
+          destinatari[indiceArrayDestinatari].setTipoVoceRubrica(WSDMTipoVoceRubricaType.IMPRESA);
         }
       }
       if("1".equals(integrazioneWSDM) && !gestioneTask){
@@ -1238,7 +1652,8 @@ public class GestorePubblicaSuPortale extends
       wsdmProtocolloDocumentoIn.setDestinatarioPrincipale(destinatarioPrincipale);
 
     // Invio mail mediante servizi di protocollazione per ENGINEERING
-    if("1".equals(integrazioneWSDM) && !gestioneTask && abilitatoInvioMailDocumentale && ("ENGINEERING".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM))){
+    if("1".equals(integrazioneWSDM) && !gestioneTask && abilitatoInvioMailDocumentale && ("ENGINEERING".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM)
+        || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM))){
       WSDMInviaMailType inviaMail = new WSDMInviaMailType();
 
         // Testo email
@@ -1291,17 +1706,47 @@ public class GestorePubblicaSuPortale extends
 
     String commsgtes = null;
     String commsgtip = null;
-    String contenutoPdf = null;
+    byte[] contenutoPdf = null;
+    String nomeFile=null;
+    String estensioneFile = "pdf";
+    String titoloFile = null;
+    Long idAllegatoSintesi = null;
     if("1".equals(integrazioneWSDM) && !gestioneTask){
       commsgtip = datiForm.getString("COMMSGTIP");
       commsgtes = datiForm.getString("COMMSGTES");
       if (commsgtes == null){
         commsgtes = "[testo vuoto]";
       }
-      if (!"1".equals(commsgtip)){
-        String commsgogg = datiForm.getString("COMMSGOGG");
-        contenutoPdf = this.gestioneWSDMManager.getTestoComunicazioneFormattato(ngara, cig, commsgogg, commsgtes);
+      String commsgogg = datiForm.getString("COMMSGOGG");
+
+      //gestione allegato sintesi
+      idAllegatoSintesi = gestioneWSDMManager.cancellaAllegatoSintesi(idprg,newIdcom);
+      if(idAllegatoSintesi==null) {
+        String key1 = UtilityStruts.getParametroString(this.getRequest(),"key1");
+        String entita=UtilityStruts.getParametroString(this.getRequest(),"entita");
+        HashMap<String, Object> ret = gestioneWSDMManager.aggiungiAllegatoSintesi(key1, cig, commsgogg, commsgtes, idprg, newIdcom, entita, this.getRequest());
+        if(ret==null) {
+          String messaggio = "Errore nella creazione del file di sintesi della comunicazione";
+          throw new GestoreException("Errore nella protocollazione del fascicolo","wsdm.fascicoloprotocollo.protocollazione.error",new Object[]{messaggio}, new Exception());
+        }else {
+          idAllegatoSintesi = (Long)ret.get("idAllegatoSintesi");
+          nomeFile = (String)ret.get("nomeFile");
+          estensioneFile = (String)ret.get("estensioneFile");
+          titoloFile = (String)ret.get("titoloFile");
+          contenutoPdf = (byte[]) ret.get("pdf");
+        }
+      }else {
+        Vector<?> datiAllegato = this.sqlManager.getVector("select dignomdoc, digdesdoc from  w_docdig where idprg=? and iddocdig=?", new Object[] {idprg,idAllegatoSintesi});
+        if(datiAllegato!=null && datiAllegato.size()>0) {
+          nomeFile = SqlManager.getValueFromVectorParam(datiAllegato, 0).getStringValue();
+          titoloFile = SqlManager.getValueFromVectorParam(datiAllegato, 1).getStringValue();
+          if(nomeFile.endsWith(".tsd"))
+          estensioneFile = "tsd";
+        }
+        BlobFile digogg = fileAllegatoManager.getFileAllegato(idprg, idAllegatoSintesi);
+        contenutoPdf = digogg.getStream();
       }
+
     }
 
     if(numAllegati!=null && !"".equals(numAllegati)){
@@ -1337,7 +1782,29 @@ public class GestorePubblicaSuPortale extends
           allegati[indiceAllegati + i].setContenuto(fileAllegato.getStream());
           if("TITULUS".equals(tipoWSDM))
             allegati[indiceAllegati + i].setIdAllegato("W_DOCDIG|" + idprg + "|" + newIddocdig.toString());
+          if("NUMIX".equals(tipoWSDM)) {
+            allegati[indiceAllegati + i] = GestioneWSDMManager.popolaAllegatoInfo(dignomdoc,allegati[indiceAllegati + i]);
+            if(indiceAllegati + i ==0 )
+              allegati[indiceAllegati + i].setIsSealed(new Long(1));
+          }
         }
+      }
+    }
+
+    //Gestione allegato di sintesi senza integrazione
+    if(!"1".equals(integrazioneWSDM)){
+      String chiaveGara = ngara;
+      String entitaGara = "GARE";
+      if(chiaveGara==null || "".equals(chiaveGara) || (genere!=null && genere.longValue()==3)){
+        entitaGara = "TORN";
+        chiaveGara = datiForm.getString("CODGAR");   //COMKEY1
+      }
+      String cigGara=(String)this.sqlManager.getObject("select codcig from v_gare_torn where codice = ?", new Object[] {chiaveGara});
+      String oggetto = datiForm.getString("COMMSGOGG");
+      String testo = datiForm.getString("COMMSGTES");
+      HashMap<String, Object> ret = gestioneWSDMManager.aggiungiAllegatoSintesi(chiaveGara, cigGara, oggetto, testo, idprg, newIdcom, entitaGara,this.getRequest());
+      if(ret==null) {
+        throw new GestoreException("Errore nella creazione della marca temporale dell'allegato di sintesi","marcaTemporale",null, new Exception());
       }
     }
 
@@ -1356,13 +1823,22 @@ public class GestorePubblicaSuPortale extends
         allegati[indiceAllegatoTesto].setContenuto(commsgtes.getBytes());
       } else {
         allegati[indiceAllegatoTesto] = new WSDMProtocolloAllegatoType();
-        allegati[indiceAllegatoTesto].setNome("Comunicazione.pdf");
-        allegati[indiceAllegatoTesto].setTipo("pdf");
-        allegati[indiceAllegatoTesto].setTitolo("Testo della comunicazione");
-        allegati[indiceAllegatoTesto].setContenuto(UtilityStringhe.string2Pdf(contenutoPdf));
+        allegati[indiceAllegatoTesto].setNome(nomeFile);
+        allegati[indiceAllegatoTesto].setTipo(estensioneFile);
+        allegati[indiceAllegatoTesto].setTitolo(titoloFile);
+        allegati[indiceAllegatoTesto].setContenuto(contenutoPdf);
+
       }
       if("TITULUS".equals(tipoWSDM))
         allegati[indiceAllegatoTesto].setIdAllegato("W_INVCOM|" + idprg + "|" + newIdcom.toString());
+
+      if("NUMIX".equals(tipoWSDM)) {
+        if(!"1".equals(commsgtip)) {
+          allegati[indiceAllegatoTesto] = GestioneWSDMManager.popolaAllegatoInfo(nomeFile,allegati[indiceAllegatoTesto]);
+        }
+        if(indiceAllegatoTesto ==0 )
+          allegati[indiceAllegatoTesto].setIsSealed(new Long(1));
+      }
     }
 
     if("1".equals(integrazioneWSDM) && !gestioneTask){
@@ -1384,12 +1860,20 @@ public class GestorePubblicaSuPortale extends
 
 
       if (wsdmProtocolloDocumentoRes.isEsito()) {
-        String numeroDocumento = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroDocumento();
-        Long annoProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getAnnoProtocollo();
-        String numeroProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroProtocollo();
+        String numeroDocumento = null;
+        if(!"LAPISOPERA".equals(tipoWSDM))
+          numeroDocumento = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroDocumento();
+        Long annoProtocollo = null;
+        if(!"LAPISOPERA".equals(tipoWSDM))
+          annoProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getAnnoProtocollo();
+        String numeroProtocollo = null;
+        if("LAPISOPERA".equals(tipoWSDM))
+          numeroProtocollo = GestioneWSDMManager.PREFISSO_COD_FASCICOLO_LAPISOPERA + wsdmProtocolloDocumentoRes.getProtocolloDocumento().getGenericS11();
+        else
+          numeroProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroProtocollo();
 
         Timestamp dataProtocollo= this.gestioneWSDMManager.getDataProtocollo(wsdmProtocolloDocumentoRes);
-        if(annoProtocollo==null){
+        if(annoProtocollo==null && !"LAPISOPERA".equals(tipoWSDM)){
           annoProtocollo = this.gestioneWSDMManager.getAnnoFromDate(dataProtocollo);
         }
 
@@ -1442,7 +1926,10 @@ public class GestorePubblicaSuPortale extends
           }else if("FOLIUM".equals(tipoWSDM)){
             codiceFascicoloNUOVO = classificafascicolo;
             annoFascicoloNUOVO = this.gestioneWSDMManager.getAnnoFromDate(dataProtocollo);
-          }else if("PRISMA".equals(tipoWSDM)){
+          }else if("ITALPROT".equals(tipoWSDM)){
+            codiceFascicoloNUOVO = codicefascicolo;
+            annoFascicoloNUOVO=new Long(annofascicolo);
+         }else if("PRISMA".equals(tipoWSDM)){
             codiceFascicoloNUOVO= codicefascicolo;
             annoFascicoloNUOVO=new Long(annofascicolo);
             numeroFascicoloNUOVO=numerofascicolo;
@@ -1451,6 +1938,11 @@ public class GestorePubblicaSuPortale extends
 
           if("TITULUS".equals(tipoWSDM))
             classificafascicolo = classificadocumento;
+
+          if("ENGINEERINGDOC".equals(tipoWSDM)) {
+            codiceufficio = uocompetenza;
+            codiceufficiodes = uocompetenzadescrizione;
+          }
 
           this.gestioneWSDMManager.setWSFascicolo(entita, key1, null, null, null, codiceFascicoloNUOVO, annoFascicoloNUOVO,
               numeroFascicoloNUOVO, classificafascicolo,codiceaoo,codiceufficio,struttura,isRiservatezza,classificadescrizione,voce,codiceaoodes,codiceufficiodes);
@@ -1471,6 +1963,9 @@ public class GestorePubblicaSuPortale extends
             Long iddocdig =idAllegatiNuovi[i];
             this.gestioneWSDMManager.setWSAllegati("W_DOCDIG", idprg, iddocdig.toString(), null, null, idWSDocumento);
           }
+
+          //Salvataggio allegato di sintesi
+          this.gestioneWSDMManager.setWSAllegati("W_DOCDIG", idprg,idAllegatoSintesi.toString(), null, null, idWSDocumento);
         }
 
 
@@ -1478,42 +1973,49 @@ public class GestorePubblicaSuPortale extends
         String messaggio = wsdmProtocolloDocumentoRes.getMessaggio();
         throw new GestoreException("Errore nella protocollazione del fascicolo","wsdm.fascicoloprotocollo.protocollazione.error",new Object[]{messaggio}, new Exception());
       }
-    }else  if("1".equals(integrazioneWSDM) && gestioneTask && creazioneOccorrenzaTask){
+    }else  if("1".equals(integrazioneWSDM) && gestioneTask){
       //Nel caso di abilitazione dell'invio singolo, la funzione viene chiamata una volta per ogni destinatario, ma l'inserimento in GARPRO_WSDM deve avvenire solo una volta
       //e ciò è controllato dalla variabile creazioneOccorrenzaTask
-      Long syscon = null;
+      Long idGarpro=null;
 
-      String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
-      if (wsdmLoginComune != null && "1".equals(wsdmLoginComune)) {
-        syscon = new Long(-1);
-      } else {
-        ProfiloUtente profiloUtente = (ProfiloUtente) this.getRequest().getSession().getAttribute(
-            CostantiGenerali.PROFILO_UTENTE_SESSIONE);
-        syscon = new Long(profiloUtente.getId());;
+      if(creazioneOccorrenzaTask) {
+
+        Long syscon = null;
+        String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+        if (wsdmLoginComune != null && "1".equals(wsdmLoginComune)) {
+          syscon = new Long(-1);
+        } else {
+          ProfiloUtente profiloUtente = (ProfiloUtente) this.getRequest().getSession().getAttribute(
+              CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+          syscon = new Long(profiloUtente.getId());;
+        }
+
+        //Codice gara da usare per GARPRO_WSDM
+        String codiceGara = ngara;
+        if(ngara==null || "".equals(ngara) || (genere!=null && genere.longValue()==3)){
+          codiceGara = datiForm.getString("CODGAR");   //COMKEY1
+        }
+
+        //Scrittura su GARPRO_WSDM
+        idGarpro= new Long(genChiaviManager.getNextId("GARPRO_WSDM"));
+
+        this.sqlManager.update("insert into garpro_wsdm(id, syscon, ngara, tipologia, classifica, cod_reg," +
+            " tipo_doc, mitt_int, classifica_tit, indice, uo_mittdest, mezzo, struttura, supporto, indirizzo_mitt, mezzo_invio,oggetto_mail,livello_ris,sottotipo)" +
+            " values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        new Object[]{idGarpro, syscon, codiceGara, new Long(1), classificadocumento, codiceregistrodocumento,
+        tipodocumento, mittenteinterno, idtitolazione, idindice, idunitaoperativamittente,mezzo,struttura,supporto,indirizzomittente,
+        mezzoinvio,oggettodocumento,livelloriservatezza,sottotipo});
+        idRet=idGarpro;
+      }else {
+        idGarpro=idOccorrenzaTask;
+        idRet=idOccorrenzaTask;
       }
 
-      //Codice gara da usare per GARPRO_WSDM
-      String codiceGara = ngara;
-      if(ngara==null || "".equals(ngara) || (genere!=null && genere.longValue()==3)){
-        codiceGara = datiForm.getString("CODGAR");   //COMKEY1
-      }
-
-      //Se esiste già un'occorrenza, la si cancella
-      Long num = (Long)this.sqlManager.getObject("select count(id) from garpro_wsdm where ngara=? and tipologia=? and syscon=?", new Object[]{codiceGara,new Long(1),syscon});
-      if(num!=null && num.longValue()>0)
-        this.sqlManager.update("delete from garpro_wsdm where ngara=? and tipologia=? and syscon=?", new Object[]{codiceGara,new Long(1),syscon});
-
-      //Scrittura su GARPRO_WSDM
-      Long id = new Long(genChiaviManager.getNextId("GARPRO_WSDM"));
-
-      this.sqlManager.update("insert into garpro_wsdm(id, syscon, ngara, tipologia, classifica, cod_reg," +
-          " tipo_doc, mitt_int, classifica_tit, indice, uo_mittdest, mezzo, struttura, supporto, indirizzo_mitt, mezzo_invio,oggetto_mail,livello_ris,sottotipo)" +
-          " values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-      new Object[]{id, syscon, codiceGara, new Long(1), classificadocumento, codiceregistrodocumento,
-      tipodocumento, mittenteinterno, idtitolazione, idindice, idunitaoperativamittente,mezzo,struttura,supporto,indirizzomittente,
-      mezzoinvio,oggettodocumento,livelloriservatezza,sottotipo});
-
+      //Salvataggio in w_invcom del riferimento all'occorrenza in garpro_wsdm
+      this.sqlManager.update("update w_invcom set idgarpro=? where idprg=? and idcom=?",new Object[]{idGarpro,idprg, newIdcom});
     }
+
+    return idRet;
   }
 
   private void associazioneFascicoloWSDM(Long genereGara, String ngara, String codgar, String iterga, Timestamp datpub, Timestamp datFinePubb, String riservatezzaAttiva, String oggettoDocumentoFittizio, String idconfi) throws GestoreException, SQLException, IOException, DocumentException{
@@ -1577,6 +2079,11 @@ public class GestorePubblicaSuPortale extends
     Long isRiservatezza = null;
     String nomeRup = UtilityStruts.getParametroString(this.getRequest(),"nomeR");
     String acronimoRup = UtilityStruts.getParametroString(this.getRequest(),"acronimoR");
+    String uocompetenza = UtilityStruts.getParametroString(this.getRequest(),"uocompetenza");
+    String uocompetenzadescrizione = UtilityStruts.getParametroString(this.getRequest(),"uocompetenzadescrizione");
+
+    if("LAPISOPERA".equals(tiposistemaremoto))
+      return;
 
     if("JIRIDE".equals(tiposistemaremoto) && "1".equals(riservatezzaAttiva) &&
         (genereGara != null && genereGara.intValue() != 10 && genereGara.intValue() != 11 && genereGara.intValue() != 20)){
@@ -1739,9 +2246,18 @@ public class GestorePubblicaSuPortale extends
         allegati[0].setNome("Fascicolo.pdf");
         allegati[0].setTipo("pdf");
         allegati[0].setTitolo(commsgtes);
-        allegati[0].setContenuto(UtilityStringhe.string2Pdf(commsgtes));
+        InputStream iccInputStream = new FileInputStream(getRequest().getSession(true).getServletContext().getRealPath("/WEB-INF/jrReport/sRGB_v4_ICC_preference.icc"));
+        try {
+          allegati[0].setContenuto(UtilityStringhe.string2PdfA(commsgtes,iccInputStream));
+        } catch (com.itextpdf.text.DocumentException e) {
+          throw new DocumentException(e);
+        }
         if("TITULUS".equals(tiposistemaremoto))
           allegati[0].setIdAllegato(idDocumento + "|1");
+
+        if("NUMIX".equals(tiposistemaremoto)) {
+          allegati[0].setIsSealed(new Long(1));
+        }
       }
 
 
@@ -1822,7 +2338,7 @@ public class GestorePubblicaSuPortale extends
         String messaggio = wsdmProtocolloDocumentoRes.getMessaggio();
         throw new GestoreException("Errore nell'inserimento del documento","wsdm.fascicoloprotocollo.documentoinserisci.error",new Object[]{messaggio}, new Exception());
       }
-    }else if ("SMAT".equals(tiposistemaremoto) || "ARCHIFLOWFA".equals(tiposistemaremoto) || "PRISMA".equals(tiposistemaremoto)){
+    }else if ("SMAT".equals(tiposistemaremoto) || "ARCHIFLOWFA".equals(tiposistemaremoto) || "PRISMA".equals(tiposistemaremoto) || "ITALPROT".equals(tiposistemaremoto)){
       Date oggi = new Date();
       Long annoFascicoloNUOVO = null;
       String numeroFascicoloNUOVO=null;
@@ -1833,6 +2349,8 @@ public class GestorePubblicaSuPortale extends
       }else if("PRISMA".equals(tiposistemaremoto)){
         annoFascicoloNUOVO=new Long(annofascicolo);
         numeroFascicoloNUOVO=numerofascicolo;
+      }else if("ITALPROT".equals(tiposistemaremoto)){
+        annoFascicoloNUOVO=new Long(annofascicolo);
       }
 
       this.gestioneWSDMManager.setWSFascicolo(entita, key1, null, null, null, codicefascicolo, annoFascicoloNUOVO,
@@ -1854,6 +2372,8 @@ public class GestorePubblicaSuPortale extends
       parWSDM.put(GestioneWSDMManager.LABEL_CODICEUO, codiceuo);
       parWSDM.put(GestioneWSDMManager.LABEL_ID_UTENTE, idutente);
       parWSDM.put(GestioneWSDMManager.LABEL_ID_UTENTE_UNITA_OPERATIVA, idutenteunop);
+      parWSDM.put(GestioneWSDMManager.LABEL_UOCOMPETENZA, uocompetenza);
+      parWSDM.put(GestioneWSDMManager.LABEL_DESCRIZIONE_UOCOMPETENZA, uocompetenzadescrizione);
 
       String messaggio = this.gestioneWSDMManager.setFascicolo(tiposistemaremoto, servizio, idconfi, entita, key1, isRiservatezza, parWSDM);
       if(messaggio!=null)
@@ -1895,7 +2415,8 @@ public class GestorePubblicaSuPortale extends
             valtec = SqlManager.getValueFromVectorParam(datiGara, 1).getStringValue();
             sezionitec = SqlManager.getValueFromVectorParam(datiGara, 2).getStringValue();
           }
-          cancellaDatiEntita(ngara, modlicg,offtel,codgar, iterga,valtec,sezionitec);
+          String nobustamm = (String)this.sqlManager.getObject("select nobustamm from torn where codgar=?", new Object[]{codgar});
+          cancellaDatiEntita(ngara, modlicg,offtel,codgar, iterga,valtec,sezionitec,nobustamm);
           break;
         }
         case 1:
@@ -1911,7 +2432,7 @@ public class GestorePubblicaSuPortale extends
               modlicg = SqlManager.getValueFromVectorParam(listaModlicgLotti.get(i), 1).longValue();
               valtec = SqlManager.getValueFromVectorParam(listaModlicgLotti.get(i), 2).getStringValue();
               sezionitec = SqlManager.getValueFromVectorParam(listaModlicgLotti.get(i), 3).getStringValue();
-              cancellaDatiEntita(lotto, modlicg, offtel, codgar, iterga, valtec, sezionitec);
+              cancellaDatiEntita(lotto, modlicg, offtel, codgar, iterga, valtec, sezionitec,null);
             }
           }
           if (genere.intValue() == 3) {
@@ -1936,10 +2457,11 @@ public class GestorePubblicaSuPortale extends
    * @param iterga
    * @param valtec
    * @param sezionitec
+   * @param nobustamm
    * @throws SQLException
    * @throws GestoreException
    */
-  private void cancellaDatiEntita(String ngara, Long modlicg, Long offtel, String codgar, String iterga, String valtec, String sezionitec) throws SQLException, GestoreException{
+  private void cancellaDatiEntita(String ngara, Long modlicg, Long offtel, String codgar, String iterga, String valtec, String sezionitec,String nobustamm) throws SQLException, GestoreException{
     if(modlicg!=null && ((modlicg.longValue()!=5 && modlicg.longValue()!=6 && modlicg.longValue()!=14) ||
     ((new Long(6)).equals(modlicg) && (new Long(1)).equals(offtel)  && !this.controlliOepvManager.checkFormato(ngara,new Long(52))))){
       this.sqlManager.update("delete from gcap where ngara=?", new Object[]{ngara});
@@ -1954,9 +2476,15 @@ public class GestorePubblicaSuPortale extends
         this.sqlManager.update("update documgara set seztec = null where CODGAR=? and ngara=? and gruppo=3 and busta=2 and (gentel !='1' or gentel is null)", new Object[]{codgar,ngara});
       }
     }
+
+    String chiave = ngara;
+    if(chiave==null || "".equals(chiave) )
+      chiave = codgar;
+
     if (!(new Long(6)).equals(modlicg) && !"1".equals(valtec)) {
       List<?> deleteList1 = this.sqlManager.getListVector("select IDPRG, IDDOCDG, NORDDOCG from documgara where ngara=? and gruppo = 3 and busta = 2", new Object[]{ngara});
       this.sqlManager.update("delete from documgara where ngara=? and gruppo = 3 and busta = 2", new Object[]{ngara});
+      this.sqlManager.update("delete from qform  where key1=? and entita='GARE' and busta=2", new Object[]{chiave});
       cancellaListaDocumenti(deleteList1,codgar, true);
     }
     String costofisso =(String)this.sqlManager.getObject("select costofisso from gare1 where ngara = ?", new Object[]{ngara});
@@ -1964,12 +2492,26 @@ public class GestorePubblicaSuPortale extends
       this.sqlManager.update("delete from goev where goev.ngara=? and goev.tippar = 2", new Object[]{ngara});
       List<?> deleteList3 = this.sqlManager.getListVector("select IDPRG, IDDOCDG, NORDDOCG from documgara where ngara=? and gruppo = 3 and busta = 3 and (gentel is null or gentel <> '1')", new Object[]{ngara});
       this.sqlManager.update("delete from documgara where ngara=? and gruppo = 3 and busta = 3 and (gentel is null or gentel <> '1')", new Object[]{ngara});
+      this.sqlManager.update("delete from qform  where key1=? and entita='GARE' and busta=3", new Object[]{chiave});
       cancellaListaDocumenti(deleteList3, codgar, true);
     }
+
+    if(!"2".equals(iterga) && !"4".equals(iterga) && !"7".equals(iterga))
+      this.sqlManager.update("delete from qform  where key1=? and entita='GARE' and busta=4", new Object[]{chiave});
+    else if("7".equals(iterga)) {
+      this.sqlManager.update("delete from qform  where key1=? and entita='GARE' and busta!=4", new Object[]{chiave});
+      this.sqlManager.update("delete from qform  where key1 like ? and entita='GARE' and busta!=4", new Object[]{codgar + "%"});
+    }
+
+    if("1".equals(nobustamm)) {
+      this.sqlManager.update("delete from documgara where ngara=? and gruppo = 3 and busta = 1", new Object[]{ngara});
+      this.sqlManager.update("delete from qform where key1=? and entita='GARE' and busta=1", new Object[]{chiave});
+    }
+
   }
 
   private void cancellaDatiGeneraliGara(String codgar, Long genere, String iterga, Long offtel, Long modlicg) throws SQLException, GestoreException{
-    if(!"2".equals(iterga) && !"4".equals(iterga)){
+    if(!"2".equals(iterga) && !"4".equals(iterga)  && !"7".equals(iterga)){
       List<?> deleteList2 = this.sqlManager.getListVector("select IDPRG, IDDOCDG, NORDDOCG from documgara where codgar=? and gruppo = 3 and busta = 4", new Object[]{codgar});
       this.sqlManager.update("delete from documgara where codgar=? and gruppo = 3 and busta = 4", new Object[]{codgar});
       cancellaListaDocumenti(deleteList2, codgar, true);

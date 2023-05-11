@@ -99,8 +99,8 @@
 				scheda=""
 				schedaPopUp=""
 				campi="V_SMAT_RDA.ID_RICHIESTA;V_SMAT_RDA.NUMERO_RDA;V_SMAT_RDA.DESCRIZIONE;V_SMAT_RDA.VALORE;V_SMAT_RDA.STATO;V_SMAT_RDA.DATA_APPROVAZIONE"
+				functionId="default"
 				chiave=""
-				where="(V_SMAT_RDA.STATO is not null )"
 				inseribile="false"
 				formName="formArchivioAppalti" >
 				<gene:campoScheda campo="ID_RICHIESTA" visibile="false" />

@@ -1,11 +1,5 @@
 package it.eldasoft.sil.pg.web.struts;
 
-import it.eldasoft.gene.bl.FileAllegatoManager;
-import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
-import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
-import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
-import it.eldasoft.gene.commons.web.struts.CostantiGeneraliStruts;
-
 import java.io.IOException;
 
 import javax.servlet.ServletException;
@@ -16,6 +10,12 @@ import org.apache.log4j.Logger;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
+
+import it.eldasoft.gene.bl.FileAllegatoManager;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
+import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
+import it.eldasoft.gene.commons.web.struts.CostantiGeneraliStruts;
 
 /**
  * Esegue il download di un file PDF allegato ad una gara o ad un appalto
@@ -49,6 +49,8 @@ public class VisualizzaFileAllegatoAction extends ActionBaseNoOpzioni {
       String idprg = new String(request.getParameter("idprg"));
       Long iddocdig = new Long(request.getParameter("iddocdig"));
       String dignomdoc = new String(request.getParameter("dignomdoc"));
+      //Con alcuni browser capita che vengano concatenati degli spazi alla fine del nome del file
+      dignomdoc = dignomdoc.trim();
       String codiceProfilo = (String) request.getSession().getAttribute(CostantiGenerali.PROFILO_ATTIVO);
       Integer idUtente = null;
       if(request.getSession().getAttribute(CostantiGenerali.PROFILO_UTENTE_SESSIONE) != null){

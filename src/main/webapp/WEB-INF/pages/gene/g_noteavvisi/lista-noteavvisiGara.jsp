@@ -91,6 +91,5 @@
 	<gene:javaScript>
 	<c:if test='${not empty param.chiave}'>
 		document.forms[0].keyParent.value="${param.chiave}";
-		document.forms[0].trovaAddWhere.value="${whereKey}";
 	</c:if>
 	</gene:javaScript>

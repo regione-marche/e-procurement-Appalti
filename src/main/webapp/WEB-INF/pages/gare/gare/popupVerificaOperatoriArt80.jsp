@@ -40,6 +40,30 @@
 
 <gene:template file="popup-message-template.jsp">
 	<c:set var="modo" value="NUOVO" scope="request" />
+	
+	<c:set var="art80statuslist" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "art80.statuslist")}'/>
+	<c:set var="art80monitoring" value="true" />
+	<c:set var="art80one_shot" value="true" />
+
+	
+	<c:if test="${!empty art80statuslist}">
+		<c:choose>
+			<c:when test="${fn:contains(art80statuslist,'monitoring')}">
+				<c:set var="art80monitoring" value="true" />
+			</c:when>
+			<c:otherwise>
+				<c:set var="art80monitoring" value="false" />
+			</c:otherwise>
+		</c:choose>
+		<c:choose>
+			<c:when test="${fn:contains(art80statuslist,'one_shot')}">
+				<c:set var="art80one_shot" value="true" />
+			</c:when>
+			<c:otherwise>
+				<c:set var="art80one_shot" value="false" />
+			</c:otherwise>
+		</c:choose>
+	</c:if>
 		
 	<gene:setString name="titoloMaschera" value="Richiesta verifica requisiti operatori art.80 DLgs.50/2016" />
 
@@ -78,14 +102,30 @@
 							<c:set var="msgGenere" value="catalogo"/>
 						</c:otherwise>
 					</c:choose>
-					Mediante questa funzione viene richiesta la verifica dei requisiti di cui all'art.80 del DLgs.50/2016 per gli operatori in ${msgGenere } che sono nello stato abilitazione indicato sotto.<br><br>
+					Mediante questa funzione viene richiesta la verifica dei requisiti di cui all'art.80 del DLgs.50/2016 per gli operatori in ${msgGenere } che sono nello stato abilitazione indicato sotto.
+					<br>Vengono considerati solo gli operatori per cui non è mai stata fatta alcuna richiesta.
+					<br>Specificare la tipologia di controllo da richiedere.<br><br>
 					Confermi l'operazione?
 					<br><br>
 				</c:otherwise>
 			</c:choose>
 			</td>
 			</gene:campoScheda>
-			<gene:campoScheda campo="ABILITAZ" title="Stato abilitazione" campoFittizio="true" definizione="T100;;A1075;;ABILITAZ" obbligatorio="true" visibile="${empty esito }" defaultValue="6"/>
+			<gene:campoScheda campo="ABILITAZ" title="Stato abilitazione operatore" campoFittizio="true" definizione="T100;;A1075;;ABILITAZ" obbligatorio="true" visibile="${empty esito }" defaultValue="6"/>
+			<gene:campoScheda visibile="${empty esito }">
+				<td class="etichetta-dato">Tipologia di controllo (*)</td>
+				<td class="valore-dato" >
+					<select name="status_service" id="status_service" >
+						<option value="" title="" >&nbsp;</option>
+						<c:if test="${art80one_shot eq 'true'}">
+							<option value="one_shot" title="One shot" <c:if test="${status_service eq 'one_shot' }">selected="selected"</c:if>>One shot</option>
+						</c:if>
+						<c:if test="${art80monitoring eq 'true'}">
+							<option value="monitoring" title="Monitoraggio" <c:if test="${status_service eq 'monitoring' }">selected="selected"</c:if>>Monitoraggio</option>
+						</c:if>
+					</select>
+				</td>
+			</gene:campoScheda>
 			<input type="hidden" name="ngara" id="ngara" value="${ngara }"/>
 			<input type="hidden" name="genere" id="genere" value="${genere }"/>
 		</gene:formScheda>
@@ -111,6 +151,13 @@
 		
 		
 		function conferma() {
+			clearMsg();
+			var status_service = $("#status_service").val();
+			if(status_service==null || status_service == ""){
+				outMsg('Il campo "Tipologia di controllo" è obbligatorio', "ERR");
+				onOffMsg();
+				return;
+			}
 			document.forms[0].jspPathTo.value="gare/gare/popupVerificaOperatoriArt80.jsp";
 			schedaConferma();
 		}

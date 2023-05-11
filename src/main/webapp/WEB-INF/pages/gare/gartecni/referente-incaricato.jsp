@@ -24,6 +24,7 @@
 				scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda.jsp","")}'
 				schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda-popup.jsp","")}'
 				campi="TECNI.CODTEC;TECNI.NOMTEC"
+				functionId="skip"
 				chiave="GARTECNI_CODTEC_${param.contatore}"
 				formName="formReferenti${param.contatore}"
 				inseribile="true">
@@ -41,6 +42,7 @@
 				scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda.jsp","")}'
 				schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda-popup.jsp","")}'
 				campi="TECNI.CODTEC;TECNI.NOMTEC"
+				functionId="skip"
 				chiave="GARTECNI_CODTEC_${param.contatore}"
 				formName="formReferenti${param.contatore}"
 				inseribile="true">

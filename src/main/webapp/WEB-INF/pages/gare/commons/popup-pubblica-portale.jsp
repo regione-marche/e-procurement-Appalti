@@ -37,6 +37,7 @@
 <c:set var="entita" value="${param.entita}" scope="request" />
 <c:set var="genereGara" value="${param.genereGara}" scope="request" />
 <c:set var="idconfi" value="${param.idconfi}" scope="request" />
+<c:set var="garavviso" value="${param.garavviso}" scope="request" />
 <c:set var="integrazioneWSDM" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNFunction", pageContext, codiceGara, idconfi)}' />
 <c:set var="notElencoCatalogoAvviso" value='${genereGara ne "10" and genereGara ne "20" and genereGara ne "11"}'/>
 
@@ -271,6 +272,7 @@
 		<input type="hidden" name="integrazioneWSDM" id="integrazioneWSDM" value="${integrazioneWSDM}" />
 		<input type="hidden" name="idconfi" id="idconfi" value="${idconfi}" />
 		<input type="hidden" name="tipoPubblicazione" id="tipoPubblicazione" value="" />
+		<input type="hidden" name="garavviso" id="garavviso" value="${garavviso}" />
 	</form>
 </gene:template>
 

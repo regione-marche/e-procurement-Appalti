@@ -132,8 +132,6 @@ Lista categorie d'iscrizione
 
 	<gene:javaScript>
 	function cambiaTipoDocumentazione(tipo) {
-		var trovaAddWhere="${trovaAddWhere}";
-		var trovaParameter="${trovaParameter }";
 		document.location.href="ApriPagina.do?"+csrfToken+"&href=gare/archdocg/archdocg-lista.jsp?TIPO="+tipo;
 	}
 	 

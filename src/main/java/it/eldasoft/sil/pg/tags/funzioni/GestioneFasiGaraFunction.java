@@ -46,6 +46,7 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
   public static final String    PARAM_WIZARD_PAGINA_ATTIVA          = "WIZARD_PAGINA_ATTIVA";
 
   private static final String   PROP_PAGINAZIONE                    = "it.eldasoft.sil.pg.fasi.paginazione";
+  private static final String   PROP_PAGINAZIONE_ELENCHI_CATALOGHI  = "it.eldasoft.sil.pg.ritiro.paginazione";
 
   // Nome dell'oggetto presente in sessione contenente tutti i codici delle gare
   // per le quali e' stato eseguito il controllo delle ditte escluse o
@@ -104,7 +105,7 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
   public String function(PageContext pageContext, Object[] params)
       throws JspException {
 
-    GestioneFasiGaraFunction.setPaginazione(pageContext);
+    GestioneFasiGaraFunction.setPaginazione(pageContext,false);
 
     SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",
         pageContext, SqlManager.class);
@@ -137,6 +138,8 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
     boolean isGaraTelematica = false;
     String compreq = null;
     String ricastae = null;
+    Long iterga = null;
+    String calcsome = null;
 
     paginaFasiGara = pageContext.getRequest().getParameter("paginaFasiGara");
     //String bustalotti = (String)params[0];
@@ -165,7 +168,7 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
 
     try {
       Vector<?> obj = sqlManager.getVector(
-          "select TIPTOR, TIPGEN, COMPREQ, OFFTEL, GARTEL, ITERGA, RIBCAL from TORN, GARE "
+          "select TIPTOR, TIPGEN, COMPREQ, OFFTEL, GARTEL, ITERGA, RIBCAL, CALCSOME from TORN, GARE "
               + "where TORN.CODGAR = GARE.CODGAR1 "
               + "and GARE.NGARA = ?", new Object[] { codiceGara });
       if (obj.get(0) != null) {
@@ -208,7 +211,7 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
       }
 
       if (obj.get(5) != null) {
-       Long iterga = ((JdbcParametro) obj.get(5)).longValue();
+    	iterga = ((JdbcParametro) obj.get(5)).longValue();
         pageContext.setAttribute("iterga", iterga,
             PageContext.REQUEST_SCOPE);
       }
@@ -218,6 +221,12 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
          pageContext.setAttribute("ribcal", ribcal,
              PageContext.REQUEST_SCOPE);
        }
+
+      if (obj.get(7) != null) {
+           calcsome = ((JdbcParametro) obj.get(7)).getStringValue();
+           pageContext.setAttribute("calcoloSogliaAnomaliaExDLgs2017", calcsome,
+               PageContext.REQUEST_SCOPE);
+        }
 
       // Estrazione del campo GARE.GENERE con una query specifica, in modo da
       // estrarre tale campo SEMPRE dall'occorrenza complementare (se esistente),
@@ -281,6 +290,7 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
     Double limmax=null;
     Double media = null;
     boolean visOffertaEco=true;
+    Long faseGara =null;
 
     boolean isValtec = false;
     //Se gara a Lotto unico o Offerte distinte si considera GARE1.VALTEC, altrimenti
@@ -327,6 +337,7 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
       }
 
 
+
       Vector<?> datiLotto = sqlManager.getVector(
           "select CODGAR1, FASGAR, MODLICG, MODASTG, DITTAP, STEPGAR, CALCSOANG, LIMMAX, MEDIA, DETLICG from GARE " +
            "where GARE.NGARA = ?", new Object[] { codiceGara });
@@ -342,7 +353,7 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
             PageContext.REQUEST_SCOPE);
 
         if (((JdbcParametro) datiLotto.get(1)).getValue() != null){
-          Long faseGara =  ((JdbcParametro) datiLotto.get(1)).longValue();
+          faseGara =  ((JdbcParametro) datiLotto.get(1)).longValue();
           pageContext.setAttribute("faseGara", faseGara,
               PageContext.REQUEST_SCOPE);
         }
@@ -395,8 +406,8 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
 	      	  	  stepWizardFasiGara = FASE_CHIUSURA_VALUTAZIONE_TECNICA;
 	      	  }
 	      } else{
-	        pageContext.setAttribute("bloccoAggiudicazione", new Long(0),
-                PageContext.REQUEST_SCOPE);
+	  	        pageContext.setAttribute("bloccoAggiudicazione", new Long(0),
+	  	                PageContext.REQUEST_SCOPE);
 	      }
           if(("aperturaDocAmm".equals(paginaFasiGara) || "aperturaOffAggProvOffUnica".equals(paginaFasiGara)) && stepWizardFasiGara > FASE_CONCLUSIONE_COMPROVA_REQUISITI){
               stepWizardFasiGara = FASE_CHIUSURA_VERIFICA_DOCUMENTAZIONE_AMMINISTRATIVA;
@@ -565,11 +576,13 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
                     UtilityNumeri.FORMATO_DOUBLE_CON_PUNTO_DECIMALE, 3),
                         PageContext.REQUEST_SCOPE);
 
-          Vector datiGare1 = sqlManager.getVector("select mintec,riptec, ripcritec from gare1 where ngara=?", new Object[]{codiceGara});
+          Long statocg = null;
+          Vector datiGare1 = sqlManager.getVector("select mintec,riptec, ripcritec, statocg from gare1 where ngara=?", new Object[]{codiceGara});
           if(datiGare1!=null && datiGare1.size()>0){
             sogliaTecnicaMinima = SqlManager.getValueFromVectorParam(datiGare1, 0).doubleValue();
             Long riptec = SqlManager.getValueFromVectorParam(datiGare1, 1).longValue();
             Long ripcritec = SqlManager.getValueFromVectorParam(datiGare1, 2).longValue();
+            statocg = SqlManager.getValueFromVectorParam(datiGare1, 3).longValue();
             if(riptec==null)
               riptec = new Long(3);
 
@@ -579,7 +592,15 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
               msg += "&nbsp;&nbsp;&nbsp;&nbsp;<b>Criterio:</b> " + tabellatiManager.getDescrTabellato("A1145", ripcritec.toString());
             }
             pageContext.setAttribute("msgRiptec",msg,PageContext.REQUEST_SCOPE);
+
           }
+          if("2".equals(bustalotti)) {
+            Long conteggioStatocg1=(Long)sqlManager.getObject("select count(*) from gare1 where codgar1=? and statocg=1", new Object[]{codiceGara});
+            if(conteggioStatocg1!=null && conteggioStatocg1.longValue()>0)
+              statocg= new Long(1);
+          }
+
+          pageContext.setAttribute("STATOCG",statocg,PageContext.REQUEST_SCOPE);
           if (sogliaTecnicaMinima != null)
             pageContext.setAttribute("sogliaTecnicaMinima",
                 UtilityNumeri.convertiDouble(sogliaTecnicaMinima,
@@ -644,11 +665,12 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
                         PageContext.REQUEST_SCOPE);
 
           Double sogliaEconomicaMinima = null;
-           Vector datiGare1 = sqlManager.getVector("select mineco,ripeco, ripcrieco from gare1 where ngara=?", new Object[]{codiceGara});
+           Vector datiGare1 = sqlManager.getVector("select mineco,ripeco, ripcrieco, statocg from gare1 where ngara=?", new Object[]{codiceGara});
           if(datiGare1!=null && datiGare1.size()>0){
             sogliaEconomicaMinima = SqlManager.getValueFromVectorParam(datiGare1, 0).doubleValue();
             Long ripeco = SqlManager.getValueFromVectorParam(datiGare1, 1).longValue();
             Long ripcrieco = SqlManager.getValueFromVectorParam(datiGare1, 2).longValue();
+            Long statocg = SqlManager.getValueFromVectorParam(datiGare1, 3).longValue();
             if(ripeco==null)
               ripeco = new Long(3);
 
@@ -658,6 +680,7 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
               msg += "&nbsp;&nbsp;&nbsp;&nbsp;<b>Criterio:</b> " + tabellatiManager.getDescrTabellato("A1145", ripcrieco.toString());
             }
             pageContext.setAttribute("msgRipeco",msg,PageContext.REQUEST_SCOPE);
+            pageContext.setAttribute("STATOCG",statocg,PageContext.REQUEST_SCOPE);
           }
           if (sogliaEconomicaMinima != null)
             pageContext.setAttribute("sogliaEconomicaMinima",
@@ -824,7 +847,7 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
     // eventualmente aggiornare dall'omonimo metodo della classe
     // GestioneAggiudProvDefOffertaUnicaFunction che estende questa classe
     paginaAttivaWizard = this.gestioneAvanzamentoWizard(paginaAttivaWizard, pageContext,
-        modalitaAggiudicazioneGara, isGaraLottiConOffertaUnica, isSorteggioControlloRequisiti,
+        modalitaAggiudicazioneGara, iterga, isGaraLottiConOffertaUnica, isSorteggioControlloRequisiti,
         isValtec, ricastae, visOffertaEco);
     wizardPaginaAttiva = UtilityNumeri.convertiIntero(paginaAttivaWizard).intValue();
 
@@ -901,6 +924,32 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
       }
     }
 
+    if(isGaraTelematica && (wizardPaginaAttiva == FASE_CHIUSURA_VERIFICA_DOCUMENTAZIONE_AMMINISTRATIVA || wizardPaginaAttiva == FASE_VALUTAZIONE_TECNICA)) {
+      try {
+        boolean garaConcorsoProg=false;
+        String isconcprog = (String) sqlManager.getObject("select isconcprog from torn,gare where ngara=? and codgar1=codgar",new Object[]{codiceGara});
+        if(wizardPaginaAttiva == FASE_CHIUSURA_VERIFICA_DOCUMENTAZIONE_AMMINISTRATIVA) {
+          if("1".equals(isconcprog)) {
+            //Controlli sulle condizioni per attivare la gestione per gare concorso di progettazione
+            if(new Long(2).equals(faseGara) || new Long(3).equals(faseGara) || new Long(4).equals(faseGara)) {
+              Long conteggio = (Long) sqlManager.getObject("select count(idcom) from w_invcom where comkey2 = ? and comstato = '6' and comtipo = 'FS11B' and idprg='PA'",new Object[]{codiceGara});
+              if(conteggio ==null || new Long(0).equals(conteggio)) {
+                garaConcorsoProg=true;
+              }
+            }
+          }
+
+        }
+        pageContext.setAttribute("garaConcorsoProg",
+            "" + garaConcorsoProg, PageContext.REQUEST_SCOPE);
+        pageContext.setAttribute("isconcprog",
+              "" + isconcprog, PageContext.REQUEST_SCOPE);
+      } catch (SQLException e) {
+        throw new JspException(
+            "Errore durante la verifica delle condizioni di gara concorso progettazione", e);
+      }
+    }
+
 
     // Creazione del parametro con la chiave da passare alla pagina di controllo
     // delle autorizzazioni
@@ -951,16 +1000,22 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
    * Setta nel request la property letta per la paginazione delle ditte
    *
    * @param pageContext context dell'applicativo
+   * @param elenco
    */
-  public static void setPaginazione(PageContext pageContext) {
-    Integer elementiPerPagina = Integer.valueOf(ConfigManager.getValore(
-    		PROP_PAGINAZIONE));
+  public static void setPaginazione(PageContext pageContext, boolean elenco) {
+    Integer elementiPerPagina = null;
+    if(elenco)
+      elementiPerPagina = Integer.valueOf(ConfigManager.getValore(
+          PROP_PAGINAZIONE_ELENCHI_CATALOGHI));
+    else
+      elementiPerPagina = Integer.valueOf(ConfigManager.getValore(
+          PROP_PAGINAZIONE));
     pageContext.setAttribute(FormTrovaTag.CAMPO_RISULTATI_PER_PAGINA,
         elementiPerPagina, PageContext.REQUEST_SCOPE);
   }
 
   protected String gestioneAvanzamentoWizard(String paginaAttivaWizard,
-      PageContext pageContext, Long modalitaAggiudicazioneGara,
+      PageContext pageContext, Long modalitaAggiudicazioneGara, Long iterGara,
       boolean isGaraLottiConOffertaUnica, boolean isSorteggioControlloRequisiti,
       boolean isValtec, String ricastae, boolean visOffertaEco) {
 
@@ -1067,6 +1122,13 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
     if(!visOffertaEco){
       listaPagineVisitate.remove(TITOLO_FASI_GARA[8]);
       listaPagineDaVisitare.remove(TITOLO_FASI_GARA[8]);
+    }
+
+    if(Long.valueOf(8).equals(iterGara)) {
+        listaPagineVisitate.remove(TITOLO_FASI_GARA[10]);
+        listaPagineDaVisitare.remove(TITOLO_FASI_GARA[10]);
+        listaPagineVisitate.remove(TITOLO_FASI_GARA[11]);
+        listaPagineDaVisitare.remove(TITOLO_FASI_GARA[11]);
     }
 
     pageContext.setAttribute("pagineVisitate", listaPagineVisitate);

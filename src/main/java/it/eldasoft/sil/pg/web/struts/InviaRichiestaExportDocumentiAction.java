@@ -10,13 +10,6 @@
  */
 package it.eldasoft.sil.pg.web.struts;
 
-import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
-import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
-import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
-import it.eldasoft.gene.db.domain.LogEvento;
-import it.eldasoft.gene.utils.LogEventiUtils;
-import it.eldasoft.sil.pg.bl.tasks.CreazioneArchivioDocumentiGaraManager;
-
 import java.io.IOException;
 
 import javax.servlet.ServletException;
@@ -27,6 +20,13 @@ import org.apache.log4j.Logger;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
+
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
+import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
+import it.eldasoft.gene.db.domain.LogEvento;
+import it.eldasoft.gene.utils.LogEventiUtils;
+import it.eldasoft.sil.pg.bl.tasks.CreazioneArchivioDocumentiGaraManager;
 
 public class InviaRichiestaExportDocumentiAction extends ActionBaseNoOpzioni {
 
@@ -53,6 +53,9 @@ public class InviaRichiestaExportDocumentiAction extends ActionBaseNoOpzioni {
     String codice = request.getParameter("codice");
     String genere = request.getParameter("genere");
     String oggetto = request.getParameter("oggetto");
+    String idstipula = request.getParameter("idstipula");
+    String entita = request.getParameter("entita");
+
     ProfiloUtente profiloUtente = (ProfiloUtente) request.getSession().getAttribute(
             CostantiGenerali.PROFILO_UTENTE_SESSIONE);
     Long syscon = new Long(profiloUtente.getId());
@@ -61,7 +64,11 @@ public class InviaRichiestaExportDocumentiAction extends ActionBaseNoOpzioni {
     int livEvento = 1;
     String errMsg ="";
     try{
-      id =  creazioneArchivioDocumentiGaraManager.insertJob(syscon, codgar);
+      String chiave= codgar;
+      if(idstipula!=null && !"".equals(idstipula)) {
+        chiave=idstipula;
+      }
+      id =  creazioneArchivioDocumentiGaraManager.insertJob(syscon, chiave, entita);
       target = FORWARD_SUCCESS;
       request.setAttribute("soggetto", oggetto + " " + codgar);
     }catch(Exception e){

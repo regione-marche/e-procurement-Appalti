@@ -152,6 +152,7 @@
 			<gene:campoLista campo="ISLOTTI" headerClass="sortable" width="60"/>
 			<gene:campoLista campo="GENERE" headerClass="sortable" />
 			<gene:campoLista campo="ISAGGIU_FIT" title="Stato gara" campoFittizio="true" definizione="T30" width="100" value="${garaEsito}"/>
+			<gene:campoLista title="Referente" entita="USRSYS" campo="SYSUTE" where="USRSYS.SYSCON=V_GARE_TORN.CLIV2" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.TORN.CLIV2")}' ordinabile="false"/>
 			
 			<gene:campoLista campo="GARTEL" visibile="false" />
 			<c:if test='${fn:contains(listaOpzioniDisponibili, "OP114#") && fn:contains(listaOpzioniDisponibili, "OP132#")}'>
@@ -264,12 +265,12 @@
 	function eliminaGara(){
 		chiaveRiga = chiaveRiga.replace("V_GARE_", "");
 		var href = "href=gare/commons/conferma-eliminazione.jsp&chiaveRiga=" + chiaveRiga + "&numeroPopUp=1";
-		win = openPopUpCustom(href, "confermaEliminaGara", 500, 200, "no", "no");
+		win = openPopUpCustom(href, "confermaEliminaGara", 500, 250, "no", "no");
 
 		if(win!=null)
 			win.focus();
 	}
-
+	
 	function confermaDelete() {
 		closePopUps();
 		document.forms[0].entita.value = "TORN";

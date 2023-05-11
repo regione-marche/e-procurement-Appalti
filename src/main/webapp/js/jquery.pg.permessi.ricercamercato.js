@@ -360,11 +360,7 @@ $(window).on("load", function () {
 		if ($(this).is(':checked')) {
 			$("#usr_ck_w_" + _syscon).attr("checked","checked").attr("disabled","disabled");
 			$("#usr_ck_r_" + _syscon).attr("checked","checked").attr("disabled","disabled");
-			if ("1" == $("#tabMeruoloU_" + _syscon).val()) {
-				$("#tabellatoMeruolo_" + _syscon).removeAttr("disabled");
-			} else {
-				$("#tabellatoMeruolo_" + _syscon).val(2).attr("selected", "selected").attr("disabled","disabled");
-			}
+			$("#tabellatoMeruolo_" + _syscon).removeAttr("disabled");
 		} else {
 			$("#usr_ck_w_" + _syscon).removeAttr("disabled");
 		}
@@ -376,16 +372,10 @@ $(window).on("load", function () {
 		_syscon = _id.substring(9);
 		if ($(this).is(':checked')) {
 			$("#usr_ck_r_" + _syscon).attr("checked","checked").attr("disabled","disabled");
-			if ("1" == $("#tabMeruoloU_" + _syscon).val()) {
-				$("#tabellatoMeruolo_" + _syscon).removeAttr("disabled");
-			} else {
-				$("#tabellatoMeruolo_" + _syscon).val(2).attr("selected", "selected").attr("disabled","disabled");
-			}
+			$("#tabellatoMeruolo_" + _syscon).removeAttr("disabled");
 		} else {
 			$("#usr_ck_r_" + _syscon).removeAttr("disabled");
-			if ("1" == $("#tabMeruoloU_" + _syscon).val()) {
-				$("#tabellatoMeruolo_" + _syscon).val(2).attr("selected", "selected").attr("disabled","disabled");
-			}
+			$("#tabellatoMeruolo_" + _syscon).val(2).attr("selected", "selected").attr("disabled","disabled");
 		}
 		$("#usr_ck_u_" + _syscon).attr("checked","checked");
 	});
@@ -445,6 +435,12 @@ $(window).on("load", function () {
 		// si avvia l'elaborazione di salvataggio dei dati.
 		var _len  = _tableUtenti.page.len();
 		var _page = _tableUtenti.page();
+		
+		//Accorgimento per evitare di perdere i valori nei campi quando si impostano filtri 
+		_tableUtenti.columns().eq(0).each( function (colIdx) {
+			_tableUtenti.column(colIdx).search('');
+		});
+		
 		_tableUtenti.page.len(-1).draw();
 		_tableUtenti.page(0).draw();
 		var _strTot = "";
@@ -462,10 +458,10 @@ $(window).on("load", function () {
 					_strSearch[num-2] = valore;
 					_strTot = _strTot+valore;
 				}
-				_tableUtenti.column(num).search("");
+				//_tableUtenti.column(num).search("");
 			});
 			
-			_tableUtenti.draw();
+			//_tableUtenti.draw();
 			//alert("_strSearch=[" + _strSearch[0] + ","+_strSearch[1] + "," + _strSearch[2] + "," + _strSearch[3] + "," + _strSearch[4] + "], _strTot=" + _strTot);
 			
 			$.map($("[id^='tabellatoMeruolo_']"), function(item) {
@@ -486,7 +482,7 @@ $(window).on("load", function () {
 					_tableUtenti.column(num).search(_strSearch[num-2]);
 				});
 			}
-			_tableUtenti.draw();
+			//_tableUtenti.draw();
 			
 			if (conta > 1) {
 				_tableUtenti.page.len(_len).draw();
@@ -557,7 +553,7 @@ $(window).on("load", function () {
     	$.map($("[id^='tabellatoMeruolo_']"), function(item1) {
     		var _id = item1.id;
     		var _syscon = _id.substring(17);
-    		if ($("#option_1_" + _syscon).length <= 0) {
+    		if ($("#tabellatoMeruolo_" + _syscon + " option").length <= 0) {
     			$.map(_tabellatoRuolo, function( item ) {
 					$("#" + _id).append($("<option/>", {id: "option_" + item.tipoTabellato + "_" + _syscon, value: item.tipoTabellato, text: item.descTabellato }));
     			});
@@ -571,17 +567,21 @@ $(window).on("load", function () {
 	    			meruolo = meruoloU;
 	    		} else {
 	    			meruolo ="2";
+	    			if($("#tabellatoMeruolo_" + _syscon).val() == 3)
+						meruolo =  "3";
 	    		}
+	    		
+	    		$("#tabellatoMeruolo_" + _syscon).attr("disabled","disabled");
+	    		
+	    		if ("1" != meruoloU){
+					$("#tabellatoMeruolo_" + _syscon +" option[value=1]").remove();
+				}
 	    		
 	    		if ($("#usr_ck_r_" + _syscon).is(':checked')) {
 	    			// Per utenti con permessi sulla gara
 	    			if (meruolo != null)
 						$("#tabellatoMeruolo_" + _syscon).val(meruolo).attr("selected", "selected");
-	    			if ("1" != meruoloU) {  //if ("2" == meruoloU || meruoloU == null) {
-	    				if ($("#usr_ck_r_" + _syscon).is(':checked')) {
-	    					$("#tabellatoMeruolo_" + _syscon).attr("disabled","disabled");
-	    				}
-	    			}
+	    			
 	    		} else {
 	    			// Per utenti privi di permessi sulla gara
 	    			if (meruolo != null) {
@@ -589,17 +589,13 @@ $(window).on("load", function () {
 	    			} else {
 	    				$("#tabellatoMeruolo_" + _syscon).val("2").attr("selected", "selected");
 	    			}
-	    			$("#tabellatoMeruolo_" + _syscon).attr("disabled","disabled");
 	    		}
 	    		
 	    		if ($("#usr_ck_w_" + _syscon).is(':checked')) {
 	    			// Per utenti con permessi sulla gara
-	    			if (meruolo != null)
+	    			if (meruolo != null){
 						$("#tabellatoMeruolo_" + _syscon).val(meruolo).attr("selected", "selected");
-	    			if ("1" != meruoloU) {  // if ("2" == meruoloU || meruoloU == null) {
-	    				if ($("#usr_ck_w_" + _syscon).is(':checked')) {
-	    					$("#tabellatoMeruolo_" + _syscon).attr("disabled","disabled");
-	    				}
+	    				$("#tabellatoMeruolo_" + _syscon).removeAttr("disabled");
 	    			}
 	    		} else {
 	    			// Per utenti privi di permessi sulla gara
@@ -608,7 +604,6 @@ $(window).on("load", function () {
 	    			} else {
 	    				$("#tabellatoMeruolo_" + _syscon).val("2").attr("selected", "selected");
 	    			}
-	    			$("#tabellatoMeruolo_" + _syscon).attr("disabled","disabled");
 	    		}
     		}
     	});

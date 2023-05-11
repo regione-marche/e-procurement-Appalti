@@ -1,7 +1,5 @@
 package it.eldasoft.sil.pg.web.struts;
 
-import it.eldasoft.gene.bl.SqlManager;
-
 import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.util.List;
@@ -9,13 +7,14 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import net.sf.json.JSONArray;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
+
+import it.eldasoft.gene.bl.SqlManager;
+import net.sf.json.JSONArray;
 
 /**
  * @author Stefano.Cestaro
@@ -35,6 +34,8 @@ public class GetCategorieAlberoAction extends Action {
   public void setSqlManager(SqlManager sqlManager) {
     this.sqlManager = sqlManager;
   }
+
+  private final static String FILTRO_CARATTERI_DA_ESCLUDERE = " and (caisim not like '%/%' and caisim not like '%. %' and caisim not like '% .%')";
 
   /**
    * Restituisce JSONArray strutturato nel seguente modo:
@@ -99,6 +100,7 @@ public class GetCategorieAlberoAction extends Action {
       String caisim_livello3 = request.getParameter("caisim_livello3");
       String caisim_livello4 = request.getParameter("caisim_livello4");
       String tipologie = request.getParameter("tipologie");
+
 
       switch (livello.intValue()) {
       case -2:
@@ -461,6 +463,7 @@ public class GetCategorieAlberoAction extends Action {
           + " and codliv2 is null "
           + " and codliv3 is null "
           + " and codliv4 is null "
+          + FILTRO_CARATTERI_DA_ESCLUDERE
           + orderBy;
       datiCategorie = this.sqlManager.getListVector(selectCategorie, new Object[] { tiplavg });
     } else {
@@ -471,6 +474,7 @@ public class GetCategorieAlberoAction extends Action {
           + " and codliv2 is null "
           + " and codliv3 is null "
           + " and codliv4 is null "
+          + FILTRO_CARATTERI_DA_ESCLUDERE
           + orderBy;
       datiCategorie = this.sqlManager.getListVector(selectCategorie, new Object[] { tiplavg, titcat });
     }
@@ -544,6 +548,7 @@ public class GetCategorieAlberoAction extends Action {
         + " and codliv2 is null "
         + " and codliv3 is null "
         + " and codliv4 is null "
+        + FILTRO_CARATTERI_DA_ESCLUDERE
         + orderBy;
     List<?> datiCategorie = this.sqlManager.getListVector(selectCategorie, new Object[] { tiplavg, caisim_livello1 });
 
@@ -617,6 +622,7 @@ public class GetCategorieAlberoAction extends Action {
         + " and codliv2 = ? "
         + " and codliv3 is null "
         + " and codliv4 is null "
+        + FILTRO_CARATTERI_DA_ESCLUDERE
         + orderBy;
     List<?> datiCategorie = this.sqlManager.getListVector(selectCategorie, new Object[] { tiplavg, caisim_livello1, caisim_livello2 });
     if (datiCategorie != null && datiCategorie.size() > 0) {
@@ -691,6 +697,7 @@ public class GetCategorieAlberoAction extends Action {
         + " and codliv2 = ? "
         + " and codliv3 = ? "
         + " and codliv4 is null "
+        + FILTRO_CARATTERI_DA_ESCLUDERE
         + orderBy;
     List<?> datiCategorie = this.sqlManager.getListVector(selectCategorie, new Object[] { tiplavg, caisim_livello1, caisim_livello2,
         caisim_livello3 });
@@ -772,6 +779,7 @@ public class GetCategorieAlberoAction extends Action {
         + " and codliv2 = ? "
         + " and codliv3 = ? "
         + " and codliv4 = ? "
+        + FILTRO_CARATTERI_DA_ESCLUDERE
         + orderBy;
     List<?> datiCategorie = this.sqlManager.getListVector(selectCategorie, new Object[] { tiplavg, caisim_livello1, caisim_livello2,
         caisim_livello3, caisim_livello4 });
@@ -955,23 +963,23 @@ public class GetCategorieAlberoAction extends Action {
     if (titcat == null || (titcat != null && "".equals(titcat.trim()))) {
       // Conteggio delle categoria non associate ad alcun titolo e non
       // archiviate
-      String selectCAIS_NonArchiviate = "select count(*) from cais where tiplavg = ? and titcat is null and (isarchi is null or isarchi <> '1')";
+      String selectCAIS_NonArchiviate = "select count(*) from cais where tiplavg = ? and titcat is null and (isarchi is null or isarchi <> '1')" + FILTRO_CARATTERI_DA_ESCLUDERE;
       Long numero_NonArchiviate = (Long) this.sqlManager.getObject(selectCAIS_NonArchiviate, new Object[] { tiplavg });
       numero[0] = (numero_NonArchiviate != null) ? numero_NonArchiviate.intValue() : 0;
 
       // Conteggio delle categorie non associate ad alcun titolo e archiviate
-      String selectCAIS_Archiviate = "select count(*) from cais where tiplavg = ? and titcat is null and isarchi is not null and isarchi = '1'";
+      String selectCAIS_Archiviate = "select count(*) from cais where tiplavg = ? and titcat is null and isarchi is not null and isarchi = '1'" + FILTRO_CARATTERI_DA_ESCLUDERE;
       Long numero_Archiviate = (Long) this.sqlManager.getObject(selectCAIS_Archiviate, new Object[] { tiplavg });
       numero[1] = (numero_Archiviate != null) ? numero_Archiviate.intValue() : 0;
 
     } else {
       // Conteggio delle categorie associate ad un titolo e non archiviate
-      String selectCAIS_NonArchiviate = "select count(*) from cais where tiplavg = ? and titcat = ? and (isarchi is null or isarchi <> '1')";
+      String selectCAIS_NonArchiviate = "select count(*) from cais where tiplavg = ? and titcat = ? and (isarchi is null or isarchi <> '1')" + FILTRO_CARATTERI_DA_ESCLUDERE;
       Long numero_NonArchiviate = (Long) this.sqlManager.getObject(selectCAIS_NonArchiviate, new Object[] { tiplavg, titcat });
       numero[0] = (numero_NonArchiviate != null) ? numero_NonArchiviate.intValue() : 0;
 
       // Conteggio delle categorie associate ad un titolo e archiviate
-      String selectCAIS_Archiviate = "select count(*) from cais where tiplavg = ? and titcat = ? and isarchi is not null and isarchi = '1'";
+      String selectCAIS_Archiviate = "select count(*) from cais where tiplavg = ? and titcat = ? and isarchi is not null and isarchi = '1'" + FILTRO_CARATTERI_DA_ESCLUDERE;
       Long numero_Archiviate = (Long) this.sqlManager.getObject(selectCAIS_Archiviate, new Object[] { tiplavg, titcat });
       numero[1] = (numero_Archiviate != null) ? numero_Archiviate.intValue() : 0;
 
@@ -999,12 +1007,12 @@ public class GetCategorieAlberoAction extends Action {
     numero[1] = 0;
 
     // Conteggio delle categorie non archiviate
-    String selectCAIS_NonArchiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and (isarchi is null or isarchi <> '1')";
+    String selectCAIS_NonArchiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and (isarchi is null or isarchi <> '1')" + FILTRO_CARATTERI_DA_ESCLUDERE;
     Long numero_NonArchiviate = (Long) this.sqlManager.getObject(selectCAIS_NonArchiviate, new Object[] { tiplavg, caisim_livello1 });
     numero[0] = (numero_NonArchiviate != null) ? numero_NonArchiviate.intValue() : 0;
 
     // Conteggio delle categorie archiviate
-    String selectCAIS_Archiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and isarchi is not null and isarchi = '1'";
+    String selectCAIS_Archiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and isarchi is not null and isarchi = '1'" + FILTRO_CARATTERI_DA_ESCLUDERE;
     Long numero_Archiviate = (Long) this.sqlManager.getObject(selectCAIS_Archiviate, new Object[] { tiplavg, caisim_livello1 });
     numero[1] = (numero_Archiviate != null) ? numero_Archiviate.intValue() : 0;
 
@@ -1034,13 +1042,13 @@ public class GetCategorieAlberoAction extends Action {
     numero[1] = 0;
 
     // Conteggio delle categorie non archiviate
-    String selectCAIS_NonArchiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and codliv2 = ? and (isarchi is null or isarchi <> '1')";
+    String selectCAIS_NonArchiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and codliv2 = ? and (isarchi is null or isarchi <> '1')" + FILTRO_CARATTERI_DA_ESCLUDERE;
     Long numero_NonArchiviate = (Long) this.sqlManager.getObject(selectCAIS_NonArchiviate, new Object[] { tiplavg, caisim_livello1,
         caisim_livello2 });
     numero[0] = (numero_NonArchiviate != null) ? numero_NonArchiviate.intValue() : 0;
 
     // Conteggio delle categorie archiviate
-    String selectCAIS_Archiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and codliv2 = ? and isarchi is not null and isarchi = '1'";
+    String selectCAIS_Archiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and codliv2 = ? and isarchi is not null and isarchi = '1'" + FILTRO_CARATTERI_DA_ESCLUDERE;
     Long numero_Archiviate = (Long) this.sqlManager.getObject(selectCAIS_Archiviate, new Object[] { tiplavg, caisim_livello1,
         caisim_livello2 });
     numero[1] = (numero_Archiviate != null) ? numero_Archiviate.intValue() : 0;
@@ -1073,13 +1081,13 @@ public class GetCategorieAlberoAction extends Action {
     numero[1] = 0;
 
     // Conteggio delle categorie non archiviate
-    String selectCAIS_NonArchiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and codliv2 = ? and codliv3 = ? and (isarchi is null or isarchi <> '1')";
+    String selectCAIS_NonArchiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and codliv2 = ? and codliv3 = ? and (isarchi is null or isarchi <> '1')" + FILTRO_CARATTERI_DA_ESCLUDERE;
     Long numero_NonArchiviate = (Long) this.sqlManager.getObject(selectCAIS_NonArchiviate, new Object[] { tiplavg, caisim_livello1,
         caisim_livello2, caisim_livello3 });
     numero[0] = (numero_NonArchiviate != null) ? numero_NonArchiviate.intValue() : 0;
 
     // Conteggio delle categorie archiviate
-    String selectCAIS_Archiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and codliv2 = ? and codliv3 = ? and isarchi is not null and isarchi = '1'";
+    String selectCAIS_Archiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and codliv2 = ? and codliv3 = ? and isarchi is not null and isarchi = '1'" + FILTRO_CARATTERI_DA_ESCLUDERE;
     Long numero_Archiviate = (Long) this.sqlManager.getObject(selectCAIS_Archiviate, new Object[] { tiplavg, caisim_livello1,
         caisim_livello2, caisim_livello3 });
     numero[1] = (numero_Archiviate != null) ? numero_Archiviate.intValue() : 0;
@@ -1114,13 +1122,13 @@ public class GetCategorieAlberoAction extends Action {
     numero[1] = 0;
 
     // Conteggio delle categorie non archiviate
-    String selectCAIS_NonArchiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and codliv2 = ? and codliv3 = ? and codliv4 = ? and (isarchi is null or isarchi <> '1')";
+    String selectCAIS_NonArchiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and codliv2 = ? and codliv3 = ? and codliv4 = ? and (isarchi is null or isarchi <> '1')" + FILTRO_CARATTERI_DA_ESCLUDERE;
     Long numero_NonArchiviate = (Long) this.sqlManager.getObject(selectCAIS_NonArchiviate, new Object[] { tiplavg, caisim_livello1,
         caisim_livello2, caisim_livello3, caisim_livello4 });
     numero[0] = (numero_NonArchiviate != null) ? numero_NonArchiviate.intValue() : 0;
 
     // Conteggio delle categorie archiviate
-    String selectCAIS_Archiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and codliv2 = ? and codliv3 = ? and codliv4 = ? and isarchi is not null and isarchi = '1'";
+    String selectCAIS_Archiviate = "select count(*) from cais where tiplavg = ? and codliv1 = ? and codliv2 = ? and codliv3 = ? and codliv4 = ? and isarchi is not null and isarchi = '1'" + FILTRO_CARATTERI_DA_ESCLUDERE;
     Long numero_Archiviate = (Long) this.sqlManager.getObject(selectCAIS_Archiviate, new Object[] { tiplavg, caisim_livello1,
         caisim_livello2, caisim_livello3, caisim_livello4 });
     numero[1] = (numero_Archiviate != null) ? numero_Archiviate.intValue() : 0;
@@ -1460,6 +1468,70 @@ public class GetCategorieAlberoAction extends Action {
       numero = (Long) this.sqlManager.getObject(selectMEARTCAT, new Object[] { ngara, caisim });
     }
     return (numero != null) ? numero.intValue() : 0;
+  }
+
+  /**
+   * Numero categorie annidate dal livello 0 ed associate.
+   *
+   * @param tiplavg
+   * @param titcat
+   * @param ngara
+   * @return
+   * @throws SQLException
+   */
+  private boolean numeroCategorieConCodiceNonSupportato(String tipologie) throws SQLException {
+
+    boolean categoriePresenti =false;
+    tipologie = StringUtils.leftPad(tipologie, 3, "0");
+
+    String selectCategorie = "select tab1tip, tab1desc from tab1 where tab1cod = ? order by tab1nord, tab1tip";
+    List<?> datiCategorie = this.sqlManager.getListVector(selectCategorie, new Object[] { "G_038" });
+    if (datiCategorie != null && datiCategorie.size() > 0) {
+      for (int i = 0; i < datiCategorie.size(); i++) {
+        Long tiplavg = (Long) SqlManager.getValueFromVectorParam(datiCategorie.get(i), 0).getValue();
+        String titcat = (String) SqlManager.getValueFromVectorParam(datiCategorie.get(i), 1).getValue();
+
+        // Per ogni CAIS.TIPLAVG controllo in funzione della tipologia
+        // di elenco (TIPOLOGIE) se deve essere caricato il nodo ROOT
+        boolean tipologia_abilitata = false;
+        switch (tiplavg.intValue()) {
+        case 1:
+          if ("1".equals(tipologie.substring(0, 1))) tipologia_abilitata = true;
+          break;
+
+        case 2:
+          if ("1".equals(tipologie.substring(1, 2))) tipologia_abilitata = true;
+          break;
+
+        case 3:
+          if ("1".equals(tipologie.substring(2))) tipologia_abilitata = true;
+          break;
+
+        case 4:
+          if ("1".equals(tipologie.substring(0, 1))) tipologia_abilitata = true;
+          break;
+
+        case 5:
+          if ("1".equals(tipologie.substring(2))) tipologia_abilitata = true;
+          break;
+        }
+
+        if (tipologia_abilitata) {
+
+          Long numero = null;
+          String selectCAIS = "select count(*) from cais where cais.tiplavg = ? and (caisim like '%/%' "
+              + "or caisim like '%. %' or caisim like '% .%')";;
+          numero = (Long) this.sqlManager.getObject(selectCAIS, new Object[] { tiplavg});
+          if(numero!=null && numero.longValue()>0) {
+            categoriePresenti = false;
+            break;
+          }
+        }
+      }
+    }
+
+
+    return categoriePresenti;
   }
 
 }

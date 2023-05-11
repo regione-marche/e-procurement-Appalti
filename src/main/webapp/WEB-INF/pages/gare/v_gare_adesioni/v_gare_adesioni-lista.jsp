@@ -15,38 +15,41 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
-
-<c:set var="ngaraaq" value='${gene:getValCampo(key,"NGARAAQ") }'/>
-<c:set var="cenint" value='${gene:getValCampo(key,"CENINT") }'/>
-<c:set var="ditta" value='${gene:getValCampo(key,"DITTA") }'/>
-
 <c:choose>
-	<c:when test="${empty ditta or ditta eq '' }">
-		<c:set var="wherecodcig" value="NGARA = '${ngaraaq}'"/>
-		<c:set var="codcig" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "CODCIG","GARE",wherecodcig)}'/>
-		<c:choose>
-			<c:when test="${not empty  codcig and codcig ne '' and not fn:startsWith(codcig, '#')}">
-				<c:set var="where" value="(V_GARE_ADESIONI.NGARAAQ = '${ngaraaq }' or V_GARE_ADESIONI.CODCIGAQ = '${codcig }')"/>
-			</c:when>
-			<c:otherwise>
-				<c:set var="where" value="V_GARE_ADESIONI.NGARAAQ = '${ngaraaq }'"/>
-			</c:otherwise>
-		</c:choose>
-		
+	<c:when test='${!empty param.ngaraaq}'>
+		<c:set var="ngaraaq" value='${param.ngaraaq}' />
 	</c:when>
 	<c:otherwise>
-		<c:set var="elencoLotti" value="${gene:callFunction3('it.eldasoft.sil.pg.tags.funzioni.GetFiltroElencoLottiAggiudicatiDittaFunction', pageContext,ngaraaq, ditta)}"/>
-		<c:choose >
-			<c:when test="${not empty elencoCig }">
-				<c:set var="where" value="(V_GARE_ADESIONI.NGARAAQ in (${elencoLotti }) or V_GARE_ADESIONI.CODCIGAQ in (${elencoCig }))"/>
-			</c:when>
-			<c:otherwise>
-				<c:set var="where" value="V_GARE_ADESIONI.NGARAAQ in (${elencoLotti })"/>
-			</c:otherwise>
-		</c:choose>
+		<c:set var="ngaraaq" value="${ngaraaq}" />
 	</c:otherwise>
 </c:choose>
-<c:set var="where" value="${where}  and V_GARE_ADESIONI.CENINT = '${cenint }'"/>
+
+<c:choose>
+	<c:when test='${!empty param.cenint}'>
+		<c:set var="cenint" value='${param.cenint}' />
+	</c:when>
+	<c:otherwise>
+		<c:set var="cenint" value="${cenint}" />
+	</c:otherwise>
+</c:choose>
+
+<c:choose>
+	<c:when test='${!empty param.ditta}'>
+		<c:set var="ditta" value='${param.ditta}' />
+	</c:when>
+	<c:otherwise>
+		<c:set var="ditta" value="${ditta}" />
+	</c:otherwise>
+</c:choose>
+
+<jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
+<c:if test='${not empty ngaraaq and gene:matches(ngaraaq, regExpresValidazStringhe, true)}' />
+<c:if test='${not empty cenint and gene:matches(cenint, regExpresValidazStringhe, true)}' />
+<c:if test='${not empty ditta and gene:matches(ditta, regExpresValidazStringhe, true)}' />
+
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, ngaraaq, "SC", "20")}
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, cenint, "SC", "16")}
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, ditta, "SC", "10")}
 
 <c:set var="entitaPrincipaleModificabile" value="" scope="session" />
 
@@ -58,7 +61,7 @@
 	<gene:redefineInsert name="corpo">
 		<table class="lista">
 		<tr><td >
-			<gene:formLista entita="V_GARE_ADESIONI" where="${where }" sortColumn="2;3" pagesize="20" tableclass="datilista" gestisciProtezioni="true" >
+			<gene:formLista entita="V_GARE_ADESIONI"  sortColumn="2;3" pagesize="20" tableclass="datilista" gestisciProtezioni="true" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreV_GARE_ADESIONILista">
 			  	<gene:redefineInsert name="addHistory">
 					<gene:historyAdd titolo='${gene:getString(pageContext,"titoloMaschera",gene:resource("label.tags.template.lista.titolo"))}' id="V_GARE_ADESIONI-lista" />
 				</gene:redefineInsert>
@@ -80,7 +83,10 @@
 				<gene:campoLista campo="NOMEST" />
 				<gene:campoLista campo="IAGGIU" />
 				<gene:campoLista campo="DATTOA" />
-					<gene:campoLista campo="NGARAAQ" visibile="false"/>
+				<gene:campoLista campo="NGARAAQ" visibile="false"/>
+				<input type="hidden" name="ngaraaq" id="ngaraaq" value="${ngaraaq}"/>
+				<input type="hidden" name="cenint" id="cenint" value="${cenint}"/>
+				<input type="hidden" name="ditta" id="ditta" value="${ditta}"/>
 			</gene:formLista>
 		</td></tr>
 		</table>

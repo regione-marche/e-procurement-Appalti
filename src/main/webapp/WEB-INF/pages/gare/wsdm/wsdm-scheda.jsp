@@ -36,6 +36,9 @@
 
 <gene:template file="scheda-template.jsp" gestisciProtezioni="true" schema="GARE" idMaschera="WSDM-scheda">
 	<c:choose>
+		<c:when test="${param.entita eq 'G1STIPULA'}">
+			<gene:setString name="titoloMaschera" value="Fascicolo documentale della stipula ${param.codstipula}" />
+		</c:when>
 		<c:when test="${param.genereGara eq '-2'}">
 			<gene:setString name="titoloMaschera" value="Fascicolo documentale dell'appalto ${param.key2} della commessa ${param.key1} " />
 		</c:when>

@@ -10,20 +10,18 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
-import it.eldasoft.gene.tags.functions.GeneralTagsFunction;
-import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.sil.pg.bl.PgManager;
-import it.eldasoft.utils.properties.ConfigManager;
-import it.eldasoft.utils.spring.UtilitySpring;
-import it.eldasoft.utils.utility.UtilityStringhe;
-
 import java.sql.SQLException;
 import java.util.List;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.tags.functions.GeneralTagsFunction;
+import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.sil.pg.bl.PgManager;
+import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityStringhe;
 
 public class GetAbilitazioneInvioComunicazioneFunction extends AbstractFunzioneTag {
 
@@ -39,8 +37,6 @@ public class GetAbilitazioneInvioComunicazioneFunction extends AbstractFunzioneT
         pageContext, PgManager.class);
     SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",
         pageContext, SqlManager.class);
-
-    String invioFax = ConfigManager.getValore(CostantiGenerali.PROP_FAX_ABILITATO);
 
     String result = "Si";
 
@@ -63,11 +59,10 @@ public class GetAbilitazioneInvioComunicazioneFunction extends AbstractFunzioneT
       if("no".equals(isRTI)){
         if("true".equals(condizioneInvioMailDocumentale) &&  (Pec==null || "".equals(Pec)))
           result="NoPec";
-        else if(((email==null || "".equals(email)) && (Pec==null || "".equals(Pec))) && ((invioFax==null || "".equals(invioFax) || "0".equals(invioFax)) || ("1".equals(invioFax) && (fax==null || "".equals(fax))))){
+        //else if(((email==null || "".equals(email)) && (Pec==null || "".equals(Pec))) && ((invioFax==null || "".equals(invioFax) || "0".equals(invioFax)) || ("1".equals(invioFax) && (fax==null || "".equals(fax))))){
+        else if((email==null || "".equals(email)) && (Pec==null || "".equals(Pec))){
           result="NoMail";
-          if("1".equals(invioFax)){
-            result="NoMailFax";
-          }
+
         }
       }else{
         //verifico nel caso di RTI che la mandataria esista ed abbia gli indirizzi
@@ -86,7 +81,8 @@ public class GetAbilitazioneInvioComunicazioneFunction extends AbstractFunzioneT
               if("true".equals(condizioneInvioMailDocumentale) &&  "".equals(emai2ip)){
                 isIndSpec ="NoPecRTI";
                 break;
-              }else if(("".equals(emai2ip) && "".equals(emaiip)) && ((invioFax==null || "".equals(invioFax) || "0".equals(invioFax)) || ("1".equals(invioFax) && "".equals(faximp)))){
+              //}else if(("".equals(emai2ip) && "".equals(emaiip)) && ((invioFax==null || "".equals(invioFax) || "0".equals(invioFax)) || ("1".equals(invioFax) && "".equals(faximp)))){
+              }else if("".equals(emai2ip) && "".equals(emaiip)) {
                 isIndSpec ="no";
               }
             }
@@ -94,9 +90,7 @@ public class GetAbilitazioneInvioComunicazioneFunction extends AbstractFunzioneT
               result ="NoPecRTI";
             if("no".equals(isIndSpec)){
               result="NoMailRTI";
-              if("1".equals(invioFax)){
-                result="NoMailFaxRTI";
-              }
+
             }
           }else{
             result="NoMandatariaRTI";

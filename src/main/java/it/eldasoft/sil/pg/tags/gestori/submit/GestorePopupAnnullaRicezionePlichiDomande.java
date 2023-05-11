@@ -10,6 +10,14 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.SQLException;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.domain.LogEvento;
@@ -18,14 +26,6 @@ import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.sql.SQLException;
-import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.log4j.Logger;
-import org.springframework.transaction.TransactionStatus;
 
 
 /**
@@ -172,6 +172,16 @@ public class GestorePopupAnnullaRicezionePlichiDomande extends
           else
             this.sqlManager.update("update gare set fasgar=?, stepgar=? where ngara=?", new Object[]{new Long(-5), new Long(-50),ngara });
 
+          //Cancellazione DGUE_BATCH
+          String whereDGUE_BATCH="";
+          if("1".equals(tipo)) {
+        	  whereDGUE_BATCH = "codgar=? and busta=1";
+          }else {
+        	  whereDGUE_BATCH = "codgar=?";
+          }
+          String sqlDGUE_BATCH = "select id from dgue_batch";
+          errMsgEvento = this.deleteDGUE_BATCH(sqlDGUE_BATCH, whereDGUE_BATCH, codgar, errMsgEvento);
+
           //Aggiornamento stato comunicazioni
           errMsgEvento= this.upadteComunicazioni(codgar, ngara, errMsgEvento,tipo);
 
@@ -259,12 +269,12 @@ public class GestorePopupAnnullaRicezionePlichiDomande extends
               + "ORAOFF = null, MEZOFF = null, MOTIES = null, ESTIMP = null, AMMINVERSA = null, FASGAR  = null, NUMORDPL = NPROGG  where codgar5=? and invgar = ?", new Object[]{codgar,"1"});
           if("3".equals(genere)){
             this.sqlManager.update("update ditg set AMMGAR =null where codgar5=? and invgar = ? and ngara5 != codgar5", new Object[]{codgar,"1"});
-            if("2".equals(iterga) || "4".equals(iterga) )
+            if("2".equals(iterga) || "4".equals(iterga) || "7".equals(iterga))
               this.sqlManager.update("update ditg set AMMGAR =? where codgar5=? and invgar = ? and ngara5 = codgar5", new Object[]{"1",codgar,"1"});
             else
               this.sqlManager.update("update ditg set AMMGAR =null where codgar5=? and invgar = ? and ngara5 = codgar5", new Object[]{codgar,"1"});
           }else{
-            if("2".equals(iterga) || "4".equals(iterga) )
+            if("2".equals(iterga) || "4".equals(iterga) || "7".equals(iterga))
               this.sqlManager.update("update ditg set AMMGAR =? where codgar5=? and invgar = ? ", new Object[]{"1",codgar,"1"});
             else
               this.sqlManager.update("update ditg set AMMGAR =null where codgar5=? and invgar = ? ", new Object[]{codgar,"1"});
@@ -549,7 +559,37 @@ public class GestorePopupAnnullaRicezionePlichiDomande extends
     return msgRet;
   }
 
+  /**
+  *
+  * @param select
+  * @param where
+  * @param codgar
+  * @param msg
+  * @param cancellazione
+  * @return
+  * @throws SQLException
+  * @throws GestoreException
+  */
+ private String deleteDGUE_BATCH(String select, String where, String codgar, String msg) throws SQLException, GestoreException{
+   String msgRet=msg;
+   List<?> datiDGUE_BATCH = this.sqlManager.getListVector(select + " where " + where, new Object[]{codgar});
+   if(datiDGUE_BATCH!=null && datiDGUE_BATCH.size()>0){
+     msgRet +="Eliminato occ. in DGUE_BATCH, DGUE_BATCH_DOC, DGUE_ELABORAZIONI (idbatch: ";
+     String idbatch=null;
+     for(int i=0;i<datiDGUE_BATCH.size();i++){
+       idbatch = SqlManager.getValueFromVectorParam(datiDGUE_BATCH.get(i), 0).getStringValue();
+       msgRet += idbatch ;
+       if(i < datiDGUE_BATCH.size() - 1)
+         msgRet += ", ";
+     }
+     msgRet+=") \r\n";
+     this.getGeneManager().deleteTabelle(new String[]{"DGUE_BATCH"},where, new Object[]{codgar});
+   }
 
+   return msgRet;
+ }
+  
+  
   /**
    *
    * @param select
@@ -596,7 +636,7 @@ public class GestorePopupAnnullaRicezionePlichiDomande extends
    */
   private String upadteComunicazioni(String codgar, String ngara, String msg,String tipo) throws SQLException, GestoreException{
     String msgRet=msg;
-    String buste = "('FS11','FS11A' )";
+    String buste = "('FS11','FS11A','FS14')";
     if("2".equals(tipo))
       buste = "('FS10','FS10A' )";
     String selectW_INVCOM = "select idprg, idcom from w_invcom where comkey2=? and comtipo in " + buste + " and comstato=6";

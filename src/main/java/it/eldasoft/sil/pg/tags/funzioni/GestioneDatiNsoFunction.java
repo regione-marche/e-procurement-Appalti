@@ -10,18 +10,20 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.utils.spring.UtilitySpring;
-import it.eldasoft.utils.utility.UtilityMath;
-import it.eldasoft.utils.utility.UtilityStringhe;
-
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.Vector;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityDate;
+import it.eldasoft.utils.utility.UtilityMath;
+import it.eldasoft.utils.utility.UtilityStringhe;
 
 /**
  * Funzione che recupera i dati di collegamento per gli ordini NSO
@@ -46,7 +48,7 @@ public class GestioneDatiNsoFunction extends AbstractFunzioneTag {
     if(!"".equals(idOrdine)){
       Long idO = new Long(idOrdine);
 
-      String selectOrdine = "select a.stato_ordine,b.codord,a.id_originario,a.codord,a.versione" +
+      String selectOrdine = "select a.stato_ordine,b.codord,a.id_originario,a.codord,a.versione, a.data_limite_mod, a.data_scadenza" +
       		" from nso_ordini a" +
       		" left join nso_ordini b on a.id_padre=b.id" +
       		" where a.id = ?";
@@ -76,6 +78,16 @@ public class GestioneDatiNsoFunction extends AbstractFunzioneTag {
           pageContext.setAttribute("codiceOrdine",codiceOrdine,PageContext.REQUEST_SCOPE);
           Long versioneOrdine = SqlManager.getValueFromVectorParam(datiOrdine, 4).longValue();
           pageContext.setAttribute("versioneOrdine",versioneOrdine,PageContext.REQUEST_SCOPE);
+          Date dataLimiteMod = (Date) SqlManager.getValueFromVectorParam(datiOrdine, 5).getValue();
+          Date dataScadenza = (Date) SqlManager.getValueFromVectorParam(datiOrdine, 6).getValue();
+          Date dataOggi = UtilityDate.getDataOdiernaAsDate();
+          String isPeriodoVariazione = "0";
+          if(dataScadenza!=null && dataOggi.before(dataScadenza)){
+            isPeriodoVariazione = "1";
+          } else if(dataLimiteMod!=null && dataOggi.before(dataLimiteMod)) {
+            isPeriodoVariazione = "1";
+          }
+          pageContext.setAttribute("isPeriodoVariazione",isPeriodoVariazione,PageContext.REQUEST_SCOPE);
 
         }
 

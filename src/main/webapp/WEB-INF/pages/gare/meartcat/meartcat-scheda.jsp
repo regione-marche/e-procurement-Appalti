@@ -26,6 +26,9 @@
 			<gene:pagina title="Dati generali" idProtezioni="DATIGEN">
 				<jsp:include page="meartcat-datigen.jsp" />
 			</gene:pagina>
+			<gene:pagina title="Allegati articoli" idProtezioni="ALLART" >
+				<jsp:include page="meartcat-pg-allegati.jsp" />
+			</gene:pagina>
 			<gene:pagina title="Prodotti degli operatori economici" idProtezioni="PRODOTTI" visibile="${stato ne 1 }">
 				<jsp:include page="meartcat-pg-listaProdotti.jsp" />
 			</gene:pagina>

@@ -59,29 +59,35 @@ public class GetWSDocumentoAction extends Action {
       String key3 = request.getParameter("key3");
       String key4 = request.getParameter("key4");
       String letturaComunicazioni = request.getParameter("letturaComunicazioni");
+      
+      List<Object> parameters = new ArrayList<Object>();
 
       // Lettura degli elementi documentali generici
       String selectWSDocumento = "select numerodoc, annoprot, numeroprot, oggetto, inout from wsdocumento where entita = ? and key1 = ? ";
-
+      parameters.add(entita);
+      parameters.add(key1);
       if (key2 != null && !"".equals(key2)) {
-        selectWSDocumento += " and key2 = '" + key2 + "' ";
+        selectWSDocumento += " and key2 = ? ";
+        parameters.add(key2);
       } else {
         selectWSDocumento += " and key2 is null ";
       }
 
       if (key3 != null && !"".equals(key3)) {
-        selectWSDocumento += " and key3 = '" + key3 + "' ";
+        selectWSDocumento += " and key3 = ? ";
+        parameters.add(key3);
       } else {
         selectWSDocumento += " and key3 is null ";
       }
 
       if (key4 != null && !"".equals(key4)) {
-        selectWSDocumento += " and key4 = '" + key4 + "' ";
+        selectWSDocumento += " and key4 = ?";
+        parameters.add(key4);
       } else {
         selectWSDocumento += " and key4 is null ";
       }
 
-      List<?> datiWSDocumento = sqlManager.getListVector(selectWSDocumento, new Object[] { entita, key1 });
+      List<?> datiWSDocumento = sqlManager.getListVector(selectWSDocumento, parameters.toArray());
       if (datiWSDocumento != null && datiWSDocumento.size() > 0) {
         total += datiWSDocumento.size();
         totalAfterFilter += datiWSDocumento.size();
@@ -100,27 +106,32 @@ public class GetWSDocumentoAction extends Action {
 
       // Lettura degli elementi documentali associati alle comunicazioni
       if(!"0".equals(letturaComunicazioni)){
-        String selectW_INVCOM = "select comdatprot, comnumprot, commsgogg from w_invcom where coment = ? and comkey1 = ? and comdatprot is not null and comnumprot is not null ";
-
+        parameters = new ArrayList<Object>();
+        String selectW_INVCOM = "select comdatprot, comnumprot, commsgogg from w_invcom where coment = ? and comkey1 = ? and comdatprot is not null and comnumprot is not null "; 
+       parameters.add(entita);
+       parameters.add(key1);
         if (key2 != null && !"".equals(key2)) {
-          selectW_INVCOM += " and comkey2 = '" + key2 + "' ";
+          selectW_INVCOM += " and comkey2 = ? ";
+          parameters.add(key2);
         } else {
           selectW_INVCOM += " and comkey2 is null ";
         }
 
         if (key3 != null && !"".equals(key3)) {
-          selectW_INVCOM += " and comkey3 = '" + key3 + "' ";
+          selectW_INVCOM += " and comkey3 = ? ";
+          parameters.add(key3);
         } else {
           selectW_INVCOM += " and comkey3 is null ";
         }
 
         if (key4 != null && !"".equals(key4)) {
-          selectW_INVCOM += " and comkey4 = '" + key4 + "' ";
+          selectW_INVCOM += " and comkey4 = ? ";
+          parameters.add(key4);
         } else {
           selectW_INVCOM += " and comkey4 is null ";
         }
 
-        List<?> datiW_INVCOM = sqlManager.getListVector(selectW_INVCOM, new Object[] { entita, key1 });
+        List<?> datiW_INVCOM = sqlManager.getListVector(selectW_INVCOM, parameters.toArray());
         if (datiW_INVCOM != null && datiW_INVCOM.size() > 0) {
           total += datiW_INVCOM.size();
           totalAfterFilter += datiW_INVCOM.size();

@@ -23,13 +23,6 @@
 
 <gene:template file="popup-message-template.jsp">
 	
-	<c:if test='${not empty param.numeroSeduta && not empty param.numeroGara}'>
-		<c:set var="numeroSeduta" value="${param.numeroSeduta}" />
-		<c:set var="numeroGara" value="${param.numeroGara}" />
-		
-		<c:set var="where" value="GFOF.NGARA2='${numeroGara}' AND GFOF.CODFOF NOT IN (SELECT CODFOF FROM GARSEDPRES WHERE GARSEDPRES.NGARA ='${numeroGara }' AND GARSEDPRES.NUMSED='${numeroSeduta}')" />
-	</c:if>
-	
 	<c:choose>
 		<c:when test='${not empty param.numeroGara}'>
 			<c:set var="numeroGara" value="${param.numeroGara}" />
@@ -38,6 +31,24 @@
 			<c:set var="numeroGara" value="${numeroGara}" />
 		</c:otherwise>
 	</c:choose>
+	
+	<c:choose>
+		<c:when test='${not empty param.numeroSeduta}'>
+			<c:set var="numeroSeduta" value="${param.numeroSeduta}" />
+		</c:when>
+		<c:otherwise>
+			<c:set var="numeroSeduta" value="${numeroSeduta}" />
+		</c:otherwise>
+	</c:choose>
+	
+	${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, numeroGara, "SC", "20")}
+	${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, numeroSeduta, "N","")}
+	
+	<c:set var="parametri" value="T:${numeroGara};T:${numeroGara};N:${numeroSeduta}"/>
+	<c:set var="where" value="GFOF.NGARA2=? AND GFOF.CODFOF NOT IN (SELECT CODFOF FROM GARSEDPRES WHERE GARSEDPRES.NGARA = ? AND GARSEDPRES.NUMSED=?)"/>
+	${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunction", pageContext, "GFOF", where, parametri)}
+	
+	<c:set var="where1" value="GFOF.NGARA2='${numeroGara}' AND GFOF.CODFOF NOT IN (SELECT CODFOF FROM GARSEDPRES WHERE GARSEDPRES.NGARA ='${numeroGara }' AND GARSEDPRES.NUMSED=${numeroSeduta})" />
 		
 	<gene:setString name="titoloMaschera" value='Lista dei componenti della commissione da associare alla seduta di gara' />
 		
@@ -74,7 +85,7 @@
 		</c:choose>
 		
 		
-		<gene:formLista entita="GFOF" where="${where}" sortColumn="3" tableclass="datilista" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAssociaComponentiGARSEDPRES"
+		<gene:formLista entita="GFOF" sortColumn="3" tableclass="datilista" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAssociaComponentiGARSEDPRES"
 		 	distinct="true" pagesize="0">
 			<gene:campoLista title="Seleziona<br><center>${titoloMenu}</center>" width="50">
 				<c:if test="${currentRow >= 0}">
@@ -84,7 +95,8 @@
 			<gene:campoLista campo="NGARA2" visibile="false"/>
 			<gene:campoLista campo="CODFOF" title="Codice componente" width="100"/>
 			<gene:campoLista campo="NOMFOF" title="Nome componente"/>
-			<input type="hidden" name="ngara" id="ngara" value="${ngara}" />			
+			<input type="hidden" name="numeroGara" id="numeroGara" value="${numeroGara}" />
+			<input type="hidden" name="numeroSeduta" id="numeroSeduta" value="${numeroSeduta}" />			
 						
 			<gene:redefineInsert name="buttons">
 				<c:if test='${empty RISULTATO and datiRiga.rowCount > 0 }'>
@@ -98,11 +110,6 @@
   	</gene:redefineInsert>
 
 	<gene:javaScript>
-		
-		<c:if test='${not empty numeroSeduta && not empty numeroGara}'>
-			document.forms[0].trovaAddWhere.value="${where}";
-		</c:if>
-		
 		function aggiungi(){
 			var numeroOggetti = contaCheckSelezionati(document.forms[0].keys);
 	  		if (numeroOggetti == 0) {
@@ -112,7 +119,6 @@
  			}
 		}
 
-		
 		function chiudi(){
 			<c:if test='${not empty RISULTATO}'>
 				var paginalista = opener.document.forms[0].pgCorrente.value = 0;
@@ -120,9 +126,6 @@
 			</c:if>
 			window.close();
 		}
-		
-
-
 	</gene:javaScript>
 	
 	</gene:template>

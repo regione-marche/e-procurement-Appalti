@@ -20,11 +20,23 @@
 <script type="text/javascript" src="${contextPath}/js/common-gare.js"></script>
 
 <c:set var="modelliPredispostiAttivoIncondizionato" scope="request" value="1" />
+<c:set var="digitalSignatureUrlCheck" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-check-url")}'/>
+<c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:choose>
+	<c:when test="${!empty digitalSignatureUrlCheck && !empty digitalSignatureProvider && (digitalSignatureProvider eq 1 || digitalSignatureProvider eq 2)}">
+		<c:set var="digitalSignatureWsCheck" value='1'/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="digitalSignatureWsCheck" value='0'/>
+	</c:otherwise>
+</c:choose>
 
 <c:set var="codiceGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetCodiceGaraFunction", pageContext)}' />
 <c:set var="ngara" value='${gene:getValCampo(key, "GARE.NGARA")}' />
-<c:set var="firmaRemota" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "firmaremota.auto.url")}'/>
-
+<c:set var="firmaProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:if test='${firmaProvider eq 2}'>
+	<c:set var="firmaRemota" value="true"/>
+</c:if>
 <c:choose>
 	<c:when test="${isProceduraTelematica }">
 		<c:set var="ruoloUtente" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetMERUOLOFunction", pageContext, ngara)}' scope="request"/>		
@@ -50,7 +62,7 @@
 		<gene:redefineInsert name="schedaModifica"></gene:redefineInsert>
 	</c:if>
 	<gene:redefineInsert name="addToAzioni" >
-		<c:if test='${modo eq "VISUALIZZA" && datiRiga.GARECONT_STATO == 2 && autorizzatoModifiche ne "2" && ruoloUtente eq "1" && gene:checkProtFunz(pageContext,"ALT","ImpostaOrdineDef")}'>
+		<c:if test='${modo eq "VISUALIZZA" && datiRiga.GARECONT_STATO == 2 && autorizzatoModifiche ne "2" && (ruoloUtente eq "1" || ruoloUtente eq "3") && gene:checkProtFunz(pageContext,"ALT","ImpostaOrdineDef")}'>
 			<tr>
 				<td class="vocemenulaterale">
 							<c:if test='${isNavigazioneDisattiva ne "1" }'>
@@ -61,7 +73,7 @@
 				</td>
 			</tr>
 		</c:if>
-		<c:if test='${modo eq "VISUALIZZA" && datiRiga.GARECONT_STATO == 3 && autorizzatoModifiche ne "2" && ruoloUtente eq "1" && gene:checkProtFunz(pageContext,"ALT","TrasmettiOrdine")}'>
+		<c:if test='${modo eq "VISUALIZZA" && datiRiga.GARECONT_STATO == 3 && autorizzatoModifiche ne "2" && (ruoloUtente eq "1" || ruoloUtente eq "3") && gene:checkProtFunz(pageContext,"ALT","TrasmettiOrdine")}'>
 			<tr>
 				<td class="vocemenulaterale">
 						<c:if test='${isNavigazioneDisattiva ne "1" }'>
@@ -198,6 +210,8 @@
 			scheda=''
 			schedaPopUp="gene/punticon/punticon-scheda-popup.jsp"
 			campi="PUNTICON.CODEIN;PUNTICON.NUMPUN;PUNTICON.NOMPUN" 
+			functionId="default"
+			parametriWhere="T:${datiRiga.TORN_CENINT}"
 			chiave="GARECONT_PCOESE;CENINT_PCOESE"
 			formName="formPuntiConsegnaOrdine"
 			inseribile="false">
@@ -223,6 +237,8 @@
 			scheda=''
 			schedaPopUp="gene/punticon/punticon-scheda-popup.jsp"
 			campi="PUNTICON.CODEIN;PUNTICON.NUMPUN;PUNTICON.NOMPUN" 
+			functionId="default"
+			parametriWhere="T:${datiRiga.TORN_CENINT}"
 			chiave="GARECONT_PCOFAT;CENINT_PCOFAT"
 			formName="formPuntiFatturazione"
 			inseribile="false">
@@ -339,7 +355,7 @@
 						<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.lista.listaNuovo")}' title='${gene:resource("label.tags.template.lista.listaNuovo")}' onclick="javascript:schedaNuovo()" id="btnNuovo">
 					</c:if>
 				</gene:insert>
-				<c:if test='${datiRiga.GARECONT_STATO == 3 && autorizzatoModifiche ne "2" && ruoloUtente eq "1" && gene:checkProtFunz(pageContext,"ALT","TrasmettiOrdine")}'>
+				<c:if test='${datiRiga.GARECONT_STATO == 3 && autorizzatoModifiche ne "2" && (ruoloUtente eq "1" || ruoloUtente eq "3") && gene:checkProtFunz(pageContext,"ALT","TrasmettiOrdine")}'>
 					<INPUT type="button" class="bottone-azione" value="Trasmetti ordine" title="Trasmetti ordine" onclick="javascript:trasmettiOrdine()">
 				</c:if>
 			</c:otherwise>
@@ -509,15 +525,6 @@
 		return true;
 	}
 	
-	var cenint = getValue("TORN_CENINT");
-	if(cenint!=""){
-		if(document.formPuntiConsegnaOrdine!=null)
-			document.formPuntiConsegnaOrdine.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		if(document.formPuntiFatturazione!=null)
-			document.formPuntiFatturazione.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		
-	}
-	
 	function showCampiContatto(valore,nomeCampo,nomeCampoFit){
 		if(valore == 2) {
 			showObj("rowGARECONT_" + nomeCampo, false);
@@ -678,16 +685,30 @@
     
     function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 		var vet = dignomdoc.split(".");
-			var ext = vet[vet.length-1];
-			ext = ext.toUpperCase();
-			if(ext=='P7M' || ext=='TSD'){
-				document.formVisFirmaDigitale.idprg.value = idprg;
-				document.formVisFirmaDigitale.iddocdig.value = iddocdig;
-				document.formVisFirmaDigitale.submit();
-			}else{
-				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-			document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
-			}
+		var ext = vet[vet.length-1];
+		ext = ext.toUpperCase();
+		<c:choose>
+			<c:when test="${digitalSignatureWsCheck eq 0}">
+				if(ext=='P7M' || ext=='TSD'){
+					document.formVisFirmaDigitale.idprg.value = idprg;
+					document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+					document.formVisFirmaDigitale.submit();
+				}else{
+					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				}
+			</c:when>
+			<c:otherwise>
+				if(ext=='P7M' || ext=='TSD' || ext=='XML' || ext=='PDF'){
+					document.formVisFirmaDigitale.idprg.value = idprg;
+					document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+					document.formVisFirmaDigitale.submit();
+				}else{
+					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				}
+			</c:otherwise>
+		</c:choose>
 	}
 	
 	

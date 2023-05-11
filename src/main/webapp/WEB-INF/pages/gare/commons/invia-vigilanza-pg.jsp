@@ -140,6 +140,7 @@
 	<c:set var="temp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.InizializzaPopupInviaVigilanzaFunction", pageContext, param.codgar, param.genereGara)}'/>
 	<c:set var="temp" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetStatoInviiVigilanzaFunction", pageContext, param.codgar)}'/>
 	<c:set var="logincomune" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.sil.pl.vigilanza.ws.login.comune")}'/>
+	<c:set var="ssoprotocollo" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "sso.protocollo")}'/>
 	
 	<gene:redefineInsert name="corpo">
 	
@@ -191,7 +192,7 @@
 					</td>
 				</tr>
 				
-				<c:if test="${!profiloUtente.autenticazioneSSO}">
+				<c:if test="${empty ssoprotocollo || ssoprotocollo eq '0'}">
 					<tr>
 						<td colspan="2">
 							<input class="opzione" id="altre" type="radio" name="credenziali" value="ALTRE" onchange="javascipt:gestioneCredenziali()">Altre credenziali
@@ -278,10 +279,10 @@
 							</tr>
 							</c:forEach>
 							
-							<c:if test="${!(isadesione eq '1' && corrispondenzaAnac eq 'true') && faseEsitoDisponibile eq 'true' }">
+							<c:if test="${!(isadesione eq '1' && corrispondenzaAnac eq 'true')}">
 								<c:forEach items="${faseEsito}" step="1" var="riga" varStatus="statusRiga" >
 									<tr>
-										<c:if test="${statusRiga.first}"><td colspan="2" class="fase" rowspan="${fn:length(faseEsito)}">Esito di gara (solo Osservatorio regionale)</td></c:if>
+										<c:if test="${statusRiga.first}"><td colspan="2" class="fase" rowspan="${fn:length(faseEsito)}">Annullamento/non aggiudicazione</td></c:if>
 										<td class="data">${riga[0]}</td>
 										<td class="esito" data-esito="${riga[1]}">${riga[2]}</td>
 										<td class="messaggio">${riga[3]}</td>
@@ -334,7 +335,7 @@
 		
 			var invia = "true";
 			
-			<c:if test='${!profiloUtente.autenticazioneSSO}'>
+			<c:if test="${empty ssoprotocollo || ssoprotocollo eq '0'}">
 			var altre = document.formInviaVigilanza.altre;
 			if (altre.checked) {
 				var username = document.formInviaVigilanza.username;

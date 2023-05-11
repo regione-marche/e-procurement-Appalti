@@ -111,14 +111,17 @@
 	</gene:gruppoCampi>
 
 	<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.GestioneComponentiCommissioneFunction" parametro='${fn:substringAfter(key, ":")}' />
+	<c:set var="integrazioneMEval" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneAppMEVALFunction", pageContext, datiRiga.GARE_NGARA, datiRiga.GARE_CODGAR1)}' />
+		
+	
 	<jsp:include page="/WEB-INF/pages/commons/interno-scheda-multipla.jsp" >
 		<jsp:param name="entita" value='GFOF'/>
 		<jsp:param name="chiave" value='${fn:substringAfter(key, ":")}'/>
 		<jsp:param name="nomeAttributoLista" value='commissione' />
 		<jsp:param name="idProtezioni" value="GFOF" />
 		<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/gfof/componente-commissione.jsp" />
-		<jsp:param name="arrayCampi" value="'GFOF_CODFOF_', 'GFOF_NOMFOF_', 'GFOF_INCFOF_', 'GFOF_INTFOF_', 'GFOF_IMPFOF_', 'GFOF_IMPLIQ_', 'GFOF_IMPSPE_', 'GFOF_DLIQSPE_', 'GFOF_INDISPONIBILITA_', 'GFOF_MOTIVINDISP_', 'GFOF_DATARICHIESTA_', 'GFOF_DATAACCETTAZIONE_', 'GFOF_ESPGIU_', 'GFOF_ID_'" />
-		<jsp:param name="arrayVisibilitaCampi" value="true, true, true, true, false, false, false, false, true, false, false, false, true, false" />
+		<jsp:param name="arrayCampi" value="'GFOF_CODFOF_', 'GFOF_NOMFOF_', 'GFOF_INCFOF_', 'GFOF_INTFOF_', 'GFOF_IMPFOF_', 'GFOF_IMPLIQ_', 'GFOF_IMPSPE_', 'GFOF_DLIQSPE_', 'GFOF_INDISPONIBILITA_', 'GFOF_MOTIVINDISP_', 'GFOF_DATARICHIESTA_', 'GFOF_DATAACCETTAZIONE_', 'GFOF_ESPGIU_', 'GFOF_ID_', 'GFOF_SEZALBO_', 'GFOF_COMMICG_'" />
+		<jsp:param name="arrayVisibilitaCampi" value="true, true, true, true, false, false, false, false, true, false, false, false, true, false, true, true" />
 		<jsp:param name="usaContatoreLista" value="true" />
 		<jsp:param name="titoloSezione" value="Componente commissione" />
 		<jsp:param name="funzEliminazione" value="delComponente" />
@@ -127,6 +130,8 @@
 		<jsp:param name="msgRaggiuntoMax" value="i componenti della commissione" />
 		<jsp:param name="sezioneInseribile" value="${isModificabile}"/>
 		<jsp:param name="sezioneEliminabile" value="${isModificabile}"/>
+		<jsp:param name="integrazioneMEval" value="${integrazioneMEval}"/>
+		<jsp:param name="obbligoPresidente" value="${obbligoPresidente}"/>
 	</jsp:include>
 
 	<gene:gruppoCampi idProtezioni="ESAMECOMM">
@@ -192,6 +197,15 @@
 				</c:if>
 				Condividi gara componenti commiss. 
 			</td>
+		</c:if>
+		<c:if test='${autorizzatoModifiche ne "2" and modoAperturaScheda eq "VISUALIZZA" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.COMMISSIONE.AbilitaValutazioneMEval") and integrazioneMEval eq "1"}'>
+			<tr>
+			<td class="vocemenulaterale">
+				<a href="javascript:apriAbilitazioneValutazioneMEval();" title="Abilita valutazione su M-Eval" tabindex="1504">
+				Abilita valutazione su M-Eval
+				</a> 
+			</td>
+			</tr>
 		</c:if>
 	</gene:redefineInsert>
 	<gene:redefineInsert name="pulsanteSalva">
@@ -342,6 +356,11 @@
 			formVisualizzaPermessiGaraCommissione.ngara.value = getValue("GARE_NGARA");
 			formVisualizzaPermessiGaraCommissione.gartel.value = getValue("TORN_GARTEL");
 			formVisualizzaPermessiGaraCommissione.submit();
+		}
+		
+		function apriAbilitazioneValutazioneMEval(){
+			var href = "href=gare/gare/gare-popup-abilitaValutazione-MEval.jsp?codgar="+getValue("GARE_CODGAR1")+"&lotto="+getValue("GARE_NGARA")+"&genere=${tipologiaGara}";
+			openPopUpCustom(href, "abilitaValutazione", 700, 450, "yes", "yes");
 		}
 		
 	</gene:javaScript>

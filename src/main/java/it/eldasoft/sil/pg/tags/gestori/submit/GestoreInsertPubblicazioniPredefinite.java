@@ -134,7 +134,7 @@ public class GestoreInsertPubblicazioniPredefinite extends
     // si estraggono le pubblicazioni bando
     try {
       listaTabellati = this.sqlManager.getListVector(
-          "select tippub, tespub from pubbli where codgar9 = ? and tippub not in (11,13,15,23) order by numpub asc",
+          "select tippub, tespub, titpub from pubbli where codgar9 = ? and tippub not in (11,13,15,23) order by numpub asc",
           new Object[] { codgar });
     } catch (SQLException e) {
       throw new GestoreException(
@@ -148,6 +148,7 @@ public class GestoreInsertPubblicazioniPredefinite extends
     String campoChiaveNumerica = "NPUBG";
     String campoTabellato = "TIPPUBG";
     String campoTesto = "TESPUBG";
+    String campoTitolo = "TITPUB";
 
     // se esistono pubblicazioni bando proseguo con gli inserimenti
     if (listaTabellati != null) {
@@ -162,6 +163,8 @@ public class GestoreInsertPubblicazioniPredefinite extends
       elencoCampi.add(new DataColumn(entitaInserimento + "." + campoTabellato,
           new JdbcParametro(JdbcParametro.TIPO_NUMERICO, null)));
       elencoCampi.add(new DataColumn(entitaInserimento + "." + campoTesto,
+          new JdbcParametro(JdbcParametro.TIPO_TESTO, null)));
+      elencoCampi.add(new DataColumn(entitaInserimento + "." + campoTitolo, 
           new JdbcParametro(JdbcParametro.TIPO_TESTO, null)));
       DataColumnContainer container = new DataColumnContainer(elencoCampi);
       // si predispone il gestore per l'aggiornamento dell'entità
@@ -183,6 +186,10 @@ public class GestoreInsertPubblicazioniPredefinite extends
             new JdbcParametro(
                 JdbcParametro.TIPO_TESTO,
                 SqlManager.getValueFromVectorParam(listaTabellati.get(i), 1).getValue()));
+        container.getColumn(entitaInserimento + "." + campoTitolo).setValue(
+            new JdbcParametro(
+                JdbcParametro.TIPO_TESTO,
+                SqlManager.getValueFromVectorParam(listaTabellati.get(i), 2).getValue()));
         gestore.inserisci(status, container);
       }
     }

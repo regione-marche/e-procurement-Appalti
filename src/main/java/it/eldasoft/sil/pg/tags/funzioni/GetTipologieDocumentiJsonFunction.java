@@ -16,16 +16,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
 import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
-import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 
 
 public class GetTipologieDocumentiJsonFunction extends AbstractFunzioneTag {
@@ -34,37 +30,37 @@ public class GetTipologieDocumentiJsonFunction extends AbstractFunzioneTag {
     super(3, new Class[] { PageContext.class,String.class,String.class });
     // TODO Auto-generated constructor stub
   }
-  
+
   private String bando = "Bando o avviso";
   private String esito = "Esito";
   private String invito = "Invito";
   private String atto = "Atto";
   private String trasparenza = "Trasparenza";
   private String attoContrarre = "Atto a contrarre";
-  
+
   private String sqlw9cfPubb = "select TORN.CODGAR,tipgar,tipgarg from TORN left outer join GARE on TORN.CODGAR=GARE.CODGAR1 where TORN.CODGAR=?";
   private String sqlCount = "select count(*) from DOCUMGARA D where D.CODGAR=? and D.TIPOLOGIA=?";
   private String sqlCountPubb = "select count(*) from DOCUMGARA D where D.CODGAR=? and D.TIPOLOGIA=? and D.statodoc = 5 and D.ISARCHI is null";
   private String sqlCountAttesaPubb = "select count(*) from DOCUMGARA D where D.CODGAR=? and D.TIPOLOGIA=? and D.statodoc is null and D.ISARCHI is null";
   private String sqlCountAttesaFirma = "select count(*) from DOCUMGARA D, W_DOCDIG W where D.CODGAR=? and D.TIPOLOGIA=? and W.IDDOCDIG=D.IDDOCDG and W.IDPRG = D.IDPRG and W.DIGFIRMA = '1' and D.ISARCHI is null";
   private String sqlCountArchi = "select count(*) from DOCUMGARA D where D.CODGAR=? and D.TIPOLOGIA=? and D.ISARCHI is NOT null";
-  
-  @Override 
-  public String function(PageContext pageContext, Object[] params) 
+
+  @Override
+  public String function(PageContext pageContext, Object[] params)
   throws JspException {
-    
+
     String codiceGara = (String) params[1];
     String ngara = (String) params[2];
-    
+
     SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",
           pageContext, SqlManager.class);
     JSONArray json =  new JSONArray();
     Long tipoPubblicazione, nrPubblicazioniTotali,gruppo;
     String nome, clausolaWhereVis,clausolaWhereUlt;
     int indice = 0;
-    String contextPath = (String) ((HttpServletRequest) pageContext.getRequest()).getContextPath();
-    
-    try { 
+    String contextPath = ((HttpServletRequest) pageContext.getRequest()).getContextPath();
+
+    try {
         List<?> w9cfPubb = sqlManager.getListVector("select ID, NOME, CL_WHERE_VIS, CL_WHERE_ULT, GRUPPO from G1CF_PUBB order by NUMORD", new Object[] {});
         if (w9cfPubb != null && w9cfPubb.size() > 0) {
           for (int i = 0; i < w9cfPubb.size(); i++) {
@@ -75,16 +71,16 @@ public class GetTipologieDocumentiJsonFunction extends AbstractFunzioneTag {
               clausolaWhereUlt = (String) SqlManager.getValueFromVectorParam(w9cfPubb.get(i), 3).getValue();
               gruppo = SqlManager.getValueFromVectorParam(w9cfPubb.get(i), 4).longValue();
               if(!new Long(5).equals(gruppo) || GeneManager.checkOP(pageContext.getServletContext(), "OP129")){
-              
+
                 if (clausolaWhereVis != null && !clausolaWhereVis.equals("")) {
                     clausolaWhereVis = " and (" + clausolaWhereVis + ")";
-                } 
+                }
                 if (clausolaWhereUlt != null && !clausolaWhereUlt.equals("")) {
                   clausolaWhereVis = clausolaWhereVis + " and (" + clausolaWhereUlt + ")";
-              } 
+              }
                 List<?> w9cfPubbVisible = null;
                 w9cfPubbVisible = sqlManager.getListVector(sqlw9cfPubb + clausolaWhereVis, new Object[] {codiceGara});
-                
+
                 if (w9cfPubbVisible!= null && w9cfPubbVisible.size() > 0) {
                     indice++;
                     JSONObject jsonItem =  new JSONObject();
@@ -99,16 +95,15 @@ public class GetTipologieDocumentiJsonFunction extends AbstractFunzioneTag {
                     if (nrPubblicazioniTotali > 0) {
                         numeroPubb = (Long)sqlManager.getObject(sqlCountPubb, new Object[] {codiceGara, tipoPubblicazione});
                         numeroAttesaPubb = (Long)sqlManager.getObject(sqlCountAttesaPubb, new Object[] {codiceGara, tipoPubblicazione});
-                        String richiestaFirma = ConfigManager.getValore(CostantiAppalti.PROP_RICHIESTA_FIRMA);
                         String riepilogoPubb = "";
                         String gruppoDescr = "(" + gruppoToNome(gruppo) + ") ";
                         String iconaGruppiPreferiti = "";
                         if(gruppo.intValue() == 15 || gruppo.intValue() == 1 || gruppo.intValue() == 6 || gruppo.intValue() == 4 ){
                           iconaGruppiPreferiti = "<img title='"+gruppoToNome(gruppo)+"' style='float:left;padding:2px' src='/Appalti/img/documentiPreferiti.png' width='12' height='12'  >";
                         }
-                        riepilogoPubb += "Da pubblicare: " + numeroAttesaPubb; 
+                        riepilogoPubb += "Da pubblicare: " + numeroAttesaPubb;
                         numeroAttesaFirma = (Long)sqlManager.getObject(sqlCountAttesaFirma, new Object[] {codiceGara, tipoPubblicazione});
-                        if("1".equals(richiestaFirma) && numeroAttesaFirma.intValue() > 0){
+                        if(numeroAttesaFirma.intValue() > 0){
                           riepilogoPubb = riepilogoPubb + ", in attesa di firma: "+ numeroAttesaFirma;
                         }
                         riepilogoPubb = riepilogoPubb + ", pubblicati: " + numeroPubb;
@@ -142,7 +137,7 @@ public class GetTipologieDocumentiJsonFunction extends AbstractFunzioneTag {
                       jsonItemA.put("href", "javascript:visualizzaDocumenti('" + ngara + "'," + tipoPubblicazione + "," + gruppo + ");");
                     }
                     jsonItem.put("a_attr", jsonItemA);
-                    
+
                     //
                     if (indice % 2 == 0) {
                         jsonItemLi.put("CLASS", "even");
@@ -150,24 +145,24 @@ public class GetTipologieDocumentiJsonFunction extends AbstractFunzioneTag {
                         jsonItemLi.put("CLASS", "odd");
                     }
                     jsonItem.put("li_attr", jsonItemLi);
-                    //Aggiungo tipologia documento 
+                    //Aggiungo tipologia documento
                     json.add(jsonItem);
-                    
+
                 }
               }
            }
         }
-      
+
     } catch (Exception ex) {
       throw new JspException("Errore nel caricamento della lista: " + ex.getMessage());
     }
-  
+
   String result = json.toString();
   result = result.replaceAll("\"CLASS\"", "\"class\"");
   return result;
 
   }
-  
+
   private String gruppoToNome(Long gruppo){
     String nome;
     switch(gruppo.intValue()) {
@@ -194,5 +189,5 @@ public class GetTipologieDocumentiJsonFunction extends AbstractFunzioneTag {
     }
     return nome;
   }
-  
+
 }

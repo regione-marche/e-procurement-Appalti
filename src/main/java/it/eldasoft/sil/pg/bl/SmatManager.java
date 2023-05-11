@@ -507,29 +507,6 @@ public class SmatManager {
 
   }
 
-  public Double updImportoTotaleTorn(String codiceGara) throws GestoreException{
-    if (logger.isDebugEnabled()) logger.debug("updImportoTotaleTorn: inizio metodo");
-    String select = "select sum(coalesce(impapp,0)) from gare where codgar1=? and ngara <> ?";
-    try {
-      Double importoTotale = new Double(0);
-      Object importoTemp = sqlManager.getObject(select, new Object[] {codiceGara, codiceGara });
-      if (importoTemp != null) {
-        if (importoTemp instanceof Long) {
-          importoTotale = new Double(((Long) importoTemp));
-        } else if (importoTemp instanceof Double) {
-          importoTotale = new Double((Double) importoTemp);
-        }
-      }
-      importoTotale = new Double(importoTotale.doubleValue());
-      if (logger.isDebugEnabled()) logger.debug("updImportoTotaleTorn: fine metodo");
-      return importoTotale;
-    } catch (SQLException e) {
-      throw new GestoreException(
-          "Errore durante la lettura degli importi dei lotti di gara", null, e);
-    }
-
-
-  }
 
   public int verificaNumeroRdaLibero(String numeroRda) throws GestoreException{
 
@@ -1485,7 +1462,8 @@ public class SmatManager {
           "update garvarpre set dittao = ? where dittao = ?","aerilpre",
           "update aerilpre set dittao = ? where dittao = ?","garilanci",
           "update garilanci set dittao = ? where dittao = ?","ditgaq",
-          "update ditgaq set dittao = ? where dittao = ?","impr",
+          "update ditgaq set dittao = ? where dittao = ?","verifiche",
+          "update verifiche set codimp = ? where codimp = ?","impr",
           "update impr set codimp = ? where codimp = ?"};
     }
     for (int i = 0; (i + 1) < updateTables.length; i += 2) {

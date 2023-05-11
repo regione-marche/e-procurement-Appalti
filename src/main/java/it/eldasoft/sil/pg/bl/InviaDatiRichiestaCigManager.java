@@ -55,6 +55,7 @@ import javax.xml.rpc.ServiceException;
 
 import org.apache.axis.MessageContext;
 import org.apache.axis.transport.http.HTTPConstants;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.xmlbeans.XmlOptions;
 
@@ -991,10 +992,17 @@ public class InviaDatiRichiestaCigManager {
                 12).getValue();
 
             if(aqdurata!=null){
-              if(aqtempo != null && aqtempo.longValue()==1)
-                tempoUtile= aqdurata.intValue() * 30;
-              else
-                tempoUtile= aqdurata.intValue() * 365;
+                if(aqtempo != null) {
+              	  if(aqtempo.longValue()==1) {
+              		  tempoUtile= aqdurata.intValue() * 30;	  
+              	  }else if(aqtempo.longValue()==3) {
+              		  tempoUtile= aqdurata.intValue();	  
+              	  }else {
+              		  tempoUtile= aqdurata.intValue() * 365;
+              	  }
+                }else {
+              	  tempoUtile= aqdurata.intValue() * 365;            		
+                }
             }
           }else{
             tempoUtile = this.inviaVigilanzaManager.calcolaTempoUtile(codgar, genereString);
@@ -1459,7 +1467,7 @@ public class InviaDatiRichiestaCigManager {
    * @return int
    * @throws SQLException
    */
-  private int getNumeroLotti(String codgar) throws SQLException {
+  public int getNumeroLotti(String codgar) throws SQLException {
     String queryCount = "select ngara from gare where codgar1 = ? and (genere is null or genere != 3)";
     List count = sqlManager.getListVector(queryCount,
         new Object[] { codgar });
@@ -1473,7 +1481,7 @@ public class InviaDatiRichiestaCigManager {
    * @return ArrayList<String>
    * @throws SQLException
    */
-  private ArrayList<String> getControlloNOTGAR(String codgar) throws SQLException{
+  public ArrayList<String> getControlloNOTGAR(String codgar) throws SQLException{
     ArrayList<String> errors = new ArrayList<String>();
     String MessageError = CTR_LOTTI_OGGETTO;
     boolean isFirst = true;
@@ -1517,7 +1525,7 @@ public class InviaDatiRichiestaCigManager {
  * @return ArrayList<String>
  * @throws SQLException
  */
-  private ArrayList<String> controlloDatiTecnico(String codRUP, boolean controlloPIVA) throws SQLException {
+  public ArrayList<String> controlloDatiTecnico(String codRUP, boolean controlloPIVA) throws SQLException {
     ArrayList<String> errors = new ArrayList<String>();
     String selectDatiTecnico = "select nomtec,cftec, pivatec, naztei " +
             "from tecni where codtec = ?";
@@ -1562,7 +1570,7 @@ public class InviaDatiRichiestaCigManager {
    * @return ArrayList<String>
    * @throws SQLException
    */
-  private ArrayList<String> getControlloImportoGara(String codgar, String ngara, String genere) throws SQLException{
+  public ArrayList<String> getControlloImportoGara(String codgar, String ngara, String genere) throws SQLException{
     ArrayList<String> errors = new ArrayList<String>();
     String MessageError = CTR_LOTTI_IMPORTO;
     String selectGARE = "select codiga, "
@@ -1608,7 +1616,7 @@ public class InviaDatiRichiestaCigManager {
    * @return ArrayList<String>
    * @throws SQLException
    */
-  private ArrayList<String> getControlloDatiTornGare(String codgar, String ngara, String genere, String campo, String profilo) throws SQLException{
+  public ArrayList<String> getControlloDatiTornGare(String codgar, String ngara, String genere, String campo, String profilo) throws SQLException{
     ArrayList<String> errors = new ArrayList<String>();
     String MessageError = "";
     boolean campoVisibile = true;
@@ -2330,4 +2338,71 @@ public class InviaDatiRichiestaCigManager {
    }
    return res;
  }
+ 
+ /**
+  * Vengono effettuati i controlli sui campi codnuts e locint, ma solo se da profilo risultano visibili.
+  * Si verificando che siano presenti almeno uno dei due tra NUTS o ISTAT.
+  * Viene restituito un vettore,in quanto estendibile ad altri campi della sezione, con l'esito dei controlli ("OK" o "NOK") con indici:
+  * 0 CODNUTS
+  * 1 LOCINT
+  *
+  * @param codnuts
+  * @param locint
+  * @param genere
+  * @param profilo
+  * @return String[]
+  */
+ public String[] controlloNutsIstat(String codnuts, String locint, String genere, String profilo){
+   boolean campoVisibile=true;
+   boolean sezioneVisibile=true;
+   boolean visNuts=false;
+   boolean visIstat=false;
+   String res[]= new String[]{"OK","OK"};
+   if (!geneManager.getProfili().checkProtec(profilo, "COLS", "VIS","GARE.GARE.LOCINT"))
+     campoVisibile=false;
+
+   if("1".equals(genere) && (!geneManager.getProfili().checkProtec(profilo, "SEZ", "VIS","GARE.GARE-scheda.ALTRIDATI.LOC") || !geneManager.getProfili().checkProtec(profilo, "PAGE", "VIS","GARE.GARE-scheda.ALTRIDATI")))
+     sezioneVisibile=false;
+   else if("2".equals(genere) && (!geneManager.getProfili().checkProtec(profilo, "SEZ", "VIS","GARE.GARE-scheda.ALTRIDATI.LOC") || !geneManager.getProfili().checkProtec(profilo, "PAGE", "VIS","GARE.GARE-scheda.ALTRIDATI")))
+     sezioneVisibile=false;
+   else if("3".equals(genere) && (!geneManager.getProfili().checkProtec(profilo, "SEZ", "VIS","GARE.TORN-OFFUNICA-scheda.ALTRIDATI.LOC") || !geneManager.getProfili().checkProtec(profilo, "PAGE", "VIS","GARE.TORN-OFFUNICA-scheda.ALTRIDATI")))
+     sezioneVisibile=false;
+   if(campoVisibile && sezioneVisibile) {
+	   visIstat=true;  
+   }
+   campoVisibile=true;
+   if (!geneManager.getProfili().checkProtec(profilo, "COLS", "VIS","GARE.TORN.CODNUTS"))
+     campoVisibile=false;
+   if(campoVisibile){
+	   visNuts=true;
+   }
+   
+   codnuts = StringUtils.stripToEmpty(codnuts);
+   locint = StringUtils.stripToEmpty(locint);
+   
+   if(visNuts && visIstat) {
+	   if("".equals(codnuts) && "".equals(locint)) {
+	     res[0]="NOK";
+	     res[1]="NOK";
+	   }
+   }
+   
+   if(visNuts && !visIstat) {
+	   if("".equals(codnuts)) {
+	     res[0]="NOK";
+	     res[1]="OK";
+	   }
+   }
+   
+   if(!visNuts && visIstat) {
+	   if("".equals(locint)) {
+	     res[0]="OK";
+	     res[1]="NOK";
+	   }
+   }
+   
+   return res;
+   
+ }
+ 
 }

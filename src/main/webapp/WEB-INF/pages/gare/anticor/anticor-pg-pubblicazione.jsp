@@ -152,7 +152,7 @@
 		var urlsito = escape(getValue("ANTICOR_URLSITO"));
 		var isIntegrazionePortale = '${fn:contains(listaOpzioniDisponibili, "OP114#")}';
 		var href = "href=gare/anticor/popup-esportaDati.jsp&id=" + id + "&anno=" + annorif + "&urlsito=" + urlsito + "&isIntegrazionePortale=" + isIntegrazionePortale + "&numeroPopUp=1";
-		openPopUpCustom(href, "esportaDati", "650", "250", "no", "no");
+		openPopUpCustom(href, "esportaDati", "850", "300", "no", "no");
 	}
 	
 	function pubblicaXmlPortale(chiave){

@@ -52,6 +52,19 @@
 							</gene:redefineInsert>
 						</c:when>
 						<c:otherwise>
+							<c:set var="whereNobustamm" value="codgar='${datiRiga.GARE_CODGAR1  }'"/>
+							<c:set var="nobustamm" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "nobustamm","torn", whereNobustamm)}' />
+							<c:choose>
+								<c:when test='${ nobustamm ne "1"}'>
+									<c:set var="msg" value="documentazione amministrativa"/>
+									<c:set var="msgCorto" value="doc.amministrativa"/>
+								</c:when>
+								<c:otherwise>
+									<c:set var="msg" value="offerte"/>
+									<c:set var="msgCorto" value="offerte"/>
+								</c:otherwise>
+							</c:choose>
+							
 							<gene:redefineInsert name="schedaNuovo" />
 							<gene:redefineInsert name="schedaModifica" />
 							<gene:redefineInsert name="addToAzioni">
@@ -61,7 +74,7 @@
 										<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtModificaFasiRicezione) and bloccoAggiudicazione ne 1 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.AttivaAperturaDoc")}'>
 											<tr>
 												<td class="vocemenulaterale">
-													<a href="javascript:confermaChiusuraRicezione('ATTIVA');" title='Attiva apertura documentazione amministrativa' tabindex="1504">Attiva apertura doc.amministrativa</a>
+													<a href="javascript:confermaChiusuraRicezione('ATTIVA');" title='Attiva apertura ${msg}' tabindex="1504">Attiva apertura ${msgCorto}</a>
 												</td>
 											</tr>
 										</c:if>
@@ -71,14 +84,14 @@
 										<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtModificaFasiRicezione) and bloccoAggiudicazione ne 1 and isProceduraTelematica ne "true" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.AttivaAperturaDoc")}'>
 											<tr>
 												<td class="vocemenulaterale">
-													<a href="javascript:confermaChiusuraRicezione('DISATTIVA');" title='Disattiva apertura documentazione amministrativa' tabindex="1504">Disattiva apertura doc.amministrativa</a>
+													<a href="javascript:confermaChiusuraRicezione('DISATTIVA');" title='Disattiva apertura ${msg}' tabindex="1504">Disattiva apertura ${msgCorto}</a>
 												</td>
 											</tr>
 										</c:if>
 									</c:otherwise>
 								</c:choose>
 									<c:set var="listaOpzioniUtenteAbilitate" value="${fn:join(profiloUtente.funzioniUtenteAbilitate,'#')}#" />
-									<c:if test="${isProceduraTelematica eq 'true' and fn:contains(listaOpzioniUtenteAbilitate, 'ou89#') and datiRiga.GARE_FASGAR >=1 and datiRiga.GARE_FASGAR < 5}">
+									<c:if test="${autorizzatoModifiche ne 2 and isProceduraTelematica eq 'true' and (fn:contains(listaOpzioniUtenteAbilitate, 'ou89#') or fn:contains(listaOpzioniUtenteAbilitate, 'ou233#')) and datiRiga.GARE_FASGAR >=1 and datiRiga.GARE_FASGAR < 5}">
 										<tr>
 											<td class="vocemenulaterale">
 												<a href="javascript:annullaRicezionePlichiDomande(1,'${nGara }',${datiRiga.TORN_ITERGA},'${datiRiga.GARE_CODGAR1 }','${datiRiga.V_GARE_GENERE_GENERE }');" title='Annulla ricezione offerte' tabindex="1505">
@@ -119,7 +132,7 @@
 						<gene:campoScheda title="Numero ditte che hanno presentato domanda di partecipazione" campo="numeroDittePartecipanti" campoFittizio="true" definizione="N7" value="${numeroDittePartecipanti}" visibile="${not isProceduraAggiudicazioneAperta and not isProceduraNegoziata}" modificabile="false" />
 						<gene:campoScheda title="Numero ditte invitate" campo="numeroDitteInvitate" campoFittizio="true" definizione="N7" value="${numeroDitteInvitate}" visibile="${not isProceduraAggiudicazioneAperta}" modificabile="false" />
 						<gene:campoScheda title="Numero ditte che hanno presentato offerta" campo="numeroDitteConOfferta" campoFittizio="true" definizione="N7" value="${numeroDitteConOfferta}" modificabile="false" />
-						
+						<input type="hidden" name="entitaPrincipaleModificabile" id="entitaPrincipaleModificabile" value="${sessionScope.entitaPrincipaleModificabile}" />
 				
 					</gene:gruppoCampi>
 

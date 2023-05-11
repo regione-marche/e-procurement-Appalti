@@ -22,8 +22,10 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 
 import javax.servlet.ServletException;
@@ -31,13 +33,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspException;
 import javax.sql.DataSource;
+
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporter;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.export.SimpleExporterInput;
+import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
+import net.sf.jasperreports.export.SimplePdfExporterConfiguration;
+import net.sf.jasperreports.export.type.PdfaConformanceEnum;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
 import org.apache.log4j.Logger;
@@ -136,7 +146,7 @@ public class GeneraAllegaPdf extends Action {
 									+ CostantiGeneraliJReports.JR_REPORTS_SUBREPORTS);
 
 					// Parametri
-					HashMap jrParameters = new HashMap();
+					HashMap<String, Object> jrParameters = new HashMap<String, Object>();
 					jrParameters.put("SUBREPORT_DIR", jReportsSubReportFolder);
 					jrParameters.put("IMAGES_DIR", jReportsImageFolder);
 					jrParameters.put("CUSTOM_SUBREPORT_DIR", jReportsCustomSubReportFolder);
@@ -154,9 +164,25 @@ public class GeneraAllegaPdf extends Action {
 					// Output stream del risultato
 					ByteArrayOutputStream baosJrReport = new ByteArrayOutputStream();
 
-					JRExporter jrExporter = new JRPdfExporter();
-					jrExporter.setParameter(JRExporterParameter.JASPER_PRINT, jrPrint);
-					jrExporter.setParameter(JRExporterParameter.OUTPUT_STREAM, baosJrReport);
+					JRPdfExporter jrExporter = new JRPdfExporter();
+					
+					
+					JasperReportsContext jasperReportsContext = DefaultJasperReportsContext.getInstance();
+		            jasperReportsContext.setProperty("net.sf.jasperreports.default.font.name", "Arial");
+		            jasperReportsContext.setProperty("net.sf.jasperreports.default.pdf.font.name", "Arial");
+		            jasperReportsContext.setProperty("net.sf.jasperreports.default.pdf.embedded", "true");
+		            SimplePdfExporterConfiguration configuration = new SimplePdfExporterConfiguration();
+		            configuration.setPdfaConformance(PdfaConformanceEnum.PDFA_1A);
+//		            String pathToICC = ctx.getRealPath(PDF_A_ICC_PATH);
+		            configuration.setIccProfilePath(request.getSession().getServletContext().getRealPath("/WEB-INF/jrReport/sRGB_v4_ICC_preference.icc"));
+		            jrExporter.setConfiguration(configuration);
+					
+//					jrExporter.setParameter(JRExporterParameter.JASPER_PRINT, jrPrint);
+//					jrExporter.setParameter(JRExporterParameter.OUTPUT_STREAM, baosJrReport);
+					List<JasperPrint> jasperPrintList = new ArrayList<JasperPrint>();
+		            jasperPrintList.add(jrPrint);
+		            jrExporter.setExporterInput(SimpleExporterInput.getInstance(jasperPrintList));
+		            jrExporter.setExporterOutput(new SimpleOutputStreamExporterOutput(baosJrReport));
 					jrExporter.exportReport();
 					inputStreamJrReport.close();
 					baosJrReport.close();

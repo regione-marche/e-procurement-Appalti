@@ -47,7 +47,7 @@ public class ControlliValiditaFunzAnnullamentoFunction extends AbstractFunzioneT
       String select = null;
 
       OpzioniUtente opzioniUtente = new OpzioniUtente( profiloUtente.getFunzioniUtenteAbilitate());
-      if(!opzioniUtente.isOpzionePresente(CostantiGeneraliAccount.OPZIONI_AMMINISTRAZIONE_PARAM_SISTEMA)){
+      if(!opzioniUtente.isOpzionePresente(CostantiGeneraliAccount.OPZIONI_AMMINISTRAZIONE_PARAM_SISTEMA) && !opzioniUtente.isOpzionePresente("ou233")){
         controlliSuperati = false;
       }  else{
 
@@ -70,8 +70,12 @@ public class ControlliValiditaFunzAnnullamentoFunction extends AbstractFunzioneT
         if("2".equals(tipo))
           select="select count(*) from w_invcom where comkey2=? and comtipo = 'FS10' and comstato in (6,7)";
         Long conteggio = (Long) sqlManager.getObject(select, new Object[]{ngara});
-        if(conteggio == null || new Long(0).equals(conteggio))
-          esito = "NO-BUSTE";
+        if(conteggio == null || new Long(0).equals(conteggio)) {
+          //Si deve controllare se vi sono ditte con fasgar=1
+          conteggio = (Long) sqlManager.getObject("select count(*) from ditg where ngara5=? and fasgar=1", new Object[]{ngara});
+          if(conteggio == null || new Long(0).equals(conteggio))
+            esito = "NO-BUSTE";
+        }
         else{
           if("1".equals(tipo)){
 

@@ -87,7 +87,8 @@
 								
 			<tr>
 				<td ${stileDati}>
-  				<gene:formLista entita="V_CATAPROD" where='${where}' pagesize="200" tableclass="datilista" sortColumn="6;7;9" gestisciProtezioni="true" >
+  				<gene:formLista entita="V_CATAPROD" where='${where}' pagesize="200" tableclass="datilista" sortColumn="6;7;9" gestisciProtezioni="true" 
+  						plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreSearchProdottiPopUp">
  					<gene:redefineInsert name="listaNuovo" />
 														
 					<gene:campoLista title="Opzioni" width="50">
@@ -146,6 +147,13 @@
 		</table>
   </gene:redefineInsert>
 	<gene:javaScript>
+		document.forms[0].descr.value = '${param.descr}';
+		document.forms[0].cod.value = '${param.cod}';
+		document.forms[0].nome.value = '${param.nome}';
+		document.forms[0].descagg.value = '${param.descagg}';
+		document.forms[0].stato.value = '${param.stato}';
+		document.forms[0].categoria.value = '${param.categoria}';
+	
 		$('#filtrodescr').val('${param.descr}');
 		$('#filtrocod').val('${param.cod}');
 		$('#filtronome').val('${param.nome}');
@@ -153,102 +161,27 @@
 		$('#filtrostato').val('${param.stato}');
 		$('#filtrocategoria').val('${param.categoria}');
 					
-	    $('#filtrodescr,#filtrocod, #filtronome, #filtrodescagg,#filtrocategoria,').keyup(function() {
-	    	delay(function(){
-	    		searchProdotti();
-	    	}, 600);
+	    $('#filtrodescr, #filtrocod, #filtronome, #filtrodescagg, #filtrocategoria').keyup(function() {
+		    	delay(function(){
+		    		fillFilters();
+		    		listaVaiAPagina(0);
+		    	}, 600);
 	    });
 	    
 	    $('#filtrostato').change(function() {
 			delay(function(){
-				searchProdotti();
+		    		fillFilters();
+		    		listaVaiAPagina(0);
 				}, 600);
 		});
-	    	    	    
-		function searchProdotti() {
-					
-			var filtrodescr = $("#filtrodescr").val();
-			var filtrocod = $("#filtrocod").val();
-			var filtronome = $("#filtronome").val();
-			var filtrodescagg = $("#filtrodescagg").val();
-			var filtrocategoria = $("#filtrocategoria").val();
-			var filtrostato = $("#filtrostato").val();
-			
-			document.forms[0].descr.value=filtrodescr;
-			document.forms[0].cod.value=filtrocod;
-			document.forms[0].nome.value=filtronome;
-			document.forms[0].descagg.value=filtrodescagg;
-			document.forms[0].stato.value=filtrostato;
-			document.forms[0].categoria.value=filtrocategoria;
-					
-			var addwhere = "";
-			var parameter = "";
-									
-			if (filtrodescr != "") {
-				addwhere += "UPPER(V_CATAPROD.DESCR) like ?";
-				parameter += "T:%" + filtrodescr.toUpperCase() + "%";
-				
-			}
-			
-			if (filtrocod != "") {
-				if (addwhere != "") {
-					addwhere += " AND ";
-				}
-				addwhere += "UPPER(V_CATAPROD.COD) like ?";
-				if (parameter != "") {
-					parameter += ";";
-				}
-				parameter += "T:%" + filtrocod.toUpperCase() + "%";
-			}
-			
-			if (filtronome != "") {
-				if (addwhere != "") {
-					addwhere += " AND ";
-				}
-				addwhere += "UPPER(V_CATAPROD.NOME) like ?";
-				if (parameter != "") {
-					parameter += ";";
-				}
-				parameter += "T:%" + filtronome.toUpperCase() + "%";
-			}
-			
-			if (filtrodescagg != "") {
-				if (addwhere != "") {
-					addwhere += " AND ";
-				}
-				addwhere += "UPPER(V_CATAPROD.DESCAGG) like ?";
-				if (parameter != "") {
-					parameter += ";";
-				}
-				parameter += "T:%" + filtrodescagg.toUpperCase() + "%";
-			}
-			
-			if (filtrostato != "") {
-				if (addwhere != "") {
-					addwhere += " AND ";
-				}
-				addwhere += "V_CATAPROD.STATO = ?";
-				if (parameter != "") {
-					parameter += ";";
-				}
-				parameter += "N:" + filtrostato;
-			}
-			
-			if (filtrocategoria != "") {
-				if (addwhere != "") {
-					addwhere += " AND ";
-				}
-				addwhere += "(UPPER(V_CATAPROD.CAISIM) like ? or UPPER(V_CATAPROD.DESCAT) like ?)";
-				if (parameter != "") {
-					parameter += ";";
-				}
-				parameter += "T:%" + filtrocategoria.toUpperCase() + "%;T:%"  + filtrocategoria.toUpperCase() + "%" ;
-			}
-			document.forms[0].trovaAddWhere.value = addwhere;
-			document.forms[0].trovaParameter.value = parameter;
-			
-			bloccaRichiesteServer();
-			listaVaiAPagina(0);
+		
+		function fillFilters() {
+			document.forms[0].descr.value = $("#filtrodescr").val();
+			document.forms[0].cod.value = $("#filtrocod").val();
+			document.forms[0].nome.value = $("#filtronome").val();
+			document.forms[0].descagg.value = $("#filtrodescagg").val();
+			document.forms[0].stato.value = $("#filtrostato").val();
+			document.forms[0].categoria.value = $("#filtrocategoria").val();
 		}
 	
 		var delay = (function(){

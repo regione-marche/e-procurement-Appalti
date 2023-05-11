@@ -126,7 +126,7 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 		"searching": false,
 		"scrollX": false,
 		"scrollY": false,
-		//"scrollCollapse": true,
+		"scrollCollapse": true,
 		
 		"columnDefs": [
 			{
@@ -307,6 +307,9 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 	    else
 	    	coeffi=coeffi.toString().replace(".",",");
 	    var punteg= d.punteg;
+		var note= d.note;
+		if(note==null)
+	    	note = "";
 	    if(punteg==null)
 	    	punteg = "";
 	    else
@@ -327,7 +330,7 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 		var valdat = d.valdat;
 		var valnum = d.valnum;
 		var descValCommissione;
-		if(modpunti == 1 && maxpunCridef>0 && d.dataCommissione){
+		if((modpunti == 1 || modpunti == 3) && maxpunCridef>0 && d.dataCommissione){
 			descValCommissione = getValCommissione(d,assegnazioneCoeffAbilitataCommissione);
 		}
 		var numdeci = parseInt(d.numdeci);
@@ -345,14 +348,29 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 		} else {
 			valnum="";
 		}
+		var formula = d.formula;
+		var esponente = d.esponente;
+		if(esponente==null)
+	    	esponente = "";
+	    else
+	    	esponente=esponente.toString().replace(".",",");
+		
 	    var tabella= '<table class="schedaDettaglio" id="coefficiente"">';
-		if(formato == 3 || formato == 4){
-			if(valstg == null)
+		if(valstg == null)
 				valstg="";
+		if(formato == 3){		
 			tabella += '<tr>'+
 				        '<td class= "intestazione">Valore offerto</td>'+
 				        '<td class= "dato" colspan="3">' + valstg + '</td>'+
 				    '</tr>';
+		}
+		if(formato == 4){
+			tabella += '<tr><td class= "intestazione">Valore offerto</td>';
+			if(valstg!=""){
+				tabella +='<td class= "dato" colspan="2" style="border-style: none;">'
+				tabella += '<textarea title="Valore offerto" type="text" cols="80" rows="3" value="" maxlength="2000" style="border-style: none;" disabled="disabled">'+ valstg +'</textarea></td>';
+			}
+			tabella += '</tr>';
 		}
 		if(formato == 1){
 			if(valdat == null)
@@ -365,7 +383,7 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 		if(formato == 2 || formato == 5 || formato == 6 || formato == 50 || formato == 51 || formato == 52){
 			tabella += '<tr>'+
 				        '<td class= "intestazione">Valore offerto</td>'+
-				        '<td class= "dato" colspan="3">' + valnum + '</td>'+
+				        '<td class= "dato" colspan="3"><span>' + valnum + '</span></td>'+
 				    '</tr>';
 		}
 	    tabella += '<tr>'+
@@ -378,7 +396,13 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 						'<td class= "dato" colspan="3">' + descFormula + '</td>'+
 					'</tr>';
 		}
-		if(modpunti == 1 && maxpunCridef>0 && d.dataCommissione){
+		if(formula==11 || formula==13 || formula==14 || formula==15){
+			tabella += '<tr>'+
+						'<td class= "intestazione">Esponente</td>'+
+						'<td class= "dato" colspan="3">' + esponente + '</td>'+
+					'</tr>';
+		}
+		if((modpunti == 1 || modpunti == 3) && maxpunCridef>0 && d.dataCommissione){
 		tabella += '<tr>'+
 						'<td class= "intestazione" style="vertical-align: middle;">Valutazione commissione</td>'+
 						'<td class= "dato" id="valCommissione" colspan="3">'+descValCommissione+'</td>'+
@@ -388,17 +412,26 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 				        '<td class= "intestazione">Coefficiente</td>'+
 				        '<td class= "datoCoefficente"  width="40%">' + coeffi + '</td>';
 	    tabella +=      '<td class= "linkCoefficente" width="20%">';
-	    if(!nascondiPulsanteCoeffiTotale && assegnazioneCoeffAbilitata && modpunti==1 && maxpunCridef>0){
+	    if(!nascondiPulsanteCoeffiTotale && assegnazioneCoeffAbilitata && (modpunti == 1 || modpunti == 3) && maxpunCridef>0){
 	    	tabella += '<input class="bottone-azione" type="button" value="Assegna coefficiente" id="btnCoefficente">';
 	    }
 	    tabella += '</td>' +
-	    '<td class= "colonnaDatiNascosti" width="20%"><span id="spanidCridef">' + d.idCridef + '</span><span id="spannecvan">' + d.necvan + '</span><span id="spanmodmanu">' + d.modmanu +  '</span><span id="spannorpar">' + d.norpar + '</span><span id="spannorpar1">' + d.norpar1 + '</span><span id="spanpunteg">' + punteg + '</span><span id="spanmaxpunCridef">' + d.maxpunCridef + '</span><span id="spanidCrival">' + d.idCrival + '</span><span id="spancoeffi">' + coeffi + '</span></td>'
+	    '<td class= "colonnaDatiNascosti" width="20%"><span id="spanidCridef">' + d.idCridef + '</span><span id="spannecvan">' + d.necvan + '</span><span id="spanmodmanu">' + d.modmanu +  '</span><span id="spannorpar">' + d.norpar + '</span><span id="spannorpar1">' + d.norpar1 + '</span><span id="spanpunteg">' + punteg + '</span><span id="spanmaxpunCridef">' + d.maxpunCridef + '</span><span id="spanidCrival">' + d.idCrival + '</span><span id="spancoeffi">' + coeffi + '</span><span id="spannote">' + note + '</span></td>'
 				    '</tr>' ;
 	    tabella += '<tr>'+
 				        '<td class= "intestazione" style="vertical-align: middle;">Punteggio</td>'+
 				        '<td class= "dato" colspan="3">' + punteg + '</td>'+
 				    '</tr>';
-	    tabella += '</table>';
+		if((modpunti == 1 || modpunti == 3) && maxpunCridef>0){
+			tabella += '<tr>'+
+							'<td class= "intestazione" style="vertical-align: middle;">Note</td>';
+							if(note!=""){
+								tabella +='<td class= "dato" colspan="2" style="border-style: none;">'
+								tabella += '<textarea title="Note" type="text" cols="80" rows="3" value="" maxlength="2000" style="border-style: none;" disabled="disabled">'+ note +'</textarea></td>';
+							}
+			tabella += '</tr>'
+		}
+		tabella += '</table>';
 	    
 	    return tabella;
 	} 
@@ -409,10 +442,13 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 		var tabella;
 		
 		tabella= '<table class="schedaDettaglio" style="border-style: none;">';
-		tabella+='<tr style="border-style: none;"><td style="width:80%;border-style: none;">'
+		tabella+='<tr style="border-style: none;"><td style="border-style: none;">'
 		for(i=0;i<data.length;i++){
 			var dataRow = data[i];
 			var coeffi = dataRow.coeffi;
+			var note = dataRow.note;
+			if(note==null)
+	    	note = "";
 			if(coeffi==null){
 				coeffi = "";
 			}else{
@@ -421,8 +457,13 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 			tabella += '<table class="schedaDettaglio" style="border-style: none;">';
 			tabella += '<tr id="riga_componente_comm_'+i+'">'+
 				'<td class= "nome-commissario" style="width: 60%;border-style: none;" >' + dataRow.nomfof + '</td>'+
-				'<td class= "dato" style="border-style: none;">Coefficiente:   <span id="coeffi">' + coeffi+ '</span><span id="idcrivalcom" style="display:none">' + dataRow.idcrivalcom+ '</span><span id="codfof" style="display:none">' + dataRow.codfof+ '</span></td>'+
-			'</tr>';
+				'<td class= "dato" style="border-style: none;">Coefficiente:   <span id="coeffi">' + coeffi+ '</span><span id="idcrivalcom" style="display:none">' + dataRow.idcrivalcom+ '</span><span id="codfof" style="display:none">' + dataRow.codfof+ '</span></td></tr>'
+				if (note != ""){
+					tabella +='<tr id="riga_componente_comm_note_'+i+'"><td class= "dato" style="border-style: none;" colspan="2" >Note:   <br>';
+					tabella += '<textarea title="Note" id="note" type="text" cols="50" rows="3" value="" maxlength="2000" style="border-style: none;" disabled="disabled" >'+ note +'</textarea></td>';
+					tabella += '</td>'+
+					'</tr>';
+				}
 			tabella += "</table>"
 		}
 		tabella+='</td><td style="border-style: none;vertical-align: middle;">'
@@ -450,6 +491,7 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 	    var norpar1 =  td.find('#spannorpar1').text();
 	    var punteg = td.find('#spanpunteg').text();
 	    var maxpun = td.find('#spanmaxpunCridef').text();
+		var note = td.find('#spannote').text();
 		if(punteg!=null && punteg!="")
 			punteg=parseFloat(punteg.replace(',','.'));
 		
@@ -467,6 +509,9 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
     		_popolaTabellatoA1z07(coeffi);
     		$("#coeffImpostato").val(coeffi);
     	}
+		
+		$("#Inputnote").val(note);
+		$("#noteImpostato").val(note);
     	
     	$("#numeroCriterio").text(norpar);
     	if(norpar1!=null && norpar1!=0){
@@ -532,6 +577,16 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 			'<input type="hidden" name="nomfof_'+i+'" id="nomfof" value="'+ dataRow.nomfof +'">'+
 			'<input type="hidden" id="idcrivalcom_'+i+'" name="idcrivalcom_'+i+'" value=""/>'+
 			'</tr>';
+			
+			if(!data.profiloCommissione || dataRow.codfof == commissarioAttivo){
+				tabella += '<tr id="note_componente_commissione_'+i+'">';	
+				tabella += '<td colspan="1"> Note </td>';
+				tabella += '<td colspan="2" class="dato" id="tdNoteComm" style="vertical-align=middle">'
+				tabella += '<textarea id="InputnoteComm_'+i+'" name="noteCommissario_'+i+'" title="Note" type="text" cols="50" rows="4" value="" maxlength="2000" onchange="onchangeInputNote(this,i)"></textarea>'+
+						'</td>';
+						'</tr>';
+			}
+			
 		}	
 		tabella += '<input type="hidden" name="idcridef" id="idcridef" value=""><input type="hidden" name="idcrival" id="idcrival" value=""><input type="hidden" name="necvan" id="necvan" value=""><input name="coeffiTotale" type="hidden" id="coeffiTotale" value=""><input name="length" type="hidden" id="length" value="'+dataCommissione.length+'">';
 		tabella += '</tbody>';
@@ -572,11 +627,15 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 
 		for(var i=0;i<length;i++){
 			var rigaModale = modale.find('#componente_commissione_'+i);
+			var rigaModaleNote = modale.find('#note_componente_commissione_'+i);
 			coeffi = tabella.find("#riga_componente_comm_"+i).find("#coeffi").html();
+			coeffi=coeffi.replace(',','.');
+			note = tabella.find("#riga_componente_comm_note_"+i).find("#note").html();
 			idcrivalcom = tabella.find("#riga_componente_comm_"+i).find("#idcrivalcom").html();
 			var codfof = tabella.find("#riga_componente_comm_"+i).find("#codfof").html();
 			$(rigaModale).find("#InputcoeffComm_"+i).val(coeffi);
 			$(rigaModale).find("#idcrivalcom_"+i).val(idcrivalcom);
+			$(rigaModaleNote).find("#InputnoteComm_"+i).val(note);
 
 			if(profiloCommissione && !(codfof == commissarioAttivo)){
 				$(modale).find("#spanCoeffi_"+i).html(coeffi);
@@ -700,6 +759,22 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
     		}
     	}
     );
+	
+	    /*
+     * Alla modifica del campo del note si valorizza
+     * il campo nascosto adoperato per il salvataggio del valore delle note
+     */
+	$("#Inputnote").change(
+    	function() {
+    		if ($("#Inputnote").val() != "") {
+        		var note =$("#Inputnote").val();
+
+                $("#noteImpostato").val(note);
+    		}else{
+    			$("#noteImpostato").val("");
+    		}
+    	}
+    );
     
     /*
      * Alla modifica del campo della select contenente i valori per il coefficente, si 
@@ -763,7 +838,6 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 	}	
 
 	function onchangeInput(riga) {
-		
 			if ($(riga).val() != "") {
 				$(riga).val($(riga).val().replace(",","."));
 				var isValid = isCoefficenteValido($(riga).val());
@@ -778,6 +852,13 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 			}
 			$(riga).closest("td").find("#update").val("true");
 	}
+	
+	function onchangeInputNote(riga,i) {
+			var j=(riga.id).substring(((riga.id).indexOf('_'))+1);
+			var idcoeff= document.getElementById("InputcoeffComm_"+j);
+			//onchangeInput(idcoeff);
+			$(idcoeff).closest("td").find("#update").val("true");
+	}
 
 	function attivaCommissione(){
 		var continua = confirm("Confermi l'attivazione della funzione 'Assegna coefficiente' per la modifica diretta del coefficiente complessivo del criterio o subcriterio?");
@@ -787,8 +868,7 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 			_getDettaglio();
 		}
 	}
-
-
+	
 $(window).ready(function (){
 	//Caricamento dei dati dalla popup
 	gara = $("#gara").val();
@@ -821,7 +901,7 @@ $(window).ready(function (){
 	            	//Salvataggio dei dati
 	            	if ( $("#formCoefficente").validate().form()) {
 	            		var options = $("#mascheraSchedaCoefficente").dialog( "option" );
-	            		setCoefficente($("#coeffImpostato").val(),$("#punteggioVal").text(),options.idCridef,options.necvan);
+	            		setCoefficente($("#coeffImpostato").val(),$("#punteggioVal").text(),options.idCridef,options.necvan,$("#noteImpostato").val());
 	            	} 
 	            	
 	            },
@@ -878,25 +958,34 @@ $(window).ready(function (){
 	/*
      * Aggiornamento coefficente
      */
-	function setCoefficente(coeff, punteg, idCridef,necvan) {
+	function setCoefficente(coeff, punteg, idCridef,necvan,note) {
 		$.ajax({
-		  async: false,
-		  url: "pg/SetCoefficente.do?gara=" + gara + "&ditta=" + ditta + "&coeff=" + coeff + "&punteg=" + punteg + "&idCridef=" + idCridef + "&necvan=" + necvan + "&tipoDettaglio=" + tipoDettaglio,
-		  error: function(e){
-				 alert("Errore durante l'aggiornamento dei dati!");
+			type: "POST",
+			url: "pg/SetCoefficente.do",
+			data: {
+					gara: gara,
+					ditta: ditta,
+					coeff: coeff,
+					punteg: punteg,
+					idCridef: idCridef,
+					necvan: necvan,
+					tipoDettaglio: tipoDettaglio,
+					note: $("#Inputnote").val()
 			},
-		}).done(function() {
-			$("#mascheraSchedaCoefficente").dialog("close");
-			$("#tdCoeff").hide();
-			$("#tdSelectCoeff").hide();
-			$("#maxpunG1cridef").val("");
-			$("#coeffImpostato").val("");
-			$("#Inputcoeff").val("");
-			$('#selectA1z07').find('option').remove();
-			_getDettaglio();
-		});
+			success: function(data){
+				$("#mascheraSchedaCoefficente").dialog("close");
+				$("#tdCoeff").hide();
+				$("#tdSelectCoeff").hide();
+				$("#maxpunG1cridef").val("");
+				$("#coeffImpostato").val("");
+				$("#Inputcoeff").val("");
+				$("#noteImpostato").val("");
+				$("#Inputnote").val("");
+				$('#selectA1z07').find('option').remove();
+				_getDettaglio();
+			}
 		
-	}
+	})};
 	
 	$("#formCoefficenteCommissione").submit(function(e) {
 		

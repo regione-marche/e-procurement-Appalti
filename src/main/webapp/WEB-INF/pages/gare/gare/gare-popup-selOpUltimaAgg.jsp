@@ -85,6 +85,11 @@
 	</c:otherwise>
 </c:choose>
 
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, garaElenco, "SC", "20")}
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, garaElenco, "SC", "20")}
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, categoriaPrev, "SC", "30")}
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, classifica, "N", "")}
+
 <c:set var="where" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetFiltroSelOpUltimaAggiudicatariaFunction", pageContext)}' scope="request"/>
 
 <c:choose>

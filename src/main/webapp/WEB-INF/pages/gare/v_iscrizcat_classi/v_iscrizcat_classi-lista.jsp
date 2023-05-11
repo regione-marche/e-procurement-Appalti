@@ -12,9 +12,9 @@
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 
-<c:set var="codiceGara" value='${gene:getValCampo(key, "CODGAR5")}' />
-<c:set var="numeroGara" value='${gene:getValCampo(key, "NGARA5")}' />
-<c:set var="codiceDitta" value='${gene:getValCampo(key, "DITTAO")}' />
+<c:set var="codiceGara" value='${gene:getValCampo(key, "CODGAR")}' />
+<c:set var="numeroGara" value='${gene:getValCampo(key, "NGARA")}' />
+<c:set var="codiceDitta" value='${gene:getValCampo(key, "CODIMP")}' />
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 
 

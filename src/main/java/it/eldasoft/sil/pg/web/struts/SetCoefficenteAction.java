@@ -38,6 +38,7 @@ public class SetCoefficenteAction extends Action {
     String ngara = request.getParameter("gara");
     String ditta = request.getParameter("ditta");
     String tipoDettaglio = request.getParameter("tipoDettaglio");
+    String note = request.getParameter("note");
     Double coeff = null;
     if (request.getParameter("coeff") != null && !"".equals(request.getParameter("coeff"))) {
       coeff = new Double(request.getParameter("coeff"));
@@ -69,12 +70,12 @@ public class SetCoefficenteAction extends Action {
       Long id = (Long)sqlManager.getObject("select id from g1crival where ngara=? and dittao=? and necvan=? and idcridef=?",
           new Object[]{ngara, ditta, necvan, idCridef});
       if (id != null) {
-        this.sqlManager.update("update g1crival set coeffi = ?, punteg = ? where id = ?", new Object[] { coeff, punteg, id });
+        this.sqlManager.update("update g1crival set coeffi = ?, punteg = ?, note = ? where id = ?", new Object[] { coeff, punteg, note, id });
       } else {
         int idInt = this.genChiaviManager.getNextId("G1CRIVAL");
         id = new Long(idInt);
-        this.sqlManager.update("insert into G1CRIVAL(id, ngara, dittao, necvan, idcridef, coeffi, punteg) values(?,?,?,?,?,?,?)",
-            new Object[] { id, ngara, ditta, necvan, idCridef, coeff, punteg });
+        this.sqlManager.update("insert into G1CRIVAL(id, ngara, dittao, necvan, idcridef, coeffi, punteg, note) values(?,?,?,?,?,?,?,?)",
+            new Object[] { id, ngara, ditta, necvan, idCridef, coeff, punteg, note});
       }
       
       descrEvento += " (num.criterio: "+necvan+" - id.g1crival: "+id+")";

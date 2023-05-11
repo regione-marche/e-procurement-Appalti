@@ -32,15 +32,6 @@
 </c:choose>
 
 <c:choose>
-	<c:when test='${not empty param.codiceGara}'>
-		<c:set var="codiceGara" value="${param.codiceGara}" />
-	</c:when>
-	<c:otherwise>
-		<c:set var="codiceGara" value="${codiceGara}" />
-	</c:otherwise>
-</c:choose>
-
-<c:choose>
 	<c:when test='${not empty param.garaLottiOffDist}'>
 		<c:set var="locGaraLottiOffDist" value="${param.garaLottiOffDist}" />
 	</c:when>
@@ -58,8 +49,69 @@
 	</c:otherwise>
 </c:choose>
 
+<c:set var="isRichiestaCigGara" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteRichiestaCigGaraFunction",  pageContext, "GARA", locCodgar )}'/>
+
+<c:set var="esistonoLotti" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsistonoLottiFunction", pageContext, locCodgar)}'/>
+
+<c:choose>
+<c:when test='${esistonoLotti && (isRichiestaCigGara ne "SI") && empty param.doubleCheck && empty RISULTATO}'>
+<table style="width:100%;">
+	<tr>
+		<td>
+			<div class="contenitore-popup">
+
+						<table class="dettaglio-notab">
+							<tr>
+						    	<td colspan="2">
+										<br>
+						    			Mediante questa funzione è possibile <b>importare</b> la lista dei lotti della gara.
+										<br>
+										<br><b>ATTENZIONE: confermando l'operazione, i lotti attualmente definiti per la gara, con i relativi dati di dettaglio (criteri di valutazione, lista lavorazioni, documenti allegati ...), verranno eliminati.</b>
+										<br><br>Confermi l'operazione?
+									  	<br>&nbsp;
+									  	<br>&nbsp;
+						      	</td>
+					  	  	</tr>
+							
+					  	<tr>
+						    <td class="comandi-dettaglio" colspan="2">
+							    	<input type="button" class="bottone-azione" value="Conferma" title="Conferma" onclick="javascript:conferma();">&nbsp;
+									<input type="button" class="bottone-azione" value="Annulla" title="Annulla" onclick="javascript:annulla();">&nbsp;&nbsp;
+									<input type="hidden" name="codgar" id="codgar" value="${locCodgar}"/>
+					  	  </td>
+						  </tr>
+						</table>
+						<input type="hidden" name="garaLottiOffDist" id="garaLottiOffDist" value="${locGaraLottiOffDist}" />
+						<input type="hidden" name="isCodificaAutomatica" id="isCodificaAutomatica" value="${locIsCodificaAutomatica}" />
+						
+			</div>
+		</td>
+	</tr>
+</table>
+<script type="text/javascript">
+<!--
+	function initPagina(){
+		checkAttivaBloccoPaginaPopup();
+			document.getElementById("titolomaschera").innerHTML = "Importazione dei lotti della gara ${locCodgar}";
+	}
+
+	function conferma() {
+		var href;
+		href = "codgar="+"${locCodgar}";
+		href += "&isCodificaAutomatica=" + "${locIsCodificaAutomatica}";
+		href += "&garaLottiOffDist=" + "${locGaraLottiOffDist}";
+		href += "&doubleCheck=OK";
+		document.location.href = "${pageContext.request.contextPath}/pg/InitImportLottiGara.do?" + href;	
+	}
 
 
+	function annulla(){
+		window.close();
+	}
+-->
+</script>
+</c:when>
+<c:otherwise>
 <table style="width:100%;">
 	<tr>
 		<td>
@@ -69,27 +121,45 @@
 				<c:when test='${empty RISULTATO or RISULTATO eq "KO"}'>
 					<form method="post" enctype="multipart/form-data" action="${contextPath}/pg/EseguiImportLottiGara.do" name="importLottiGara" >
 						<table class="dettaglio-notab">
-					    <tr>
-					    	<td colspan="2">
-					    		<p>
-					    			Mediante questa funzione è possibile <b>importare</b> la lista dei lotti della gara.
-									  <br>&nbsp;
-									  <br>&nbsp;
-									</p>
-								</td>
-							</tr>
-							<tr>
-								<td class="etichetta-dato">File Excel da importare (*)</td>
-								<td class="valore-dato"><input type="file" name="selezioneFile" maxlength="255" size="55" onkeydown="return bloccaCaratteriDaTastiera(event);"></td>
-							</tr>
-							<tr>
-				    		<td colspan="2">
-								  <br>&nbsp;
-								  <br><b>ATTENZIONE: durante l'operazione di import verranno eliminati i lotti esistenti della gara.</b>
-							  	<br>&nbsp;
-							  	<br>&nbsp;
-				      	</td>
-			  	  	</tr>
+						<c:choose>
+						<c:when test='${isRichiestaCigGara ne "SI"}'>
+						    <tr>
+							    	<td colspan="2">
+							    		<p>
+							    			Mediante questa funzione è possibile <b>importare</b> la lista dei lotti della gara.
+											  <br><br>Selezionare il file da importare.
+											  <br>&nbsp;
+											  <br>&nbsp;
+											</p>
+										</td>
+									</tr>
+									<tr>
+										<td class="etichetta-dato">File Excel da importare (*)</td>
+										<td class="valore-dato"><input type="file" name="selezioneFile" maxlength="255" size="55" onkeydown="return bloccaCaratteriDaTastiera(event);"></td>
+									</tr>
+									<tr>
+						    		<td colspan="2">
+								 	    <br>&nbsp;
+										<c:if test='${esistonoLotti }'>
+											<br><b>ATTENZIONE: durante l'operazione di import verranno eliminati i lotti esistenti della gara.</b>
+										  	<br>&nbsp;
+									     </c:if>
+									  	<br>&nbsp;
+							      	</td>
+							  	  	</tr>
+						 </c:when>
+						<c:otherwise>
+						 	<c:set var="msgSimog" value="Non è possibile procedere con l'importazione dei lotti perchè è stata già presentata la richiesta CIG a SIMOG per la gara" />
+									<tr>
+						    		<td colspan="2">
+										  <br>&nbsp;
+										  <br>${msgSimog}
+									  	<br>&nbsp;
+									  	<br>&nbsp;
+						      	</td>
+					  	  	</tr>
+     					</c:otherwise>
+						</c:choose>
 
 						<c:if test='${RISULTATO eq "KO"}'>
 							<% // Visualizzazione della lista degli errori %>
@@ -116,10 +186,11 @@
 							
 					  	<tr>
 						    <td class="comandi-dettaglio" colspan="2">
-									<input type="button" class="bottone-azione" value="Importa" title="Importa" onclick="javascript:importa();">&nbsp;
+							    	<c:if test='${isRichiestaCigGara ne "SI"}'>
+							    		<input type="button" class="bottone-azione" value="Importa" title="Importa" onclick="javascript:importa();">&nbsp;
+							    	</c:if>
 									<input type="button" class="bottone-azione" value="Annulla" title="Annulla" onclick="javascript:annulla();">&nbsp;&nbsp;
 									<input type="hidden" name="codgar" id="codgar" value="${locCodgar}"/>
-									<input type="hidden" name="codiceGara" id="codiceGara" value="${codiceGara}"/>
 					  	  </td>
 						  </tr>
 						</table>
@@ -197,7 +268,7 @@
 		if(document.importLottiGara.selezioneFile) {
 			var nomeCompletoFile = "" + document.importLottiGara.selezioneFile.value;
 			if(nomeCompletoFile != ""){
-				if(nomeCompletoFile.substr(nomeCompletoFile.lastIndexOf('.')+1).toUpperCase() == "XLS") {
+				if(nomeCompletoFile.substr(nomeCompletoFile.lastIndexOf('.')+1).toUpperCase() == "XLS" || nomeCompletoFile.substr(nomeCompletoFile.lastIndexOf('.')+1).toUpperCase() == "XLSX"){
 					bloccaRichiesteServer();
 					setTimeout("document.importLottiGara.submit()", 150);
 				} else {
@@ -230,3 +301,5 @@
 
 -->
 </script>
+	</c:otherwise>
+</c:choose>

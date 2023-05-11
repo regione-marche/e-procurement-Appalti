@@ -5,6 +5,7 @@ import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
 
 import java.io.PrintWriter;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -45,11 +46,19 @@ public class ControlloProtocollazioneDocBandoAction extends Action {
       String ngara = request.getParameter("ngara");
       String codgar = request.getParameter("codgar");
       String genereGara = request.getParameter("genereGara");
+      
+      List<Object> parameters = new ArrayList<Object>();
       String select="select IDPRG, IDDOCDG from DOCUMGARA where CODGAR=? ";
-      if( genereGara== null || "2".equals(genereGara))
-        select+=" and NGARA = '"+ ngara + "'";
+      parameters.add(codgar);
+     
+      if( genereGara== null || "2".equals(genereGara)) {
+        select+=" and NGARA = ?";
+        parameters.add(ngara);
+      }
+      
       select+=" and GRUPPO = ? order by NUMORD";
-      List<?> datiDoc=this.sqlManager.getListVector(select, new Object[]{codgar,new Long(1)});
+      parameters.add(new Long(1));
+      List<?> datiDoc=this.sqlManager.getListVector(select, parameters.toArray());
 
       if(datiDoc!=null && datiDoc.size()>0){
         String idprg = null;

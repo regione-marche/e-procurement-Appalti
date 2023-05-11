@@ -58,6 +58,12 @@ public class AggiudicazioneManager {
   private static final int      DLgs_56_2017     = 2;
   private static final int      DL_32_2019       = 3;
 
+  /**
+   * variabile che indica che nel caso di qform ci sono ditte con ribasso nullo per cui
+   * non si può effettuare il calcolo soglia, mi si deve effettuare il calcolo graduatoria
+   */
+  private String calcoloGradQform=null;
+
     /** Logger */
 	static Logger logger = Logger.getLogger(AggiudicazioneManager.class);
 
@@ -71,6 +77,8 @@ public class AggiudicazioneManager {
 	private ControlliOepvManager controlliOepvManager;
 
     private PgManagerEst1 pgManagerEst1;
+
+
 
 	/**
 	 * Set SqlManager
@@ -130,7 +138,9 @@ public class AggiudicazioneManager {
 		  alasup = impl.getDouble("ALASUP");
 		}
 
-
+		if (impl.isColumn("calcoloGradQform")){
+		  calcoloGradQform = impl.getString("calcoloGradQform");
+         }
 
 		if (logger.isDebugEnabled())
 			logger.debug("aggiudicazioneFaseA(" + codgar + "," + ngara
@@ -215,7 +225,11 @@ public class AggiudicazioneManager {
 				    if (this.esistonoDitteRiammesse(ngara,gestionePuneco))
 						this.settaMotiesANull(ngara);
 
-					this.settaRibassoAZero(ngara);
+				    Long offtel = null;
+				    if (hMapTORN.get("offtel") != null)
+				      offtel = (Long)hMapTORN.get("offtel");
+				    if(!new Long(3).equals(offtel))
+				      this.settaRibassoAZero(ngara);
 					this.settaPunteggiAZero(ngara);
 
 					// Forzatura dei campi AMMGAR e INVOFF ancora nulli al valore 1
@@ -672,7 +686,7 @@ public class AggiudicazioneManager {
 		      else
 		        onsogrib =(String)hMapGARE.get("onsogrib");
 			}
-			if (hMapParametri.get("ribauo") != null) {
+			if (hMapParametri.get("riboepv") != null) {
 				riboepv = ((Double) hMapParametri.get("riboepv")).doubleValue();
 			}
 		}
@@ -1202,7 +1216,7 @@ public class AggiudicazioneManager {
 		try {
 			List datiTORN = this.sqlManager.getListVector(
 					"select TIPGAR, MODLIC, TIPTOR, CORGAR, OFFAUM, TIPGEN, DINVIT, ITERGA, ACCQUA, "
-							+ "IMPTOR, MODCONT, SELPAR, INVERSA, ALTRISOG from TORN where CODGAR = ?",
+							+ "IMPTOR, MODCONT, SELPAR, INVERSA, ALTRISOG, OFFTEL, CALCSOME from TORN where CODGAR = ?",
 					new Object[] { codgar });
 			if (datiTORN != null && datiTORN.size() > 0) {
 
@@ -1290,6 +1304,18 @@ public class AggiudicazioneManager {
                 if (altrisog == null)
                   altrisog = new Long(0);
                 hMap.put("altrisog", altrisog);
+
+                Long offtel = SqlManager.getValueFromVectorParam(
+                    datiTORN.get(0),14).longValue();
+                if (offtel == null)
+                  offtel = new Long(0);
+                hMap.put("offtel", offtel);
+
+                String calcsome = SqlManager.getValueFromVectorParam(
+                        datiTORN.get(0),15).toString();
+                if (calcsome == null)
+                    calcsome= "";
+                hMap.put("calcsome", calcsome);
 			}
 		} catch (SQLException e) {
 			throw new GestoreException(
@@ -1755,7 +1781,7 @@ public class AggiudicazioneManager {
               importoGara < importoCalcoloSoglia){
             isEsclusioneAutomaticaApplicabile = true;
           }
-          if("1".equals(escautoString) || "2".equals(escautoString))
+          if("1".equals(escautoString) || "2".equals(escautoString) || "5".equals(escautoString))
             isEsclusioneAutomaticaApplicabile = true;
           else if("3".equals(escautoString) || "4".equals(escautoString))
             isEsclusioneAutomaticaApplicabile = false;
@@ -1766,6 +1792,10 @@ public class AggiudicazioneManager {
         }else if(modalitaDLCalcoloGraduatoria && numeroDitteAmmesse < numMinDitteCalcoloSoglia){//In questo modo viene tracciato in W_LOGEVENTI il fatto che si sta applicando il calcolo graduatoria
           ret[0] = "ControlloNumeroDitteNonSuperato";
           ret[1] = new Long(numMinDitteCalcoloSoglia).toString();
+          isCalcoloSogliaAnomaliaApplicabile = false;
+        }else if("true".equals(calcoloGradQform)) {
+          ret[0] = "ControlloRibassoDitteNonSuperato";
+          isCalcoloSogliaAnomaliaApplicabile = false;
         }
 
 		hMapParametri.put("isCalcoloSogliaAnomaliaApplicabile", new Boolean(isCalcoloSogliaAnomaliaApplicabile));
@@ -2243,6 +2273,7 @@ public class AggiudicazioneManager {
         long tipologiaGara =0;
         double importoGara=0;
         boolean modalitaDLCalcoloGraduatoria=false;
+        String calcsome = null;
 
 		// *** Valore minimo per la gestione del correttivo ***
 		if (hMapParametri.get("numeroDitteAmmesse") != null)
@@ -2267,6 +2298,8 @@ public class AggiudicazioneManager {
           imptor = ((Double) hMapTORN.get("imptor")).doubleValue();
         if (hMapParametri.get("tipologiaGara") != null)
           tipologiaGara = ((Long) hMapParametri.get("tipologiaGara")).longValue();
+        if (hMapTORN.get("calcsome") != null)
+      	  calcsome = ((String) hMapTORN.get("calcsome"));
 
         if(tipologiaGara==1 || tipologiaGara==3)
           importoGara = imptor;
@@ -2310,20 +2343,30 @@ public class AggiudicazioneManager {
 		      numeroVoce=2;
 		  }
 
-		    String descrizioneTabellato = this.leggiDescrizioneDaTab1(codiceTabellato, new Long(numeroVoce));
-			if (descrizioneTabellato != null) {
-			  descrizioneTabellato = descrizioneTabellato.substring(0, 1);
-			  minimoPerCorrettivo = new Long(descrizioneTabellato);
-				//Parametro per gestire il msg di avviso nel calcolo soglia anomalia
-		        hMapParametri.put("numMinDitteCalcoloSoglia", minimoPerCorrettivo);
-		        if(numeroDitteAmmesse < minimoPerCorrettivo.longValue() && (garaDLgs_50_2016 || garaDLgs_56_2017 || garaDL_2019 ||"1".equals(legRegSic) ))
-		          modalitaDLCalcoloGraduatoria=true;
-			} else {
-				String message = "Non trovato il parametro (" + codiceTabellato + ") delle offerte ammesse, " +
-						"cioè il limite per far scattare il correttivo";
-				throw new GestoreException(message,	"inizializzaParametri." + codiceTabellato);
-			}
+		    if ("1".equals(calcsome)) {
+	    		minimoPerCorrettivo = new Long("2");
+	    		//Parametro per gestire il msg di avviso nel calcolo soglia anomalia
+	    		hMapParametri.put("numMinDitteCalcoloSoglia", minimoPerCorrettivo);
+	    		if(numeroDitteAmmesse < minimoPerCorrettivo.longValue())
+	    			modalitaDLCalcoloGraduatoria=true;
+		    }else {
+		    	String descrizioneTabellato = this.leggiDescrizioneDaTab1(codiceTabellato, new Long(numeroVoce));
+		    	if (descrizioneTabellato != null) {
+		    		descrizioneTabellato = descrizioneTabellato.substring(0, 1);
+		    		minimoPerCorrettivo = new Long(descrizioneTabellato);
+		    		//Parametro per gestire il msg di avviso nel calcolo soglia anomalia
+		    		hMapParametri.put("numMinDitteCalcoloSoglia", minimoPerCorrettivo);
+		    		if(numeroDitteAmmesse < minimoPerCorrettivo.longValue() && (garaDLgs_50_2016 || garaDLgs_56_2017 || garaDL_2019 ||"1".equals(legRegSic) ))
+		    			modalitaDLCalcoloGraduatoria=true;
+		    	} else {
+		    		String message = "Non trovato il parametro (" + codiceTabellato + ") delle offerte ammesse, " +
+		    				"cioè il limite per far scattare il correttivo";
+		    		throw new GestoreException(message,	"inizializzaParametri." + codiceTabellato);
+		    	}
+		    }
 
+			if(!modalitaDLCalcoloGraduatoria && "true".equals(calcoloGradQform))
+			  modalitaDLCalcoloGraduatoria=true;
 			hMapParametri.put("modalitaDLCalcoloGraduatoria", modalitaDLCalcoloGraduatoria);
 
 			if(garaDL_2019){
@@ -2457,6 +2500,7 @@ public class AggiudicazioneManager {
       boolean modalitaDL2016 = false;
       boolean modalitaDL2017 = false;
       boolean modalitaManuale =true;
+      Long numeroDitteAmmesse = ((Long) hMapParametri.get("numeroDitteAmmesse")).longValue();
 
       if (hMapParametri.get("modalitaDL2016") != null)
         modalitaDL2016 = ((Boolean) hMapParametri.get("modalitaDL2016")).booleanValue();
@@ -2466,6 +2510,13 @@ public class AggiudicazioneManager {
       String isGaraDLGS2017 = "false";
 
       if(modalitaDL2016 || modalitaDL2017){
+    	String calcsome="0";
+
+    	try {
+    		calcsome=(String)sqlManager.getObject("select calcsome from torn where codgar=? ", new Object[]{impl.getString("GARE.CODGAR1")});;
+    	} catch (SQLException e) {
+    	  	throw new GestoreException("Errore nella lettura del parametro calcsome ",impl.getString("GARE.CODGAR1"), new Object[] {}, e);
+    	}
         if (modalitaDL2017)
           isGaraDLGS2017 = "true";
         Long metsoglia = impl.getLong("GARE1.METSOGLIA");
@@ -2474,8 +2525,8 @@ public class AggiudicazioneManager {
         if (hMapParametri.get("modalitaManuale") != null)
           modalitaManuale = ((Boolean) hMapParametri.get("modalitaManuale")).booleanValue();
         //Si deve eseguire il metodo di calcolo della soglia solo se questo non è valorizzato e modalità automatica
-        if(metsoglia==null && !modalitaManuale){
-          Object valori[] = this.getMetodoCalcoloSoglia(isGaraDLGS2017);
+        if((metsoglia==null || ("1".equals(calcsome) && numeroDitteAmmesse >= new Long("2") && numeroDitteAmmesse <= new Long("4") && !new Long(3).equals(metsoglia) && !new Long(4).equals(metsoglia))) && !modalitaManuale){
+          Object valori[] = this.getMetodoCalcoloSoglia(isGaraDLGS2017,calcsome,numeroDitteAmmesse);
           metsoglia = (Long)valori[0];
           if(valori[1]!=null)
             metcoeff = (Double)valori[1];
@@ -2497,13 +2548,18 @@ public class AggiudicazioneManager {
      *
      * @throws GestoreException
      */
-	public Object[] getMetodoCalcoloSoglia(String isModalitaDL2017) throws GestoreException{
+	public Object[] getMetodoCalcoloSoglia(String isModalitaDL2017, String calcsome, Long numeroDitteAmmesse) throws GestoreException{
 	  Long metsoglia=null;
 	  Double metcoeff=null;
       String codiceTabellato;
+      int rand;
 
       Random r =  new Random();
-      int rand = r.nextInt(5) + 1;
+      if("1".equals(calcsome) && (numeroDitteAmmesse >= new Long("2") && numeroDitteAmmesse <= new Long("4"))) {
+    	  rand = r.nextInt(2) + 3;
+      }else {
+    	  rand = r.nextInt(5) + 1;
+      }
       metsoglia = new Long(rand);
       if(rand==5){
         r =  new Random();
@@ -3127,7 +3183,7 @@ public class AggiudicazioneManager {
 				  double sommaRibasso = 0;
 				  if(sum instanceof Double)
 		            sommaRibasso = new Double((Double)sum).doubleValue();
-		          else
+		          else if(sum instanceof Long)
 		            sommaRibasso = new Double(((Long) sum)).doubleValue();
 
 			      mediaRibasso = sommaRibasso / numeroDitte;
@@ -4251,9 +4307,8 @@ public class AggiudicazioneManager {
 				.get("primaAggiudicatariaSelezionata");
 		String nomimo = null;
 		Double ribauo = null;
-		Double riboepv = null;
 
-		String selectDITG = "select nomimo, ribauo, riboepv from ditg where ngara5 = ? and dittao = ?";
+		String selectDITG = "select nomimo, ribauo from ditg where ngara5 = ? and dittao = ?";
 		try {
 			List datiDITG = this.sqlManager.getListVector(selectDITG,
 					new Object[] { ngara, dittao });
@@ -4262,8 +4317,7 @@ public class AggiudicazioneManager {
 						datiDITG.get(0), 0).stringValue();
 				ribauo = SqlManager.getValueFromVectorParam(
 						datiDITG.get(0), 1).doubleValue();
-				riboepv= SqlManager.getValueFromVectorParam(
-                    datiDITG.get(0), 2).doubleValue();
+
 			}
 		} catch (SQLException e) {
 			throw new GestoreException(
@@ -4540,6 +4594,10 @@ public class AggiudicazioneManager {
         if (hMapGARE.get("legRegSic") != null)
           legRegSic = ( (String) hMapGARE.get("legRegSic"));
 
+        boolean modalitaDLCalcoloGraduatoria = false;
+        if (hMapParametri.get("modalitaDLCalcoloGraduatoria") != null)
+          modalitaDLCalcoloGraduatoria = ((Boolean) hMapParametri.get("modalitaDLCalcoloGraduatoria")).booleanValue();
+
         String costofisso = ((String)hMapGARE.get("costofisso")).toString();
 
         String importoOffertaCongiunta = "";
@@ -4550,7 +4608,7 @@ public class AggiudicazioneManager {
           selectImportoOffertaCongiunta = ", "+ importoOffertaCongiunta;
         }
 
-		String selectDITG = "select dittao, staggi, congruo, ribauo"+selectImportoOffertaCongiunta+" from ditg "
+		String selectDITG = "select dittao, staggi, congruo, ribauo, impoff"+selectImportoOffertaCongiunta+" from ditg "
 				+ "where ngara5 = ? " + "and staggi > 1 ";
 
 		if (hMapParametri.get("garaInversa") != null && "1".equals(hMapParametri.get("garaInversa"))){
@@ -4560,11 +4618,18 @@ public class AggiudicazioneManager {
 
         if(hMapGARE.get("ultdetlic") != null && !"1".equals(costofisso)){
             selectDITG += " order by " + importoOffertaCongiunta + ", staggi";
+        }else if("true".equals(calcoloGradQform)) {
+          if (modlicg == 17)
+            selectDITG += " order by impoff desc, staggi";
+          else
+            selectDITG += " order by impoff, staggi";
         }else if (modlicg == 6 || modlicg == 17) {
             selectDITG += " order by ribauo desc, staggi";
         } else {
             selectDITG += " order by ribauo, staggi";
         }
+
+
 
 		try {
 			List datiDITG = this.sqlManager.getListVector(selectDITG,
@@ -4580,8 +4645,15 @@ public class AggiudicazioneManager {
 							datiDITG.get(i), 2).stringValue();
 			        if(hMapGARE.get("ultdetlic") != null && !"1".equals(costofisso)){
                       ribauo = SqlManager.getValueFromVectorParam(
+                          datiDITG.get(i), 5).doubleValue();
+			        }else if("true".equals(calcoloGradQform)) {
+			          //Si entra in questa casistica quando vi è almeno un ribasso nullo, ed allora
+			          //si deve prendere in considerazione l'importo per tutte le ditte e non più il ribasso.
+			          //Per semplificare il codice, invece di introdurre nuove variabili per la gestione dell'importo,
+			          //nelle variabili del ribasso si metterà l'importo
+			          ribauo = SqlManager.getValueFromVectorParam(
                           datiDITG.get(i), 4).doubleValue();
-			        } else {
+			        }else {
 	                    ribauo = SqlManager.getValueFromVectorParam(
                             datiDITG.get(i), 3).doubleValue();
 			        }
@@ -4593,7 +4665,7 @@ public class AggiudicazioneManager {
 								primaAggiudicataria = dittao;
 								listaPrimeParimerito = "'" + primaAggiudicataria + "'";
 							} else{
-							      if (ribauo.equals(ribauoPrimaVincitrice)) {
+							      if (ribauo!=null && ribauo.equals(ribauoPrimaVincitrice)) {
     								numeroPrimeParimerito++;
     								listaPrimeParimerito += ",'" + dittao + "'";
     							  }
@@ -4621,7 +4693,7 @@ public class AggiudicazioneManager {
 	                                  ribauoPrimaVincitrice = ribauo;
 	                                  primaAggiudicataria = dittao;
 	                                  listaPrimeParimerito = "'" + primaAggiudicataria + "'";
-	                              } else if (ribauo.equals(ribauoPrimaVincitrice)) {
+	                              } else if (ribauo!=null && ribauo.equals(ribauoPrimaVincitrice)) {
 	                                  numeroPrimeParimerito++;
 	                                  listaPrimeParimerito += ",'" + dittao + "'";
 	                                }
@@ -4647,7 +4719,7 @@ public class AggiudicazioneManager {
                                     ribauoPrimaVincitrice = ribauo;
                                     primaAggiudicataria = dittao;
                                     listaPrimeParimerito = "'" + primaAggiudicataria + "'";
-                                } else if (ribauo.equals(ribauoPrimaVincitrice) ) {
+                                } else if (ribauo!=null && ribauo.equals(ribauoPrimaVincitrice) ) {
                                     numeroPrimeParimerito++;
                                     listaPrimeParimerito += ",'" + dittao + "'";
                                 }
@@ -4673,7 +4745,7 @@ public class AggiudicazioneManager {
 									ribauoPrimaVincitrice = ribauo;
 									primaAggiudicataria = dittao;
 									listaPrimeParimerito = "'" + primaAggiudicataria + "'";
-								} else if (ribauo.equals(ribauoPrimaVincitrice) ) {
+								} else if (ribauo!=null && ribauo.equals(ribauoPrimaVincitrice) ) {
 									numeroPrimeParimerito++;
 									listaPrimeParimerito += ",'" + dittao + "'";
 								  }
@@ -4987,6 +5059,10 @@ public class AggiudicazioneManager {
 
         String costofisso = (String)hMapGARE.get("costofisso");
 
+        long offtel=0;
+        if (hMapTORN.get("offtel") != null)
+          offtel = (Long)hMapTORN.get("offtel");
+
 		double impoff = 0;
 		double iaggiu = 0;
 		double ribauo = 0;
@@ -4995,6 +5071,7 @@ public class AggiudicazioneManager {
 		double impcano = 0;
 		double riboepv = 0;
 		String codgar = null;
+		boolean riboepvNullo = false;
 
 		String selectDITG = "select ribauo, impoff, impperm, impcano, riboepv, codgar5 from ditg where ngara5 = ? and dittao = ?";
 		try {
@@ -5026,6 +5103,8 @@ public class AggiudicazioneManager {
                 if (SqlManager.getValueFromVectorParam(datiDITG.get(0), 4).doubleValue() != null) {
                   riboepv = SqlManager.getValueFromVectorParam(datiDITG.get(0), 4).doubleValue().doubleValue();
                   hMapParametri.put("riboepv", new Double(riboepv));
+                }else {
+                  riboepvNullo = true;
                 }
                 if (SqlManager.getValueFromVectorParam(datiDITG.get(0), 5).stringValue() != null) {
                   codgar = SqlManager.getValueFromVectorParam(datiDITG.get(0), 5).stringValue();
@@ -5043,29 +5122,25 @@ public class AggiudicazioneManager {
           //oepvCalcolo=2   ribasso
           //oepvCalcolo=3   nè importo nè ribasso - costofisso
           if (modlicg==6){
+            boolean isVecchiaOepv = controlliOepvManager.isVecchiaOepvFromNgara(ngara);
             if("1".equals(costofisso)){
               oepvCalcolo=3;
-            }else if (modlicg==6 && !controlliOepvManager.isVecchiaOepvFromNgara(ngara)){
+            }else if (!isVecchiaOepv){
               if(controlliOepvManager.checkFormato(ngara, new Long(51))){
                 oepvCalcolo=2;
                 ribauo = riboepv;
               }else if(!controlliOepvManager.checkFormato(ngara, new Long(50)) && !controlliOepvManager.checkFormato(ngara, new Long(52))){
                 oepvCalcolo=3;
               }
-            }else if (modlicg==6 && controlliOepvManager.isVecchiaOepvFromNgara(ngara)){
-              if(riboepv != 0){
-                oepvCalcolo=2;
-                ribauo=riboepv;
-              }
             }
           }
           if(modlicg==6 && oepvCalcolo==3){
     		  iaggiu = UtilityMath.round(impapp, 2);
-          }else if(modlicg==5 || modlicg==14 || modlicg== 16 || (modlicg==6 && oepvCalcolo==1) || ((modlicg==1 || modlicg == 13 || modlicg == 17)&& detlicg==4)){
+          }else if(modlicg==5 || modlicg==14 || modlicg== 16 || (modlicg==6 && oepvCalcolo==1) || ((modlicg==1 || modlicg == 13 || modlicg == 17) && detlicg==4)){
               if(sicinc != null && "2".equals(sicinc))
                 impoff += impsic;
               iaggiu = UtilityMath.round(impoff, 2);
-              if(modlicg==6){
+              if(modlicg==6 && offtel!=3 && riboepv == 0){
             	 riboepv = this.calcolaRIBAUO(impapp, onprge, impsic, impnrl, sicinc,impoff,onsogrib);
                  String cifreRibasso=pgManagerEst1.getNumeroDecimaliRibasso(codgar);
                  if(cifreRibasso!=null && !"".equals(cifreRibasso)){
@@ -5095,7 +5170,10 @@ public class AggiudicazioneManager {
 		}
 		hMapParametri.put("iaggiu", new Double(iaggiu));
 		if(modlicg==6){
-			hMapParametri.put("riboepv", new Double(riboepv));
+			if(riboepvNullo == false)
+			  hMapParametri.put("riboepv", new Double(riboepv));
+			else
+			  hMapParametri.put("riboepv", null);
 		}
 
 		if (logger.isDebugEnabled())
@@ -5312,6 +5390,20 @@ public class AggiudicazioneManager {
 
       hMapParametri.put("garaInversa", hMapTORN.get("inversa"));
 
+      int modlicg = 0;
+      if (hMapGARE.get("modlicg") != null)
+         modlicg = ((Long) hMapGARE.get("modlicg")).intValue();
+
+      if(modlicg!=6) {
+        Long offtel = null;
+        if (hMapTORN.get("offtel") != null)
+          offtel = (Long)hMapTORN.get("offtel");
+        if(new Long(3).equals(offtel)) {
+          boolean controlloDitteRibassoNullo = esistonoDitteRiammesse(ngara,false);
+          if(controlloDitteRibassoNullo)
+            calcoloGradQform="true";
+        }
+      }
 
       // Controllo se esistono ditte dopo il calcolo della soglia di anomalia
       if (this.esistonoDitte(ngara, "staggi > 1")) {
@@ -5351,7 +5443,7 @@ public class AggiudicazioneManager {
      *         2 per DLgs.56/2017
      *         3 per DL 32/2019
      */
-    public int getLeggeCalcoloSoglia(Long iterga, Date dinvit, Date dpubavg,Date datpub ){
+    public int getLeggeCalcoloSoglia(Long iterga, Date dinvit, Date dpubavg,Date datpub, String calcsome){
       int ret=this.DLgs_163_2006;
       Date dataControllo = null;
       if (iterga == 3 || iterga == 4 || iterga == 5 || iterga == 6)
@@ -5362,8 +5454,10 @@ public class AggiudicazioneManager {
         else
           dataControllo = dpubavg;
       }
-
-      if(dataControllo == null)
+      if("1".equals(calcsome)) {
+    	  ret = this.DLgs_56_2017;
+      }
+      else if(dataControllo == null)
         ret = this.DL_32_2019;
       else{
         dataControllo = UtilityDate.convertiData(UtilityDate.convertiData(dataControllo, UtilityDate.FORMATO_GG_MM_AAAA), UtilityDate.FORMATO_GG_MM_AAAA);
@@ -5866,6 +5960,7 @@ public class AggiudicazioneManager {
       Date dpubavg = null;
       Date dinvit = null;
       Date datpub = null;
+      String calcsome = null;
       boolean valorizzaMediasca= true;
       boolean modalitaDL2016 = false;
       boolean modalitaDL2017 = false;
@@ -5888,10 +5983,12 @@ public class AggiudicazioneManager {
         dinvit = ((Date) hMapTORN.get("dinvit"));
       if (hMapParametri.get("datpub") != null)
         datpub = ((Date) hMapParametri.get("datpub"));
+      if (hMapTORN.get("calcsome") != null)
+    	  calcsome = ((String) hMapTORN.get("calcsome"));
 
 
       if((modlicg==13 || modlicg==14) && !"1".equals(legRegSic)){
-        int ret=this.getLeggeCalcoloSoglia(new Long(iterga), dinvit, dpubavg, datpub);
+        int ret=this.getLeggeCalcoloSoglia(new Long(iterga), dinvit, dpubavg, datpub, calcsome);
         if(ret==1)
           modalitaDL2016= true;
         else if(ret==2)
@@ -6404,11 +6501,11 @@ public class AggiudicazioneManager {
 
      if (!isGaraLottiConOffertaUnica) {
        //Caso GARA lotto unico - sbiancamento dati GARECONT
-       this.sqlManager.update("update garecont set impqua=null, codimp=null, coorba=null, codbic=null, banapp=null  where ngara=? and ncont=?",
+       this.sqlManager.update("update garecont set impqua=null, codimp=null, coorba=null, codbic=null, banapp=null, nprotcoorba=null, dprotcoorba=null  where ngara=? and ncont=?",
              new Object[]{ngara, new Long(1) });
      }else{
        if((new Long(1)).equals(modcont)){
-         this.sqlManager.update("update garecont set impqua=null, codimp=null, coorba=null, codbic=null, banapp=null  where ngara=? and ngaral=?",
+         this.sqlManager.update("update garecont set impqua=null, codimp=null, coorba=null, codbic=null, banapp=null, nprotcoorba=null, dprotcoorba=null  where ngara=? and ngaral=?",
              new Object[]{codgar,ngara });
        }else if((new Long(2)).equals(modcont)){
          this.cancellaGarecontOffertaUnica(codgar);
@@ -6593,7 +6690,7 @@ public class AggiudicazioneManager {
     *
     *@throws SQLException,GestoreException
     */
-   public Object[] controlloNumDitteAmmesseSopraSoglia(String ngara,String tabellato, int numeroVoce) throws SQLException, GestoreException{
+   public Object[] controlloNumDitteAmmesseSopraSoglia(String ngara,String tabellato, int numeroVoce, String calcsome) throws SQLException, GestoreException{
      boolean esitoControlloNumDitte= true;
      Long numDitteGara = (Long)sqlManager.getObject("select count(dittao) from ditg where ngara5=? and " +
          "(AMMGAR <> '2' or AMMGAR is null) and (MOTIES < 99 or MOTIES is null)", new Object[]{ngara});
@@ -6602,18 +6699,24 @@ public class AggiudicazioneManager {
 
      String descTabellatoValoreConfronto = this.leggiDescrizioneDaTab1(tabellato, new Long(numeroVoce));
      Long valoreConfronto = new Long(0);
-     if(descTabellatoValoreConfronto!=null && !"".equals(descTabellatoValoreConfronto)){
-       int pos = descTabellatoValoreConfronto.indexOf("-");
-       if(pos<0)
-         pos=1;
-       descTabellatoValoreConfronto = descTabellatoValoreConfronto.substring(0, pos);
-       descTabellatoValoreConfronto=descTabellatoValoreConfronto.trim();
-       valoreConfronto = new Long(descTabellatoValoreConfronto);
+
+     if("1".equals(calcsome)) {
+    	 descTabellatoValoreConfronto = "2";
+    	 valoreConfronto = new Long(2);
+     }else {
+     	if(descTabellatoValoreConfronto!=null && !"".equals(descTabellatoValoreConfronto)){
+     		int pos = descTabellatoValoreConfronto.indexOf("-");
+     		if(pos<0)
+     			pos=1;
+     		descTabellatoValoreConfronto = descTabellatoValoreConfronto.substring(0, pos);
+     		descTabellatoValoreConfronto=descTabellatoValoreConfronto.trim();
+     		valoreConfronto = new Long(descTabellatoValoreConfronto);
+     	}
      }
 
      if(numDitteGara.longValue() < valoreConfronto.longValue())
        esitoControlloNumDitte = false;
-      return new Object[]{new Boolean(esitoControlloNumDitte),descTabellatoValoreConfronto};
+      return new Object[]{new Boolean(esitoControlloNumDitte),descTabellatoValoreConfronto,String.valueOf(numDitteGara)};
    }
 
 
@@ -6627,26 +6730,32 @@ public class AggiudicazioneManager {
     *
     *@throws SQLException,GestoreException
     */
-   public Object[] controlloNumDitteInvoffSopraSoglia(String ngara,String tabellato, int numeroVoce) throws SQLException, GestoreException{
+   public Object[] controlloNumDitteInvoffSopraSoglia(String ngara,String tabellato, int numeroVoce, String calcsome) throws SQLException, GestoreException{
      boolean esitoControlloNumDitte= true;
      Long numDitteGara = (Long)sqlManager.getObject("select count(dittao) from ditg where ngara5=? and (INVOFF = '1' or INVOFF is null) ", new Object[]{ngara});
      if(numDitteGara==null)
        numDitteGara = new Long(0);
 
-     String descTabellatoValoreConfronto = this.leggiDescrizioneDaTab1(tabellato, new Long(numeroVoce));
-     Long valoreConfronto = new Long(0);
-     if(descTabellatoValoreConfronto!=null && !"".equals(descTabellatoValoreConfronto)){
-       int pos = descTabellatoValoreConfronto.indexOf("-");
-       if(pos<0)
-         pos=1;
-       descTabellatoValoreConfronto = descTabellatoValoreConfronto.substring(0, pos);
-       descTabellatoValoreConfronto=descTabellatoValoreConfronto.trim();
-       valoreConfronto = new Long(descTabellatoValoreConfronto);
+	 String descTabellatoValoreConfronto = this.leggiDescrizioneDaTab1(tabellato, new Long(numeroVoce));
+	 Long valoreConfronto = new Long(0);
+
+     if("1".equals(calcsome)) {
+    	 descTabellatoValoreConfronto = "2";
+    	 valoreConfronto = new Long(2);
+     }else {
+    	 if(descTabellatoValoreConfronto!=null && !"".equals(descTabellatoValoreConfronto)){
+    		 int pos = descTabellatoValoreConfronto.indexOf("-");
+    		 if(pos<0)
+    			 pos=1;
+    		 descTabellatoValoreConfronto = descTabellatoValoreConfronto.substring(0, pos);
+    		 descTabellatoValoreConfronto=descTabellatoValoreConfronto.trim();
+    		 valoreConfronto = new Long(descTabellatoValoreConfronto);
+    	 }
      }
 
      if(numDitteGara.longValue() < valoreConfronto.longValue())
        esitoControlloNumDitte = false;
-      return new Object[]{new Boolean(esitoControlloNumDitte),descTabellatoValoreConfronto};
+      return new Object[]{new Boolean(esitoControlloNumDitte),descTabellatoValoreConfronto,String.valueOf(numDitteGara)};
    }
 
    /**
@@ -6968,6 +7077,7 @@ public class AggiudicazioneManager {
      Date dpubavg = null;
      Date dinvit = null;
      Date datpub = null;
+     String calcsome = null;
 
      if (hMapGARE.get("dpubavg") != null)
        dpubavg = (Date) hMapGARE.get("dpubavg");
@@ -6977,8 +7087,10 @@ public class AggiudicazioneManager {
        dinvit = ((Date) hMapTORN.get("dinvit"));
      if (hMapParametri.get("datpub") != null)
        datpub = ((Date) hMapParametri.get("datpub"));
+     if (hMapTORN.get("calcsome") != null)
+   	  calcsome = ((String) hMapTORN.get("calcsome"));
 
-     int ret=this.getLeggeCalcoloSoglia(new Long(iterga), dinvit, dpubavg, datpub);
+     int ret=this.getLeggeCalcoloSoglia(new Long(iterga), dinvit, dpubavg, datpub, calcsome);
      if(ret==3)
        result=true;
 

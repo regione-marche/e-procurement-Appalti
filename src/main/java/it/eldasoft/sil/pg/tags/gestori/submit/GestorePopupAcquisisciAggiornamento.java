@@ -10,6 +10,14 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.Date;
+import java.sql.SQLException;
+import java.util.Vector;
+
+import org.apache.log4j.Logger;
+import org.apache.xmlbeans.XmlException;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
@@ -24,14 +32,6 @@ import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.portgare.datatypes.AggiornamentoAnagraficaImpresaDocument;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.sql.Date;
-import java.sql.SQLException;
-import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.apache.xmlbeans.XmlException;
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore non standard per l'acquisizione di un singolo aggiornamento FS5 proveniente
@@ -166,7 +166,7 @@ public class GestorePopupAcquisisciAggiornamento extends AbstractGestoreEntita {
 
               //La variabile contiene l'informazione se è stata modificata la pec o i referenti.
               String impostareStatoNota = UtilityStruts.getParametroString(this.getRequest(),"impostareStatoNota");
-              pgManager.InserisciVariazioni(messaggioVariazioni, codiceDitta,"INS",profilo,comDataStato,"true".equals(impostareStatoNota));
+              pgManager.InserisciVariazioni(messaggioVariazioni, codiceDitta,"INS",profilo,comDataStato,"true".equals(impostareStatoNota),null);
             }
 
             //Aggiornamento dello stato a processata

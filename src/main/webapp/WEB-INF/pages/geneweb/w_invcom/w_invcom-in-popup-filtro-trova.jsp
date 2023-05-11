@@ -46,7 +46,7 @@
 
 	<gene:javaScript>	
 	document.forms[0].jspPathTo.value="gare/commons/popup-filtro.jsp";
-	document.forms[0].action+="?tipo=ComunicazioniIn";
+	document.forms[0].action+="?tipo=ComunicazioniIn&entFiltro=W_INVCOM";
 	document.getElementById("risultatiPerPagina").disabled=true;
 	</gene:javaScript>
 	

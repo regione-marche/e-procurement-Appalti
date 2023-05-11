@@ -14,7 +14,6 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
-
 <c:choose>
 	<c:when test='${!empty param.cenint}'>
 		<c:set var="cenint" value='${param.cenint}' />
@@ -66,21 +65,23 @@
 <c:set var="modcont" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetModcontFunction", pageContext, codiceGara)}' />
 
 <c:set var="garaltsogPopolata" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.EsistonoOccorrenzeGaraltsogFunction", pageContext, ngara, ngaral, modcont, codimp)}'/>
+<c:set var="functionId" value="skip" />
 <c:if test="${garaltsogPopolata eq 'true'}">
 	<c:choose>
 		<c:when test="${modcont eq '1' }">
-			<c:set var="whereArchivio" value=" and UFFINT.CODEIN IN (SELECT CENINT FROM GARALTSOG WHERE NGARA = '${ngaral }')" />
+			<c:set var="functionId" value="g1aqspesa_1" />
+			<c:set var="parametriWhere" value="T:${ngaral}" />
 		</c:when>
 		<c:when test="${modcont eq '2' }">
-			<c:set var="whereArchivio" value=" and UFFINT.CODEIN IN (SELECT CENINT FROM GARALTSOG WHERE NGARA in (${elencoLotti}))" />
+			<c:set var="functionId" value="g1aqspesa_2_(${elencoLotti})" />
 		</c:when>
 		<c:otherwise>
-			<c:set var="whereArchivio" value=" and UFFINT.CODEIN IN (SELECT CENINT FROM GARALTSOG WHERE NGARA = '${ngara }')" />
+			<c:set var="functionId" value="g1aqspesa_0" />
+			<c:set var="parametriWhere" value="T:${ngara}" />
 		</c:otherwise>
 	</c:choose>
-	
-	
 </c:if>
+<c:set var="functionId" value="${functionId}|abilitazione:1"/>
 
 <gene:template file="scheda-template.jsp" gestisciProtezioni="true" idMaschera="G1AQSPESA-scheda" schema="GARE">
 	
@@ -112,7 +113,8 @@
 				schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda-popup.jsp","")}'
 				campi="UFFINT.CODEIN;UFFINT.NOMEIN"
 				chiave="G1AQSPESA_CENINT"
-				where="UFFINT.DATFIN IS NULL ${whereArchivio}"
+				functionId="${functionId}_parentFormName:formUFFINTG1AQSPESA"
+				parametriWhere="${parametriWhere}"
 				inseribile="false"
 				formName="formUFFINTG1AQSPESA">
 					<gene:campoScheda campo="CENINT" obbligatorio="true"/>

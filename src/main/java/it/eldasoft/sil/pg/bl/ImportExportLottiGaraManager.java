@@ -1,5 +1,5 @@
 /*
- * Created on 23/dic/2015
+ * Created on 05/apr/2022
  *
  * Copyright (c) EldaSoft S.p.A.
  * Tutti i diritti sono riservati.
@@ -9,26 +9,6 @@
  * aver prima formalizzato un accordo specifico con EldaSoft.
  */
 package it.eldasoft.sil.pg.bl;
-
-import it.eldasoft.gene.bl.GenChiaviManager;
-import it.eldasoft.gene.bl.GeneManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.bl.TabellatiManager;
-import it.eldasoft.gene.commons.web.TempFileUtilities;
-import it.eldasoft.gene.commons.web.struts.UploadFileForm;
-import it.eldasoft.gene.db.dao.SqlDao;
-import it.eldasoft.gene.db.domain.Tabellato;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.excel.CampoImportExcel;
-import it.eldasoft.sil.pg.bl.excel.DizionarioStiliExcel;
-import it.eldasoft.utils.metadata.cache.DizionarioCampi;
-import it.eldasoft.utils.metadata.domain.Campo;
-import it.eldasoft.utils.sql.comp.SqlComposerException;
-import it.eldasoft.utils.utility.UtilityExcel;
-import it.eldasoft.utils.utility.UtilityMath;
-import it.eldasoft.utils.utility.UtilityNumeri;
-import it.eldasoft.utils.utility.UtilityStringhe;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -49,18 +29,42 @@ import javax.servlet.http.HttpSession;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
-import org.apache.poi.hssf.usermodel.DVConstraint;
-import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFCellStyle;
-import org.apache.poi.hssf.usermodel.HSSFDataValidation;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
-import org.apache.poi.hssf.usermodel.HSSFFormulaEvaluator;
-import org.apache.poi.hssf.usermodel.HSSFPrintSetup;
-import org.apache.poi.hssf.usermodel.HSSFRichTextString;
-import org.apache.poi.hssf.usermodel.HSSFRow;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.hssf.util.CellRangeAddressList;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.DataValidation;
+import org.apache.poi.ss.usermodel.DataValidationConstraint;
+import org.apache.poi.ss.usermodel.DataValidationHelper;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.PrintSetup;
+import org.apache.poi.ss.usermodel.RichTextString;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.util.CellRangeAddressList;
+import org.apache.poi.xssf.usermodel.XSSFRichTextString;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import it.eldasoft.gene.bl.GenChiaviManager;
+import it.eldasoft.gene.bl.GeneManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.bl.TabellatiManager;
+import it.eldasoft.gene.commons.web.TempFileUtilities;
+import it.eldasoft.gene.commons.web.struts.UploadFileForm;
+import it.eldasoft.gene.db.dao.SqlDao;
+import it.eldasoft.gene.db.domain.Tabellato;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.excel.CampoImportExcel;
+import it.eldasoft.sil.pg.bl.excel.DizionarioStiliExcelX;
+import it.eldasoft.utils.metadata.cache.DizionarioCampi;
+import it.eldasoft.utils.metadata.domain.Campo;
+import it.eldasoft.utils.sql.comp.SqlComposerException;
+import it.eldasoft.utils.utility.UtilityExcelX;
+import it.eldasoft.utils.utility.UtilityMath;
+import it.eldasoft.utils.utility.UtilityNumeri;
+import it.eldasoft.utils.utility.UtilityStringhe;
 
 /**
  * Classe per la gestione delle funzionalita' di import/export dei lotti su foglio Excel
@@ -85,7 +89,7 @@ public class ImportExportLottiGaraManager {
   private PgManager                 pgManager;
 
   /** Manager della W_GENCHIAVI */
-  private GenChiaviManager			genChiaviManager;
+  private GenChiaviManager          genChiaviManager;
 
   public void setSqlDao(SqlDao sqlDao) {
     this.sqlDao = sqlDao;
@@ -116,8 +120,8 @@ public class ImportExportLottiGaraManager {
   }
 
   public void setGenChiaviManager(GenChiaviManager genChiaviManager) {
-		this.genChiaviManager = genChiaviManager;
-	  }
+        this.genChiaviManager = genChiaviManager;
+      }
 
   private final String       SCHEMA_CAMPI                                                 = "GARE";
 
@@ -144,9 +148,9 @@ public class ImportExportLottiGaraManager {
    * Nome del file associato al file Excel contenente l'export dei lotti della gara
    */
 
-  private final String       NOME_FILE_C0OGGASS_EXPORT                                    = "LottiGara.xls";
+  private final String       NOME_FILE_C0OGGASS_EXPORT                                    = "LottiGara.xlsx";
 
-  private HSSFWorkbook       workBook                                                     = null;
+  private Workbook       workBook                                                     = null;
 
   private String[]           arrayCampi;
   private int[]              arrayStiliCampi;
@@ -190,9 +194,9 @@ public class ImportExportLottiGaraManager {
 
     this.setDefinizioni();
 
-    this.workBook = new HSSFWorkbook();
+    this.workBook = new XSSFWorkbook();
     // Creazione del dizionario degli stili delle celle dell'intero file Excel
-    DizionarioStiliExcel dizStiliExcel = new DizionarioStiliExcel(this.workBook);
+    DizionarioStiliExcelX dizStiliExcel = new DizionarioStiliExcelX((XSSFWorkbook)this.workBook);
 
     // Scrittura sul foglio Excel dei dati generali della gara
     this.setDatiGeneraliGara(codgar, profiloAttivo, isGaraLottiOffDist, dizStiliExcel);
@@ -228,7 +232,7 @@ public class ImportExportLottiGaraManager {
   }
 
 
-  private void importLotti(HSSFSheet foglio, String codgar,
+  private void importLotti(Sheet foglio, String codgar,
       List<CampoImportExcel> listaCampiImportExcel, boolean isGaraLottiOffDist,
       HttpSession session, LoggerImportOffertaPrezzi loggerImport,
       boolean isCodificaAutomaticaAttiva)
@@ -241,7 +245,7 @@ public class ImportExportLottiGaraManager {
 
     int indiceRiga = FOGLIO_LISTA_LOTTI__RIGA_INIZIALE - 1;
 
-    int ultimaRigaValorizzata = foglio.getPhysicalNumberOfRows();
+    int ultimaRigaValorizzata = foglio.getLastRowNum() +1;
 
     HashMap<String, Object> valoriCampi = new HashMap<String, Object>();
     Vector<?> datiLottoComplementare = this.sqlDao.getVectorQuery(
@@ -344,7 +348,7 @@ public class ImportExportLottiGaraManager {
 
     for (; indiceRiga < ultimaRigaValorizzata
     && contatoreRigheVuote <= IMPORT_NUMERO_RIGHE_CONSECUTIVE_VUOTE; indiceRiga++) {
-      HSSFRow rigaFoglioExcel = foglio.getRow(indiceRiga);
+      Row rigaFoglioExcel = foglio.getRow(indiceRiga);
       if (rigaFoglioExcel != null) {
         // Lista dei valori di GARE
         List<Object> valoriCampiRigaExcel = this.letturaRiga(rigaFoglioExcel, listaCampiImportExcel);
@@ -549,24 +553,24 @@ public class ImportExportLottiGaraManager {
             while (iterator1.hasNext()) {
               String nomeCampo = (String) iterator1.next();
               strCampi.append(nomeCampo.concat(", "));
-	          strValori.append("?, ");
-	          valori[indice] = valoriCampi.get(nomeCampo);
+              strValori.append("?, ");
+              valori[indice] = valoriCampi.get(nomeCampo);
               indice++;
             }
 
             for (int y = 0; y < listaValoriRiga.size(); y++) {
-            	if ((isCodificaAutomaticaAttiva && y == 3) || (!isCodificaAutomaticaAttiva && y == 2)) {
-            		if ("0000000000".equals(listaValoriRiga.get(y))) {
-            			int nextId = this.genChiaviManager.getNextId("GARE.CODCIG");
-            			valori[y] = "#".concat(StringUtils.leftPad("" + nextId, 9, "0"));
-            		} else {
-            			if (listaValoriRiga.get(y) != null) {
-            				valori[y] = ((String) listaValoriRiga.get(y)).toUpperCase();
-            			}
-       	            }
-  	            } else {
-   		          valori[y] = listaValoriRiga.get(y);
-   	            }
+                if ((isCodificaAutomaticaAttiva && y == 3) || (!isCodificaAutomaticaAttiva && y == 2)) {
+                    if ("0000000000".equals(listaValoriRiga.get(y))) {
+                        int nextId = this.genChiaviManager.getNextId("GARE.CODCIG");
+                        valori[y] = "#".concat(StringUtils.leftPad("" + nextId, 9, "0"));
+                    } else {
+                        if (listaValoriRiga.get(y) != null) {
+                            valori[y] = ((String) listaValoriRiga.get(y)).toUpperCase();
+                        }
+                    }
+                } else {
+                  valori[y] = listaValoriRiga.get(y);
+                }
             }
 
             sqlInsertGARE = sqlInsertGARE.replaceFirst("CAMPI", strCampi.substring( 0, strCampi.length() - 2));
@@ -683,9 +687,9 @@ public class ImportExportLottiGaraManager {
    this.setDefinizioni();
 
    LoggerImportOffertaPrezzi loggerImport = new LoggerImportOffertaPrezzi();
-   this.workBook = new HSSFWorkbook(fileExcel.getSelezioneFile().getInputStream());
+   this.workBook = WorkbookFactory.create(fileExcel.getSelezioneFile().getInputStream());
 
-   HSSFSheet foglioLottiGara = null;
+   Sheet foglioLottiGara = null;
    int indiceFoglio = -1;
    // Flag per indicare se eseguire il controllo delle informazioni preliminari
    // del foglio Excel che si sta importando: se il foglio Excel e' esportato
@@ -819,7 +823,7 @@ public class ImportExportLottiGaraManager {
 
        // 0
        arrayCampi[cnt] = "GARE.GARE.NGARA";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
        arrayTitoloColonne[cnt] = "Codice lotto";
        arrayLarghezzaColonne[cnt] = 14;
        arrayCampiVisibili[cnt] = true;
@@ -827,7 +831,7 @@ public class ImportExportLottiGaraManager {
        // 1
        cnt++;
        arrayCampi[cnt] = "GARE.GARE.CODIGA";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_CENTER;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_CENTER;
        arrayTitoloColonne[cnt] = "Lotto";
        arrayLarghezzaColonne[cnt] = 6;
        arrayCampiVisibili[cnt] = true;
@@ -835,7 +839,7 @@ public class ImportExportLottiGaraManager {
        // 2
        cnt++;
        arrayCampi[cnt] = "GARE.GARE.CODCIG";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
        arrayTitoloColonne[cnt] = "Codice CIG";
        arrayLarghezzaColonne[cnt] = 10;
        arrayCampiVisibili[cnt] = true;
@@ -843,7 +847,7 @@ public class ImportExportLottiGaraManager {
        // 3
        cnt++;
        arrayCampi[cnt] = "GARE.GARE.NOT_GAR";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
        arrayTitoloColonne[cnt] = "Oggetto";
        arrayLarghezzaColonne[cnt] = 80;
        arrayCampiVisibili[cnt] = true;
@@ -851,7 +855,7 @@ public class ImportExportLottiGaraManager {
        // 4
        cnt++;
        arrayCampi[cnt] = "GARE.GARE.IMPAPP";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT;
        arrayTitoloColonne[cnt] = "Importo a base di gara";
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
@@ -859,7 +863,7 @@ public class ImportExportLottiGaraManager {
        // 5
        cnt++;
        arrayCampi[cnt] = "GARE.GARE.IMPNRL";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT;
        arrayTitoloColonne[cnt] = "di cui non soggetto a ribasso";
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
@@ -867,7 +871,7 @@ public class ImportExportLottiGaraManager {
        // 6
        cnt++;
        arrayCampi[cnt] = "GARE.GARE.IMPSIC";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT;
        arrayTitoloColonne[cnt] = "di cui sicurezza";
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
@@ -875,7 +879,7 @@ public class ImportExportLottiGaraManager {
        // 7
        cnt++;
        arrayCampi[cnt] = "GARE.GARE.CUPPRG";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
        arrayTitoloColonne[cnt] = "Codice CUP";
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
@@ -883,7 +887,7 @@ public class ImportExportLottiGaraManager {
        // 8
        cnt++;
        arrayCampi[cnt] = "GARE.GARCPV.CODCPV";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
        arrayTitoloColonne[cnt] = "Codice CPV principale";
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
@@ -891,7 +895,7 @@ public class ImportExportLottiGaraManager {
        // 9
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.CODCUI";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
        arrayTitoloColonne[cnt] = "Codice CUI";
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
@@ -899,7 +903,7 @@ public class ImportExportLottiGaraManager {
        // 10
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.ANNINT";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_CENTER;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_CENTER;
        arrayTitoloColonne[cnt] = "Anno programmazione";
        arrayLarghezzaColonne[cnt] = 6;
        arrayCampiVisibili[cnt] = true;
@@ -907,7 +911,7 @@ public class ImportExportLottiGaraManager {
        // 11
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.IMPRIN";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT;
        arrayTitoloColonne[cnt] = "Importo rinnovi";
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
@@ -915,7 +919,7 @@ public class ImportExportLottiGaraManager {
        // 12
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.DESRIN";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
        arrayTitoloColonne[cnt] = "Descrizione rinnovi";
        arrayLarghezzaColonne[cnt] = 80;
        arrayCampiVisibili[cnt] = true;
@@ -923,7 +927,7 @@ public class ImportExportLottiGaraManager {
        // 13
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.IMPSERV";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT;
        arrayTitoloColonne[cnt] = "Importo opzione servizi analoghi";
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
@@ -931,7 +935,7 @@ public class ImportExportLottiGaraManager {
        // 14
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.IMPPROR";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT;
        arrayTitoloColonne[cnt] = "Importo opzione proroga";
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
@@ -939,7 +943,7 @@ public class ImportExportLottiGaraManager {
        // 15
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.IMPALTRO";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT;
        arrayTitoloColonne[cnt] = "Importo altre opzioni";
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
@@ -947,7 +951,7 @@ public class ImportExportLottiGaraManager {
        // 16
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.DESOPZ";
-       arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
        arrayTitoloColonne[cnt] = "descrizione opzioni";
        arrayLarghezzaColonne[cnt] = 80;
        arrayCampiVisibili[cnt] = true;
@@ -971,12 +975,12 @@ public class ImportExportLottiGaraManager {
   *         e forniture', sottoforma di lista di oggetti Campo. La lista e'
   *         vuota se nella riga non si trova nessun nome fisico
   */
- private Map<String,List<?>> getListaCampiDaImportare(HSSFSheet foglio, String nomeFoglio, String entita) {
+ private Map<String,List<?>> getListaCampiDaImportare(Sheet foglio, String nomeFoglio, String entita) {
    if (logger.isDebugEnabled())
      logger.debug("getListaCampiDaImportare: inizio metodo");
 
    DizionarioCampi dizCampi = DizionarioCampi.getInstance();
-   HSSFRow riga = foglio.getRow(FOGLIO_LISTA_LOTTI_RIGA_NOME_FISICO_CAMPI - 1);
+   Row riga = foglio.getRow(FOGLIO_LISTA_LOTTI_RIGA_NOME_FISICO_CAMPI - 1);
    Map<String,List<?>> mappa = new HashMap<String,List<?>>();
    List<String> listaNomiFisiciCampiDaImportare = new ArrayList<String>();
    List<Long> listaIndiceColonnaCampiDaImportare = new ArrayList<Long>();
@@ -1011,8 +1015,8 @@ public class ImportExportLottiGaraManager {
      }
 
      for (int i = 0; i < maxColNumber; i++) {
-       HSSFCell cella = riga.getCell(i);
-       String carattereColonna = UtilityExcel.conversioneNumeroColonna(i + 1);
+       Cell cella = riga.getCell(i);
+       String carattereColonna = UtilityExcelX.conversioneNumeroColonna(i + 1);
        if (cella != null) {
          if (logger.isDebugEnabled())
            logger.debug("getListaCampiDaImportare: inizio lettura della "
@@ -1020,8 +1024,8 @@ public class ImportExportLottiGaraManager {
                + carattereColonna
                + (riga.getRowNum() + 1));
 
-         if (cella.getCellType() == HSSFCell.CELL_TYPE_STRING) {
-           HSSFRichTextString richTextString = cella.getRichStringCellValue();
+         if (cella.getCellType() == Cell.CELL_TYPE_STRING) {
+           RichTextString richTextString = cella.getRichStringCellValue();
            if (richTextString != null) {
              String valoreCella = richTextString.getString();
              if (valoreCella != null && valoreCella.trim().length() > 0) {
@@ -1125,7 +1129,7 @@ public class ImportExportLottiGaraManager {
   * @return
   */
  private List<CampoImportExcel> getListaCampiDaImportareExcel(
-     HSSFSheet foglioLottiGara, int indiceFoglio, String entita, boolean isCodificaAutomaticaAttiva ) {
+     Sheet foglioLottiGara, int indiceFoglio, String entita, boolean isCodificaAutomaticaAttiva ) {
 
    Map<String,List<?>> mappa = null;
    mappa = this.getListaCampiDaImportare(foglioLottiGara, FOGLIO_LISTA_LOTTI[indiceFoglio], entita);
@@ -1136,14 +1140,14 @@ public class ImportExportLottiGaraManager {
        && mappa.containsKey("listaNomiFisiciCampiDaImportare")
        && !mappa.containsKey("listaErrori")) {
 
-	 List<String> listaNomiFisiciCampiDaImportare = (List<String>) mappa.get("listaNomiFisiciCampiDaImportare");
-	 List<Long> listaIndiceColonnaCampiDaImportare = (List<Long>) mappa.get("listaIndiceColonnaCampiDaImportare");
-	 List<Long> listaIndiceArrayValoreCampiDaImportare = (List<Long>) mappa.get("listaIndiceArrayValoreCampiDaImportare");
+     List<String> listaNomiFisiciCampiDaImportare = (List<String>) mappa.get("listaNomiFisiciCampiDaImportare");
+     List<Long> listaIndiceColonnaCampiDaImportare = (List<Long>) mappa.get("listaIndiceColonnaCampiDaImportare");
+     List<Long> listaIndiceArrayValoreCampiDaImportare = (List<Long>) mappa.get("listaIndiceArrayValoreCampiDaImportare");
 
      CampoImportExcel tmpCampo = null;
      for (int i = 0; i < listaNomiFisiciCampiDaImportare.size(); i++) {
        String nomeFisicoCampo = listaNomiFisiciCampiDaImportare.get(i);
-       tmpCampo = new CampoImportExcel(nomeFisicoCampo,new Long(3));
+       tmpCampo = new CampoImportExcel(nomeFisicoCampo,new Long(3),tabellatiManager);
        tmpCampo.setColonnaCampo(listaIndiceColonnaCampiDaImportare.get(i).intValue());
        tmpCampo.setColonnaArrayValori(listaIndiceArrayValoreCampiDaImportare.get(i).intValue());
 
@@ -1179,16 +1183,16 @@ public class ImportExportLottiGaraManager {
   * @throws GestoreException
   */
  private void setDatiGeneraliGara(String codgar, String profiloAttivo,
-     boolean isGaraLottiOffDist, DizionarioStiliExcel dizStiliExcel)
+     boolean isGaraLottiOffDist, DizionarioStiliExcelX dizStiliExcel)
      throws SQLException, GestoreException {
 
-   HSSFSheet foglioDatiGenerali = workBook.createSheet(FOGLIO_DATI_GARA);
-   UtilityExcel.setLarghezzaColonna(foglioDatiGenerali, 1, 30);
-   UtilityExcel.setLarghezzaColonna(foglioDatiGenerali, 2, 45);
+   Sheet foglioDatiGenerali = workBook.createSheet(FOGLIO_DATI_GARA);
+   UtilityExcelX.setLarghezzaColonna(foglioDatiGenerali, 1, 30);
+   UtilityExcelX.setLarghezzaColonna(foglioDatiGenerali, 2, 45);
 
-   HSSFRow riga = null;
-   HSSFCell cella = null;
-   HSSFCellStyle stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_INTESTAZIONE);
+   Row riga = null;
+   Cell cella = null;
+   CellStyle stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_INTESTAZIONE);
 
    // Scrittura dell'intestazione delle due colonne del foglio
    // Prima riga del foglio
@@ -1199,8 +1203,8 @@ public class ImportExportLottiGaraManager {
    // Seconda cella: titolo "Dati generali della gara"
    cella = riga.createCell(1);
    cella.setCellStyle(stile);
-   cella.setCellValue(new HSSFRichTextString("Dati generali della gara"));
-   stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA);
+   cella.setCellValue(new XSSFRichTextString("Dati generali della gara"));
+   stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA);
    // Seconda riga del foglio (riga nascosta)
    riga = foglioDatiGenerali.createRow(1);
    // Prima cella: vuota
@@ -1211,7 +1215,7 @@ public class ImportExportLottiGaraManager {
    cella.setCellStyle(stile);
    riga.setZeroHeight(true); // nascondo la riga
 
-   stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_SEPARATRICE);
+   stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_SEPARATRICE);
    // Terza riga del foglio (riga di divisione tra intestazione e dati)
    riga = foglioDatiGenerali.createRow(2);
    riga.setHeightInPoints(3);
@@ -1235,23 +1239,23 @@ public class ImportExportLottiGaraManager {
            bustalotti = (Long) SqlManager.getValueFromVectorParam(datiGaraComplementare, 0).getValue();
            destor = (String) SqlManager.getValueFromVectorParam(datiGaraComplementare, 1).getValue();
            if((new Long(1)).equals(bustalotti)){
-             UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga, "Codice gara",
-                 dizStiliExcel.getStileExcel(DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
+             UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga, "Codice gara",
+                 dizStiliExcel.getStileExcel(DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
              if (codgar != null && codgar.length() > 0)
-               UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+               UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
                    codgar, dizStiliExcel.getStileExcel(
-                         DizionarioStiliExcel.STRINGA_ALIGN_LEFT));
+                         DizionarioStiliExcelX.STRINGA_ALIGN_LEFT));
              else
                indiceRiga++;
 
              // Titolo della gara
-             UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+             UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                  "Titolo", dizStiliExcel.getStileExcel(
-                         DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
+                         DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
              if (destor != null && destor.length() > 0)
-               UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+               UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
                    destor, dizStiliExcel.getStileExcel(
-                         DizionarioStiliExcel.STRINGA_ALIGN_LEFT));
+                         DizionarioStiliExcelX.STRINGA_ALIGN_LEFT));
              else
                indiceRiga++;
            }
@@ -1274,10 +1278,10 @@ public class ImportExportLottiGaraManager {
     * @throws GestoreException
     */
    private void setDatiPrincipaliGara(String codgar,
-       HSSFSheet foglioLottiGara, boolean isCodificaAutomaticaAttiva,
-       DizionarioStiliExcel dizStiliExcel) throws GestoreException {
+       Sheet foglioLottiGara, boolean isCodificaAutomaticaAttiva,
+       DizionarioStiliExcelX dizStiliExcel) throws GestoreException {
 
-     HSSFRow riga5 = foglioLottiGara.createRow(4);
+     Row riga5 = foglioLottiGara.createRow(4);
      if (riga5 != null) {
        // Valori dei campi da databse
        String codiceGara = null;
@@ -1306,29 +1310,29 @@ public class ImportExportLottiGaraManager {
          }
 
          // Scrittura valore TORN.CODGAR o GARE.CODGAR1 sul file Excel
-         UtilityExcel.scriviCella(foglioLottiGara, 1, 5, codiceGara,
-             dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+         UtilityExcelX.scriviCella(foglioLottiGara, 1, 5, codiceGara,
+             dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
          // Scrittura valore CODGAR sul file Excel
-         UtilityExcel.scriviCella(foglioLottiGara, 2, 5, codgar,
-             dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+         UtilityExcelX.scriviCella(foglioLottiGara, 2, 5, codgar,
+             dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
          // Lettura valore GARE.MODLICG sul file Excel
-         UtilityExcel.scriviCella(foglioLottiGara, 3, 5, modlic,
-             dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+         UtilityExcelX.scriviCella(foglioLottiGara, 3, 5, modlic,
+             dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
          // Lettura valore V_GARE_TORN.ISLOTTI sul file Excel
-         UtilityExcel.scriviCella(foglioLottiGara, 4, 5, isLotti,
-             dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+         UtilityExcelX.scriviCella(foglioLottiGara, 4, 5, isLotti,
+             dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
          // Lettura valore V_GARE_TORN.ISGENERE sul file Excel
-         UtilityExcel.scriviCella(foglioLottiGara, 5, 5, isGenere,
-             dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+         UtilityExcelX.scriviCella(foglioLottiGara, 5, 5, isGenere,
+             dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
          if (isCodificaAutomaticaAttiva)
-           UtilityExcel.scriviCella(foglioLottiGara, 6, 5, "1",
-               dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+           UtilityExcelX.scriviCella(foglioLottiGara, 6, 5, "1",
+               dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
          else
-           UtilityExcel.scriviCella(foglioLottiGara, 6, 5, "2",
-               dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+           UtilityExcelX.scriviCella(foglioLottiGara, 6, 5, "2",
+               dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
         //Nuova gestione del campo Soggetto a ribasso
-         UtilityExcel.scriviCella(foglioLottiGara, 7, 5, "1",
-             dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+         UtilityExcelX.scriviCella(foglioLottiGara, 7, 5, "1",
+             dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
        } catch (SQLException s) {
          throw new GestoreException("Errore durante la scrittura dei dati "
                  + "principali della gara da usare in fase di import per la "
@@ -1354,14 +1358,14 @@ public class ImportExportLottiGaraManager {
     * @throws GestoreException
     */
    private boolean verifichePreliminari(String codgar,
-       HSSFSheet foglioLottiGara, boolean isCodificaAutomaticaAttiva)
+       Sheet foglioLottiGara, boolean isCodificaAutomaticaAttiva)
        throws GestoreException {
      boolean result = true;
 
      if (logger.isDebugEnabled())
        logger.debug("verifichePreliminari: inizio metodo");
 
-     HSSFRow riga5 = foglioLottiGara.getRow(4);
+     Row riga5 = foglioLottiGara.getRow(4);
      if (riga5 != null && riga5.getPhysicalNumberOfCells() > 0) {
        // Valori dei campi da databse
        String codiceGara = null;
@@ -1402,21 +1406,21 @@ public class ImportExportLottiGaraManager {
 
          if (continuaConfronto) {
            // Lettura valore TORN.CODGAR o GARE.CODGAR1 dal file Excel
-           codiceGaraXLS = UtilityExcel.leggiCellaString(
+           codiceGaraXLS = UtilityExcelX.leggiCellaString(
                foglioLottiGara, 1, 5);
            // Lettura valore GARE.NGARA dal file Excel
-           numeroLottoXLS = UtilityExcel.leggiCellaString(
+           numeroLottoXLS = UtilityExcelX.leggiCellaString(
                foglioLottiGara, 2, 5);
            // Lettura valore GARE.MODLICG dal file Excel
-           modlicgXLS = UtilityExcel.leggiCellaString(
+           modlicgXLS = UtilityExcelX.leggiCellaString(
                foglioLottiGara, 3, 5);
            // Lettura valore V_GARE_TORN.ISLOTTI dal file Excel
-           isLottiXLS = UtilityExcel.leggiCellaString(
+           isLottiXLS = UtilityExcelX.leggiCellaString(
                foglioLottiGara, 4, 5);
            // Lettura valore V_GARE_TORN.ISGENERE dal file Excel
-           isGenereXLS = UtilityExcel.leggiCellaString(
+           isGenereXLS = UtilityExcelX.leggiCellaString(
                foglioLottiGara, 5, 5);
-           String tmp = UtilityExcel.leggiCellaString(
+           String tmp = UtilityExcelX.leggiCellaString(
                foglioLottiGara, 6, 5);
            if ("1".equals(tmp)) isCodificaAutomaticaXLS = true;
 
@@ -1528,10 +1532,10 @@ public class ImportExportLottiGaraManager {
     * @throws GestoreException
     * @throws SQLException
     */
-   private void setLottiGara(String codgar, String profiloAttivo, boolean isGaraLotti, DizionarioStiliExcel dizStiliExcel)
+   private void setLottiGara(String codgar, String profiloAttivo, boolean isGaraLotti, DizionarioStiliExcelX dizStiliExcel)
          throws GestoreException, SQLException {
 
-     HSSFSheet foglioListaLotti = workBook.createSheet(FOGLIO_LISTA_LOTTI[0]);
+     Sheet foglioListaLotti = workBook.createSheet(FOGLIO_LISTA_LOTTI[0]);
      boolean isCodificaAutomaticaAttiva = this.geneManager.isCodificaAutomatica("GARE", "NGARA");
 
      if (isCodificaAutomaticaAttiva) {
@@ -1547,7 +1551,7 @@ public class ImportExportLottiGaraManager {
 
      selectGARA = " select GARE.NGARA from GARE where CODGAR1 = ? order by NGARA asc";
      selectCampiLottoGara = " select GARE.NGARA, GARE.CODIGA, GARE.CODCIG, GARE.NOT_GAR, GARE.IMPAPP, GARE.IMPNRL, GARE.IMPSIC, GARE.CUPPRG" +
-       		" from GARE where NGARA = ? and (GARE.GENERE is null or GARE.GENERE <> 3) order by NGARA asc";
+            " from GARE where NGARA = ? and (GARE.GENERE is null or GARE.GENERE <> 3) order by NGARA asc";
 
      String selectGarcpvLotto = "select codcpv from garcpv where ngara =? and tipcpv='1'";
      String selectGare1Lotto = "select CODCUI, ANNINT, IMPRIN, DESRIN, IMPSERV, IMPPROR, IMPALTRO, DESOPZ  from GARE1 where NGARA = ?";
@@ -1574,9 +1578,15 @@ public class ImportExportLottiGaraManager {
              FOGLIO_LISTA_LOTTI__RIGA_INIZIALE
                  + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[1] - 1,
              arrayIndiceColonnaCampi[1] - 1);
-         DVConstraint validazioneCODIGA = DVConstraint.createNumericConstraint(
-             DVConstraint.ValidationType.INTEGER, DVConstraint.OperatorType.BETWEEN, "0", "999");
-         HSSFDataValidation dataValidation = new HSSFDataValidation(addressList, validazioneCODIGA);
+
+         DataValidationHelper dvHelper = foglioListaLotti.getDataValidationHelper();
+         DataValidationConstraint validazioneCODIGA = dvHelper.createNumericConstraint(
+             DataValidationConstraint.ValidationType.INTEGER, DataValidationConstraint.OperatorType.BETWEEN, "0", "999");
+         DataValidation dataValidation = dvHelper.createValidation(
+             validazioneCODIGA, addressList);
+           dataValidation.setSuppressDropDownArrow(true);
+           dataValidation.setShowErrorBox(true);
+
          foglioListaLotti.addValidationData(dataValidation);
       }
        // Convalida dati per CODCIG
@@ -1586,63 +1596,73 @@ public class ImportExportLottiGaraManager {
                FOGLIO_LISTA_LOTTI__RIGA_INIZIALE
                    + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[2] - 1,
                arrayIndiceColonnaCampi[2] - 1);
-           DVConstraint validazioneCODCIG = DVConstraint.createNumericConstraint(
-           DVConstraint.ValidationType.TEXT_LENGTH, DVConstraint.OperatorType.EQUAL, "10",null);
-           HSSFDataValidation dataValidation = new HSSFDataValidation(addressList, validazioneCODCIG);
+
+
+         DataValidationHelper dvHelper = foglioListaLotti.getDataValidationHelper();
+         DataValidationConstraint validazioneCODCIG = dvHelper.createNumericConstraint(
+             DataValidationConstraint.ValidationType.TEXT_LENGTH, DataValidationConstraint.OperatorType.EQUAL, "10",null);
+         DataValidation dataValidation = dvHelper.createValidation(
+             validazioneCODCIG, addressList);
+           dataValidation.setSuppressDropDownArrow(true);
+           dataValidation.setShowErrorBox(true);
+
            foglioListaLotti.addValidationData(dataValidation);
         }
 
        int indiceColonna = 1;
        DizionarioCampi dizCampi = DizionarioCampi.getInstance();
        Campo campo = null;
-       HSSFRow riga = null;
+       Row riga = null;
+
+       List<CellStyle> stili = new ArrayList<CellStyle>();
 
        for (int ii = 0; ii < arrayCampi.length; ii++) {
          if (arrayCampiVisibili[ii])
            foglioListaLotti.setDefaultColumnStyle(
                (short) (arrayIndiceColonnaCampi[ii] - 1),
                dizStiliExcel.getStileExcel(arrayStiliCampi[ii]));
+         stili.add(dizStiliExcel.getStileExcel(arrayStiliCampi[ii]));
        }
 
 
        foglioListaLotti.setPrintGridlines(true);
        // (0.77 inc <=> 2 cm)
-       foglioListaLotti.setMargin(HSSFSheet.TopMargin, 0.77);
-       foglioListaLotti.setMargin(HSSFSheet.BottomMargin, 0.77);
-       foglioListaLotti.setMargin(HSSFSheet.LeftMargin, 0.77);
-       foglioListaLotti.setMargin(HSSFSheet.RightMargin, 0.77);
+       foglioListaLotti.setMargin(Sheet.TopMargin, 0.77);
+       foglioListaLotti.setMargin(Sheet.BottomMargin, 0.77);
+       foglioListaLotti.setMargin(Sheet.LeftMargin, 0.77);
+       foglioListaLotti.setMargin(Sheet.RightMargin, 0.77);
 
        // Set delle informazioni per l'area di stampa dei dati del foglio
-       HSSFPrintSetup printSetup = foglioListaLotti.getPrintSetup();
+       PrintSetup printSetup = foglioListaLotti.getPrintSetup();
        printSetup.setLandscape(true);
-       printSetup.setPaperSize(HSSFPrintSetup.A4_PAPERSIZE);
+       printSetup.setPaperSize(PrintSetup.A4_PAPERSIZE);
 
        printSetup.setScale((short) 70); // Presumo significhi zoom al 70%
        // Scrittura dell'intestazione della foglio
        for (int indiceRigaIntestazione = 0; indiceRigaIntestazione < FOGLIO_LISTA_LOTTI__RIGA_INIZIALE; indiceRigaIntestazione++) {
 
          riga = foglioListaLotti.createRow(indiceRigaIntestazione);
-         HSSFCellStyle stile = null;
+         CellStyle stile = null;
          for (int ii = 0; ii < arrayCampi.length; ii++) {
            if (arrayCampiVisibili[ii]) {
              switch (indiceRigaIntestazione) {
              case 0:
                if (stile == null){
-                 stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_INTESTAZIONE);
+                 stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_INTESTAZIONE);
                }
-               UtilityExcel.scriviCella(foglioListaLotti,
+               UtilityExcelX.scriviCella(foglioListaLotti,
                    arrayIndiceColonnaCampi[ii], indiceRigaIntestazione + 1,
                    arrayTitoloColonne[ii], stile);
-               UtilityExcel.setLarghezzaColonna(foglioListaLotti,
+               UtilityExcelX.setLarghezzaColonna(foglioListaLotti,
                    arrayIndiceColonnaCampi[ii], arrayLarghezzaColonne[ii]);
                break;
 
              case FOGLIO_LISTA_LOTTI_RIGA_NOME_FISICO_CAMPI - 1:
                // Seconda riga: nomi fisici dei campi
                if (stile == null)
-                 stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA);
+                 stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA);
                campo = dizCampi.getCampoByNomeFisico(arrayCampi[ii].substring(arrayCampi[ii].indexOf(".") + 1));
-               UtilityExcel.scriviCella(foglioListaLotti,
+               UtilityExcelX.scriviCella(foglioListaLotti,
                    arrayIndiceColonnaCampi[ii], indiceRigaIntestazione + 1,
                    SCHEMA_CAMPI.concat(".").concat(campo.getNomeFisicoCampo()),
                    stile);
@@ -1650,9 +1670,9 @@ public class ImportExportLottiGaraManager {
              case FOGLIO_LISTA_LOTTI__RIGA_INIZIALE - 2:
                // Riga separatrice intestazione dai dati
                if (stile == null){
-                 stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_SEPARATRICE);
+                 stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_SEPARATRICE);
                }
-               UtilityExcel.scriviCella(foglioListaLotti, arrayIndiceColonnaCampi[ii], indiceRigaIntestazione + 1, " ",
+               UtilityExcelX.scriviCella(foglioListaLotti, arrayIndiceColonnaCampi[ii], indiceRigaIntestazione + 1, " ",
                    stile);
                break;
              }//switch
@@ -1691,7 +1711,7 @@ public class ImportExportLottiGaraManager {
                if (record != null && record.size() > 0) {
                  // Campo NGARA (campo visibile se gara a lotti con offerta unica)
                  if (arrayCampiVisibili[0]) {
-                   UtilityExcel.scriviCella(foglioListaLotti, indiceColonna++, indiceRiga + i, tmpNgara, null);
+                   UtilityExcelX.scriviCella(foglioListaLotti, indiceColonna++, indiceRiga + i, tmpNgara, stili.get(indiceColonna - 1));
                  }
 
                  // Campo CODIGA (campo visibile se gara a lotti con offerta unica
@@ -1699,7 +1719,7 @@ public class ImportExportLottiGaraManager {
                  if (arrayCampiVisibili[1]) {
                    String codiga = SqlManager.getValueFromVectorParam( record, 1).getStringValue();
                    if (codiga != null)
-                      UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, codiga, null);
+                      UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, codiga, stili.get(indiceColonna -1));
                    else
                       indiceColonna++;
                  }
@@ -1709,7 +1729,7 @@ public class ImportExportLottiGaraManager {
                    String codcig = SqlManager.getValueFromVectorParam( record, 2).getStringValue();
                    codcig = UtilityStringhe.convertiNullInStringaVuota(codcig);
                    if (!"".equals(codcig))
-                      UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, codcig, null);
+                      UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, codcig, stili.get(indiceColonna -1));
                    else
                       indiceColonna++;
                  }
@@ -1719,7 +1739,7 @@ public class ImportExportLottiGaraManager {
                    String not_gar = SqlManager.getValueFromVectorParam( record, 3).getStringValue();
                    not_gar = UtilityStringhe.convertiNullInStringaVuota(not_gar);
                    if (!"".equals(not_gar))
-                      UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, not_gar, null);
+                      UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, not_gar, stili.get(indiceColonna - 1));
                    else
                       indiceColonna++;
                  }
@@ -1728,7 +1748,7 @@ public class ImportExportLottiGaraManager {
                  if (arrayCampiVisibili[4]) {
                    Double impapp = SqlManager.getValueFromVectorParam( record, 4).doubleValue();
                    if (impapp != null)
-                      UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, impapp, null);
+                      UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, impapp, stili.get(indiceColonna - 1));
                    else
                       indiceColonna++;
                  }
@@ -1737,7 +1757,7 @@ public class ImportExportLottiGaraManager {
                  if (arrayCampiVisibili[5]) {
                    Double impnrl = SqlManager.getValueFromVectorParam( record, 5).doubleValue();
                    if (impnrl != null)
-                      UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, impnrl, null);
+                      UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, impnrl, stili.get(indiceColonna - 1));
                    else
                       indiceColonna++;
                  }
@@ -1746,7 +1766,7 @@ public class ImportExportLottiGaraManager {
                  if (arrayCampiVisibili[6]) {
                    Double impsic = SqlManager.getValueFromVectorParam( record, 6).doubleValue();
                    if (impsic != null)
-                      UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, impsic, null);
+                      UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, impsic, stili.get(indiceColonna - 1));
                    else
                       indiceColonna++;
                  }
@@ -1755,7 +1775,7 @@ public class ImportExportLottiGaraManager {
                  if (arrayCampiVisibili[7]) {
                    String cupprg = SqlManager.getValueFromVectorParam( record, 7).stringValue();
                    if (cupprg != null)
-                      UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, cupprg, null);
+                      UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, cupprg, stili.get(indiceColonna - 1));
                    else
                       indiceColonna++;
                  }
@@ -1766,7 +1786,7 @@ public class ImportExportLottiGaraManager {
                    if(codcpvVet!=null){
                      String codcpv = SqlManager.getValueFromVectorParam( codcpvVet, 0).stringValue();
                      if (codcpv != null)
-                        UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, codcpv, null);
+                        UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, codcpv,stili.get(indiceColonna - 1));
                      else
                        indiceColonna++;
                    }else
@@ -1780,7 +1800,7 @@ public class ImportExportLottiGaraManager {
                    if (arrayCampiVisibili[9]) {
                      String codcui = SqlManager.getValueFromVectorParam( datiGare1, 0).stringValue();
                      if (codcui != null)
-                        UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, codcui, null);
+                        UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, codcui, stili.get(indiceColonna - 1));
                      else
                        indiceColonna++;
                    }else
@@ -1790,7 +1810,7 @@ public class ImportExportLottiGaraManager {
                    if (arrayCampiVisibili[10]) {
                      Long annint = SqlManager.getValueFromVectorParam( datiGare1, 1).longValue();
                      if (annint != null)
-                        UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, annint, null);
+                        UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, annint, stili.get(indiceColonna - 1));
                      else
                        indiceColonna++;
                    }else
@@ -1800,7 +1820,7 @@ public class ImportExportLottiGaraManager {
                    if (arrayCampiVisibili[11]) {
                      Double imprin = SqlManager.getValueFromVectorParam( datiGare1, 2).doubleValue();
                      if (imprin != null)
-                        UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, imprin, null);
+                        UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, imprin, stili.get(indiceColonna - 1));
                      else
                        indiceColonna++;
                    }else
@@ -1810,7 +1830,7 @@ public class ImportExportLottiGaraManager {
                    if (arrayCampiVisibili[12]) {
                      String desrin = SqlManager.getValueFromVectorParam( datiGare1, 3).stringValue();
                      if (desrin != null)
-                        UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, desrin, null);
+                        UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, desrin, stili.get(indiceColonna - 1));
                      else
                        indiceColonna++;
                    }else
@@ -1820,7 +1840,7 @@ public class ImportExportLottiGaraManager {
                    if (arrayCampiVisibili[13]) {
                      Double impserv = SqlManager.getValueFromVectorParam( datiGare1, 4).doubleValue();
                      if (impserv != null)
-                        UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, impserv, null);
+                        UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, impserv, stili.get(indiceColonna - 1));
                      else
                        indiceColonna++;
                    }else
@@ -1830,7 +1850,7 @@ public class ImportExportLottiGaraManager {
                    if (arrayCampiVisibili[14]) {
                      Double imppror = SqlManager.getValueFromVectorParam( datiGare1, 5).doubleValue();
                      if (imppror != null)
-                        UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, imppror, null);
+                        UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, imppror, stili.get(indiceColonna - 1));
                      else
                        indiceColonna++;
                    }else
@@ -1840,7 +1860,7 @@ public class ImportExportLottiGaraManager {
                    if (arrayCampiVisibili[15]) {
                      Double impaltro = SqlManager.getValueFromVectorParam( datiGare1, 6).doubleValue();
                      if (impaltro != null)
-                        UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, impaltro, null);
+                        UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, impaltro, stili.get(indiceColonna - 1));
                      else
                        indiceColonna++;
                    }else
@@ -1849,9 +1869,9 @@ public class ImportExportLottiGaraManager {
                    // Campo DESOPZ
                    if (arrayCampiVisibili[16]) {
                      String desopz = SqlManager.getValueFromVectorParam( datiGare1, 7).stringValue();
-                     if (desopz != null)
-                        UtilityExcel.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, desopz, null);
-                     else
+                     if (desopz != null) {
+                       UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, desopz, stili.get(indiceColonna -1));
+                     }else
                        indiceColonna++;
                    }else
                       indiceColonna++;
@@ -1928,7 +1948,7 @@ public class ImportExportLottiGaraManager {
      Double impsicXls = new Double(0);
      for (int colonna = 0; colonna < listaCampiImportExcel.size(); colonna++) {
        CampoImportExcel tmpCampo = listaCampiImportExcel.get(colonna);
-       String strCellaExcel = UtilityExcel.conversioneNumeroColonna(tmpCampo.getColonnaCampo())
+       String strCellaExcel = UtilityExcelX.conversioneNumeroColonna(tmpCampo.getColonnaCampo())
            + (indiceRiga + 1);
        Object valore = valoriCampiRigaExcel.get(colonna);
 
@@ -2016,13 +2036,13 @@ public class ImportExportLottiGaraManager {
                  valoriCampiRigaExcel.set(colonna, "" + ((Double) valore).longValue());
              }
              if (valore instanceof Long) {
-            	 Long tmpLongValore =  (Long) valore;
-            	 tmpValore = tmpLongValore.toString();
-            	 valoriCampiRigaExcel.set(colonna, "" + ((Long) valore).longValue());
+                 Long tmpLongValore =  (Long) valore;
+                 tmpValore = tmpLongValore.toString();
+                 valoriCampiRigaExcel.set(colonna, "" + ((Long) valore).longValue());
              }
              if (valore instanceof String) {
-            	 tmpValore = ((String) valore).toUpperCase();
-            	 valoriCampiRigaExcel.set(colonna, tmpValore.toUpperCase());
+                 tmpValore = ((String) valore).toUpperCase();
+                 valoriCampiRigaExcel.set(colonna, tmpValore.toUpperCase());
              }
 
              if (tmpValore != null && tmpValore.length() != 10) {
@@ -2031,14 +2051,14 @@ public class ImportExportLottiGaraManager {
                    + " presenta un valore non ammesso: il codice CIG deve avere una lunghezza di 10 caratteri.");
                rigaImportabile = false;
              } else {
-            	 if (!this.pgManager.controlloCodiceCIG(tmpValore)) {
-            		 tmpListaMsg.add(" - la cella "
+                 if (!this.pgManager.controlloCodiceCIG(tmpValore)) {
+                     tmpListaMsg.add(" - la cella "
                              + strCellaExcel
                              + " presenta "
                              + "un valore non ammesso: "
                              + "il codice CIG non e' valido.");
-            		 rigaImportabile = false;
-            	 }
+                     rigaImportabile = false;
+                 }
              }
            } else if(arrayCampi[7].equalsIgnoreCase(SCHEMA_CAMPI.concat(".").concat(tmpCampo.getNomeFisicoCampo()))) {
              String tmpValore = null;
@@ -2218,7 +2238,7 @@ public class ImportExportLottiGaraManager {
 
      for (int colonna = 0; colonna < listaCampiImportExcel.size(); colonna++) {
        CampoImportExcel tmpCampo = listaCampiImportExcel.get(colonna);
-       String strCellaExcel = UtilityExcel.conversioneNumeroColonna(tmpCampo.getColonnaCampo())
+       String strCellaExcel = UtilityExcelX.conversioneNumeroColonna(tmpCampo.getColonnaCampo())
            + (indiceRiga + 1);
        Object valore = valoriCampiRigaExcelGARE.get(colonna);
        if (valore == null) {
@@ -2485,51 +2505,51 @@ public class ImportExportLottiGaraManager {
      return rigaImportabile;
    }
 
-   private List<Object> letturaRiga(HSSFRow rigaFoglioExcel, List<?> listaCampiDaImportare) {
+   private List<Object> letturaRiga(Row rigaFoglioExcel, List<?> listaCampiDaImportare) {
      List<Object> valoriCampi = new ArrayList<Object>();
-     HSSFCell cella = null;
-     HSSFFormulaEvaluator evaluator = new HSSFFormulaEvaluator(workBook);
+     Cell cella = null;
+     FormulaEvaluator evaluator = workBook.getCreationHelper().createFormulaEvaluator();
      for (int i = 0; i < listaCampiDaImportare.size(); i++) {
        CampoImportExcel campoImportExcel = (CampoImportExcel) listaCampiDaImportare.get(i);
        cella = rigaFoglioExcel.getCell(campoImportExcel.getColonnaCampo() - 1);
        if (cella != null) {
          switch (cella.getCellType()) {
-         case HSSFCell.CELL_TYPE_STRING:
+         case Cell.CELL_TYPE_STRING:
            valoriCampi.add(cella.getRichStringCellValue().toString());
            break;
-         case HSSFCell.CELL_TYPE_NUMERIC:
+         case Cell.CELL_TYPE_NUMERIC:
            if (HSSFDateUtil.isCellDateFormatted(cella))
              valoriCampi.add(HSSFDateUtil.getJavaDate(cella.getNumericCellValue()));
            else
              valoriCampi.add(new Double(cella.getNumericCellValue()));
            break;
-         case HSSFCell.CELL_TYPE_BOOLEAN:
+         case Cell.CELL_TYPE_BOOLEAN:
            valoriCampi.add(new Boolean(cella.getBooleanCellValue()));
            break;
-         case HSSFCell.CELL_TYPE_BLANK:
+         case Cell.CELL_TYPE_BLANK:
            valoriCampi.add(null);
            break;
-         case HSSFCell.CELL_TYPE_ERROR:
+         case Cell.CELL_TYPE_ERROR:
            valoriCampi.add(new Error("Cella con errore"));
            break;
-         case HSSFCell.CELL_TYPE_FORMULA:
+         case Cell.CELL_TYPE_FORMULA:
            switch (evaluator.evaluateFormulaCell(cella)) {
-           case HSSFCell.CELL_TYPE_BOOLEAN:
+           case Cell.CELL_TYPE_BOOLEAN:
              valoriCampi.add(new Boolean(cella.getBooleanCellValue()));
              break;
-           case HSSFCell.CELL_TYPE_NUMERIC:
+           case Cell.CELL_TYPE_NUMERIC:
              if (HSSFDateUtil.isCellDateFormatted(cella))
                valoriCampi.add(HSSFDateUtil.getJavaDate(cella.getNumericCellValue()));
              else
                valoriCampi.add(new Double(cella.getNumericCellValue()));
              break;
-           case HSSFCell.CELL_TYPE_STRING:
+           case Cell.CELL_TYPE_STRING:
              valoriCampi.add(cella.getRichStringCellValue().toString());
              break;
-           case HSSFCell.CELL_TYPE_BLANK:
+           case Cell.CELL_TYPE_BLANK:
              valoriCampi.add(null);
              break;
-           case HSSFCell.CELL_TYPE_ERROR:
+           case Cell.CELL_TYPE_ERROR:
              valoriCampi.add(new Error(
                  "Cella con formula, il cui risultato e' un errore"));
              break;
@@ -2537,7 +2557,7 @@ public class ImportExportLottiGaraManager {
            break;
          }
        } else {
-         String letteraColonna = UtilityExcel.conversioneNumeroColonna(i + 1);
+         String letteraColonna = UtilityExcelX.conversioneNumeroColonna(i + 1);
          if (logger.isDebugEnabled())
            logger.debug("La cella "
                + letteraColonna

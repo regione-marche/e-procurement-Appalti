@@ -6,6 +6,7 @@ import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.utils.properties.ConfigManager;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -45,12 +46,13 @@ public class GetWSLoginAction extends Action {
     String idconfi = null;
     String filtroConfi = "";
     
+    List<Object> parameters = new ArrayList<Object>();
     if("WSERP".equals(servizio) || "WSERP_L190".equals(servizio)){
       syscon = new Long(-1);
     }else{
       if ("FASCICOLOPROTOCOLLO".equals(servizio) || "DOCUMENTALE".equals(servizio)){
         idconfi = request.getParameter("idconfi");
-        filtroConfi = " and idconfiwsdm = " + idconfi;
+        filtroConfi = " and idconfiwsdm = ? " ;
       }
       wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
       if (wsdmLoginComune != null && "1".equals(wsdmLoginComune)) {
@@ -59,11 +61,15 @@ public class GetWSLoginAction extends Action {
         syscon = new Long(request.getParameter("syscon"));
       }
     }
-
+    parameters.add(syscon);
+    parameters.add(servizio);
+    if(!"".equals(filtroConfi)) 
+      parameters.add(idconfi);
+    
+   
     List<?> datiWSLogin = sqlManager.getVector(
-        "select username, password, ruolo, nome, cognome, codiceuo, idutente, idutenteunop from wslogin where syscon = ? and servizio = ?" + filtroConfi, new Object[] { syscon,
-            servizio });
-
+        "select username, password, ruolo, nome, cognome, codiceuo, idutente, idutenteunop from wslogin where syscon = ? and servizio = ?" + filtroConfi, 
+        parameters.toArray());
     if (datiWSLogin != null && datiWSLogin.size() > 0) {
       String username = (String) SqlManager.getValueFromVectorParam(datiWSLogin, 0).getValue();
       String password = (String) SqlManager.getValueFromVectorParam(datiWSLogin, 1).getValue();

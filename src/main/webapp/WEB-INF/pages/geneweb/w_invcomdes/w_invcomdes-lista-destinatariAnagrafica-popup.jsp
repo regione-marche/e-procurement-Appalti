@@ -29,6 +29,7 @@
 		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmsupporto.js?v=${sessionScope.versioneModuloAttivo}"></script>
 	</gene:redefineInsert>
 	
+	<c:set var="descc" value="${param.descc}" />
 	
 	<c:choose>
 		<c:when test='${not empty param.idprg}'>
@@ -166,6 +167,7 @@
 			<input type="hidden" name="idcom" value="${idcom}" />
 			<input type="hidden" name="comkey1" value="${comkey1}" />
 			<input type="hidden" name="entitaRicerca" value="${entitaRicerca}" />
+			<input type="hidden" name="descc" value="${descc}" />
 			<c:if test='${integrazioneWSDM =="1"}'>
 				<input id="servizio" type="hidden" value="FASCICOLOPROTOCOLLO" />
 				<input id="idprg" type="hidden" value="${sessionScope.moduloAttivo}" />

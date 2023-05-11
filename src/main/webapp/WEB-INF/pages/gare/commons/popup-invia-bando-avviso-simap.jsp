@@ -26,6 +26,7 @@
 	<gene:redefineInsert name="addHistory" />
 	<gene:redefineInsert name="gestioneHistory" />
 	<gene:setString name="titoloMaschera" value='Invio dei dati a Formulari Europei per la creazione dei formulari GUUE' />
+	<c:set var="ssoprotocollo" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "sso.protocollo")}'/>
 
 	<gene:redefineInsert name="corpo">
 	
@@ -44,7 +45,7 @@
 						<br>
 						<br>
 						<br>
-						<c:if test='${!profiloUtente.autenticazioneSSO}'>
+						<c:if test="${empty ssoprotocollo || ssoprotocollo eq '0'}">
 							<b>Credenziali (utente e password) per la connessione a Formulari Europei</b>
 							<br>
 							<br>
@@ -56,7 +57,7 @@
 					</td>
 				</tr>
 				
-				<c:if test='${!profiloUtente.autenticazioneSSO}'>
+				<c:if test="${empty ssoprotocollo || ssoprotocollo eq '0'}">
 					<tr>	
 						<td class="etichetta-dato">Utente</td>
 						<td class="valore-dato">
@@ -163,7 +164,7 @@
 			var metodo = $("#metodoInvio").val();
 			
 			if(metodo == 'controllaEdInvia'){
-			<c:if test='${!profiloUtente.autenticazioneSSO}'>
+			<c:if test="${empty ssoprotocollo || ssoprotocollo eq '0'}">
 				var altre = document.formInviaBandoAvvisoSimap.altre;
 				if (altre.checked) {
 					var username = document.formInviaBandoAvvisoSimap.username;

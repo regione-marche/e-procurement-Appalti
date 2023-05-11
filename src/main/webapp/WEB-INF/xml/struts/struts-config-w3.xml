@@ -1,0 +1,148 @@
+<?xml version="1.0"?>
+<!DOCTYPE struts-config PUBLIC "-//Apache Software Foundation//DTD Struts Configuration 1.2//EN" "http://struts.apache.org/dtds/struts-config_1_2.dtd">
+<struts-config>
+	
+	<form-beans>
+		<form-bean name="uploadMultiploForm" type="it.eldasoft.sil.w3.web.struts.UploadMultiploForm" />
+	</form-beans>
+	
+	<global-forwards>
+	</global-forwards>
+
+	<action-mappings>
+	
+		<action path="/Scheda" name="uploadMultiploForm" type="it.eldasoft.gene.web.struts.tags.SchedaAction" scope="request" validate="false" parameter="metodo" >
+			<!-- Se si verificano errori ritorna alla trova -->
+			<forward name="errore" path="/ApriPagina.do" module="/" />
+		</action >
+		
+		<action path="/VisualizzaDocumentoAllegato" type="org.springframework.web.struts.DelegatingActionProxy" 
+			scope="request" validate="false">
+		</action>
+
+		<action path="/AvviaRichiestaIDGARACIG"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" >
+			<forward name="richiestaidgaracigcontrollo" path="/WEB-INF/pages/w3/commons/popup-validazione-idgaracig.jsp" module="/" />
+			<forward name="richiestaidgaracigrichiesta" path="/WEB-INF/pages/w3/commons/popup-richiesta-idgaracig.jsp" module="/" />
+		</action>
+
+		<action path="/AvviaRichiestaRequisiti"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" >
+			<forward name="richiestareqcontrollo" path="/WEB-INF/pages/w3/commons/popup-validazione-idgaracig.jsp" module="/" />
+			<forward name="richiestareqrichiesta" path="/WEB-INF/pages/w3/commons/popup-richiesta-requisiti.jsp" module="/" />
+		</action>
+
+		<action path="/RichiestaIDGARACIG"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" >
+			<forward name="richiestaidgaracigsuccess" path="/WEB-INF/pages/w3/commons/popup-success-richiesta-idgaracig.jsp" module="/" />
+			<forward name="richiestaidgaracigerror" path="/WEB-INF/pages/w3/commons/popup-richiesta-idgaracig.jsp" module="/" />
+		</action>
+
+		<action path="/RichiestaIDGARACIGMassivo"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" >
+			<forward name="richiestaidgaracigsuccess" path="/WEB-INF/pages/w3/commons/popup-richiesta-idgaracig-massivo.jsp" module="/" />
+			<forward name="richiestaidgaracigerror" path="/WEB-INF/pages/w3/commons/popup-richiesta-idgaracig-massivo.jsp" module="/" />
+		</action>
+		
+		<action path="/RichiestaRequisiti"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" >
+			<forward name="richiestareqsuccess" path="/WEB-INF/pages/w3/commons/popup-success-richiesta-requisiti.jsp" module="/" />
+			<forward name="richiestareqerror" path="/WEB-INF/pages/w3/commons/popup-richiesta-requisiti.jsp" module="/" />
+		</action>
+		
+		<action path="/AvviaModificaIDGARACIG"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" >
+			<forward name="modificaidgaracigcontrollo" path="/WEB-INF/pages/w3/commons/popup-validazione-idgaracig.jsp" module="/" />
+			<forward name="modificaidgaracigrichiesta" path="/WEB-INF/pages/w3/commons/popup-modifica-idgaracig.jsp" module="/" />
+		</action>
+
+		<action path="/ModificaIDGARACIG"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" >
+			<forward name="modificaidgaracigsuccess" path="/WEB-INF/pages/w3/commons/popup-success-modifica-idgaracig.jsp" module="/" />
+			<forward name="modificaidgaracigerror" path="/WEB-INF/pages/w3/commons/popup-modifica-idgaracig.jsp" module="/" />
+		</action>
+		
+		<action path="/CancellaIDGARACIG"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" >
+			<forward name="cancellaidgaracigsuccess" path="/WEB-INF/pages/w3/commons/popup-success-cancella-idgaracig.jsp" module="/" />
+			<forward name="cancellaidgaracigerror" path="/WEB-INF/pages/w3/commons/popup-cancella-idgaracig.jsp" module="/" />
+		</action>
+		
+		<action path="/ConsultaGaraLotto"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" >
+			<forward name="consultagaralottosuccess" path="/WEB-INF/pages/w3/w3gara/w3gara-consulta-success.jsp" module="/" />
+			<forward name="consultagaralottoerror" path="/WEB-INF/pages/w3/w3gara/w3gara-consulta-gara-lotto.jsp" module="/" />
+		</action>
+
+		<action path="/AvviaPubblicaGaraLotto"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" >
+			<forward name="pubblicagaralottocontrollo" path="/WEB-INF/pages/w3/commons/popup-validazione-idgaracig.jsp" module="/" />
+			<forward name="pubblicagaralottorichiesta" path="/WEB-INF/pages/w3/w3gara/w3gara-pubblica-gara-lotto.jsp" module="/" />
+		</action>
+
+		<action path="/PubblicaGaraLotto"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" >
+			<forward name="pubblicagaralottosuccess" path="/WEB-INF/pages/w3/w3gara/w3gara-pubblica-success.jsp" module="/" />
+			<forward name="pubblicagaralottogerror" path="/WEB-INF/pages/w3/w3gara/w3gara-pubblica-gara-lotto.jsp" module="/" />
+		</action>
+		
+		<action path="/ElaboraRichiesteLotti"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" >
+			<forward name="elaborarichiestelottisuccess" path="/WEB-INF/pages/w3/w3gara/w3gara-elabora-richieste-lotti-success.jsp" module="/" />
+			<forward name="elaborarichiestelottierror" path="/WEB-INF/pages/w3/w3gara/w3gara-elabora-richieste-lotti.jsp" module="/" />
+			<forward name="elaborarichiestelottiwarning" path="/WEB-INF/pages/w3/w3gara/w3gara-elabora-richieste-lotti-warning.jsp" module="/" />
+		</action>
+
+		<action path="/ConfrontaCIG"
+			type="org.springframework.web.struts.DelegatingActionProxy" parameter="metodo"
+			scope="request" validate="false" >
+			<forward name="confrontacigsuccess" path="/WEB-INF/pages/w3/commons/popup-confronta-cig.jsp" module="/" />
+			<forward name="confrontacigerror" path="/WEB-INF/pages/w3/commons/popup-riallinea-cig.jsp" module="/" />
+			<forward name="riallineacigsuccess" path="/WEB-INF/pages/w3/commons/popup-esito-riallinea.jsp" module="/" />
+		</action>
+		
+		<action path="/LoginSimog"
+			type="org.springframework.web.struts.DelegatingActionProxy" parameter="metodo"
+			scope="request" validate="false" >
+			<forward name="result" path="/WEB-INF/pages/w3/commons/popup-login-simog.jsp" module="/" />
+		</action>
+		
+		<action path="/LoginRupSimog"
+			type="org.springframework.web.struts.DelegatingActionProxy" parameter="metodo"
+			scope="request" validate="false" >
+			<forward name="result" path="/WEB-INF/pages/w3/commons/gestione-credenziali-simog.jsp" module="/" />
+		</action>
+		
+		<action path="/CancellaCredenzialiSimog"
+			type="org.springframework.web.struts.DelegatingActionProxy" parameter="metodo"
+			scope="request" validate="false" >
+			<forward name="success" path="/WEB-INF/pages/w3/commons/gestione-credenziali-simog.jsp" module="/" />
+		</action>
+		
+		<action path="/ValorizzaCentroCosto"
+			type="org.springframework.web.struts.DelegatingActionProxy" parameter="metodo"
+			scope="request" validate="false" >
+			<forward name="result" path="/WEB-INF/pages/w3/commons/popup-valorizza-centrocosto.jsp" module="/" />
+		</action>
+
+	</action-mappings>
+
+	<plug-in className="org.apache.struts.tiles.TilesPlugin">
+		<set-property property="definitions-config"
+			value="/WEB-INF/xml/tiles/tiles-defs-gene-common.xml, /WEB-INF/xml/tiles/tiles-defs-gene-admin.xml" />
+		<set-property property="moduleAware" value="true" />
+	</plug-in>
+
+</struts-config>

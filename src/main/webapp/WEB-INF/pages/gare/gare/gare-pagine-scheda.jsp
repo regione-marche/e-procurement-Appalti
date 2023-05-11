@@ -18,6 +18,7 @@
 
 <c:set var="codiceGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetCodiceGaraFunction", pageContext)}' />
 <c:set var="modlicg" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetMODLICGFunction", pageContext, "")}' />
+<c:set var="iterga" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetITERGAFunction", pageContext, codiceGara)}' />
 <c:set var="isVecchiaOepv" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.isVecchiaOEPVFunction", pageContext, codiceGara)}' />
 <c:set var="contieneFormato52" value="${gene:callFunction2('it.eldasoft.sil.pg.tags.funzioni.CheckContieneFormatoFunction', pageContext, '52')}" />
 <c:set var="itergaMacro" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetITERGAMacroFunction", pageContext, key)}' scope="request"/>
@@ -35,6 +36,9 @@
 		<c:set var="visualizzaControlloSpesa" value="true"/>
 	</c:if>
 </c:if>
+<c:set var="faseRicezione" value="false" />
+<c:set var="faseGara-Apertura_doc_amm" value="false" />
+<c:set var="faseGaraOff" value="false" />
 
 <c:choose>
 	<c:when test="${itergaMacro eq 1}">
@@ -43,8 +47,29 @@
 	<c:when test="${itergaMacro eq 3}">
 		<c:set var="titleFasiRicezione" value="Inviti e ricezione offerte" />
 	</c:when>
+	<c:when test="${itergaMacro eq 7}">
+		<c:set var="titleFasiRicezione" value="Ricezione domande di partecipazione" />
+	</c:when>
 	<c:otherwise>
 		<c:set var="titleFasiRicezione" value="Ricezione domande e offerte" />
+	</c:otherwise>
+</c:choose>
+
+<c:choose>
+	<c:when test="${iterga eq 8}">
+		<c:set var="isRicercaMercatoNegoziata" value="true" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="isRicercaMercatoNegoziata" value="false" />
+	</c:otherwise>
+</c:choose>
+
+<c:choose>
+	<c:when test="${itergaMacro eq 3 && isRicercaMercatoNegoziata eq 'true'}">
+		<c:set var="titleFasiGaraTab3" value="3. Apertura offerte e valutazione" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="titleFasiGaraTab3" value="3. Apertura offerte e calcolo aggiud." />
 	</c:otherwise>
 </c:choose>
 
@@ -68,8 +93,20 @@
 
 <c:set var="integrazioneWSERP" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSERPFunction", pageContext)}' scope="request" />
 
+<c:if test="${isProceduraTelematica eq '1' }">
+	<c:set var="offtel" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetOFFTELFunction", pageContext, codiceGara)}' />
+</c:if>
+
 <c:set var="costofisso" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetCOSTOFISSOFunction",  pageContext,ngara)}' />
-<c:set var="visListaLavForn" value="${(((modlicg eq '6' and (isVecchiaOepv or contieneFormato52)) or modlicg eq '5' or modlicg eq '14' or modlicg eq '16' or (esitoControlloAdesione eq 'true' and modlicg eq '0')) and not lottoOffertaUnica and costofisso ne '1') or (lottoOffertaUnica and bustalotti eq '1' and costofisso ne '1' and ((modlicg eq '6' and (isVecchiaOepv or contieneFormato52)) or modlicg eq '5' or modlicg eq '14'))}" scope="request" />
+<c:set var="isAffidamentoDerivato" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.IsAffidamentoDerivatoFunction",  pageContext,ngara)}' />
+<c:set var="visListaLavForn" value="${((((modlicg eq '6' and (isVecchiaOepv or contieneFormato52)) or modlicg eq '5' or modlicg eq '14' or modlicg eq '16' or (isAffidamentoDerivato eq 'true') or (esitoControlloAdesione eq 'true' and modlicg eq '0')) and not lottoOffertaUnica and costofisso ne '1') or (lottoOffertaUnica and bustalotti eq '1' and costofisso ne '1' and ((modlicg eq '6' and (isVecchiaOepv or contieneFormato52)) or modlicg eq '5' or modlicg eq '14'))) and offtel ne '3'}" scope="request" />
+
+<c:if test="${not lottoOffertaUnica and not garaPerElenco and not garaPerCatalogo }">
+	<c:set var="whereNobustamm" value="codgar='${codiceGara}'"/>
+	<c:set var="nobustamm" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "nobustamm","torn", whereNobustamm)}' />
+</c:if>
+ 
+
  
 <gene:formPagine gestisciProtezioni="true">
 
@@ -147,6 +184,7 @@
 <c:choose>
 	<c:when test='${not garaPerElenco and not garaPerCatalogo}'>
 		<gene:pagina title="1. ${titleFasiRicezione}" idProtezioni="FASIRICEZIONE"  visibile='${not lottoOffertaUnica}'>
+			<c:set var="faseRicezione" value="true" />
 			<jsp:include page="gare-pg-fasiRicezione.jsp" />
 		</gene:pagina>
 		<gene:pagina title="Ditte concorrenti" idProtezioni="DITTECONCORRENTI"  visibile='${not lottoOffertaUnica}'>
@@ -161,27 +199,38 @@
 </c:choose>
 
 
-	<gene:pagina title="2. Apertura doc.ammin." idProtezioni="FASIGARA-APERTURA_DOC_AMM" selezionabile="${faseGara >= 2}"  visibile='${not lottoOffertaUnica and not garaPerElenco and not garaPerCatalogo}'>
+	<gene:pagina title="2. Apertura doc.ammin." idProtezioni="FASIGARA-APERTURA_DOC_AMM" selezionabile="${faseGara >= 2}"  visibile='${not lottoOffertaUnica and not garaPerElenco and not garaPerCatalogo and nobustamm ne "1"}'>
+		<c:set var="faseGara-Apertura_doc_amm" value="true" />
 		<jsp:include page="gare-pg-fasiAperturaDocAmm.jsp" >
 			<jsp:param name="paginaFasiGara" value="aperturaDocAmm" /> 
 		</jsp:include>
 	</gene:pagina>
-	<gene:pagina title="3. Apertura offerte e calcolo aggiud." idProtezioni="FASIGARA" selezionabile="${faseGara >= 5}"  visibile='${not lottoOffertaUnica and not garaPerElenco and not garaPerCatalogo}'>
+	<gene:pagina title="${titleFasiGaraTab3}" idProtezioni="FASIGARA" selezionabile="${faseGara >= 5}"  visibile='${not lottoOffertaUnica and not garaPerElenco and not garaPerCatalogo}'>
+		<c:set var="faseGaraOff" value="true" />
 		<jsp:include page="gare-pg-fasiGara.jsp" >
-			<jsp:param name="paginaFasiGara" value="aperturaOffAggProv"/> 
+			<jsp:param name="paginaFasiGara" value="aperturaOffAggProv"/>
+			<jsp:param name="isRicercaMercatoNegoziata" value="${isRicercaMercatoNegoziata}"/>
 		</jsp:include>
 	</gene:pagina>
-	<gene:pagina title="${prefTitleAggiudicazione}Aggiudicazione" idProtezioni="AGGDEF"  selezionabile="${empty prefTitleAggiudicazione or !empty dittaProv}"  visibile='${not lottoOffertaUnica and not garaPerElenco and not garaPerCatalogo}'>
-		<jsp:include page="gare-pg-aggiudicazione-definitiva.jsp">
-			<jsp:param name="lottoDiGara" value="${lottoDiGara}" />
-		</jsp:include>
-	</gene:pagina>
+	<c:if test="${!(isRicercaMercatoNegoziata eq 'true')}">
+		<gene:pagina title="${prefTitleAggiudicazione}Aggiudicazione" idProtezioni="AGGDEF"  selezionabile="${empty prefTitleAggiudicazione or !empty dittaProv}"  visibile='${not lottoOffertaUnica and not garaPerElenco and not garaPerCatalogo}'>
+			<jsp:include page="gare-pg-aggiudicazione-definitiva.jsp">
+				<jsp:param name="lottoDiGara" value="${lottoDiGara}" />
+			</jsp:include>
+		</gene:pagina>
+	</c:if>
+	<c:if test="${isRicercaMercatoNegoziata eq 'true'}">
+		<gene:pagina title="Affidamenti derivati" idProtezioni="AGGPV"  selezionabile="true"  visibile='true'>
+			<jsp:include page="gare-pg-prodotti-valutati.jsp" />
+		</gene:pagina>
+	</c:if>
+	
 	<%/*
 	<gene:pagina title="Pubblicazioni esito" idProtezioni="PUBESITO"  visibile='${not lottoOffertaUnica and not garaPerElenco and not garaPerCatalogo}'>
 		<jsp:include page="gare-pg-pub-esito.jsp" />
 	</gene:pagina>
 	*/%>
-	<c:if test="${not lottoOffertaUnica and not garaPerElenco and not garaPerCatalogo }">
+	<c:if test="${not lottoOffertaUnica and not garaPerElenco and not garaPerCatalogo and not isRicercaMercatoNegoziata }">
 		<c:choose>
 			<c:when test="${paginaContratto eq 'stipula' }">
 				<gene:pagina title="Stipula accordo quadro" idProtezioni="STIPULA" >
@@ -247,3 +296,36 @@
 	</gene:pagina>
 
 </gene:formPagine>
+
+<gene:javaScript>
+			
+var selezionaPaginaOld = selezionaPagina;
+
+selezionaPagina = function(pageNumber) {
+var formDaEstendere = $('form[name="pagineForm"]');
+<c:if test="${!faseRicezione}">
+$('<input>').attr({
+    type: 'hidden',
+    name: 'logAccessoFasiRic',
+	value: '1'
+}).appendTo(formDaEstendere);
+</c:if>
+<c:if test="${!faseGaraApertura_doc_amm}">
+$('<input>').attr({
+    type: 'hidden',
+    name: 'logAccessoFasiAperturaDocAmm',
+	value: '1'
+}).appendTo(formDaEstendere);
+</c:if>
+<c:if test="${!faseGaraOff}">
+$('<input>').attr({
+    type: 'hidden',
+    name: 'logAccessoFasiGara',
+	value: '1'
+}).appendTo(formDaEstendere);
+</c:if>
+return selezionaPaginaOld(pageNumber);
+}
+
+</gene:javaScript>
+

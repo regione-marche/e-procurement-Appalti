@@ -18,6 +18,7 @@ import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityStringhe;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -248,13 +249,26 @@ public class GestoreOrdiniNso extends AbstractGestoreChiaveIDAutoincrementante {
                 if(new Long(0)<countProdottiAggiudicataria){//MULTIRIGA
 
                   if(!"".equals(arrmultikey)){
-                    String[] ContafVect = arrmultikey.split(";");
-                    String inClause = arrmultikey.replace(";", ",");
-                    inClause = inClause.substring(0, inClause.length()-1);
+//                    String[] ContafVect = arrmultikey.split(";");
+//                    String inClause = arrmultikey.replace(";", ",");
+//                    inClause = inClause.substring(0, inClause.length()-1);
+                    List<Object> parameters = new ArrayList<Object>();
+                    parameters.add(ngara);
+                    parameters.add(dittaAggiudicataria);
+
+                    String[] contaf = arrmultikey.substring(0, arrmultikey.length()-1).split(";");
+                    String inClause = "";
+                    for(int i=0;i<contaf.length;i++) {
+                      if(i>0) {
+                        inClause += ", ";
+                      }
+                      inClause += "?";
+                      parameters.add(contaf[i]);
+                    }
                     List listaProdottiAggiudicataria  = this.sqlManager.getListVector(
                         "select CODGAR,NGARA,CODVOC,VOCE,UNIMISEFF,QUANTIEFF,PREOFF" +
                         " from V_GCAP_DPRE where NGARA= ? and COD_DITTA = ? and CONTAF in("+ inClause + ")",
-                        new Object[] { ngara,dittaAggiudicataria });
+                        parameters.toArray());
                     if (listaProdottiAggiudicataria != null && listaProdottiAggiudicataria.size() > 0) {
                       for (int k = 0; k < listaProdottiAggiudicataria.size(); k++) {
                         Vector vectProdottiAgg = (Vector) listaProdottiAggiudicataria.get(k);
@@ -376,9 +390,13 @@ public class GestoreOrdiniNso extends AbstractGestoreChiaveIDAutoincrementante {
 
     //Gestione dati obbligatori condizionali
     if(datiForm.isColumn("NSO_ORDINI.ESENZIONE_CIG")){
-      if(!StringUtils.isNumeric(StringUtils.trimToEmpty(datiForm.getString("NSO_ORDINI.ESENZIONE_CIG")))) {
-        throw new GestoreException("Il valore del campo Esenzione CIG deve essere un numero.","nso.esenzionecig.numeric.error");
-      }
+      /*
+       * from xsd isEsclusioneValida
+       * <sequence select="( contains( 'ES01 ES02 ES03 ES04 ES05 ES06 ES07 ES08 ES09 ES10                 ES11 ES12 ES13 ES14 ES15 ES16 ES17 ES18 ES19 ES20              ES21 ES22 ES23 ES24 ES25 ES26 ES27', $arg )          )"/>
+       */
+//      if(!StringUtils.isNumeric(StringUtils.trimToEmpty(datiForm.getString("NSO_ORDINI.ESENZIONE_CIG")))) {
+//        throw new GestoreException("Il valore del campo Esenzione CIG deve essere un numero.","nso.esenzionecig.numeric.error");
+//      }
       String cig = datiForm.getString("NSO_ORDINI.CIG");
       cig = UtilityStringhe.convertiNullInStringaVuota(cig);
       if("".equals(cig)){
@@ -573,7 +591,7 @@ public class GestoreOrdiniNso extends AbstractGestoreChiaveIDAutoincrementante {
               throw new GestoreException("Errore nella determinazione del max progressivo degli allegati dell'ordine", null);
             }
 
-            Long iddocdig = pgManagerEst1.inserisciW_DOCDIG(this.getRequest(), this.getForm(),indice, "PG", "NSO_ALLEGATI");
+            Long iddocdig = pgManagerEst1.inserisciW_DOCDIG(this.getRequest(), this.getForm(),indice, "PG", "NSO_ALLEGATI", null);
             newDataColumnContainer.setValue("NSO_ALLEGATI.IDPRG", "PG");
             newDataColumnContainer.setValue("NSO_ALLEGATI.IDDOCDIG", iddocdig);
             newDataColumnContainer.setValue("NSO_ALLEGATI.NSO_ORDINI_ID", datiForm.getLong("NSO_ORDINI.ID"));

@@ -76,15 +76,30 @@
 
 <c:set var="valoreInizializzazioneContspe" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1115","7","true")}'/>
 
+<c:set var="integrazioneWSERP" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSERPFunction", pageContext)}' />
+<c:if test='${integrazioneWSERP eq "1"}'>
+	<c:set var="presenzaRda" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetWSERPPresenzaRdaFunction", pageContext, codiceGara, ngara, requestScope.tipoWSERP)}' />
+	<c:set var="tipoWSERP" value='${requestScope.tipoWSERP}' />
+</c:if>
+
 <%/* Dati generali della gara */%>
 <gene:formScheda entita="GARE" gestisciProtezioni="true" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreInizializzazioniAttoContrattuale"
 		gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreAttoContrattuale">
 
 	<gene:redefineInsert name="addToAzioni" >
+		<c:if test='${autorizzatoModifiche ne "2" && modo eq "VISUALIZZA" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GeneraNumeroOrdine")}'>
+			<tr>
+		        <td class="vocemenulaterale">
+					<a href="javascript:setNOrdine();" title="Genera numero ordine" tabindex="1503">
+						Genera numero ordine
+					</a>
+				</td>					
+			</tr>
+		</c:if>
 		<c:if test='${esisteIntegrazioneLavori eq "TRUE" && modo eq "VISUALIZZA" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.EsecuzioneContratto")}'>
 			<tr>
 		        <td class="vocemenulaterale">
-					<a href="javascript:gestioneContrattoDEC('${datiRiga.GARE_NGARA}');" title="Esecuzione contratto" tabindex="1503">
+					<a href="javascript:gestioneContrattoDEC('${datiRiga.GARE_NGARA}');" title="Esecuzione contratto" tabindex="1504">
 						Esecuzione contratto
 					</a>
 				</td>					
@@ -94,12 +109,41 @@
 		
 			<tr>
 				<td class="vocemenulaterale">
-					<c:if test='${isNavigazioneDisattiva ne "1"}'><a href="javascript:delegaLavoroRup();" title='Delega commessa al RUP' tabindex="1502"></c:if>
+					<c:if test='${isNavigazioneDisattiva ne "1"}'><a href="javascript:delegaLavoroRup();" title='Delega commessa al RUP' tabindex="1505"></c:if>
 						Delega commessa al RUP
 					<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
 				</td>
 			</tr>
 		</c:if>
+		<c:if test='${modo eq "VISUALIZZA" and autorizzatoModifiche ne "2" and (((tipoWSERP eq "CAV" or tipoWSERP eq "AMIU") && empty datiRiga.GARE1_NUMRDO && isAccordoQuadro ne 1) and (presenzaRda eq "1" || presenzaRda eq "2")) }'>
+			<tr>
+				<td class="vocemenulaterale">
+					<a href="javascript:comunicaEsitoRdaInGara('${key}','${requestScope.tipoWSERP}');" title='Invia dati contratto ad ERP' tabindex="1512">
+						Invia dati contratto ad ERP
+					</a>
+				</td>
+			</tr>
+		</c:if>
+	</gene:redefineInsert>
+	<gene:redefineInsert name="documentiAssociati" >
+	<c:choose>
+		  <c:when test='${isNavigazioneDisabilitata ne "1"}'>
+		  <c:set var="addWhere" value="COAKEY1=${datiRiga.GARECONT_NGARA};COAKEY2=${ncont}"/>
+		  <c:set var="fictitiousVar" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetNumDocAssociatiCustomFunction", pageContext, "GARECONT", addWhere)}' />
+			<tr>
+				<td class="vocemenulaterale">
+					<a href='javascript:documentiAssociatiGarecont();' title="Documenti associati contratto" tabindex="1522">
+						Documenti associati contratto <c:if test="${not empty requestScope.numRecordDocAssociatiCustom}">(${requestScope.numRecordDocAssociatiCustom})</c:if>
+					</a>
+				</td>
+			</tr>
+		</c:when>
+		        <c:otherwise>
+		          	<td>
+						Documenti associati contratto
+					</td>
+		        </c:otherwise>
+			</c:choose>
 	</gene:redefineInsert>
 
 	<gene:redefineInsert name="schedaNuovo" />
@@ -108,6 +152,7 @@
 	<jsp:include page="gare-interno-contratto-OffertaUnica.jsp">
 		<jsp:param name="modcont" value="${modcont}"/>
 		<jsp:param name="tipoContratto" value="contratto"/>
+		<jsp:param name="codice" value="${codiceGara}"/>
 		<jsp:param name="ncont" value="${ncont}"/>
 	</jsp:include>
 	
@@ -431,4 +476,18 @@
 		document.pagineForm.action += "&modcont=" + modcont + "&isAccordoQuadro=" + isAccordoQuadro + "&codcont=" + codcont + "&ncont=" + ncont + "&ngaral=" + ngaral + "&codimp=" + codimp;
 		selezionaPaginaDefault(pageNumber);
 	}
+	
+	function comunicaEsitoRdaInGara(ngara,tipoWSERP){
+		var href="href=gare/gare/gare-popup-comunicaEsitoRda.jsp&ngara=" + ngara + "&isGaraLottiConOffertaUnica=true"+ "&tipoWSERP=" + tipoWSERP;
+		openPopUpCustom(href, "comunicaEsitoRda", 700, 600, "yes","yes");
+	}
+	
+	
+	
+	function documentiAssociatiGarecont(){
+		var keys = "GARECONT.NGARA=T:"+getValue("GARECONT_NGARA")+";GARECONT.NCONT=N:"+${ncont};
+		var href = contextPath+'/ListaDocumentiAssociati.do?'+csrfToken+'&metodo=visualizza&entita=GARECONT&valori='+keys;
+		document.location.href = href;
+	}
+	
 </gene:javaScript>

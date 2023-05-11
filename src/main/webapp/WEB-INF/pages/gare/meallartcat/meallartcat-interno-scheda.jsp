@@ -19,6 +19,7 @@
 	<c:when test="${param.tipoDettaglio eq 1}">
 		<gene:campoScheda campo="ID_${param.contatore}" entita="MEALLARTCAT" campoFittizio="true" visibile="false" definizione="N12;1" value="${item[0]}" />
 		<gene:campoScheda campo="IDARTCAT_${param.contatore}" entita="MEALLARTCAT" campoFittizio="true" visibile="false" definizione="N12;1" value="${item[1]}" />
+		<gene:campoScheda campo="TIPOALL_${param.contatore}" entita="MEALLARTCAT" campoFittizio="true" visibile="false" definizione="N12;1" value="${item[5]}" />
 		<gene:campoScheda campo="IDPRG_${param.contatore}" entita="MEALLARTCAT" campoFittizio="true"  visibile="false" definizione="T2;0" value="${item[2]}" />
 		<gene:campoScheda campo="IDDOCDIG_${param.contatore}" entita="MEALLARTCAT" campoFittizio="true"  visibile="false" definizione="N12;0" value="${item[3]}" />
 		<gene:campoScheda title="Facsimile certificato n. ${param.contatore}" campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" modificabile="false" campoFittizio="true" definizione="T100;0"  value="${item[4]}" href="javascript:visualizzaFileAllegato('${item[2]}','${item[3]}','${item[4]}');"/>
@@ -31,6 +32,7 @@
 	<c:otherwise>
 		<gene:campoScheda campo="ID_${param.contatore}" entita="MEALLARTCAT" campoFittizio="true" visibile="false" definizione="N12;1" />
 		<gene:campoScheda campo="IDARTCAT_${param.contatore}" entita="MEALLARTCAT" campoFittizio="true" visibile="false" definizione="N12;1" />
+		<gene:campoScheda campo="TIPOALL_${param.contatore}" entita="MEALLARTCAT" campoFittizio="true" visibile="false" definizione="N12;1" value="1"/>
 		<gene:campoScheda campo="IDPRG_${param.contatore}" entita="MEALLARTCAT" campoFittizio="true"  visibile="false" definizione="T2;0" />
 		<gene:campoScheda campo="IDDOCDIG_${param.contatore}" entita="MEALLARTCAT" campoFittizio="true"  visibile="false" definizione="N12;0" />
 		<gene:campoScheda title="Facsimile certificato n. ${param.contatore}" campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" modificabile="false" campoFittizio="true" definizione="T100;0" visibile="false"/>

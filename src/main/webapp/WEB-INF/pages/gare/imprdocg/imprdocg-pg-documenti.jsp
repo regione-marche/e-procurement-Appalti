@@ -16,6 +16,20 @@
 <c:set var="numeroGara" value='${gene:getValCampo(key, "DITG.NGARA5")}' />
 <c:set var="codiceDitta" value='${gene:getValCampo(key, "DITG.DITTAO")}' />
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
+<c:set var="digitalSignatureUrlCheck" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-check-url")}'/>
+<c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:choose>
+	<c:when test="${!empty digitalSignatureUrlCheck && !empty digitalSignatureProvider && (digitalSignatureProvider eq 1 || digitalSignatureProvider eq 2)}">
+		<c:set var="digitalSignatureWsCheck" value='1'/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="digitalSignatureWsCheck" value='0'/>
+	</c:otherwise>
+</c:choose>
+
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, codiceGara, "SC", "21")}
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, numeroGara, "SC", "20")}
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, codiceDitta, "SC", "10")}
 
 <gene:redefineInsert name="head">
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>		
@@ -43,10 +57,10 @@
 
 <c:choose>
 	<c:when test="${genereGara eq 10 ||  genereGara eq 20}">
-		<c:set var="ordinamento" value="-13;-14;22;5;8"/>
+		<c:set var="ordinamento" value="-16;-17;25;5;8"/>
 	</c:when>
 	<c:otherwise>
-		<c:set var="ordinamento" value="-7;22;5;8"/>
+		<c:set var="ordinamento" value="-7;25;5;8"/>
 	</c:otherwise>
 </c:choose>
 
@@ -95,8 +109,16 @@
 	</c:if>
 </c:if>
 
+<c:choose>
+  		<c:when test="${param.listaDocAnnullati eq 'true'}">
+  			<c:set var="classe" value=""/>
+  		</c:when>
+  		<c:otherwise>
+  			<c:set var="classe" value='class="dettaglio-tab-lista"'/>
+  		</c:otherwise>
+  	</c:choose>
 
-<table class="dettaglio-tab-lista">
+<table ${classe}>
 <tr>
 
 	<c:choose>
@@ -107,6 +129,8 @@
 				<c:if test="${abilitaz eq '1' and not empty dabilitazString }">
 					<c:set var="whereV_GARE_DOCDITTA" value="${whereV_GARE_DOCDITTA} and not(V_GARE_DOCDITTA.FASELE=1 and V_GARE_DOCDITTA.DATAPUB is not null and V_GARE_DOCDITTA.DATAPUB > ${dabilitazString })" />
 				</c:if>
+			<c:set var="whereQform" value="KEY1='${numeroGara }'"/>
+			<c:set var="idQform" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "ID","QFORM", whereQform)}'/>
 		</c:when>
 		<c:otherwise>
 			<c:set var="whereV_GARE_DOCDITTA"
@@ -133,6 +157,16 @@
 	<c:if test="${sezionitec ne 1 and genereGara ne 10 and genereGara ne 20}">
 		<c:set var="whereV_GARE_DOCDITTA" value="${whereV_GARE_DOCDITTA} and ( (V_GARE_DOCDITTA.BUSTA is null or V_GARE_DOCDITTA.SEZTEC is null) or not (V_GARE_DOCDITTA.BUSTA = 2 and V_GARE_DOCDITTA.SEZTEC=1))"/>
 	</c:if>		
+  	
+  	<c:choose>
+  		<c:when test="${param.listaDocAnnullati eq 'true'}">
+  			<c:set var="whereV_GARE_DOCDITTA" value="${whereV_GARE_DOCDITTA} and V_GARE_DOCDITTA.DOCANNUL = '1'"/>
+  		</c:when>
+  		<c:otherwise>
+  			<c:set var="whereV_GARE_DOCDITTA" value="${whereV_GARE_DOCDITTA} and (V_GARE_DOCDITTA.DOCANNUL is null or  V_GARE_DOCDITTA.DOCANNUL <> '1')"/>
+  		</c:otherwise>
+  	</c:choose>
+  	
   	
   	<%// Creo la lista per i documenti%>
 		<table class="lista">
@@ -168,38 +202,49 @@
 								</tr>
 							</c:when>
 							<c:otherwise>
-								<c:if test='${autorizzatoModifiche ne 2 and datiRiga.rowCount > 0 and gene:checkProtFunz(pageContext,"MOD","MOD") }'>
-									<tr>
-										<td class="vocemenulaterale">
-											<a href="javascript:listaApriInModifica();" title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' tabindex="1502">
-												${gene:resource("label.tags.template.dettaglio.schedaModifica")}
-											</a>
-										</td>
-									</tr>
-								</c:if>
-								<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "INS","INS") and tipo != "CONSULTAZIONE" and tipo != "VERIFICA_NO_INS"}'>
-									<tr>
-										<td class="vocemenulaterale">
-											<a href="javascript:aggiungi();" title='Aggiungi documentazione' tabindex="1502">
-												Aggiungi documentazione
-											</a>
-										</td>
-									</tr>
-								</c:if>
-								<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext,"DEL","LISTADELSEL") and tipo != "CONSULTAZIONE" }'>
-									<tr>
-										<td class="vocemenulaterale">
-											<a href="javascript:listaEliminaSelezione();" title='${gene:resource("label.tags.template.lista.listaEliminaSelezione")}' tabindex="1503">
-												${gene:resource("label.tags.template.lista.listaEliminaSelezione")}
-											</a>
-										</td>
-									</tr>
+								<c:if test="${param.listaDocAnnullati ne 'true'}">
+									<c:if test='${autorizzatoModifiche ne 2 and datiRiga.rowCount > 0 and gene:checkProtFunz(pageContext,"MOD","MOD") }'>
+										<tr>
+											<td class="vocemenulaterale">
+												<a href="javascript:listaApriInModifica();" title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' tabindex="1502">
+													${gene:resource("label.tags.template.dettaglio.schedaModifica")}
+												</a>
+											</td>
+										</tr>
+									</c:if>
+									<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "INS","INS") and tipo != "CONSULTAZIONE" and tipo != "VERIFICA_NO_INS"}'>
+										<tr>
+											<td class="vocemenulaterale">
+												<a href="javascript:aggiungi();" title='Aggiungi documentazione' tabindex="1502">
+													Aggiungi documentazione
+												</a>
+											</td>
+										</tr>
+									</c:if>
+									<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext,"DEL","LISTADELSEL") and tipo != "CONSULTAZIONE" }'>
+										<tr>
+											<td class="vocemenulaterale">
+												<a href="javascript:listaEliminaSelezione();" title='${gene:resource("label.tags.template.lista.listaEliminaSelezione")}' tabindex="1503">
+													${gene:resource("label.tags.template.lista.listaEliminaSelezione")}
+												</a>
+											</td>
+										</tr>
+									</c:if>
 								</c:if>
 								<c:if test='${(gene:checkProtFunz(pageContext,"ALT","EsportaDocumentiBusta") and stepWizard ne "2") or (stepWizard eq "2" and gene:checkProtFunz(pageContext,"ALT","FASE-AMM.EsportaDocumentiBusta"))}'>
 									<tr>
 										<td class="vocemenulaterale">
 											<a href='javascript:openModal("${numeroGara}", "${codiceDitta}" ,"${pageContext.request.contextPath}",${stepWizard },"${prefissoFileDownloadComBari }");' title='Esporta su file zip' tabindex="1504">
 												Esporta su file zip
+											</a>
+										</td>
+									</tr>
+								</c:if>
+								<c:if test='${param.listaDocAnnullati ne "true" and  gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.IMPRDOCG-lista.DOCUMENTI.DocAnnullati") and  (genereGara eq 10 or genereGara eq 20) and not empty idQform}'>
+									<tr>
+										<td class="vocemenulaterale">
+											<a href='javascript:apriListaDocAnnullati();' title='Documenti annullati da operatore' tabindex="1504">
+												Documenti annullati da operatore
 											</a>
 										</td>
 									</tr>
@@ -215,7 +260,7 @@
 					<gene:campoLista campoFittizio="true" visibile="false">
 						<%/* Nel caso in cui siano diversi inframezzo il titolo */%>
 						<c:if test="${newTab1desc != oldTab1desc}">
-							<td colspan="9">
+							<td colspan="10">
 								<b>${newTab1desc }</b> 
 							</td>
 						</tr>
@@ -242,7 +287,7 @@
 					</gene:campoLista>
 					
 					<c:choose>
-						<c:when test='${(empty updateLista or updateLista ne 1) and autorizzatoModifiche ne 2 and (gene:checkProtFunz(pageContext, "DEL","DEL") or gene:checkProtFunz(pageContext,"DEL","LISTADELSEL")) and tipo != "CONSULTAZIONE"}' >
+						<c:when test='${(empty updateLista or updateLista ne 1) and autorizzatoModifiche ne 2 and (gene:checkProtFunz(pageContext, "DEL","DEL") or gene:checkProtFunz(pageContext,"DEL","LISTADELSEL")) and tipo != "CONSULTAZIONE" and param.listaDocAnnullati ne "true"}' >
 							<gene:set name="titoloMenu">
 								<jsp:include page="/WEB-INF/pages/commons/iconeCheckUncheck.jsp" />
 							</gene:set>
@@ -300,22 +345,31 @@
 							<INPUT type="button" class="bottone-azione" value="Annulla" title="Annulla modifiche" onclick="javascript:listaAnnullaModifica();">
 						</c:when>
 						<c:otherwise>
-							<c:if test='${autorizzatoModifiche ne 2 and datiRiga.rowCount > 0 and gene:checkProtFunz(pageContext,"MOD","MOD") and tipo != "CONSULTAZIONE" }'>
-								<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' onclick="javascript:listaApriInModifica();">&nbsp;&nbsp;&nbsp;
+							<c:if test="${param.listaDocAnnullati ne 'true'}">
+								<c:if test='${autorizzatoModifiche ne 2 and datiRiga.rowCount > 0 and gene:checkProtFunz(pageContext,"MOD","MOD") and tipo != "CONSULTAZIONE" }'>
+									<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' onclick="javascript:listaApriInModifica();">&nbsp;&nbsp;&nbsp;
+								</c:if>
+								<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "INS","INS")  and tipo != "VERIFICA_NO_INS"}'>
+									<INPUT type="button"  class="bottone-azione" value='Aggiungi documentazione' title='Aggiungi documentazione' onclick="javascript:aggiungi();">&nbsp;&nbsp;&nbsp;
+								</c:if>
+								<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext,"DEL","LISTADELSEL") }'>
+									<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.lista.listaEliminaSelezione")}' title='${gene:resource("label.tags.template.lista.listaEliminaSelezione")}' onclick="javascript:listaEliminaSelezione();">
+								</c:if>
+								<c:if test='${autorizzatoModifiche ne 2 and ((gene:checkProtFunz(pageContext, "INS","INS")  and tipo != "VERIFICA_NO_INS") or gene:checkProtFunz(pageContext,"DEL","LISTADELSEL") or (datiRiga.rowCount > 0 and gene:checkProtFunz(pageContext,"MOD","MOD") and tipo != "CONSULTAZIONE")) }'>
+									&nbsp;<br><br>
+								</c:if>
 							</c:if>
-							<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "INS","INS")  and tipo != "VERIFICA_NO_INS"}'>
-								<INPUT type="button"  class="bottone-azione" value='Aggiungi documentazione' title='Aggiungi documentazione' onclick="javascript:aggiungi();">&nbsp;&nbsp;&nbsp;
-							</c:if>
-							<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext,"DEL","LISTADELSEL") }'>
-								<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.lista.listaEliminaSelezione")}' title='${gene:resource("label.tags.template.lista.listaEliminaSelezione")}' onclick="javascript:listaEliminaSelezione();">
-							</c:if>
-							<c:if test='${autorizzatoModifiche ne 2 and ((gene:checkProtFunz(pageContext, "INS","INS")  and tipo != "VERIFICA_NO_INS") or gene:checkProtFunz(pageContext,"DEL","LISTADELSEL") or (datiRiga.rowCount > 0 and gene:checkProtFunz(pageContext,"MOD","MOD") and tipo != "CONSULTAZIONE")) }'>
-								&nbsp;<br><br>
-							</c:if>
-
+							
 							<c:choose>
 								<c:when test="${genereGara eq 10 or genereGara eq 20}">
-									<c:set var="testoIndietro" value="Torna a elenco operatori" />
+									<c:choose>
+								  		<c:when test="${param.listaDocAnnullati eq 'true'}">
+								  			<c:set var="testoIndietro" value="Torna a documenti richiesti e presentati" />
+								  		</c:when>
+								  		<c:otherwise>
+								  			<c:set var="testoIndietro" value="Torna a elenco operatori" />
+								  		</c:otherwise>
+								  	</c:choose>
 								</c:when>
 								<c:when test="${stepWizard eq '8' }">
 									<c:set var="testoIndietro" value="Torna al dettaglio aggiudicazione" />
@@ -340,6 +394,7 @@
 			<input type="hidden" name="href" value="gene/system/firmadigitale/verifica-firmadigitale-popUp.jsp" />
 			<input type="hidden" name="idprg" id="idprg" value="" />
 			<input type="hidden" name="iddocdig" id="iddocdig" value="" />
+			<input type="hidden" name="opreload" id="opreload" value="1" />
 		</form>
 		
   
@@ -375,6 +430,23 @@
 			openPopUpCustom(href, "ulterioriCampi", 800, 550, "yes", "yes");
 		}
 	
+	function visualizzaInMdgue(idprg,iddocdig) {
+		console.log('visualizzaInMdgue:'+idprg+','+iddocdig);
+		var href = "${pageContext.request.contextPath}/pg/VisualizzaDgueApp.do";
+		var codiceDitta = "${codiceDitta}";
+		var codiceGara = "${codiceGara }";
+		//document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig+ "&codiceDitta=" + codiceDitta+ "&codiceGara=" + codiceGara;
+		var getUrl = window.location;
+		var baseUrl = getUrl .protocol + "//" + getUrl.host + "/" + getUrl.pathname.split('/')[1]+'/';
+		console.log('baseUrl: '+baseUrl);
+		var a = document.createElement("a");
+		a.target = 'blank';
+		a.href = baseUrl+'pg/VisualizzaDgueApp.do?'+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig+ "&codiceDitta=" + codiceDitta+ "&codiceGara=" + codiceGara;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		
+	}
 	function visualizzaFileAllegato(idprg,iddocdig,dignomdoc,dataril,oraril,doctel,indiceRiga,norddoci,proveni) {
 		<c:if test="${ not empty prefissoFileDownloadComBari and stepWizard eq '5'}">
 		var prefissoFile = 	"${prefissoFileDownloadComBari }";
@@ -398,41 +470,81 @@
 		
 		var vet = dignomdoc.split(".");
 		var ext = vet[vet.length-1];
-		ext = ext.toUpperCase(); 
-		if(ext=='P7M' || ext=='TSD'){
-			if(dataril!=null && dataril!=''){
-				var res1 = dataril.substring(0,2);
-				var res2 = dataril.substring(3,5);
-				var res3 = dataril.substring(6,10);
-				var fdataril = res3+res2+res1;
-				if(oraril!=null && oraril!="")
-					fdataril+=" " + oraril +":00";
-				if($("#ckdate").size() == 0){
-					var _input = $("<input/>", {"type": "hidden","id": "ckdate", "name": "ckdate", value:""});
-					$("#formVisFirmaDigitale").append(_input);
+		ext = ext.toUpperCase();
+		<c:choose>
+			<c:when test="${digitalSignatureWsCheck eq 0}">
+				if(ext=='P7M' || ext=='TSD'){
+					if(dataril!=null && dataril!=''){
+						var res1 = dataril.substring(0,2);
+						var res2 = dataril.substring(3,5);
+						var res3 = dataril.substring(6,10);
+						var fdataril = res3+res2+res1;
+						if(oraril!=null && oraril!="")
+							fdataril+=" " + oraril +":00";
+						if($("#ckdate").size() == 0){
+							var _input = $("<input/>", {"type": "hidden","id": "ckdate", "name": "ckdate", value:""});
+							$("#formVisFirmaDigitale").append(_input);
+						}
+						document.formVisFirmaDigitale.ckdate.value = fdataril;
+					}else{
+					 	if($("#ckdate").size() > 0){
+							document.formVisFirmaDigitale.ckdate.remove();
+						}
+					}
+				 	document.formVisFirmaDigitale.idprg.value = idprg;
+					document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+					var l = Math.floor((screen.width-800)/2);
+					var t = Math.floor((screen.height-550)/2);
+					var numOpener = getNumeroPopUp()+1;
+					l = l - 30 + (numOpener * 30);
+					t = t - 50 + (numOpener * 50);
+					window.open("","popUpFirma","toolbar=no,menubar=no,width=800,height=550,top="+t+",left="+l+",resizable=yes,scrollbars=yes");
+					tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
+					document.formVisFirmaDigitale.submit();
+				}else{
+					tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
+					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+					var nomeCodificato = encodeURIComponent(dignomdoc);
+					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + nomeCodificato;
 				}
-				document.formVisFirmaDigitale.ckdate.value = fdataril;
-			}else{
-			 	if($("#ckdate").size() > 0){
-					document.formVisFirmaDigitale.ckdate.remove();
+			</c:when>
+			<c:otherwise>
+				if(ext=='P7M' || ext=='TSD' || ext=='XML' || ext=='PDF'){
+					if(dataril!=null && dataril!=''){
+						var res1 = dataril.substring(0,2);
+						var res2 = dataril.substring(3,5);
+						var res3 = dataril.substring(6,10);
+						var fdataril = res3+res2+res1;
+						if(oraril!=null && oraril!="")
+							fdataril+=" " + oraril +":00";
+						if($("#ckdate").size() == 0){
+							var _input = $("<input/>", {"type": "hidden","id": "ckdate", "name": "ckdate", value:""});
+							$("#formVisFirmaDigitale").append(_input);
+						}
+						document.formVisFirmaDigitale.ckdate.value = fdataril;
+					}else{
+					 	if($("#ckdate").size() > 0){
+							document.formVisFirmaDigitale.ckdate.remove();
+						}
+					}
+				 	document.formVisFirmaDigitale.idprg.value = idprg;
+					document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+					var l = Math.floor((screen.width-800)/2);
+					var t = Math.floor((screen.height-550)/2);
+					var numOpener = getNumeroPopUp()+1;
+					l = l - 30 + (numOpener * 30);
+					t = t - 50 + (numOpener * 50);
+					window.open("","popUpFirma","toolbar=no,menubar=no,width=800,height=550,top="+t+",left="+l+",resizable=yes,scrollbars=yes");
+					tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
+					document.formVisFirmaDigitale.submit();
+				}else{
+					tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
+					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+					var nomeCodificato = encodeURIComponent(dignomdoc);
+					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + nomeCodificato;
 				}
-			}
-		 	document.formVisFirmaDigitale.idprg.value = idprg;
-			document.formVisFirmaDigitale.iddocdig.value = iddocdig;
-			var l = Math.floor((screen.width-800)/2);
-			var t = Math.floor((screen.height-550)/2);
-			var numOpener = getNumeroPopUp()+1;
-			l = l - 30 + (numOpener * 30);
-			t = t - 50 + (numOpener * 50);
-			window.open("","popUpFirma","toolbar=no,menubar=no,width=800,height=550,top="+t+",left="+l+",resizable=yes,scrollbars=yes");
-			tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
-			document.formVisFirmaDigitale.submit();
-		}else{
-			tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
-			var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-			var nomeCodificato = encodeURIComponent(dignomdoc);
-			document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + nomeCodificato;
-		}
+			</c:otherwise>
+		</c:choose>
 			
 	}
 	
@@ -470,6 +582,16 @@
 		selezionaPaginaDefault(pageNumber);
 	}
 	
+	function apriListaDocAnnullati(){
+		var href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&key=${key}";
+		href += "&href=gare/imprdocg/imprdocg-lista-docAnnullati.jsp";
+		href += "&stepWizard=${stepWizard }";
+		href += "&tipo=${tipo }";
+		href += "&comunicazioniVis=${comunicazioniVis }";
+		href += "&genereGara=${genereGara }";
+		href += "&aut=${aut}";
+		document.location.href=href;
+	}
 	</gene:javaScript>
 
 </tr>

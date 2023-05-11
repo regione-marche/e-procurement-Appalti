@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+<sqlMap namespace="W3GARADOC">
+
+	<resultMap id="resultW3GARADOC" class="it.eldasoft.gene.db.domain.BlobFile">
+		<result property="stream" column="DOCUMENTO" columnIndex="1" jdbcType="BINARY"/>
+	</resultMap>
+
+	<select id="getDocumentoAllegato" parameterClass="java.util.HashMap" resultMap="resultW3GARADOC">
+		SELECT DOCUMENTO FROM W3GARADOC WHERE NUMGARA = #numgara# AND NUMDOC = #numdoc#
+	</select>
+
+</sqlMap>

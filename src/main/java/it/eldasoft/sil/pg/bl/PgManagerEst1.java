@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
 import org.apache.struts.upload.FormFile;
 
 import it.eldasoft.gene.bl.GenChiaviManager;
@@ -38,6 +39,7 @@ import it.eldasoft.gene.db.domain.Tabellato;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.utils.AllegatoSintesiUtils;
 import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiGaraFunction;
 import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiRicezioneFunction;
 import it.eldasoft.sil.pg.web.struts.UploadMultiploForm;
@@ -55,7 +57,20 @@ import it.eldasoft.utils.utility.UtilityStringhe;
  */
 public class PgManagerEst1 {
 
+  static Logger               logger                        = Logger.getLogger(PgManagerEst1.class);
+
   private static final String REPLACEMENT_DOCMANCANTI = "#DOCMANCANTI#";
+  public static final String QFORM_NON_ABILITATO = "NOQFORM";
+  public static final String QFORM_INSERIMENTO = "INSQFORM";
+  public static final String QFORM_INSERIMENTO_OBBLIGO = "INSQFORM_OBBLIGO";
+  public static final String QFORM_VISUALIZZAZIONE = "VISQFORM";
+  public static final String QFORM_VOCEPROFILO_TUTTE_BUSTE = "ALT.GARE.QuestionariQForm.associazioneBusta.tutte";
+  public static final String QFORM_TEC_LISTA_LOTTI = "listaTEC";
+  public static final String QFORM_ECO_LISTA_LOTTI = "listaECO";
+  public static final String ELENCO_DOC_RINNOVO = "RINN";
+  public static final String ELENCO_DOC_ISCRIZIONE = "ISCR";
+  public static final String OPZIONE_QFORM_ELENCHI = "OP136";
+
 
   private SqlManager          sqlManager;
 
@@ -369,6 +384,32 @@ public class PgManagerEst1 {
   }
 
   /**
+   * Viene restituito l'oggetto della gara, che nel caso di gara a lotto unico è GARE.NOT_GAR,
+   * nel caso di gare ad offerta unica o offerte distinte è TORN.DESTOR, mentre per elenchi e
+   * cataloghi è GARELBO.OGGETTO
+   * Viene integrata la gestione delle stipule
+   *
+   * @param ngara
+   * @param codgar
+   * @param genereGara
+   * @param entita
+   * @return String
+   */
+  public String getOggettoGara(String ngara, String codgar, Long genereGara, boolean stipula) throws SQLException {
+    String oggetto= "";
+    if(stipula){
+      Long id=null;
+      if(ngara!=null && !"".equals(ngara))
+        id=new Long(ngara);
+      oggetto=(String)sqlManager.getObject("select oggetto from g1stipula where id=?", new Object[]{id});
+    }else {
+      oggetto = this.getOggettoGara(ngara, codgar, genereGara);
+    }
+    return oggetto;
+
+  }
+
+  /**
    * Viene fatto il controllo che tutti gli allegati presenti nella lista(in posizione indicata dal parametro), abbiano
    * un formato specificato fra quelli validi
    * @param listaAllegati
@@ -596,6 +637,7 @@ public class PgManagerEst1 {
   public String[] controlloPermessiModificaUtente(String entita, String chiave,ProfiloUtente profilo, boolean controlloTabellatoTelematiche) throws SQLException{
     String codgar = "";
     String codlav = "";
+    Long idstipula = null;
     Long idMeric=null;
     String autorizzato = "false";
     String autorizzatoTelematicaOda = "true";
@@ -604,6 +646,8 @@ public class PgManagerEst1 {
        codlav = chiave;
     }else if("GARECONT".equals(entita)){
        idMeric= new Long(chiave);
+    }else if("G1STIPULA".equals(entita)){
+      idstipula= new Long(chiave);
     }else {
        codgar = chiave;
     }
@@ -620,7 +664,15 @@ public class PgManagerEst1 {
           }
      }else if("NSO_ORDINI".equals(entita)){
       autorizzato=String.valueOf(true);
-      autorizzatoTelematicaOda = String.valueOf("1".equalsIgnoreCase(profilo.getRuoloUtenteMercatoElettronico()));
+      autorizzatoTelematicaOda = String.valueOf("1".equalsIgnoreCase(profilo.getRuoloUtenteMercatoElettronico()) || "3".equalsIgnoreCase(profilo.getRuoloUtenteMercatoElettronico()));
+     }else if("G1STIPULA".equals(entita)){
+       String abilitazioneStd = new String (profilo.getAbilitazioneStd());
+       Long autori = (Long) sqlManager.getObject(
+               "select autori from g_permessi where idstipula = ? and syscon = ?",
+               new Object[] { idstipula, syscon });
+           if ((new Long(1)).equals(autori) || (new String("A")).equals(abilitazioneStd)) {
+             autorizzato = "true";
+           }
      }else if("GARECONT".equals(entita)){
       String abilitazioneGare = new String (profilo.getAbilitazioneGare());
       Long autori = (Long) sqlManager.getObject(
@@ -941,7 +993,7 @@ public class PgManagerEst1 {
             Long aqtempo = SqlManager.getValueFromVectorParam(datiTorn, 2).longValue();
             if (aqtempo==null){
               erroriBloccanti = "SI";
-              msgErroriBloccanti += "<br>Non è stato specificato se la durata dell'accordo quadro è espressa in mesi o anni.";
+              msgErroriBloccanti += "<br>Non è stato specificato se la durata dell'accordo quadro è espressa in giorni o mesi o anni.";
             }
           }
         }
@@ -1002,7 +1054,7 @@ public class PgManagerEst1 {
    * @return
    * @throws GestoreException
    */
-  public Long inserisciW_DOCDIG(HttpServletRequest request, UploadFileForm uploadFileForm, int indice, String idprg, String digent) throws GestoreException {
+  public Long inserisciW_DOCDIG(HttpServletRequest request, UploadFileForm uploadFileForm, int indice, String idprg, String digent, String digkey1) throws GestoreException {
 
     String fname = null;
     Long iddocdig = null;
@@ -1018,6 +1070,7 @@ public class PgManagerEst1 {
       iddocdig = new Long(iddocdig.longValue() + 1);
       dccW_DOCDIG.addColumn("W_DOCDIG.IDDOCDIG", JdbcParametro.TIPO_NUMERICO, iddocdig);
       dccW_DOCDIG.addColumn("W_DOCDIG.DIGENT", JdbcParametro.TIPO_TESTO, digent);
+      dccW_DOCDIG.addColumn("W_DOCDIG.DIGKEY1", JdbcParametro.TIPO_TESTO, digkey1);
 
       // Gestione upload del file
       FormFile ff = (FormFile) hm.get(new Long(indice));
@@ -1494,11 +1547,13 @@ public class PgManagerEst1 {
    * @param whereBusteAttiveWizard
    * @param whereBusteAttiveWizardImprdocg
    * @param commsgtes
+   * @param sostituzione
    * @return String
    * @throws Exception
    */
-  public String sostituzioneMnemonicoDocumentiMancanti(String codiceGara, String gara, String ditta, Long genere, String whereBusteAttiveWizard,  String whereBusteAttiveWizardImprdocg, String commsgtes) throws Exception {
-    String ret = commsgtes;
+  public String sostituzioneMnemonicoDocumentiMancanti(String codiceGara, String gara, String ditta, Long genere, String whereBusteAttiveWizard,  String whereBusteAttiveWizardImprdocg,
+      String commsgtes, boolean sostituzione) throws Exception {
+    String ret = "";
 
     String select="select descrizione,proveni, situazdoci, notedoci,norddoci from imprdocg where codgar=? and (ngara is null or ngara=? ) and codimp=? and (situazdoci =1 or situazdoci=5) order by norddoci";
     if(genere.longValue()==4){
@@ -1534,10 +1589,287 @@ public class PgManagerEst1 {
           testoMail.append("\r\n") ;
       }
       if(testoMail.length() > 1)
-        ret = commsgtes.replaceAll(REPLACEMENT_DOCMANCANTI, testoMail.toString());
+        if(sostituzione)
+          ret = commsgtes.replaceAll(REPLACEMENT_DOCMANCANTI, testoMail.toString());
+        else
+          ret = testoMail.toString();
     } else {
-      ret = commsgtes.replaceAll(REPLACEMENT_DOCMANCANTI, "");
+      if(sostituzione)
+        ret = commsgtes.replaceAll(REPLACEMENT_DOCMANCANTI, "");
     }
     return ret;
   }
+
+  /**
+   * Il metodo controlla se è attiva la gestione dei formulari
+   * Il parametro lottoGara, va settato a true solo nel caso di busta tecnica ed economica per le gare a lotti
+   * @param ngara
+   * @param codgar
+   * @param genere
+   * @param busta
+   * @param iterga
+   * @param lottoGara
+   * @return
+   * @throws GestoreException
+   * @throws SQLException
+   */
+  public String gestioneQuestionari(String ngara,String codgar,Long genere, int busta,Long iterga, boolean lottoGara) throws SQLException {
+    String esito=QFORM_NON_ABILITATO;
+    //Controllo esistenza documenti
+    Long bustaLong = new Long(busta);
+    String chiaveQform = ngara;
+    if((ngara==null || "".equals(ngara) || new Long(3).equals(genere)) && !lottoGara)
+      chiaveQform = codgar;
+    String selectDocumgara="select count(*) from documgara where codgar=? and gruppo=3 and busta=?";
+    String condizioneDGUE ="";
+    if(busta==1 || busta==4)
+      condizioneDGUE += " and (IDSTAMPA <> 'DGUE' or IDSTAMPA is null)";
+    Long conteggioDocumenti = (Long)this.sqlManager.getObject(selectDocumgara + condizioneDGUE , new Object[] {codgar, bustaLong});
+    Long conteggioQuestionari = (Long)this.sqlManager.getObject("select count(*) from qform where entita='GARE' and key1=? and busta=? and (stato = 1 or stato = 5)", new Object[] {chiaveQform, bustaLong});
+    if((conteggioDocumenti==null || new Long(0).equals(conteggioDocumenti)) && (conteggioQuestionari==null || new Long(0).equals(conteggioQuestionari))) {
+      boolean garaPubblicata= false;
+      String select="select count(CODGAR9) from PUBBLI where CODGAR9 = ? and TIPPUB=?";
+      Object par[] = new Object[2];
+      par[0]=codgar;
+      //Si deve controllare se la gara è pubblicata
+      if(busta==4 || ((busta==1 || busta==2 || busta==3) && new Long(1).equals(iterga))) {
+        par[1]= new Long(11);
+      }else {
+        par[1]= new Long(13);
+      }
+      Long numeroPubblicazioni = (Long) sqlManager.getObject(select, par);
+      if (numeroPubblicazioni != null && numeroPubblicazioni.longValue()>0)
+        garaPubblicata = true;
+      if(!garaPubblicata) {
+        esito=QFORM_INSERIMENTO;
+      }
+    }else if(conteggioQuestionari!=null && conteggioQuestionari.longValue()>0)
+      esito=QFORM_VISUALIZZAZIONE;
+
+    return esito;
+  }
+
+  /**
+   * Il metodo controlla se è attiva la gestione dei formulari per l'elenco
+   * Il parametro lottoGara, va settato a true solo nel caso di busta tecnica ed economica per le gare a lotti
+   * @param ngara
+   * @param codgar
+   * @return String
+   * @throws GestoreException
+   * @throws SQLException
+   */
+  public String gestioneQuestionariElenco(String ngara,String codgar) throws SQLException {
+    String esito=QFORM_NON_ABILITATO;
+    //Controllo esistenza documenti
+    Long conteggioDocumenti = (Long)this.sqlManager.getObject("select count(*) from documgara where codgar=? and gruppo=3 and (fasele=1 or fasele=2)", new Object[] {codgar});
+    Long conteggioQuestionari = (Long)this.sqlManager.getObject("select count(*) from qform where entita='GARE' and key1=? and (stato = 1 or stato = 5)", new Object[] {ngara});
+    if((conteggioDocumenti==null || new Long(0).equals(conteggioDocumenti)) && (conteggioQuestionari==null || new Long(0).equals(conteggioQuestionari))) {
+      boolean garaPubblicata= false;
+      String select="select count(CODGAR9) from PUBBLI where CODGAR9 = ? and TIPPUB=?";
+      Long numeroPubblicazioni = (Long) sqlManager.getObject(select, new Object[] {codgar, new Long(11)});
+      if (numeroPubblicazioni != null && numeroPubblicazioni.longValue()>0)
+        garaPubblicata = true;
+      if(!garaPubblicata)
+        esito=QFORM_INSERIMENTO;
+    }else if(conteggioQuestionari!=null && conteggioQuestionari.longValue()>0)
+      esito=QFORM_VISUALIZZAZIONE;
+
+    return esito;
+  }
+
+  /**
+   * Viene verificato se esiste la property per la marca temporale.
+   * Se esiste ed è true controlloEsistenzaFile, viene controllata l'esitenza del file marcato temporalmente
+   * @param idprg
+   * @param idcom
+   * @param controlloEsistenzaFile
+   * @return boolean[]
+   * @throws SQLException
+   */
+  public boolean[] applicareMarcaTemporalmente(String idprg, Long idcom, boolean controlloEsistenzaFile) throws SQLException {
+    boolean esisteFileMarcato = false;
+    Object par[] = new Object[] {idprg, idcom.toString()};
+    String urlAccesso = ConfigManager.getValore("marcaturaTemp.url");
+    boolean applicareMarcaTemp = false;
+    if(urlAccesso!=null && !"".equals(urlAccesso))
+      applicareMarcaTemp=true;
+    if(applicareMarcaTemp && controlloEsistenzaFile) {
+      String sqlFileMarcaTemporale = "select count(idprg) from W_DOCDIG where DIGKEY1 = ? and DIGKEY2=? and DIGENT ='W_INVCOM' and DIGNOMDOC = "
+          + AllegatoSintesiUtils.creazioneFiltroNomeFileSintesi(true,this.sqlManager);
+      Long conteggio=(Long)this.sqlManager.getObject(sqlFileMarcaTemporale, par);
+      if(conteggio.longValue()!=0)
+        esisteFileMarcato = true;
+    }
+    boolean ret[] = {esisteFileMarcato,applicareMarcaTemp};
+    return ret;
+  }
+
+  public boolean esistonoDitteDGUE(String codgar, Long gruppo) throws GestoreException{
+    boolean esistonoDitte=false;
+
+    Long numDitte=null;
+    try {
+      numDitte = (Long)this.sqlManager.getObject("select count(*) from documgara where codgar=? and gruppo =? and idstampa=?", new Object[] {codgar,gruppo, "DGUE"});
+    } catch (SQLException e) {
+      throw new GestoreException("Si è verificato un errore durante la lettura di DOCUMGARA", null, e);
+    }
+    if(numDitte!= null && numDitte.longValue()>0)
+      esistonoDitte=true;
+    return esistonoDitte;
+  }
+
+  public boolean isGaraSospesa(String codgar) throws GestoreException{
+	    boolean isGaraSospesa = false;
+
+	    Long numSosp=null;
+	    try {
+	    	numSosp = (Long)this.sqlManager.getObject("select count(*) from garsospe where codgar=? and datfine is null", new Object[] {codgar});
+	    } catch (SQLException e) {
+	      throw new GestoreException("Si è verificato un errore durante la lettura di GARSOSPE", null, e);
+	    }
+	    if(numSosp!= null && numSosp.longValue()>0)
+	    	isGaraSospesa=true;
+	    return isGaraSospesa;
+	  }
+
+  public String gestioneDocDGUEConcorrenti(String codgar, String ngara, Long gruppoDGUE, Long busta, boolean soloInserimento) throws SQLException, GestoreException {
+    String select="select dignomdoc, documgara.idprg, iddocdg, descrizione from documgara, w_docdig where codgar= ? and GRUPPO = ? and documgara.idprg=w_docdig.idprg and documgara.iddocdg=w_docdig.iddocdig";
+    select +=" and idstampa = 'DGUE' and (isarchi='2' or isarchi is null)";
+    Long gruppoDocConcorrenti = new Long(3);
+
+    String ret=null;
+
+    Vector<?> datiDocumentoDGUE = this.sqlManager.getVector(select, new Object[]{codgar,gruppoDGUE});
+    if(datiDocumentoDGUE!=null && datiDocumentoDGUE.size()>0) {
+      String nomeAllegato = SqlManager.getValueFromVectorParam(datiDocumentoDGUE, 0).getStringValue();
+      if(nomeAllegato!=null && !"".equals(nomeAllegato) && nomeAllegato.toUpperCase().lastIndexOf("XML")>0) {
+        String desrizione = SqlManager.getValueFromVectorParam(datiDocumentoDGUE, 3).getStringValue();
+        String idprg=SqlManager.getValueFromVectorParam(datiDocumentoDGUE, 1).getStringValue();
+        Long iddocdg=SqlManager.getValueFromVectorParam(datiDocumentoDGUE, 2).longValue();
+        Long norddocg = (Long)this.sqlManager.getObject("select norddocg from documgara where codgar= ? and GRUPPO = ? and busta =? and idprg=? and iddocdg=? "
+            + "and idstampa = 'DGUE' and (isarchi='2' or isarchi is null)",
+            new Object[] {codgar, gruppoDocConcorrenti, busta, idprg, iddocdg});
+        if(norddocg==null) {
+          Long conteggioQuestionari = null;
+          if(!soloInserimento) {
+            //Si deve controllare se vi sono qform associati al gruppo 3 e busta di destinazione, se vi sono, non va fatto l'inserimento
+            String chiaveQform = codgar;
+            if(ngara!=null)
+              chiaveQform = ngara;
+            conteggioQuestionari = (Long)this.sqlManager.getObject("select count(*) from qform where entita='GARE' and key1=? and busta=? and (stato = 1 or stato = 5)", new Object[] {chiaveQform, busta});
+          }
+          if(conteggioQuestionari==null || new Long(0).equals(conteggioQuestionari)) {
+            String insert="insert into documgara(codgar, ngara, norddocg,gruppo, descrizione, idstampa, valenza, idprg, iddocdg, busta, obbligatorio, modfirma, numord) "
+                + "values(?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            Object params[]= new Object[13];
+            params[0]=  codgar;
+            params[1]=  ngara;
+
+            norddocg = (Long)this.sqlManager.getObject("select max(norddocg) from documgara where codgar=?", new Object[] {codgar});
+            if(norddocg == null)
+              norddocg = new Long(0);
+            norddocg = new Long(norddocg.longValue() + 1);
+            params[2]=  norddocg;
+            params[3] = gruppoDocConcorrenti;
+            params[4] = desrizione;
+            params[5] = "DGUE";
+            params[6] = new Long(0);
+            params[7] = idprg;
+            params[8] = iddocdg;
+            params[9] = busta;
+            params[10] = new Long(1);
+            params[11] = new Long(1);
+
+            Long numord = (Long)this.sqlManager.getObject("select max(numord) from documgara where codgar=? and gruppo = ? and busta = ?", new Object[] {codgar, gruppoDocConcorrenti, busta});
+            if(numord == null)
+              numord = new Long(0);
+            numord = new Long(numord.longValue() + 1);
+            params[12] = numord;
+            this.sqlManager.update(insert, params);
+            ret="INS";
+          }
+        }else if(!soloInserimento){
+          this.sqlManager.update("update documgara set descrizione=? where codgar=? and norddocg=?", new Object[] {desrizione, codgar, norddocg});
+          ret="AGG";
+        }
+      }
+    }else  if(!soloInserimento){
+      //Se non c'è occorrenza con documgara DGUE con file allegato xml, si deve controllare se vi è l'occorrenza dei documenti dei concorrenti DGUE
+      //se c'è, va cancellata
+      Long norddocg = (Long)this.sqlManager.getObject("select norddocg from documgara where codgar= ? and GRUPPO = ? and busta =? and idstampa = 'DGUE' and (isarchi='2' or isarchi is null)",
+          new Object[] {codgar, gruppoDocConcorrenti, busta});
+      if(norddocg!=null) {
+        this.sqlManager.update("delete from documgara where NORDDOCG = ? and  codgar=?", new Object[] {norddocg, codgar});
+        ret="CANC";
+      }
+    }
+    return ret;
+  }
+
+  /**
+   * Vengono letti i codici cig dei lotti, scartando i cig fittizzi, e viene
+   * composta una stringa del tipo: 'cig1','cig2',...
+   *
+   * @param codiceGara
+   * @param ditta
+   * @return String
+   * @throws SQLException
+   */
+  public String getElencoCigLotti(String codiceGara, String ditta) throws SQLException {
+    String elencoCodcigLotti="";
+    String select="select codcig from gare where codgar1=? and ditta=? and genere is null";
+    List<?> listaCigLotti = sqlManager.getListVector(select, new Object[]{codiceGara,ditta});
+    if(listaCigLotti!=null && listaCigLotti.size()>0){
+      String codcig=null;
+      for(int i=0;i<listaCigLotti.size();i++){
+        codcig = SqlManager.getValueFromVectorParam(listaCigLotti.get(i), 0).getStringValue() ;
+        if(codcig != null && !"".equals(codcig) && !codcig.startsWith("#")){
+          if(elencoCodcigLotti.length() > 1)
+            elencoCodcigLotti+=",";
+          elencoCodcigLotti+="'" + codcig +"'";
+        }
+      }
+
+    }
+    if("".equals(elencoCodcigLotti))
+      elencoCodcigLotti=null;
+
+    return elencoCodcigLotti;
+  }
+
+  public static String getTabellatoClassifica(Long tipcat){
+    String codiceTabellato = "A1015";
+    if (tipcat.longValue() == 2)
+      codiceTabellato = "G_035";
+    else if (tipcat.longValue() == 3)
+      codiceTabellato = "G_036";
+    else if (tipcat.longValue() == 4)
+      codiceTabellato = "G_037";
+    else if (tipcat.longValue() == 5)
+      codiceTabellato = "G_049";
+    return codiceTabellato;
+  }
+
+  public Double updImportoTotaleTorn(String codiceGara) throws GestoreException{
+    if (logger.isDebugEnabled()) logger.debug("updImportoTotaleTorn: inizio metodo");
+    String select = "select sum(coalesce(impapp,0)) from gare where codgar1=? and ngara <> ?";
+    try {
+      Double importoTotale = new Double(0);
+      Object importoTemp = sqlManager.getObject(select, new Object[] {codiceGara, codiceGara });
+      if (importoTemp != null) {
+        if (importoTemp instanceof Long) {
+          importoTotale = new Double(((Long) importoTemp));
+        } else if (importoTemp instanceof Double) {
+          importoTotale = new Double((Double) importoTemp);
+        }
+      }
+      importoTotale = new Double(importoTotale.doubleValue());
+      if (logger.isDebugEnabled()) logger.debug("updImportoTotaleTorn: fine metodo");
+      return importoTotale;
+    } catch (SQLException e) {
+      throw new GestoreException(
+          "Errore durante la lettura degli importi dei lotti di gara", null, e);
+    }
+  }
+
 }

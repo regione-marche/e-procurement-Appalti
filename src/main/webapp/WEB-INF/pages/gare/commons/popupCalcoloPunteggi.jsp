@@ -19,6 +19,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
+
 <c:choose>
 	<c:when test='${not empty requestScope.calcoloEseguito and requestScope.calcoloEseguito eq "1"}' >
 <script type="text/javascript">
@@ -49,6 +51,8 @@
 	</c:otherwise>
 </c:choose>
 
+<c:if test='${not tipo and gene:matches(tipo, "^1|2$", true)}' />
+
 <c:choose>
 	<c:when test='${!empty param.AttivaValutazioneTec}'>
 		<c:set var="AttivaValutazioneTec" value="${param.AttivaValutazioneTec}" />
@@ -76,6 +80,8 @@
 		<c:set var="ngara" value='${gene:getValCampo(chiave,"NGARA5")}'  />
 	</c:when>
 </c:choose>
+
+<c:if test='${not empty ngara and gene:matches(ngara, regExpresValidazStringhe, true)}' />
 
 <c:choose>
 	<c:when test='${!empty param.bustalotti}'>
@@ -154,7 +160,10 @@
 </c:choose>
 
 <c:set var="isValutazioneCommissione" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.IsValutazioneCommissioneFunction",pageContext,codice)}' />
-	
+
+<c:if test="${tipo eq '1' }">
+	<c:set var="statocg" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetSTATOCGFunction",pageContext,ngara)}' />
+</c:if>
 <c:if test="${esitoControlloG1cridef eq 'nok' and isValutazioneCommissione}">
 	<c:set var="esitoControlloGiudiziCommissione" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.ControlloGiudizioCommissioneFunction", pageContext, ngara,tipo,codgar, "" )}' />
 	<c:if test="${esitoControlloGiudiziCommissione eq 'ok' or esitoControlloGiudiziCommissione eq 'ko'}">
@@ -175,6 +184,10 @@
 			<td>
 			<br>
 		<c:choose>
+			<c:when test="${statocg == '1'}">
+				<c:set var="blocco" value="true"/>
+				Per procedere con il calcolo dei punteggi, deve essere prima conclusa la valutazione delle offerte su M-Eval.<br>
+			</c:when>
 			<c:when test="${esistonoDitteConPunteggio eq 'si'}">
 				<c:set var="blocco" value="true"/>
 				I punteggi dei criteri di valutazione della busta ${msgTitolo} risultano già assegnati alle ditte.<br>
@@ -233,6 +246,7 @@
 				<c:set var="blocco" value="true"/>
 				Per procedere con il calcolo dei punteggi, non ci devono essere ditte nella lista con soccorso istruttorio in corso.<br>
 			</c:when>
+			
 			<c:otherwise>
 				Confermi il calcolo dei punteggi dei criteri di valutazione della busta ${msgTitolo } per le ditte in gara?<br>
 			</c:otherwise>

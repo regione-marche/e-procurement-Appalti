@@ -10,6 +10,13 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Vector;
+
+import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.domain.LogEvento;
@@ -20,13 +27,6 @@ import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.MEPAManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityStringhe;
-
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore non standard per la pagina popupChiusuraAperturaDocAmm.jsp
@@ -101,7 +101,6 @@ public class GestorePopupChiusuraAperturaDcoAmm extends AbstractGestoreEntita {
           if("CALCOLO".equals(faseDaImpostare) && "2".equals(bustalotti)){
             fasgar= new Long(7);
             stepgar= new Long(70);
-            this.sqlManager.update("update gare set fasgar=?, stepgar=? where codgar1=?", new Object[]{fasgar, stepgar,ngara});
           }else if("ECO".equals(faseDaImpostare)){
             fasgar= new Long(6);
             stepgar= new Long(60);
@@ -140,7 +139,9 @@ public class GestorePopupChiusuraAperturaDcoAmm extends AbstractGestoreEntita {
             fasgar= new Long(2);
             stepgar= new Long(35);
           }
-          if(!("CALCOLO".equals(faseDaImpostare) && "2".equals(bustalotti))){
+          if("2".equals(bustalotti) && ("TEC".equals(faseDaImpostare) || "ECO".equals(faseDaImpostare))){
+            this.sqlManager.update("update gare set fasgar=?, stepgar=? where codgar1=?", new Object[]{fasgar, stepgar,ngara});
+          }else{
             this.sqlManager.update("update gare set fasgar=?, stepgar=? where ngara=?", new Object[]{fasgar, stepgar,ngara});
             //Nel caso di attivazione dell'offerta economica per bustalotti=1 si deve aggiornare lo stato della gara fittizia, ma se questa ha uno stato < 6
             if("ECO".equals(faseDaImpostare) && "1".equals(bustalotti)){
@@ -159,8 +160,10 @@ public class GestorePopupChiusuraAperturaDcoAmm extends AbstractGestoreEntita {
                 String lotto = null;
                 for(int i=0;i<listaLotti.size();i++){
                   lotto = SqlManager.getValueFromVectorParam(listaLotti.get(i), 0).getStringValue();
-                  mepaManager.impostaComunicazioniAScartate(lotto,"OFFERTE");
-                  mepaManager.impostaComunicazioniDaRiaquisire(lotto);
+                  //Nel caso di fase economica si deve specificare che siamo nel caso di lotto
+                  mepaManager.impostaComunicazioniAScartate(lotto,"OFFERTE_ECO_LOTTI_DISTINTI");
+                  mepaManager.impostaComunicazioniDaRiaquisireLottoPlicoUnicoOfferteDistinte(lotto);
+
                 }
               }
             }else{
@@ -174,6 +177,7 @@ public class GestorePopupChiusuraAperturaDcoAmm extends AbstractGestoreEntita {
                 mepaManager.impostaComunicazioniDaRiaquisireLottoPlicoUnicoOfferteDistinte(ngara);
               else
                 mepaManager.impostaComunicazioniDaRiaquisire(ngara);
+
             }
           }
 

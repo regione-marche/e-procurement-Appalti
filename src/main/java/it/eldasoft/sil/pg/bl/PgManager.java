@@ -20,6 +20,7 @@ import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -48,6 +49,7 @@ import it.eldasoft.gene.bl.integrazioni.CinecaWSManager;
 import it.eldasoft.gene.bl.integrazioni.CinecaWSPersoneFisicheManager;
 import it.eldasoft.gene.bl.scadenz.ScadenzariManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.commons.web.domain.CostantiGeneraliAccount;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.db.datautils.DataColumn;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
@@ -60,6 +62,8 @@ import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.utils.ListaDocumentiPortaleUtilities;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiGaraFunction;
 import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiRicezioneFunction;
 import it.eldasoft.sil.portgare.datatypes.AbilitazionePreventivaType;
@@ -94,6 +98,7 @@ import it.eldasoft.sil.portgare.datatypes.RichiestaVariazioneDocument;
 import it.eldasoft.sil.portgare.datatypes.RinnovoIscrizioneImpresaElencoOperatoriDocument;
 import it.eldasoft.sil.portgare.datatypes.SOAType;
 import it.eldasoft.utils.profiles.FiltroLivelloUtente;
+import it.eldasoft.utils.profiles.OpzioniUtente;
 import it.eldasoft.utils.profiles.cache.DizionarioLivelli;
 import it.eldasoft.utils.profiles.domain.Livello;
 import it.eldasoft.utils.properties.ConfigManager;
@@ -107,6 +112,9 @@ import it.eldasoft.www.PortaleAlice.PortaleAliceProxy;
 import it.maggioli.eldasoft.ws.erp.WSERPUgovAnagraficaType;
 import it.maggioli.eldasoft.ws.erp.WSERPUgovResType;
 import it.maggioli.eldasoft.ws.erp.WSERP_PortType;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+import net.sf.json.JSONSerializer;
 
 /**
  * Classe di gestione delle funzionalita' comuni di PG
@@ -147,15 +155,16 @@ public class PgManager {
   private CinecaWSPersoneFisicheManager cinecaWSPersoneFisicheManager;
 
   private CinecaAnagraficaComuneManager cinecaAnagraficaComuneManager;
+  
+  /** Manager per gestire l'integrazione programmazione (RdA/RdI)*/
+  private GestioneProgrammazioneManager gestioneProgrammazioneManager;
 
 
   /**
    * Nome del file per la registrazione dei messaggi provenienti da Portale
    * Alice
    */
-  private static final String nomeFileXML_IscrizioneImpresa = "dati_reg.xml";
 
-	public static final String NOME_FILE_RINNOVO_ISCRIZIONE = "dati_rin.xml";
 
 	private static final String REPLACEMENT_NGARA = "#NGARA#";
 	private static final String REPLACEMENT_CODGAR = "#CODGAR#";
@@ -184,6 +193,8 @@ public class PgManager {
 	private static final String REPLACEMENT_NOMTECRUP  = "#NOMTECRUP#";
 	private static final String REPLACEMENT_CFTECRUP  = "#CFTECRUP#";
     private static final String REPLACEMENT_INCTEC  = "#INCTECRUP#";
+
+    private static final String REPLACEMENT_URL_MEVAL  = "#URL_MEVAL#";
 
     private static final String costanteIdContratto = "  #NREPAT#";
 
@@ -235,6 +246,10 @@ public class PgManager {
 
   public void setCinecaAnagraficaComuneManager(CinecaAnagraficaComuneManager cinecaAnagraficaComuneManager) {
     this.cinecaAnagraficaComuneManager = cinecaAnagraficaComuneManager;
+  }
+  
+  public void setGestioneProgrammazioneManager(GestioneProgrammazioneManager gestioneProgrammazioneManager) {
+    this.gestioneProgrammazioneManager = gestioneProgrammazioneManager;
   }
 
   /**
@@ -554,6 +569,10 @@ public class PgManager {
             "id_archiviazione = ?", new Object[] { id_archiviazione });
 
       }
+      
+    //Rimuovo le occorrenze da GARERDA contattando il WS 
+    this.gestioneProgrammazioneManager.scollegaRdaGara(codiceTornata,null);
+     
 
 
     } catch (SQLException e) {
@@ -614,7 +633,7 @@ public class PgManager {
         new Object[] { codiceGara });
     this.geneManager.deleteTabelle(new String[] { "OPSU" }, "ngara4 = ? ",
         new Object[] { codiceGara });
-    this.geneManager.deleteTabelle(new String[] { "DPUN", "DPRE", "GARSTR",
+    this.geneManager.deleteTabelle(new String[] { "DPUN", "DPUN_CG", "DPRE", "GARSTR",
         "DPRE_SAN" }, "ngara = ? ", new Object[] { codiceGara });
     this.geneManager.deleteTabelle(new String[] { "OPSD" }, "ngara6 = ? ",
         new Object[] { codiceGara });
@@ -634,6 +653,16 @@ public class PgManager {
     // più
     // chiavi di quelle gestite in C0OGGASS.
     delete = "delete from iscrizclassi where ngara = ?";
+    try {
+      this.sqlManager.update(delete, new Object[] { codiceGara, });
+    } catch (SQLException e) {
+      throw new GestoreException(
+          "Errore durante l'eliminazione dele righe delle tabella ISCRIZCLASSI ",
+          null, e);
+    }
+
+    // Eliminazione dell'entità QFORM
+    delete = "delete from QFORM where entita = 'GARE' and key1=?";
     try {
       this.sqlManager.update(delete, new Object[] { codiceGara, });
     } catch (SQLException e) {
@@ -669,7 +698,24 @@ public class PgManager {
           null, e);
     }
 
-
+    //sbiancamento dello stato delle ricerche di mercato
+    try {
+      String seguen=(String)this.sqlManager.getObject("select seguen from gare where ngara=? ", new Object[] {codiceGara});
+      if(seguen!=null && !"".equals(seguen))
+        this.sqlManager.update("update gare set isriconclusa=null where ngara=?", new Object[]{seguen});
+    } catch (SQLException e) {
+      throw new GestoreException(
+          "Errore nell'aggiornamento dello stato delle ricerche di mercato",
+          null, e);
+    }
+    
+    //Rimuovo le occorrenze da GARERDA contattando il WS
+    try {
+      String  codgar = (String) this.sqlManager.getObject("select CODGAR1 from GARE where NGARA = ?",new Object[] {codiceGara});
+      this.gestioneProgrammazioneManager.scollegaRdaLotto(codgar, codiceGara,null);
+    } catch (SQLException e) {
+      throw new GestoreException("Errore nel recupero del codice della gara",null, e);
+    }
 
     if (logger.isDebugEnabled())
       logger.debug("deleteGARE(" + codiceGara + "): fine metodo");
@@ -1216,6 +1262,22 @@ public class PgManager {
           "copiaGARE", e1);
     }
 
+
+    Boolean isPadreRicercaMercatoNegoziata = false;
+    try {
+    	Long iterRicMeNeg = (Long) this.geneManager.getSql().getObject("select t.iterga"
+				+ " from torn t join gare g1 on t.codgar=g1.codgar1"
+				+ " join gare g2 on g1.ngara=g2.seguen and g2.ngara=?", new Object[] { nGaraSorgente });
+    	if(iterRicMeNeg!=null && Long.valueOf(8).equals(iterRicMeNeg)) {
+    		isPadreRicercaMercatoNegoziata = true;
+    	}
+	} catch (SQLException sqle) {
+	      throw new GestoreException(
+	              "Errore nella lettura dell'iter di gara per le ricerche di mercato!",
+	              "copiaGARE", sqle);
+	}
+
+
     // Inizio copia delle entita' figlie di GARE
     String querySql = "select * from ENTITA where CAMPOCHIAVE = ? ";
 
@@ -1313,7 +1375,7 @@ public class PgManager {
               if ("GCAP".equalsIgnoreCase(entitaCopia[i])) {
                 // Rimozione dei campi da non copiare
                 // che riferiscono del collegamento alle rda (integrazione WSERP)
-                String campiDaNonCopiare[] = new String[]{ "GCAP.CODCARR","GCAP.CODRDA", "GCAP.POSRDA"};
+                String campiDaNonCopiare[] = new String[]{ "GCAP.CODCARR","GCAP.CODRDA", "GCAP.POSRDA", "GCAP.ISPRODNEG"};
                 campiDaCopiare.removeColumns(campiDaNonCopiare);
               }
 
@@ -1358,7 +1420,7 @@ public class PgManager {
                       "GARE.ESINEG", "GARE.DATNEG", "GARE.DLETTAGGPROV","GARE.DSEDPUBEVA",
                       "GARE.DAVVPRVREQ", "GARE.DRICHDOCCR", "GARE.NPROREQ", "GARE.DTERMDOCCR",
                       "GARE.DRICESP", "GARE.IMPCOM", "GARE.IMPLIQ", "GARE.DATLIQ",
-                      "GARE.DINVDOCTEC", "GARE.DCONVDITTE", "GARE.RIBOEPV"};
+                      "GARE.DINVDOCTEC", "GARE.DCONVDITTE", "GARE.RIBOEPV", "GARE.ISRICONCLUSA"};
                 } else {
                   campiDaNonCopiare = new String[]{ "GARE.FASGAR",
                       "GARE.NOFVAL", "GARE.NOFMED", "GARE.MEDIA", "GARE.DITTAP",
@@ -1379,7 +1441,7 @@ public class PgManager {
                       "GARE.ESINEG", "GARE.DATNEG", "GARE.DLETTAGGPROV","GARE.DSEDPUBEVA",
                       "GARE.DAVVPRVREQ", "GARE.DRICHDOCCR", "GARE.NPROREQ", "GARE.DTERMDOCCR",
                       "GARE.DRICESP", "GARE.IMPCOM", "GARE.IMPLIQ", "GARE.DATLIQ",
-                      "GARE.DINVDOCTEC", "GARE.DCONVDITTE", "GARE.RIBOEPV"};
+                      "GARE.DINVDOCTEC", "GARE.DCONVDITTE", "GARE.RIBOEPV", "GARE.ISRICONCLUSA"};
                 }
 
                 campiDaCopiare.removeColumns(campiDaNonCopiare);
@@ -1420,6 +1482,12 @@ public class PgManager {
                   }
                 }
 
+                //ricerca di mercato negoziata:non copio il codice gara padre per non
+                //avere più affidamenti generati pe rlo stesso operatore
+                if(isPadreRicercaMercatoNegoziata) {
+                	campiDaCopiare.removeColumns(new String[]{"GARE.SEGUEN"});
+                }
+
               }
 
               if ("GARESTATI".equalsIgnoreCase(entitaCopia[i]))
@@ -1435,7 +1503,8 @@ public class PgManager {
                     "GARE1.METSOGLIA", "GARE1.METCOEFF", "GARE1.MEDIASCA", "GARE1.SOMMARIB", "GARE1.MEDIAIMP",
                     "GARE1.SOGLIAIMP", "GARE1.AEDINVIT","GARE1.AENPROTI","GARE1.NOFALAINF",
                     "GARE1.NOFALASUP","GARE1.METPUNTI","GARE1.UUID","GARE1.IAGGIUINI","GARE1.RIBAGGINI",
-                    "GARE1.SOGLIA1", "GARE1.SOGLIAVAR", "GARE1.MEDIARAP", "GARE1.SOGLIANORMA"});
+                    "GARE1.SOGLIA1", "GARE1.SOGLIAVAR", "GARE1.MEDIARAP", "GARE1.SOGLIANORMA", "GARE1.MOTESENTECIG", "GARE1.NUMRDO",
+                    "GARE1.STATOCG"});
               }
 
               if ("GARECONT".equalsIgnoreCase(entitaCopia[i])) {
@@ -1449,7 +1518,8 @@ public class PgManager {
                     "GARECONT.MOTREV", "GARECONT.DATRIF", "GARECONT.NPROAT", "GARECONT.IDPRG",
                     "GARECONT.IDDOCDG", "GARECONT.IMPQUA", "GARECONT.LREGCO", "GARECONT.NREGCO",
                     "GARECONT.DREGCO", "GARECONT.NUMCONT", "GARECONT.CODBIC", "GARECONT.DSCAPO",
-                    "GARECONT.NPROPO", "GARECONT.NUMCONT", "GARECONT.DCONSD"};
+                    "GARECONT.NPROPO", "GARECONT.NUMCONT", "GARECONT.DCONSD" , "GARECONT.DPROAT",
+                    "GARECONT.NPROTCOORBA", "GARECONT.DPROTCOORBA"};
                 campiDaCopiare.removeColumns(campiDaNonCopiare);
               }
 
@@ -2488,7 +2558,7 @@ public class PgManager {
           campiDaCopiare.getColumn("TORN.CODGAR").setChiave(true);
           campiDaCopiare.setValue("TORN.CODGAR", codiceGaraDestinazione);
           campiDaCopiare.removeColumns(new String[] { "TORN.ESINEG","TORN.MODAST", "TORN.MODGAR", "TORN.TATTOC",
-              "TORN.NPNOMINACOMM", "TORN.UUID", "TORN.NUMAVCP"});
+              "TORN.NPNOMINACOMM", "TORN.UUID", "TORN.NUMAVCP", "TORN.CLIV2"});
           //Se non è stata selezionata la copia dei termini di gara si devono escludere i seguenti campi:
           if (!copiaTermini) {
             campiDaCopiare.removeColumns(new String[] { "TORN.DTEPAR","TORN.OTEPAR",
@@ -2504,6 +2574,14 @@ public class PgManager {
           campiDaCopiare.insert("TORN", this.geneManager.getSql());
         }
       }
+
+      //Gestione campo CLIV2
+      ProfiloUtente profilo = (ProfiloUtente) request.getSession().getAttribute(
+              CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+      Long syscon = new Long(profilo.getId());
+
+      this.sqlManager.update("update torn set cliv2=? where codgar=? ",new Object[]{syscon, codiceGaraDestinazione});
+
       if (logger.isDebugEnabled())
         logger.debug("copiaTORNcomune: fine copia " + "occorrenza di TORN");
 
@@ -2511,6 +2589,9 @@ public class PgManager {
       // /////////////////////////////////////
       // Copia di GARERDA
       // /////////////////////////////////////
+      if(gestioneProgrammazioneManager.isAttivaIntegrazioneProgrammazione()){
+        logger.debug("copiaTORNcomune: skip copia occorrenze di GARERDA");
+      }else {
       if (logger.isDebugEnabled())
         logger.debug("copiaTORNcomune: inizio copia occorrenze di GARERDA");
       listaOccorrenzeDaCopiare = this.geneManager.getSql().getListHashMap(
@@ -2534,6 +2615,7 @@ public class PgManager {
           campiDaCopiareGARERDA.removeColumns(campiDaNonCopiareGARERDA);
           campiDaCopiareGARERDA.insert("GARERDA", this.geneManager.getSql());
         }
+      }
       }
 
       if (logger.isDebugEnabled())
@@ -2880,17 +2962,37 @@ public class PgManager {
     return valoreFasGar;
   }
 
+  /**
+   *
+   * @param numeroGara
+   * @param operazione
+   * @param gestioneBustaAmm
+   * @param modlicg
+   * @param valtec
+   * @throws SQLException
+   */
   public void updateChiusuraAperturaFasiRicezione(String numeroGara,
-      String operazione) throws SQLException {
+      String operazione,boolean gestioneBustaAmm, Long modlicg, String valtec) throws SQLException {
 
+    Long fasgar=null;
+    Long stepgar=null;
     if ("ATTIVA".equals(operazione)) {
+      if(gestioneBustaAmm) {
+        fasgar = new Long(GestioneFasiGaraFunction.FASE_APERTURA_DOCUM_AMMINISTR / 10);
+        stepgar = new Long(GestioneFasiGaraFunction.FASE_APERTURA_DOCUM_AMMINISTR);
+      }else {
+        if(new Long(6).equals(modlicg) || "1".equals(valtec)) {
+          fasgar = new Long(GestioneFasiGaraFunction.FASE_VALUTAZIONE_TECNICA / 10);
+          stepgar = new Long(GestioneFasiGaraFunction.FASE_VALUTAZIONE_TECNICA);
+        }else {
+          fasgar = new Long(GestioneFasiGaraFunction.FASE_APERTURA_OFFERTE_ECONOMICHE / 10);
+          stepgar = new Long(GestioneFasiGaraFunction.FASE_APERTURA_OFFERTE_ECONOMICHE);
+        }
+
+      }
       this.sqlManager.update(
           "update GARE set FASGAR = ?, STEPGAR = ? where NGARA = ? ",
-          new Object[] {
-              new Long(
-                  GestioneFasiGaraFunction.FASE_APERTURA_DOCUM_AMMINISTR / 10),
-              new Long(GestioneFasiGaraFunction.FASE_APERTURA_DOCUM_AMMINISTR),
-              numeroGara }, 1);
+          new Object[] { fasgar, stepgar, numeroGara }, 1);
     } else if ("DISATTIVA".equals(operazione)) {
 
       this.sqlManager.update(
@@ -2960,7 +3062,7 @@ public class PgManager {
       }
     } catch (SQLException e) {
       throw new GestoreException(
-          "Errore durante il calcolo della cauzione provvisoria",
+          "Errore durante il calcolo della garanzia provvisoria",
           "calcolaCauzProvv", e);
     }
 
@@ -3689,21 +3791,23 @@ public class PgManager {
    */
   public void aggiornaFaseGara(Long numeroFaseAttiva, String codiceGara,
       boolean isFromRicezOfferte) throws GestoreException {
-    String sqlUpdate = null;
-    if (isFromRicezOfferte)
-      sqlUpdate = "update GARE set FASGAR = ?, STEPGAR = ? "
-          + "where NGARA = ? and (FASGAR < 2 or FASGAR is null) ";
-    else
-      sqlUpdate = "update GARE set FASGAR = ?, STEPGAR = ? where NGARA = ? ";
-    Double d = new Double(Math.floor(numeroFaseAttiva.doubleValue() / 10));
+    if(numeroFaseAttiva!=null) {
+      String sqlUpdate = null;
+      if (isFromRicezOfferte)
+        sqlUpdate = "update GARE set FASGAR = ?, STEPGAR = ? "
+            + "where NGARA = ? and (FASGAR < 2 or FASGAR is null) ";
+      else
+        sqlUpdate = "update GARE set FASGAR = ?, STEPGAR = ? where NGARA = ? ";
+      Double d = new Double(Math.floor(numeroFaseAttiva.doubleValue() / 10));
 
-    try {
-      this.sqlManager.update(sqlUpdate, new Object[] { new Long(d.longValue()),
-          numeroFaseAttiva, codiceGara });
-    } catch (SQLException s) {
-      throw new GestoreException(
-          "Errore nell'aggiornamento della fase di gare della tabella GARE",
-          "updateGARE_FASGAR", s);
+      try {
+        this.sqlManager.update(sqlUpdate, new Object[] { new Long(d.longValue()),
+            numeroFaseAttiva, codiceGara });
+      } catch (SQLException s) {
+        throw new GestoreException(
+            "Errore nell'aggiornamento della fase di gare della tabella GARE",
+            "updateGARE_FASGAR", s);
+      }
     }
   }
 
@@ -3904,18 +4008,19 @@ public class PgManager {
     }
 
     Long bustalotti = null;
+    String esclusioneDGUE=" and (IDSTAMPA is null or IDSTAMPA != 'DGUE')";
 
     try {
       if (copiaLottoInLottoUnico) {
         numOccorrenze = this.geneManager.countOccorrenze("DOCUMGARA",
-            "CODGAR = ? and (NGARA = ? or NGARA is null) and GRUPPO != 11 and GRUPPO != 12 and (ISARCHI!='1' or ISARCHI is null)", new Object[] {
+            "CODGAR = ? and (NGARA = ? or NGARA is null) and GRUPPO != 11 and GRUPPO != 12 and (ISARCHI!='1' or ISARCHI is null)" + esclusioneDGUE, new Object[] {
                 codiceGaraSorgente, nGaraSorgente });
         sql += " and (NGARA = ? or NGARA is null)";
       } else if (lottoDiGara) {
         bustalotti = (Long)this.sqlManager.getObject("select bustalotti from gare where ngara=?", new Object[]{codiceGaraSorgente});
         if ((bustalotti == null || (bustalotti != null && bustalotti.longValue()!=1)) || ((new Long(1)).equals(bustalotti) && !codiceGaraSorgente.equals(codiceGaraDestinazione)) ) {
           numOccorrenze = this.geneManager.countOccorrenze("DOCUMGARA",
-              "CODGAR = ? and NGARA = ? and GRUPPO != 11 and GRUPPO != 12 and (ISARCHI!='1' or ISARCHI is null)", new Object[] { codiceGaraSorgente,
+              "CODGAR = ? and NGARA = ? and GRUPPO != 11 and GRUPPO != 12 and (ISARCHI!='1' or ISARCHI is null)" + esclusioneDGUE, new Object[] { codiceGaraSorgente,
                   nGaraSorgente });
           sql += " and NGARA = ?";
         }
@@ -3924,10 +4029,10 @@ public class PgManager {
           sql += " and NGARA is null";
         }
         numOccorrenze = this.geneManager.countOccorrenze("DOCUMGARA",
-            "CODGAR = ? and GRUPPO != 11 and GRUPPO != 12 and (ISARCHI!='1' or ISARCHI is null)", new Object[] { codiceGaraSorgente });
+            "CODGAR = ? and GRUPPO != 11 and GRUPPO != 12 and (ISARCHI!='1' or ISARCHI is null)" + esclusioneDGUE,  new Object[] { codiceGaraSorgente });
 
       }
-      sql += " and GRUPPO != 11 and GRUPPO != 12 and (ISARCHI!='1' or ISARCHI is null) order by NORDDOCG";
+      sql += " and GRUPPO != 11 and GRUPPO != 12 and (ISARCHI!='1' or ISARCHI is null) " + esclusioneDGUE + " order by NORDDOCG";
 
       if (this.geneManager.getSql().isTable("DOCUMGARA") && numOccorrenze > 0) {
         if (lottoDiGara || copiaLottoInLottoUnico)
@@ -4003,7 +4108,7 @@ public class PgManager {
             if (numOccorrenzeW_DOCDIG > 0) {
               // Il campo W_DOCDIG.DIGOGG è di tipo BLOB e va trattato
               // separatamente
-              String select = "select IDPRG,IDDOCDIG,DIGENT,DIGKEY1,DIGKEY2,DIGTIPDOC,DIGNOMDOC,DIGDESDOC,DIGFIRMA from W_DOCDIG where IDPRG = ? and IDDOCDIG = ?";
+              String select = "select IDPRG,IDDOCDIG,DIGENT,DIGKEY1,DIGKEY2,DIGTIPDOC,DIGNOMDOC,DIGDESDOC from W_DOCDIG where IDPRG = ? and IDDOCDIG = ?";
               List<?> occorrenzeW_DOCDIGDaCopiare = this.geneManager.getSql().getListHashMap(
                   select, new Object[] { idprg, iddocdg });
               if (occorrenzeW_DOCDIGDaCopiare != null
@@ -4061,6 +4166,13 @@ public class PgManager {
         }
 
       }
+
+      //Gestione integrazione MDUGE
+      String urlMDGUE = ConfigManager.getValore(CostantiAppalti.PROP_INTEGRAZIONE_MDGUE_URL);
+      if(urlMDGUE!=null && !"".equals(urlMDGUE) ) {
+        this.copiaDocumentazioneDGUE(status, nGaraSorgente, codiceGaraSorgente, nGaraDestinazione, codiceGaraDestinazione, lottoDiGara, entita);
+      }
+
     } catch (SQLException e) {
       throw new GestoreException(
           "Errore nella copia del lotto di gara  per entita' DOCUMGARA",
@@ -4069,6 +4181,45 @@ public class PgManager {
       throw new GestoreException(
           "Errore nella lettura del campo BLOB DIGOGG della W_DOCDIG",
           "copiaGARE", e);
+    }
+
+    //Copia QFORM
+    try {
+      String dbdultaggmodString = sqlManager.getDBFunction("DATETIMETOSTRING",
+          new String[] { "dultaggmod" });
+      String select ="select titolo, descrizione, tipologia, busta, idmodello," + dbdultaggmodString + ", oggetto from qform where entita='GARE' and key1=? and stato in (1,5)";
+      List<?> listaQform = this.sqlManager.getListVector(select, new Object[]{nGaraSorgente});
+      if(listaQform!=null && listaQform.size()>0) {
+        int id=0;
+        String titolo=null;
+        String descrizione=null;
+        Long tipologia = null;
+        Long busta = null;
+        Long idmodello = null;
+        String dultaggmodStringValue = null;
+        java.util.Date dultaggmod = null;
+        String oggetto = null;
+        Timestamp dultaggmodTime =null;
+        for(int i=0;i<listaQform.size();i++) {
+          id = genChiaviManager.getNextId("QFORM");
+          titolo = SqlManager.getValueFromVectorParam(listaQform.get(i), 0).getStringValue();
+          descrizione = SqlManager.getValueFromVectorParam(listaQform.get(i), 1).getStringValue();
+          tipologia = SqlManager.getValueFromVectorParam(listaQform.get(i), 2).longValue();
+          busta = SqlManager.getValueFromVectorParam(listaQform.get(i), 3).longValue();
+          idmodello = SqlManager.getValueFromVectorParam(listaQform.get(i), 4).longValue();
+          dultaggmodStringValue = SqlManager.getValueFromVectorParam(listaQform.get(i), 5).getStringValue();
+          dultaggmodTime = null;
+          if(dultaggmodStringValue!=null && !"".equals(dultaggmodStringValue)) {
+            dultaggmod = UtilityDate.convertiData(dultaggmodStringValue, UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS);
+            dultaggmodTime = new Timestamp(dultaggmod.getTime());
+          }
+          oggetto = SqlManager.getValueFromVectorParam(listaQform.get(i), 6).getStringValue();
+          this.sqlManager.update("insert into qform(id,entita,key1,titolo, descrizione, tipologia, busta, stato, idmodello, dultaggmod, oggetto) values(?,?,?,?,?,?,?,?,?,?,?)",
+              new Object[] {new Long(id),"GARE", nGaraDestinazione,titolo,descrizione,tipologia,busta,new Long(1),idmodello,dultaggmodTime,oggetto});
+        }
+      }
+    } catch (Exception e) {
+      throw new GestoreException("Errore nella copia di QFORM", "copiaGARE", e);
     }
 
   }
@@ -4421,7 +4572,7 @@ public class PgManager {
                           catiga, modo, tipgen, null,null);
 
                 // Aggiornamento di INVREA di ISCRIZCLASSI
-                if (!"0".equals(catiga))
+                if (numcla!=null)
                   this.aggiornaNumInviti("$" + elencoe, elencoe, codiceDitta,
                         catiga, modo, tipgen, numcla,null);
                 }
@@ -4712,6 +4863,10 @@ public class PgManager {
     try {
       String ragioneSociale = impresa.getRagioneSociale();
       String naturaGiuridica = impresa.getNaturaGiuridica();
+      Long tipoSocCooperativa = null;
+      if(impresa.isSetTipoSocietaCooperativa() && !"".equals(impresa.getTipoSocietaCooperativa()))
+        tipoSocCooperativa= new Long(impresa.getTipoSocietaCooperativa());
+
       String tipoImpresa = impresa.getTipoImpresa();
       String codiceFiscale = impresa.getCodiceFiscale();
       String partitaIVA = impresa.getPartitaIVA();
@@ -4740,6 +4895,9 @@ public class PgManager {
       String cellulare = recapiti.getCellulare();
       String fax = recapiti.getFax();
       String pec = recapiti.getPec();
+      String gruppoiva = null;
+      if(impresa.isSetGruppoIva())
+        gruppoiva = impresa.getGruppoIva();
 
       CameraCommercioType cciaa = impresa.getCciaa();
       String numRegistroDitte = null;
@@ -5024,12 +5182,16 @@ public class PgManager {
 
       elencoCampiIMPR.add(new DataColumn("IMPR.NATGIUI", new JdbcParametro(
           JdbcParametro.TIPO_NUMERICO, natgiui)));
+      elencoCampiIMPR.add(new DataColumn("IMPR.TIPOCOOP", new JdbcParametro(
+          JdbcParametro.TIPO_NUMERICO, tipoSocCooperativa)));
       elencoCampiIMPR.add(new DataColumn("IMPR.TIPIMP", new JdbcParametro(
           JdbcParametro.TIPO_NUMERICO, new Long(tipoImpresa))));
       elencoCampiIMPR.add(new DataColumn("IMPR.CFIMP", new JdbcParametro(
           JdbcParametro.TIPO_TESTO, codiceFiscale)));
       elencoCampiIMPR.add(new DataColumn("IMPR.PIVIMP", new JdbcParametro(
           JdbcParametro.TIPO_TESTO, partitaIVA)));
+      elencoCampiIMPR.add(new DataColumn("IMPR.ISGRUPPOIVA", new JdbcParametro(
+          JdbcParametro.TIPO_TESTO, gruppoiva)));
       elencoCampiIMPR.add(new DataColumn("IMPR.OGGSOC", new JdbcParametro(
           JdbcParametro.TIPO_TESTO, oggettoSociale)));
       elencoCampiIMPR.add(new DataColumn("IMPR.ISMPMI", new JdbcParametro(
@@ -5421,6 +5583,9 @@ public class PgManager {
       containerIMPR.getColumn("IMPR.ZONEAT").setObjectOriginalValue(" ");
       containerIMPR.getColumn("IMPR.ACERTATT").setObjectOriginalValue(" ");
       containerIMPR.getColumn("IMPR.AISTPREV").setObjectOriginalValue(" ");
+      containerIMPR.getColumn("IMPR.ISGRUPPOIVA").setObjectOriginalValue(" ");
+      containerIMPR.getColumn("IMPR.TIPOCOOP").setObjectOriginalValue(
+          new Long(-1));
 
       containerIMPR.getColumn("IMPR.REGDIT").setObjectOriginalValue(" ");
       containerIMPR.getColumn("IMPR.DISCIF").setObjectOriginalValue(datamtp);
@@ -5506,6 +5671,10 @@ public class PgManager {
         containerIMPR.getColumn("IMPR.CODIMP").setChiave(true);
         containerIMPR.insert("IMPR", sqlManager);
       }
+
+      if("1".equals(gruppoiva))
+        this.sqlManager.update(
+            "update impr set isgruppoiva=? where  pivimp=? and (nazimp is null or nazimp='1')", new Object[] {"1", partitaIVA });
 
       // Gestione degli altri indirizzi
       this.gestioneAltriIndirizzi(impresa, codiceImpresa);
@@ -5606,7 +5775,9 @@ public class PgManager {
       // Fine aggiornamento dati LEGALE RAPPRESENTANTE
 
       //inizio integrazione con cineca
-      if ("1".equals(integrazioneCineca)) {
+      //C.F. Viene richiesto da Cineca a giugno 2021 di abolire questa casistica: l'integrazione avviene solo in aggiudicazione
+      //if ("1".equals(integrazioneCineca)) {
+      if (false) {
         try {
           String[] res = null;
           if ("6".equals(tipoImpresa)) {
@@ -6354,7 +6525,7 @@ public class PgManager {
         Vector<?> datiW_DOCDIG = null;
         try {
           datiW_DOCDIG = this.sqlManager.getVector(select, new Object[] { digent,
-              idcom.toString(), idprgW_DOCDIG, nomeFileXML_IscrizioneImpresa });
+              idcom.toString(), idprgW_DOCDIG, CostantiAppalti.nomeFileXML_IscrizioneImpresa });
 
         } catch (SQLException e) {
           livEvento = 3;
@@ -6398,12 +6569,15 @@ public class PgManager {
               String ragSociale = document.getRegistrazioneImpresa().getDatiImpresa().getImpresa().getRagioneSociale();
               String pec = document.getRegistrazioneImpresa().getDatiImpresa().getImpresa().getRecapiti().getPec();
               String mail = document.getRegistrazioneImpresa().getDatiImpresa().getImpresa().getRecapiti().getEmail();
+              String gruppoiva = document.getRegistrazioneImpresa().getDatiImpresa().getImpresa().getGruppoIva();
 
               String tipoImpresa = document.getRegistrazioneImpresa().getDatiImpresa().getImpresa().getTipoImpresa();
               Long tipimp = null;
               if (tipoImpresa != null && !"".equals(tipoImpresa))
                 tipimp = new Long(tipoImpresa);
               boolean saltareControlloPivaNulla = anagraficaManager.saltareControlloObbligPiva(tipimp);
+              if("1".equals(gruppoiva))
+                saltareControlloPivaNulla=false;
               if (!saltareControlloPivaNulla
                   && partitaiva != null
                   && !"".equals(partitaiva))
@@ -6534,7 +6708,7 @@ public class PgManager {
               }
               this.aggiornaDitta(document, codiceDitta, modo);
             */
-              String datiDitta[] = this.controlloEsistenzaDitta(partitaiva, codfisc);
+              String datiDitta[] = this.controlloEsistenzaDitta(partitaiva, codfisc, gruppoiva);
               codiceDitta = datiDitta[0];
               modo = datiDitta[1];
               if("UPDATE".equals(modo)){
@@ -6584,7 +6758,7 @@ public class PgManager {
 
                 //Viene popolata la G_NOTEAVVISI
                 if(messaggioVariazioni!=null && !"".equals(messaggioVariazioni)){
-                  this.InserisciVariazioni(messaggioVariazioni, codiceDitta,"INS",null,comDataStato,impostareStatoNota);
+                  this.InserisciVariazioni(messaggioVariazioni, codiceDitta,"INS",null,comDataStato,impostareStatoNota,null);
                 }
               }
               this.aggiornaDitta(document, codiceDitta, modo);
@@ -7225,7 +7399,7 @@ public class PgManager {
       boolean aggiornaImporto) throws GestoreException {
 
     String sql = "select NOMIMO, NPROGG, DITTAO, IMPAPPD, NUMORDPL, AMMGAR, FASGAR from DITG where CODGAR5 = ? and NGARA5 = ?";
-    String sqlInsert = "insert into DITG (CODGAR5,NOMIMO,NPROGG,DITTAO,NGARA5,IMPAPPD,NUMORDPL, AMMGAR, FASGAR, INVGAR, INVOFF) values(?,?,?,?,?,?,?,?,?,?,?)";
+    String sqlInsert = "insert into DITG (CODGAR5,NOMIMO,NPROGG,DITTAO,NGARA5,IMPAPPD,NUMORDPL, AMMGAR, FASGAR, INVGAR, INVOFF, NCOMOPE) values(?,?,?,?,?,?,?,?,?,?,?,?)";
 
     try {
       // Recupera l'importo a base d'asta del lotto
@@ -7242,7 +7416,7 @@ public class PgManager {
           invoff = "1";
 
         for (int i = 0; i < listaDatiDitg.size(); i++) {
-          Object[] parametri = new Object[11];
+          Object[] parametri = new Object[12];
           parametri[0] = codgar;
           parametri[1] = SqlManager.getValueFromVectorParam(
               listaDatiDitg.get(i), 0).stringValue();
@@ -7275,6 +7449,7 @@ public class PgManager {
           parametri[8] = fasgar;
           parametri[9] = "1";
           parametri[10] = invoff;
+          parametri[11] = "1";
 
           this.sqlManager.update(sqlInsert, parametri);
         }
@@ -7655,11 +7830,13 @@ public class PgManager {
    * @param modo
    * @param profilo
    * @param dataNota
+   * @param impostaStatoAperta
+   * @param titolo
    *
    * @throws GestoreException
    */
   public void InserisciVariazioni(Object document, String codiceImpresa,
-      String modo, ProfiloUtente profilo, Date dataNota, boolean impostaStatoAperta)
+      String modo, ProfiloUtente profilo, Date dataNota, boolean impostaStatoAperta, String titolo)
       throws GestoreException {
 
     RichiestaGenericaType richiestaVarDatiId = null;
@@ -7675,7 +7852,10 @@ public class PgManager {
     } else if (document instanceof String) {
       testoRichiesta = (String) document;
       statoNota = new Long(90);
-      titoloNota = "Notifica variazione dati da portale";
+      if(titolo!=null)
+        titoloNota=titolo;
+      else
+        titoloNota = "Notifica variazione dati da portale";
 
       // Si eliminano i caratteri &nbsp;
       testoRichiesta = testoRichiesta.replaceAll("&nbsp;", " ");
@@ -7801,7 +7981,7 @@ public class PgManager {
         + "DATALB,PROALB,TCAPRE,NCAPRE,OGGSOC,SOGGDURC,SETTPROD,POSINPS,POSINAIL,CODCEDIL,ACERTATT,ULTDIC,ASSOBBL,AISTPREV,"
         + "DTRISOA,DVERSOA,ISMPMI,INDWEB,ISCRCCIAA,"
         + "ISCRIWL,WLPREFE,WLSEZIO,WLDISCRI,WLDSCAD,WLINCORSO,CLADIM,CODATT,CODBIC,COGNOME,NOME,"
-        + "ISCRIAE,AEDSCAD,AEINCORSO,ISCRIESP,ISCRIRAT,RATING,RATDSCAD,RATINCORSO,SOCIOUNICO,REGFISC,DINTSOA from impr where CODIMP=?";
+        + "ISCRIAE,AEDSCAD,AEINCORSO,ISCRIESP,ISCRIRAT,RATING,RATDSCAD,RATINCORSO,SOCIOUNICO,REGFISC,DINTSOA,TIPOCOOP from impr where CODIMP=?";
 
     // Sezione dati generali
     DataColumnContainer datiImpr = new DataColumnContainer(sqlManager, "IMPR",
@@ -7825,11 +8005,11 @@ public class PgManager {
       String descOriginale = "";
       Long tmp = datiImpr.getColumn("IMPR.NATGIUI").getOriginalValue().longValue();
       if (tmp != null)
-        descOriginale = tabellatiManager.getDescrTabellato("A2128",
+        descOriginale = tabellatiManager.getDescrTabellato("G_043",
             tmp.toString());
 
       if (!"".equals(naturaGiuridica))
-        naturaGiuridica = tabellatiManager.getDescrTabellato("A2128",
+        naturaGiuridica = tabellatiManager.getDescrTabellato("G_043",
             naturaGiuridica);
 
       if (!"".equals(msg)) msg += "\n";
@@ -7838,6 +8018,36 @@ public class PgManager {
           + descOriginale
           + "\na:\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
           + naturaGiuridica
+          + "\n";
+
+    }
+
+    String tipologiaSocCooperativa = null;  //ADEGUARE GESTIONE TIPOCOOP, sosistuire isSetAltriDatiAnagrafici e getNaturaGiuridica con i metodi giusti
+    if(impresa.isSetTipoSocietaCooperativa())
+      tipologiaSocCooperativa=impresa.getTipoSocietaCooperativa();
+    Long tipSocCooperativa = null;
+    if (tipologiaSocCooperativa != null && !"".equals(tipologiaSocCooperativa))
+      tipSocCooperativa = new Long(tipologiaSocCooperativa);
+    else
+      tipologiaSocCooperativa = "";
+    datiImpr.setValue("IMPR.TIPOCOOP", tipSocCooperativa);
+    if (datiImpr.isModifiedColumn("IMPR.TIPOCOOP")) {
+      String descOriginale = "";
+      Long tmp = datiImpr.getColumn("IMPR.TIPOCOOP").getOriginalValue().longValue();
+      if (tmp != null)
+        descOriginale = tabellatiManager.getDescrTabellato("G_074",
+            tmp.toString());
+
+      if (!"".equals(tipologiaSocCooperativa))
+        tipologiaSocCooperativa = tabellatiManager.getDescrTabellato("G_074",
+            tipologiaSocCooperativa);
+
+      if (!"".equals(msg)) msg += "\n";
+
+      msg += "La tipologia società cooperativa é cambiata \nda:\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+          + descOriginale
+          + "\na:\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+          + tipologiaSocCooperativa
           + "\n";
 
     }
@@ -12550,6 +12760,10 @@ public class PgManager {
             ngara = SqlManager.getValueFromVectorParam(listaLotti.get(j), 0).getStringValue();
             this.updateIMPRDOCGICancellazione(codgar, ngara);
           }
+          //nel caso di bustalotti 1, le occorrenze di IMPRDOCG sono associate sia ai lotti(busta tecnica ed economica)
+          //che alla gara con ngara=codgar1, quindi vanno eliminate anche quest'ultime
+          if(new Long(1).equals(bustalotti))
+            this.updateIMPRDOCGICancellazione(codgar, codgar);
         }
     }
 
@@ -12598,19 +12812,31 @@ public class PgManager {
   }
 
   /**
-   * Viene letto il tabellato A1101 per determinare la modalità di selezione ditte
-   * da eleco. I valori possibili sono "MAN"(manuale), "AUTO" (automatica) e  "MISTA"
+   * Per determinare la modalità di selezione ditte viene fatto un primo controllo
+   * sugli ou235,ou236 e ou237. Se non è valorizzato nessuno di questi tre
+   * viene letto il tabellato A1101.
+   * I valori possibili sono "MAN"(manuale), "AUTO" (automatica) e  "MISTA"
+   * @param profiloUtente
    * @return String
    */
-  public String getModalitaSelezioneDitteElenco() {
+  public String getModalitaSelezioneDitteElenco(ProfiloUtente profiloUtente) {
     String modalita = "MAN";
-    List<Tabellato> listaTabellato = tabellatiManager.getTabellato("A1101");
-    if (listaTabellato != null && listaTabellato.size() > 0) {
-      String descrTab = (listaTabellato.get(0)).getDescTabellato();
-      if (descrTab != null && descrTab.startsWith("1"))
-        modalita = "AUTO";
-      else if(descrTab != null && descrTab.startsWith("2"))
-        modalita = "MISTA";
+    OpzioniUtente opzioniUtente = new OpzioniUtente( profiloUtente.getFunzioniUtenteAbilitate());
+    if(opzioniUtente.isOpzionePresente(CostantiGeneraliAccount.SELEZIONE_AUTOMATICA_OPERATORE_ELENCO)){
+      modalita = "AUTO";
+    }else if(opzioniUtente.isOpzionePresente(CostantiGeneraliAccount.SELEZIONE_MANUALE_OPERATORE_ELENCO)){
+      modalita = "MAN";
+    }else if(opzioniUtente.isOpzionePresente(CostantiGeneraliAccount.SELEZIONE_AUTOMATICA_MANUALE_OPERATORE_ELENCO)){
+      modalita = "MISTA";
+    }else {
+      List<Tabellato> listaTabellato = tabellatiManager.getTabellato("A1101");
+      if (listaTabellato != null && listaTabellato.size() > 0) {
+        String descrTab = (listaTabellato.get(0)).getDescTabellato();
+        if (descrTab != null && descrTab.startsWith("1"))
+          modalita = "AUTO";
+        else if(descrTab != null && descrTab.startsWith("2"))
+          modalita = "MISTA";
+      }
     }
     return modalita;
   }
@@ -12730,7 +12956,7 @@ public class PgManager {
     Long sceltaContr= null;
     if (tipoGara != null) {
       if (tipoGara.longValue() >= 51
-          && tipoGara.longValue() <= 88)
+          && tipoGara.longValue() <= 89)
         sceltaContr = tipoGara;
       else {
         List<?> listaValoriTabellatoA1z05 = null;
@@ -12774,6 +13000,7 @@ public class PgManager {
 	 * Viene restituito il numero di protocollo associato alla comunicazione, numero
 	 * di protocollo che viene adoperato per individuare l'occorrenza in WSDOCUMENTI
 	 * da collegare alla riga di WSALLEGATI che viene insertia per ogni occorrenza di W_DOCDIG
+	 * e la stringa contenente l'elenco dei nomi dei documenti
 	 *
 	 * @param document container in cui sono presenti i dati dei documenti
 	 * @param codiceGara codice della gara
@@ -12781,24 +13008,30 @@ public class PgManager {
 	 * @param numGara numero della gara
 	 * @param data data di presentazione richiesta
 	 * @param ora ora di presentazione richiesta
-	 * @return String
+	 * @param posticipareAcqQfrom
+	 * @return Object[]
 	 * @throws GestoreException
 	 */
 	public Object[] insertDocumenti(Object document, String codiceGara,
-					String codiceImpresa, String numGara, java.util.Date data, String ora, Long idComunicazione)
+					String codiceImpresa, String numGara, java.util.Date data, String ora, Long idComunicazione, boolean posticipareAcqQform)
 					throws GestoreException {
 	    String comnumprot = null;
 	    Timestamp comdatprotTimestamp=null;
 		ListaDocumentiType listaDocumenti = null;
+		boolean aggiornamento=false;
+		boolean rinnovo=false;
 		if (document instanceof IscrizioneImpresaElencoOperatoriDocument) {
 			listaDocumenti = ((IscrizioneImpresaElencoOperatoriDocument) document).getIscrizioneImpresaElencoOperatori().getDocumenti();
 		} else if (document instanceof AggiornamentoIscrizioneImpresaElencoOperatoriDocument) {
 			listaDocumenti = ((AggiornamentoIscrizioneImpresaElencoOperatoriDocument) document).getAggiornamentoIscrizioneImpresaElencoOperatori().getDocumenti();
+			aggiornamento = true;
 		} else if (document instanceof RinnovoIscrizioneImpresaElencoOperatoriDocument) {
 			listaDocumenti = ((RinnovoIscrizioneImpresaElencoOperatoriDocument) document).getRinnovoIscrizioneImpresaElencoOperatori().getDocumenti();
+			rinnovo=true;
 		}
 
-		if (listaDocumenti != null) {
+		String msgElencoDoc = "Documenti presentati:\r\n";
+		if (listaDocumenti != null && listaDocumenti.sizeOfDocumentoArray()>0) {
 		  Long idDocumentoProtocollo = null;
 
 		  //Caricamento dati per l'inserimento in WSALLEGATI
@@ -12825,124 +13058,170 @@ public class PgManager {
             throw new GestoreException("Errore nell'acquisizione della documentazione", null, e);
           }
 
+          String uuid=null;
+          String nomeFile = null;
+          int idDitgqform=0;
+          Long statoDitgqform=null;
+          Timestamp dataatt = null;
+          Iterator<DocumentoType> iterator = null;
+          if(!rinnovo) {
+            iterator = ListaDocumentiPortaleUtilities.getIteratore(listaDocumenti.getDocumentoArray());
+          }else {
+            iterator = Arrays.stream(listaDocumenti.getDocumentoArray()).iterator();
+          }
 
-			for (int j = 0; j < listaDocumenti.sizeOfDocumentoArray(); j++) {
+          while(iterator.hasNext()) {
+            DocumentoType datoCodificato = iterator.next();
+            nomeFile = datoCodificato.getNomeFile();
+            String descrizione = datoCodificato.getDescrizione();
+            if(!CostantiAppalti.nomeFileQestionario.equals(nomeFile))
+              msgElencoDoc+= nomeFile + "\r\n";
+            byte[] file = this.getFileFromDocumento(datoCodificato,idComunicazione.toString());
+            long id = -1;
+            if (datoCodificato.isSetId()) {
+              id = datoCodificato.getId();
+            }
+            uuid = datoCodificato.getUuid();
 
-				DocumentoType datoCodificato = listaDocumenti.getDocumentoArray(j);
-				String nomeFile = datoCodificato.getNomeFile();
-				String descrizione = datoCodificato.getDescrizione();
-				byte[] file = this.getFileFromDocumento(datoCodificato,idComunicazione.toString());
-				long id = -1;
-				if (datoCodificato.isSetId()) {
-					id = datoCodificato.getId();
-				}
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				try {
-					baos.write(file);
-				} catch (IOException e1) {
-					logger.error("Errore nell'acquisizione della documentazione", e1);
-					throw new GestoreException("Errore nell'acquisizione della documentazione", null, e1);
-				}
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try {
+              baos.write(file);
+            } catch (IOException e1) {
+              logger.error("Errore nell'acquisizione della documentazione", e1);
+              throw new GestoreException("Errore nell'acquisizione della documentazione", null, e1);
+            }
 
-				String select;
-				String update;
-				Long progressivo = null;
-				try {
-					//Inserimento in W_DOCDIG
-					select = "SELECT MAX(iddocdig) FROM w_docdig WHERE idprg = 'PA'";
-					Long nProgressivoW_DOCDIG = (Long) this.sqlManager.getObject(select, null);
+            String select;
+            String update;
+            Long progressivo = null;
+            try {
+              if(CostantiAppalti.nomeFileQestionario.equals(nomeFile)) {
+                //Gestione iscrizione tramite qform,
+                idDitgqform = this.genChiaviManager.getNextId("DITGQFORM");
+                if(posticipareAcqQform) {
+                  statoDitgqform = new Long(CostantiAppalti.statoDITGQFORMDaAttivare);
+                  dataatt = null;
+                }else {
+                  statoDitgqform = new Long(CostantiAppalti.statoDITGQFORMAttivo);
+                  dataatt = new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime());
+                  if(aggiornamento) {
+                    this.sqlManager.update("update ditgqform set stato=?, datadis=? where ngara= ? and codgar =? and dittao = ? and stato = ?",
+                        new Object[] {new Long(CostantiAppalti.statoDITGQFORMSuperato), dataatt,
+                            numGara, codiceGara, codiceImpresa, new Long(CostantiAppalti.statoDITGQFORMAttivo)});
+                  }
+                }
+                this.sqlManager.update("insert into ditgqform(id,ngara,codgar,dittao,oggetto,uuid,datapres,stato,dataatt) "
+                    + "values(?,?,?,?,?,?,?,?,?)", new Object[] {new Long(idDitgqform), numGara, codiceGara, codiceImpresa, baos.toString(), uuid,
+                        new Timestamp(data.getTime()), statoDitgqform, dataatt});
 
-					if (nProgressivoW_DOCDIG == null) {
-						nProgressivoW_DOCDIG = new Long(0);
-					}
+                if(aggiornamento) {
+                  //Va gestita la cancellazione dei file elencati nel json
+                  this.deleteFileQform(baos.toString(), numGara,  codiceImpresa, new Timestamp(data.getTime()));
+                }
+              }else {
+                //Inserimento in W_DOCDIG
+                select = "SELECT MAX(iddocdig) FROM w_docdig WHERE idprg = 'PA'";
+                Long nProgressivoW_DOCDIG = (Long) this.sqlManager.getObject(select, null);
 
-					Long newProgressivoW_DOCDIG = nProgressivoW_DOCDIG + 1;
+                if (nProgressivoW_DOCDIG == null) {
+                  nProgressivoW_DOCDIG = new Long(0);
+                }
 
-					Vector<DataColumn> elencoCampiW_DOCDIG = new Vector<DataColumn>();
+                Long newProgressivoW_DOCDIG = nProgressivoW_DOCDIG + 1;
 
-					elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.IDPRG",
-									new JdbcParametro(JdbcParametro.TIPO_TESTO, "PA")));
-					elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.IDDOCDIG",
-									new JdbcParametro(JdbcParametro.TIPO_NUMERICO, newProgressivoW_DOCDIG)));
-					elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGENT",
-									new JdbcParametro(JdbcParametro.TIPO_TESTO, "IMPRDOCG")));
-					elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGNOMDOC",
-									new JdbcParametro(JdbcParametro.TIPO_TESTO, nomeFile)));
-					elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGOGG",
-									new JdbcParametro(JdbcParametro.TIPO_BINARIO, baos)));
+                Vector<DataColumn> elencoCampiW_DOCDIG = new Vector<DataColumn>();
+                String idPrg = "PA";
+                elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.IDPRG",
+                    new JdbcParametro(JdbcParametro.TIPO_TESTO, idPrg)));
+                elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.IDDOCDIG",
+                    new JdbcParametro(JdbcParametro.TIPO_NUMERICO, newProgressivoW_DOCDIG)));
+                elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGENT",
+                    new JdbcParametro(JdbcParametro.TIPO_TESTO, "IMPRDOCG")));
+                elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGNOMDOC",
+                    new JdbcParametro(JdbcParametro.TIPO_TESTO, nomeFile)));
+                elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGOGG",
+                    new JdbcParametro(JdbcParametro.TIPO_BINARIO, baos)));
 
-					DataColumnContainer containerW_DOCDIG = new DataColumnContainer(elencoCampiW_DOCDIG);
+                DataColumnContainer containerW_DOCDIG = new DataColumnContainer(elencoCampiW_DOCDIG);
 
-					containerW_DOCDIG.insert("W_DOCDIG", sqlManager);
+                containerW_DOCDIG.insert("W_DOCDIG", sqlManager);
+                //brutalmente mi faccio la copia dopo la insert
+                String sqlUpdate= "update W_DOCDIG set FIRMACHECKTS = (select w2.FIRMACHECKTS from W_DOCDIG w2 where w2.idprg='PA' and w2.digkey1=? and w2.digkey3=?)," +
+	                		"FIRMACHECK = (select w2.FIRMACHECK from W_DOCDIG w2 where w2.idprg='PA' and w2.digkey1=? and w2.digkey3=?) " +
+	                		"where IDDOCDIG = ? and IDPRG = ?";
+                logger.debug("Aggiorno il documento "+newProgressivoW_DOCDIG);
+                this.sqlManager.update(sqlUpdate, new Object[]{idComunicazione.toString(),uuid,idComunicazione.toString(),uuid,newProgressivoW_DOCDIG, idPrg});
+                logger.debug("Aggiornato il documento "+newProgressivoW_DOCDIG+" con i dati della firma se presenti.");
+                //Inserimento in IMPRDOCG
+                Long proveni = null;
+                if (id > 0) {
 
-					//Inserimento in IMPRDOCG
-					Long proveni = null;
-					if (id > 0) {
+                  progressivo = id;
 
-						progressivo = id;
+                  //verifico che ci sia prima l'occorrenza in IMPRDOCG
+                  select = "SELECT idprg, iddocdg  FROM imprdocg WHERE codgar = ? AND codimp = ? AND norddoci = ? AND proveni = ?";
+                  Object occorrezzaImprdocg = this.sqlManager.getVector(select,
+                      new Object[]{codiceGara, codiceImpresa, progressivo, (long) 1});
 
-						//verifico che ci sia prima l'occorrenza in IMPRDOCG
-						select = "SELECT idprg, iddocdg  FROM imprdocg WHERE codgar = ? AND codimp = ? AND norddoci = ? AND proveni = ?";
-						Object occorrezzaImprdocg = this.sqlManager.getVector(select,
-										new Object[]{codiceGara, codiceImpresa, progressivo, (long) 1});
+                  if (occorrezzaImprdocg != null) {
+                    //si tratta di un documento richiesto
+                    String idprg = SqlManager.getValueFromVectorParam(occorrezzaImprdocg, 0).stringValue();
+                    Long iddocdg = SqlManager.getValueFromVectorParam(occorrezzaImprdocg, 1).longValue();
 
-						if (occorrezzaImprdocg != null) {
-							//si tratta di un documento richiesto
-							String idprg = SqlManager.getValueFromVectorParam(occorrezzaImprdocg, 0).stringValue();
-							Long iddocdg = SqlManager.getValueFromVectorParam(occorrezzaImprdocg, 1).longValue();
+                    if (StringUtils.isEmpty(idprg) && iddocdg == null) {
+                      //non esiste ancora un riferimento nella imprdocg al documento
+                      //richiesto di documgara, quindi creo il legame
+                      update = "UPDATE imprdocg SET idprg = ?, iddocdg = ?, datarilascio = ?, orarilascio = ?, doctel = ?, situazdoci=?, uuid = ? "
+                          + "WHERE codgar = ? AND codimp = ? AND norddoci = ? AND proveni = ?";
+                      this.sqlManager.update(update, new Object[]{"PA", newProgressivoW_DOCDIG,
+                          data, ora, "1", new Long(2), uuid, codiceGara, codiceImpresa, progressivo, (long) 1});
+                    } else {
+                      //anche se si rientra nel caso di documento richiesto dall’ente
+                      //(cioè contiene il riferimento a DOCUMGARA), se la corrispondente
+                      //occorrenza in IMPRDOCG contiene già un riferimento a un documento
+                      //(IDPRG, IDDOCDG.IMPRDOCG), viene inserita una nuova occorrenza
+                      //in IMPRDOCG inizializzando la sua descrizione (DESCRIZIONE.IMPRDOCG)
+                      //con quella della corrispondente occorrenza in DOCUMGARA.
+                      this.insertDocumentoGara(codiceGara, codiceImpresa, progressivo,
+                          numGara, newProgressivoW_DOCDIG, proveni, descrizione, data, ora, uuid);
+                    }
+                  } else {
+                    //altrimenti inserisci un'occorrenza nuova in imprdocg per casi di disallineamento
+                    this.insertDocumentoGara(codiceGara, codiceImpresa, progressivo,
+                        numGara, newProgressivoW_DOCDIG, proveni, descrizione, data, ora, uuid);
+                  }
+                } else {
+                  //inserisci occorrenza in imprdocg
+                  progressivo = this.insertDocumentoGara(codiceGara, codiceImpresa, progressivo,
+                      numGara, newProgressivoW_DOCDIG, proveni, descrizione, data, ora, uuid);
+                }
 
-							if (StringUtils.isEmpty(idprg) && iddocdg == null) {
-								//non esiste ancora un riferimento nella imprdocg al documento
-								//richiesto di documgara, quindi creo il legame
-								update = "UPDATE imprdocg SET idprg = ?, iddocdg = ?, datarilascio = ?, orarilascio = ?, doctel = ?, situazdoci=? "
-												+ "WHERE codgar = ? AND codimp = ? AND norddoci = ? AND proveni = ?";
-								this.sqlManager.update(update, new Object[]{"PA", newProgressivoW_DOCDIG,
-									data, ora, "1", new Long(2), codiceGara, codiceImpresa, progressivo, (long) 1});
-							} else {
-								//anche se si rientra nel caso di documento richiesto dall’ente
-								//(cioè contiene il riferimento a DOCUMGARA), se la corrispondente
-								//occorrenza in IMPRDOCG contiene già un riferimento a un documento
-								//(IDPRG, IDDOCDG.IMPRDOCG), viene inserita una nuova occorrenza
-								//in IMPRDOCG inizializzando la sua descrizione (DESCRIZIONE.IMPRDOCG)
-								//con quella della corrispondente occorrenza in DOCUMGARA.
-								this.insertDocumentoGara(codiceGara, codiceImpresa, progressivo,
-												numGara, newProgressivoW_DOCDIG, proveni, descrizione, data, ora);
-							}
-						} else {
-								//altrimenti inserisci un'occorrenza nuova in imprdocg per casi di disallineamento
-								this.insertDocumentoGara(codiceGara, codiceImpresa, progressivo,
-												numGara, newProgressivoW_DOCDIG, proveni, descrizione, data, ora);
-							}
-					} else {
-						//inserisci occorrenza in imprdocg
-						progressivo = this.insertDocumentoGara(codiceGara, codiceImpresa, progressivo,
-										numGara, newProgressivoW_DOCDIG, proveni, descrizione, data, ora);
-					}
+                //Aggiornamento di W_DOCDIG con il riferimento a IMPRDOCG
+                update = "UPDATE w_docdig SET digkey1 = ?, digkey2 = ?, digkey3 = ? WHERE idprg = ? AND iddocdig = ?";
+                this.sqlManager.update(update, new Object[]{codiceGara, progressivo.toString(), codiceImpresa, "PA", newProgressivoW_DOCDIG});
 
-					//Aggiornamento di W_DOCDIG con il riferimento a IMPRDOCG
-					update = "UPDATE w_docdig SET digkey1 = ?, digkey2 = ? WHERE idprg = ? AND iddocdig = ?";
-					this.sqlManager.update(update, new Object[]{codiceGara, progressivo.toString(), "PA", newProgressivoW_DOCDIG});
-
-					//inserimento in wsallegati
-					if (idDocumentoProtocollo != null) {
-    					int idWsallegati = this.genChiaviManager.getNextId("WSALLEGATI");
-    					this.sqlManager.update("insert into wsallegati(id, entita, key1, key2, idwsdoc) values(?,?,?,?,?)",
-    					    new Object[]{idWsallegati, "W_DOCDIG", "PA", newProgressivoW_DOCDIG.toString(),idDocumentoProtocollo});
-					}
-
-				} catch (SQLException e) {
-					logger.error("Errore nell'acquisizione della documentazione", e);
-					throw new GestoreException("Errore nell'acquisizione della documentazione", null, e);
-				}
+                //inserimento in wsallegati
+                if (idDocumentoProtocollo != null) {
+                  int idWsallegati = this.genChiaviManager.getNextId("WSALLEGATI");
+                  this.sqlManager.update("insert into wsallegati(id, entita, key1, key2, idwsdoc) values(?,?,?,?,?)",
+                      new Object[]{idWsallegati, "W_DOCDIG", "PA", newProgressivoW_DOCDIG.toString(),idDocumentoProtocollo});
+                }
+              }
+			} catch (Exception e) {
+			  logger.error("Errore nell'acquisizione della documentazione", e);
+			  throw new GestoreException("Errore nell'acquisizione della documentazione", null, e);
 			}
+          }
 
+		}else {
+		  msgElencoDoc="Nessun documento presentato";
 		}
-		return new Object[]{comnumprot,comdatprotTimestamp};
+		return new Object[]{comnumprot,comdatprotTimestamp,msgElencoDoc};
 	}
 
 	public long insertDocumentoGara(String codiceGara, String codiceImpresa,
 					Long progressivo, String numGara, Long newProgressivoW_DOCDIG,
-					Long proveni, String descrizione, java.util.Date data, String ora) throws SQLException {
+					Long proveni, String descrizione, java.util.Date data, String ora, String uuid) throws SQLException {
 
 		String select;
 
@@ -13001,6 +13280,8 @@ public class PgManager {
 						new JdbcParametro(JdbcParametro.TIPO_TESTO, ora)));
 		elencoCampiIMPRDOCG.add(new DataColumn("IMPRDOCG.DOCTEL",
 						new JdbcParametro(JdbcParametro.TIPO_TESTO, "1")));
+		elencoCampiIMPRDOCG.add(new DataColumn("IMPRDOCG.UUID",
+            new JdbcParametro(JdbcParametro.TIPO_TESTO, uuid)));
 
 		DataColumnContainer containerIMPRDOCG = new DataColumnContainer(elencoCampiIMPRDOCG);
 		containerIMPRDOCG.insert("IMPRDOCG", sqlManager);
@@ -13162,12 +13443,13 @@ public class PgManager {
      *
      * @param partitaiva partitaiva
      * @param codfisc codice fiscale
+     * @param gruppoiva
      * @return  String[] String[0] codice dell'impresa
      *                   String[1] modo, ossia 'INS' (se l'impresa non è presente), 'UPDATE' (se presente).
      * @throws GestoreException
      */
 	public String[] controlloEsistenzaDitta(String partitaiva,
-	    String codfisc) throws GestoreException{
+	    String codfisc, String gruppoiva) throws GestoreException{
 
   	  String selectCodimp = "";
       String select="";
@@ -13206,7 +13488,7 @@ public class PgManager {
         select = "select count(codimp) from impr where upper(cfimp)=? and upper(pivimp)=?";
         numImpr = (Long) this.sqlManager.getObject(select, new Object[] {
             codfisc, partitaiva });
-        if (numImpr == null || numImpr.longValue() == 0) {
+        if ((numImpr == null || numImpr.longValue() == 0) && !"1".equals(gruppoiva)) {
           select = "select count(codimp) from impr where upper(pivimp)=? and (cfimp is null or upper(cfimp) = ?)";
           numImpr = (Long) this.sqlManager.getObject(select, new Object[] {
               partitaiva, partitaiva });
@@ -13317,6 +13599,8 @@ public class PgManager {
 	  String codFisc=null;
 	  String piva = null;
 	  Long nazimp = null;
+	  String ambitoTerritorale = null;
+	  String idFiscaleEstero = null;
 	  Double quota;
 	  Long tipoImpresa = null;
 	  String impresa = null;
@@ -13348,13 +13632,18 @@ public class PgManager {
 	    ragSoc = listaPartecipanti[i].getRagioneSociale();
 	    codFisc = listaPartecipanti[i].getCodiceFiscale();
 	    piva = listaPartecipanti[i].getPartitaIVA();
+	    ambitoTerritorale = listaPartecipanti[i].getAmbitoTerritoriale();
 	    if (listaPartecipanti[i].isSetQuota()) {
 	      quota = new Double(listaPartecipanti[i].getQuota());
 	    } else {
 	      quota=null;
 	    }
 	    tipoImpresa = new Long(listaPartecipanti[i].getTipoImpresa());
-
+	    if("2".equals(ambitoTerritorale)) {
+	      idFiscaleEstero = listaPartecipanti[i].getIdFiscaleEstero();
+	      codFisc = idFiscaleEstero;
+	      piva = idFiscaleEstero;
+	    }
 	    //Si controlla l'esistenza dell'Impresa solo fra quelle registrate
 	    String selectImpreseRegistrate="select codimp from impr,w_puser where codimp=userkey1 and codimp<>? and upper(cfimp)=?";
 	    Object par[] = null;
@@ -13370,7 +13659,7 @@ public class PgManager {
           if (impresaRegistrata == null || "".equals(impresaRegistrata)) {
             //L'impresa non è presente fra le imprese registrate
             //Si controllano le imprese nella banca dati
-            String dati[] = this.controlloEsistenzaDitta( piva, codFisc);
+            String dati[] = this.controlloEsistenzaDitta( piva, codFisc, "");
             impresa = dati[0];
             modo = dati[1];
           } else {
@@ -13467,7 +13756,12 @@ public class PgManager {
 	    try{
 	      Long notecod = null;
 	      // Operatore (utente di USRSYS che ha avuto accesso all'applicativo)
-	      Long syscon = new Long(idProfilo);
+	      Long syscon = null;
+	      if(idProfilo!=-1)
+	        syscon = new Long(idProfilo);
+	      else{
+	        syscon = new Long(48);
+	      }
 	      Date datains = new Date(UtilityDate.getDataOdiernaAsDate().getTime());
 
 	      // Aggiornamento dati Impresa
@@ -13708,9 +14002,16 @@ public class PgManager {
         boolean visGareOffertaUnica, boolean visGareLottoUnico, String profiloWEb, String tipoOperazione, String filtroUffint, String filtroProfilo) {
       String entita = "";
       String chiave = "";
-      String filtro="from w_invcom , ENTITA  where comkey2=CHIAVE and comtipo='FS12' and comdatlet is null and comstato='3' ";
+      String filtroComent = "";
+      if ("10".equals(profilo)) {
+    	  filtroComent += " and coment = 'G1STIPULA' ";
+      }else {
+    	  filtroComent += " and coment is null ";
+      }
+
+      String filtro="from w_invcom , ENTITA  where comkey2=CHIAVE and comtipo='FS12' and comdatlet is null" + filtroComent + "and comstato='3' ";
       if ("sel".equals(tipoOperazione))
-        filtro="from w_invcom , ENTITA, w_puser  where comkey2=CHIAVE and comtipo='FS12' and comdatlet is null and comstato='3' and w_puser.usernome = w_invcom.comkey1" ;
+        filtro="from w_invcom , ENTITA, w_puser  where comkey2=CHIAVE and comtipo='FS12' and comdatlet is null" + filtroComent + "and comstato='3' and w_puser.usernome = w_invcom.comkey1" ;
       if ("1".equals(profilo)) {
         entita = "v_gare_torn";
         chiave = "codice";
@@ -13795,6 +14096,18 @@ public class PgManager {
         chiave = "nso.id";
         if (StringUtils.isNotBlank(filtroUffint)) {
           filtro += " and nso.CODEIN = '" + filtroUffint + "'";
+        }
+      }else if ("10".equals(profilo)) {
+        //Per le stipule la view v_gare_stipula ha problemi di lentezza nel reperire le comunicazioni, quindi si lavora direttamente con la tabella G1STIPULA
+        filtro="from w_invcom, ENTITA, gare, torn  where comkey2=CHIAVE and comtipo='FS12' and comdatlet is null" + filtroComent + "and comstato='3' and gare.ngara=g1stipula.ngara and torn.codgar=gare.codgar1";
+        if ("sel".equals(tipoOperazione))
+          filtro="from w_invcom , ENTITA, gare, torn, w_puser  where comkey2=CHIAVE and comtipo='FS12' and comdatlet is null" + filtroComent + "and comstato='3' and gare.ngara=g1stipula.ngara and torn.codgar=gare.codgar1 and w_puser.usernome = w_invcom.comkey1" ;
+        entita = "g1stipula";
+        chiave = "codstipula";
+        if (filtroUtente != null && !"".equals(filtroUtente))
+            filtro += " and " + filtroUtente;
+        if (StringUtils.isNotBlank(filtroUffint)) {
+          filtro += " and CENINT = '" + filtroUffint + "'";
         }
       }
 
@@ -13908,6 +14221,11 @@ public class PgManager {
       if (cftecrup == null)
         cftecrup="";
       stringa = StringUtils.replace(stringa, REPLACEMENT_CFTECRUP, cftecrup);
+
+      String urlMEval= (String)parametri.get("urlMEval");
+      if (urlMEval == null)
+        urlMEval="";
+      stringa = StringUtils.replace(stringa, REPLACEMENT_URL_MEVAL, urlMEval);
 
       return stringa;
     }
@@ -14990,6 +15308,286 @@ public class PgManager {
         throw new GestoreException(
             "Errore durante l'eliminazione dele righe delle tabella WSVIGILANZA ",
             null, e);
+      }
+    }
+
+    /**
+     * Viene gestita la copia dei documento DGUE, che hanno la seguente caratteristica, che i documenti dei
+     * conocorrenti puntano alla stessa occorrenza di w_docdig dei documenti di gara. Nella copia questa caratteristica
+     * deve essere mantenuta
+     *
+     * @param status
+     * @param nGaraSorgente
+     * @param codiceGaraSorgente
+     * @param nGaraDestinazione
+     * @param codiceGaraDestinazione
+     * @param lottoDiGara
+     * @param entita
+     * @throws GestoreException
+     * @throws SQLException
+     * @throws IOException
+     */
+    public void copiaDocumentazioneDGUE(TransactionStatus status,
+        String nGaraSorgente, String codiceGaraSorgente,
+        String nGaraDestinazione, String codiceGaraDestinazione,
+        boolean lottoDiGara, String entita) throws GestoreException, SQLException, IOException {
+
+      List<?> listaOccorenzeDaCopiare = null;
+      List<?> listaDocumentiConcorrenti = null;
+      DataColumnContainer campiDaCopiare = null;
+      DataColumnContainer campiDaCopiareConcorrenti = null;
+      long numOccorrenze = 0;
+      String sql = "select * from DOCUMGARA where CODGAR = ?";
+      String sqlConcorrenti=null;
+
+      boolean copiaLottoInLottoUnico = false;
+      if (!codiceGaraSorgente.startsWith("$")
+          && codiceGaraDestinazione.startsWith("$")) {
+        copiaLottoInLottoUnico = true;
+      }
+
+      Long bustalotti = null;
+
+
+        if (copiaLottoInLottoUnico) {
+          numOccorrenze = this.geneManager.countOccorrenze("DOCUMGARA",
+              "CODGAR = ? and (NGARA = ? or NGARA is null) and (GRUPPO = 1 or GRUPPO = 6) and (ISARCHI!='1' or ISARCHI is null) and IDSTAMPA = 'DGUE'" , new Object[] {
+                  codiceGaraSorgente, nGaraSorgente });
+          sql += " and (NGARA = ? or NGARA is null)";
+        } else if (lottoDiGara) {
+          bustalotti = (Long)this.sqlManager.getObject("select bustalotti from gare where ngara=?", new Object[]{codiceGaraSorgente});
+          if ((bustalotti == null || (bustalotti != null && bustalotti.longValue()!=1)) || ((new Long(1)).equals(bustalotti) && !codiceGaraSorgente.equals(codiceGaraDestinazione)) ) {
+            numOccorrenze = this.geneManager.countOccorrenze("DOCUMGARA",
+                "CODGAR = ? and NGARA = ? and (GRUPPO = 1 or GRUPPO = 6) and (ISARCHI!='1' or ISARCHI is null) and IDSTAMPA = 'DGUE'", new Object[] { codiceGaraSorgente,
+                    nGaraSorgente });
+            sql += " and NGARA = ?";
+          }
+        } else {
+          if ("TORN".equals(entita)) {
+            sql += " and NGARA is null";
+          }
+          numOccorrenze = this.geneManager.countOccorrenze("DOCUMGARA",
+              "CODGAR = ? and (GRUPPO = 1 or GRUPPO = 6) and (ISARCHI!='1' or ISARCHI is null) and IDSTAMPA = 'DGUE'",  new Object[] { codiceGaraSorgente });
+
+        }
+
+        //Ricerca dei documenti di gara DGUE
+        sql += " and (GRUPPO = 1 or GRUPPO = 6) and (ISARCHI!='1' or ISARCHI is null) and IDSTAMPA = 'DGUE' order by NORDDOCG";
+
+        if (this.geneManager.getSql().isTable("DOCUMGARA") && numOccorrenze > 0) {
+          if (lottoDiGara || copiaLottoInLottoUnico)
+            listaOccorenzeDaCopiare = this.geneManager.getSql().getListHashMap(
+                sql, new Object[] { codiceGaraSorgente, nGaraSorgente });
+          else
+            listaOccorenzeDaCopiare = this.geneManager.getSql().getListHashMap(
+                sql, new Object[] { codiceGaraSorgente });
+
+          if (listaOccorenzeDaCopiare != null
+              && listaOccorenzeDaCopiare.size() > 0) {
+
+            for (int row = 0; row < listaOccorenzeDaCopiare.size(); row++) {
+              if (lottoDiGara || copiaLottoInLottoUnico)
+                campiDaCopiare = new DataColumnContainer(
+                    this.geneManager.getSql(), "DOCUMGARA", sql, new Object[] {
+                        codiceGaraSorgente, nGaraSorgente });
+              else
+                campiDaCopiare = new DataColumnContainer(
+                    this.geneManager.getSql(), "DOCUMGARA", sql,
+                    new Object[] { codiceGaraSorgente });
+
+              campiDaCopiare.setValoriFromMap(
+                  (HashMap<?,?>) listaOccorenzeDaCopiare.get(row), true);
+
+              String campiDaNonCopiare[] = new String[]{ "DOCUMGARA.DATARILASCIO"};
+              campiDaCopiare.removeColumns(campiDaNonCopiare);
+
+              campiDaCopiare.getColumn("CODGAR").setChiave(true);
+              campiDaCopiare.setValue("CODGAR", codiceGaraDestinazione);
+              // campiDaCopiare.setValue("NGARA",nGaraDestinazione);
+              // se il campo NGARA è valorizzato, va sostituito con il valore di
+              // nGaraDestinazione
+              if (campiDaCopiare.getString("NGARA") != null
+                  || copiaLottoInLottoUnico)
+                campiDaCopiare.setValue("NGARA", nGaraDestinazione);
+
+              campiDaCopiare.getColumn("NORDDOCG").setChiave(true);
+
+              long newNorddocg = 1;
+              if (!codiceGaraSorgente.equals(codiceGaraDestinazione)) {
+                Long norddcog = campiDaCopiare.getLong("NORDDOCG");
+                newNorddocg = norddcog.longValue();
+              } else {
+                // Si deve calcolare il valore di NORDDOCG
+                Long maxNorddocg = (Long) this.geneManager.getSql().getObject(
+                    "select max(NORDDOCG) from DOCUMGARA where CODGAR= ?",
+                    new Object[] { codiceGaraDestinazione });
+
+                if (maxNorddocg != null && maxNorddocg.longValue() > 0)
+                  newNorddocg = maxNorddocg.longValue() + 1;
+              }
+              campiDaCopiare.setValue("NORDDOCG", new Long(newNorddocg));
+
+              // Per adesso non gestisco la copia dei file, ossia W_DOCDIG
+              campiDaCopiare.setValue("IDPRG", "PG");
+              campiDaCopiare.setValue("IDDOCDG", null);
+
+              //Si sbianca STATODOC
+              campiDaCopiare.setValue("STATODOC", null);
+
+              // Inserimento del nuovo record
+              campiDaCopiare.insert("DOCUMGARA", this.geneManager.getSql());
+
+              // Copia delle occorrenze di W_DOCDIG figlie di DOCUMGARA
+              HashMap<?,?> hm = (HashMap<?,?>) listaOccorenzeDaCopiare.get(row);
+              String idprg = hm.get("IDPRG").toString();
+              Long iddocdg = ((JdbcParametro) hm.get("IDDOCDG")).longValue();
+
+              long numOccorrenzeW_DOCDIG = this.geneManager.countOccorrenze(
+                  "W_DOCDIG", "IDPRG = ? and IDDOCDIG = ?", new Object[] { idprg,
+                      iddocdg });
+              if (numOccorrenzeW_DOCDIG > 0) {
+                // Il campo W_DOCDIG.DIGOGG è di tipo BLOB e va trattato
+                // separatamente
+                String select = "select IDPRG,IDDOCDIG,DIGENT,DIGKEY1,DIGKEY2,DIGTIPDOC,DIGNOMDOC,DIGDESDOC,DIGFIRMA from W_DOCDIG where IDPRG = ? and IDDOCDIG = ?";
+                List<?> occorrenzeW_DOCDIGDaCopiare = this.geneManager.getSql().getListHashMap(
+                    select, new Object[] { idprg, iddocdg });
+                if (occorrenzeW_DOCDIGDaCopiare != null
+                    && occorrenzeW_DOCDIGDaCopiare.size() > 0) {
+                  for (int i = 0; i < occorrenzeW_DOCDIGDaCopiare.size(); i++) {
+                    DataColumnContainer campiDaCopiareW_DOCDIG = new DataColumnContainer(
+                        this.geneManager.getSql(), "W_DOCDIG", select,
+                        new Object[] { idprg, iddocdg });
+                    campiDaCopiareW_DOCDIG.setValoriFromMap(
+                        (HashMap<?,?>) occorrenzeW_DOCDIGDaCopiare.get(i), true);
+                    campiDaCopiareW_DOCDIG.getColumn("IDPRG").setChiave(true);
+
+                    campiDaCopiareW_DOCDIG.getColumn("IDDOCDIG").setChiave(true);
+
+                    // Si deve calcolare il valore di IDDOCDIG
+                    Long maxIDDOCDIG = (Long) this.geneManager.getSql().getObject(
+                        "select max(IDDOCDIG) from W_DOCDIG where IDPRG= ?",
+                        new Object[] { idprg });
+
+                    long newIDDOCDIG = 1;
+                    if (maxIDDOCDIG != null && maxIDDOCDIG.longValue() > 0)
+                      newIDDOCDIG = maxIDDOCDIG.longValue() + 1;
+
+                    campiDaCopiareW_DOCDIG.setValue("IDDOCDIG", new Long(
+                        newIDDOCDIG));
+                    campiDaCopiareW_DOCDIG.setValue("DIGKEY1",
+                        codiceGaraDestinazione);
+                    campiDaCopiareW_DOCDIG.setValue("DIGKEY2", new Long(
+                        newNorddocg));
+                    BlobFile fileAllegato = null;
+                    fileAllegato = fileAllegatoManager.getFileAllegato(idprg,
+                        iddocdg);
+                    ByteArrayOutputStream baos = null;
+                    if (fileAllegato != null && fileAllegato.getStream() != null) {
+                      baos = new ByteArrayOutputStream();
+                      baos.write(fileAllegato.getStream());
+                    }
+                    campiDaCopiareW_DOCDIG.addColumn("W_DOCDIG.DIGOGG",
+                        JdbcParametro.TIPO_BINARIO, baos);
+
+                    // Inserimento del nuovo record su w_docdig
+                    campiDaCopiareW_DOCDIG.insert("W_DOCDIG",
+                        this.geneManager.getSql());
+
+                    // Aggiornamento dei campi IDPRG e IDDOCDG di documgara
+                    this.sqlManager.update(
+                        "update DOCUMGARA set IDPRG=?,IDDOCDG = ? where CODGAR=? and NORDDOCG=?",
+                        new Object[] { idprg, new Long(newIDDOCDIG),
+                            codiceGaraDestinazione, new Long(newNorddocg) });
+
+                    //Ricerca dei documenti concorrenti collegati allo stesso allegato dei documenti di gara
+                    sqlConcorrenti = "select * from DOCUMGARA where CODGAR = ? and GRUPPO = 3 and (ISARCHI!='1' or ISARCHI is null) and IDSTAMPA = 'DGUE' and IDPRG=? and IDDOCDG=? ";
+                    listaDocumentiConcorrenti = this.geneManager.getSql().getListHashMap(
+                        sqlConcorrenti, new Object[] { codiceGaraSorgente, idprg, iddocdg });
+
+                    if (listaDocumentiConcorrenti != null
+                        && listaDocumentiConcorrenti.size() > 0) {
+                      for (int riga = 0; riga < listaDocumentiConcorrenti.size(); riga++) {
+                        campiDaCopiareConcorrenti = new DataColumnContainer(
+                            this.geneManager.getSql(), "DOCUMGARA", sqlConcorrenti,
+                            new Object[] { codiceGaraSorgente, idprg, iddocdg });
+
+                        campiDaCopiareConcorrenti.setValoriFromMap(
+                            (HashMap<?,?>) listaDocumentiConcorrenti.get(riga), true);
+
+                        campiDaNonCopiare = new String[]{ "DOCUMGARA.DATARILASCIO"};
+                        campiDaCopiareConcorrenti.removeColumns(campiDaNonCopiare);
+
+                        campiDaCopiareConcorrenti.getColumn("CODGAR").setChiave(true);
+                        campiDaCopiareConcorrenti.setValue("CODGAR", codiceGaraDestinazione);
+                        // campiDaCopiare.setValue("NGARA",nGaraDestinazione);
+                        // se il campo NGARA è valorizzato, va sostituito con il valore di
+                        // nGaraDestinazione
+                        if (campiDaCopiareConcorrenti.getString("NGARA") != null
+                            || copiaLottoInLottoUnico)
+                          campiDaCopiareConcorrenti.setValue("NGARA", nGaraDestinazione);
+
+                        campiDaCopiareConcorrenti.getColumn("NORDDOCG").setChiave(true);
+
+                        newNorddocg = 1;
+                        if (!codiceGaraSorgente.equals(codiceGaraDestinazione)) {
+                          Long norddcog = campiDaCopiareConcorrenti.getLong("NORDDOCG");
+                          newNorddocg = norddcog.longValue();
+                        } else {
+                          // Si deve calcolare il valore di NORDDOCG
+                          Long maxNorddocg = (Long) this.geneManager.getSql().getObject(
+                              "select max(NORDDOCG) from DOCUMGARA where CODGAR= ?",
+                              new Object[] { codiceGaraDestinazione });
+
+                          if (maxNorddocg != null && maxNorddocg.longValue() > 0)
+                            newNorddocg = maxNorddocg.longValue() + 1;
+                        }
+                        campiDaCopiareConcorrenti.setValue("NORDDOCG", new Long(newNorddocg));
+
+                        campiDaCopiareConcorrenti.setValue("IDPRG", "PG");
+                        campiDaCopiareConcorrenti.setValue("IDDOCDG", new Long(newIDDOCDIG));
+
+                        //Si sbianca STATODOC
+                        campiDaCopiareConcorrenti.setValue("STATODOC", null);
+
+                        // Inserimento del nuovo record
+                        campiDaCopiareConcorrenti.insert("DOCUMGARA", this.geneManager.getSql());
+
+                      }
+
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+  }
+
+    /**
+     *
+     * @param json
+     * @param ngara
+     * @param ditta
+     * @param data
+     * @throws SQLException
+     */
+    public void deleteFileQform(String json, String ngara, String ditta, Timestamp data) throws Exception {
+      if(json!=null) {
+        JSONObject jsonOggetto = (JSONObject)JSONSerializer.toJSON(json);
+        JSONObject surveyType = ((JSONObject)jsonOggetto.get(CostantiAppalti.sezioneDatiQuestionario));
+
+        JSONObject result = ((JSONObject)surveyType.get("result"));
+        JSONArray test = result.getJSONArray(CostantiAppalti.sezioneFileCancellatiQuestionario);
+        String uuid=null;
+        for(Object o: test){
+          if ( o instanceof JSONObject ) {
+            uuid = ((JSONObject)o).getString("uuid");
+            this.sqlManager.update("update imprdocg set isarchi = ?, datadis =? where ngara=? and codimp=? and uuid=?",
+                new Object[]{"1", data, ngara,ditta, uuid});
+
+          }
+        }
       }
     }
 }

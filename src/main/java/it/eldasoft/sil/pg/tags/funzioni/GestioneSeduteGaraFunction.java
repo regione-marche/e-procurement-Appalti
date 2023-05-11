@@ -10,11 +10,6 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.utils.spring.UtilitySpring;
-
 import java.sql.SQLException;
 import java.util.Vector;
 
@@ -22,6 +17,11 @@ import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 
 import org.apache.commons.lang.StringUtils;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.utils.spring.UtilitySpring;
 
 /**
  * Funzione per caricare nella pagina delle sedute di gare i valori di
@@ -43,9 +43,9 @@ public class GestioneSeduteGaraFunction extends AbstractFunzioneTag {
     SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",
         pageContext, SqlManager.class);
 
-    String select="select iterga, critlicg, compreq,g1.valtec from torn,gare g,gare1 g1  where g.ngara=? and g.codgar1=codgar and g1.ngara=g.ngara";
+    String select="select iterga, critlicg, compreq,g1.valtec,nobustamm from torn,gare g,gare1 g1  where g.ngara=? and g.codgar1=codgar and g1.ngara=g.ngara";
     if(genereGara!=null && "3".equals(genereGara))
-      select="select iterga, critlic, compreq, valtec  from torn where codgar=?";
+      select="select iterga, critlic, compreq, valtec,nobustamm from torn where codgar=?";
 
     try {
       @SuppressWarnings("unchecked")
@@ -56,6 +56,7 @@ public class GestioneSeduteGaraFunction extends AbstractFunzioneTag {
         Long critlic = (Long) (datiGara.get(1)).getValue();
         String compreq = (String)(datiGara.get(2)).getValue();
         String valtec = (String)(datiGara.get(3)).getValue();
+        String nobustamm = (String)(datiGara.get(4)).getValue();
         pageContext.setAttribute("iterga", iterga,
             PageContext.REQUEST_SCOPE);
         pageContext.setAttribute("critlic", critlic,
@@ -63,6 +64,8 @@ public class GestioneSeduteGaraFunction extends AbstractFunzioneTag {
         pageContext.setAttribute("compreq", compreq,
             PageContext.REQUEST_SCOPE);
         pageContext.setAttribute("valtec", valtec,
+            PageContext.REQUEST_SCOPE);
+        pageContext.setAttribute("nobustamm", nobustamm,
             PageContext.REQUEST_SCOPE);
       }
     } catch (SQLException e) {

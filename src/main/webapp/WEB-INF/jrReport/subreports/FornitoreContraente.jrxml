@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="FornitoreContraente" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+<!-- Created with Jaspersoft Studio version 6.16.0.final utlizzo versione della libreria JasperReports6.16.0-48579d909b7943b64690c65c71e07e0b80981928  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="FornitoreContraente" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="4284831c-0b07-46e6-b687-739ebf13dbf5">
 	<property name="ireport.zoom" value="1.3310000000000004"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
@@ -60,7 +61,7 @@ WHERE GARECONT.NGARA = $P{NUMERO_GARA} AND GARECONT.CODIMP = $P{CODICE_IMPRESA}]
 	<detail>
 		<band height="20" splitType="Immediate">
 			<staticText>
-				<reportElement mode="Opaque" x="0" y="0" width="482" height="20" backcolor="#CCCCCC"/>
+				<reportElement mode="Opaque" x="0" y="0" width="482" height="20" backcolor="#CCCCCC" uuid="22f8ac13-2b18-49d9-9804-19991aec058f"/>
 				<box topPadding="2" leftPadding="0" bottomPadding="0">
 					<pen lineWidth="0.5"/>
 					<topPen lineWidth="0.5"/>
@@ -69,14 +70,14 @@ WHERE GARECONT.NGARA = $P{NUMERO_GARA} AND GARECONT.CODIMP = $P{CODICE_IMPRESA}]
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
-					<font size="12" isBold="true" isPdfEmbedded="true"/>
+					<font size="12" isBold="true"/>
 				</textElement>
 				<text><![CDATA[FORNITORE CONTRAENTE]]></text>
 			</staticText>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="b0c43d04-c7b1-473d-b417-82c188fc99b7"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -84,7 +85,7 @@ WHERE GARECONT.NGARA = $P{NUMERO_GARA} AND GARECONT.CODIMP = $P{CODICE_IMPRESA}]
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="a5465881-4dd7-40f5-908d-e302170a9515"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -93,21 +94,21 @@ WHERE GARECONT.NGARA = $P{NUMERO_GARA} AND GARECONT.CODIMP = $P{CODICE_IMPRESA}]
 					</textElement>
 					<text><![CDATA[Ragione Sociale]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="83a7fccd-82b3-4360-99d2-e2424d8f2fee"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{RAGIONE_SOCIALE}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{RAGIONE_SOCIALE}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="63725014-0ae6-4676-8aab-20a1454992da"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -115,7 +116,7 @@ WHERE GARECONT.NGARA = $P{NUMERO_GARA} AND GARECONT.CODIMP = $P{CODICE_IMPRESA}]
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="f6ea8045-1edf-43a6-a3ea-fb67a8769580"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -124,21 +125,21 @@ WHERE GARECONT.NGARA = $P{NUMERO_GARA} AND GARECONT.CODIMP = $P{CODICE_IMPRESA}]
 					</textElement>
 					<text><![CDATA[Partita IVA]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="8e16d67e-20fc-46ae-80af-6ebf5e06c854"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{PARTITA_IVA}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{PARTITA_IVA}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="8dcdcd89-4d28-4b79-adf2-104526cf2697"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -146,7 +147,7 @@ WHERE GARECONT.NGARA = $P{NUMERO_GARA} AND GARECONT.CODIMP = $P{CODICE_IMPRESA}]
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="6ec779d5-6884-4463-8391-e615a92d24eb"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -155,15 +156,15 @@ WHERE GARECONT.NGARA = $P{NUMERO_GARA} AND GARECONT.CODIMP = $P{CODICE_IMPRESA}]
 					</textElement>
 					<text><![CDATA[Indirizzo Sede Legale]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="b97ae3bc-b9c2-41df-8928-89a927b80539"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{INDIRIZZO} == null ? "" :
+					<textFieldExpression><![CDATA[$F{INDIRIZZO} == null ? "" :
 ($F{INDIRIZZO} + " " + $F{NUMERO_CIVICO} + ", " +
 $F{CAP} + " " + $F{LCOALITA} +
 ($F{PROVINCIA} == null ? "" : " (" + $F{PROVINCIA} + ") "))]]></textFieldExpression>
@@ -172,7 +173,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="04f5f691-495e-4ec0-b6dd-a93a11e643d2"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -180,7 +181,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="19efec79-235b-4618-8bbb-02d9ba7569c5"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -189,21 +190,21 @@ $F{CAP} + " " + $F{LCOALITA} +
 					</textElement>
 					<text><![CDATA[Telefono]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="96408113-3cb7-41d7-a9ad-f511b1b0cad3"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{TELEFONO}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{TELEFONO}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="9b6d5999-2d76-4cfd-b5e2-7c17957366dd"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -211,7 +212,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="42b7e77a-f6e4-4baf-a14c-fd7b47179a79"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -220,21 +221,21 @@ $F{CAP} + " " + $F{LCOALITA} +
 					</textElement>
 					<text><![CDATA[Fax]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="176f1c51-4b4e-4aa8-b1e4-c242e5b1cf78"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{FAX}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{FAX}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="face56eb-3604-4062-8c8d-bb0d08b1f029"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -242,7 +243,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="70b7c8c3-7ef0-440a-abdd-c9d1649fb69c"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -251,21 +252,21 @@ $F{CAP} + " " + $F{LCOALITA} +
 					</textElement>
 					<text><![CDATA[E-mail]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="1ca03d61-c546-4b2e-8ae0-e38dce4935b6"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{EMAIL}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{EMAIL}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="c36984b8-f55f-4393-9a10-a7080373cb51"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -273,7 +274,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="ed538c93-6609-4bd9-9101-eaab5c2957df"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -282,21 +283,21 @@ $F{CAP} + " " + $F{LCOALITA} +
 					</textElement>
 					<text><![CDATA[PEC]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="6a20cefd-196c-40fd-8441-35fbaf215e26"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{PEC}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{PEC}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="42b340d9-d6c5-4178-8d99-747fb80ec769"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -304,7 +305,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="16489ddb-9258-4e1e-b946-12eeb480df99"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -313,21 +314,21 @@ $F{CAP} + " " + $F{LCOALITA} +
 					</textElement>
 					<text><![CDATA[Tipologia societaria]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="2220ef27-1c5a-493c-830f-03fc781aea67"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{TIPOLOGIA_SOCIETARIA}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{TIPOLOGIA_SOCIETARIA}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="92d35a8c-6d32-41bf-8997-58aa0a4ead08"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -335,7 +336,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="bb83371f-1fc3-4775-9c28-5814012d449b"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -344,21 +345,21 @@ $F{CAP} + " " + $F{LCOALITA} +
 					</textElement>
 					<text><![CDATA[Codice Fiscale dell'impresa]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="102edba5-871f-4e8e-a8fb-e3471d73a01d"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{CODICE_FISCALE}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{CODICE_FISCALE}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="de65b040-7c86-4cc1-86fd-f51c224863bd"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -366,7 +367,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="f515fea6-3b8e-490e-b81f-07c5cd441941"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -375,21 +376,21 @@ $F{CAP} + " " + $F{LCOALITA} +
 					</textElement>
 					<text><![CDATA[Provincia sede registro imprese]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="1598b45e-cd1b-4780-8239-671481b08e63"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{PROVINCIA_REGISTRO_IMPRESE}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{PROVINCIA_REGISTRO_IMPRESE}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="21d134d0-91e6-48e9-8dd4-c8beb47d73a2"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -397,7 +398,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="5ceb1945-813f-46e5-af81-5b6fd6e9ae1d"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -406,21 +407,21 @@ $F{CAP} + " " + $F{LCOALITA} +
 					</textElement>
 					<text><![CDATA[Numero iscrizione registro imprese]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="da17db25-8f55-4021-9ba3-3d8c5d48458a"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{NUMERO_ISCRIZIONE}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{NUMERO_ISCRIZIONE}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="8532dc59-47fe-4f72-aaed-0cc5027b449f"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -428,7 +429,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="248d66ed-05e0-4d3d-8af4-aa58e131ef74"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -437,21 +438,21 @@ $F{CAP} + " " + $F{LCOALITA} +
 					</textElement>
 					<text><![CDATA[Codice Ditta INAIL]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="48b5c83e-573d-48ff-b036-7723d8a023be"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{CODICE_INAIL}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{CODICE_INAIL}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="4c694bb2-ea3d-46a9-a9ff-bb487f797499"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -459,7 +460,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="a9ad93af-2e44-4e58-8027-c435ce4a00e6"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -468,21 +469,21 @@ $F{CAP} + " " + $F{LCOALITA} +
 					</textElement>
 					<text><![CDATA[Numero P.A.T.]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="c0c61c14-0dbb-47e5-be91-b079c2e82127"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{NUMERO_PAT}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{NUMERO_PAT}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="47cf2d6e-9b5b-4fd4-807b-656fc08c14c4"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -490,7 +491,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="db00580f-ad7b-4111-ac37-f8181d0712ac"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -499,21 +500,21 @@ $F{CAP} + " " + $F{LCOALITA} +
 					</textElement>
 					<text><![CDATA[Sede competente INAIL]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="12a5a3d4-c63c-4d32-b423-5f5e5f099afd"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{SEDE_COMPETENTE_INAIL}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{SEDE_COMPETENTE_INAIL}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="6ff5e5b5-4b8d-40b5-a31d-58e704dbfbd7"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -521,7 +522,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="6ad73405-e2a1-412a-8d8b-143841d3cfe0"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -530,21 +531,21 @@ $F{CAP} + " " + $F{LCOALITA} +
 					</textElement>
 					<text><![CDATA[Matricola aziendale INPS]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="6a31bb5f-eb85-42c6-bf89-3f103436aa32"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{MATRICOLA_IMPS}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{MATRICOLA_IMPS}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="20">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="a2566caa-9d44-4987-b235-2f206953a294"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -552,7 +553,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="ba37d0f9-b5f4-4168-a91b-827fce65e74f"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -561,21 +562,21 @@ $F{CAP} + " " + $F{LCOALITA} +
 					</textElement>
 					<text><![CDATA[Sede competente INPS]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="56650add-7ba4-458c-9e48-6faa45fcf246"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{SEDE_COMPETENTE_INPS}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{SEDE_COMPETENTE_INPS}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="30">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" uuid="c90748b3-53cc-4daa-86b6-a95c1f64037c"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -583,7 +584,7 @@ $F{CAP} + " " + $F{LCOALITA} +
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="20"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="a67337e3-a917-4fc2-b41b-48af4ab6600d"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -592,19 +593,19 @@ $F{CAP} + " " + $F{LCOALITA} +
 					</textElement>
 					<text><![CDATA[Settore produttivo del CCNL applicato]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="20"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="eb238c64-306b-4be8-893d-2aed9e5d66ee"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{SETTORE_PRODUTTIVO}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{SETTORE_PRODUTTIVO}]]></textFieldExpression>
 				</textField>
 			</frame>
 			<frame>
-				<reportElement positionType="Float" x="0" y="20" width="482" height="10"/>
+				<reportElement positionType="Float" x="0" y="20" width="482" height="10" uuid="f284f6d1-7eae-483a-a2f8-a9e58cfebae0"/>
 			</frame>
 		</band>
 	</detail>

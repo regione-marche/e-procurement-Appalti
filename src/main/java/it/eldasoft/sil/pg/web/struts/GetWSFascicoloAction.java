@@ -1,6 +1,7 @@
 package it.eldasoft.sil.pg.web.struts;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -43,38 +44,45 @@ public class GetWSFascicoloAction extends Action {
     String annoIn = request.getParameter("anno");
     String numeroIn = request.getParameter("numero");
     String tipo = request.getParameter("tipo");
+    
+    List<Object> parameters = new ArrayList<Object>();
 
     String selectWSFASCICOLO = "select codice, anno, numero, codaoo, coduff, struttura, classifica, desclassi,desvoce,desaoo,desuff from wsfascicolo ";
-    Object par[] = null;
+
     if ("chiave".equals(tipo)) {
       selectWSFASCICOLO += "where entita = ? and key1 = ? ";
+      parameters.add(entita);
+      parameters.add(key1);
       if (key2 != null && !"".equals(key2)) {
-        selectWSFASCICOLO += " and key2 = '" + key2 + "' ";
+        selectWSFASCICOLO += " and key2 = ? ";
+        parameters.add(key2);
       } else {
         selectWSFASCICOLO += " and (key2 is null or key2='') ";
       }
 
       if (key3 != null && !"".equals(key3)) {
-        selectWSFASCICOLO += " and key3 = '" + key3 + "' ";
+        selectWSFASCICOLO += " and key3 = ? ";
+        parameters.add(key3);
       } else {
         selectWSFASCICOLO += " and (key3 is null or key3='') ";
       }
 
       if (key4 != null && !"".equals(key4)) {
-        selectWSFASCICOLO += " and key4 = '" + key4 + "' ";
+        selectWSFASCICOLO += " and key4 = ? ";
+        parameters.add(key1);
       } else {
         selectWSFASCICOLO += " and (key4 is null or key4='') ";
       }
-      par = new Object[] {entita, key1};
     } else if ("codice".equals(tipo)) {
       selectWSFASCICOLO += "where anno = ? and numero =?";
+      parameters.add(annoIn);
+      parameters.add(numeroIn);
       if (codiceIn != null && !"".equals(codiceIn))
-        selectWSFASCICOLO += " and codice = '" + codiceIn + "'";
-
-      par = new Object[] {annoIn, numeroIn};
+        selectWSFASCICOLO += " and codice = ? ";
+      parameters.add(codiceIn);
     }
 
-    List<?> datiWSFASCICOLO = sqlManager.getVector(selectWSFASCICOLO, par);
+    List<?> datiWSFASCICOLO = sqlManager.getVector(selectWSFASCICOLO, parameters.toArray());
 
     if (datiWSFASCICOLO != null && datiWSFASCICOLO.size() > 0) {
       String codice = (String) SqlManager.getValueFromVectorParam(datiWSFASCICOLO, 0).getValue();

@@ -16,6 +16,7 @@ import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.media.multipart.file.StreamDataBodyPart;
+import org.springframework.util.StringUtils;
 
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.sil.pg.ws.nso.rest.request.OrderNsoRequest;
@@ -36,6 +37,7 @@ public class ClientNso {
   public static final String NSO_ENDPOINT                     = "nso.ws.url";
   public static final String NSO_ENDPOINT_VALIDATE_ORDER_PATH = "nso.ws.url.validateOrder.path";
   public static final String NSO_ENDPOINT_PROCESS_ORDER_PATH  = "nso.ws.url.processOrder.path";
+  public static final String NSO_ENDPOINT_REVOKE_ORDER_PATH   = "nso.ws.url.revokeOrder.path";
 
   private GestioneWSDMManager wsdmManager;
   
@@ -119,14 +121,15 @@ public class ClientNso {
       String urlNso = ConfigManager.getValore(NSO_ENDPOINT);
       String urlNsoPath = ConfigManager.getValore(NSO_ENDPOINT_PROCESS_ORDER_PATH);
       String urlNsoPathWithOrder = urlNsoPath + "/" + order.getOrderId();
-
+      logger.info("urlNso: "+urlNso);
+      logger.info("urlNsoPathWithOrder: "+urlNsoPathWithOrder);
       WebTarget webTarget = this.client.target(urlNso).path(urlNsoPathWithOrder);
       
       MultiPart multiPart = new MultiPart();
       multiPart.setMediaType(MediaType.MULTIPART_FORM_DATA_TYPE);
       file = order.getOrderXml();
       StreamDataBodyPart streamBodyPart = new StreamDataBodyPart("file", file);
-      
+      logger.info("streamBodyPart.getMediaType(): "+streamBodyPart.getMediaType());
       multiPart.bodyPart(streamBodyPart);
       multiPart.getBodyParts().add(new FormDataBodyPart("orderCode", order.getOrderCode()));
       multiPart.getBodyParts().add(new FormDataBodyPart("orderDate", order.getOrderDate()));
@@ -142,12 +145,20 @@ public class ClientNso {
         multiPart.getBodyParts().add(new FormDataBodyPart("rootOrderCode", order.getRootOrderCode()));
         multiPart.getBodyParts().add(new FormDataBodyPart("rootOrderId", order.getRootOrderId().toString()));
       }
-      multiPart.getBodyParts().add(new FormDataBodyPart("hasAttachment", order.getHasAttachment().toString()));
+      if(order.getHasAttachment()!=null) {
+        multiPart.getBodyParts().add(new FormDataBodyPart("hasAttachment", order.getHasAttachment().toString()));
+      }
       multiPart.getBodyParts().add(new FormDataBodyPart("uffint", order.getUffint()));
-      multiPart.getBodyParts().add(new FormDataBodyPart("cig", order.getCig()));
+      if(StringUtils.hasText(order.getCig())) {
+        multiPart.getBodyParts().add(new FormDataBodyPart("cig", order.getCig()));
+      }
       multiPart.getBodyParts().add(new FormDataBodyPart("ngara", order.getNgara()));
       multiPart.getBodyParts().add(new FormDataBodyPart("totalPriceWithVat", order.getTotalPriceWithVat().toString()));
+
+      multiPart.getBodyParts().add(new FormDataBodyPart("sender", order.getSender()));
+      multiPart.getBodyParts().add(new FormDataBodyPart("receiver", order.getReceiver()));
       
+      logger.info("Try to send request [multiPart.getMediaType(): "+multiPart.getMediaType()+"]");
       Response response = webTarget.request(MediaType.APPLICATION_JSON_TYPE).post(Entity.entity(multiPart, multiPart.getMediaType()));
       logger.info("Response Status received: " + response.getStatus());
       return response;
@@ -163,6 +174,49 @@ public class ClientNso {
       }
     }
     //prevent null pointer on caller
+    return Response.serverError().build();
+  }
+  
+  public Response revokeOrder(OrderNsoRequest order) {
+    InputStream file = null;
+    try {
+      if(this.feature==null || this.client==null) {
+        this.initializeCreds();
+      }
+      
+      String urlNso = ConfigManager.getValore(NSO_ENDPOINT);
+      String urlNsoPath = ConfigManager.getValore(NSO_ENDPOINT_REVOKE_ORDER_PATH);
+      String urlNsoPathWithOrder = urlNsoPath;
+      logger.info("urlNso: "+urlNso);
+      logger.info("urlNsoPathWithOrder: "+urlNsoPathWithOrder);
+      WebTarget webTarget = this.client.target(urlNso).path(urlNsoPathWithOrder);
+      MultiPart multiPart = new MultiPart();
+      multiPart.setMediaType(MediaType.MULTIPART_FORM_DATA_TYPE);
+      file = order.getOrderXml();
+      StreamDataBodyPart streamBodyPart = new StreamDataBodyPart("file", file);
+      logger.info("streamBodyPart.getMediaType(): "+streamBodyPart.getMediaType());
+      multiPart.bodyPart(streamBodyPart);
+      multiPart.getBodyParts().add(new FormDataBodyPart("orderId", order.getOrderId()));
+      multiPart.getBodyParts().add(new FormDataBodyPart("orderCode", order.getOrderCode()));
+      multiPart.getBodyParts().add(new FormDataBodyPart("orderDate", order.getOrderDate()));
+      multiPart.getBodyParts().add(new FormDataBodyPart("fileName", order.getFileName()));
+      multiPart.getBodyParts().add(new FormDataBodyPart("endpoint", order.getEndPoint()));
+      multiPart.getBodyParts().add(new FormDataBodyPart("codimp", order.getCodimp()));
+      logger.info("Try to send request [multiPart.getMediaType(): "+multiPart.getMediaType()+"]");
+      Response response = webTarget.request(MediaType.APPLICATION_JSON_TYPE).post(Entity.entity(multiPart, multiPart.getMediaType()));
+      logger.info("Response Status received for revoke: " + response.getStatus());
+      return response;
+    } catch (Exception e) {
+      logger.error("Error during communication with nso-integration", e);
+    } finally {
+      if (file != null) {
+        try {
+          file.close();
+        } catch (IOException e) {
+          logger.warn("Impossibile close InputStream");
+        }
+      }
+    }
     return Response.serverError().build();
   }
 

@@ -41,7 +41,7 @@ public class GestionePubblicazioniBandoFunction extends AbstractFunzioneTag {
 
     try {
       List listaPubblicazioniBando = sqlManager.getListVector(
-          "select CODGAR9, NUMPUB, TIPPUB, TESPUB, NPRPUB, DINPUB, DATPUB, IMPPUB, INTPUB, DATFIPUB "
+          "select CODGAR9, NUMPUB, TIPPUB, TESPUB, NPRPUB, DINPUB, DATPUB, IMPPUB, INTPUB, DATFIPUB, TITPUB, NAVPUB, NAVNUM, URLPUB "
               + "from PUBBLI "
               + "where CODGAR9 = ? "
               + "order by NUMPUB asc", new Object[] { nGara });

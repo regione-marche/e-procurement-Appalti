@@ -48,9 +48,9 @@
 				<jsp:include page="nso_ordini-pg-storico.jsp" />
 			</gene:pagina>
 		</c:if>
-		<c:if test='${requestScope.statoOrdine ge 4}'>
+		<%-- <c:if test='${requestScope.statoOrdine ge 4}'>
 			<gene:pagina title="XML inviato" idProtezioni="XMLINV" visibile='true'>
 				<jsp:include page="nso_ordini-pg-xml-inviato.jsp" />
 			</gene:pagina>
-		</c:if>
+		</c:if> --%>
 </gene:formPagine>

@@ -17,7 +17,6 @@
 <%@ taglib uri="http://www.eldasoft.it/tags" prefix="elda"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
-
 <c:choose>
 	<c:when test='${not empty RISULTATO and RISULTATO eq "OK"}' >
 		<script type="text/javascript">
@@ -82,7 +81,11 @@
 	<c:set var="controlliSuperati" value="false"/>
 </c:if>
 
-<c:set var="where" value="GARE.PRECED='${ngara }' and GARE.ESINEG is null and exists (select CODGAR9 from PUBBLI where PUBBLI.CODGAR9=GARE.CODGAR1 and (PUBBLI.TIPPUB=11 or PUBBLI.TIPPUB=13))"/>
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, ngara, "SC", "20")}
+<c:set var="where" value="GARE.PRECED=? and GARE.ESINEG is null and exists (select CODGAR9 from PUBBLI where PUBBLI.CODGAR9=GARE.CODGAR1 and (PUBBLI.TIPPUB=11 or PUBBLI.TIPPUB=13))"/>
+<c:set var="parametri" value="T:${ngara}"/>
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunction", pageContext, "GARE", where, parametri)}
+
 <c:set var="modo" value="MODIFICA" scope="request" />
 
 <gene:template file="popup-template.jsp" gestisciProtezioni="false" >
@@ -134,7 +137,7 @@
 		<table class="lista">
 			<c:if test="${controlliSuperati eq 'true' and (RISULTATO eq 'OK' or empty RISULTATO)  }">
 			<tr>
-				<td><gene:formLista entita="GARE" pagesize="${risultatiPerPagina}" tableclass="datilista" gestisciProtezioni="false" sortColumn="-2" where="${where}" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAggiornaDaRilanci">
+				<td><gene:formLista entita="GARE" pagesize="${risultatiPerPagina}" tableclass="datilista" gestisciProtezioni="false" sortColumn="-2" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAggiornaDaRilanci">
 					<gene:campoLista title=""	width="20">
 						<c:if test="${currentRow >= 0 }">
 							<input type="radio" value="${datiRiga.GARE_NGARA}" name="keyRilancio" id="keys${currentRow}"  onclick="javascript:impostaRilancio('${datiRiga.GARE_NGARA}');"  <c:if test="${datiRiga.GARE_FASGAR ne 6}">disabled="disabled"</c:if>/>

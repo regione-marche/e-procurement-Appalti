@@ -10,15 +10,15 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.utils.spring.UtilitySpring;
-
 import java.sql.SQLException;
 import java.util.List;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.utils.spring.UtilitySpring;
 
 /**
  * Funzione per inizializzare le sezioni dei componenti della commissione di
@@ -41,12 +41,14 @@ public class GestioneComponentiCommissioneFunction extends AbstractFunzioneTag {
         pageContext, SqlManager.class);
     try {
       List listaComponentiCommissione = sqlManager.getListVector(
-          "select NGARA2, CODFOF, NOMFOF, INCFOF, INTFOF, IMPFOF, IMPLIQ, IMPSPE, DLIQSPE, INDISPONIBILITA, MOTIVINDISP, DATARICHIESTA, DATAACCETTAZIONE, ESPGIU, ID " +
+          "select NGARA2, CODFOF, NOMFOF, INCFOF, INTFOF, IMPFOF, IMPLIQ, IMPSPE, DLIQSPE, INDISPONIBILITA, MOTIVINDISP, DATARICHIESTA, "
+          + "DATAACCETTAZIONE, ESPGIU, ID, SEZALBO, COMMICG " +
             "from GFOF where NGARA2 = ? order by ID", new Object[]{nGara});
 
       if (listaComponentiCommissione != null && listaComponentiCommissione.size() > 0)
         pageContext.setAttribute("commissione", listaComponentiCommissione,
             PageContext.REQUEST_SCOPE);
+
     } catch (SQLException e) {
       throw new JspException("Errore nell'estrarre i componenti della " +
             "commissione della gara " + nGara, e);

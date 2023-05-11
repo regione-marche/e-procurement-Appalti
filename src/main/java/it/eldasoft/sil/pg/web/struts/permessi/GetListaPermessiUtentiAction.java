@@ -10,6 +10,7 @@ import it.eldasoft.utils.properties.ConfigManager;
 
 import java.io.PrintWriter;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -83,7 +84,7 @@ public class GetListaPermessiUtentiAction extends Action {
     }
 
     try {
-
+      List<Object> parameters = new ArrayList<Object>();
       String selectUSR = "select v_usrsys_matricolario.syslogin, "
           + " v_usrsys_matricolario.sysute, "
           + " v_usrsys_matricolario.email, "
@@ -120,20 +121,24 @@ public class GetListaPermessiUtentiAction extends Action {
               + " from v_usrsys_matricolario, g_permessi, usr_ein "
               + " where g_permessi.syscon = v_usrsys_matricolario.syscon "
               + " and usr_ein.syscon = v_usrsys_matricolario.syscon "
-              + " and usr_ein.codein = '" + codein1 + "'"
-              + " and g_permessi.codgar = '" + codgar + "'"
+              + " and usr_ein.codein = ? "
+              + " and g_permessi.codgar = ? "
               + " union "
               + selectUSR
               + " from v_usrsys_matricolario, g_permessi "
               + " where g_permessi.syscon = v_usrsys_matricolario.syscon  "
-              + " and g_permessi.codgar = '" + codgar + "'"
+              + " and g_permessi.codgar = ? "
               + " and syspwbou LIKE '%ou89%'";
+          parameters.add(codein1);
+          parameters.add(codgar);
+          parameters.add(codgar);
 
         } else {
           selectUSR = selectUSR
               + " from v_usrsys_matricolario, g_permessi "
               + " where g_permessi.syscon = v_usrsys_matricolario.syscon "
-              + " and g_permessi.codgar = '" + codgar + "'";
+              + " and g_permessi.codgar = ? ";
+          parameters.add(codgar);
         }
 
       } else if ("MODIFICA".equals(operation)) {
@@ -142,42 +147,51 @@ public class GetListaPermessiUtentiAction extends Action {
               + " from v_usrsys_matricolario, g_permessi, usr_ein "
               + " where v_usrsys_matricolario.syscon = g_permessi.syscon "
               + " and usr_ein.syscon = v_usrsys_matricolario.syscon "
-              + " and g_permessi.codgar = '" +codgar + "' "
-              + " and usr_ein.codein = '" + codein1 + "' "
+              + " and g_permessi.codgar = ? "
+              + " and usr_ein.codein = ? "
               + " union "
               + selectUSR
               + " from v_usrsys_matricolario, g_permessi "
               + " where g_permessi.syscon = v_usrsys_matricolario.syscon  "
-              + " and g_permessi.codgar = '" + codgar + "'"
+              + " and g_permessi.codgar = ? "
               + " and syspwbou LIKE '%ou89%'"
               + " union " + selectUSR_mod
               + " from v_usrsys_matricolario, usr_ein "
               + " where usr_ein.syscon = v_usrsys_matricolario.syscon "
-              + " and usr_ein.codein = '" + codein1 + "' "
+              + " and usr_ein.codein = ? "
               + " and v_usrsys_matricolario.syscon not in ("
 		              + " select v_usrsys_matricolario.syscon from v_usrsys_matricolario, g_permessi, usr_ein "
 		              + " where v_usrsys_matricolario.syscon = g_permessi.syscon "
 		              + " and usr_ein.syscon = v_usrsys_matricolario.syscon "
-		              + " and g_permessi.codgar = '" +codgar + "' "
-		              + " and usr_ein.codein = '" + codein1 + "' "
+		              + " and g_permessi.codgar = ? "
+		              + " and usr_ein.codein = ? "
               + ") and (v_usrsys_matricolario.sysdisab is null or v_usrsys_matricolario.sysdisab = '0') ";
+          parameters.add(codgar);
+          parameters.add(codein1);
+          parameters.add(codgar);
+          parameters.add(codein1);
+          parameters.add(codgar);
+          parameters.add(codein1);
         } else {
           selectUSR = selectUSR
               + " from v_usrsys_matricolario, g_permessi "
               + " where v_usrsys_matricolario.syscon = g_permessi.syscon "
-              + " and g_permessi.codgar = '" + codgar + "' "
+              + " and g_permessi.codgar = ? "
               + " union " + selectUSR_mod
               + " from v_usrsys_matricolario"
               + " where v_usrsys_matricolario.syscon not in ( "
 		              + " select v_usrsys_matricolario.syscon from v_usrsys_matricolario, g_permessi "
 		              + " where v_usrsys_matricolario.syscon = g_permessi.syscon "
-		              + " and g_permessi.codgar = '" + codgar + "' "
+		              + " and g_permessi.codgar = ? "
               + ") and (v_usrsys_matricolario.sysdisab is null or v_usrsys_matricolario.sysdisab = '0') ";
+          parameters.add(codgar);
+          parameters.add(codgar);
         }
 
         if (ufficioAppartenza != null) {
         	selectUSR = selectUSR
-	          	+ " and (v_usrsys_matricolario.sysuffapp = '" + ufficioAppartenza + "' or v_usrsys_matricolario.sysuffapp is null)" ;
+	          	+ " and (v_usrsys_matricolario.sysuffapp = ? or v_usrsys_matricolario.sysuffapp is null)" ;
+        	parameters.add(ufficioAppartenza);
 	    }
         if (isAssocUffintAbilitata) {
           selectUSR += " union "
@@ -185,18 +199,20 @@ public class GetListaPermessiUtentiAction extends Action {
               + " from v_usrsys_matricolario "
               + " where  v_usrsys_matricolario.syspwbou LIKE '%ou89%' and v_usrsys_matricolario.syscon not in"
               + " (select v_usrsys_matricolario.syscon from v_usrsys_matricolario, g_permessi"
-              + " where g_permessi.syscon = v_usrsys_matricolario.syscon  and g_permessi.codgar = '" + codgar + "'"
+              + " where g_permessi.syscon = v_usrsys_matricolario.syscon  and g_permessi.codgar = ? "
               + " and syspwbou LIKE '%ou89%') and (v_usrsys_matricolario.sysdisab is null or v_usrsys_matricolario.sysdisab = '0')";
+          parameters.add(codgar);
 
           if (ufficioAppartenza != null) {
             selectUSR = selectUSR
-                + " and (v_usrsys_matricolario.sysuffapp = '" + ufficioAppartenza + "' or v_usrsys_matricolario.sysuffapp is null)" ;
+                + " and (v_usrsys_matricolario.sysuffapp = ? or v_usrsys_matricolario.sysuffapp is null)" ;
+            parameters.add(ufficioAppartenza);
           }
         }
 
       }
 
-      List<?> hmUSR = sqlManager.getListHashMap(selectUSR, null);
+      List<?> hmUSR = sqlManager.getListHashMap(selectUSR, parameters.toArray());
       if (hmUSR != null && hmUSR.size() > 0) {
 
     	  for (int i=0; i < hmUSR.size(); i++) {

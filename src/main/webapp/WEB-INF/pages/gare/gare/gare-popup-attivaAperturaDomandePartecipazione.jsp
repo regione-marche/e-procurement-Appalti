@@ -65,7 +65,9 @@
 		<c:if test='${!empty (filtroLivelloUtente)}'>
 			<c:set var="autotizzatoModifica" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetAutorizzatoModificaFunction", pageContext, "CODGAR", codgar, "2")}'/>
 		</c:if>
-		<c:set var="esistonoDitteInGara" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsistonoDitteInGaraFunction", pageContext, "CODGAR5", codgar,"")}' />
+		<c:if test="${ !fn:startsWith(codgar, '$')}">
+			<c:set var="esistonoDitteInGara" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsistonoDitteInGaraFunction", pageContext, "CODGAR5", codgar,"")}' />
+		</c:if>
 		
 		<c:set var="modo" value="NUOVO" scope="request" />
 		
@@ -91,7 +93,7 @@
 								<br>
 								<br>
 							</c:when>
-							<c:when test="${esistonoDitteInGara eq 'false' }">
+							<c:when test="${esistonoDitteInGara eq 'false' and !fn:startsWith(codgar, '$')}">
 								<br>
 								Non &egrave; possibile procedere alla fase di apertura delle domande di partecipazione perch&egrave; non ci sono ditte in gara.
 								<br>

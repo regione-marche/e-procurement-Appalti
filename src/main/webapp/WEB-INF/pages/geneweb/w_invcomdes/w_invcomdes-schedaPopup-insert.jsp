@@ -33,6 +33,7 @@
 		<gene:formScheda entita="W_INVCOMDES" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreW_INVCOMDES">
 			<gene:campoScheda campo="IDPRG" visibile="false" defaultValue="${param.idprg}"/>
 			<gene:campoScheda campo="IDCOM" visibile="false" defaultValue="${param.idcom}"/>
+			<gene:campoScheda campo="DESCC" visibile="false" defaultValue="${param.descc}"/>
 			<gene:campoScheda campo="IDCOMDES" visibile="false"/>
 			<c:choose>
 				<c:when test="${comintest eq '1'}">
@@ -42,7 +43,7 @@
 						<gene:campoScheda campo="DESINTEST" visibile="false"/>
 				</c:otherwise>
 			</c:choose>
-			<gene:campoScheda campo="COMTIPMA" defaultValue="2" obbligatorio="true" gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoTipoIndirizzo"/>
+			<gene:campoScheda campo="COMTIPMA" defaultValue="1" obbligatorio="true" gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoTipoIndirizzo"/>
 			<gene:campoScheda campo="DESMAIL"/>
 			<gene:campoScheda>
 				<td class="comandi-dettaglio" colSpan="2">

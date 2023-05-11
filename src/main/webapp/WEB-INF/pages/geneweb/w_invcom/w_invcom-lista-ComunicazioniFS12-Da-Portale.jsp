@@ -81,6 +81,14 @@
 				<c:set var="idUtente" value="${sessionScope.profiloUtente.id}" />
 				<c:set var="filtroUffint" value="${sessionScope.uffint}" scope="request"/>
 			</c:when>
+			<c:when test='${gene:checkProt(pageContext,  "FUNZ.VIS.ALT.GARE.GestioneStipulaContratti")}'>
+				<!-- Per la lettura delle comunicazioni l'utilizzo della view  V_GARE_STIPULA crea rallentamenti, per ovviare si e' deciso di usare direttamente l'entita G1STIPULA-->
+				<c:set var="filtroLivelloUtenteStipule"
+					value='${gene:callFunction2("it.eldasoft.gene.tags.utils.functions.FiltroLivelloUtenteFunction", pageContext, "V_GARE_STIPULA")}' scope="request"/>
+				<c:set var="filtroLivelloUtenteStipuleFS12" value='${fn:replace(filtroLivelloUtenteStipule,"V_GARE_STIPULA","G1STIPULA")}' scope="request"/>
+				<c:set var="profilo" value='10'/>
+				<c:set var="titoloCodice" value='Codice stipula'/>
+			</c:when>
 		</c:choose>
 		<c:set var="conteggioComunicazioniDaLeggere" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetComunicazioniDaLeggereFunction", pageContext, "sel", profilo)}' />
 		<gene:setString name="titoloMaschera" value="Comunicazioni ricevute non lette" />
@@ -127,10 +135,13 @@
 							</c:choose>
 						</c:otherwise>
 					</c:choose>
+					<c:if test="${profilo eq 10}">
+						<c:set var="idStipula" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetIdStipulaFunction", pageContext, chiave1)}'/>
+					</c:if>
 					<gene:campoLista title="Opzioni" width="50">
 						<c:if test="${currentRow >= 0}">
 							<gene:PopUp variableJs="rigaPopUpMenu${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'">
-								<gene:PopUpItem title="Visualizza" href="javascript:apriComunicazione('${datiRiga.OBJ1}','${datiRiga.OBJ2 }','${chiaveGara}','${tipoGara }' );" />
+								<gene:PopUpItem title="Visualizza" href="javascript:apriComunicazione('${datiRiga.OBJ1}','${datiRiga.OBJ2 }','${chiaveGara}','${tipoGara }','${idStipula}' );" />
 							</gene:PopUp>
 						</c:if>
 					</gene:campoLista>
@@ -138,10 +149,13 @@
 					<gene:campoLista campo="C02" definizione="N10;0" visibile="false" ordinabile="false"/>
 					<gene:campoLista campo="C03" definizione="T20;0" visibile="false" ordinabile="false"/>
 					<gene:campoLista ordinabile="false" campo="C04" title="Mittente" definizione="T120;0"/>
-					<gene:campoLista  ordinabile="false" campo="C05" title="Oggetto"  definizione="T300;0" href="javascript:apriComunicazione('${datiRiga.OBJ1}','${datiRiga.OBJ2 }','${chiaveGara}','${tipoGara }');"/>
+					<gene:campoLista  ordinabile="false" campo="C05" title="Oggetto"  definizione="T300;0" href="javascript:apriComunicazione('${datiRiga.OBJ1}','${datiRiga.OBJ2 }','${chiaveGara}','${tipoGara }','${idStipula}');"/>
 					<gene:campoLista ordinabile="false" campo="C06" title="Data invio" definizione="T19;0;"/>
 					<gene:campoLista ordinabile="false" campo="C08" visibile="false" definizione="D;0;"/>
 					<c:choose>
+						<c:when test="${profilo eq 10}">
+							<gene:campoLista ordinabile="false" campo="C07" title="${titoloCodice}" definizione="T20;0" href="javascript:apriDettaglio(${idStipula},'${chiave2 }');"/>
+						</c:when>
 						<c:when test="${profilo eq 9}">
 							<gene:campoLista ordinabile="false" campo="C09" title="${titoloCodice}" definizione="T20;0" href="javascript:apriDettaglio('${chiave1}','${chiave2 }');"/>
 						</c:when>
@@ -187,7 +201,7 @@
 	
 	<gene:javaScript>
 				
-		function apriComunicazione(chiave1,chiave2,chiaveGara,tipoGara){
+		function apriComunicazione(chiave1,chiave2,chiaveGara,tipoGara,idStipula){
 			var genere;
 			var keyParent;
 			<c:choose>
@@ -235,6 +249,11 @@
 					keyParent = "NSO_ORDINI.ID=T:"+chiaveGara
 					genere=40;
 				</c:when>
+				<c:when test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GestioneStipulaContratti")}'>
+					//keyParent = "G1STIPULA.CODSTIPULA=T:"+chiaveGara
+					keyParent = "G1STIPULA.ID=N:"+idStipula
+				</c:when>
+				
 			</c:choose>
 			
 			var keyAdd = "W_INVCOM.COMKEY1=T:" + chiaveGara;
@@ -297,6 +316,13 @@
 					href += "&key=" + chiave
 					document.location.href = href;
 				 </c:when>
+				<c:when test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GestioneStipulaContratti")}'>
+				 	var chiave = "G1STIPULA.ID=N:" + chiave1;
+					var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/g1stipula/g1stipula-scheda.jsp";
+					href += "&key=" + chiave
+					document.location.href = href;
+				</c:when>
+				 
 			</c:choose>
 			
 		}
@@ -305,19 +331,16 @@
 		
 		// Visualizzazione del dettaglio
 		function visualizzaGara(chiaveRiga,cenint,codprofilo,genere){
-			var link =  '${pageContext.request.contextPath}/SetProfilo.do?'+csrfToken+'&profilo='+ codprofilo;
-			if("${uffintAbilitati}" == 1){link =  link + '&uffint=' + cenint;}
-			var trovaParameter = "T:" + chiaveRiga;
-			var trovaAddWhere = '';
+			var link = '${pageContext.request.contextPath}/pg/VisualizzaGareProfilo.do?codice=' + chiaveRiga + '&profilo=' + codprofilo + '&genere=' + genere;
+			if ("${uffintAbilitati}" == 1) {
+				link =  link + '&uffint=' + cenint;
+			}
 			if(genere=='11'){
-				trovaAddWhere = "GAREAVVISI.NGARA = ?";
 				link =  link + '&href=gare/gareavvisi/gareavvisi-lista.jsp';
 			}else{
-				trovaAddWhere = "V_GARE_TORN.CODICE = ?";
 				link =  link + '&href=gare/v_gare_torn/v_gare_torn-lista.jsp';
 			}
-			link =  link + '&trovaParameter=' + trovaParameter + '&trovaAddWhere=' + trovaAddWhere;
-			
+
 			document.location.href = link;
 		}
 				

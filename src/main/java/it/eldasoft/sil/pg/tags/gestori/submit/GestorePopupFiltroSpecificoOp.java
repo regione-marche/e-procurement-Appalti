@@ -10,17 +10,17 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.db.datautils.DataColumnContainer;
-import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-
 import java.sql.SQLException;
 import java.util.Vector;
 
 import javax.servlet.http.HttpSession;
 
 import org.springframework.transaction.TransactionStatus;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.db.datautils.DataColumnContainer;
+import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 
 /**
  * Gestore non standard che si occupa di preparare la condizione di filtro
@@ -118,6 +118,8 @@ public class GestorePopupFiltroSpecificoOp extends AbstractGestoreEntita {
         HttpSession sessione = this.getRequest().getSession();
         sessione.setAttribute("filtro", null);
         sessione.setAttribute("filtroSpecifico", null);
+        sessione.setAttribute("modalitaFiltroCategorie", null);
+        sessione.setAttribute("applicatoFiltroInOr", null);
         sessione.setAttribute("elencoUlterioriCategorie", null);
         sessione.setAttribute("elencoIdFiltriSpecifici", null);
         sessione.setAttribute("elencoMsgFiltriSpecifici", null);

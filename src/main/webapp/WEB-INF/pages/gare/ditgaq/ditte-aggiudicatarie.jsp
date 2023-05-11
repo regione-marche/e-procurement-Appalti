@@ -78,8 +78,8 @@
 			scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda.jsp","")}'
 			schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
 			campi="IMPR.CODIMP;IMPR.NOMIMP"
+			functionId="skip"
 			chiave="DITGAQ_DITTAO_${param.contatore}"
-			where=""
 			inseribile="false"
 			formName="formArchivioDitte${param.contatore}" >
 			<gene:campoScheda campo="DITTAO_${param.contatore}" entita="DITGAQ" campoFittizio="true"  modificabile="false" definizione="T10;0;;;G1DITTAODQ" value="${item[2]}" />
@@ -130,7 +130,7 @@
 			<c:forEach items="${requestScope[nomeVariabileRagdet]}" var="componenteRagg" varStatus="stato">
 				<gene:campoScheda/>
 				<gene:campoScheda addTr="false" campo="CODDIC_${stato.index}" entita="RAGDET" campoFittizio="true" hideTitle="true" definizione="T10;1" value="${componenteRagg[1]}" href='javascript:archivioImpresa("${componenteRagg[1]}");' modificabile="false"/> 
-				<gene:campoScheda addTr="false" campo="NOMEST_${stato.index}" entita="IMPR" hideTitle="true" campoFittizio="true"   definizione="T2000;0;;NOTE;" value="${componenteRagg[4]}"  href='javascript:archivioImpresa("${componenteRagg[1]}");' modificabile="false"/>
+				<gene:campoScheda addTr="false" campo="NOMEST_${stato.index}" entita="IMPR" hideTitle="true" campoFittizio="true"   definizione="T2000;0;;;" value="${componenteRagg[4]}"  href='javascript:archivioImpresa("${componenteRagg[1]}");' modificabile="false"/>
 			</c:forEach>
 			<gene:campoScheda addTr="false">
 					</table>

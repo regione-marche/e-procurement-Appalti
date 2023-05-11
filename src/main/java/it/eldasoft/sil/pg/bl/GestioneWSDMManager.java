@@ -1,16 +1,21 @@
 package it.eldasoft.sil.pg.bl;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
@@ -19,16 +24,23 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.http.HttpServletRequest;
 import javax.xml.rpc.ServiceException;
 
 import org.apache.axis.EngineConfiguration;
 import org.apache.axis.client.Stub;
 import org.apache.axis.configuration.FileProvider;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.ws.security.handler.WSHandlerConstants;
 import org.apache.xml.security.utils.Base64;
+import org.springframework.jdbc.core.support.SqlLobValue;
+import org.springframework.jdbc.support.lob.DefaultLobHandler;
+import org.springframework.jdbc.support.lob.LobHandler;
 import org.springframework.transaction.TransactionStatus;
+
+import com.lowagie.text.DocumentException;
 
 import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.bl.GenChiaviManager;
@@ -40,10 +52,13 @@ import it.eldasoft.gene.db.domain.BlobFile;
 import it.eldasoft.gene.db.domain.TabellatoWsdm;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.utils.AllegatoSintesiUtils;
+import it.eldasoft.sil.pg.bl.utils.MarcaturaTemporaleFileUtils;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.sicurezza.CriptazioneException;
 import it.eldasoft.utils.sicurezza.FactoryCriptazioneByte;
 import it.eldasoft.utils.sicurezza.ICriptazioneByte;
+import it.eldasoft.utils.spring.SpringAppContext;
 import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityNumeri;
 import it.eldasoft.utils.utility.UtilityStringhe;
@@ -84,8 +99,11 @@ import it.maggioli.eldasoft.ws.dm.WSDMProtocolloInOutType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloModificaInType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloModificaResType;
 import it.maggioli.eldasoft.ws.dm.WSDMRicercaAccountEmailType;
+import it.maggioli.eldasoft.ws.dm.WSDMRicercaFascicoloResType;
+import it.maggioli.eldasoft.ws.dm.WSDMRicercaFascicoloType;
 import it.maggioli.eldasoft.ws.dm.WSDMRigaType;
 import it.maggioli.eldasoft.ws.dm.WSDMTabellaType;
+import it.maggioli.eldasoft.ws.dm.WSDMTipoVoceRubricaType;
 import it.maggioli.eldasoft.ws.dm.WSDMTrasmissioneDocumentoType;
 import it.maggioli.eldasoft.ws.dm.WSDMTrasmissioneResType;
 import it.maggioli.eldasoft.ws.dm.WSDMVerificaMailResType;
@@ -184,12 +202,36 @@ public class GestioneWSDMManager {
   public static final String LABEL_DESCRIZIONE_FASCICOLO = "descrizionefascicolo";
   public static final String LABEL_OGGETTO_FASCICOLO = "oggettofascicolo";
   public static final String LABEL_TIPO_FASCICOLO = "tipofascicolo";
+  public static final String LABEL_COMENT = "coment";
+  public static final String LABEL_UOCOMPETENZA = "uocompetenza";
+  public static final String LABEL_DESCRIZIONE_UOCOMPETENZA = "uocompetenzadescrizione";
 
   public static final String FILTRO_GRUPPO_VUOTO = "gruppovuoto";
 
   public static final String VOCE_LAVORI = "UBUY – Tipo lavori";
   public static final String VOCE_FORNITURA = "UBUY – Tipo fornitura";
   public static final String VOCE_SERVIZI = "UBUY – Tipo servizi";
+
+  public static final String CONTATORE_FASCICOLI_CREATI = "FascicoliProcessati";
+
+  public static final String SELECT_CONTEGGIO_FASCICOLI_MANCANTI = "select count( v.codgar) from V_GARE_GENERE v where v.genere ? "
+      + "and exists (select * from pubbli where codgar=codgar9 and tippub in (11,12,13)) "
+      + "and not exists (select * from wsfascicolo where key1=v.codice) "
+      + "and not exists (select * from gare where ngara=codice and preced is not null)";
+
+  public static final String FILTRO_UFFINT_SELECT_CONTEGGIO_FASCICOLI_MANCANTI = " and exists (select * from torn t where t.codgar=v.codgar and t.cenint in $)";
+
+  public static final String SELECT_CONTEGGIO_FASCICOLI_MANCANTI_RILANCI = "select count(preced) from gare where preced is not null "
+      + "and exists (select * from pubbli where codgar1=codgar9 and tippub in (11,12,13)) "
+      + "and not exists (select * from wsfascicolo where key1=ngara) ";
+
+  public static final String FILTRO_UFFINT_SELECT_CONTEGGIO_FASCICOLI_MANCANTI_RILANCI = " and exists (select * from torn t where codgar1=codgar and t.cenint in $)";
+
+  public static final String SEPARATORE_SEZIONI = "\r\n";
+  public static final String SEPARATORE_LINEA_COMPLETA = "_____________________________________________________________________________________\r\n";
+  public static final String SEPARATORE_ELEMENTIMULTIPLI = "\r\n";
+
+  public static final String PREFISSO_COD_FASCICOLO_LAPISOPERA = "ID_";
 
   private SqlManager          sqlManager;
   private GenChiaviManager    genChiaviManager;
@@ -358,7 +400,7 @@ public class GestioneWSDMManager {
         loginEngAttr.setIdUtenteUnitaOperativa(idutenteunop);
         loginAttr.setLoginEngAttr(loginEngAttr);
       }
-      wsdmFascicoloRes = wsdm.WSDMFascicoloLeggi(loginAttr, codice, anno, numero, classifica);
+      wsdmFascicoloRes = wsdm.WSDMFascicoloLeggi(loginAttr, codice, anno, numero, classifica,null);
 
     } catch (Throwable t) {
       throw new GestoreException("Si e' verificato un errore durante la lettura del fascicolo: " + t.getMessage(),
@@ -398,7 +440,7 @@ public class GestioneWSDMManager {
         loginEngAttr.setIdUtenteUnitaOperativa(idutenteunop);
         loginAttr.setLoginEngAttr(loginEngAttr);
       }
-      wsdmFascicoloRes = wsdm.WSDMFascicoloMetadatiLeggi(loginAttr, codice, anno, numero, classifica);
+      wsdmFascicoloRes = wsdm.WSDMFascicoloMetadatiLeggi(loginAttr, codice, anno, numero, classifica,null);
 
     } catch (Throwable t) {
       throw new GestoreException("Si e' verificato un errore durante la lettura del fascicolo: " + t.getMessage(),
@@ -653,27 +695,30 @@ public class GestioneWSDMManager {
 
     if (entita != null && !"".equals(entita) && key1 != null && !"".equals(key1)) {
 
+      List<Object> parameters = new ArrayList<Object>();
       String whereWSFASCICOLO = " entita = ? and key1 = ? ";
-      Object[] params = new Object[2];
-      params[0] = entita;
-      params[1] = key1;
+      parameters.add(entita);
+      parameters.add(key1);
 
       if (key2 != null && !"".equals(key2)) {
-        whereWSFASCICOLO += " and key2 = '" + key2 + "' ";
+        whereWSFASCICOLO += " and key2 = ? ";
+        parameters.add(key2);
       } else {
         whereWSFASCICOLO += " and key2 is null ";
         key2=null;
       }
 
       if (key3 != null && !"".equals(key3)) {
-        whereWSFASCICOLO += " and key3 = '" + key3 + "' ";
+        whereWSFASCICOLO += " and key3 = ? ";
+        parameters.add(key3);
       } else {
         whereWSFASCICOLO += " and key3 is null ";
         key3=null;
       }
 
       if (key4 != null && !"".equals(key4)) {
-        whereWSFASCICOLO += " and key4 = '" + key4 + "' ";
+        whereWSFASCICOLO += " and key4 = ? ";
+        parameters.add(key4);
       } else {
         whereWSFASCICOLO += " and key4 is null ";
         key4=null;
@@ -686,18 +731,34 @@ public class GestioneWSDMManager {
       try {
         status = this.sqlManager.startTransaction();
         String countWSFASCICOLO = "select count(*) from wsfascicolo where " + whereWSFASCICOLO;
-        Long cnt = (Long) this.sqlManager.getObject(countWSFASCICOLO, new Object[] { entita, key1 });
+        Long cnt = (Long) this.sqlManager.getObject(countWSFASCICOLO, parameters.toArray());
         numero = StringUtils.stripToNull(numero);
+
+        List<Object> updateParameters = new ArrayList<Object>();
         if (cnt != null && cnt.longValue() > 0) {
           String updateWSFASCICOLO = "update wsfascicolo set codice = ?, anno = ?, numero = ?";
-          if(classifica!=null && !"".equals(classifica))
-            updateWSFASCICOLO += ", classifica ='" + classifica + "'";
-          if(struttura!=null && !"".equals(struttura))
-            updateWSFASCICOLO += ", struttura ='" + struttura + "'";
+          updateParameters.add(codice);
+          updateParameters.add(anno);
+          updateParameters.add(numero);
+          if(classifica!=null && !"".equals(classifica)) {
+            updateWSFASCICOLO += ", classifica = ?";
+            updateParameters.add(classifica);
+          }
+          if(struttura!=null && !"".equals(struttura)) {
+            updateWSFASCICOLO += ", struttura = ? ";
+            updateParameters.add(struttura);
+          }
+          if(descrizioneFascicolo!=null && !"".equals(descrizioneFascicolo)) {
+            updateWSFASCICOLO += ", desclassi = ? ";
+            updateParameters.add(descrizioneFascicolo);
+          }
+
           //if("JIRIDE".equals(tipoWSDM) && ("GARE".equals(entita) || "TORN".equals(entita)) && (isGara.intValue()>0)){
           //  updateWSFASCICOLO += ", isriserva =" + new Long(1);}
           updateWSFASCICOLO+="  where " + whereWSFASCICOLO;
-          this.sqlManager.update(updateWSFASCICOLO, new Object[] { codice, anno, numero, entita, key1 });
+          updateParameters.addAll(parameters);
+
+          this.sqlManager.update(updateWSFASCICOLO, updateParameters.toArray());
 
         } else {
           int id = this.genChiaviManager.getNextId("WSFASCICOLO");
@@ -706,6 +767,14 @@ public class GestioneWSDMManager {
           struttura = StringUtils.stripToNull(struttura);
           String insertWSFASCICOLO = "insert into wsfascicolo (id, entita, key1, key2, key3, key4, codice, anno, numero, classifica, codaoo, coduff, "
               + "struttura, isriserva,desclassi,desvoce,desaoo,desuff) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+          if("".equals(descrizioneFascicolo) || "undefined".equals(descrizioneFascicolo))
+            descrizioneFascicolo=null;
+          if("".equals(voce) || "undefined".equals(voce))
+            voce=null;
+          if("".equals(desaoo))
+            desaoo=null;
+          if("".equals(desuff))
+            desuff=null;
           this.sqlManager.update(insertWSFASCICOLO, new Object[] { new Long(id), entita, key1, key2, key3, key4, codice,
               anno, numero, classifica, codiceAoo,codiceUfficio,struttura,isRiservatezzaAttiva,descrizioneFascicolo,voce,
               desaoo,desuff});
@@ -913,6 +982,10 @@ public class GestioneWSDMManager {
      wsdmProtocolloDocumentoIn.setInserimentoInFascicolo(WSDMInserimentoInFascicoloType.NO);
    }
 
+   if("ENGINEERINGDOC".equals(parametri.get("tipoWSDM"))){
+     wsdmProtocolloDocumentoIn.setGenericS31((String)parametri.get(LABEL_UOCOMPETENZA));
+   }
+
    if ("SI_FASCICOLO_ESISTENTE".equals(parametri.get("inserimentoinfascicolo"))) {
      wsdmProtocolloDocumentoIn.setInserimentoInFascicolo(WSDMInserimentoInFascicoloType.SI_FASCICOLO_ESISTENTE);
      WSDMFascicoloType wsdmFascicolo = new WSDMFascicoloType();
@@ -923,29 +996,42 @@ public class GestioneWSDMManager {
      if (!"".equals(numerofascicolo)) wsdmFascicolo.setNumeroFascicolo(numerofascicolo);
      if("TITULUS".equals(parametri.get("tipoWSDM")) || "FOLIUM".equals(parametri.get("tipoWSDM")))
        wsdmFascicolo.setOggettoFascicolo((String)parametri.get("oggettofascicolo"));
-     if("ARCHIFLOWFA".equals(parametri.get("tipoWSDM")) || "FOLIUM".equals(parametri.get("tipoWSDM")) || "INFOR".equals(parametri.get("tipoWSDM")))
+     if("ARCHIFLOWFA".equals(parametri.get("tipoWSDM")) || "FOLIUM".equals(parametri.get("tipoWSDM")) || "INFOR".equals(parametri.get("tipoWSDM")) || "DOCER".equals(parametri.get("tipoWSDM"))
+         || "ITALPROT".equals(parametri.get("tipoWSDM")) || "ENGINEERINGDOC".equals(parametri.get("tipoWSDM")) || "LAPISOPERA".equals(parametri.get("tipoWSDM")))
        wsdmFascicolo.setClassificaFascicolo((String)parametri.get("classificafascicolo"));
-     if("PRISMA".equals(parametri.get("tipoWSDM")) || "JIRIDE".equals(parametri.get("tipoWSDM")))
+     if("PRISMA".equals(parametri.get("tipoWSDM")) || "JIRIDE".equals(parametri.get("tipoWSDM")) || "INFOR".equals(parametri.get("tipoWSDM")))
        wsdmFascicolo.setStruttura((String)parametri.get("struttura"));
      if("JIRIDE".equals(parametri.get("tipoWSDM"))){
        wsdmProtocolloDocumentoIn.setLivelloRiservatezza((String)parametri.get("livelloriservatezza"));
      }
 
+     if("DOCER".equals(parametri.get("tipoWSDM"))){
+       wsdmProtocolloDocumentoIn.setGenericS11((String)parametri.get("tipofirma"));
+       wsdmProtocolloDocumentoIn.setGenericS21((String)parametri.get("idunitaoperativamittenteDesc"));
+       wsdmProtocolloDocumentoIn.setGenericS22((String)parametri.get("idunitaoperativamittente"));
+     }
+
      wsdmProtocolloDocumentoIn.setFascicolo(wsdmFascicolo);
    }
 
+
    if ("SI_FASCICOLO_NUOVO".equals(parametri.get("inserimentoinfascicolo"))) {
+
      wsdmProtocolloDocumentoIn.setInserimentoInFascicolo(WSDMInserimentoInFascicoloType.SI_FASCICOLO_NUOVO);
      WSDMFascicoloType wsdmFascicolo = new WSDMFascicoloType();
      wsdmFascicolo.setOggettoFascicolo((String)parametri.get("oggettofascicolo"));
      wsdmFascicolo.setClassificaFascicolo((String)parametri.get("classificafascicolo"));
      wsdmFascicolo.setDescrizioneFascicolo((String)parametri.get("descrizionefascicolo"));
-     if("TITULUS".equals(parametri.get("tipoWSDM")) || "SMAT".equals(parametri.get("tipoWSDM")) || "ARCHIFLOWFA".equals(parametri.get("tipoWSDM")))
+     if("TITULUS".equals(parametri.get("tipoWSDM")) || "SMAT".equals(parametri.get("tipoWSDM")) || "ARCHIFLOWFA".equals(parametri.get("tipoWSDM"))
+         || "ITALPROT".equals(parametri.get("tipoWSDM")))
        wsdmFascicolo.setCodiceFascicolo((String)parametri.get("codicefascicolo"));
      if("PRISMA".equals(parametri.get("tipoWSDM"))){
        wsdmFascicolo.setStruttura((String)parametri.get("struttura"));
        wsdmFascicolo.setAnnoFascicolo(new Long((String)parametri.get("annofascicolo")));
        wsdmFascicolo.setNumeroFascicolo((String)parametri.get("numerofascicolo"));
+     }
+     if("ITALPROT".equals(parametri.get("tipoWSDM"))){
+       wsdmFascicolo.setAnnoFascicolo(new Long((String)parametri.get("annofascicolo")));
      }
      if("JIRIDE".equals(parametri.get("tipoWSDM"))){
        wsdmFascicolo.setStruttura((String)parametri.get("struttura"));
@@ -956,10 +1042,14 @@ public class GestioneWSDMManager {
        wsdmFascicolo.setGenericS11((String)parametri.get("acronimoRup"));
        wsdmFascicolo.setGenericS12((String)parametri.get("nomeRup"));
      }
+     if("INFOR".equals(parametri.get("tipoWSDM")))
+       wsdmFascicolo.setStruttura((String)parametri.get("struttura"));
+
      wsdmProtocolloDocumentoIn.setFascicolo(wsdmFascicolo);
    }
 
-   if(("ARCHIFLOWFA".equals(parametri.get("tipoWSDM")) || "FOLIUM".equals(parametri.get("tipoWSDM")) || "PRISMA".equals(parametri.get("tipoWSDM"))) && "SI_FASCICOLO_NUOVO".equals(parametri.get("inserimentoinfascicolo"))){
+   if(("ARCHIFLOWFA".equals(parametri.get("tipoWSDM")) || "FOLIUM".equals(parametri.get("tipoWSDM")) || "PRISMA".equals(parametri.get("tipoWSDM"))
+       || "ITALPROT".equals(parametri.get("tipoWSDM"))) && "SI_FASCICOLO_NUOVO".equals(parametri.get("inserimentoinfascicolo"))){
      wsdmProtocolloDocumentoIn.setInserimentoInFascicolo(WSDMInserimentoInFascicoloType.SI_FASCICOLO_ESISTENTE);
    }
 
@@ -969,7 +1059,8 @@ public class GestioneWSDMManager {
    }
    if("JDOC".equals(parametri.get("tipoWSDM"))){
      wsdmProtocolloDocumentoIn.setGenericS11((String)parametri.get("sottotipo"));
-     wsdmProtocolloDocumentoIn.setGenericS12((String)parametri.get("RUP"));
+     wsdmProtocolloDocumentoIn.setGenericS12((String)parametri.get("nomeRup"));
+     wsdmProtocolloDocumentoIn.setGenericS45((String)parametri.get("acronimoRup"));
    }
 
    return wsdmProtocolloDocumentoIn;
@@ -995,7 +1086,7 @@ public class GestioneWSDMManager {
     String selectIMPR=null;
     try {
       if(descrizione!=null){
-        Long numOccorrenze = (Long)this.sqlManager.getObject("select count(idcom) from w_invcomdes where idprg = ? and idcom = ? and descodsog=?", new Object[]{idprg, idcom, codiceRaggruppamento});
+        Long numOccorrenze = (Long)this.sqlManager.getObject("select count(idcom) from w_invcomdes where idprg = ? and idcom = ? and descodsog=?  and (descc is null or descc <>1)", new Object[]{idprg, idcom, codiceRaggruppamento});
         if(numOccorrenze!=null && numOccorrenze.longValue()==1){
           //Si deve controllare se la descrizione termina in " - Mandataria"
           if(descrizione.endsWith("- Mandataria")){
@@ -1354,9 +1445,9 @@ public class GestioneWSDMManager {
       else
         parametriMailIn.setFormatoMail(WSDMMailFormatoType.TEXT);
 
-      String selectW_INVCOMDES = "select desmail, idcomdes from w_invcomdes where idprg = ? and idcom = ?";
-      if("PALEO".equals(tipoWSDM) || "ARCHIFLOW".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM)){
-        if("ARCHIFLOW".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM)){
+      String selectW_INVCOMDES = "select desmail, idcomdes from w_invcomdes where idprg = ? and idcom = ?  and (descc is null or descc <>1)";
+      if("PALEO".equals(tipoWSDM) || "ARCHIFLOW".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM) || "INFOR".equals(tipoWSDM)){
+        if("ARCHIFLOW".equals(tipoWSDM)){
           String dest[] = null;
           List<?> datiW_INVCOMDES = this.sqlManager.getListVector(selectW_INVCOMDES, new Object[] { idprg, idcom });
           if (datiW_INVCOMDES != null && datiW_INVCOMDES.size() > 0) {
@@ -1366,6 +1457,9 @@ public class GestioneWSDMManager {
               dest[i] = (String) SqlManager.getValueFromVectorParam(datiW_INVCOMDES.get(i), 0).getValue();
           }
           parametriMailIn.setDestinatariMail(dest);
+        }
+        if("INFOR".equals(tipoWSDM)){
+          parametriMailIn.setCodiceRegistro(datiWSDM.get("codiceregistrodocumento"));
         }
 
         WSDMInviaMailResType wsdmInviaMailResType = this.wsdmInviaMail(datiWSDM.get("username"), datiWSDM.get("password"), datiWSDM.get("ruolo"),
@@ -1378,23 +1472,23 @@ public class GestioneWSDMManager {
           desstato = "5";
           msgErroreInvioMail = wsdmInviaMailResType.getMessaggio();
         }
-        String updateW_INVCOMDES = "update w_invcomdes set desstato = ?, deserrore =?, desdatinv = ? where idprg = ? and idcom = ?";
+        String updateW_INVCOMDES = "update w_invcomdes set desstato = ?, deserrore =?, desdatinv = ? where idprg = ? and idcom = ? and (descc is null or descc <>1)";
         this.sqlManager.update(updateW_INVCOMDES, new Object[] {desstato, msgErroreInvioMail,  new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()), idprg, idcom });
-      }else if("ENGINEERING".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM)){
+      }else if("ENGINEERING".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM)){
         statoComunicazione = "10";
         desstato = "4";
-        String updateW_INVCOMDES = "update w_invcomdes set desstato = ?, deserrore =?, desdatinv = ? where idprg = ? and idcom = ?";
+        String updateW_INVCOMDES = "update w_invcomdes set desstato = ?, deserrore =?, desdatinv = ? where idprg = ? and idcom = ? and (descc is null or descc <>1)";
         this.sqlManager.update(updateW_INVCOMDES, new Object[] {desstato, msgErroreInvioMail,  new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()), idprg, idcom });
       }else{
         //JIRIDE si deve inviare una mail per ogni destinatario
         //anche per EASYDOC
-        if("JIRIDE".equals(tipoWSDM) || "EASYDOC".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM) || "JPROTOCOL".equals(tipoWSDM)){
+        if("JIRIDE".equals(tipoWSDM) || "EASYDOC".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM) || "JPROTOCOL".equals(tipoWSDM)  || "ARCHIFLOWFA".equals(tipoWSDM)){
           boolean invioMailOk = true;
 
           List<?> datiW_INVCOMDES = this.sqlManager.getListVector(selectW_INVCOMDES, new Object[] { idprg, idcom });
           if (datiW_INVCOMDES != null && datiW_INVCOMDES.size() > 0) {
             WSDMInviaMailResType wsdmInviaMailResType = null;
-            String updateW_INVCOMDES = "update w_invcomdes set desstato = ?, deserrore =?, desdatinv = ? where idprg = ? and idcom = ? and idcomdes = ? ";
+            String updateW_INVCOMDES = "update w_invcomdes set desstato = ?, deserrore =?, desdatinv = ? where idprg = ? and idcom = ? and idcomdes = ? and (descc is null or descc <>1)";
             WSDMProtocolloAllegatoType[] allegatiReali = null;
             if("EASYDOC".equals(tipoWSDM)){
               boolean tabellatiInDB = this.isTabellatiInDb();
@@ -2379,7 +2473,7 @@ public class GestioneWSDMManager {
    * @throws GestoreException
    */
   public List<?>  popolaDestinatariWSDM(String idprg, Long idcom, String tipoWSDM, String mezzoInvio, WSDMProtocolloDocumentoInType wsdmProtocolloDocumentoIn) throws SQLException, GestoreException{
-    String selectW_INVCOMDES = "select desintest, descodent, descodsog, desmail, idcomdes from w_invcomdes where idprg = ? and idcom = ?";
+    String selectW_INVCOMDES = "select desintest, descodent, descodsog, desmail, idcomdes from w_invcomdes where idprg = ? and idcom = ?  and (descc is null or descc <>1)";
     List<?> datiW_INVCOMDES = this.sqlManager.getListVector(selectW_INVCOMDES, new Object[] { idprg, idcom });
     String destinatarioPrincipale="";
     if (datiW_INVCOMDES != null && datiW_INVCOMDES.size() > 0) {
@@ -2403,9 +2497,10 @@ public class GestioneWSDMManager {
           String emailAggiuntiva=null;
           String provincia=null;
           String cap=null;
+          String nome=null;
           String select = "select cfimp,indimp,nciimp,locimp,codcit,tipimp,pivimp,emaiip,proimp,capimp from impr where codimp = ?";
           if("TECNI".equals(descodent))
-            select = "select cftec,indtec,ncitec,loctec,cittec,pivatec,ematec,protec,captec from tecni where codtec = ?";
+            select = "select cftec,indtec,ncitec,loctec,cittec,pivatec,ematec,protec,captec,nometei from tecni where codtec = ?";
           Vector<?> datiImpr = this.sqlManager.getVector(select, new Object[] { descodsog });
           if(datiImpr!=null && datiImpr.size()>0){
             Long tipimp = null;
@@ -2447,6 +2542,7 @@ public class GestioneWSDMManager {
                 emailAggiuntiva = (String) SqlManager.getValueFromVectorParam(datiImpr,6).getValue();
                 provincia  = (String) SqlManager.getValueFromVectorParam(datiImpr,7).getValue();
                 cap  = (String) SqlManager.getValueFromVectorParam(datiImpr,8).getValue();
+                nome = (String) SqlManager.getValueFromVectorParam(datiImpr,9).getValue();
               }
             }
           }
@@ -2464,6 +2560,14 @@ public class GestioneWSDMManager {
           destinatari[i].setEmailAggiuntiva(emailAggiuntiva);
           destinatari[i].setCapResidenza(cap);
           destinatari[i].setProvinciaResidenza(provincia);
+          if("IMPR".equals(descodent)) {
+            destinatari[i].setTipoVoceRubrica(WSDMTipoVoceRubricaType.IMPRESA);
+          }else {
+            destinatari[i].setTipoVoceRubrica(WSDMTipoVoceRubricaType.PERSONA);
+            if (nome != null) {
+              destinatari[i].setNome(nome);
+            }
+          }
         }
         destinatari[i].setCognomeointestazione(descodesintestdent);
         if(mezzoInvio!=null && !"".equals(mezzoInvio))
@@ -2486,7 +2590,7 @@ public class GestioneWSDMManager {
    * @throws SQLException
    */
   public void setDestinatariMail(String idprg, Long idcom, WSDMInviaMailType inviaMail, WSDMProtocolloDocumentoInType wsdmProtocolloDocumentoIn) throws SQLException{
-    String selectW_INVCOMDESMail = "select desmail from w_invcomdes where idprg = ? and idcom = ?";
+    String selectW_INVCOMDESMail = "select desmail from w_invcomdes where idprg = ? and idcom = ?  and (descc is null or descc <>1)";
     List<?> datiW_INVCOMDESMail = this.sqlManager.getListVector(selectW_INVCOMDESMail, new Object[] { idprg, idcom });
     if (datiW_INVCOMDESMail != null && datiW_INVCOMDESMail.size() > 0) {
       String[] destinatariMail = new String[datiW_INVCOMDESMail.size()];
@@ -2544,6 +2648,7 @@ public class GestioneWSDMManager {
       String classificadocumento =  (String)datiWSDM.get(LABEL_CLASSIFICA_DOCUMENTO);
       String tipodocumento = (String)datiWSDM.get(LABEL_TIPO_DOCUMENTO);
       String oggettodocumento = (String)datiWSDM.get(LABEL_OGGETTO_DOCUMENTO);
+      String coment = (String)datiWSDM.get(LABEL_COMENT);
       String descrizionedocumento = null;
       String mittenteinterno = (String)datiWSDM.get(LABEL_MITTENTE_INTERNO);
       String indirizzomittente = (String)datiWSDM.get(LABEL_INDIRIZZO_MITTENTE);
@@ -2579,9 +2684,17 @@ public class GestioneWSDMManager {
       }
 
       String codiceufficio  =   (String)datiWSDM.get(LABEL_CODICE_UFFICIO);
+      String uocompetenza = null;
+      if("ENGINEERINGDOC".equals(tipoWSDM)) {
+        uocompetenza = (String)datiWSDM.get(LABEL_CODICE_UFFICIO);
+        codiceufficio = null;
+      }
 
       Long numeroallegatiComunicazione = new Long(0);
       String selectAllegati="select iddocdig, dignomdoc, digdesdoc from w_docdig where idprg=? and DIGENT=? and digkey1=? and digkey2=? ";
+      selectAllegati += " and DIGNOMDOC <> " +  AllegatoSintesiUtils.creazioneFiltroNomeFileSintesi(true,this.sqlManager);
+      selectAllegati += " and DIGNOMDOC <> " +  AllegatoSintesiUtils.creazioneFiltroNomeFileSintesi(false,this.sqlManager);
+      selectAllegati += " order by iddocdig";
       List<?> listaAllegatiComunicazione = this.sqlManager.getListVector(selectAllegati, new Object[]{idprg,"W_INVCOM", idprg, idcom.toString()});
       if(numeroallegatiComunicazione!=null)
         numeroallegatiComunicazione = new Long(listaAllegatiComunicazione.size());
@@ -2621,7 +2734,7 @@ public class GestioneWSDMManager {
             nome="";
           if(cognome==null)
             cognome="";
-         RUP = nome + " " + cognome;
+         RUP = cognome + " " + nome;
          nomeRup = RUP;
          if(nome.length()>0)
            acronimoRup +=nome.substring(0, 1);
@@ -2664,6 +2777,7 @@ public class GestioneWSDMManager {
       par.put(GestioneWSDMManager.LABEL_ACRONIMO_RUP, acronimoRup);
       par.put(GestioneWSDMManager.LABEL_NOME_RUP, nomeRup);
       par.put(GestioneWSDMManager.LABEL_RUP, RUP);
+      par.put(GestioneWSDMManager.LABEL_UOCOMPETENZA, uocompetenza);
 
       if("JIRIDE".equals(tipoWSDM) && "SI_FASCICOLO_ESISTENTE".equals(inserimentoinfascicolo)){
         par.put("livelloriservatezza", livelloriservatezza);
@@ -2680,7 +2794,7 @@ public class GestioneWSDMManager {
       }
 
       // Invio mail mediante servizi di protocollazione per ENGINEERING, TITULUS,SMAT,URBI
-      if(abilitatoInvioMailDocumentale && ("ENGINEERING".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM))){
+      if(abilitatoInvioMailDocumentale && ("ENGINEERING".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM))){
         WSDMInviaMailType inviaMail = new WSDMInviaMailType();
 
 
@@ -2722,112 +2836,167 @@ public class GestioneWSDMManager {
           allegati[indiceAllegati + i].setContenuto(digogg.getStream());
           if("TITULUS".equals(tipoWSDM))
             allegati[indiceAllegati + i].setIdAllegato("W_DOCDIG|" + idprg + "|" + iddocdig.toString());
+          if("NUMIX".equals(tipoWSDM)) {
+            allegati[indiceAllegati + i] = GestioneWSDMManager.popolaAllegatoInfo(dignomdoc,allegati[indiceAllegati + i]);
+            if(indiceAllegati + i ==0 )
+              allegati[indiceAllegati + i].setIsSealed(new Long(1));
+          }
         }
       }
 
       String commsgogg = (String)datiWSDM.get(LABEL_COMMSGOGG);
-      String contenutoPdf = this.getTestoComunicazioneFormattato(ngara, cig, commsgogg, commsgtes);
 
-      // Aggiunta del testo della comunicazione
-      int posTestoComunicazione = numeroallegati;
-      if ("1".equals(posizioneAllegatoComunicazione))
-        posTestoComunicazione = 0;
-      String commsgtip = (String)datiWSDM.get(GestioneWSDMManager.LABEL_COMMSGTIP);
-      if ("1".equals(commsgtip)) {
-        commsgtes = "<!DOCTYPE html><html><body>" + commsgtes + "</body></html>";
-        allegati[posTestoComunicazione] = new WSDMProtocolloAllegatoType();
-        allegati[posTestoComunicazione].setNome("Comunicazione.html");
-        allegati[posTestoComunicazione].setTipo("html");
-        allegati[posTestoComunicazione].setTitolo("Testo della comunicazione");
-        allegati[posTestoComunicazione].setContenuto(commsgtes.getBytes());
-      } else {
-        allegati[posTestoComunicazione] = new WSDMProtocolloAllegatoType();
-        allegati[posTestoComunicazione].setNome("Comunicazione.pdf");
-        allegati[posTestoComunicazione].setTipo("pdf");
-        allegati[posTestoComunicazione].setTitolo("Testo della comunicazione");
-        allegati[posTestoComunicazione].setContenuto(UtilityStringhe.string2Pdf(contenutoPdf));
+      //gestione allegato sintesi
+      byte[] contenutoPdf = null;
+      Long idAllegatoSintesi = cancellaAllegatoSintesi(idprg,idcom);
+      String nomeFile=null;
+      String estensioneFile = "pdf";
+      String titoloFile = null;
+      if(idAllegatoSintesi==null) {
+        HashMap<String, Object> ret = aggiungiAllegatoSintesi(ngara, cig, commsgogg, commsgtes, idprg, idcom, coment, null);
+        if(ret==null) {
+          this.impostaStatoComunicazione(idprg, idcom, new Long(15));
+          messaggioRitorno = "Errore nella creazione del file di sintesi della comunicazione";
+          esito="NOK";
+        }else {
+          idAllegatoSintesi = (Long)ret.get("idAllegatoSintesi");
+          nomeFile = (String)ret.get("nomeFile");
+          estensioneFile = (String)ret.get("estensioneFile");
+          titoloFile = (String)ret.get("titoloFile");
+          contenutoPdf = (byte[]) ret.get("pdf");
+        }
+      }else {
+        Vector<?> datiAllegato = this.sqlManager.getVector("select dignomdoc, digdesdoc from  w_docdig where idprg=? and iddocdig=?", new Object[] {idprg,idAllegatoSintesi});
+        if(datiAllegato!=null && datiAllegato.size()>0) {
+          nomeFile = SqlManager.getValueFromVectorParam(datiAllegato, 0).getStringValue();
+          titoloFile = SqlManager.getValueFromVectorParam(datiAllegato, 1).getStringValue();
+          if(nomeFile.endsWith(".tsd"))
+          estensioneFile = "tsd";
+        }
+        BlobFile digogg = fileAllegatoManager.getFileAllegato(idprg, idAllegatoSintesi);
+        contenutoPdf = digogg.getStream();
       }
-      if("TITULUS".equals(tipoWSDM))
-        allegati[posTestoComunicazione].setIdAllegato("W_INVCOM|" + idprg + "|" + idcom.toString());
-
-      wsdmProtocolloDocumentoIn.setAllegati(allegati);
-
-      String username = (String)datiWSDM.get(LABEL_USERNAME);
-      String password = (String)datiWSDM.get(LABEL_PASSWORD);
-      String ruolo = (String)datiWSDM.get(LABEL_RUOLO);
-      String nome = (String)datiWSDM.get(LABEL_NOME);
-      String cognome = (String)datiWSDM.get(LABEL_COGNOME);
-      String codiceuo = (String)datiWSDM.get(LABEL_CODICEUO);
-      String idutente = (String)datiWSDM.get(LABEL_ID_UTENTE);
-      String idutenteunop = (String)datiWSDM.get(LABEL_ID_UTENTE_UNITA_OPERATIVA);
-
-      WSDMProtocolloDocumentoResType wsdmProtocolloDocumentoRes = this.wsdmProtocolloInserisci(username, password,
-          ruolo, nome, cognome, codiceuo, idutente, idutenteunop, codiceaoo, codiceufficio,  wsdmProtocolloDocumentoIn,idconfi);
-
-      if (wsdmProtocolloDocumentoRes.isEsito()) {
-        String numeroDocumento = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroDocumento();
-        Long annoProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getAnnoProtocollo();
-        String numeroProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroProtocollo();
-
-        Timestamp dataProtocollo= this.getDataProtocollo(wsdmProtocolloDocumentoRes);
-        if(annoProtocollo==null){
-          annoProtocollo = this.getAnnoFromDate(dataProtocollo);
+      if(!"NOK".equals(esito)) {
+        // Aggiunta del testo della comunicazione
+        int posTestoComunicazione = numeroallegati;
+        if ("1".equals(posizioneAllegatoComunicazione))
+          posTestoComunicazione = 0;
+        String commsgtip = (String)datiWSDM.get(GestioneWSDMManager.LABEL_COMMSGTIP);
+        if ("1".equals(commsgtip)) {
+          commsgtes = "<!DOCTYPE html><html><body>" + commsgtes + "</body></html>";
+          allegati[posTestoComunicazione] = new WSDMProtocolloAllegatoType();
+          allegati[posTestoComunicazione].setNome("Comunicazione.html");
+          allegati[posTestoComunicazione].setTipo("html");
+          allegati[posTestoComunicazione].setTitolo("Testo della comunicazione");
+          allegati[posTestoComunicazione].setContenuto(commsgtes.getBytes());
+        } else {
+          allegati[posTestoComunicazione] = new WSDMProtocolloAllegatoType();
+          allegati[posTestoComunicazione].setNome(nomeFile);
+          allegati[posTestoComunicazione].setTipo(estensioneFile);
+          allegati[posTestoComunicazione].setTitolo(titoloFile);
+          allegati[posTestoComunicazione].setContenuto(contenutoPdf);
         }
 
+        if("NUMIX".equals(tipoWSDM)) {
+          if(!"1".equals(commsgtip)) {
+            allegati[posTestoComunicazione] = GestioneWSDMManager.popolaAllegatoInfo(nomeFile,allegati[posTestoComunicazione]);
+          }
+          if(posTestoComunicazione ==0 )
+            allegati[posTestoComunicazione].setIsSealed(new Long(1));
+        }
+        if("TITULUS".equals(tipoWSDM))
+          allegati[posTestoComunicazione].setIdAllegato("W_INVCOM|" + idprg + "|" + idcom.toString());
 
-        //Salvataggio in WSDOCUMENTO
-        String key1=ngara;
-        if(genere.longValue()==3)
-          key1=codgar;
-        if(oggettodocumento!=null && oggettodocumento.length()>2000)
-          oggettodocumento = oggettodocumento.substring(0, 2000);
-        Long idWSDocumento = this.setWSDocumento("GARE", key1, null, null, null, numeroDocumento, annoProtocollo, numeroProtocollo, oggettodocumento,inout);
+        wsdmProtocolloDocumentoIn.setAllegati(allegati);
 
-        //Salvataggio della mail in WSALLEGATI
-        this.setWSAllegati("W_INVCOM", idprg, idcom.toString(), null, null, idWSDocumento);
+        String username = (String)datiWSDM.get(LABEL_USERNAME);
+        String password = (String)datiWSDM.get(LABEL_PASSWORD);
+        String ruolo = (String)datiWSDM.get(LABEL_RUOLO);
+        String nome = (String)datiWSDM.get(LABEL_NOME);
+        String cognome = (String)datiWSDM.get(LABEL_COGNOME);
+        String codiceuo = (String)datiWSDM.get(LABEL_CODICEUO);
+        String idutente = (String)datiWSDM.get(LABEL_ID_UTENTE);
+        String idutenteunop = (String)datiWSDM.get(LABEL_ID_UTENTE_UNITA_OPERATIVA);
 
-        //Salvataggio degli allegati in WSALLEGATI
-        if (idcom.longValue() > 0) {
-          Long iddocdig=null;
-          Long numOccorrenze=null;
+        WSDMProtocolloDocumentoResType wsdmProtocolloDocumentoRes = this.wsdmProtocolloInserisci(username, password,
+            ruolo, nome, cognome, codiceuo, idutente, idutenteunop, codiceaoo, codiceufficio,  wsdmProtocolloDocumentoIn,idconfi);
 
-          //Inserimento allegati della documentazione di gara documenti (gruppo=6 e allmail='1')
-          String selectAllegatiDocumgara="select d.IDDOCDG from DOCUMGARA d,W_DOCDIG w where CODGAR=? ";
-          if( genere.longValue()!=3)
-            selectAllegatiDocumgara+=" and NGARA = '"+ ngara + "'";
-          selectAllegatiDocumgara+=" and GRUPPO = ? and d.IDPRG=w.IDPRG and d.IDDOCDG = w.IDDOCDIG and allmail=? order by numord,norddocg";
-          List listaDocumenti = sqlManager.getListVector(selectAllegatiDocumgara, new Object[]{codgar,new Long(6) ,"1"});
-          if(listaDocumenti!=null && listaDocumenti.size()>0){
-            for (int i = 0; i < listaDocumenti.size(); i++) {
-              iddocdig =SqlManager.getValueFromVectorParam(listaDocumenti.get(i), 0).longValue();
-              //Se l'occorrenza è già presente in W_DOCDIG non si deve inserire(caso che si presenta nel caso sia abilitato l'invio singolo)
-              numOccorrenze = (Long)this.sqlManager.getObject("select count(id) from wsallegati where entita=? and key1=? and key2=?", new Object[]{"W_DOCDIG",idprg,iddocdig.toString()});
-              if(numOccorrenze==null || new Long(0).equals(numOccorrenze))
-                this.setWSAllegati("W_DOCDIG", idprg, iddocdig.toString(), null, null, idWSDocumento);
+        if (wsdmProtocolloDocumentoRes.isEsito()) {
+          String numeroDocumento = null;
+          if(!"LAPISOPERA".equals(tipoWSDM))
+            numeroDocumento = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroDocumento();
+          Long annoProtocollo = null;
+          if(!"LAPISOPERA".equals(tipoWSDM))
+            annoProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getAnnoProtocollo();
+          String numeroProtocollo = null;
+          if("LAPISOPERA".equals(tipoWSDM))
+            numeroProtocollo = GestioneWSDMManager.PREFISSO_COD_FASCICOLO_LAPISOPERA + wsdmProtocolloDocumentoRes.getProtocolloDocumento().getGenericS11();
+          else
+            numeroProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroProtocollo();
+
+          Timestamp dataProtocollo= this.getDataProtocollo(wsdmProtocolloDocumentoRes);
+          if(annoProtocollo==null && !"LAPISOPERA".equals(tipoWSDM)){
+            annoProtocollo = this.getAnnoFromDate(dataProtocollo);
+          }
+
+
+          //Salvataggio in WSDOCUMENTO
+          String key1=ngara;
+          if(genere.longValue()==3)
+            key1=codgar;
+          if(oggettodocumento!=null && oggettodocumento.length()>2000)
+            oggettodocumento = oggettodocumento.substring(0, 2000);
+          Long idWSDocumento = this.setWSDocumento("GARE", key1, null, null, null, numeroDocumento, annoProtocollo, numeroProtocollo, oggettodocumento,inout);
+
+          //Salvataggio della mail in WSALLEGATI
+          this.setWSAllegati("W_INVCOM", idprg, idcom.toString(), null, null, idWSDocumento);
+
+          //Salvataggio degli allegati in WSALLEGATI
+          if (idcom.longValue() > 0) {
+            Long iddocdig=null;
+            Long numOccorrenze=null;
+
+            //Inserimento allegati della documentazione di gara documenti (gruppo=6 e allmail='1')
+            String selectAllegatiDocumgara="select d.IDDOCDG from DOCUMGARA d,W_DOCDIG w where CODGAR=? ";
+            if( genere.longValue()!=3)
+              selectAllegatiDocumgara+=" and NGARA = '"+ ngara + "'";
+            selectAllegatiDocumgara+=" and GRUPPO = ? and d.IDPRG=w.IDPRG and d.IDDOCDG = w.IDDOCDIG and allmail=? order by numord,norddocg";
+            List listaDocumenti = sqlManager.getListVector(selectAllegatiDocumgara, new Object[]{codgar,new Long(6) ,"1"});
+            if(listaDocumenti!=null && listaDocumenti.size()>0){
+              for (int i = 0; i < listaDocumenti.size(); i++) {
+                iddocdig =SqlManager.getValueFromVectorParam(listaDocumenti.get(i), 0).longValue();
+                //Se l'occorrenza è già presente in W_DOCDIG non si deve inserire(caso che si presenta nel caso sia abilitato l'invio singolo)
+                numOccorrenze = (Long)this.sqlManager.getObject("select count(id) from wsallegati where entita=? and key1=? and key2=?", new Object[]{"W_DOCDIG",idprg,iddocdig.toString()});
+                if(numOccorrenze==null || new Long(0).equals(numOccorrenze))
+                  this.setWSAllegati("W_DOCDIG", idprg, iddocdig.toString(), null, null, idWSDocumento);
+              }
             }
+
+            //Inserimento allegati della comunicazione
+            for (int i = 0; i < numeroallegati; i++) {
+              iddocdig = SqlManager.getValueFromVectorParam(listaAllegatiComunicazione.get(i), 0).longValue();
+              this.setWSAllegati("W_DOCDIG", idprg, iddocdig.toString(), null, null, idWSDocumento);
+            }
+
+            //Inserimento allegato di sintesi
+            this.setWSAllegati("W_DOCDIG", idprg, idAllegatoSintesi.toString(), null, null, idWSDocumento);
           }
 
-          //Inserimento allegati della comunicazione
-          for (int i = 0; i < numeroallegati; i++) {
-            iddocdig = SqlManager.getValueFromVectorParam(listaAllegatiComunicazione.get(i), 0).longValue();
-            this.setWSAllegati("W_DOCDIG", idprg, iddocdig.toString(), null, null, idWSDocumento);
-          }
+          datiProtocollo = new HashMap<String,Object>();
+          datiProtocollo.put(LABEL_NUMERO_DOCUMENTO, numeroDocumento);
+          datiProtocollo.put(LABEL_ANNO_PROTOCOLLO, annoProtocollo);
+          datiProtocollo.put(LABEL_NUMERO_PROTOCOLLO, numeroProtocollo);
+          datiProtocollo.put(LABEL_DATA_PROTOCOLLO, dataProtocollo);
+          datiProtocollo.put(LABEL_NUMERO_ALLEGATI_REALI, new Long(numeroallegati));
+
+        }else{
+          //La protocollazione non è andata a buon fine, si deve impostare lo stato della comunicazione a 15
+          //String updateW_INVCOM = "update w_invcom set comstato = ? where idprg = ? and idcom = ?";
+          //this.sqlManager.update(updateW_INVCOM, new Object[]{new Long(15),idprg,idcom});
+          this.impostaStatoComunicazione(idprg, idcom, new Long(15));
+          messaggioRitorno = wsdmProtocolloDocumentoRes.getMessaggio();
+          esito="NOK";
         }
-
-        datiProtocollo = new HashMap<String,Object>();
-        datiProtocollo.put(LABEL_NUMERO_DOCUMENTO, numeroDocumento);
-        datiProtocollo.put(LABEL_ANNO_PROTOCOLLO, annoProtocollo);
-        datiProtocollo.put(LABEL_NUMERO_PROTOCOLLO, numeroProtocollo);
-        datiProtocollo.put(LABEL_DATA_PROTOCOLLO, dataProtocollo);
-        datiProtocollo.put(LABEL_NUMERO_ALLEGATI_REALI, new Long(numeroallegati));
-
-      }else{
-        //La protocollazione non è andata a buon fine, si deve impostare lo stato della comunicazione a 15
-        //String updateW_INVCOM = "update w_invcom set comstato = ? where idprg = ? and idcom = ?";
-        //this.sqlManager.update(updateW_INVCOM, new Object[]{new Long(15),idprg,idcom});
-        this.impostaStatoComunicazione(idprg, idcom, new Long(15));
-        messaggioRitorno = wsdmProtocolloDocumentoRes.getMessaggio();
-        esito="NOK";
       }
       return new Object[]{esito,messaggioRitorno, datiProtocollo, listaW_INVCOMDES,allegati};
     }catch(Throwable e){
@@ -2937,8 +3106,8 @@ public class GestioneWSDMManager {
         parametriMailIn.setFormatoMail(WSDMMailFormatoType.TEXT);
 
 
-      if("PALEO".equals(tipoWSDM) || "ARCHIFLOW".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM)){
-        if("ARCHIFLOW".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM)){
+      if("PALEO".equals(tipoWSDM) || "ARCHIFLOW".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM) || "INFOR".equals(tipoWSDM)){
+        if("ARCHIFLOW".equals(tipoWSDM) ){
           String dest[] = null;
           if (datiW_INVCOMDES != null && datiW_INVCOMDES.size() > 0) {
             //Si deve impostare il vettore dei destinatari
@@ -2949,6 +3118,8 @@ public class GestioneWSDMManager {
           parametriMailIn.setDestinatariMail(dest);
 
         }
+        if("INFOR".equals(tipoWSDM) )
+          parametriMailIn.setCodiceRegistro((String)dati.get(LABEL_CODICE_REGISTRO_DOCUMENTO));
 
         WSDMInviaMailResType wsdmInviaMailResType = this.wsdmInviaMail(username, password, ruolo, nome, cognome, codiceuo, null, null, parametriMailIn,idconfi);
         if(wsdmInviaMailResType.isEsito()){
@@ -2959,12 +3130,12 @@ public class GestioneWSDMManager {
           desstato = "5";
           msgErroreInvioMail = wsdmInviaMailResType.getMessaggio();
         }
-      } else if ("IRIDE".equals(tipoWSDM) || "JIRIDE".equals(tipoWSDM) || "EASYDOC".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM) || "JPROTOCOL".equals(tipoWSDM)) {
+      } else if ("IRIDE".equals(tipoWSDM) || "JIRIDE".equals(tipoWSDM) || "EASYDOC".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM) || "JPROTOCOL".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM)) {
         //si deve inviare una mail per ogni destinatario
         boolean invioMailOk = true;
         if (datiW_INVCOMDES != null && datiW_INVCOMDES.size() > 0) {
           WSDMInviaMailResType wsdmInviaMailResType = null;
-          String updateW_INVCOMDES = "update w_invcomdes set desstato = ?, deserrore =?, desdatinv = ? where idprg = ? and idcom = ? and idcomdes = ? ";
+          String updateW_INVCOMDES = "update w_invcomdes set desstato = ?, deserrore =?, desdatinv = ? where idprg = ? and idcom = ? and idcomdes = ? and (descc is null or descc <>1)";
           if("EASYDOC".equals(tipoWSDM)){
             boolean tabellatiInDB = this.isTabellatiInDb();
             String mailChannelCode = this.getcodiceTabellato("FASCICOLOPROTOCOLLO", "mailchannelcode",idconfi, tabellatiInDB);
@@ -3024,7 +3195,7 @@ public class GestioneWSDMManager {
           else
             statoComunicazione = "11";
         }
-      }else if ("ENGINEERING".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM)) {
+      }else if ("ENGINEERING".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM)) {
         statoComunicazione = "10";
         desstato = "4";
       }
@@ -3053,8 +3224,8 @@ public class GestioneWSDMManager {
     }
 
     if("PALEO".equals(tipoWSDM) || "ENGINEERING".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "ARCHIFLOW".equals(tipoWSDM) || "SMAT".equals(tipoWSDM)
-        || "ARCHIFLOWFA".equals(tipoWSDM) || "URBI".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM)){
-      String updateW_INVCOMDES = "update w_invcomdes set desstato = ?, deserrore =?, desdatinv = ? where idprg = ? and idcom = ?";
+        || "ARCHIFLOWFA".equals(tipoWSDM) || "URBI".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM) || "INFOR".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM)){
+      String updateW_INVCOMDES = "update w_invcomdes set desstato = ?, deserrore =?, desdatinv = ? where idprg = ? and idcom = ? and (descc is null or descc <>1)";
       try{
         this.sqlManager.update(updateW_INVCOMDES, new Object[] {desstato, msgErroreInvioMail,  new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()), idprg, idcom.toString() });
       }catch(SQLException e){
@@ -3091,7 +3262,7 @@ public class GestioneWSDMManager {
     sqlManager.update("update pubbli set tippub=? where codgar9=? and tippub=?", new Object[]{new Long(13),codgar,new Long(23)});
 
     if(!abilitatoInvioSingolo){
-      String updateTorn = "update torn set nproti = ? where codgar= ?" ;
+      String updateTorn = "update torn set nproti = ? where codgar= ? and nproti is null" ;
       this.sqlManager.update(updateTorn, new Object[] {numeroProtocollo, codgar });
     }
   }
@@ -3223,6 +3394,15 @@ public class GestioneWSDMManager {
     return wsdmConfigManager.getWsdmConfigurazione(uffint,codapp);
   }
 
+  public Long getWsdmConfigurazioneFromIdStipula(Long idStipula, String codapp) throws SQLException {
+
+    String ngara = (String) sqlManager.getObject("select ngara from g1stipula where id = ?", new Object[]{idStipula});
+    String select="select cenint from gare, torn where ngara = ? and codgar=codgar1";
+    String uffint = (String) sqlManager.getObject(select, new Object[]{ngara});
+
+    return wsdmConfigManager.getWsdmConfigurazione(uffint,codapp);
+  }
+
   public List<Long> getListaConfigurazioniValoreProp(String chiave, String valore) throws SQLException{
     String select = "select w.id from wsdmconfipro wp, wsdmconfi w where wp.idconfi = w.id and wp.chiave = ? and wp.valore = ? and w.codapp = 'PG'";
     List<?> listaConfigurazioni = this.sqlManager.getListVector(select, new Object[] { chiave, valore });
@@ -3348,6 +3528,8 @@ public class GestioneWSDMManager {
    */
   public String setFascicolo(String tiposistemaremoto, String servizio, String idconfi, String entita, String key1, Long isRiservatezza, HashMap<String, Object> par) throws GestoreException, SQLException{
     String messaggio = null;
+    String coduff = null;
+    String desuff = null;
     WSDMFascicoloInType wsdmFascicoloIn = new WSDMFascicoloInType();
     wsdmFascicoloIn.setClassificaFascicolo((String)par.get(LABEL_CLASSIFICA_FASCICOLO));
     wsdmFascicoloIn.setDescrizioneFascicolo((String)par.get(LABEL_DESCRIZIONE_FASCICOLO));
@@ -3355,6 +3537,9 @@ public class GestioneWSDMManager {
     if("JIRIDE".equals(tiposistemaremoto)){
       wsdmFascicoloIn.setStruttura((String)par.get(LABEL_STRUTTURA));
       wsdmFascicoloIn.setTipo((String)par.get(LABEL_TIPO_FASCICOLO));
+    }
+    if("ENGINEERINGDOC".equals(tiposistemaremoto) || "INFOR".equals(tiposistemaremoto)){
+      wsdmFascicoloIn.setStruttura((String)par.get(LABEL_STRUTTURA));
     }
     if("JDOC".equals(tiposistemaremoto)){
       wsdmFascicoloIn.setGenericS11((String)par.get(LABEL_ACRONIMO_RUP));
@@ -3374,8 +3559,12 @@ public class GestioneWSDMManager {
       }
       String numeroFascicoloNUOVO = wsdmFascicoloRes.getFascicolo().getNumeroFascicolo();
 
-      this.setWSFascicolo(entita, key1, null, null, null, codiceFascicoloNUOVO, annoFascicoloNUOVO,
-          numeroFascicoloNUOVO, (String)par.get("classificafascicolo"),null,null,(String)par.get("struttura"),isRiservatezza,null,null,null,null);
+      if("ENGINEERINGDOC".equals(tiposistemaremoto)){
+        coduff = (String)par.get(LABEL_UOCOMPETENZA);
+        desuff = (String)par.get(LABEL_DESCRIZIONE_UOCOMPETENZA);
+      }
+     this.setWSFascicolo(entita, key1, null, null, null, codiceFascicoloNUOVO, annoFascicoloNUOVO,
+          numeroFascicoloNUOVO, (String)par.get("classificafascicolo"),null,coduff,(String)par.get("struttura"),isRiservatezza,null,null,null,desuff);
 
     }else{
       messaggio = wsdmFascicoloRes.getMessaggio();
@@ -3390,11 +3579,16 @@ public class GestioneWSDMManager {
    * @param cig
    * @param oggettoComunicazione
    * @param testoComunicazione
-   * @return String
+   * @param idprg
+   * @param idcom
+   * @param iccInputStream
+   * @return byte[]
    * @throws SQLException
    * @throws GestoreException
+   * @throws IOException
+   * @throws DocumentException
    */
-  public String getTestoComunicazioneFormattato(String ngara, String cig, String oggettoComunicazione, String testoComunicazione) throws SQLException, GestoreException{
+  public byte[] getTestoComunicazioneFormattato(String ngara, String cig, String oggettoComunicazione, String testoComunicazione, String idprg, Long idcom, InputStream iccInputStream) throws SQLException, GestoreException, IOException, DocumentException{
 
     String testo = "";
     String denominazione = ConfigManager.getValore("denominazioneEnte");
@@ -3499,11 +3693,321 @@ public class GestioneWSDMManager {
     testo += "\r\n";
 
     //Testo comunicazione
-    if (testoComunicazione == null)
+    String commsgtip = (String)this.sqlManager.getObject("select commsgtip from w_invcom where idprg = ? and idcom = ?", new Object[] {idprg, idcom });
+    if("1".equals(commsgtip))
+      testoComunicazione = "(testo della comunicazione in formato html)";
+    else if (testoComunicazione == null)
       testoComunicazione = "";
     testo += testoComunicazione + "\r\n";
 
-    return testo;
+    //Riga vuota
+    testo += "\r\n";
+
+    //Elenco allegati;
+    /*
+    String testoAllegati="Allegati:\r\n";
+    List<?> allegati= this.sqlManager.getListVector("select idprg, iddocdig,dignomdoc from w_docdig where digent = ? and digkey1 = ? and digkey2 = ?", new Object[] { "W_INVCOM", idprg, idcom.toString() });
+    if(allegati!=null && allegati.size()>0){
+      BlobFile digogg = null;
+      String idprgAllegato = null;
+      Long iddocdig = null;
+      String sha = null;
+
+      String dignomdoc = null;
+      for(int i=0;i<allegati.size();i++) {
+        idprgAllegato = SqlManager.getValueFromVectorParam(allegati.get(i), 0).getStringValue();
+        iddocdig = SqlManager.getValueFromVectorParam(allegati.get(i), 1).longValue();
+        dignomdoc = SqlManager.getValueFromVectorParam(allegati.get(i), 2).getStringValue();
+        digogg = fileAllegatoManager.getFileAllegato(idprgAllegato, iddocdig);
+        if(digogg!=null) {
+          sha = DigestUtils.shaHex(digogg.getStream());
+          testoAllegati += sha + "*" + dignomdoc;
+          if( i<allegati.size() - 1)
+            testoAllegati += "\r\n";
+        }
+      }
+
+    }else {
+      testoAllegati += "Nessun documento allegato\r\n";
+    }
+    testo+=testoAllegati;
+    */
+    testo += this.getTestoAllegati(idprg, idcom);
+    byte[] pdf = null;
+    try {
+      pdf = UtilityStringhe.string2PdfA(testo, iccInputStream);
+      logger.debug("PDF-A creato.");
+    } catch (com.itextpdf.text.DocumentException e) {
+      throw new DocumentException(e);
+    }
+    return pdf;
+  }
+
+  /**
+   * Viene costruito il testo della mail dandogli una formattazione
+   * @param ngara
+   * @param cig
+   * @param oggettoComunicazione
+   * @param testoComunicazione
+   * @param idprg
+   * @param idcom
+   * @param iccInputStream
+   * @return byte[]
+   * @throws SQLException
+   * @throws GestoreException
+   * @throws IOException
+   * @throws DocumentException
+   */
+  public byte[] getTestoComunicazioneFormattatoStipula(String codStipula, String oggettoComunicazione, String testoComunicazione, String idprg, Long idcom, InputStream iccInputStream) throws SQLException, GestoreException, IOException, DocumentException{
+
+    String testo = "";
+    String denominazione = ConfigManager.getValore("denominazioneEnte");
+    if (denominazione != null) {
+      testo += denominazione + "\r\n";
+    }
+
+    String nomein = null;
+    String viaein = null;
+    String nciein = null;
+    String capein = null;
+    String citein = null;
+    String proein = null;
+
+    String oggettoStipula = null;
+    Vector<?> datiUffint= this.sqlManager.getVector("select nomein,viaein, nciein, capein, citein, proein,oggetto from v_gare_stipula,uffint where codstipula=? and cenint=codein", new Object[]{codStipula});
+    if (datiUffint != null) {
+      nomein = SqlManager.getValueFromVectorParam(datiUffint, 0).getStringValue();
+      viaein = SqlManager.getValueFromVectorParam(datiUffint, 1).getStringValue();
+      nciein = SqlManager.getValueFromVectorParam(datiUffint, 2).getStringValue();
+      capein = SqlManager.getValueFromVectorParam(datiUffint, 3).getStringValue();
+      citein = SqlManager.getValueFromVectorParam(datiUffint, 4).getStringValue();
+      proein = SqlManager.getValueFromVectorParam(datiUffint, 5).getStringValue();
+      oggettoStipula = SqlManager.getValueFromVectorParam(datiUffint, 6).getStringValue();
+
+      //Stazione appaltante o ufficio
+      if (nomein == null)
+        nomein = "";
+      testo += nomein + "\r\n";
+
+      // Indirizzo
+      if (viaein == null)
+        viaein = "";
+      testo += viaein;
+      if (nciein != null && !"".equals(nciein))
+        testo += ", " + nciein;
+      if (capein != null && !"".equals(capein))
+        testo +=  " - " + capein + " ";
+      if (citein == null)
+        citein = "";
+      testo += citein ;
+      if(proein !=null && !"".equals(proein))
+        testo += " (" + proein + ")";
+
+      testo += "\r\n";
+
+      //Riga vuota
+      testo += "\r\n";
+
+    }
+
+    // Oggetto
+    String ngaraStipula = (String)this.sqlManager.getObject("select ngara from g1stipula where codstipula=?", new Object[] {codStipula});
+    testo += "Oggetto stipula: " + oggettoStipula + " - Codice stipula: " + codStipula + "(rif.gara: " + ngaraStipula + ")\r\n\r\n";
+
+    //Oggetto comunicazione
+    if (oggettoComunicazione == null)
+      oggettoComunicazione = "";
+    testo += "Oggetto comunicazione: " + oggettoComunicazione + "\r\n";
+
+    //Riga vuota
+    testo += "\r\n";
+
+    //Testo comunicazione
+    String commsgtip = (String)this.sqlManager.getObject("select commsgtip from w_invcom where idprg = ? and idcom = ?", new Object[] {idprg, idcom });
+    if("1".equals(commsgtip))
+      testoComunicazione = "(testo della comunicazione in formato html)";
+    else if (testoComunicazione == null)
+      testoComunicazione = "";
+    testo += testoComunicazione + "\r\n";
+
+    //Riga vuota
+    testo += "\r\n";
+
+    //Elenco allegati;
+    testo += this.getTestoAllegati(idprg, idcom);
+    byte[] pdf = null;
+    try {
+      pdf = UtilityStringhe.string2PdfA(testo, iccInputStream);
+      logger.debug("PDF-A creato.");
+    } catch (com.itextpdf.text.DocumentException e) {
+      throw new DocumentException(e);
+    }
+    return pdf;
+  }
+
+  /**
+   * Viene creata la stringa che concatena il nome dell'allegato ed il suo hask
+   * @param idprg
+   * @param idcom
+   * @return String
+   * @throws SQLException
+   * @throws GestoreException
+   * @throws IOException
+   */
+  private String getTestoAllegati(String idprg, Long idcom) throws SQLException, GestoreException, IOException {
+    String testoAllegati="Allegati:\r\n";
+    List<?> allegati= this.sqlManager.getListVector("select idprg, iddocdig,dignomdoc from w_docdig where digent = ? and digkey1 = ? and digkey2 = ?", new Object[] { "W_INVCOM", idprg, idcom.toString() });
+    if(allegati!=null && allegati.size()>0){
+      BlobFile digogg = null;
+      String idprgAllegato = null;
+      Long iddocdig = null;
+      String sha = null;
+
+      String dignomdoc = null;
+      for(int i=0;i<allegati.size();i++) {
+        idprgAllegato = SqlManager.getValueFromVectorParam(allegati.get(i), 0).getStringValue();
+        iddocdig = SqlManager.getValueFromVectorParam(allegati.get(i), 1).longValue();
+        dignomdoc = SqlManager.getValueFromVectorParam(allegati.get(i), 2).getStringValue();
+        digogg = fileAllegatoManager.getFileAllegato(idprgAllegato, iddocdig);
+        if(digogg!=null) {
+          sha = DigestUtils.shaHex(digogg.getStream());
+          testoAllegati += sha + "*" + dignomdoc;
+          if( i<allegati.size() - 1)
+            testoAllegati += "\r\n";
+        }
+      }
+
+    }else {
+      testoAllegati += "Nessun documento allegato\r\n";
+    }
+
+    return testoAllegati;
+  }
+
+
+  /**
+   * Viene creata la stringa che concatena la lista dei destinatari
+   * @param idprg
+   * @param idcom
+   * @return String
+   * @throws SQLException
+   * @throws GestoreException
+   * @throws IOException
+   */
+  private String getTestoDestinatari(String idprg, Long idcom, String descc) throws SQLException, GestoreException, IOException {
+    String testodestinatari="Destinatari:";
+
+    String desdatinv_ToString = sqlManager.getDBFunction("DATETIMETOSTRING",
+        new String[] { "desdatinv" });
+    String desdatlet_ToString = sqlManager.getDBFunction("DATETIMETOSTRING",
+        new String[] { "desdatlet" });
+    String desdatcons_ToString = sqlManager.getDBFunction("DATETIMETOSTRING",
+        new String[] { "desdatcons" });
+
+    String addDescc = "and (descc <> '1' or descc is null)";
+    if("1".equals(descc)) {
+      addDescc = "and descc = 1";
+      testodestinatari = "Destinatari in copia conoscenza:";
+    }
+
+    List<?> destinatari= this.sqlManager.getListVector("select desmail, comtipma, desstato, "+desdatinv_ToString+", deserrore, desesitopec, "+desdatlet_ToString+", "+desdatcons_ToString+" from w_invcomdes where idprg = ? and idcom = ? "+addDescc+" order by idcomdes", new Object[] {idprg, idcom});
+    if(destinatari!=null && destinatari.size()>0){
+
+      for(int i=0;i<destinatari.size();i++) {
+        testodestinatari += SEPARATORE_ELEMENTIMULTIPLI;
+
+        String desmail = SqlManager.getValueFromVectorParam(destinatari.get(i), 0).getStringValue();
+        if(desmail==null)
+          desmail="";
+
+        String tipomail_cod = SqlManager.getValueFromVectorParam(destinatari.get(i), 1).getStringValue();
+        String tipomail = "";
+        if(tipomail_cod!=null && !"".equals(tipomail_cod))
+          tipomail = this.tabellatiManager.getDescrTabellato("W_003", tipomail_cod);
+
+        String desstato_cod = SqlManager.getValueFromVectorParam(destinatari.get(i), 2).getStringValue();
+        String desstato = "";
+        if(desstato_cod!=null && !"".equals(desstato_cod))
+          desstato = this.tabellatiManager.getDescrTabellato("G_z21", desstato_cod);
+
+        String desdatinv = SqlManager.getValueFromVectorParam(destinatari.get(i), 3).getStringValue();
+        if(desdatinv==null)
+          desdatinv="";
+
+        String deserrore = SqlManager.getValueFromVectorParam(destinatari.get(i), 4).getStringValue();
+
+        String desesitopec_cod = SqlManager.getValueFromVectorParam(destinatari.get(i), 5).getStringValue();
+        String desesitopec = "";
+        if(desesitopec_cod!=null && !"".equals(desesitopec_cod))
+          desesitopec = this.tabellatiManager.getDescrTabellato("G_z26", desesitopec_cod);
+
+        String desdatlet = SqlManager.getValueFromVectorParam(destinatari.get(i), 6).getStringValue();
+
+        String desdatcons = SqlManager.getValueFromVectorParam(destinatari.get(i), 7).getStringValue();
+        if(desdatcons==null)
+          desdatcons="";
+
+        testodestinatari += (i+1)+") Indirizzo: "+desmail +" ("+tipomail+")\r\n";
+        testodestinatari += "- Stato: " +desstato+"\r\n";
+        testodestinatari += "- Data e ora invio: " +desdatinv+"\r\n";
+        if(desdatlet!=null && !"".equals(desdatlet))
+          testodestinatari += "- Data e ora lettura su portale: " +desdatlet+"\r\n";
+        if(desesitopec!=null && !"".equals(desesitopec))
+          testodestinatari += "- Esito PEC: " +desesitopec+"\r\n";
+        if(desdatcons!=null && !"".equals(desdatcons))
+          testodestinatari += "- Data e ora di consegna PEC: " +desdatcons+"\r\n";
+        if(deserrore!=null && !"".equals(deserrore))
+          testodestinatari += "- Errore: " +deserrore+"\r\n";
+
+
+      }
+
+    }else {
+      testodestinatari = "";
+    }
+
+    return testodestinatari;
+  }
+
+  /**
+   * Viene creata la stringa che concatena la lista dei destinatari
+   * @param idprg
+   * @param idcom
+   * @return String
+   * @throws SQLException
+   * @throws GestoreException
+   * @throws IOException
+   */
+  private String getTestoDocumentiRichiesti(String idprg, Long idcom) throws SQLException, GestoreException, IOException {
+    String testodocumenti="Documenti richiesti:";
+    List<?> documenti= this.sqlManager.getListVector("select descrizione, obbligatorio, formato from g1docsoc where idprg = ? and idcom = ? order by numord", new Object[] {idprg, idcom});
+    if(documenti!=null && documenti.size()>0){
+
+      for(int i=0;i<documenti.size();i++) {
+        testodocumenti += SEPARATORE_ELEMENTIMULTIPLI;
+
+        String descrizione = SqlManager.getValueFromVectorParam(documenti.get(i), 0).getStringValue();
+        if(descrizione==null)
+          descrizione="";
+
+        String obbligatorio = SqlManager.getValueFromVectorParam(documenti.get(i), 1).getStringValue();
+        obbligatorio = "1".equals(obbligatorio) ? "Si" : "No";
+
+        String formdoc = "";
+        String formato = SqlManager.getValueFromVectorParam(documenti.get(i), 2).getStringValue();
+        if(formato!=null && !"".equals(formato))
+          formdoc = this.tabellatiManager.getDescrTabellato("A1105", formato);
+
+        testodocumenti += (i+1)+")Descrizione: "+descrizione +"\r\n";
+        testodocumenti += "- Obbligatorio: " +obbligatorio+"\r\n";
+        testodocumenti += "- Formato del documento:" +formdoc+"\r\n";
+      }
+
+    }else {
+      testodocumenti += "Nessun documento richiesto\r\n";
+    }
+
+    return testodocumenti;
   }
 
   /**
@@ -3565,5 +4069,563 @@ public class GestioneWSDMManager {
     }
     return wsdmListaAccountEmail;
   }
+
+  /**
+   * Viene controllata l'esistenza del file allegato e se è marcato temporalmente.
+   * Se esite il file marcato temporalmente non viene cancellato, altrimenti viene cancellato
+   * Il metodo restituisce il valore di W_DOCDIG.IDDOCDIG se esiste il file marcato temporalmente
+   * @param idprg
+   * @param idcom
+   * @param entita
+   * @return Long
+   * @throws SQLException
+   */
+  public Long cancellaAllegatoSintesi(String idprg, Long idcom) throws SQLException {
+    Object par[] = new Object[] {idprg, idcom.toString(), "W_INVCOM"};
+    String urlAccesso = ConfigManager.getValore("marcaturaTemp.url");
+    boolean applicareMarcaTemp = false;
+    boolean esisteMarcatura = false;
+    Long IDDOCDIG = null;
+    if(urlAccesso!=null && !"".equals(urlAccesso))
+      applicareMarcaTemp=true;
+    if(applicareMarcaTemp) {
+      String sqlFileMarcaTemporale = "select IDDOCDIG from W_DOCDIG where DIGKEY1 = ? and DIGKEY2=? and DIGENT =? and DIGNOMDOC = "
+          + AllegatoSintesiUtils.creazioneFiltroNomeFileSintesi(true,this.sqlManager);
+      IDDOCDIG=(Long)this.sqlManager.getObject(sqlFileMarcaTemporale, par);
+      if(IDDOCDIG!=null)
+        esisteMarcatura = true;
+    }
+    if(!esisteMarcatura) {
+      //Si deve cancellare un eventuale allegato di sintesi già presente
+      String delete = "delete from W_DOCDIG  where DIGKEY1 = ? and DIGKEY2=? and DIGENT =? and DIGNOMDOC = "
+          + AllegatoSintesiUtils.creazioneFiltroNomeFileSintesi(false,this.sqlManager);
+      this.sqlManager.update(delete, par);
+    }
+    return IDDOCDIG;
+  }
+
+
+
+  /**
+   * Viene creato l'allegato di sintesi, che eventualmente viene marcato temporalmente ed inserito in W_DOCDIG.
+   * Vengono restituiti il valore di W_DOCDIG.IDDOCDIG, il nome del file, l'estensione, il titolo ed il pdf
+   * @param comkey1
+   * @param cig
+   * @param commsgogg
+   * @param commsgtes
+   * @param idprg
+   * @param idcom
+   * @param request
+   * @return HashMap
+   * @throws SQLException
+   * @throws GestoreException
+   * @throws IOException
+   * @throws DocumentException
+   */
+  public HashMap<String,Object> aggiungiAllegatoSintesi(String comkey1, String cig, String commsgogg, String commsgtes, String idprg, Long idcom, String entita,HttpServletRequest request) throws SQLException, GestoreException, IOException, DocumentException {
+    HashMap<String,Object> ret = new HashMap<String,Object>();
+    InputStream iccInputStream = null;
+    if(request!=null) {
+      iccInputStream = new FileInputStream(request.getSession(true).getServletContext().getRealPath("/WEB-INF/jrReport/sRGB_v4_ICC_preference.icc"));
+    } else {
+      iccInputStream = new FileInputStream(SpringAppContext.getServletContext().getRealPath("/WEB-INF/jrReport/sRGB_v4_ICC_preference.icc"));
+    }
+    byte[] pdf = null;
+    if("G1STIPULA".equals(entita)) {
+      pdf = getTestoComunicazioneFormattatoStipula(comkey1, commsgogg, commsgtes, idprg,idcom,iccInputStream);
+    }else {
+      pdf = getTestoComunicazioneFormattato(comkey1, cig, commsgogg, commsgtes, idprg,idcom, iccInputStream);
+    }
+    String insert="insert into w_docdig(idprg,iddocdig,digent,digkey1,digkey2,dignomdoc,digdesdoc,digogg) values(?,?,?,?,?,?,?,?)";
+    String esitoMarcaTemporale="";
+    HashMap<String,Object> marcaTemporale = null;
+
+    //Se attiva la gestione della marcatemporale si deve chiamare l'apposito servizio
+    String urlAccesso = ConfigManager.getValore("marcaturaTemp.url");
+    String descrizioneAllegato = "Riepilogo comunicazione";
+    String estensione="pdf";
+
+    if(urlAccesso!=null && !"".equals(urlAccesso)) {
+      marcaTemporale = MarcaturaTemporaleFileUtils.creaMarcaTemporale(pdf, idcom, comkey1, entita, request);
+      esitoMarcaTemporale = (String)marcaTemporale.get("esito");
+      if(!"OK".equals(esitoMarcaTemporale)) {
+        return null;
+      }
+    }
+
+    LobHandler lobHandler = new DefaultLobHandler();
+    Long maxContatore = (Long)this.sqlManager.getObject("select  coalesce(max(iddocdig),0) + 1 from W_DOCDIG where idprg = ?", new Object[] {idprg});
+    String nomeAllegato = idprg + maxContatore.toString() + "_comunicazione.pdf";
+    if(urlAccesso!=null && !"".equals(urlAccesso) && "OK".equals(esitoMarcaTemporale)) {
+      pdf = (byte[])marcaTemporale.get("file");
+      nomeAllegato+=".tsd";
+      estensione ="tsd";
+      descrizioneAllegato += " con marcatura temporale";
+    }
+
+    this.sqlManager.update(insert, new Object[] {idprg, maxContatore, "W_INVCOM",idprg,idcom.toString(),nomeAllegato,descrizioneAllegato,new SqlLobValue(pdf, lobHandler)});
+
+
+    ret.put("pdf", pdf);
+    ret.put("nomeFile", nomeAllegato);
+    ret.put("estensioneFile", estensione);
+    ret.put("titoloFile",descrizioneAllegato);
+    ret.put("idAllegatoSintesi", maxContatore);
+
+    return ret;
+  }
+
+  /**
+   * L'unica differenza col metodo precedente è che in spring per tale metodo viene chiesto di generare una transazione indipendente.
+   * @param comkey1
+   * @param cig
+   * @param commsgogg
+   * @param commsgtes
+   * @param idprg
+   * @param idcom
+   * @param request
+   * @return HashMap
+   * @throws SQLException
+   * @throws GestoreException
+   * @throws IOException
+   * @throws DocumentException
+   */
+  public HashMap<String,Object> aggiungiAllegatoSintesiConTransazione(String comkey1, String cig, String commsgogg, String commsgtes, String idprg, Long idcom, String entita,HttpServletRequest request) throws SQLException, GestoreException, IOException, DocumentException {
+    HashMap<String,Object> ret = aggiungiAllegatoSintesi(comkey1, cig, commsgogg, commsgtes, idprg, idcom, entita, request);
+    return ret;
+  }
+
+  /**
+   * Ricerca del fascicolo basata su anno e/o classifica. Supportata solo da ITALPROT
+   *
+   * @param username
+   * @param password
+   * @param anno
+   * @param servizio
+   * @param classifica
+   * @param idconfi
+   * @return WSDMRicercaFascicoloResType
+   * @throws GestoreException
+   */
+  public WSDMRicercaFascicoloResType wsdmRicercaFascicolo(String username, String password, String cognome, Long anno, String classifica,
+      String codicefascicolo, String oggetto, String struttura, String codiceproc, String cig, String servizio, String idconfi) throws GestoreException {
+    WSDMRicercaFascicoloResType wsdmFascicoloRes = null;
+    try {
+      WSDM_PortType wsdm = this.getWSDM(username, password, servizio,idconfi);
+      WSDMLoginAttrType loginAttr = new WSDMLoginAttrType();
+
+      WSDMRicercaFascicoloType ricerca =  new WSDMRicercaFascicoloType();
+      if(anno!=null)
+        ricerca.setAnnoFascicolo(anno);
+      if(classifica!=null)
+        ricerca.setClassificaFascicolo(classifica);
+
+      if(codicefascicolo!=null)
+        ricerca.setCodiceFascicolo(codicefascicolo);
+      if(oggetto!=null)
+        ricerca.setOggettoFascicolo(oggetto);
+      if(struttura!=null)
+        ricerca.setStrutturaFascicolo(struttura);
+      if(codiceproc!=null)
+        ricerca.setIdentificativoGara(codiceproc);;
+      if(cig!=null)
+        ricerca.setCig(cig);
+
+
+      wsdmFascicoloRes = wsdm.WSDMRicercaFascicolo(loginAttr, ricerca);
+
+    } catch (Throwable t) {
+      throw new GestoreException("Si e' verificato un errore durante la ricerca dei fascicoli: " + t.getMessage(),
+          "wsdm.fascicoloprotocollo.fascicoloricerca.remote.error", t);
+    }
+    return wsdmFascicoloRes;
+  }
+
+  /**
+   * Metodo adoperato solo da italprot per la richiesta dell'inserimento della firma di un documento
+   * @param username
+   * @param password
+   * @param protocolloDocumentoIn
+   * @param idconfi
+   * @return WSDMProtocolloDocumentoResType
+   * @throws GestoreException
+   */
+  public WSDMProtocolloDocumentoResType wsdmFirmaInserisci(String username, String password, WSDMProtocolloDocumentoInType protocolloDocumentoIn, String idconfi) throws GestoreException {
+    WSDMProtocolloDocumentoResType resType =null;
+    try {
+      WSDM_PortType wsdm = this.getWSDM(username, password, SERVIZIO_FASCICOLOPROTOCOLLO, idconfi);
+      resType = wsdm.WSDMFirmaInserisci(null, protocolloDocumentoIn);
+    } catch (Throwable  e) {
+      throw new GestoreException("Si e' verificato un errore nella chiamata del WSDMFirmaInserisci : " + e.getMessage(),
+          "wsdm.firma.inserisci.remote.error", e);
+    }
+    return resType;
+  }
+
+  /**
+   * Metodo adoperato solo da italprot per avere restitituito un documento di cui è stata richiesta la firma tramite il servizio WSDMFirmaInserisci
+   * @param username
+   * @param password
+   * @param nDocumento
+   * @param idconfi
+   * @return
+   * @throws GestoreException
+   */
+  public WSDMProtocolloDocumentoResType wsdmFirmaVerifica(String username, String password, String nDocumento, String idconfi) throws GestoreException {
+    WSDMProtocolloDocumentoResType resType =null;
+    try {
+      WSDM_PortType wsdm = this.getWSDM(username, password, SERVIZIO_FASCICOLOPROTOCOLLO, idconfi);
+      resType = wsdm.WSDMFirmaVerifica(null, nDocumento);
+    } catch (Throwable  e) {
+      throw new GestoreException("Si e' verificato un errore nella chiamata del WSDMFirmaVerifica : " + e.getMessage(),
+          "wsdm.firma.verifica.remote.error", e);
+    }
+    return resType;
+  }
+
+  /**
+   * Il metodo restituisce il numero di fascicoli da creare per la tipologia specificata,
+   * ("GARE","AVVISI","ELENCHI","CATALOGHI","RILANCI").
+   * Si considerano le occorrenze pubblicate su Portale.
+   * @param tipo
+   * @param elencoUffint
+   * @return
+   * @throws SQLException
+   */
+  public Long getConteggioFascicoliMancanti(String tipo, String elencoUffint) throws SQLException {
+    Long conteggio=null;
+    String select="";
+    if("GARE".equals(tipo)) {
+      select = SELECT_CONTEGGIO_FASCICOLI_MANCANTI.replace("?", "in (1,2,3)");
+    }else if("AVVISI".equals(tipo)) {
+      select = SELECT_CONTEGGIO_FASCICOLI_MANCANTI.replace("?", "= 11");
+    }else if("ELENCHI".equals(tipo)) {
+      select = SELECT_CONTEGGIO_FASCICOLI_MANCANTI.replace("?", "= 10");
+    }else if("CATALOGHI".equals(tipo)) {
+      select = SELECT_CONTEGGIO_FASCICOLI_MANCANTI.replace("?", "= 20");
+    }else if("RILANCI".equals(tipo)) {
+      select = SELECT_CONTEGGIO_FASCICOLI_MANCANTI_RILANCI.replace("?", "= 11");
+      if(!"".equals(elencoUffint))
+        select += FILTRO_UFFINT_SELECT_CONTEGGIO_FASCICOLI_MANCANTI_RILANCI.replace("$", elencoUffint);
+    }
+
+    if(!"RILANCI".equals(tipo) && !"".equals(elencoUffint))
+      select += FILTRO_UFFINT_SELECT_CONTEGGIO_FASCICOLI_MANCANTI.replace("$", elencoUffint);
+
+    conteggio = (Long)sqlManager.getObject(select, new Object[] {});
+
+    return conteggio;
+  }
+
+  /**
+   * Il metodo valorizza gli attributi isSigned e isTimeMarked della classe WSDMProtocolloAllegatoType.
+   * Se nel nome del file passato come parametro è presente le estensioni "p7m" si imposta a 1 isSigned.
+   * Se nel nome del file passato come parametro è presente le estensioni "tsd" si imposta a 1 isTimeMarked.
+   *
+   * @param nomeFile
+   * @param allegatoType
+   * @return WSDMProtocolloAllegatoType
+   */
+  public static WSDMProtocolloAllegatoType popolaAllegatoInfo(String nomeFile, WSDMProtocolloAllegatoType allegatoType) {
+    if(nomeFile!=null) {
+      nomeFile = nomeFile.toLowerCase();
+      if(nomeFile.lastIndexOf("p7m")>0)
+        allegatoType.setIsSigned(new Long(1));
+      if(nomeFile.lastIndexOf("tsd")>0)
+        allegatoType.setIsTimeMarked(new Long(1));
+
+    }
+    return allegatoType;
+  }
+
+  public byte[] esportaRiepilogoComunicazione(String idprg, Long idcom, String operatore, InputStream iccInputStream) throws SQLException, GestoreException, IOException, DocumentException {
+
+    String comdatins_ToString = sqlManager.getDBFunction("DATETIMETOSTRING",
+        new String[] { "comdatins" });
+    String comdatprot_ToString = sqlManager.getDBFunction("DATETIMETOSTRING",
+        new String[] { "comdatprot" });
+
+    Vector<?> datiComunicazione = this.sqlManager.getVector("select "
+        + "comkey1, " //0
+        + "coment, " //1
+        + "commsgtes, "//2
+        + "commsgogg, "//3
+        + "comstato, "//4
+        +  comdatins_ToString+", "//5
+        + "comdatsca, "//6
+        + "comorasca, "//7
+        + "committ, "//8
+        + "comcodope, "//9
+        + "comnumprot, "//10
+        +  comdatprot_ToString+", "//11
+        + "commodello " //12
+
+        + "from w_invcom where idprg = ? and idcom = ?", new Object[] {idprg, idcom});
+
+    String comkey1 =  SqlManager.getValueFromVectorParam(datiComunicazione, 0).getStringValue();
+    String coment =  SqlManager.getValueFromVectorParam(datiComunicazione, 1).getStringValue();
+    String testoComunicazione =  SqlManager.getValueFromVectorParam(datiComunicazione, 2).getStringValue();
+    String oggettoComunicazione =  SqlManager.getValueFromVectorParam(datiComunicazione, 3).getStringValue();
+    String stato =  SqlManager.getValueFromVectorParam(datiComunicazione, 4).getStringValue();
+    String datains =  SqlManager.getValueFromVectorParam(datiComunicazione, 5).getStringValue();
+    String comdatsca = SqlManager.getValueFromVectorParam(datiComunicazione, 6).getStringValue();
+    String comorasca = SqlManager.getValueFromVectorParam(datiComunicazione, 7).getStringValue();
+    String committ  = SqlManager.getValueFromVectorParam(datiComunicazione, 8).getStringValue();
+    String comcodope = SqlManager.getValueFromVectorParam(datiComunicazione, 9).getStringValue();
+    String comnumprot = SqlManager.getValueFromVectorParam(datiComunicazione, 10).getStringValue();
+    String comdatprot = SqlManager.getValueFromVectorParam(datiComunicazione, 11).getStringValue();
+    String commodello = SqlManager.getValueFromVectorParam(datiComunicazione, 12).getStringValue();
+
+
+    String testo = "";
+    //metadati generazione report
+    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/YYYY HH:mm:ss", Locale.ITALIAN);
+    String dateString = sdf.format(new Date());
+
+    testo += "Report comunicazione PG/"+idcom+" generato il "+ dateString.split(" ")[0]+" alle ore "+ dateString.split(" ")[1] +"\r\nOperatore " +operatore+"\r\n";
+    testo += SEPARATORE_LINEA_COMPLETA+"\r\n";
+
+    //sezione denominazione
+    String denominazione = ConfigManager.getValore("denominazioneEnte");
+    if (denominazione != null) {
+      testo += denominazione + "\r\n";
+    }
+
+    String nomein = null;
+    String viaein = null;
+    String nciein = null;
+    String capein = null;
+    String citein = null;
+    String proein = null;
+
+    String oggettoStipula=null;
+
+    Long genere = null;
+    String codgar = null;
+
+    Vector<?> datiGara= this.sqlManager.getVector("select genere,codgar  from v_gare_genere where codice=?", new Object[]{comkey1});
+    if (datiGara != null) {
+      genere = SqlManager.getValueFromVectorParam(datiGara, 0).longValue();
+      codgar = SqlManager.getValueFromVectorParam(datiGara, 1).getStringValue();
+      if(genere == 100 || genere == 300) { //devo recuperare il vero genere se siamo in un lotto
+        Vector<?> datiLotto= this.sqlManager.getVector("select genere,codgar  from v_gare_genere where codice=?", new Object[]{codgar});
+        genere = SqlManager.getValueFromVectorParam(datiLotto, 0).longValue();
+      }
+    }
+
+    String select = "select nomein,viaein, nciein, capein, citein, proein from torn,uffint where codgar=? and cenint=codein";
+
+    if("G1STIPULA".equals(coment)) {
+      select = "select nomein,viaein, nciein, capein, citein, proein,oggetto from v_gare_stipula,uffint where codstipula=? and cenint=codein";
+      codgar=comkey1;
+    }
+
+    Vector<?> datiUffint= this.sqlManager.getVector(select, new Object[]{codgar});
+    if (datiUffint != null) {
+      nomein = SqlManager.getValueFromVectorParam(datiUffint, 0).getStringValue();
+      viaein = SqlManager.getValueFromVectorParam(datiUffint, 1).getStringValue();
+      nciein = SqlManager.getValueFromVectorParam(datiUffint, 2).getStringValue();
+      capein = SqlManager.getValueFromVectorParam(datiUffint, 3).getStringValue();
+      citein = SqlManager.getValueFromVectorParam(datiUffint, 4).getStringValue();
+      proein = SqlManager.getValueFromVectorParam(datiUffint, 5).getStringValue();
+      if("G1STIPULA".equals(coment)) {
+        oggettoStipula = SqlManager.getValueFromVectorParam(datiUffint, 6).getStringValue();
+      }
+
+      //Stazione appaltante o ufficio
+      if (nomein == null)
+        nomein = "";
+      testo += nomein + "\r\n";
+
+      // Indirizzo
+      if (viaein == null)
+        viaein = "";
+      testo += viaein;
+      if (nciein != null && !"".equals(nciein))
+        testo += ", " + nciein;
+      if (capein != null && !"".equals(capein))
+        testo +=  " - " + capein + " ";
+      if (citein == null)
+        citein = "";
+      testo += citein ;
+      if(proein !=null && !"".equals(proein))
+        testo += " (" + proein + ")";
+
+      testo += "\r\n";
+      }
+      //Riga vuota
+      testo += SEPARATORE_SEZIONI+"\r\n";
+
+
+
+
+      // Oggetto
+    if("G1STIPULA".equals(coment)) {
+      testo += "Oggetto stipula: " + oggettoStipula + "\r\nCodice stipula: " + comkey1 + "\r\n";
+    }else {
+      String oggettoGara = null;
+
+      String cig = null;
+
+
+      Vector<?> datiTorn = sqlManager.getVector("select codcig from v_gare_torn v where codgar = ?", new Object[]{codgar});
+      if(datiTorn!=null && datiTorn.size()>0){
+        cig = SqlManager.getValueFromVectorParam(datiTorn, 0).getStringValue();
+      }
+
+      if (cig == null) {
+        cig = "";
+      }
+      switch (genere.intValue()) {
+        case 1:
+        case 3:
+          oggettoGara = (String)this.sqlManager.getObject("select destor from torn where codgar=?", new Object[]{codgar});
+          if (oggettoGara == null)
+            oggettoGara = "";
+          testo += "Oggetto gara: " + oggettoGara + "\r\nCodice gara: " + codgar + "\r\nCIG: " + cig + "\r\n";
+          break;
+        case 2:
+        case 4:
+          oggettoGara = (String)this.sqlManager.getObject("select not_gar from gare where ngara=?", new Object[]{comkey1});
+          if (oggettoGara == null)
+            oggettoGara = "";
+          testo += "Oggetto gara: " + oggettoGara + "\r\nCodice gara: " + comkey1 + "\r\nCIG: " + cig + "\r\n";
+          break;
+        case 10:
+          oggettoGara = (String)this.sqlManager.getObject("select oggetto from garealbo where ngara=?", new Object[]{comkey1});
+          if (oggettoGara == null)
+            oggettoGara = "";
+          testo += "Oggetto elenco: " + oggettoGara + "\r\nCodice elenco: " + comkey1 + "\r\n";
+          break;
+        case 11:
+          oggettoGara = (String)this.sqlManager.getObject("select oggetto from gareavvisi where ngara=?", new Object[]{comkey1});
+          if (oggettoGara == null)
+            oggettoGara = "";
+          testo += "Oggetto avviso: " + oggettoGara + "\r\nCodice avviso: " + comkey1 + "\r\n";
+          break;
+        case 20:
+          oggettoGara = (String)this.sqlManager.getObject("select oggetto from garealbo where ngara=?", new Object[]{comkey1});
+          if (oggettoGara == null)
+            oggettoGara = "";
+          testo += "Oggetto catalogo: " + oggettoGara + "\r\nCodice catalogo: " + comkey1 + "\r\n";
+          break;
+      }
+    }
+    testo += SEPARATORE_LINEA_COMPLETA+ "\r\n";
+    //Oggetto comunicazione
+    if (oggettoComunicazione == null)
+      oggettoComunicazione = "";
+    testo += "Oggetto comunicazione: " + oggettoComunicazione + "\r\n\r\n";
+
+    //Testo comunicazione
+    String commsgtip = (String)this.sqlManager.getObject("select commsgtip from w_invcom where idprg = ? and idcom = ?", new Object[] {idprg, idcom });
+    if("1".equals(commsgtip))
+      testoComunicazione = "(testo della comunicazione in formato html)\r\n";
+    else if (testoComunicazione == null)
+      testoComunicazione = "";
+    testo += testoComunicazione + "\r\n";
+
+    //in caso di soccorso istruttorio
+    String commod = "";
+    if(commodello!=null && !"".equals(commodello)) {
+
+      testo += SEPARATORE_SEZIONI+"\r\n";
+
+      commod = this.tabellatiManager.getDescrTabellato("W_008", commodello);
+      testo += "Tipologia di comunicazione: "+commod + "\r\n";
+
+      if(comdatsca!=null && !"".equals(comdatsca)) {
+        testo += "Data termine presentazione documentazione: "+comdatsca + "\r\n";
+      }
+
+      if(comorasca!=null && !"".equals(comorasca)) {
+        testo += "Ora termine presentazione documentazione: "+comorasca + "\r\n";
+      }
+      testo += "\r\n";
+      testo += this.getTestoDocumentiRichiesti(idprg,idcom);
+    }
+
+    testo += SEPARATORE_SEZIONI+"\r\n";
+    testo += this.getTestoAllegati(idprg, idcom)+"\r\n";
+
+    //dati della w_invcom
+
+    //Riga vuota
+    testo += SEPARATORE_LINEA_COMPLETA+"\r\n";
+
+    String statoCom = "";
+    if(stato != null && !"".equals(stato))
+      statoCom = this.tabellatiManager.getDescrTabellato("G_z20", stato);
+    testo += "Stato della comunicazione: "+statoCom + "\r\n";
+
+    if(datains == null)
+      datains = "";
+    testo += "Data di inserimento: "+datains + "\r\n";
+
+    if(committ!=null)
+    testo += "Mittente: "+committ + "\r\n";
+
+    String operCom = "";
+    if(comcodope!=null && !"".equals(comcodope)) {
+      Vector<?> sysute = this.sqlManager.getVector("select sysute from usrsys where syscon=?", new Object[] {comcodope});
+      operCom= SqlManager.getValueFromVectorParam(sysute, 0).stringValue();
+    }
+    testo += "Operatore: "+operCom + "\r\n";
+
+    //solo se attiva la protocollazione
+    if(comnumprot!=null && !"".equals(comnumprot)) {
+      testo += "Numero protocollo: "+comnumprot + "\r\n";
+    }
+    //solo se attiva la protocollazione
+    if(comdatprot!=null && !"".equals(comdatprot)) {
+      testo += "Data protocollo: "+comdatprot + "\r\n";
+    }
+
+    testo += SEPARATORE_SEZIONI+"\r\n";
+    testo += this.getTestoDestinatari(idprg, idcom, null);
+
+    testo += SEPARATORE_SEZIONI+"\r\n";
+    testo += this.getTestoDestinatari(idprg, idcom, "1");
+
+
+
+    byte[] pdf = null;
+    try {
+      pdf = UtilityStringhe.string2PdfA(testo, iccInputStream);
+      logger.debug("PDF-A creato.");
+      return pdf;
+    } catch (com.itextpdf.text.DocumentException e) {
+      throw new DocumentException(e);
+    }
+  }
+
+
+  /**
+   * Lettura del protocollo asincrono
+   * @param username
+   * @param password
+   * @param cognome
+   * @param codiceProcesso
+   * @param servizio
+   * @param idconfi
+   * @return WSDMProtocolloDocumentoResType
+   * @throws GestoreException
+   */
+  public WSDMProtocolloDocumentoResType wsdmProtocolloAsincronoEsito(String username, String password, String cognome, String codiceProcesso, String servizio, String idconfi) throws GestoreException {
+    WSDMProtocolloDocumentoResType resType =null;
+    try {
+      WSDM_PortType wsdm = this.getWSDM(username, password, servizio, idconfi);
+      WSDMLoginAttrType login = new WSDMLoginAttrType();
+      login.setCognome(cognome);
+      resType = wsdm.WSDMProtocolloAsincronoEsito(login, codiceProcesso);
+    } catch (Throwable  e) {
+      throw new GestoreException("Si e' verificato un errore nella chiamata del WSDMProtocolloAsincronoEsito : " + e.getMessage(),
+          "wsdm.protocollo.asincrono.remote.error", e);
+    }
+    return resType;
+  }
+
 }
+
+
 

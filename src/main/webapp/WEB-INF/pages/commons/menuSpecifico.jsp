@@ -61,4 +61,18 @@
   	  </c:choose>
 	  </td>
 </c:if>
+
+<c:if test='${gene:checkProt(pageContext,"MENU.VIS.STIPULE")}' >
+  	  <td>
+	<c:choose>
+	  	<c:when test='${isNavigazioneDisattiva eq "1"}'>
+			<span><c:out value="Stipule" /></span>
+		</c:when>
+	  	<c:otherwise>
+		  <a id="lnavbarStipule" href="javascript:showSubmenuNavbar('lnavbarStipule',linksetSubMenuStipule);" tabindex="1230">Stipule</a>
+		</c:otherwise>
+  	  </c:choose>
+	  </td>
+</c:if>
+
  	

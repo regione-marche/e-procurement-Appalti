@@ -17,15 +17,14 @@
 
 <c:set var="annulla" value="${param.annulla}" />
 <c:set var="tipo" value="${param.tipo}" />
+<c:set var="entita" value="${param.entFiltro}" />
 
-<c:set var="tmp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.InitFiltroListaSessioneFunction", pageContext,annulla,tipo)}' />
+<c:set var="tmp" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.InitFiltroListaSessioneFunction", pageContext,annulla,tipo,entita)}' />
 
 <script type="text/javascript">
 	window.opener.document.forms[0].pgSort.value = "";
 	window.opener.document.forms[0].pgLastSort.value = "";
 	window.opener.document.forms[0].pgLastValori.value = "";
-	window.opener.document.forms[0].trovaAddWhere.value = "";
-	window.opener.document.forms[0].trovaParameter.value = "";
 	window.close();
 	window.opener.bloccaRichiesteServer();
 	window.opener.listaVaiAPagina(0);

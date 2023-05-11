@@ -174,6 +174,8 @@
 						<input type="hidden" id="pgLastValori" name="pgLastValori" value="" />
 
 						<input type="hidden" id="updateLista" name="updateLista" value="${updateLista}" />
+						<input type="hidden" name="entitaPrincipaleModificabile" id="entitaPrincipaleModificabile" value="${sessionScope.entitaPrincipaleModificabile}" />
+						
 						<gene:campoScheda campo="NGARA" entita="GARE" where="TORN.CODGAR=GARE.NGARA" visibile="false" />
 						<gene:campoScheda campo="CODGAR1" entita="GARE" where="TORN.CODGAR=GARE.NGARA" visibile="false" />
 

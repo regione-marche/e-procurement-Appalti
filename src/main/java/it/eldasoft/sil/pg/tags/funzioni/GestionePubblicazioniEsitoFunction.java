@@ -38,7 +38,7 @@ public class GestionePubblicazioniEsitoFunction extends AbstractFunzioneTag {
   public String function(PageContext pageContext, Object[] params)
       throws JspException {
     
-    String querySelect = "select NGARA, NPUBG, TIPPUBG, DINPUBG, DFIPUBG, TESPUBG, IMPPUB, DINVPUBG, NPRPUB "
+    String querySelect = "select NGARA, NPUBG, TIPPUBG, DINPUBG, DFIPUBG, TESPUBG, IMPPUB, DINVPUBG, NPRPUB, TITPUB, NAVPUB, NAVNUM, URLPUB  "
       + "from PUBG "
       + "where NGARA = ? "
       + "order by NGARA, NPUBG asc";

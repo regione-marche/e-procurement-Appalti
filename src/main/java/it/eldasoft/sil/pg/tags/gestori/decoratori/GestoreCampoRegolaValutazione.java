@@ -10,16 +10,16 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.decoratori;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.db.datautils.DataColumn;
-import it.eldasoft.gene.tags.decorators.campi.AbstractGestoreCampo;
-import it.eldasoft.utils.spring.UtilitySpring;
-
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Vector;
 
 import javax.servlet.jsp.PageContext;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.db.datautils.DataColumn;
+import it.eldasoft.gene.tags.decorators.campi.AbstractGestoreCampo;
+import it.eldasoft.utils.spring.UtilitySpring;
 /**
  * Gestore del campo fittizzio INFO_OFFEC della pagina delle fasi di gara,
  * per tale campo si deve calcolare il numero di lotti in cui IMPOFF è valorizzato
@@ -86,7 +86,7 @@ public class GestoreCampoRegolaValutazione extends AbstractGestoreCampo {
 		String valoreCampo="";
 		String select="select tab1desc from tab1 where tab1cod=? and tab1tip=? ";
 		boolean eseguiSelect= false;
-		if("1".equals(modpunti)){
+		if("1".equals(modpunti) || "3".equals(modpunti)){
 		  eseguiSelect=true;
 		  tab1cod="A1142";
 		  if(datiRiga.get("G1CRIDEF_MODMANU")!=null)

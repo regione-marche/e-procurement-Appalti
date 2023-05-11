@@ -23,7 +23,8 @@
 		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.easytabs.js"></script>
 		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmsupporto.js?v=${sessionScope.versioneModuloAttivo}"></script>
 		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmfascicoloprotocollo.js?v=${sessionScope.versioneModuloAttivo}"></script>
-		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.comunicazione.js"></script>
+		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.comunicazione.js?v=${sessionScope.versioneModuloAttivo}"></script>
+		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmuffici.js?v=${sessionScope.versioneModuloAttivo}"></script>
 				
 		<style type="text/css">
 			.dataTables_filter {
@@ -100,6 +101,9 @@
 					<td class="etichetta-dato">Classifica</td>
 					<td class="valore-dato">
 						<select id="classificadocumento" name="classificadocumento"></select>
+						<select id="classificadocumento_filtro" name="classificadocumento_filtro" style="display: none;"></select>
+						<span id="classdoc" name="classdoc" style="display: none;"></span>
+						<div style="display: none;" class="error" id="classificadocumentomessaggio"></div>
 					</td>						
 				</tr>
 				<tr>
@@ -143,6 +147,12 @@
 					<td class="etichetta-dato">Sottotipo</td>
 					<td class="valore-dato">
 						<select id="sottotipo" name="sottotipo"></select>
+					</td>						
+				</tr>
+				<tr style="display: none;" id="rigaTipoFirma">
+					<td class="etichetta-dato">Tipo di firma</td>
+					<td class="valore-dato">
+						<select id="tipofirma" name="tipofirma"></select>
 					</td>						
 				</tr>
 				<tr>
@@ -224,7 +234,7 @@
 					<td class="valore-dato">
 						<select id="idunitaoperativamittente" name="idunitaoperativamittente"></select>
 					</td>						
-				</tr>				
+				</tr>
 				<tr>
 					<td class="etichetta-dato">Numero destinatari</td>
 					<td class="valore-dato">
@@ -280,7 +290,8 @@
 				
 				<tr id="sezionedatifascicolo">
 					<td colspan="2">
-						<b><br>Dati del fascicolo</b>
+						<b><br>Dati del fascicolo</b> <span style="float:right;"><a href="javascript:gestioneletturafascicolo();" id="linkleggiDatiFascicolo" class="linkLettura" style="display: none;">Rileggi dati fascicolo</a></span>
+						<br>
 						<div style="display: none;" class="error" id="documentifascicolomessaggio"></div>
 					</td>
 				</tr>
@@ -299,6 +310,7 @@
 					<td class="etichetta-dato">Anno fascicolo</td>
 					<td class="valore-dato"><input id="annofascicolo" name="annofascicolo" title="Anno fascicolo" class="testo" type="text" size="6" value="" maxlength="4">&nbsp;<a href="javascript:gestioneletturafascicoloPrisma();" id="linkleggifascicoloPrisma" style="display: none;">Leggi fascicolo</a></td>
 				</tr>
+				
 				<tr>
 					<td class="etichetta-dato">Numero fascicolo</td>
 					<td class="valore-dato"><input id="numerofascicolo" name="numerofascicolo" title="Numero fascicolo" class="testo" type="text" size="24" value="" maxlength="100"></td>
@@ -326,6 +338,7 @@
 					<td class="valore-dato">
 						<select id="classificafascicolonuovo" name="classificafascicolonuovo"></select>
 						<input id="classificafascicolonuovoPrisma" name="classificafascicolonuovoPrisma" title="Classifica fascicolo" class="testo" type="text" size="24" value="" maxlength="100" style="display: none;">
+						<input id="classificafascicolonuovoItalprot" name="classificafascicolonuovoItalprot" title="Classifica fascicolo" class="testo" type="text" size="24" value="" maxlength="100" style="display: none;">
 						<div style="display: none;" class="error" id="classificafascicolonuovomessaggio"></div>
 						<input type="hidden" id="classificadescrizione"  name="classificadescrizione"/>
 						<input type="hidden" id="voce"  name="voce"/>
@@ -336,6 +349,14 @@
 					<td class="valore-dato">
 						<select id="tipofascicolonuovo" name="tipofascicolonuovo"></select>
 						<span id="tipofascicolo" name="tipofascicolo" style="display: none;" title="Tipo"></span>
+					</td>
+				</tr>
+				<tr id="trricercafascicolo" style="display: none;">
+					<td class="etichetta-dato">Fascicolo</td>
+					<td class="valore-dato">
+					<select id="listafascicoli" name="listafascicoli" style="min-width:450px;max-width:450px">
+					</select>
+					<a href="javascript:gestioneletturafascicoliItalprot();" id="linkleggifascicoliItalprot" style="display: none;">Carica fascicoli</a> 
 					</td>
 				</tr>
 				<tr>
@@ -369,6 +390,20 @@
 					<td class="etichetta-dato" >Nome Rup  </td>
 					<td class="valore-dato"  >
 						<span id="nomeRup" name="nomeRup"></span>
+					</td>						
+				</tr>
+				
+				<tr id="sezioneuocompetenza" style="display: none;">
+					<td class="etichetta-dato">Unit&agrave; operativa di competenza</td>
+					<td class="valore-dato" id="tdDescrizioneUo">
+						<input id="uocompetenza" name="uocompetenza"  type="hidden" />
+						<input id="uocompetenzadescrizione" name="uocompetenzadescrizione"  type="hidden" />
+						<span id="uocompetenzaSpan" name="uocompetenzaSpan" ></span>
+						<textarea readonly id="uocompetenzaTxt" name="uocompetenzaTxt" title="Unit&agrave; operativa di competenza" class="testo" rows="4" cols="45" ></textarea>
+						&nbsp;
+						<a href="javascript:apriListaUffici();" title="Seleziona unit&agrave; operativa" tabindex="1514" id="selezioneuocompetenza">
+							Seleziona unit&agrave; operativa
+						</a>
 					</td>						
 				</tr>
 				
@@ -455,5 +490,22 @@
 				</tr>
 			</table>
 		</div>
+				
 	</gene:redefineInsert>
+	<gene:javaScript>
+		/*
+		$(window).ready(function (){
+			var _v1 = "${pageContext.request.contextPath}";
+			myWsdmUffici.init(_v1);
+			myWsdmUffici.creaFinestraListaUffici();
+		});
+		*/
+	
+		function apriListaUffici() {
+			_ctx = "${pageContext.request.contextPath}";
+			$("#finestraListaUffici").dialog("open");
+			_creaContainerListaUffici();
+		}
+	
+	</gene:javaScript>
 </gene:template>

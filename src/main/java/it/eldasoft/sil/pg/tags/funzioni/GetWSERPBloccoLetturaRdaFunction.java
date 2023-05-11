@@ -29,7 +29,7 @@ import javax.servlet.jsp.PageContext;
 public class GetWSERPBloccoLetturaRdaFunction extends AbstractFunzioneTag {
 
   public GetWSERPBloccoLetturaRdaFunction() {
-    super(3, new Class[] { PageContext.class, String.class, String.class });
+    super(4, new Class[] { PageContext.class, String.class, String.class, String.class });
   }
 
   @Override
@@ -41,9 +41,11 @@ public class GetWSERPBloccoLetturaRdaFunction extends AbstractFunzioneTag {
 
     String ngara = (String) params[1];
     String codiceGara = (String) params[2];
+    String tipoWSERP = (String) params[3];
 
     String visLetturaRda = "false";
     String bloccoOperazioniSmeUp= "false";
+    String bloccoOperazioniAtac= "false";
     try {
       Vector<?> datiGara = sqlManager.getVector(
           "select v.genere, g.bustalotti, g.esineg, g.modlicg from v_gare_torn v,gare g" +
@@ -93,9 +95,10 @@ public class GetWSERPBloccoLetturaRdaFunction extends AbstractFunzioneTag {
                 }
 
               }
-              Long counterOpSmeUp = (Long) sqlManager.getObject("select count(*) from gcap where ngara = ? and codcarr is not null", new Object[] { ngara });
-              if(counterOpSmeUp > 0){
+              Long counterOp = (Long) sqlManager.getObject("select count(*) from gcap where ngara = ? and codcarr is not null", new Object[] { ngara });
+              if(counterOp > 0){
                 bloccoOperazioniSmeUp= "true";
+                bloccoOperazioniAtac= "true";
               }
             }
           }
@@ -103,8 +106,17 @@ public class GetWSERPBloccoLetturaRdaFunction extends AbstractFunzioneTag {
         }
 
       }
-
+      
+      if("ATAC".equals(tipoWSERP)) {
+    	  bloccoOperazioniSmeUp = "false";
+    	  visLetturaRda= "true";
+      }else {
+    	  bloccoOperazioniAtac = "false";  
+      }
+      
       pageContext.setAttribute("bloccoOperazioniSmeUp", bloccoOperazioniSmeUp, PageContext.REQUEST_SCOPE);
+      pageContext.setAttribute("bloccoOperazioniAtac", bloccoOperazioniAtac, PageContext.REQUEST_SCOPE);
+      
 
     }catch (SQLException e) {
         throw new JspException(

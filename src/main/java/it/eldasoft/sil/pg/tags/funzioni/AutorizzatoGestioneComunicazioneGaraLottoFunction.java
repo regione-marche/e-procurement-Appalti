@@ -40,8 +40,11 @@ public class AutorizzatoGestioneComunicazioneGaraLottoFunction extends
       if ("GARE".equals(coment)) {
         // si tratta di una comunicazione da inviare che parte da gara plico unico
         codgar = (String) sqlManager.getObject("select codgar1 from gare where ngara = ?", new Object[] {comkey1 });
+      } else if ("G1STIPULA".equals(coment)) {
+          Long idStipula = (Long) sqlManager.getObject("select id from g1stipula where codstipula = ?", new Object[] {comkey1 });
+          codgar=idStipula.toString();
       } else {
-        codgar = comkey1;
+   		  codgar = comkey1;	  
       }
 
       ProfiloUtente profilo = (ProfiloUtente) pageContext.getSession().getAttribute(

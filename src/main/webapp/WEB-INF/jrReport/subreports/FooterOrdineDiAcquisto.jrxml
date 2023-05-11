@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.16.0.final utlizzo versione della libreria JasperReports6.16.0-48579d909b7943b64690c65c71e07e0b80981928  -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="FooterOrdineDiAcquisto" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="2f70d98c-a795-4506-98e4-3331d4ebfc15">
 	<property name="ireport.zoom" value="1.3636363636363635"/>
 	<property name="ireport.x" value="0"/>
@@ -50,7 +51,7 @@ from documgara,w_docdig where gruppo=11 and w_docdig.idprg=documgara.idprg and w
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
-					<font fontName="SansSerif" size="12" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="true"/>
+					<font fontName="Arial" size="12" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
 					<paragraph lineSpacing="Single"/>
 				</textElement>
 				<text><![CDATA[DOCUMENTI ALLEGATI ALL'ORDINE]]></text>
@@ -71,7 +72,7 @@ from documgara,w_docdig where gruppo=11 and w_docdig.idprg=documgara.idprg and w
 					</datasetRun>
 					<jr:column width="482" uuid="3febe6f4-d9f1-4977-986f-5569e19d6a7b">
 						<jr:detailCell height="20" rowSpan="1">
-							<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+							<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 								<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="482" height="20" uuid="c91725d9-d4c3-4cb2-a857-b4cdbb7336cf"/>
 								<box leftPadding="5" rightPadding="2">
 									<topPen lineWidth="0.5"/>
@@ -122,7 +123,7 @@ from documgara,w_docdig where gruppo=11 and w_docdig.idprg=documgara.idprg and w
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
-					<font size="12" isBold="true" isPdfEmbedded="true"/>
+					<font size="12" isBold="true"/>
 				</textElement>
 				<text><![CDATA[DISCIPLINA ED ALTRI ELEMENTI APPLICABILI AL PRESENTE CONTRATTO]]></text>
 			</staticText>

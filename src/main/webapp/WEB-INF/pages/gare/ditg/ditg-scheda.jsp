@@ -43,22 +43,6 @@
 				</tr>
 			</gene:redefineInsert>
 			
-			
-			<c:if test='${(!(modo eq "MODIFICA" or modo eq "NUOVO")) and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.DITG-scheda.StampaEtichetta")}'>
-				<c:if test='${(tipscad eq "1" and (datiRiga.DITG_DRICIND ne "" and ! empty datiRiga.DITG_DRICIND ) and (datiRiga.DITG_NPRDOM ne "" and ! empty datiRiga.DITG_NPRDOM)) or (tipscad eq "2" and (datiRiga.DITG_DATOFF ne "" and ! empty datiRiga.DITG_DATOFF) and (datiRiga.DITG_NPROFF ne "" and ! empty datiRiga.DITG_NPROFF)) or (tipscad eq "3" and (datiRiga.DITG_DATREQ ne "" and ! empty datiRiga.DITG_DATREQ) and (datiRiga.DITG_NPRREQ ne "" and ! empty datiRiga.DITG_NPRREQ))}' >
-					<gene:redefineInsert name="addToAzioni" >
-						<tr>
-							<td class="vocemenulaterale" >
-								<a href="javascript:stampaProtocollo();" title="Stampa etichetta" tabindex="1503">
-									Stampa etichetta
-								</a>
-							</td>
-						</tr>
-					</gene:redefineInsert>	
-				</c:if>
-			</c:if>
-
-			
 			<c:choose>
 				<c:when test='${not ((tipscad eq "1") || (tipscad eq "2" && tipgarg eq "1"))}'>
 					<gene:redefineInsert name="schedaNuovo" />
@@ -93,8 +77,8 @@
 						scheda='${gene:if(gene:checkProtObj(pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda.jsp","")}'
 						schedaPopUp='${gene:if(gene:checkProtObj(pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
 						campi="IMPR.CODIMP;IMPR.NOMEST;IMPR.CFIMP;IMPR.PIVIMP;IMPR.CGENIMP"
+						functionId="skip"
 						chiave="DITG_DITTAO"
-						where=""
 						formName="formDitteGara"
 						inseribile="true">
 						<gene:campoScheda campo="DITTAO" entita="DITG" obbligatorio="true" modificabile='false'/>
@@ -111,8 +95,8 @@
 						scheda='${gene:if(gene:checkProtObj(pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda.jsp","")}'
 						schedaPopUp='${gene:if(gene:checkProtObj(pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
 						campi="IMPR.CODIMP;IMPR.NOMEST;IMPR.CFIMP;IMPR.PIVIMP;IMPR.CGENIMP"
+						functionId="ditteDitg"
 						chiave="DITG_DITTAO"
-						where="(IMPR.TIPIMP <>3 and IMPR.TIPIMP <>10) or IMPR.TIPIMP is null"
 						formName="formDitteGara"
 						inseribile="true">
 						<gene:campoScheda campo="DITTAO" entita="DITG" obbligatorio="true" />
@@ -128,7 +112,7 @@
 						<c:when test='${raggruppamentoSelezionato ne "SI"}'>
 							<gene:campoScheda campo="DITTAO" keyCheck="true" title="Codice raggruppamento temporaneo" entita="DITG" obbligatorio="${isCodificaAutomatica eq 'false'}"  />
 							<gene:campoScheda campo="DITTAO_FIT" title="Codice raggruppamento temporaneo" campoFittizio="true" definizione="T10;;;;CODIMP" modificabile="false" />
-							<gene:campoScheda title="Ragione sociale" campo="NOMEST" speciale="true" campoFittizio="true" definizione="T2000;;;NOTE;NOMIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.NOMEST")}'  >
+							<gene:campoScheda title="Ragione sociale" campo="NOMEST" speciale="true" campoFittizio="true" definizione="T2000;;;;NOMIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.NOMEST")}'  >
 								<gene:popupCampo titolo="Selezione raggruppamento da archivio ditte" href="archivioRTI()" />
 							</gene:campoScheda>
 							<gene:archivio titolo="ditte"
@@ -136,8 +120,8 @@
 								scheda=''
 								schedaPopUp='${gene:if(gene:checkProtObj(pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
 								campi="IMPR.CODIMP;IMPR.NOMEST;IMPR.CFIMP;IMPR.PIVIMP;IMPR.CGENIMP"
+								functionId="ditteDitg"
 								chiave="CODDIC"
-								where="(IMPR.TIPIMP <>3 and IMPR.TIPIMP <>10) or IMPR.TIPIMP is null"
 								formName="formDitteGara"
 								inseribile="true">
 								<gene:campoScheda title="Codice ditta mandataria" campo="CODDIC" campoFittizio="true" definizione="T10;;;;CODDIC" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.RAGIMP.CODDIC")}' />
@@ -171,7 +155,7 @@
 										schedaPopUp='${gene:if(gene:checkProtObj(pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
 										campi="IMPR.CODIMP;IMPR.NOMEST"
 										chiave="DITTAO_FIT"
-										where="(IMPR.TIPIMP <>3 and IMPR.TIPIMP <>10) or IMPR.TIPIMP is null"
+										functionId="ditteDitg"
 										formName="formDitteGara"
 										inseribile="true">
 										<gene:campoScheda campo="DITTAO_FIT" keyCheck="true" title="Codice raggruppamento temporaneo" campoFittizio="true" obbligatorio="${isCodificaAutomatica eq 'false'}" value="${codiceRaggruppamento}" definizione="T10;;;;CODIMP" modificabile="false"/>
@@ -183,8 +167,8 @@
 										scheda=''
 										schedaPopUp='${gene:if(gene:checkProtObj(pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
 										campi="IMPR.CODIMP;IMPR.NOMEST;IMPR.CFIMP;IMPR.PIVIMP"
+										functionId="ditteDitg"
 										chiave="CODDIC"
-										where="(IMPR.TIPIMP <>3 and IMPR.TIPIMP <>10) or IMPR.TIPIMP is null"
 										formName="formDitteMandataria"
 										inseribile="true">
 										<gene:campoScheda title="Codice ditta mandataria" campo="CODDIC" campoFittizio="true" definizione="T10;;;;CODDIC" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.RAGIMP.CODDIC")}' value="${codiceMandataria}" modificabile="false"/>
@@ -303,9 +287,6 @@
 						</gene:insert>
 					</c:otherwise>
 					</c:choose>
-					<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.DITG-scheda.StampaEtichetta") and modo eq "VISUALIZZA" and ((tipscad eq "1" and (datiRiga.DITG_DRICIND ne "" and ! empty datiRiga.DITG_DRICIND) and (datiRiga.DITG_NPRDOM ne "" and ! empty datiRiga.DITG_NPRDOM)) or (tipscad eq "2" and (datiRiga.DITG_DATOFF ne "" and ! empty datiRiga.DITG_DATOFF) and (datiRiga.DITG_NPROFF ne "" and ! empty datiRiga.DITG_NPROFF)) or (tipscad eq "3" and (datiRiga.DITG_DATREQ ne "" and ! empty datiRiga.DITG_DATREQ) and (datiRiga.DITG_NPRREQ ne "" and ! empty datiRiga.DITG_NPRREQ)))}' >
-						<INPUT type="button"  class="bottone-azione" value='Stampa etichetta' title='Stampa etichetta' onclick="javascript:stampaProtocollo();">
-					</c:if>
 					
 					
 					&nbsp;
@@ -364,15 +345,6 @@
 				var ngara="${numeroGara }";
 				openPopUpCustom("href=gare/commons/popupCalcoloNumeroProtocollo.jsp&campo=" + campo + "&tipscad=" + tipscad + "&campodata=" + campo1 + "&data=" + data + "&campoora=" + campo2 +"&ngara=" + ngara, "NumProtocollo", 100, 100, "no", "no");
 			}
-		}
-		
-		function stampaProtocollo(){
-			setTimeout("stampaEtichetta()", 100);
-		}
-
-		function stampaEtichetta(){
-			var href = "href=gare/ditg/composizioneEtichettaInCorso.jsp&key=" + document.forms[0].key.value + "&tipoProtocollo=${tipscad}" ;
-			openPopUpCustom(href, "composizioneEtichettaProtocollo", 540, 190, 0, 0);
 		}
 		
 		function conferma(){
@@ -457,6 +429,21 @@
 			if(tipoRTI!=null && tipoRTI!="")
 				href += "&tipoRTI=" + tipoRTI; 
 			var raggruppamentoSelezionato = "${raggruppamentoSelezionato }";
+			
+			if(nomest==null)
+				nomest="";
+			nomest = escape(nomest);
+			href += "&denom=" + nomest; 
+			
+			if(dittao==null)
+				dittao="";	
+			href += "&ditta=" + dittao; 
+			
+			if(raggruppamentoSelezionato==null)
+				raggruppamentoSelezionato="";	
+			href += "&raggSel=" + raggruppamentoSelezionato; 
+			
+			/*
 			if(raggruppamentoSelezionato != "SI" ){
 				var filtroNomest="";
 				var filtro ="";
@@ -487,6 +474,7 @@
 				}
 				 
 			}
+			*/
 			openPopUpCustom(href, "formDitteGaraRTI", 800, 500, 1, 1);
 		}
 		

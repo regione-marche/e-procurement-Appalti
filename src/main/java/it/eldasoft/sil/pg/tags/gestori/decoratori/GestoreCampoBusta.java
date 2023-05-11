@@ -10,16 +10,16 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.decoratori;
 
+import java.util.HashMap;
+import java.util.Vector;
+
+import javax.servlet.jsp.PageContext;
+
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.db.datautils.DataColumn;
 import it.eldasoft.gene.tags.decorators.campi.AbstractGestoreCampo;
 import it.eldasoft.gene.tags.decorators.campi.ValoreTabellato;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.util.HashMap;
-import java.util.Vector;
-
-import javax.servlet.jsp.PageContext;
 
 /**
  * Gestore per il campo DOCUMGARA.BUSTA
@@ -70,7 +70,7 @@ public class GestoreCampoBusta extends AbstractGestoreCampo {
       fasiRicezione=true;
 
 
-    if(fasiRicezione || (!"".equals(iterga) && !"2".equals(iterga) && !"4".equals(iterga))){
+    if(fasiRicezione || (!"".equals(iterga) && !"2".equals(iterga) && !"4".equals(iterga) && !"7".equals(iterga))){
       ValoreTabellato opzione = new ValoreTabellato("4", "Prequalifica");
       int posizioneOpzione = this.getCampo().getValori().indexOf(opzione);
       if (posizioneOpzione >= 0)

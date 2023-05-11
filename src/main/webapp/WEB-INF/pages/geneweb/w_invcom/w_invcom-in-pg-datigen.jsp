@@ -73,11 +73,15 @@
 	<gene:campoScheda campo="COMMODELLO" visibile="${!empty datiRiga.W_INVCOM_COMMODELLO}"/>
 	<gene:campoScheda campo="COMDATINS" definizione="D;0;;TIMESTAMP;COMDATINS"  title="Data e ora invio" />
 	<gene:campoScheda campo="COMDATLET" />
+	<gene:campoScheda campo="COMSYSLET" visibile="false"/>
+	<gene:campoScheda campo="SYSUTE" entita="USRSYS" title="Letto da" definizione="T" where="USRSYS.SYSCON = W_INVCOM.COMSYSLET" visibile="${!empty datiRiga.W_INVCOM_COMSYSLET}"/>
 	<gene:campoScheda campo="COMMSGOGG" />
 	<gene:campoScheda campo="COMMSGTES" />
 	<gene:campoScheda campo="COMNUMPROT" visibile='${integrazioneWSDM =="1" and !empty datiRiga.W_INVCOM_COMNUMPROT}' modificabile="false"/>
   	<gene:campoScheda campo="COMDATPROT" visibile='${integrazioneWSDM =="1" and !empty datiRiga.W_INVCOM_COMDATPROT}' modificabile="false"/>
   	<gene:campoScheda campo="COMTIPMA" visibile="${false}"/>
+  	<gene:campoScheda campo="COMKEY1" visibile="${false}"/>
+  	<gene:campoScheda campo="COMKEY2" visibile="${false}"/>
 	<gene:campoScheda>
 	<tr id="rigaElencoRisposte">
 	

@@ -13,6 +13,8 @@ package it.eldasoft.sil.pg.bl;
 import it.eldasoft.gene.bl.GenChiaviManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.TabellatiManager;
+import it.eldasoft.gene.db.domain.LogEvento;
+import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.utils.properties.ConfigManager;
 
@@ -27,6 +29,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -56,9 +60,21 @@ public class LeggiPubblicazioniManager {
     this.tabellatiManager = tabellatiManager;
   }
 
-  public JSONArray leggiPubblicazioni(String codgar) throws GestoreException, IOException, SQLException, ParseException{
+  public JSONArray leggiPubblicazioni(String codgar, HttpServletRequest request) throws GestoreException, IOException, SQLException, ParseException{
 
 
+	//variabili per tracciatura eventi
+	int livEvento = 1;
+	String codEvento = "GA_CONSULTA_FEU";
+	String oggEvento = codgar;
+	String descrEvento = "";
+	String errMsgEvento = "";
+	int insertFlag = 0;
+	String descr = null;
+	  
+    JSONArray ja = new JSONArray();
+    JSONArray jaInviati = new JSONArray();
+	
     String urlString = ConfigManager.getValore(PROP_BANDO_AVVISO_SIMAP_WS_URL);
     if (urlString == null || "".equals(urlString)) {
       throw new GestoreException(
@@ -67,17 +83,19 @@ public class LeggiPubblicazioniManager {
     }
 
     urlString = urlString + "/leggipubblicazioni";
+    if(codgar.indexOf("$") == 0) {
+    	oggEvento=codgar.substring(1);
+    }
 
-    JSONArray ja = new JSONArray();
-    JSONArray jaInviati = new JSONArray();
-
-    List codiciUUID = sqlManager.getListVector("select uuid from garuuid where codgar = ?",
+    List codiciUUID = sqlManager.getListVector("select uuid,tipric from garuuid where codgar = ?",
         new Object[] { codgar });
     if (codiciUUID != null && codiciUUID.size() > 0) {
       for (int i = 0; i < codiciUUID.size(); i++) {
         String uuid = (String) SqlManager.getValueFromVectorParam(
             codiciUUID.get(i), 0).getValue();
         ja.add(uuid);
+        String tipric = (String) SqlManager.getValueFromVectorParam(
+                codiciUUID.get(i), 1).getValue();
       }
     }
 
@@ -103,22 +121,60 @@ public class LeggiPubblicazioniManager {
       res= res + output;
     }
 
-    JSONObject jsonResult = JSONObject.fromObject(res);
-    boolean esito = (Boolean) jsonResult.get("esito");
-    if(!esito){return jaInviati;}
-    JSONArray jsonPubb = (JSONArray) jsonResult.get("pubblicazioni");
-    for (int i = 0; i<jsonPubb.size(); i++){
-      JSONObject pubblicazione = jsonPubb.getJSONObject(i);
-      String noticeNumber = (String) pubblicazione.get("notice_number_oj");
-      if(noticeNumber != null){
-       logger.debug(noticeNumber);
-       String descr = inserisciPubb(pubblicazione,codgar);
-       if(descr != null){
-         pubblicazione.put("descrizione", descr);
-         jaInviati.add(pubblicazione);
-       }
-      }
-    }
+	JSONObject jsonResult = JSONObject.fromObject(res);
+	boolean esito = (Boolean) jsonResult.get("esito");
+	if (!esito) {
+		return jaInviati;
+	}
+	JSONArray jsonPubb = (JSONArray) jsonResult.get("pubblicazioni");
+	for (int i = 0; i < jsonPubb.size(); i++) {
+
+		livEvento = 1;
+		errMsgEvento = "";
+		insertFlag = 0;
+		try {
+			JSONObject pubblicazione = jsonPubb.getJSONObject(i);
+			String noticeNumber = (String) pubblicazione.get("notice_number_oj");
+			String uuid = (String) pubblicazione.get("uuid");
+			String form = (String) pubblicazione.get("form");
+			if (noticeNumber != null) {
+				logger.debug(noticeNumber);
+				descr = inserisciPubb(pubblicazione, codgar);
+				if (descr != null) {
+					descrEvento = "Consultazione delle pubblicazioni SIMAP (uuid: " + uuid + " , tipo richiesta: " + form + " , n.pubblicazione:" + noticeNumber + ")";
+					pubblicazione.put("descrizione", descr);
+					jaInviati.add(pubblicazione);
+					insertFlag = 1;
+				}
+				String updateGaruuid = "update garuuid set eseguito='1' where uuid=?";
+				this.sqlManager.update(updateGaruuid, new Object[] { uuid });
+			}
+		} catch (Exception le) {
+			livEvento = 3;
+			errMsgEvento = le.getMessage();
+		} finally {
+			if (insertFlag == 1) {
+				try {
+					//Se request valorizzata arriva da chiamata online se null da task
+					LogEvento logEvento=null;
+					if(request==null) {
+						logEvento = new LogEvento();
+					}else {
+						logEvento = LogEventiUtils.createLogEvento((HttpServletRequest) request);
+					}
+					logEvento.setCodApplicazione("PG");
+					logEvento.setLivEvento(livEvento);
+					logEvento.setOggEvento(oggEvento);
+					logEvento.setCodEvento(codEvento);
+					logEvento.setDescr(descrEvento);
+					logEvento.setErrmsg(errMsgEvento);
+					LogEventiUtils.insertLogEventi(logEvento);
+				} catch (Exception le) {
+					logger.error("Errore inaspettato durante la tracciatura su w_logeventi", le);
+				}
+			}
+		}
+	}
     conn.disconnect();
     return jaInviati;
   }
@@ -130,40 +186,40 @@ public class LeggiPubblicazioniManager {
         new Object[] { pubb.get("uuid") });
 
     String descrizione = null;
-    String tespub = null;
+    String titpub = null;
     String noticeNumber = (String) pubb.get("notice_number_oj");
     String form = (String) pubb.get("form");
     if(form != null && form.equals("FS1")){
-      tespub = noticeNumber + " - " + form + " - Avviso di preinformazione";
       descrizione = "Avviso di preinformazione";
+      titpub = form + " - " +descrizione;
     }
     if(form != null && form.equals("FS4")){
-      tespub = noticeNumber + " - " + form + " - Avviso periodico indicativo";
       descrizione = "Avviso periodico indicativo";
+      titpub = form + " - " +descrizione;
     }
     if(form != null && form.equals("FS2")){
-      tespub = noticeNumber + " - " + form + " - Bando di gara";
       descrizione = "Bando di gara";
+      titpub = form + " - " +descrizione;
     }
     if(form != null && form.equals("FS5")){
-      tespub = noticeNumber + " - " + form + " - Bando di gara settori speciali";
       descrizione = "Bando di gara settori speciali";
+      titpub = form + " - " +descrizione;
     }
-    if(form != null && form.equals("FS8")){
-      tespub = noticeNumber + " - " + form + " - Avviso relativo al profilo di committente";
+    if(form != null && form.equals("FS8")){;
       descrizione = "Avviso relativo al profilo di committente";
+      titpub = form + " - " +descrizione;
     }
     if(form != null && form.equals("FS3")){
-      tespub = noticeNumber + " - " + form + " - Avviso di aggiudicazione";
       descrizione = "Avviso di aggiudicazione";
+      titpub = form + " - " +descrizione;
     }
     if(form != null && form.equals("FS6")){
-      tespub = noticeNumber + " - " + form + " - Avviso di aggiudicazione settori speciali";
       descrizione = "Avviso di aggiudicazione settori speciali";
+      titpub = form + " - " +descrizione;
     }
     if(form != null && form.equals("FS14")){
-      tespub = noticeNumber + " - " + form + " - Rettifica ";
       descrizione = "Rettifica ";
+      titpub = form + " - " +descrizione;
     }
 
     if(form.equals("FS14")){
@@ -172,39 +228,39 @@ public class LeggiPubblicazioniManager {
       String selectGaruuid = "select tipric from garuuid where uuid = ?";
       String tipric = (String) this.sqlManager.getObject(selectGaruuid, new Object[] { pubb.get("uuid")});
       if(tipric != null && tipric.equals("SIMAP-FS1")){
-        tespub = tespub + " avviso di preinformazione";
         formulario = "SIMAP-FS1";
         descrizione = descrizione + "avviso di preinformazione";
+        titpub = titpub + "avviso di preinformazione";
       }
       if(tipric != null && tipric.equals("SIMAP-FS4")){
-        tespub = tespub + " avviso periodico indicativo";
         formulario = "SIMAP-FS4";
         descrizione = descrizione + "avviso periodico indicativo";
+        titpub = titpub + "avviso periodico indicativo";
       }
       if(tipric != null && tipric.equals("SIMAP-FS2")){
-        tespub = tespub + " bando di gara";
         formulario = "SIMAP-FS2";
         descrizione = descrizione + "bando di gara";
+        titpub = titpub + "bando di gara";
       }
       if(tipric != null && tipric.equals("SIMAP-FS5")){
-        tespub = tespub + " bando di gara settori speciali";
         formulario = "SIMAP-FS5";
         descrizione = descrizione + "bando di gara settori speciali";
+        titpub = titpub + "bando di gara settori speciali";
       }
       if(tipric != null && tipric.equals("SIMAP-FS8")){
-        tespub = tespub + " avviso relativo al profilo di committente";
         formulario = "SIMAP-FS8";
         descrizione = descrizione + "avviso relativo al profilo di committente";
+        titpub = titpub + "avviso relativo al profilo di committente";
       }
       if(tipric != null && tipric.equals("SIMAP-FS3")){
-        tespub = tespub + " avviso di aggiudicazione";
         formulario = "SIMAP-FS3";
         descrizione = descrizione + "avviso di aggiudicazione";
+        titpub = titpub + "avviso di aggiudicazione";
       }
       if(tipric != null && tipric.equals("SIMAP-FS6")){
-        tespub = tespub + " avviso di aggiudicazione settori speciali";
         formulario = "SIMAP-FS6";
         descrizione = descrizione + "avviso di aggiudicazione settori speciali";
+        titpub = titpub + "avviso di aggiudicazione settori speciali";
       }
     }
 
@@ -226,7 +282,8 @@ public class LeggiPubblicazioniManager {
     if(formulario != null && formulario.equals("SIMAP-FS1") || formulario.equals("SIMAP-FS2") || formulario.equals("SIMAP-FS4") || formulario.equals("SIMAP-FS5") || formulario.equals("SIMAP-FS8")){
 
       String esistePub = (String) sqlManager.getObject(
-          "select codgar9 from pubbli where codgar9 = ? and tespub like '"+ pubb.get("notice_number_oj") +"%'",
+          "select codgar9 from pubbli where codgar9 = ? and (tespub like '"+ pubb.get("notice_number_oj") +"%' "
+              + "or navpub = '"+ pubb.get("notice_number_oj") +"')",
           new Object[] { codgar });
 
       if(esistePub == null){
@@ -237,8 +294,8 @@ public class LeggiPubblicazioniManager {
         if(numpub == null){
           numpub = new Long(0);}
 
-        String insertPubbli = "insert into pubbli(numpub,tippub,dinpub,datpub,tespub,codgar9) values(?,?,?,?,?,?)";
-        this.sqlManager.update(insertPubbli, new Object[] { numpub +1,3,noticeDateSql,dateOjSql,tespub,codgar});
+        String insertPubbli = "insert into pubbli(numpub,tippub,dinpub,datpub,codgar9,titpub,navpub,navnum,urlpub) values(?,?,?,?,?,?,?,?,?)";
+        this.sqlManager.update(insertPubbli, new Object[] { numpub +1,3,noticeDateSql,dateOjSql,codgar,titpub,noticeNumber,pubb.get("no_doc_ext"),pubb.get("ted_links")});
 
         String desc = tabellatiManager.getDescrTabellato("A1108", "1");
         if(desc!=null && !"".equals(desc))
@@ -261,18 +318,18 @@ public class LeggiPubblicazioniManager {
           if(numeroPubbli.intValue() == 0){
             if(codgar.charAt(0) == '$'){
               String insertDocumgara = "insert into documgara(norddocg,numord,gruppo,descrizione,urldoc,codgar,ngara,tipologia) values(?,?,?,?,?,?,?,?)";
-              this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,1,tespub,pubb.get("ted_links"),codgar,codgar.substring(1),tipologia});
+              this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,1,noticeNumber + " - " +titpub,pubb.get("ted_links"),codgar,codgar.substring(1),tipologia});
             }else{
               String insertDocumgara = "insert into documgara(norddocg,numord,gruppo,descrizione,urldoc,codgar,tipologia) values(?,?,?,?,?,?,?)";
-              this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,1,tespub,pubb.get("ted_links"),codgar,tipologia});
+              this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,1,noticeNumber + " - " +titpub,pubb.get("ted_links"),codgar,tipologia});
             }
           }else{
             if(codgar.charAt(0) == '$'){
               String insertDocumgara = "insert into documgara(norddocg,numord,gruppo,descrizione,urldoc,codgar,ngara,datarilascio,statodoc,tipologia) values(?,?,?,?,?,?,?,?,?,?)";
-              this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,1,tespub,pubb.get("ted_links"),codgar,codgar.substring(1),dateOjSql,new Long(5),tipologia});
+              this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,1,noticeNumber + " - " +titpub,pubb.get("ted_links"),codgar,codgar.substring(1),dateOjSql,new Long(5),tipologia});
             }else{
               String insertDocumgara = "insert into documgara(norddocg,numord,gruppo,descrizione,urldoc,codgar,datarilascio,statodoc,tipologia) values(?,?,?,?,?,?,?,?,?)";
-              this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,1,tespub,pubb.get("ted_links"),codgar,dateOjSql,new Long(5),tipologia});
+              this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,1,noticeNumber + " - " +titpub,pubb.get("ted_links"),codgar,dateOjSql,new Long(5),tipologia});
             }
           }
         }
@@ -317,14 +374,15 @@ public class LeggiPubblicazioniManager {
         }
 
         String esistePub = (String) sqlManager.getObject(
-            "select ngara from pubg where ngara = ? and tespubg like '"+ pubb.get("notice_number_oj") +"%'",
+            "select ngara from pubg where ngara = ? and (tespubg like '"+ pubb.get("notice_number_oj") +"%' "
+                + "or navpub = '"+ pubb.get("notice_number_oj") +"')",
             new Object[] { ngara });
 
         if(esistePub == null){
 
-          String insertPubg = "insert into pubg(npubg,tippubg,dinpubg,dinvpubg,tespubg,ngara) values(?,?,?,?,?,?)";
+          String insertPubg = "insert into pubg(npubg,tippubg,dinpubg,dinvpubg,ngara,titpub,navpub,navnum,urlpub) values(?,?,?,?,?,?,?,?,?)";
 
-          this.sqlManager.update(insertPubg, new Object[] { numpub +1,3,dateOjSql,noticeDateSql,tespub,ngara});
+          this.sqlManager.update(insertPubg, new Object[] { numpub +1,3,dateOjSql,noticeDateSql,ngara,titpub,noticeNumber,pubb.get("no_doc_ext"),pubb.get("ted_links")});
 
           String desc = tabellatiManager.getDescrTabellato("A1108", "1");
           if(desc!=null && !"".equals(desc))
@@ -349,10 +407,10 @@ public class LeggiPubblicazioniManager {
               //lotto unico
               if(numeroPubbli.intValue() == 0){
                 insertDocumgara = "insert into documgara(norddocg,numord,gruppo,descrizione,urldoc,codgar,ngara,tipologia) values(?,?,?,?,?,?,?,?)";
-                this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,4,tespub,pubb.get("ted_links"),codgar,codgar.substring(1),tipologia});
+                this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,4,noticeNumber + " - " +titpub,pubb.get("ted_links"),codgar,codgar.substring(1),tipologia});
               }else{
                 insertDocumgara = "insert into documgara(norddocg,numord,gruppo,descrizione,urldoc,codgar,ngara,datarilascio,statodoc,tipologia) values(?,?,?,?,?,?,?,?,?,?)";
-                this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,4,tespub,pubb.get("ted_links"),codgar,codgar.substring(1),dateOjSql,new Long(5),tipologia});
+                this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,4,noticeNumber + " - " +titpub,pubb.get("ted_links"),codgar,codgar.substring(1),dateOjSql,new Long(5),tipologia});
               }
             }else{
               ngara = (String) sqlManager.getObject(
@@ -367,20 +425,20 @@ public class LeggiPubblicazioniManager {
                         codiciGare.get(0), 0).getValue();
                         if(new Long(0).equals(numeroPubbli)){
                           insertDocumgara = "insert into documgara(norddocg,numord,gruppo,descrizione,urldoc,codgar,ngara,tipologia) values(?,?,?,?,?,?,?,?)";
-                          this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,4,tespub,pubb.get("ted_links"),codgar,ngara,tipologia});
+                          this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,4,noticeNumber + " - " +titpub,pubb.get("ted_links"),codgar,ngara,tipologia});
                         }else{
                           insertDocumgara = "insert into documgara(norddocg,numord,gruppo,descrizione,urldoc,codgar,ngara,datarilascio,statodoc,tipologia) values(?,?,?,?,?,?,?,?,?,?)";
-                          this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,4,tespub,pubb.get("ted_links"),codgar,ngara,dateOjSql,new Long(5),tipologia});;
+                          this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,4,noticeNumber + " - " +titpub,pubb.get("ted_links"),codgar,ngara,dateOjSql,new Long(5),tipologia});;
                         }
                 }
               }else{
                 //a lotti plicco unico
                 if(new Long(0).equals(numeroPubbli)){
-                  insertDocumgara = "insert into documgara(norddocg,numord,gruppo,descrizione,urldoc,codgar) values(?,?,?,?,?,?)";
-                  this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,4,tespub,pubb.get("ted_links"),codgar});
+                  insertDocumgara = "insert into documgara(norddocg,numord,gruppo,descrizione,urldoc,codgar,tipologia) values(?,?,?,?,?,?,?)";
+                  this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,4,noticeNumber + " - " +titpub,pubb.get("ted_links"),codgar,tipologia});
                 }else{
-                  insertDocumgara = "insert into documgara(norddocg,numord,gruppo,descrizione,urldoc,codgar,datarilascio,statodoc) values(?,?,?,?,?,?,?,?)";
-                  this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,4,tespub,pubb.get("ted_links"),codgar,dateOjSql,new Long(5)});
+                  insertDocumgara = "insert into documgara(norddocg,numord,gruppo,descrizione,urldoc,codgar,datarilascio,statodoc,tipologia) values(?,?,?,?,?,?,?,?,?)";
+                  this.sqlManager.update(insertDocumgara, new Object[] { norddocg+1,norddocg+1,4,noticeNumber + " - " +titpub,pubb.get("ted_links"),codgar,dateOjSql,new Long(5),tipologia});
                 }
               }
             }
@@ -394,7 +452,7 @@ public class LeggiPubblicazioniManager {
 
   private Long getTipologiaFromGruppo(String codgar, Long gruppo) throws SQLException, GestoreException{
     Long tipologia = null;
-    List<?> w9cfPubb = sqlManager.getListVector("select ID, CL_WHERE_VIS, CL_WHERE_ULT from G1CF_PUBB where GRUPPO = ? order by NUMORD", new Object[] {gruppo});
+    List<?> w9cfPubb = sqlManager.getListVector("select ID, CL_WHERE_VIS, CL_WHERE_ULT from G1CF_PUBB where GRUPPO = ? and id != 17 order by ID desc", new Object[] {gruppo});
     if (w9cfPubb != null && w9cfPubb.size() > 0) {
 
       for (int i = 0; i < w9cfPubb.size(); i++) {

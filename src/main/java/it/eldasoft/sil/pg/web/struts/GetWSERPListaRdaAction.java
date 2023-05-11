@@ -8,6 +8,7 @@ import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityStringhe;
 import it.maggioli.eldasoft.ws.conf.WSERPConfigurazioneOutType;
 import it.maggioli.eldasoft.ws.erp.WSERPMetadatoType;
+import it.maggioli.eldasoft.ws.erp.WSERPPosizioneRdaType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaResType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaType;
 
@@ -51,6 +52,7 @@ public class GetWSERPListaRdaAction extends Action {
       servizio ="WSERP";
 
     String codiceGara = request.getParameter("codgar");
+    String codice = request.getParameter("codice");
     String codiceRda = request.getParameter("codicerda");
     String gruppoAcquisti = request.getParameter("gruppoacq");
     String divisione = request.getParameter("divisione");
@@ -61,12 +63,16 @@ public class GetWSERPListaRdaAction extends Action {
     String uffint = request.getParameter("uffint");
     String scProfilo = request.getParameter("scProfilo");
     scProfilo = UtilityStringhe.convertiNullInStringaVuota(scProfilo);
+    String tipoGara = request.getParameter("tipoGara");
+    String modo = request.getParameter("modo");
+    String filtroLotto = request.getParameter("filtroLotto");
 
     JSONObject result = new JSONObject();
     int totalRDA = 0;
     int totalAfterFilterRDA = 0;
     int totalDATIPERSONALIZZATI = 0;
     List<HashMap<String, Object>> hMapRDA = new ArrayList<HashMap<String, Object>>();
+    List<HashMap<String, Object>> hMapPosizioni = new ArrayList<>();
     List<HashMap<String, Object>> hMapDATIPERSONALIZZATI = new ArrayList<HashMap<String, Object>>();
     WSERPRdaResType wserpRdaRes = new WSERPRdaResType();
 
@@ -85,7 +91,6 @@ public class GetWSERPListaRdaAction extends Action {
 
       String username = credenziali[0];
       String password = credenziali[1];
-
       WSERPRdaType erpSearch = new WSERPRdaType();
       if("AVM".equals(tipoWSERP)){
         erpSearch.setCodiceRda(codiceRda);
@@ -119,6 +124,15 @@ public class GetWSERPListaRdaAction extends Action {
         }
         if(!"".equals(scProfilo)){
           erpSearch.setSceltaContraente(scProfilo);
+        }
+        erpSearch.setUfficioIntestatario(uffint);
+      }
+      if("RAIWAY".equals(tipoWSERP)){
+        if(tipoGara != null){
+          erpSearch.setDivisioneInLotti(!tipoGara.equals("garaLottoUnico"));
+        }
+        if(codiceRda != null){
+          erpSearch.setCodiceRda(codiceRda);
         }
       }
 
@@ -216,14 +230,75 @@ public class GetWSERPListaRdaAction extends Action {
               hMap.put("luogoConsegna", null);
             }
 
+            //RAIWAY columns
+            if("RAIWAY".equals(tipoWSERP)){
+              if(!"posRda".equals(modo)){
+                  if(rdaSingle.getPosizioneRdaArray() != null){
+                    hMap.put("nrPos", rdaSingle.getPosizioneRdaArray().length);
+                  } else {
+                    hMap.put("nrPos", null);
+                  }
+                  if(rdaSingle.getLottoArray() != null){
+                    hMap.put("nrLotti", rdaSingle.getLottoArray().length);
+                  } else {
+                    hMap.put("nrLotti", null);
+                  }
+                  if(rdaSingle.getTecniciArray() != null){
+                    hMap.put("rdp", rdaSingle.getTecniciArray(0).getDenominazione());
+                  } else {
+                    hMap.put("rdp", null);
+                  }
+                  hMap.put("totale", rdaSingle.getValoreStimato());
+              } else{
+                if(codiceRda != null && !"".equals(codiceRda)){
+                  WSERPPosizioneRdaType[] posArray = rdaSingle.getPosizioneRdaArray();
+//              	if("true".equals(filtroLotto)) {
+                  String idLotto = gestioneWSERPManager.getCodiga(codiceGara, codice);
+                  if(idLotto != null){
+                    List<WSERPPosizioneRdaType> filteredPosizioneRdaList = new ArrayList<WSERPPosizioneRdaType>();
+                    for (int p = 0; p < posArray.length; p++) {
+                      WSERPPosizioneRdaType pos = posArray[p];
+                      if(Long.valueOf(idLotto).equals(pos.getIdLotto())) {
+                        filteredPosizioneRdaList.add(pos);
+                      }
+                    }
+                    WSERPPosizioneRdaType[] filteredPosizioneRdaArray = new WSERPPosizioneRdaType[filteredPosizioneRdaList.size()];
+                    for (int p = 0; p < filteredPosizioneRdaList.size(); p++) {
+                      filteredPosizioneRdaArray[p]= filteredPosizioneRdaList.get(p);
+                    }
+                    posArray = filteredPosizioneRdaArray;
+                  }
+//              	}
+
+                  for(WSERPPosizioneRdaType elem : posArray){
+                    if(gestioneWSERPManager.verificaPresenzaPosizioneRda(null, codiceGara, codice, codiceRda, elem.getPosizioneRiferimento()) != 1){
+                      HashMap<String, Object> hMapPos = new HashMap<>();
+                      hMapPos.put("numPos", elem.getPosizioneRiferimento());
+                      hMapPos.put("oggetto", elem.getDescrizioneEstesa());
+                      hMapPos.put("totale", elem.getPrezzoPrevisto() * elem.getQuantita());
+                      hMapPos.put("dettagli", "Link dettaglio rda");
+                      hMapPosizioni.add(hMapPos);
+                    }
+                  }
+                }
+              }
+            }else {
+            	hMap.put("totale", null);
+            	hMap.put("nrPos", null);
+            	hMap.put("nrLotti", null);
+            	hMap.put("rdp", null);
+            }
             hMap.put("checkRda", null);
-            hMapRDA.add(hMap);
-
-          }//for
-
-
+            String numRda = gestioneWSERPManager.verificaRdaAssociata(rdaSingle.getCodiceRda());
+            if("RAIWAY".equals(tipoWSERP)){
+              if(!numRda.equals(rdaSingle.getCodiceRda())){
+                hMapRDA.add(hMap);
+              }
+            }else {
+              hMapRDA.add(hMap);
+            }
+          }
         }
-
       }
     }
 
@@ -235,8 +310,11 @@ public class GetWSERPListaRdaAction extends Action {
 
     result.put("iTotalRecords", totalRDA);
     result.put("iTotalDisplayRecords", totalAfterFilterRDA);
-    result.put("data", hMapRDA);
-
+    if(!"posRda".equals(modo)){
+      result.put("data", hMapRDA);
+    } else{
+      result.put("data", hMapPosizioni);
+    }
     out.print(result);
     out.flush();
 

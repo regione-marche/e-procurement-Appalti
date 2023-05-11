@@ -10,6 +10,18 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Vector;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.integrazioni.CinecaWSManager;
 import it.eldasoft.gene.db.datautils.DataColumn;
@@ -25,24 +37,13 @@ import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveIDAuto
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.AggiudicazioneManager;
 import it.eldasoft.sil.pg.bl.ControlliOepvManager;
+import it.eldasoft.sil.pg.bl.GestioneProgrammazioneManager;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityStringhe;
-
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Vector;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.log4j.Logger;
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore della popup di aggiudicazione definitiva per definire la ditta
@@ -62,6 +63,8 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
   private PgManager pgManager;
 
   private ControlliOepvManager controlliOepvManager;
+  
+  private GestioneProgrammazioneManager gestioneProgrammazioneManager;
 
   @Override
   public String getEntita() {
@@ -84,6 +87,8 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
         this.getServletContext(), PgManager.class);
     controlliOepvManager = (ControlliOepvManager) UtilitySpring.getBean("controlliOepvManager",
         this.getServletContext(), ControlliOepvManager.class);
+    gestioneProgrammazioneManager = (GestioneProgrammazioneManager) UtilitySpring.getBean("gestioneProgrammazioneManager",
+        this.getServletContext(), GestioneProgrammazioneManager.class);
 
   }
 
@@ -160,6 +165,8 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
       else
         dataColumnContainerGARE.addColumn("GARE.PRIMAAGGIUDICATARIASELEZIONATA",
             impl.getColumn("PRIMAAGGIUDICATARIASELEZIONATA"));
+      
+      boolean isIntegrazioneProgrammazioneException = false;
 
       try {
         Long genere=(Long)this.sqlManager.getObject("select genere from v_gare_torn where codice=?", new Object[]{codgar});
@@ -353,7 +360,7 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
                   riboepv = ((Double) hMapParametri.get("riboepv")).doubleValue();
                   ribauo = riboepv;
                 }
-                
+
                 elencoCampi.add(new DataColumn("DITGAQ.RIBAGG", new JdbcParametro(JdbcParametro.TIPO_DECIMALE, riboepv)));
             }
 
@@ -690,10 +697,10 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
                 this.pgManager.aggiornaNumAggiudicazioniLotti(codiceElenco, elencoe, codgar, ngara, catiga, tipoGara, numcla, stazioneAppaltante, tipoalgo, "INS");
               }
             }
-            //Allineamento dei dati dell'atto in tutti i lotti
+            //Allineamento dei dati dell'atto mella gara fittizia
             this.sqlManager.update(
-                "update gare set tattoa=?, dattoa=?, nattoa=? where codgar1=? and ngara<>?",
-                new Object[] { tattoa,dattoa,nattoa,codgar,ngara });
+                "update gare set tattoa=?, dattoa=?, nattoa=? where ngara=? ",
+                new Object[] { tattoa,dattoa,nattoa,codgar });
           }
         }
 
@@ -713,7 +720,16 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
         }else{
           this.getRequest().setAttribute("RISULTATO", "CALCOLOINTERROTTO");
         }
-
+        
+       
+        //Integrazione programmazione
+        if(gestioneProgrammazioneManager.isAttivaIntegrazioneProgrammazione() && modoRichiamo != null)
+          try {
+            this.gestioneProgrammazioneManager.aggiornaRdaGara(codgar,ngara,null);
+          }catch(GestoreException e) {
+            isIntegrazioneProgrammazioneException = true;
+            throw e;
+          }
 
         //best case
         livEvento = 1;
@@ -725,9 +741,11 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
 
       } catch (Throwable e) {
         livEvento = 3;
+        this.getRequest().setAttribute("RISULTATO", "ERRORI");
         messageKey = "errors.gestoreException.*.aggiudicazioneFaseB-Definitva";
         errMsgEvento = this.resBundleGenerale.getString(messageKey);
-        this.getRequest().setAttribute("RISULTATO", "ERRORI");
+        if(isIntegrazioneProgrammazioneException)
+          throw (GestoreException) e;
         throw new GestoreException(
             "Errore durante il calcolo dell'aggiudicazione definitiva",
             "aggiudicazioneFaseB-Definitva", e);

@@ -65,10 +65,11 @@ public class CopiaCriteriManager {
         String isnoprz = null;
         Long tipcal = null;
         Long seztec = null;
+        Double esponente = null;
         String insertGoev="insert into goev (NGARA,NECVAN,NORPAR,TIPPAR,MAXPUN,DESPAR," +
             "LIVPAR,NECVAN1,NORPAR1,MINPUN, ISNOPRZ, SEZTEC) values(?,?,?,?,?,?,?,?,?,?,?,?)";
-        String insertG1cridef="insert into g1cridef (ID,NGARA,NECVAN,DESCRI,MAXPUN,FORMATO,MODPUNTI,MODMANU,NUMDECI,FORMULA)" +
-            " values(?,?,?,?,?,?,?,?,?,?)";
+        String insertG1cridef="insert into g1cridef (ID,NGARA,NECVAN,DESCRI,MAXPUN,FORMATO,MODPUNTI,MODMANU,NUMDECI,FORMULA,ESPONENTE)" +
+            " values(?,?,?,?,?,?,?,?,?,?,?)";
 
         for (Iterator iterator = listaCriteri.iterator(); iterator.hasNext();) {
           Vector criterio = (Vector) iterator.next();
@@ -158,6 +159,14 @@ public class CopiaCriteriManager {
               if(criterio.get(18)!= null)
                 tipcal = ((JdbcParametro) criterio.get(18)).longValue();
             }
+            esponente=null;
+            if(tipoSorgente.equals(ALTRO_LOTTO)){
+              if(criterio.get(20)!=null)
+                esponente = ((JdbcParametro) criterio.get(20)).doubleValue();
+            }else {
+              if(criterio.get(18)!=null)
+                esponente = ((JdbcParametro) criterio.get(18)).doubleValue();
+            }
           }
 
           if(tipoSorgente.equals(ALTRO_LOTTO)){
@@ -173,7 +182,7 @@ public class CopiaCriteriManager {
           if(id != null){
             nuovoId=new Long(genChiaviManager.getNextId("G1CRIDEF"));
             this.sqlManager.update(insertG1cridef, new Object[] { nuovoId, ngaraDestinazione, necvan, descri,
-                maxpunG1cridef, formato, modpunti, modmanu, numdeci, formula});
+                maxpunG1cridef, formato, modpunti, modmanu, numdeci, formula, esponente});
 
             List datiG1crireg = sqlManager.getListVector("select coeffi, puntuale, valmin, valmax from g1crireg where idcridef = ? order by id", new Object[]{id});
 

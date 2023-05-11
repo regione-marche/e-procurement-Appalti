@@ -221,8 +221,8 @@ public class GestoreInizializzazioniW_INVCOM extends AbstractGestorePreload {
               page.setAttribute("initCOMMODELLO",commodello, PageContext.REQUEST_SCOPE);
             }
 
-            if(crittes==null || crittes.longValue()!=2){
-              if(genere != null && (genere.longValue()==4 || genere.longValue()==5 || genere.longValue()==6)){
+
+            if(genere != null && (genere.longValue()==4 || genere.longValue()==5 || genere.longValue()==6 || new Long(1).equals(commodello))){
                 singolaDitta = true;
                 String selectDitta = "select ditg.nprogg, ditg.numordpl, ditg.dittao, impr.nomest, impr.cfimp, impr.pivimp, impr.dtrisoa, impr.DSCANC from impr,ditg where impr.codimp = ditg.dittao and impr.codimp = ? and ditg.ngara5 = ?";
                 Vector datiDitta =  sqlManager.getVector(selectDitta,new Object[] { ditta, gara });
@@ -234,8 +234,8 @@ public class GestoreInizializzazioniW_INVCOM extends AbstractGestorePreload {
                 pivimp =  ((JdbcParametro) datiDitta.get(5)).getStringValue();
                 g_dtrisoa =  ((JdbcParametro) datiDitta.get(6)).dataValue();
                 g_dscanc =  ((JdbcParametro) datiDitta.get(7)).dataValue();
-                }
             }
+
 
             if(datiW_confcom.get(0)!=null){
 
@@ -286,38 +286,28 @@ public class GestoreInizializzazioniW_INVCOM extends AbstractGestorePreload {
               page.setAttribute("initCOMINTEST",
                   ((JdbcParametro) datiW_confcom.get(1)).getValue(), PageContext.REQUEST_SCOPE);
 
-            String whereBusteAttiveWizard = page.getRequest().getParameter("whereBusteAttiveWizard");
+            String whereBusteAttiveWizard = (String) page.getSession().getAttribute("whereBusteAttiveWizard");
             String whereBusteAttiveWizardImprdocg =  "";
             if(whereBusteAttiveWizard!=null && !"".equals(whereBusteAttiveWizard)){
               whereBusteAttiveWizardImprdocg = whereBusteAttiveWizard.replace("DOCUMGARA", "IMPRDOCG");
             }
 
-            if(datiW_confcom.get(2)!=null){
+            if(ditta!=null && !"".equals(ditta) && genere != null && (genere.longValue()==4 || genere.longValue()==5 || genere.longValue()==6) && new Long(2).equals(crittes)){
+            //Non c'è la sostituzione degli mnemonici, ma si crea il testo per la documentazione mancante
+              try {
+                String testoMail = pgManagerEst1.sostituzioneMnemonicoDocumentiMancanti(codiceGara, gara, ditta, genere, whereBusteAttiveWizard, whereBusteAttiveWizardImprdocg, "", false);
+                page.setAttribute("initCOMMSGTES",testoMail, PageContext.REQUEST_SCOPE);
+              } catch (Exception e) {
+                throw new JspException(
+                    "Errore durante la selezione dei dati per la creazione dei documenti mancanti", e);
+              }
+            } else if(datiW_confcom.get(2)!=null){
 
               if(((JdbcParametro) datiW_confcom.get(2)).getValue()!=null){
 
                 String commsgtes = null;
                 commsgtes = ((JdbcParametro) datiW_confcom.get(2)).getValue().toString();
 
-                if(ditta!=null && !"".equals(ditta)){
-                  if(crittes!=null && crittes.longValue()==1){
-                    page.setAttribute("initCOMMSGTES",commsgtes, PageContext.REQUEST_SCOPE);
-                  }else if(new Long(1).equals(commodello)){
-                    genere = ((JdbcParametro) datiW_confcom.get(4)).longValue();
-                    if(keyAdd!=null && !"".equals(keyAdd)){
-                      String testoMail;
-                      try {
-                        testoMail = pgManagerEst1.sostituzioneMnemonicoDocumentiMancanti(codiceGara, gara, ditta, genere, whereBusteAttiveWizard, whereBusteAttiveWizardImprdocg, commsgtes);
-                        page.setAttribute("initCOMMSGTES",testoMail, PageContext.REQUEST_SCOPE);
-                      } catch (Exception e) {
-                        throw new JspException(
-                            "Errore durante la selezione dei dati per la creazione dei documenti mancanti", e);
-                      }
-                    }
-                  }
-                }
-
-                if(!new Long(1).equals(commodello)) {
                   if(singolaDitta){
                     HashMap<String, Object>  parametri = new HashMap<String, Object>() ;
                     parametri.put("oggetto", commsgtes);
@@ -350,11 +340,22 @@ public class GestoreInizializzazioniW_INVCOM extends AbstractGestorePreload {
                   parametri.put("cftecrup", cftecrup);
                   parametri.put("inctec", inctec);
                   commsgtes = pgManager.sostituzioneMnemonici(parametri);
-                  page.setAttribute("initCOMMSGTES",commsgtes, PageContext.REQUEST_SCOPE);
+                  genere = ((JdbcParametro) datiW_confcom.get(4)).longValue();
+                  if(keyAdd!=null && !"".equals(keyAdd)){
+                    String testoMail;
+                    try {
+                      testoMail = pgManagerEst1.sostituzioneMnemonicoDocumentiMancanti(codiceGara, gara, ditta, genere, whereBusteAttiveWizard, whereBusteAttiveWizardImprdocg, commsgtes,true);
+                      page.setAttribute("initCOMMSGTES",testoMail, PageContext.REQUEST_SCOPE);
+                    } catch (Exception e) {
+                      throw new JspException(
+                          "Errore durante la selezione dei dati per la creazione dei documenti mancanti", e);
+                    }
+                  }else
+                    page.setAttribute("initCOMMSGTES",commsgtes, PageContext.REQUEST_SCOPE);
                 }
               }
             }
-          }
+
         } else {
           // nuovo da modulo comunicazioni ricevute, usando la funzione rispondi
 

@@ -62,8 +62,61 @@
 </c:choose>
 
 <c:choose>
-	<c:when test='${gruppo eq 3}'>
-		<c:set var="dati" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetBusteDocumentiConcorrentiJsonFunction", pageContext,codiceGara,numeroGara)}'></c:set>
+	<c:when test='${!empty param.gestioneQuestionariPreq}'>
+		<c:set var="gestioneQuestionariPreq" value="${param.gestioneQuestionariPreq}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="gestioneQuestionariPreq" value="${gestioneQuestionariPreq}" />
+	</c:otherwise>
+</c:choose>
+
+<c:choose>
+	<c:when test='${!empty param.gestioneQuestionariAmm}'>
+		<c:set var="gestioneQuestionariAmm" value="${param.gestioneQuestionariAmm}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="gestioneQuestionariAmm" value="${gestioneQuestionariAmm}" />
+	</c:otherwise>
+</c:choose>
+
+<c:choose>
+	<c:when test='${!empty param.gestioneQuestionariTec}'>
+		<c:set var="gestioneQuestionariTec" value="${param.gestioneQuestionariTec}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="gestioneQuestionariTec" value="${gestioneQuestionariTec}" />
+	</c:otherwise>
+</c:choose>
+
+<c:choose>
+	<c:when test='${!empty param.gestioneQuestionariEco}'>
+		<c:set var="gestioneQuestionariEco" value="${param.gestioneQuestionariEco}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="gestioneQuestionariEco" value="${gestioneQuestionariEco}" />
+	</c:otherwise>
+</c:choose>
+
+<c:choose>
+	<c:when test='${!empty param.gestioneQuestionariIscriz}'>
+		<c:set var="gestioneQuestionariIscriz" value="${param.gestioneQuestionariIscriz}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="gestioneQuestionariIscriz" value="${gestioneQuestionariIscriz}" />
+	</c:otherwise>
+</c:choose>
+
+<c:if test="${genereGara eq '10' or genereGara eq '20' }">
+	<c:set var="garaElencoCatalogo" value='true'/>
+</c:if>
+
+<c:choose>
+	<c:when test='${gruppo eq 3 and garaElencoCatalogo ne "true"}'>
+		<c:set var="varQuestionari" value="${gestioneQuestionariPreq},${gestioneQuestionariAmm},${gestioneQuestionariTec},${gestioneQuestionariEco}" />
+		<c:set var="dati" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetBusteDocumentiConcorrentiJsonFunction", pageContext,codiceGara,numeroGara,varQuestionari)}'></c:set>
+	</c:when>
+	<c:when test='${gruppo eq 3 and garaElencoCatalogo eq "true"}'>
+		<c:set var="dati" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetFaseleDocumentiOperatoriJsonFunction", pageContext,codiceGara,numeroGara,gestioneQuestionariIscriz)}'></c:set>
 	</c:when>
 	<c:otherwise>
 		<c:set var="dati" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetTipologieDocumentiJsonFunction", pageContext,codiceGara,numeroGara)}'></c:set>

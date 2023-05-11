@@ -36,8 +36,8 @@
 						scheda=""
 						schedaPopUp=""
 						campi="GARE.NGARA"
+						functionId="g1crimod"
 						chiave=""
-						where="GARE.MODLICG = 6 and exists (SELECT * FROM goev WHERE goev.ngara = gare.ngara)"
 						formName="formGareALotti"
 						inseribile="false">
 						<gene:campoScheda campo="NGARA" title="Gara da cui importare i criteri di valutazione" definizione="T21;0" campoFittizio="true" obbligatorio="true" />
@@ -83,7 +83,7 @@
 
 	<gene:javaScript>
 	function apriDettaglio(titolo){
-		link =  '${pageContext.request.contextPath}/ApriPagina.do?'+csrfToken+'&href=gare/goevmod/goevmod-lista.jsp&key=GOEVMOD.IDCRIMOD=T:${id}&tipoCriterio=1&titolo=${titolo}';
+		link =  '${pageContext.request.contextPath}/ApriPagina.do?'+csrfToken+'&href=gare/goevmod/goevmod-lista.jsp&idcrimod=${id}&tipoCriterio=1&titolo=${titolo}';
 		document.location.href = link;
 	}
 	</gene:javaScript>

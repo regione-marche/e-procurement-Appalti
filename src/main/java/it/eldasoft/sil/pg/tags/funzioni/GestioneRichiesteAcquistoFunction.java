@@ -49,13 +49,13 @@ public class GestioneRichiesteAcquistoFunction extends AbstractFunzioneTag {
 
       if(!"".equals(ngara)){
         select="select ID, CODGAR, DATCRE, DATRIL, NUMRDA, POSRDA, DATACONS, LUOGOCONS," +
-        " CODVOC, VOCE, UNIMIS, CODCAT, PERCIVA, CODCARR, QUANTI, PREZUN, ESERCIZIO, NGARA" +
+        " CODVOC, VOCE, UNIMIS, CODCAT, PERCIVA, CODCARR, QUANTI, PREZUN, ESERCIZIO, NGARA, STRUTTURA" +
         " from GARERDA where CODGAR=? and NGARA =? order by id";
         listaRichiesteAcquisto = sqlManager.getListVector(
             select, new Object[]{codgar,ngara});
       }else{
         select="select ID, CODGAR, DATCRE, DATRIL, NUMRDA, POSRDA, DATACONS, LUOGOCONS," +
-        " CODVOC, VOCE, UNIMIS, CODCAT, PERCIVA, CODCARR, QUANTI, PREZUN, ESERCIZIO, NGARA" +
+        " CODVOC, VOCE, UNIMIS, CODCAT, PERCIVA, CODCARR, QUANTI, PREZUN, ESERCIZIO, NGARA, STRUTTURA" +
         " from GARERDA where CODGAR=? order by id";
         listaRichiesteAcquisto = sqlManager.getListVector(
             select, new Object[]{codgar});

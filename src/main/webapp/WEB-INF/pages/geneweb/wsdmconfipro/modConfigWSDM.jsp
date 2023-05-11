@@ -105,6 +105,8 @@
 	//22	-b		wsdm.tabellatiJiride.letdir
 	//23	-b		wsdm.tabellatiJiride.pecUffint
 	//24    -b		wsdm.posizioneAllegatoComunicazione
+	//25    -b      wsdm.firmaDocumenti
+	//26    other   wsdm.firmaDocumenti.destinatario
 	
 	arrayProprieta = [[idconfi,"wsdm.fascicoloprotocollo.url"],[idconfi,"wsdmconfigurazione.fascicoloprotocollo.url"],[idconfi,"pg.wsdm.invioMailPec"],
 	                  [idconfi,"wsdm.protocolloSingoloInvito"],[idconfi,"wsdm.documentale.url"],[idconfi,"wsdmconfigurazione.documentale.url"],
@@ -113,9 +115,10 @@
 	                  [idconfi,"wsdm.associaDocumentiProtocollo"],[idconfi,"wsdm.invioMailPec.delay"],[idconfi,"wsdm.gestioneERP"],
 	                  [idconfi,"wsdm.fascicoloprotocollo.url"],[idconfi,"wsdm.documentiDaProtocollo"],[idconfi,"wsdm.accediCreaFascicolo"],
 	                  [idconfi,"wsdm.obbligoClassificaFascicolo"],[idconfi,"wsdm.obbligoUfficioFascicolo"],[idconfi,"wsdm.accediFascicoloDocumentaleCommessa"],
-	                  [idconfi,"wsdm.tabellatiJiride.letdir"],[idconfi,"wsdm.tabellatiJiride.pecUffint"],[idconfi,"wsdm.posizioneAllegatoComunicazione"]];
+	                  [idconfi,"wsdm.tabellatiJiride.letdir"],[idconfi,"wsdm.tabellatiJiride.pecUffint"],[idconfi,"wsdm.posizioneAllegatoComunicazione"],
+	                  [idconfi,"wsdm.firmaDocumenti"],[idconfi,"wsdm.firmaDocumenti.destinatario"]];
 											
-	tipoProprieta = [ "","","-b","-b","","","-b", "b","-b","-b", "b","-b","-b","","-b","","-b","-b","-b","-b","-b","-b","-b","-b"];											
+	tipoProprieta = [ "","","-b","-b","","","-b", "b","-b","-b", "b","-b","-b","","-b","","-b","-b","-b","-b","-b","-b","-b","-b","-b","other"];											
 	
 	var condLoginComune;
 	var condUrlProtocollo;
@@ -169,18 +172,35 @@
 		}
 	}
 	
+	function disabilitaDaProp25(campo){
+		if(campo.value==1){
+			$("#destinatarioFirma").show();
+		} else {
+			$("#destinatarioFirma").hide();
+			$("#prop26").val('');
+		}
+	}
+	
 	function visualizzaPropDelay(campo){
 		if(campo.value==0){
 			$('#delayMailDoc').hide();
 		   $('#prop14').val("");
 		}else{
-			if($("#tiposistemaremoto").val()=="JIRIDE" || $("#tiposistemaremoto").val()=="EASYDOC" || $("#tiposistemaremoto").val()=="PRISMA" || $("#tiposistemaremoto").val()=="JPROTOCOL"){
+			if($("#tiposistemaremoto").val()=="JIRIDE" || $("#tiposistemaremoto").val()=="EASYDOC" || $("#tiposistemaremoto").val()=="PRISMA" || $("#tiposistemaremoto").val()=="JPROTOCOL"
+				|| $("#tiposistemaremoto").val()!="ARCHIFLOWFA"){
 				$('#delayMailDoc').show();
 			}
 		}
 	}
 	
 	function gestisciSubmit(){
+		if($("#tiposistemaremoto").val()=="ITALPROT"){
+			if($('#prop25 :selected').val()=='1' && ($('#prop26').val()==null || $('#prop26').val()=="")){
+				alert("Valorizzare il campo 'Intestazione destinatario fittizio per firma'");
+				return;
+			}
+		}
+		
 		$('#prop9').removeAttr('disabled');
 		$('#prop10').removeAttr('disabled');
 		$('#prop12').removeAttr('disabled');
@@ -414,6 +434,7 @@
 		var visualizzaFascicoloDocCommessa=false;
 		var visualizzagestioneMittenteDaServizio=false;
 		var visualizzaindMitenteUffint=false;
+		var visualizzafirmaDocumento=false;
 		if(condUrlProtocollo || condUrlDocumentale){
 			if($("#tiposistemaremoto").val()==null || $("#tiposistemaremoto").val() ==''){
 				var url = $("#prop2").val();
@@ -439,13 +460,20 @@
 				visualizzaObbligatorioUfficio=true;
 			}
 			if($("#tiposistemaremoto").val()=="IRIDE" || $("#tiposistemaremoto").val()=="JIRIDE" || $("#tiposistemaremoto").val()=="ENGINEERING" ||  $("#tiposistemaremoto").val()=="ARCHIFLOW" || $("#tiposistemaremoto").val()=="INFOR"
-				|| $("#tiposistemaremoto").val()=="JPROTOCOL" ||  $("#tiposistemaremoto").val()=="JDOC")
+				|| $("#tiposistemaremoto").val()=="JPROTOCOL" ||  $("#tiposistemaremoto").val()=="JDOC" ||  $("#tiposistemaremoto").val()=="ENGINEERINGDOC" ||  $("#tiposistemaremoto").val()=="ITALPROT"
+				||  $("#tiposistemaremoto").val()=="LAPISOPERA")
 				visualizzaaccessoFunzCreaFascicolo=true;
-					
+			if($("#tiposistemaremoto").val()=="ITALPROT"){
+				visualizzafirmaDocumento=true;
+			}
+			if($("#tiposistemaremoto").val()=="INFOR"){
+				visualizzaStrutturaCompetente=true;
+			}
 		}
 		
 		
-	    if(!condUrlProtocollo || ($("#tiposistemaremoto").val()!="JIRIDE" && $("#tiposistemaremoto").val()!="EASYDOC" && $("#tiposistemaremoto").val()!="PRISMA" && $("#tiposistemaremoto").val()!="JPROTOCOL")){
+	    if(!condUrlProtocollo || ($("#tiposistemaremoto").val()!="JIRIDE" && $("#tiposistemaremoto").val()!="EASYDOC" && $("#tiposistemaremoto").val()!="PRISMA" && $("#tiposistemaremoto").val()!="JPROTOCOL") 
+	    		&& $("#tiposistemaremoto").val()!="ARCHIFLOWFA"){
 		   $('#delayMailDoc').hide();
 		   $('#prop14').val("");
 	    }else{
@@ -529,6 +557,16 @@
 			$("#indMitenteUffint").show();
 		}else{
 			$("#indMitenteUffint").hide();
+		}
+		if(visualizzafirmaDocumento){
+			$("#firmaDocumento").show();
+			if($('#prop25 :selected').val()!='1')
+				$("#destinatarioFirma").hide();
+			else
+				$("#destinatarioFirma").show();
+		}else{
+			$("#firmaDocumento").hide();
+			$("#destinatarioFirma").hide();
 		}
 	}
 	
@@ -929,7 +967,7 @@
 			
 			<tr id="accessoFunzCreaFascicolo" style="display:none;">
 				<td class="etichetta-dato" >
-					<span id="titoloProp18" >Accesso alla funzione 'Crea fascicolo'?</span>
+					<span id="titoloProp18" >Accesso alla funzione 'Crea/Associa fascicolo'?</span>
 				</td>
 
 				<td class="valore-dato">
@@ -1104,6 +1142,33 @@
 						<option value='1'>Si</option>
 						<option value='0'>No</option>
 					</select>
+				</td>
+			</tr>
+			
+			<tr id="firmaDocumento" style="display:none;">
+				<td class="etichetta-dato" >
+					<span id="titoloProp25" >Attiva funzione 'Firma documento'?</span>
+				</td>
+
+				<td class="valore-dato">
+					<input type="hidden" id="codapp25" name="idconfi" value="${idconfi}" />
+					<input type="hidden" id="chiave25" name="chiave" value="wsdm.firmaDocumenti" maxlength="60" />
+					<select id="prop25" name="valore" onchange="disabilitaDaProp25(this);">
+						<option value='1'>Si</option>
+						<option value='0'>No</option>
+					</select>
+				</td>
+			</tr>
+			
+			<tr id="destinatarioFirma" style="display:none;">
+				<td class="etichetta-dato" >
+					<span id="titoloProp26" >Intestazione destinatario fittizio per firma (*)</span>
+				</td>
+
+				<td class="valore-dato">
+					<input type="hidden" id="codapp26" name="idconfi" value="${idconfi}" />
+					<input type="hidden" id="chiave26" name="chiave" value="wsdm.firmaDocumenti.destinatario" maxlength="60" />
+					<input type="text" id="prop26" name="valore" size="80" maxlength="500" />
 				</td>
 			</tr>
 			

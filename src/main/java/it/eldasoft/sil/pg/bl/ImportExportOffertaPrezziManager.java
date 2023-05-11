@@ -1,5 +1,5 @@
 /*
- * Created on 02/ott/09
+ * Created on 05/apr/22
  *
  * Copyright (c) EldaSoft S.p.A.
  * Tutti i diritti sono riservati.
@@ -10,39 +10,13 @@
  */
 package it.eldasoft.sil.pg.bl;
 
-import it.eldasoft.gene.bl.GenChiaviManager;
-import it.eldasoft.gene.bl.GeneManager;
-import it.eldasoft.gene.bl.GestoreProfili;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.bl.TabellatiManager;
-import it.eldasoft.gene.bl.docass.DocumentiAssociatiManager;
-import it.eldasoft.gene.commons.web.TempFileUtilities;
-import it.eldasoft.gene.commons.web.struts.UploadFileForm;
-import it.eldasoft.gene.db.dao.SqlDao;
-import it.eldasoft.gene.db.domain.Tabellato;
-import it.eldasoft.gene.db.domain.docass.DocumentoAssociato;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.gene.web.struts.docass.CostantiDocumentiAssociati;
-import it.eldasoft.gene.web.struts.docass.GestioneFileDocumentiAssociatiException;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.excel.DizionarioStiliExcel;
-import it.eldasoft.utils.metadata.cache.DizionarioCampi;
-import it.eldasoft.utils.metadata.domain.Campo;
-import it.eldasoft.utils.properties.ConfigManager;
-import it.eldasoft.utils.sql.comp.SqlComposerException;
-import it.eldasoft.utils.utility.UtilityDate;
-import it.eldasoft.utils.utility.UtilityExcel;
-import it.eldasoft.utils.utility.UtilityMath;
-import it.eldasoft.utils.utility.UtilityNumeri;
-import it.eldasoft.utils.utility.UtilityStringhe;
-import it.maggioli.eldasoft.ws.conf.WSERPConfigurazioneOutType;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,24 +33,66 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
-import org.apache.poi.hssf.usermodel.DVConstraint;
-import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFCellStyle;
-import org.apache.poi.hssf.usermodel.HSSFDataValidation;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
-import org.apache.poi.hssf.usermodel.HSSFFormulaEvaluator;
-import org.apache.poi.hssf.usermodel.HSSFPrintSetup;
-import org.apache.poi.hssf.usermodel.HSSFRichTextString;
-import org.apache.poi.hssf.usermodel.HSSFRow;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.hssf.util.CellRangeAddressList;
+import org.apache.poi.hssf.usermodel.HSSFFont;
+import org.apache.poi.hssf.util.HSSFColor;
+import org.apache.poi.ss.usermodel.BorderFormatting;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.ConditionalFormattingRule;
+import org.apache.poi.ss.usermodel.DataValidation;
+import org.apache.poi.ss.usermodel.DataValidationConstraint;
+import org.apache.poi.ss.usermodel.DataValidationHelper;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.FontFormatting;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.PatternFormatting;
+import org.apache.poi.ss.usermodel.PrintSetup;
+import org.apache.poi.ss.usermodel.RichTextString;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.SheetConditionalFormatting;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.CellRangeAddressList;
+import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.xssf.usermodel.XSSFRichTextString;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import it.eldasoft.gene.bl.GenChiaviManager;
+import it.eldasoft.gene.bl.GeneManager;
+import it.eldasoft.gene.bl.GestoreProfili;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.bl.TabellatiManager;
+import it.eldasoft.gene.bl.docass.DocumentiAssociatiManager;
+import it.eldasoft.gene.commons.web.TempFileUtilities;
+import it.eldasoft.gene.commons.web.struts.UploadFileForm;
+import it.eldasoft.gene.db.dao.SqlDao;
+import it.eldasoft.gene.db.domain.Tabellato;
+import it.eldasoft.gene.db.domain.docass.DocumentoAssociato;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.web.struts.docass.CostantiDocumentiAssociati;
+import it.eldasoft.gene.web.struts.docass.GestioneFileDocumentiAssociatiException;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.excel.DizionarioStiliExcelX;
+import it.eldasoft.utils.metadata.cache.DizionarioCampi;
+import it.eldasoft.utils.metadata.domain.Campo;
+import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.sql.comp.SqlComposerException;
+import it.eldasoft.utils.utility.UtilityDate;
+import it.eldasoft.utils.utility.UtilityExcelX;
+import it.eldasoft.utils.utility.UtilityMath;
+import it.eldasoft.utils.utility.UtilityNumeri;
+import it.eldasoft.utils.utility.UtilityStringhe;
+import it.maggioli.eldasoft.ws.conf.WSERPConfigurazioneOutType;
 
 /**
  * Classe per la gestione delle funzionalita' di import/export dell'offerta
  * prezzi su foglio Excel
  *
- * @author Luca.Giacomazzo
+ * @author Manuel.Bridda
  */
 public class ImportExportOffertaPrezziManager {
 
@@ -164,7 +180,7 @@ public class ImportExportOffertaPrezziManager {
 
   private final int          FOGLIO_DATI_GARA_RIGA_INIZIALE_DATI_GARA                     = 4;
 
-  private final int          FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE                = 10;
+  public final int          FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE                = 10;
 
   private final int          FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE                          = 10;
 
@@ -174,21 +190,19 @@ public class ImportExportOffertaPrezziManager {
    * Per il foglio 'Lavorazioni e forniture', rappresenta il numero di righe da
    * formattare dopo l'ultima occorrenza della GCAP estratta
    */
-  private final int          FOGLIO_LAVORAZIONE_E_FORNITURE_ULTERIORI_RIGHE_DA_FORMATTARE = 20;
+  public final int          FOGLIO_LAVORAZIONE_E_FORNITURE_ULTERIORI_RIGHE_DA_FORMATTARE = 20;
 
   private final int          FOGLIO_OFFERTA_PREZZI_ULTERIORI_RIGHE_DA_FORMATTARE          = 20;
 
-  private final DVConstraint DATA_VALIDATION_CONSTRAINT_SI_NO                             = DVConstraint.createExplicitListConstraint(new String[] {
-      "si", "no"                                                                         });
+  private final String[] DATA_VALIDATION_CONSTRAINT_SI_NO                             = new String[] {"si", "no"};
 
-  private final DVConstraint DATA_VALIDATION_CONSTRAINT_CORPO_MISURA                      = DVConstraint.createExplicitListConstraint(new String[] {
-      "a corpo", "a misura"                                                              });
+  private final String[] DATA_VALIDATION_CONSTRAINT_CORPO_MISURA                      = new String[] {"a corpo", "a misura"};
 
   /**
    * Nome del file associato al file Excel contenente l'export delle lavorazioni
    * e forniture
    */
-  private final String       NOME_FILE_C0OGGASS_EXPORT                                    = "LavorazioniFornitureGara.xls";
+  private final String       NOME_FILE_C0OGGASS_EXPORT                                    = "LavorazioniFornitureGara.xlsx";
 
   /**
    * Titolo del documento associato con cui viene inserito il file Excel
@@ -200,7 +214,7 @@ public class ImportExportOffertaPrezziManager {
    * Nome del file con cui viene inserito in C0OGGASS il file Excel contenente i
    * ddati per l'offerta prezzi in fase di import
    */
-  private final String       NOME_FILE_C0OGGASS_IMPORT                                    = "LavorazioniFornitureGara-import.xls";
+  private final String       NOME_FILE_C0OGGASS_IMPORT                                    = "LavorazioniFornitureGara-import.xlsx";
 
   /**
    * Titolo del documento associato con cui viene inserito il file Excel
@@ -221,11 +235,15 @@ public class ImportExportOffertaPrezziManager {
    * Nome del file associato al file Excel contenente l'export dell'offerta
    * prezzi
    */
-  private final String       NOME_FILE_EXPORT_OFFERTA_PREZZI                               = "OffertaPrezziDitteInGara.xls";
+  private final String       NOME_FILE_EXPORT_OFFERTA_PREZZI                               = "OffertaPrezziDitteInGara.xlsx";
 
+  /**
+   * Nome del file associato al file Excel contenente l'export della valutazione prodotti
+   */
+  private final String       NOME_FILE_EXPORT_VALUTAZIONE_PRODOTTI                        = "ValutazioneProdottiInGara.xlsx";
   // private final String TABELLA_CAMPI = "GCAP";
 
-  private HSSFWorkbook       workBook                                                     = null;
+  private Workbook       workBook                                                     = null;
 
   private String[]           arrayCampi;
   private int[]              arrayStiliCampi;
@@ -289,13 +307,17 @@ public class ImportExportOffertaPrezziManager {
     // Gestione delle configurazioni.
     // In funzione del tipo di fornitura si devono creare gli array opportuni
     Long tipoFornitura = null;
+    Long iterga = null;
 
     Vector<?> datiTORN = this.sqlDao.getVectorQuery(
-        "select torn.tipforn from torn, gare where torn.codgar = gare.codgar1 and gare.ngara = ?",
+        "select torn.tipforn, torn.iterga from torn, gare where torn.codgar = gare.codgar1 and gare.ngara = ?",
         new Object[] { ngara });
     if (datiTORN != null && datiTORN.size() > 0) {
       if (SqlManager.getValueFromVectorParam(datiTORN, 0) != null) {
         tipoFornitura = SqlManager.getValueFromVectorParam(datiTORN, 0).longValue();
+      }
+      if (SqlManager.getValueFromVectorParam(datiTORN, 1) != null) {
+        iterga = SqlManager.getValueFromVectorParam(datiTORN, 1).longValue();
       }
     }
 
@@ -305,11 +327,11 @@ public class ImportExportOffertaPrezziManager {
     boolean pesoVisibile=false;
     if("3".equals(ribcal))
       pesoVisibile=true;
-    this.setDefinizioni(tipoFornitura, null, pesoVisibile);
+    this.setDefinizioni(tipoFornitura, null, pesoVisibile, iterga);
 
-    this.workBook = new HSSFWorkbook();
+    this.workBook = new XSSFWorkbook();
     // Creazione del dizionario degli stili delle celle dell'intero file Excel
-    DizionarioStiliExcel dizStiliExcel = new DizionarioStiliExcel(this.workBook);
+    DizionarioStiliExcelX dizStiliExcel = new DizionarioStiliExcelX((XSSFWorkbook) this.workBook);
 
     // Scrittura sul foglio Excel dei dati generali della gara
     this.setDatiGeneraliGara(ngara, profiloAttivo, isGaraLottiConOffertaUnica,
@@ -383,10 +405,11 @@ public class ImportExportOffertaPrezziManager {
    * @param tipoFornitura
    * @param gara
    * @param gestioneRibassoPesato
+   * @param iterga
    * @throws SQLException
    * @throws GestoreException
    */
-  private void setDefinizioni(Long tipoFornitura, String gara, boolean gestioneRibassoPesato) throws SQLException, GestoreException {
+  private void setDefinizioni(Long tipoFornitura, String gara, boolean gestioneRibassoPesato, Long iterga) throws SQLException, GestoreException {
 
     if (tipoFornitura != null) {
       if (new Long(1).equals(tipoFornitura)) {
@@ -403,7 +426,7 @@ public class ImportExportOffertaPrezziManager {
 
         // 0
         arrayCampi[cnt] = "GARE.GCAP.NGARA";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Codice lotto";
         arrayLarghezzaColonne[cnt] = 14;
         arrayCampiVisibili[cnt] = true;
@@ -411,7 +434,7 @@ public class ImportExportOffertaPrezziManager {
         // 1
         cnt++;
         arrayCampi[cnt] = "GARE.GARE.CODIGA";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Lotto";
         arrayLarghezzaColonne[cnt] = 6;
         arrayCampiVisibili[cnt] = true;
@@ -419,7 +442,7 @@ public class ImportExportOffertaPrezziManager {
         // 2
         cnt++;
         arrayCampi[cnt] = "GARE.GARE.CODCIG";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Codice CIG";
         arrayLarghezzaColonne[cnt] = 10;
         arrayCampiVisibili[cnt] = true;
@@ -427,7 +450,7 @@ public class ImportExportOffertaPrezziManager {
         // 3
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.CODVOC";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Voce lotto";
         arrayLarghezzaColonne[cnt] = 14;
         arrayCampiVisibili[cnt] = true;
@@ -435,7 +458,7 @@ public class ImportExportOffertaPrezziManager {
         // 4
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.VOCE";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Descrizione";
         arrayLarghezzaColonne[cnt] = 25;
         arrayCampiVisibili[cnt] = false;
@@ -443,7 +466,7 @@ public class ImportExportOffertaPrezziManager {
         // 5
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_EST.DESEST";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Descrizione estesa";
         arrayLarghezzaColonne[cnt] = 65;
         arrayCampiVisibili[cnt] = false;
@@ -451,7 +474,7 @@ public class ImportExportOffertaPrezziManager {
         // 6
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.CODCAT";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Categoria";
         arrayLarghezzaColonne[cnt] = 25;
         arrayCampiVisibili[cnt] = false;
@@ -459,7 +482,7 @@ public class ImportExportOffertaPrezziManager {
         // 7
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.CLASI1";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "A corpo o a misura?";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -467,7 +490,7 @@ public class ImportExportOffertaPrezziManager {
         // 8
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.SOLSIC";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Solo sicurezza?";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -475,7 +498,7 @@ public class ImportExportOffertaPrezziManager {
         // 9
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.SOGRIB";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Sogg. a ribasso?";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -483,7 +506,7 @@ public class ImportExportOffertaPrezziManager {
         // 10
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.UNIMIS";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Um";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -491,7 +514,7 @@ public class ImportExportOffertaPrezziManager {
         // 11
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.QUANTI";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE1_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE1_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Quantità complessive";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -499,7 +522,7 @@ public class ImportExportOffertaPrezziManager {
         // 12
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.PREZUN";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Prezzo unitario";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -507,7 +530,7 @@ public class ImportExportOffertaPrezziManager {
         // 13
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_SAN.CODATC";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Codice ATC";
         arrayLarghezzaColonne[cnt] = 15;
         arrayCampiVisibili[cnt] = true;
@@ -515,7 +538,7 @@ public class ImportExportOffertaPrezziManager {
         // 14
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_SAN.CODAUR";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Codice AUR prodotto richiesto";
         arrayLarghezzaColonne[cnt] = 15;
         arrayCampiVisibili[cnt] = true;
@@ -523,7 +546,7 @@ public class ImportExportOffertaPrezziManager {
         // 15
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_SAN.PRINCATT";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Principio attivo";
         arrayLarghezzaColonne[cnt] = 15;
         arrayCampiVisibili[cnt] = true;
@@ -531,7 +554,7 @@ public class ImportExportOffertaPrezziManager {
         // 16
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_SAN.FORMAFARM";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Forma farmaceutica";
         arrayLarghezzaColonne[cnt] = 15;
         arrayCampiVisibili[cnt] = true;
@@ -539,7 +562,7 @@ public class ImportExportOffertaPrezziManager {
         // 17
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_SAN.DOSAGGIO";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Dosaggio";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -547,7 +570,7 @@ public class ImportExportOffertaPrezziManager {
         // 18
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_SAN.VIASOMM";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Via di somministrazione";
         arrayLarghezzaColonne[cnt] = 20;
         arrayCampiVisibili[cnt] = true;
@@ -555,7 +578,7 @@ public class ImportExportOffertaPrezziManager {
         // 19
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.UNIMIS";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Unità di misura";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -563,7 +586,7 @@ public class ImportExportOffertaPrezziManager {
         // 20
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.QUANTI";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE1_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE1_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Fabbisogno relativo a 12 mesi in unità di misura";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -571,7 +594,7 @@ public class ImportExportOffertaPrezziManager {
         // 21
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.PREZUN";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Base di gara unitaria (euro, IVA esclusa)";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -579,7 +602,7 @@ public class ImportExportOffertaPrezziManager {
         // 22
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.PERCIVA";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "IVA";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -587,7 +610,7 @@ public class ImportExportOffertaPrezziManager {
         // 23
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_SAN.NOTE";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Note";
         arrayLarghezzaColonne[cnt] = 25;
         arrayCampiVisibili[cnt] = true;
@@ -595,7 +618,7 @@ public class ImportExportOffertaPrezziManager {
         // 24
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.DENOMPROD";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Denominazione del prodotto";
         arrayLarghezzaColonne[cnt] = 25;
         arrayCampiVisibili[cnt] = true;
@@ -603,7 +626,7 @@ public class ImportExportOffertaPrezziManager {
         // 25
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.CODAIC";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Codice AIC";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -611,7 +634,7 @@ public class ImportExportOffertaPrezziManager {
         // 26
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.CODAUR";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Codice AUR prodotto richiesto";
         arrayLarghezzaColonne[cnt] = 15;
         arrayCampiVisibili[cnt] = false;
@@ -619,7 +642,7 @@ public class ImportExportOffertaPrezziManager {
         // 27
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.NUNICONF";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Numero unità per confezione";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -627,7 +650,7 @@ public class ImportExportOffertaPrezziManager {
         // 28
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.CLASRESP";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Classe di rimborsabilità (A,C,H)";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -635,7 +658,7 @@ public class ImportExportOffertaPrezziManager {
         // 29
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.PREZVPUBBL";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Prezzo di vendita al pubblico IVA inclusa (compliare obbligatoriamente anche per gli ex factory e per emoderivati classe A)";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -643,7 +666,7 @@ public class ImportExportOffertaPrezziManager {
         // 30
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.IVAPVPUBBL";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "IVA";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -651,7 +674,7 @@ public class ImportExportOffertaPrezziManager {
         // 31
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.PSCONTOBL";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Per i farmaci ex factory per i quali è obbligatorio indicare la % di sconto obbligatorio aggiuntivo al 33,35% sulle forniture cedute a strutture pubbliche del SSN offerto";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -659,7 +682,7 @@ public class ImportExportOffertaPrezziManager {
         // 32
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.ESTRGUSO";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Indicare gli estremi della G.U. in cui è stata pubblicata la % di sconto della colonna precedente";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -667,7 +690,7 @@ public class ImportExportOffertaPrezziManager {
         // 33
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE.PREOFF";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Prezzo unitario di offerta IVA esclusa";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -675,7 +698,7 @@ public class ImportExportOffertaPrezziManager {
         // 34
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.PREZUNRIF";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Prezzo unitario di riferimento (ex factory o 50% o emoderivato)";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -683,7 +706,7 @@ public class ImportExportOffertaPrezziManager {
         // 35
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.SCONTOFF";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Sconto offerto per prodotto";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -691,7 +714,7 @@ public class ImportExportOffertaPrezziManager {
         // 36
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.SCONTOBBL";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Sconto obbligatorio per legge";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -699,7 +722,7 @@ public class ImportExportOffertaPrezziManager {
         // 37
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.SCONTAGG";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Sconto aggiuntivo rispetto a quello obbligatorio";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -707,7 +730,7 @@ public class ImportExportOffertaPrezziManager {
         // 38
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.CONTAF";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Numero progressivo";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -726,7 +749,7 @@ public class ImportExportOffertaPrezziManager {
 
         // 0
         arrayCampi[cnt] = "GARE.GCAP.NGARA";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Codice lotto";
         arrayLarghezzaColonne[cnt] = 14;
         arrayCampiVisibili[cnt] = true;
@@ -734,7 +757,7 @@ public class ImportExportOffertaPrezziManager {
         // 1
         cnt++;
         arrayCampi[cnt] = "GARE.GARE.CODIGA";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Lotto";
         arrayLarghezzaColonne[cnt] = 6;
         arrayCampiVisibili[cnt] = true;
@@ -742,7 +765,7 @@ public class ImportExportOffertaPrezziManager {
         // 2
         cnt++;
         arrayCampi[cnt] = "GARE.GARE.CODCIG";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Codice CIG";
         arrayLarghezzaColonne[cnt] = 10;
         arrayCampiVisibili[cnt] = true;
@@ -750,7 +773,7 @@ public class ImportExportOffertaPrezziManager {
         // 3
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.CODVOC";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Voce lotto";
         arrayLarghezzaColonne[cnt] = 14;
         arrayCampiVisibili[cnt] = true;
@@ -758,7 +781,7 @@ public class ImportExportOffertaPrezziManager {
         // 4
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.VOCE";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Descrizione";
         arrayLarghezzaColonne[cnt] = 25;
         arrayCampiVisibili[cnt] = false;
@@ -766,7 +789,7 @@ public class ImportExportOffertaPrezziManager {
         // 5
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_EST.DESEST";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Descrizione estesa";
         arrayLarghezzaColonne[cnt] = 65;
         arrayCampiVisibili[cnt] = false;
@@ -774,7 +797,7 @@ public class ImportExportOffertaPrezziManager {
         // 6
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.CODCAT";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Categoria";
         arrayLarghezzaColonne[cnt] = 25;
         arrayCampiVisibili[cnt] = false;
@@ -782,7 +805,7 @@ public class ImportExportOffertaPrezziManager {
         // 7
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.CLASI1";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "A corpo o a misura?";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -790,7 +813,7 @@ public class ImportExportOffertaPrezziManager {
         // 8
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.SOLSIC";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Solo sicurezza?";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -798,7 +821,7 @@ public class ImportExportOffertaPrezziManager {
         // 9
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.SOGRIB";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Sogg. a ribasso?";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -806,7 +829,7 @@ public class ImportExportOffertaPrezziManager {
         // 10
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.UNIMIS";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Um";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -814,7 +837,7 @@ public class ImportExportOffertaPrezziManager {
         // 11
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.QUANTI";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE1_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE1_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Quantità complessive";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -822,7 +845,7 @@ public class ImportExportOffertaPrezziManager {
         // 12
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.PREZUN";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Prezzo unitario";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -830,7 +853,7 @@ public class ImportExportOffertaPrezziManager {
         // 13
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.PERCIVA";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "IVA";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -838,7 +861,7 @@ public class ImportExportOffertaPrezziManager {
         // 14
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_SAN.CODCLASS";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Codice CND";
 //        arrayTitoloColonne[cnt] = "Codice classificazione (derivata dalla classificazione nazionale)";
         arrayLarghezzaColonne[cnt] = 15;
@@ -847,7 +870,7 @@ public class ImportExportOffertaPrezziManager {
         // 15
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_SAN.DEPRODCN";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Descrizione CND";
 //        arrayTitoloColonne[cnt] = "Descrizione del prodotto derivato dalla codifica nazionale";
         arrayLarghezzaColonne[cnt] = 25;
@@ -856,7 +879,7 @@ public class ImportExportOffertaPrezziManager {
         // 16
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_SAN.CODAUR";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Codice AUR prodotto richiesto";
         arrayLarghezzaColonne[cnt] = 15;
         arrayCampiVisibili[cnt] = true;
@@ -864,7 +887,7 @@ public class ImportExportOffertaPrezziManager {
         // 17
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_SAN.DPRODCAP";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Descrizione del prodotto da capitolato";
         arrayLarghezzaColonne[cnt] = 25;
         arrayCampiVisibili[cnt] = true;
@@ -872,7 +895,7 @@ public class ImportExportOffertaPrezziManager {
         // 18
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.QUANTI";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE1_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE1_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Quantità complessive";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -880,7 +903,7 @@ public class ImportExportOffertaPrezziManager {
         // 19
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.PREZUN";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Base di gara unitaria (euro, IVA esclusa)";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -888,7 +911,7 @@ public class ImportExportOffertaPrezziManager {
         // 20
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.DENOMPROD";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Descrizione prodotto del fornitore";
         arrayLarghezzaColonne[cnt] = 25;
         arrayCampiVisibili[cnt] = true;
@@ -896,7 +919,7 @@ public class ImportExportOffertaPrezziManager {
         // 21
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.CODPROD";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Codice prodotto del fornitore";
         arrayLarghezzaColonne[cnt] = 15;
         arrayCampiVisibili[cnt] = true;
@@ -904,7 +927,7 @@ public class ImportExportOffertaPrezziManager {
         // 22
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.CODAUR";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Codice AUR prodotto offerto";
         arrayLarghezzaColonne[cnt] = 15;
         arrayCampiVisibili[cnt] = false;
@@ -912,7 +935,7 @@ public class ImportExportOffertaPrezziManager {
         // 23
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.NREPDISP";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Numero di repertorio dispositivo";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -920,7 +943,7 @@ public class ImportExportOffertaPrezziManager {
         // 24
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.REF";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "REF";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -928,7 +951,7 @@ public class ImportExportOffertaPrezziManager {
         // 25
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.QUANTICONF";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Quantità di prodotto in ciascuna confezione";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -936,7 +959,7 @@ public class ImportExportOffertaPrezziManager {
         // 26
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE.PREOFF";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Prezzo unitario offerto";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -944,7 +967,7 @@ public class ImportExportOffertaPrezziManager {
         // 27
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.IVAPVPUBBL";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE0_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE0_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Aliquota IVA";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -952,7 +975,7 @@ public class ImportExportOffertaPrezziManager {
         // 28
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.NOTE";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Note";
         arrayLarghezzaColonne[cnt] = 25;
         arrayCampiVisibili[cnt] = true;
@@ -960,10 +983,199 @@ public class ImportExportOffertaPrezziManager {
         // 29
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.CONTAF";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Numero progressivo";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
+      } else if (Long.valueOf(8).equals(tipoFornitura)) {
+          //ricercaMercatoNegoziata
+          int numeroTotaleCampi = 22;
+          int cnt = 0;
+
+          arrayCampi = new String[numeroTotaleCampi];
+          arrayStiliCampi = new int[numeroTotaleCampi];
+          arrayTitoloColonne = new String[numeroTotaleCampi];
+          arrayLarghezzaColonne = new int[numeroTotaleCampi];
+          arrayCampiVisibili = new boolean[numeroTotaleCampi];
+          arrayIndiceColonnaCampi = new int[numeroTotaleCampi];
+
+
+          // 0
+          arrayCampi[cnt] = "GARE.GCAP.NGARA";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
+          arrayTitoloColonne[cnt] = "Codice lotto";
+          arrayLarghezzaColonne[cnt] = 14;
+          arrayCampiVisibili[cnt] = true;
+
+          // 1
+          cnt++;
+          arrayCampi[cnt] = "GARE.GARE.CODIGA";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_CENTER;
+          arrayTitoloColonne[cnt] = "Lotto";
+          arrayLarghezzaColonne[cnt] = 6;
+          arrayCampiVisibili[cnt] = true;
+
+          // 2
+          cnt++;
+          arrayCampi[cnt] = "GARE.GCAP.CODVOC";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
+          arrayTitoloColonne[cnt] = "Voce";
+          arrayLarghezzaColonne[cnt] = 14;
+          arrayCampiVisibili[cnt] = true;
+
+          // 3
+          cnt++;
+          arrayCampi[cnt] = "GARE.V_GCAP_DPRE.VOCE";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
+          arrayTitoloColonne[cnt] = "Descrizione";
+          arrayLarghezzaColonne[cnt] = 25;
+          arrayCampiVisibili[cnt] = true;
+
+          // 4
+          cnt++;
+          arrayCampi[cnt] = "GARE.GCAP_EST.DESEST";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
+          arrayTitoloColonne[cnt] = "Descrizione estesa";
+          arrayLarghezzaColonne[cnt] = 65;
+          arrayCampiVisibili[cnt] = false;
+
+          // 5
+          cnt++;
+          arrayCampi[cnt] = "GARE.GCAP.CLASI1";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
+          arrayTitoloColonne[cnt] = "A corpo o a misura?";
+          arrayLarghezzaColonne[cnt] = 11;
+          arrayCampiVisibili[cnt] = true;
+
+          // 6
+          cnt++;
+          arrayCampi[cnt] = "GARE.V_GCAP_DPRE.SOLSIC";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
+          arrayTitoloColonne[cnt] = "Solo sicurezza?";
+          arrayLarghezzaColonne[cnt] = 11;
+          arrayCampiVisibili[cnt] = false;
+
+          // 7
+          cnt++;
+          arrayCampi[cnt] = "GARE.V_GCAP_DPRE.SOGRIB";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
+          arrayTitoloColonne[cnt] = "Sogg. a ribasso?";
+          arrayLarghezzaColonne[cnt] = 11;
+          arrayCampiVisibili[cnt] = false;
+
+          // 8
+          cnt++;
+          arrayCampi[cnt] = "GARE.GCAP.DATACONS";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
+          arrayTitoloColonne[cnt] = "Data consegna";
+          arrayLarghezzaColonne[cnt] = 15;
+          arrayCampiVisibili[cnt] = true;
+
+          // 9
+          cnt++;
+          arrayCampi[cnt] = "GARE.UNIMIS.DESUNI";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
+          arrayTitoloColonne[cnt] = "Um";
+          arrayLarghezzaColonne[cnt] = 11;
+          arrayCampiVisibili[cnt] = true;
+
+          // 10
+          cnt++;
+          arrayCampi[cnt] = "GARE.GCAP.QUANTI";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE1_ALIGN_RIGHT;
+          arrayTitoloColonne[cnt] = "Quantità";
+          arrayLarghezzaColonne[cnt] = 11;
+          arrayCampiVisibili[cnt] = true;
+
+          // 11
+          cnt++;
+          arrayCampi[cnt] = "GARE.GCAP.PREZUN";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
+          arrayTitoloColonne[cnt] = "Prezzo unitario";
+          arrayLarghezzaColonne[cnt] = 11;
+          arrayCampiVisibili[cnt] = true;
+
+          // 12
+          cnt++;
+          arrayCampi[cnt] = "GARE.V_GCAP_DPRE.IMPOFF";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
+          arrayTitoloColonne[cnt] = "Importo totale";
+          arrayLarghezzaColonne[cnt] = 11;
+          arrayCampiVisibili[cnt] = true;
+
+          //ORANGE//
+
+          // 13
+          cnt++;
+          arrayCampi[cnt] = "GENE.IMPR.NOMEST";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
+          arrayTitoloColonne[cnt] = "Ragione sociale ditta";
+          arrayLarghezzaColonne[cnt] = 65;
+          arrayCampiVisibili[cnt] = true;
+
+          // 14
+          cnt++;
+          arrayCampi[cnt] = "GENE.IMPR.CFIMP";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
+          arrayTitoloColonne[cnt] = "C.F./P.Iva";
+          arrayLarghezzaColonne[cnt] = 16;
+          arrayCampiVisibili[cnt] = false;
+
+          // 15
+          cnt++;
+          arrayCampi[cnt] = "GARE.V_GCAP_DPRE.DATACONSOFF";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
+          arrayTitoloColonne[cnt] = "Data consegna garantita";
+          arrayLarghezzaColonne[cnt] = 15;
+          arrayCampiVisibili[cnt] = true;
+
+          // 16
+          cnt++;
+          arrayCampi[cnt] = "GARE.V_GCAP_DPRE.PREOFF";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
+          arrayTitoloColonne[cnt] = "Prezzo unitario";
+          arrayLarghezzaColonne[cnt] = 11;
+          arrayCampiVisibili[cnt] = true;
+
+          // 17
+          cnt++;
+          arrayCampi[cnt] = "GARE.V_GCAP_DPRE.IMPOFF";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
+          arrayTitoloColonne[cnt] = "Importo";
+          arrayLarghezzaColonne[cnt] = 11;
+          arrayCampiVisibili[cnt] = true;
+
+          // 18
+          cnt++;
+          arrayCampi[cnt] = "GARE.V_GCAP_DPRE.TIPOLOGIA";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
+          arrayTitoloColonne[cnt] = "Tipologia";
+          arrayLarghezzaColonne[cnt] = 11;
+          arrayCampiVisibili[cnt] = true;
+
+          // 19
+          cnt++;
+          arrayCampi[cnt] = "GARE.V_GCAP_DPRE.NOTE";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
+          arrayTitoloColonne[cnt] = "Note";
+          arrayLarghezzaColonne[cnt] = 25;
+          arrayCampiVisibili[cnt] = true;
+
+          // 20
+          cnt++;
+          arrayCampi[cnt] = "GARE.V_GCAP_DPRE.SOLSIC";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
+          arrayTitoloColonne[cnt] = "Aggiudicatario?";
+          arrayLarghezzaColonne[cnt] = 15;
+          arrayCampiVisibili[cnt] = true;
+
+          // 21
+          cnt++;
+          arrayCampi[cnt] = "GARE.GCAP.CONTAF";
+          arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
+          arrayTitoloColonne[cnt] = "Numero progressivo";
+          arrayLarghezzaColonne[cnt] = 11;
+          arrayCampiVisibili[cnt] = false;
 
       } else if (new Long(98).equals(tipoFornitura)) {
         // Istituto Zooprofilattico
@@ -979,7 +1191,7 @@ public class ImportExportOffertaPrezziManager {
 
         // 0
         arrayCampi[cnt] = "GARE.GCAP.NGARA";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Codice lotto";
         arrayLarghezzaColonne[cnt] = 14;
         arrayCampiVisibili[cnt] = true;
@@ -987,7 +1199,7 @@ public class ImportExportOffertaPrezziManager {
         // 1
         cnt++;
         arrayCampi[cnt] = "GARE.GARE.CODIGA";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Lotto";
         arrayLarghezzaColonne[cnt] = 6;
         arrayCampiVisibili[cnt] = true;
@@ -995,7 +1207,7 @@ public class ImportExportOffertaPrezziManager {
         // 2
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.NORVOC";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Pos.";
         arrayLarghezzaColonne[cnt] = 6;
         arrayCampiVisibili[cnt] = true;
@@ -1003,7 +1215,7 @@ public class ImportExportOffertaPrezziManager {
         // 3
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.CODVOC";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Codice IZS";
         arrayLarghezzaColonne[cnt] = 20;
         arrayCampiVisibili[cnt] = true;
@@ -1011,7 +1223,7 @@ public class ImportExportOffertaPrezziManager {
         // 4
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.VOCE";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Descrizione";
         arrayLarghezzaColonne[cnt] = 65;
         arrayCampiVisibili[cnt] = true;
@@ -1019,7 +1231,7 @@ public class ImportExportOffertaPrezziManager {
         // 5
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_EST.DESEST";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Note";
         arrayLarghezzaColonne[cnt] = 65;
         arrayCampiVisibili[cnt] = true;
@@ -1027,7 +1239,7 @@ public class ImportExportOffertaPrezziManager {
         // 6
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.UNIMIS";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Um";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1035,7 +1247,7 @@ public class ImportExportOffertaPrezziManager {
         // 7
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.QUANTI";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE1_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE1_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Quantità richiesta in Um";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1043,7 +1255,7 @@ public class ImportExportOffertaPrezziManager {
         // 8
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.IVAPROD";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "IVA";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1051,7 +1263,7 @@ public class ImportExportOffertaPrezziManager {
         // 9
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.NUNICONF";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE1_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE1_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Quantità max. per confezione in Um";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1060,7 +1272,7 @@ public class ImportExportOffertaPrezziManager {
         // 10
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.CODPROD";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Codice prodotto offerto";
         arrayLarghezzaColonne[cnt] = 15;
         arrayCampiVisibili[cnt] = true;
@@ -1068,7 +1280,7 @@ public class ImportExportOffertaPrezziManager {
         // 11
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.DENOMPROD";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Descrizione prodotto offerto";
         arrayLarghezzaColonne[cnt] = 65;
         arrayCampiVisibili[cnt] = true;
@@ -1076,7 +1288,7 @@ public class ImportExportOffertaPrezziManager {
         // 12
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE.UNIMIS";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Um Confezione";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
@@ -1084,7 +1296,7 @@ public class ImportExportOffertaPrezziManager {
         // 13
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.NUNICONF";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Quantità per confezione in Um";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1092,7 +1304,7 @@ public class ImportExportOffertaPrezziManager {
         // 14
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE.QUANTI";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE1_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE1_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Numero confezioni";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1100,7 +1312,7 @@ public class ImportExportOffertaPrezziManager {
         // 15
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE.PREOFF";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Prezzo per confezione";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1108,7 +1320,7 @@ public class ImportExportOffertaPrezziManager {
         // 16
         cnt++;
         arrayCampi[cnt] = "GARE.DPRE_SAN.IVAPVPUBBL";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "IVA confezione";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1116,14 +1328,14 @@ public class ImportExportOffertaPrezziManager {
         // 17
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.CONTAF";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Numero progressivo";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
 
       } else {
 
-        int numeroTotaleCampi = 16;
+        int numeroTotaleCampi = 17;
         int cnt = 0;
 
         arrayCampi = new String[numeroTotaleCampi];
@@ -1135,7 +1347,7 @@ public class ImportExportOffertaPrezziManager {
 
         // 0
         arrayCampi[cnt] = "GARE.GCAP.NGARA";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Codice lotto";
         arrayLarghezzaColonne[cnt] = 14;
         arrayCampiVisibili[cnt] = true;
@@ -1143,7 +1355,7 @@ public class ImportExportOffertaPrezziManager {
         // 1
         cnt++;
         arrayCampi[cnt] = "GARE.GARE.CODIGA";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Lotto";
         arrayLarghezzaColonne[cnt] = 6;
         arrayCampiVisibili[cnt] = true;
@@ -1151,7 +1363,7 @@ public class ImportExportOffertaPrezziManager {
         // 2
         cnt++;
         arrayCampi[cnt] = "GARE.GARE.CODCIG";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Codice CIG";
         arrayLarghezzaColonne[cnt] = 10;
         arrayCampiVisibili[cnt] = true;
@@ -1159,7 +1371,7 @@ public class ImportExportOffertaPrezziManager {
         // 3
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.CODVOC";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Voce lotto";
         arrayLarghezzaColonne[cnt] = 14;
         arrayCampiVisibili[cnt] = true;
@@ -1167,7 +1379,7 @@ public class ImportExportOffertaPrezziManager {
         // 4
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.VOCE";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Descrizione";
         arrayLarghezzaColonne[cnt] = 25;
         arrayCampiVisibili[cnt] = true;
@@ -1175,7 +1387,7 @@ public class ImportExportOffertaPrezziManager {
         // 5
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP_EST.DESEST";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "Descrizione estesa";
         arrayLarghezzaColonne[cnt] = 65;
         arrayCampiVisibili[cnt] = true;
@@ -1183,7 +1395,7 @@ public class ImportExportOffertaPrezziManager {
         // 6
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.CODCAT";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Categoria";
         arrayLarghezzaColonne[cnt] = 25;
         arrayCampiVisibili[cnt] = true;
@@ -1191,7 +1403,7 @@ public class ImportExportOffertaPrezziManager {
         // 7
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.CLASI1";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "A corpo o a misura?";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1199,7 +1411,7 @@ public class ImportExportOffertaPrezziManager {
         // 8
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.SOLSIC";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Solo sicurezza?";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1207,7 +1419,7 @@ public class ImportExportOffertaPrezziManager {
         // 9
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.SOGRIB";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Sogg. a ribasso?";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1215,7 +1427,7 @@ public class ImportExportOffertaPrezziManager {
         // 10
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.UNIMIS";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
         arrayTitoloColonne[cnt] = "Um";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1223,7 +1435,7 @@ public class ImportExportOffertaPrezziManager {
         // 11
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.QUANTI";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE1_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE1_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Quantità complessive";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1231,7 +1443,7 @@ public class ImportExportOffertaPrezziManager {
         // 12
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.PREZUN";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Prezzo unitario";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1239,7 +1451,7 @@ public class ImportExportOffertaPrezziManager {
         // 13
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.PERCIVA";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_LEFT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_LEFT;
         arrayTitoloColonne[cnt] = "IVA";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = true;
@@ -1247,7 +1459,7 @@ public class ImportExportOffertaPrezziManager {
         // 14
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.PESO";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE4_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE4_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Peso";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = gestioneRibassoPesato;
@@ -1255,10 +1467,21 @@ public class ImportExportOffertaPrezziManager {
         // 15
         cnt++;
         arrayCampi[cnt] = "GARE.GCAP.CONTAF";
-        arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
         arrayTitoloColonne[cnt] = "Numero progressivo";
         arrayLarghezzaColonne[cnt] = 11;
         arrayCampiVisibili[cnt] = false;
+
+        // 16
+        boolean visibile=false;
+        if(new Long(8).equals(iterga))
+          visibile=true;
+        cnt++;
+        arrayCampi[cnt] = "GARE.GCAP.DATACONS";
+        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DATA_ALIGN_CENTER_DEFAULT;
+        arrayTitoloColonne[cnt] = "Data consegna";
+        arrayLarghezzaColonne[cnt] = 15;
+        arrayCampiVisibili[cnt] = visibile;
 
       }
 
@@ -1297,7 +1520,7 @@ public class ImportExportOffertaPrezziManager {
 
       // 0
       arrayCampi[cnt] = "GARE.V_GCAP_DPRE.NGARA";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
       arrayTitoloColonne[cnt] = "Codice lotto";
       arrayLarghezzaColonne[cnt] = 14;
       arrayCampiVisibili[cnt] = true;
@@ -1305,7 +1528,7 @@ public class ImportExportOffertaPrezziManager {
       // 1
       cnt++;
       arrayCampi[cnt] = "GARE.V_GCAP_DPRE.CODIGA";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_CENTER;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_CENTER;
       arrayTitoloColonne[cnt] = "Lotto";
       arrayLarghezzaColonne[cnt] = 6;
       arrayCampiVisibili[cnt] = true;
@@ -1313,7 +1536,7 @@ public class ImportExportOffertaPrezziManager {
       // 2
       cnt++;
       arrayCampi[cnt] = "GENE.IMPR.NOMEST";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
       arrayTitoloColonne[cnt] = "Ragione sociale ditta";
       arrayLarghezzaColonne[cnt] = 65;
       arrayCampiVisibili[cnt] = true;
@@ -1321,7 +1544,7 @@ public class ImportExportOffertaPrezziManager {
       // 3
       cnt++;
       arrayCampi[cnt] = "GENE.IMPR.CFIMP";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
       arrayTitoloColonne[cnt] = "C.F./P.Iva";
       arrayLarghezzaColonne[cnt] = 16;
       arrayCampiVisibili[cnt] = true;
@@ -1329,7 +1552,7 @@ public class ImportExportOffertaPrezziManager {
       // 4
       cnt++;
       arrayCampi[cnt] = "GARE.GCAP.CODVOC";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
       arrayTitoloColonne[cnt] = "Voce lotto";
       arrayLarghezzaColonne[cnt] = 14;
       arrayCampiVisibili[cnt] = true;
@@ -1338,7 +1561,7 @@ public class ImportExportOffertaPrezziManager {
       // 5
       cnt++;
       arrayCampi[cnt] = "GARE.V_GCAP_DPRE.VOCE";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
       arrayTitoloColonne[cnt] = "Descrizione";
       arrayLarghezzaColonne[cnt] = 25;
       arrayCampiVisibili[cnt] = true;
@@ -1346,7 +1569,7 @@ public class ImportExportOffertaPrezziManager {
       // 6
       cnt++;
       arrayCampi[cnt] = "GARE.GCAP_EST.DESEST";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_LEFT;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
       arrayTitoloColonne[cnt] = "Descrizione estesa";
       arrayLarghezzaColonne[cnt] = 65;
       arrayCampiVisibili[cnt] = true;
@@ -1354,7 +1577,7 @@ public class ImportExportOffertaPrezziManager {
       // 7
       cnt++;
       arrayCampi[cnt] = "GARE.GCAP.CLASI1";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
       arrayTitoloColonne[cnt] = "A corpo o a misura?";
       arrayLarghezzaColonne[cnt] = 11;
       arrayCampiVisibili[cnt] = true;
@@ -1362,7 +1585,7 @@ public class ImportExportOffertaPrezziManager {
       // 8
       cnt++;
       arrayCampi[cnt] = "GARE.V_GCAP_DPRE.SOLSIC";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
       arrayTitoloColonne[cnt] = "Solo sicurezza?";
       arrayLarghezzaColonne[cnt] = 11;
       arrayCampiVisibili[cnt] = true;
@@ -1370,7 +1593,7 @@ public class ImportExportOffertaPrezziManager {
       // 9
       cnt++;
       arrayCampi[cnt] = "GARE.V_GCAP_DPRE.SOGRIB";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
       arrayTitoloColonne[cnt] = "Sogg. a ribasso?";
       arrayLarghezzaColonne[cnt] = 11;
       arrayCampiVisibili[cnt] = true;
@@ -1378,7 +1601,7 @@ public class ImportExportOffertaPrezziManager {
       // 10
       cnt++;
       arrayCampi[cnt] = "GARE.UNIMIS.DESUNI";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
       arrayTitoloColonne[cnt] = "Um";
       arrayLarghezzaColonne[cnt] = 11;
       arrayCampiVisibili[cnt] = true;
@@ -1386,7 +1609,7 @@ public class ImportExportOffertaPrezziManager {
       // 11
       cnt++;
       arrayCampi[cnt] = "GARE.V_GCAP_DPRE.QUANTIEFF";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE1_ALIGN_RIGHT;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE1_ALIGN_RIGHT;
       arrayTitoloColonne[cnt] = "Quantità";
       arrayLarghezzaColonne[cnt] = 11;
       arrayCampiVisibili[cnt] = true;
@@ -1394,7 +1617,7 @@ public class ImportExportOffertaPrezziManager {
       //12
       cnt++;
       arrayCampi[cnt] = "GARE.V_GCAP_DPRE.PERRIB";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE1_ALIGN_RIGHT;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE1_ALIGN_RIGHT;
       arrayTitoloColonne[cnt] = "Ribasso";
       arrayLarghezzaColonne[cnt] = 11;
       arrayCampiVisibili[cnt] = gestioneRibassoPesato;
@@ -1402,7 +1625,7 @@ public class ImportExportOffertaPrezziManager {
       // 13
       cnt++;
       arrayCampi[cnt] = "GARE.V_GCAP_DPRE.PREOFF";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
       arrayTitoloColonne[cnt] = "Prezzo unitario";
       arrayLarghezzaColonne[cnt] = 11;
       arrayCampiVisibili[cnt] = true;
@@ -1410,7 +1633,7 @@ public class ImportExportOffertaPrezziManager {
       // 14
       cnt++;
       arrayCampi[cnt] = "GARE.V_GCAP_DPRE.PERCIVAEFF";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE1_ALIGN_RIGHT;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE1_ALIGN_RIGHT;
       arrayTitoloColonne[cnt] = "Iva";
       arrayLarghezzaColonne[cnt] = 11;
       arrayCampiVisibili[cnt] = true;
@@ -1418,7 +1641,7 @@ public class ImportExportOffertaPrezziManager {
       // 15
       cnt++;
       arrayCampi[cnt] = "GARE.V_GCAP_DPRE.IMPOFF";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
       arrayTitoloColonne[cnt] = "Importo";
       arrayLarghezzaColonne[cnt] = 11;
       arrayCampiVisibili[cnt] = true;
@@ -1426,7 +1649,7 @@ public class ImportExportOffertaPrezziManager {
       // 16
       cnt++;
       arrayCampi[cnt] = "GARE.V_GCAP_DPRE.PESO";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
       arrayTitoloColonne[cnt] = "Peso";
       arrayLarghezzaColonne[cnt] = 11;
       arrayCampiVisibili[cnt] = gestioneRibassoPesato;
@@ -1434,7 +1657,7 @@ public class ImportExportOffertaPrezziManager {
       // 17
       cnt++;
       arrayCampi[cnt] = "GARE.V_GCAP_DPRE.RIBPESO";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
       arrayTitoloColonne[cnt] = "Ribasso pesato";
       arrayLarghezzaColonne[cnt] = 11;
       arrayCampiVisibili[cnt] = gestioneRibassoPesato;
@@ -1442,7 +1665,7 @@ public class ImportExportOffertaPrezziManager {
       // 18
       cnt++;
       arrayCampi[cnt] = "GARE.GCAP.CONTAF";
-      arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+      arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
       arrayTitoloColonne[cnt] = "Numero progressivo";
       arrayLarghezzaColonne[cnt] = 11;
       arrayCampiVisibili[cnt] = false;
@@ -1460,7 +1683,7 @@ public class ImportExportOffertaPrezziManager {
 
             cnt++;
             arrayCampi[cnt] = "GARE.XDPRE." + nomeCampo;
-            //arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+            //arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
             arrayTitoloColonne[cnt] = descrizione;
             // arrayLarghezzaColonne[cnt] = 11;
             arrayCampiVisibili[cnt] = true;
@@ -1468,7 +1691,7 @@ public class ImportExportOffertaPrezziManager {
             if(definizione!=null){
               if(definizione.startsWith("VC")){
                 //Campo Stringa
-                arrayStiliCampi[cnt] = DizionarioStiliExcel.STRINGA_ALIGN_CENTER;
+                arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_CENTER;
                 String tmp = definizione.substring(2);
                 if(tmp!=null) {
                   int dimCampo = (new Long(tmp)).intValue();
@@ -1485,33 +1708,33 @@ public class ImportExportOffertaPrezziManager {
                 }
               }else  if(definizione.startsWith("DT")){
                 //Campo data
-                arrayStiliCampi[cnt] = DizionarioStiliExcel.DATA_ALIGN_CENTER;
+                arrayStiliCampi[cnt] = DizionarioStiliExcelX.DATA_ALIGN_CENTER;
                 arrayLarghezzaColonne[cnt] = 20;
                 arrayFormatoCampiXdpre[i]="DT";
               }else if(definizione.startsWith("NU") && tabellato==null){
                 //Campo numerico
                 arrayLarghezzaColonne[cnt] = 11;
                 if(definizione.indexOf(".")<0 ){
-                  arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_CENTER;
+                  arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_CENTER;
                   arrayFormatoCampiXdpre[i]="LONG";
                 }else{
                   String tmp[] = definizione.split("\\.");
                   if("0".equals(tmp[1])){
-                    arrayStiliCampi[cnt] = DizionarioStiliExcel.INTERO_ALIGN_CENTER;
+                    arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_CENTER;
                     arrayFormatoCampiXdpre[i]="LONG";
                   }
                   else{
                     arrayFormatoCampiXdpre[i]="DOUBLE";
                     int cifreDecimali = (new Long(tmp[1])).intValue();
                     if(cifreDecimali<=5)
-                      arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT;
+                      arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT;
                     else
-                      arrayStiliCampi[cnt] = DizionarioStiliExcel.DECIMALE9_ALIGN_RIGHT;
+                      arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE9_ALIGN_RIGHT;
                   }
                 }
               }else if(definizione.startsWith("NU") && tabellato!=null){
                 //Campo tabellato
-                arrayStiliCampi[cnt] = DizionarioStiliExcel.DATA_ALIGN_CENTER;
+                arrayStiliCampi[cnt] = DizionarioStiliExcelX.DATA_ALIGN_CENTER;
                 arrayLarghezzaColonne[cnt] = 20;
                 arrayFormatoCampiXdpre[i]="TABELLATO";
               }
@@ -1559,24 +1782,27 @@ public class ImportExportOffertaPrezziManager {
     // if (gestoreProfili.checkProtec(profiloAttivo, "COLS",
     // "VIS","GARE.TORN.TIPFORN")) {
     // }
+    Long iterga = null;
 
     Vector<?> datiTORN = this.sqlDao.getVectorQuery(
-        "select torn.tipforn from torn, gare where torn.codgar = gare.codgar1 and gare.ngara = ?",
+        "select torn.tipforn, torn.iterga from torn, gare where torn.codgar = gare.codgar1 and gare.ngara = ?",
         new Object[] { ngara });
     if (datiTORN != null && datiTORN.size() > 0) {
       if (SqlManager.getValueFromVectorParam(datiTORN, 0) != null) {
         tipoFornitura = SqlManager.getValueFromVectorParam(datiTORN, 0).longValue();
       }
+      if (SqlManager.getValueFromVectorParam(datiTORN, 1) != null) {
+        iterga = SqlManager.getValueFromVectorParam(datiTORN, 1).longValue();
+      }
     }
 
     if (tipoFornitura == null) tipoFornitura = new Long(3);
-    this.setDefinizioni(tipoFornitura,null,false);
+    this.setDefinizioni(tipoFornitura,null,false, iterga);
 
     LoggerImportOffertaPrezzi loggerImport = new LoggerImportOffertaPrezzi();
-    this.workBook = new HSSFWorkbook(
-        fileExcel.getSelezioneFile().getInputStream());
+    this.workBook = WorkbookFactory.create(fileExcel.getSelezioneFile().getInputStream());
 
-    HSSFSheet foglioLavorazioniForniture = null;
+    Sheet foglioLavorazioniForniture = null;
     int indiceFoglio = -1;
     // Flag per indicare se eseguire il controllo delle informazioni preliminari
     // del foglio Excel che si sta importando: se il foglio Excel e' esportato
@@ -1613,10 +1839,10 @@ public class ImportExportOffertaPrezziManager {
 
     if (foglioLavorazioniForniture != null) {
 
-      HSSFRow rigaGestioneRibsub = foglioLavorazioniForniture.getRow(4);
+      Row rigaGestioneRibsub = foglioLavorazioniForniture.getRow(4);
       if (rigaGestioneRibsub != null && rigaGestioneRibsub.getPhysicalNumberOfCells() > 0) {
         // Se essite la riga ed è valorizzata allora è presente la nuova gestione ribsub
-        String nuovaGestioneRibsub = UtilityExcel.leggiCellaString(
+        String nuovaGestioneRibsub = UtilityExcelX.leggiCellaString(
             foglioLavorazioniForniture, 7, 5);
         if (nuovaGestioneRibsub != null && "1".equals(nuovaGestioneRibsub))
           nuovaGestioneRibsubAttiva = true;
@@ -1920,7 +2146,7 @@ public class ImportExportOffertaPrezziManager {
    * @return
    */
   private List<CampoImportExcel> getListaCampiDaImportareExcel(
-      HSSFSheet foglioLavorazioniForniture, int indiceFoglio, String entita,
+      Sheet foglioLavorazioniForniture, int indiceFoglio, String entita,
       Long tipoFornitura, String codiceDitta,String isPrequalifica) {
 
     Map<String,List<?>> mappa = null;
@@ -2010,7 +2236,7 @@ public class ImportExportOffertaPrezziManager {
 
   }
 
-  private void importOffertaPrezziGara(HSSFSheet foglio, String ngara,
+  private void importOffertaPrezziGara(Sheet foglio, String ngara,
       List<CampoImportExcel> listaCampiImportExcel, boolean isGaraLottiConOffertaUnica,
       HttpSession session, LoggerImportOffertaPrezzi loggerImport,
       boolean isCodificaAutomaticaAttiva, Long tipoFornitura,
@@ -2091,7 +2317,7 @@ public class ImportExportOffertaPrezziManager {
 
     for (; indiceRiga < ultimaRigaValorizzata
         && contatoreRigheVuote <= IMPORT_NUMERO_RIGHE_CONSECUTIVE_VUOTE; indiceRiga++) {
-      HSSFRow rigaFoglioExcel = foglio.getRow(indiceRiga);
+      Row rigaFoglioExcel = foglio.getRow(indiceRiga);
       if (rigaFoglioExcel != null) {
         // Lista dei valori di GCAP
         List<Object> valoriCampiRigaExcel = this.letturaRiga(rigaFoglioExcel,
@@ -2185,7 +2411,7 @@ public class ImportExportOffertaPrezziManager {
                   loggerImport.addMessaggioErrore("La riga " + (indiceRiga + 1)
                       + " non importata:");
                   loggerImport.addMessaggioErrore("- la cella "
-                      + UtilityExcel.conversioneNumeroColonna(colonnaCodiceLotto + 1)
+                      + UtilityExcelX.conversioneNumeroColonna(colonnaCodiceLotto + 1)
                       + (indiceRiga + 1)
                       + " presenta un codice lotto inesistente o "
                       + "con criterio di aggiudicazione diverso da offerta "
@@ -2233,7 +2459,7 @@ public class ImportExportOffertaPrezziManager {
                 loggerImport.addMessaggioErrore("La riga " + (indiceRiga + 1)
                     + " non importata:");
                 loggerImport.addMessaggioErrore("- la cella "
-                    + UtilityExcel.conversioneNumeroColonna(colonnaCodiceLotto + 1)
+                    + UtilityExcelX.conversioneNumeroColonna(colonnaCodiceLotto + 1)
                     + (indiceRiga + 1) + " presenta un codice lotto inesistente"
                     + " o con criterio di aggiudicazione diverso da offerta "
                     + "prezzi unitari");
@@ -2996,16 +3222,16 @@ public class ImportExportOffertaPrezziManager {
    * @throws GestoreException
    */
   private void setDatiGeneraliGara(String ngara, String profiloAttivo,
-      boolean isGaraLottiConOffertaUnica, DizionarioStiliExcel dizStiliExcel)
+      boolean isGaraLottiConOffertaUnica, DizionarioStiliExcelX dizStiliExcel)
       throws SQLException, GestoreException {
 
-    HSSFSheet foglioDatiGenerali = workBook.createSheet(FOGLIO_DATI_GARA);
-    UtilityExcel.setLarghezzaColonna(foglioDatiGenerali, 1, 30);
-    UtilityExcel.setLarghezzaColonna(foglioDatiGenerali, 2, 45);
+    Sheet foglioDatiGenerali = workBook.createSheet(FOGLIO_DATI_GARA);
+    UtilityExcelX.setLarghezzaColonna(foglioDatiGenerali, 1, 30);
+    UtilityExcelX.setLarghezzaColonna(foglioDatiGenerali, 2, 45);
 
-    HSSFRow riga = null;
-    HSSFCell cella = null;
-    HSSFCellStyle stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_INTESTAZIONE);
+    Row riga = null;
+    Cell cella = null;
+    CellStyle stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_INTESTAZIONE);
 
     // Scrittura dell'intestazione delle due colonne del foglio
     // Prima riga del foglio
@@ -3016,8 +3242,8 @@ public class ImportExportOffertaPrezziManager {
     // Seconda cella: titolo "Dati generali della gara"
     cella = riga.createCell(1);
     cella.setCellStyle(stile);
-    cella.setCellValue(new HSSFRichTextString("Dati generali della gara"));
-    stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA);
+    cella.setCellValue(new XSSFRichTextString("Dati generali della gara"));
+    stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA);
     // Seconda riga del foglio (riga nascosta)
     riga = foglioDatiGenerali.createRow(1);
     // Prima cella: vuota
@@ -3028,7 +3254,7 @@ public class ImportExportOffertaPrezziManager {
     cella.setCellStyle(stile);
     riga.setZeroHeight(true); // nascondo la riga
 
-    stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_SEPARATRICE);
+    stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_SEPARATRICE);
     // Terza riga del foglio (riga di divisione tra intestazione e dati)
     riga = foglioDatiGenerali.createRow(2);
     riga.setHeightInPoints(3);
@@ -3058,13 +3284,13 @@ public class ImportExportOffertaPrezziManager {
           // codice ALICE
           if (gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
               "GARE.TORN.CODGAR")) {
-            UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+            UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                 "Codice gara", dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
+                        DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
             if (ngara != null && ngara.length() > 0)
-              UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
                   ngara, dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_LEFT));
+                        DizionarioStiliExcelX.STRINGA_ALIGN_LEFT));
             else
               indiceRiga++;
           }
@@ -3072,13 +3298,13 @@ public class ImportExportOffertaPrezziManager {
           // Titolo della tornata
           if (gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
               "GARE.GARE.NOT_GAR")) {
-            UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga, "Oggetto",
+            UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga, "Oggetto",
                 dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
+                        DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
             if (destor != null && destor.length() > 0)
-              UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
                   destor, dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_LEFT));
+                        DizionarioStiliExcelX.STRINGA_ALIGN_LEFT));
             else
               indiceRiga++;
           }
@@ -3086,14 +3312,14 @@ public class ImportExportOffertaPrezziManager {
           // Importo complessivo
           if (gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
               "GARE.TORN.IMPTOR")) {
-            UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+            UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                 "Importo complessivo", dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_ITALIC));
+                        DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_ITALIC));
             if (imptor != null && imptor.doubleValue() != 0)
-              UtilityExcel.scriviCella(foglioDatiGenerali, 2,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 2,
                   indiceRiga++, imptor,
                   dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT));
+                        DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT));
             else
               indiceRiga++;
           }
@@ -3173,13 +3399,13 @@ public class ImportExportOffertaPrezziManager {
           if ((new Long(1)).equals(bustalotti)) {
             // codice ALICE
             if (gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS", "GARE.GARE.CODGAR1")) {
-              UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                   "Codice gara", dizStiliExcel.getStileExcel(
-                          DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
+                          DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
               if (codgar != null && codgar.length() > 0)
-                UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+                UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
                     codgar, dizStiliExcel.getStileExcel(
-                          DizionarioStiliExcel.STRINGA_ALIGN_LEFT));
+                          DizionarioStiliExcelX.STRINGA_ALIGN_LEFT));
               else
                 indiceRiga++;
             }
@@ -3187,26 +3413,26 @@ public class ImportExportOffertaPrezziManager {
             //Oggetto gara
             if (gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
                 "GARE.GARE.NOT_GAR")) {
-              UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                   "Oggetto gara", dizStiliExcel.getStileExcel(
-                          DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
+                          DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
               if (destor != null && destor.length() > 0)
-                UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+                UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
                     destor, dizStiliExcel.getStileExcel(
-                          DizionarioStiliExcel.STRINGA_ALIGN_LEFT));
+                          DizionarioStiliExcelX.STRINGA_ALIGN_LEFT));
               else
                 indiceRiga++;
             }
             // lotto
             if (gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
                 "GARE.GARE.CODIGA")) {
-              UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                   "Lotto", dizStiliExcel.getStileExcel(
-                          DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
+                          DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
               if (codiga != null && codiga.length() > 0)
-                UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+                UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
                     codiga, dizStiliExcel.getStileExcel(
-                          DizionarioStiliExcel.STRINGA_ALIGN_LEFT));
+                          DizionarioStiliExcelX.STRINGA_ALIGN_LEFT));
               else
                 indiceRiga++;
             }
@@ -3215,13 +3441,13 @@ public class ImportExportOffertaPrezziManager {
             // codice ALICE
             if (gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
                 "GARE.GARE.NGARA")) {
-              UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                   "Codice gara", dizStiliExcel.getStileExcel(
-                          DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
+                          DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
               if (ngara != null && ngara.length() > 0)
-                UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+                UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
                     ngara, dizStiliExcel.getStileExcel(
-                          DizionarioStiliExcel.STRINGA_ALIGN_LEFT));
+                          DizionarioStiliExcelX.STRINGA_ALIGN_LEFT));
               else
                 indiceRiga++;
             }
@@ -3230,13 +3456,13 @@ public class ImportExportOffertaPrezziManager {
           // Codice CIG
           if (gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
               "GARE.GARE.CODCIG")) {
-            UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+            UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                 "Codice CIG", dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
+                        DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
             if (codiceCIG != null && codiceCIG.length() > 0)
-              UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
                   codiceCIG, dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_LEFT));
+                        DizionarioStiliExcelX.STRINGA_ALIGN_LEFT));
             else
               indiceRiga++;
           }
@@ -3244,13 +3470,13 @@ public class ImportExportOffertaPrezziManager {
           // Titolo della gara
           if (gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
               "GARE.GARE.NOT_GAR")) {
-            UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+            UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                 "Oggetto", dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
+                        DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
             if (not_gar != null && not_gar.length() > 0)
-              UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
                   not_gar, dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_LEFT));
+                        DizionarioStiliExcelX.STRINGA_ALIGN_LEFT));
             else
               indiceRiga++;
           }
@@ -3258,13 +3484,13 @@ public class ImportExportOffertaPrezziManager {
           // Importo opere a misura
           if (gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
               "GARE.GARE.IMPMIS") && "1".equals("" + tipoGara)) {
-            UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+            UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                 "Importo opere a misura", dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_ITALIC));
+                        DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_ITALIC));
             if (impmis != null && impmis.doubleValue() != 0)
-              UtilityExcel.scriviCella(foglioDatiGenerali, 2,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 2,
                   indiceRiga++, impmis, dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT));
+                        DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT));
             else
               indiceRiga++;
           }
@@ -3272,13 +3498,13 @@ public class ImportExportOffertaPrezziManager {
           // Importo opere a corpo
           if (gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
               "GARE.GARE.IMPCOR") && "1".equals("" + tipoGara)) {
-            UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+            UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                 "Importo opere a corpo", dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_ITALIC));
+                        DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_ITALIC));
             if (impcor != null)
-              UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
                   impcor, dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT));
+                        DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT));
             else
               indiceRiga++;
           }
@@ -3286,13 +3512,13 @@ public class ImportExportOffertaPrezziManager {
           // Importo oneri di progettazione: non previsto da analisi
           if(gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
               "GARE.ONPRGE") && tipgen!=null && tipgen.longValue()==1){
-            UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+            UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                 "Oneri di progettazione", dizStiliExcel.getStileExcel(
-                    DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_ITALIC));
+                    DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_ITALIC));
             if (onprge != null) {
-              UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,onprge,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,onprge,
                   dizStiliExcel.getStileExcel(
-                      DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT));
+                      DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT));
 
             } else
               indiceRiga++;
@@ -3303,13 +3529,13 @@ public class ImportExportOffertaPrezziManager {
           // Importo a base d'asta
           if (gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
               "GARE.GARE.IMPAPP")) {
-            UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+            UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                 "Importo a base di gara", dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
+                        DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_BOLD_ITALIC));
             if (impapp != null) {
-              UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,impapp,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,impapp,
                   dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT_LEFT_BOLD));
+                        DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT_LEFT_BOLD));
             } else
               indiceRiga++;
           }
@@ -3324,25 +3550,25 @@ public class ImportExportOffertaPrezziManager {
             double importoSoggettoARibasso = impapp.doubleValue()
                 - impnrl.doubleValue() - impsic.doubleValue()
                 - onprge.doubleValue();
-            UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+            UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                 "di cui soggetto a ribasso", dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_ITALIC));
-            UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+                        DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_ITALIC));
+            UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
                 new Double(importoSoggettoARibasso),
                 dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT));
+                        DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT));
           }
 
           // Importo non soggetto a ribasso
           if (gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
               "GARE.GARE.IMPNRL")) {
-            UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+            UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                 "di cui non soggetto a ribasso", dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_ITALIC));
+                        DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_ITALIC));
             if (impnrl != null && impnrl.doubleValue() != 0)
-              UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
                   impnrl, dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT));
+                        DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT));
             else
               indiceRiga++;
           }
@@ -3350,13 +3576,13 @@ public class ImportExportOffertaPrezziManager {
           // Importo di cui sicurezza
           if (gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
               "GARE.GARE.IMPSIC")) {
-            UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+            UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
                 "di cui sicurezza", dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.STRINGA_ALIGN_RIGHT_ITALIC));
+                        DizionarioStiliExcelX.STRINGA_ALIGN_RIGHT_ITALIC));
             if (impsic != null && impsic.doubleValue() != 0)
-              UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+              UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
                   impsic, dizStiliExcel.getStileExcel(
-                        DizionarioStiliExcel.DECIMALE2_ALIGN_RIGHT));
+                        DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT));
           }
 
           // Importo oneri di progettazione: non previsto da analisi
@@ -3364,10 +3590,10 @@ public class ImportExportOffertaPrezziManager {
            * if(gestoreProfili.checkProtec(profiloAttivo, "COLS", "VIS",
            * "GARE.ONPRGE")){ campo =
            * dizCampi.getCampoByNomeFisico("GARE.ONPRGE");
-           * UtilityExcel.scriviCella(foglioDatiGenerali, 1, indiceRiga,
+           * UtilityExcelX.scriviCella(foglioDatiGenerali, 1, indiceRiga,
            * campo.getDescrizioneBreve(), stileTestoRight); if (onprge != null
            * && onprge.doubleValue() != 0)
-           * UtilityExcel.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
+           * UtilityExcelX.scriviCella(foglioDatiGenerali, 2, indiceRiga++,
            * onprge, stileDecimal2Right); }
            */
         }
@@ -3403,12 +3629,12 @@ public class ImportExportOffertaPrezziManager {
    */
   private void setLavorazioniForniture(String ngara, String profiloAttivo,
       boolean exportPrezziUnitari, boolean isGaraLottiConOffertaUnica,
-      DizionarioStiliExcel dizStiliExcel, Long tipoFornitura, String ribcal)
+      DizionarioStiliExcelX dizStiliExcel, Long tipoFornitura, String ribcal)
       throws GestoreException, SQLException {
 
     GestoreProfili gestoreProfili = geneManager.getProfili();
 
-    HSSFSheet foglioLavorazioniForniture=null;
+    Sheet foglioLavorazioniForniture=null;
 
     if (new Long(98).equals(tipoFornitura)){
       foglioLavorazioniForniture = workBook.createSheet(FOGLIO_LISTA_PRODOTTI[0]);
@@ -3651,7 +3877,21 @@ public class ImportExportOffertaPrezziManager {
 
     case 3:
       if (it.eldasoft.utils.sql.comp.SqlManager.DATABASE_ORACLE.equals(SqlManager.getTipoDB())) {
-        selectGCAP = "select GCAP.CODVOC, GCAP.VOCE, GCAP.CLASI1, GCAP.SOLSIC, GCAP.SOGRIB, UNIMIS.DESUNI, GCAP.QUANTI, GCAP.PREZUN, GCAP.NGARA, GCAP.CONTAF, GCAP.NORVOC, GCAP.CODCAT, GCAP.PERCIVA, GCAP.PESO "
+        selectGCAP = "select GCAP.CODVOC, "//0
+            + "GCAP.VOCE, " //1
+            + "GCAP.CLASI1, " //2
+            + "GCAP.SOLSIC, " //3
+            + "GCAP.SOGRIB, " //4
+            + "UNIMIS.DESUNI, " //5
+            + "GCAP.QUANTI, " //6
+            + "GCAP.PREZUN, " //7
+            + "GCAP.NGARA, " //8
+            + "GCAP.CONTAF, " //9
+            + "GCAP.NORVOC, " //10
+            + "GCAP.CODCAT, " //11
+            + "GCAP.PERCIVA, " //12
+            + "GCAP.PESO, " //13
+            + "GCAP.DATACONS " //14
             + "from GCAP, unimis "
             + "where GCAP.UNIMIS = UNIMIS.TIPO(+) "
             + "and GCAP.NGARA = ? "
@@ -3661,7 +3901,21 @@ public class ImportExportOffertaPrezziManager {
         // Osservazione: questa query e' stata testata su Oracle 10
       } else if (it.eldasoft.utils.sql.comp.SqlManager.DATABASE_SQL_SERVER.equals(SqlManager.getTipoDB())
           || it.eldasoft.utils.sql.comp.SqlManager.DATABASE_POSTGRES.equals(SqlManager.getTipoDB())) {
-        selectGCAP = "select GCAP.CODVOC, GCAP.VOCE, GCAP.CLASI1, GCAP.SOLSIC, GCAP.SOGRIB, UNIMIS_1.DESUNI, GCAP.QUANTI, GCAP.PREZUN, GCAP.NGARA, GCAP.CONTAF, GCAP.NORVOC, GCAP.CODCAT, GCAP.PERCIVA, GCAP.PESO "
+        selectGCAP = "select GCAP.CODVOC, " //0
+            + "GCAP.VOCE, " //1
+            + "GCAP.CLASI1, " //2
+            + "GCAP.SOLSIC, " //3
+            + "GCAP.SOGRIB, " // 4
+            + "UNIMIS_1.DESUNI, " //5
+            + "GCAP.QUANTI, " //6
+            + "GCAP.PREZUN, " //7
+            + "GCAP.NGARA, " //8
+            + "GCAP.CONTAF, " //9
+            + "GCAP.NORVOC, " //10
+            + "GCAP.CODCAT, " //11
+            + "GCAP.PERCIVA, " //12
+            + "GCAP.PESO, " //13
+            + "GCAP.DATACONS " //14
             + "from GCAP left outer join (select * from unimis where conta=-1) unimis_1 on GCAP.UNIMIS = UNIMIS_1.TIPO "
             + "where GCAP.NGARA = ? "
             + "and GCAP.DITTAO is null "
@@ -3773,16 +4027,20 @@ public class ImportExportOffertaPrezziManager {
         numeroRigheDaFormattare = 10000;
       // Convalida dati per CODIGA
       if (arrayCampiVisibili[1]) {
-      CellRangeAddressList addressList = new CellRangeAddressList(
-            FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE - 1,
-            FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE
-                + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[1] - 1,
-            arrayIndiceColonnaCampi[1] - 1);
-        DVConstraint validazioneCODIGA = DVConstraint.createNumericConstraint(
-            DVConstraint.ValidationType.INTEGER, DVConstraint.OperatorType.BETWEEN, "0",
-            "999");
-        HSSFDataValidation dataValidation = new HSSFDataValidation(addressList,
-            validazioneCODIGA);
+        CellRangeAddressList addressList = new CellRangeAddressList(
+              FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE - 1,
+              FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE
+                  + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[1] - 1,
+              arrayIndiceColonnaCampi[1] - 1);
+
+        DataValidationHelper dvHelper = foglioLavorazioniForniture.getDataValidationHelper();
+        DataValidationConstraint validazioneCODIGA = dvHelper.createNumericConstraint(
+        DataValidationConstraint.ValidationType.INTEGER, DataValidationConstraint.OperatorType.BETWEEN, "0", "999");
+        DataValidation dataValidation = dvHelper.createValidation(
+        validazioneCODIGA, addressList);
+        dataValidation.setSuppressDropDownArrow(true);
+        dataValidation.setShowErrorBox(true);
+
         foglioLavorazioniForniture.addValidationData(dataValidation);
      }
 
@@ -3794,9 +4052,14 @@ public class ImportExportOffertaPrezziManager {
                 FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE
                     + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[2] - 1,
                 arrayIndiceColonnaCampi[2] - 1);
-            DVConstraint validazioneCODCIG = DVConstraint.createNumericConstraint(
-            DVConstraint.ValidationType.TEXT_LENGTH, DVConstraint.OperatorType.EQUAL, "10",null);
-            HSSFDataValidation dataValidation = new HSSFDataValidation(addressList, validazioneCODCIG);
+
+            DataValidationHelper dvHelper = foglioLavorazioniForniture.getDataValidationHelper();
+            DataValidationConstraint validazioneCODIGA = dvHelper.createNumericConstraint(
+                DataValidationConstraint.ValidationType.TEXT_LENGTH, DataValidationConstraint.OperatorType.EQUAL, "10",null);
+            DataValidation dataValidation = dvHelper.createValidation(
+                validazioneCODIGA, addressList);
+              dataValidation.setSuppressDropDownArrow(true);
+              dataValidation.setShowErrorBox(true);
             foglioLavorazioniForniture.addValidationData(dataValidation);
          }
 
@@ -3807,9 +4070,11 @@ public class ImportExportOffertaPrezziManager {
               FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE
                   + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[7] - 1,
               arrayIndiceColonnaCampi[7] - 1);
-          HSSFDataValidation dataValidation = new HSSFDataValidation(addressList,
-              DATA_VALIDATION_CONSTRAINT_CORPO_MISURA);
-          dataValidation.setSuppressDropDownArrow(false);
+          DataValidationHelper dvHelper = foglioLavorazioniForniture.getDataValidationHelper();
+          DataValidation dataValidation = dvHelper.createValidation(
+          dvHelper.createExplicitListConstraint(DATA_VALIDATION_CONSTRAINT_CORPO_MISURA), addressList);
+          dataValidation.setSuppressDropDownArrow(true);
+          dataValidation.setShowErrorBox(true);
           foglioLavorazioniForniture.addValidationData(dataValidation);
         }
 
@@ -3820,9 +4085,11 @@ public class ImportExportOffertaPrezziManager {
               FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE
                   + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[8] - 1,
               arrayIndiceColonnaCampi[8] - 1);
-          HSSFDataValidation dataValidation = new HSSFDataValidation(addressList,
-              DATA_VALIDATION_CONSTRAINT_SI_NO);
-          dataValidation.setSuppressDropDownArrow(false);
+          DataValidationHelper dvHelper = foglioLavorazioniForniture.getDataValidationHelper();
+          DataValidation dataValidation = dvHelper.createValidation(
+          dvHelper.createExplicitListConstraint(DATA_VALIDATION_CONSTRAINT_SI_NO), addressList);
+          dataValidation.setSuppressDropDownArrow(true);
+          dataValidation.setShowErrorBox(true);
           foglioLavorazioniForniture.addValidationData(dataValidation);
         }
 
@@ -3833,9 +4100,11 @@ public class ImportExportOffertaPrezziManager {
               FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE
                   + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[9] - 1,
               arrayIndiceColonnaCampi[9] - 1);
-          HSSFDataValidation dataValidation = new HSSFDataValidation(addressList,
-              DATA_VALIDATION_CONSTRAINT_SI_NO);
-          dataValidation.setSuppressDropDownArrow(false);
+          DataValidationHelper dvHelper = foglioLavorazioniForniture.getDataValidationHelper();
+          DataValidation dataValidation = dvHelper.createValidation(
+          dvHelper.createExplicitListConstraint(DATA_VALIDATION_CONSTRAINT_SI_NO), addressList);
+          dataValidation.setSuppressDropDownArrow(true);
+          dataValidation.setShowErrorBox(true);
           foglioLavorazioniForniture.addValidationData(dataValidation);
         }
       }
@@ -3843,34 +4112,39 @@ public class ImportExportOffertaPrezziManager {
       int indiceColonna = 1;
       DizionarioCampi dizCampi = DizionarioCampi.getInstance();
       Campo campo = null;
-      HSSFRow riga = null;
+      Row riga = null;
 
       //Si nasconde la colonna relativa a CONTAF
       foglioLavorazioniForniture.setColumnHidden(posCampoContaf, true);
 
+      List<CellStyle> stili = new ArrayList<CellStyle>();
+      stili.add(dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA)); //fittizi, per sincronizzare gli indici. Non saranno mai utilizzato
+      stili.add(dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
       for (int ii = 0; ii < arrayCampi.length; ii++) {
-        if (arrayCampiVisibili[ii])
+        if (arrayCampiVisibili[ii]) {
           foglioLavorazioniForniture.setDefaultColumnStyle(
               (short) (arrayIndiceColonnaCampi[ii] - 1),
               dizStiliExcel.getStileExcel(arrayStiliCampi[ii]));
+          stili.add(dizStiliExcel.getStileExcel(arrayStiliCampi[ii]));
+        }
       }
       // Il formato della colonna Importo: decimale a 5 cifre con allineamento
       // a destra
       foglioLavorazioniForniture.setDefaultColumnStyle(
           (short) (indiceColonnaImporto - 1),
-          dizStiliExcel.getStileExcel(DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT));
+          dizStiliExcel.getStileExcel(DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT));
 
       foglioLavorazioniForniture.setPrintGridlines(true);
       // (0.77 inc <=> 2 cm)
-      foglioLavorazioniForniture.setMargin(HSSFSheet.TopMargin, 0.77);
-      foglioLavorazioniForniture.setMargin(HSSFSheet.BottomMargin, 0.77);
-      foglioLavorazioniForniture.setMargin(HSSFSheet.LeftMargin, 0.77);
-      foglioLavorazioniForniture.setMargin(HSSFSheet.RightMargin, 0.77);
+      foglioLavorazioniForniture.setMargin(Sheet.TopMargin, 0.77);
+      foglioLavorazioniForniture.setMargin(Sheet.BottomMargin, 0.77);
+      foglioLavorazioniForniture.setMargin(Sheet.LeftMargin, 0.77);
+      foglioLavorazioniForniture.setMargin(Sheet.RightMargin, 0.77);
 
       // Set delle informazioni per l'area di stampa dei dati del foglio
-      HSSFPrintSetup printSetup = foglioLavorazioniForniture.getPrintSetup();
+      PrintSetup printSetup = foglioLavorazioniForniture.getPrintSetup();
       printSetup.setLandscape(true);
-      printSetup.setPaperSize(HSSFPrintSetup.A4_PAPERSIZE);
+      printSetup.setPaperSize(PrintSetup.A4_PAPERSIZE);
 
       if (isGaraLottiConOffertaUnica && isCodificaAutomaticaAttiva)
         printSetup.setScale((short) 62); // Presumo significhi zoom al 62%
@@ -3882,7 +4156,7 @@ public class ImportExportOffertaPrezziManager {
       // Scrittura dell'intestazione della foglio
       for (int indiceRigaIntestazione = 0; indiceRigaIntestazione < FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE; indiceRigaIntestazione++) {
         riga = foglioLavorazioniForniture.createRow(indiceRigaIntestazione);
-        HSSFCellStyle stile = null;
+        CellStyle stile = null;
         for (int ii = 0; ii < arrayCampi.length; ii++) {
           if (arrayCampiVisibili[ii]) {
             switch (indiceRigaIntestazione) {
@@ -3892,47 +4166,47 @@ public class ImportExportOffertaPrezziManager {
               switch (tipoFornitura.intValue()) {
               case 1:
                 if (ii < 24) {
-                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_INTESTAZIONE);
+                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_INTESTAZIONE);
                 } else {
-                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_INTESTAZIONE_ARANCIONE);
+                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_INTESTAZIONE_ARANCIONE);
                 }
                 break;
 
               case 2:
                 if (ii < 20) {
-                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_INTESTAZIONE);
+                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_INTESTAZIONE);
                 } else {
-                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_INTESTAZIONE_ARANCIONE);
+                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_INTESTAZIONE_ARANCIONE);
                 }
                 break;
 
               case 98:
                 if (ii < 10) {
-                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_INTESTAZIONE);
+                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_INTESTAZIONE);
                 } else {
-                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_INTESTAZIONE_ARANCIONE);
+                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_INTESTAZIONE_ARANCIONE);
                 }
                 break;
 
               default:
                 if (stile == null)
-                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_INTESTAZIONE);
+                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_INTESTAZIONE);
 
                 break;
               }
 
-              UtilityExcel.scriviCella(foglioLavorazioniForniture,
+              UtilityExcelX.scriviCella(foglioLavorazioniForniture,
                   arrayIndiceColonnaCampi[ii], indiceRigaIntestazione + 1,
                   arrayTitoloColonne[ii], stile);
-              UtilityExcel.setLarghezzaColonna(foglioLavorazioniForniture,
+              UtilityExcelX.setLarghezzaColonna(foglioLavorazioniForniture,
                   arrayIndiceColonnaCampi[ii], arrayLarghezzaColonne[ii]);
               break;
             case FOGLIO_LAVORAZIONE_E_FORNITURE_RIGA_NOME_FISICO_CAMPI - 1:
               // Seconda riga: nomi fisici dei campi
               if (stile == null)
-                stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA);
+                stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA);
               campo = dizCampi.getCampoByNomeFisico(arrayCampi[ii].substring(arrayCampi[ii].indexOf(".") + 1));
-              UtilityExcel.scriviCella(foglioLavorazioniForniture,
+              UtilityExcelX.scriviCella(foglioLavorazioniForniture,
                   arrayIndiceColonnaCampi[ii], indiceRigaIntestazione + 1,
                   SCHEMA_CAMPI.concat(".").concat(campo.getNomeFisicoCampo()),
                   stile);
@@ -3944,27 +4218,27 @@ public class ImportExportOffertaPrezziManager {
               switch (tipoFornitura.intValue()) {
               case 1:
                 if (ii < 24) {
-                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_SEPARATRICE);
+                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_SEPARATRICE);
                 } else {
-                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_SEPARATRICE_ARANCIONE);
+                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_SEPARATRICE_ARANCIONE);
                 }
                 break;
 
               case 2:
                 if (ii < 20) {
-                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_SEPARATRICE);
+                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_SEPARATRICE);
                 } else {
-                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_SEPARATRICE_ARANCIONE);
+                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_SEPARATRICE_ARANCIONE);
                 }
                 break;
 
               default:
                 if (stile == null)
-                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_SEPARATRICE);
+                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_SEPARATRICE);
                 break;
               }
 
-              UtilityExcel.scriviCella(foglioLavorazioniForniture,
+              UtilityExcelX.scriviCella(foglioLavorazioniForniture,
                   arrayIndiceColonnaCampi[ii], indiceRigaIntestazione + 1, " ",
                   stile);
               break;
@@ -3975,12 +4249,12 @@ public class ImportExportOffertaPrezziManager {
         if (new Long(98).equals(tipoFornitura)) {
           if (indiceRigaIntestazione == 0) {
             // Set titolo della colonna importo
-            UtilityExcel.scriviCella(foglioLavorazioniForniture,
+            UtilityExcelX.scriviCella(foglioLavorazioniForniture,
                 indiceColonnaImporto, indiceRigaIntestazione + 1, "Prezzo complessivo",
                 stile);
             // La colonna 'Importo' ha la stessa larghezza della colonna 'Prezzo
             // unitario'
-            UtilityExcel.setLarghezzaColonna(foglioLavorazioniForniture,
+            UtilityExcelX.setLarghezzaColonna(foglioLavorazioniForniture,
                 indiceColonnaImporto,
                 arrayLarghezzaColonne[arrayLarghezzaColonne.length - 1]);
           } else if (indiceRigaIntestazione > 0
@@ -3988,7 +4262,7 @@ public class ImportExportOffertaPrezziManager {
             // Nascondo la riga del foglio
             riga.setZeroHeight(true);
           } else if (indiceRigaIntestazione == FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE - 2) {
-            UtilityExcel.scriviCella(foglioLavorazioniForniture,
+            UtilityExcelX.scriviCella(foglioLavorazioniForniture,
                 indiceColonnaImporto, indiceRigaIntestazione + 1, " ", stile);
             // Set altezza della riga che divide l'intestazione dai dati
             riga.setHeightInPoints(3);
@@ -3996,12 +4270,12 @@ public class ImportExportOffertaPrezziManager {
         }else{
           if (indiceRigaIntestazione == 0) {
             // Set titolo della colonna importo
-            UtilityExcel.scriviCella(foglioLavorazioniForniture,
+            UtilityExcelX.scriviCella(foglioLavorazioniForniture,
                 indiceColonnaImporto, indiceRigaIntestazione + 1, "Importo",
                 stile);
             // La colonna 'Importo' ha la stessa larghezza della colonna 'Prezzo
             // unitario'
-            UtilityExcel.setLarghezzaColonna(foglioLavorazioniForniture,
+            UtilityExcelX.setLarghezzaColonna(foglioLavorazioniForniture,
                 indiceColonnaImporto,
                 arrayLarghezzaColonne[arrayLarghezzaColonne.length - 1]);
           } else if (indiceRigaIntestazione > 0
@@ -4009,7 +4283,7 @@ public class ImportExportOffertaPrezziManager {
             // Nascondo la riga del foglio
             riga.setZeroHeight(true);
           } else if (indiceRigaIntestazione == FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE - 2) {
-            UtilityExcel.scriviCella(foglioLavorazioniForniture,
+            UtilityExcelX.scriviCella(foglioLavorazioniForniture,
                 indiceColonnaImporto, indiceRigaIntestazione + 1, " ", stile);
             // Set altezza della riga che divide l'intestazione dai dati
             riga.setHeightInPoints(3);
@@ -4035,37 +4309,38 @@ public class ImportExportOffertaPrezziManager {
 
       switch (tipoFornitura.intValue()) {
       case 1:
-        letteraColonnaQUANTI = UtilityExcel.conversioneNumeroColonna(arrayIndiceColonnaCampi[20]);
-        letteraColonnaPREZUN = UtilityExcel.conversioneNumeroColonna(arrayIndiceColonnaCampi[33]);
+        letteraColonnaQUANTI = UtilityExcelX.conversioneNumeroColonna(arrayIndiceColonnaCampi[20]);
+        letteraColonnaPREZUN = UtilityExcelX.conversioneNumeroColonna(arrayIndiceColonnaCampi[33]);
         break;
 
       case 2:
-        letteraColonnaQUANTI = UtilityExcel.conversioneNumeroColonna(arrayIndiceColonnaCampi[18]);
-        letteraColonnaPREZUN = UtilityExcel.conversioneNumeroColonna(arrayIndiceColonnaCampi[26]);
+        letteraColonnaQUANTI = UtilityExcelX.conversioneNumeroColonna(arrayIndiceColonnaCampi[18]);
+        letteraColonnaPREZUN = UtilityExcelX.conversioneNumeroColonna(arrayIndiceColonnaCampi[26]);
         break;
 
       case 3:
-        letteraColonnaQUANTI = UtilityExcel.conversioneNumeroColonna(arrayIndiceColonnaCampi[11]);
-        letteraColonnaPREZUN = UtilityExcel.conversioneNumeroColonna(arrayIndiceColonnaCampi[12]);
+        letteraColonnaQUANTI = UtilityExcelX.conversioneNumeroColonna(arrayIndiceColonnaCampi[11]);
+        letteraColonnaPREZUN = UtilityExcelX.conversioneNumeroColonna(arrayIndiceColonnaCampi[12]);
         break;
 
       case 98:
-        letteraColonnaQUANTI = UtilityExcel.conversioneNumeroColonna(arrayIndiceColonnaCampi[14]);
-        letteraColonnaPREZUN = UtilityExcel.conversioneNumeroColonna(arrayIndiceColonnaCampi[15]);
+        letteraColonnaQUANTI = UtilityExcelX.conversioneNumeroColonna(arrayIndiceColonnaCampi[14]);
+        letteraColonnaPREZUN = UtilityExcelX.conversioneNumeroColonna(arrayIndiceColonnaCampi[15]);
         break;
 
       default:
         break;
       }
 
+      CellStyle stileFormula = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT);
       if (letteraColonnaQUANTI != null && letteraColonnaPREZUN != null) {
         for (int ig = FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE; ig <= (FOGLIO_LAVORAZIONE_E_FORNITURE__RIGA_INIZIALE + numeroRigheDaFormattare); ig++) {
           String formula = "ROUND(" + letteraColonnaQUANTI + ig + ", 3) * ROUND("
               + letteraColonnaPREZUN + ig + ", 5)";
           // String formula = letteraColonnaQUANTI + ig + " * " +
           // letteraColonnaPREZUN + ig;
-          UtilityExcel.scriviFormulaCella(foglioLavorazioniForniture,
-              indiceColonnaImporto, ig, formula, null);
+          UtilityExcelX.scriviFormulaCella(foglioLavorazioniForniture,
+              indiceColonnaImporto, ig, formula, stileFormula);
         }
       }
 
@@ -4100,8 +4375,8 @@ public class ImportExportOffertaPrezziManager {
 
               // Campo NGARA (campo visibile se gara a lotti con offerta unica)
               if (isGaraLottiConOffertaUnica && arrayCampiVisibili[0]) {
-                UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                    indiceColonna++, indiceRiga + i, tmpNgara, null);
+                UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                    indiceColonna++, indiceRiga + i, tmpNgara, stili.get(indiceColonna));
               }
 
               // Campo CODIGA (campo visibile se gara a lotti con offerta unica
@@ -4112,11 +4387,11 @@ public class ImportExportOffertaPrezziManager {
                     new Object[] { tmpNgara });
                 if (tmpDatiGara != null && tmpDatiGara.size() > 0) {
                   String codiga = ((JdbcParametro) tmpDatiGara.get(0)).getStringValue();
-                  UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                      indiceColonna++, indiceRiga + i, codiga, null);
+                  UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                      indiceColonna++, indiceRiga + i, codiga, stili.get(indiceColonna));
                   String codcig = ((JdbcParametro) tmpDatiGara.get(1)).getStringValue();
-                  UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                      indiceColonna++, indiceRiga + i, codcig, null);
+                  UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                      indiceColonna++, indiceRiga + i, codcig, stili.get(indiceColonna));
                 } else
                   indiceColonna = indiceColonna + 2;
               }
@@ -4127,7 +4402,7 @@ public class ImportExportOffertaPrezziManager {
                * if(isGaraLottiConOffertaUnica && arrayCampiVisibili[2]){ Double
                * norvoc = SqlManager.getValueFromVectorParam( record,
                * 10).doubleValue(); if (norvoc != null)
-               * UtilityExcel.scriviCella(foglioLavorazioniForniture,
+               * UtilityExcelX.scriviCella(foglioLavorazioniForniture,
                * indiceColonna++, indiceRiga + i, norvoc, null); else
                * indiceColonna++; }
                */
@@ -4136,7 +4411,7 @@ public class ImportExportOffertaPrezziManager {
                 // Campo NORVOC
                 Double norvoc = SqlManager.getValueFromVectorParam( record, 7).doubleValue();
                 if (norvoc != null)
-                   UtilityExcel.scriviCella(foglioLavorazioniForniture,indiceColonna++, indiceRiga + i, norvoc, null);
+                   UtilityExcelX.scriviCella(foglioLavorazioniForniture,indiceColonna++, indiceRiga + i, norvoc, stili.get(indiceColonna));
                 else
                    indiceColonna++;
               }
@@ -4150,8 +4425,8 @@ public class ImportExportOffertaPrezziManager {
                 String codvoc = SqlManager.getValueFromVectorParam(
                     record, 0).toString();
                 if (codvoc != null && codvoc.length() > 0)
-                  UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                      indiceColonna++, indiceRiga + i, codvoc, null);
+                  UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                      indiceColonna++, indiceRiga + i, codvoc, stili.get(indiceColonna));
                 else
                   indiceColonna++;
               }
@@ -4168,8 +4443,8 @@ public class ImportExportOffertaPrezziManager {
                 String voce = SqlManager.getValueFromVectorParam(
                     record, posCampiRecord).toString();
                 if (voce != null && voce.length() > 0)
-                  UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                      indiceColonna++, indiceRiga + i, voce, null);
+                  UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                      indiceColonna++, indiceRiga + i, voce, stili.get(indiceColonna));
                 else
                   indiceColonna++;
               }
@@ -4220,8 +4495,8 @@ public class ImportExportOffertaPrezziManager {
                 if (desest != null && desest.length() > 0) {
                   if (desest.length() > 32766)
                     desest = desest.substring(0, 32759).concat(" [...]");
-                  UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                      indiceColonna++, indiceRiga + i, desest, null);
+                  UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                      indiceColonna++, indiceRiga + i, desest, stili.get(indiceColonna));
                 } else
                   indiceColonna++;
               }
@@ -4232,8 +4507,8 @@ public class ImportExportOffertaPrezziManager {
                   String codcat = SqlManager.getValueFromVectorParam(
                       record, 11).toString();
                   if (codcat != null && codcat.length() > 0)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, codcat, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, codcat, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4242,10 +4517,10 @@ public class ImportExportOffertaPrezziManager {
                 if (arrayCampiVisibili[7]) {
                   Long clasi1 = SqlManager.getValueFromVectorParam(record, 2).longValue();
                   if (clasi1 != null)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
                         indiceColonna++,  indiceRiga + i,
                         (mappaTabelleatoA1051.get(clasi1.toString())).toLowerCase(),
-                        null);
+                        stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4255,9 +4530,9 @@ public class ImportExportOffertaPrezziManager {
                 if (arrayCampiVisibili[8]) {
                   solsic = SqlManager.getValueFromVectorParam(record, 3).toString();
                   if (solsic != null && solsic.length() > 0)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
                         indiceColonna++, indiceRiga + i,
-                        solsic.equals("1") ? "si" : "no", null);
+                        solsic.equals("1") ? "si" : "no", stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4267,9 +4542,9 @@ public class ImportExportOffertaPrezziManager {
                 if (arrayCampiVisibili[9]) {
                   sogrib = SqlManager.getValueFromVectorParam(record, 4).toString();
                   if (sogrib != null && sogrib.length() > 0) {
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
                         indiceColonna++, indiceRiga + i,
-                        sogrib.equals("1") ? "no" : "si", null);
+                        sogrib.equals("1") ? "no" : "si", stili.get(indiceColonna));
                   } else
                     indiceColonna++;
                 }
@@ -4279,8 +4554,8 @@ public class ImportExportOffertaPrezziManager {
                   String desuni = SqlManager.getValueFromVectorParam(
                       record, 5).toString();
                   if (desuni != null && desuni.length() > 0)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, desuni, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, desuni, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4290,8 +4565,8 @@ public class ImportExportOffertaPrezziManager {
                   Double quanti = SqlManager.getValueFromVectorParam(
                       record, 6).doubleValue();
                   if (quanti != null)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, quanti, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, quanti, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4302,8 +4577,8 @@ public class ImportExportOffertaPrezziManager {
                     Double prezun = SqlManager.getValueFromVectorParam(
                         record, 7).doubleValue();
                     if (prezun != null)
-                      UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                          indiceColonna++, indiceRiga + i, prezun, null);
+                      UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                          indiceColonna++, indiceRiga + i, prezun, stili.get(indiceColonna));
                     else
                       indiceColonna++;
                   } else
@@ -4315,8 +4590,8 @@ public class ImportExportOffertaPrezziManager {
                   if (arrayCampiVisibili[13]) {
                     Long perciva = SqlManager.getValueFromVectorParam(record, 12).longValue();
                     if (perciva != null)
-                      UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                          indiceColonna++, indiceRiga + i, perciva, null);
+                      UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                          indiceColonna++, indiceRiga + i, perciva, stili.get(indiceColonna));
                     else
                       indiceColonna++;
                   }
@@ -4326,8 +4601,8 @@ public class ImportExportOffertaPrezziManager {
                   if (arrayCampiVisibili[14]) {
                     Double peso = SqlManager.getValueFromVectorParam(record, 13).doubleValue();
                     if (peso != null)
-                      UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                          indiceColonna++, indiceRiga + i, peso, null);
+                      UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                          indiceColonna++, indiceRiga + i, peso, stili.get(indiceColonna));
                     else
                       indiceColonna++;
                   }
@@ -4341,8 +4616,8 @@ public class ImportExportOffertaPrezziManager {
                   String codatc = SqlManager.getValueFromVectorParam(
                       record, 11).toString();
                   if (codatc != null && codatc.length() > 0)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, codatc, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, codatc, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4352,8 +4627,8 @@ public class ImportExportOffertaPrezziManager {
                   String codaur = SqlManager.getValueFromVectorParam(
                       record, 12).toString();
                   if (codaur != null && codaur.length() > 0)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, codaur, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, codaur, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4363,8 +4638,8 @@ public class ImportExportOffertaPrezziManager {
                   String princatt = SqlManager.getValueFromVectorParam(
                       record, 13).toString();
                   if (princatt != null && princatt.length() > 0)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, princatt, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, princatt, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4374,8 +4649,8 @@ public class ImportExportOffertaPrezziManager {
                   String formafarm = SqlManager.getValueFromVectorParam(
                       record, 14).toString();
                   if (formafarm != null && formafarm.length() > 0)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, formafarm, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, formafarm, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4385,8 +4660,8 @@ public class ImportExportOffertaPrezziManager {
                   String dosaggio = SqlManager.getValueFromVectorParam(
                       record, 15).toString();
                   if (dosaggio != null && dosaggio.length() > 0)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, dosaggio, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, dosaggio, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4396,8 +4671,8 @@ public class ImportExportOffertaPrezziManager {
                   String viasomm = SqlManager.getValueFromVectorParam(
                       record, 16).toString();
                   if (viasomm != null && viasomm.length() > 0)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, viasomm, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, viasomm, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4416,8 +4691,8 @@ public class ImportExportOffertaPrezziManager {
                   String desuni = SqlManager.getValueFromVectorParam(
                       record, posCampiRecord).toString();
                   if (desuni != null && desuni.length() > 0){
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, desuni, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, desuni, stili.get(indiceColonna));
                   }else
                     indiceColonna++;
                 }
@@ -4435,8 +4710,8 @@ public class ImportExportOffertaPrezziManager {
                   Double quanti = SqlManager.getValueFromVectorParam(
                       record, posCampiRecord).doubleValue();
                   if (quanti != null)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, quanti, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, quanti, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4450,8 +4725,8 @@ public class ImportExportOffertaPrezziManager {
                     Double prezun = SqlManager.getValueFromVectorParam(
                         record, 7).doubleValue();
                     if (prezun != null)
-                      UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                          indiceColonna++, indiceRiga + i, prezun, null);
+                      UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                          indiceColonna++, indiceRiga + i, prezun, stili.get(indiceColonna));
                     else
                       indiceColonna++;
                   } else
@@ -4462,8 +4737,8 @@ public class ImportExportOffertaPrezziManager {
                 if (arrayCampiVisibili[22]) {
                   Long perciva = SqlManager.getValueFromVectorParam(record, 12).longValue();
                   if (perciva != null)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, perciva, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, perciva, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4473,8 +4748,8 @@ public class ImportExportOffertaPrezziManager {
                   String note = SqlManager.getValueFromVectorParam(
                       record, 17).toString();
                   if (note != null && note.length() > 0)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, note, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, note, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4486,8 +4761,8 @@ public class ImportExportOffertaPrezziManager {
                   String codclass = SqlManager.getValueFromVectorParam(
                       record, 11).toString();
                   if (codclass != null && codclass.length() > 0)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, codclass, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, codclass, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4497,8 +4772,8 @@ public class ImportExportOffertaPrezziManager {
                   String deprodcn = SqlManager.getValueFromVectorParam(
                       record, 12).toString();
                   if (deprodcn != null && deprodcn.length() > 0)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, deprodcn, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, deprodcn, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4508,8 +4783,8 @@ public class ImportExportOffertaPrezziManager {
                   String codaur = SqlManager.getValueFromVectorParam(
                       record, 13).toString();
                   if (codaur != null && codaur.length() > 0)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, codaur, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, codaur, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4519,8 +4794,8 @@ public class ImportExportOffertaPrezziManager {
                   String dprodcap = SqlManager.getValueFromVectorParam(
                       record, 14).toString();
                   if (dprodcap != null && dprodcap.length() > 0)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, dprodcap, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, dprodcap, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4530,8 +4805,8 @@ public class ImportExportOffertaPrezziManager {
                   Double quanti = SqlManager.getValueFromVectorParam(
                       record, 6).doubleValue();
                   if (quanti != null)
-                    UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                        indiceColonna++, indiceRiga + i, quanti, null);
+                    UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                        indiceColonna++, indiceRiga + i, quanti, stili.get(indiceColonna));
                   else
                     indiceColonna++;
                 }
@@ -4542,8 +4817,8 @@ public class ImportExportOffertaPrezziManager {
                     Double prezun = SqlManager.getValueFromVectorParam(
                         record, 7).doubleValue();
                     if (prezun != null)
-                      UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                          indiceColonna++, indiceRiga + i, prezun, null);
+                      UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                          indiceColonna++, indiceRiga + i, prezun, stili.get(indiceColonna));
                     else
                       indiceColonna++;
                   } else
@@ -4552,8 +4827,35 @@ public class ImportExportOffertaPrezziManager {
               }
 
               //GCAP.CONTAF
-              UtilityExcel.scriviCella(foglioLavorazioniForniture,
+              UtilityExcelX.scriviCella(foglioLavorazioniForniture,
                   posCampoContaf +1, indiceRiga + i, contaf, null);
+
+              //DATACONS
+              if (new Long(3).equals(tipoFornitura) && "GARE.GCAP.DATACONS".equals(arrayCampi[16]) && arrayCampiVisibili[16]) {
+                /*
+                Timestamp datacons  = SqlManager.getValueFromVectorParam(record, 14).dataValue();
+                if(datacons != null){
+                  GregorianCalendar dataconsGC = new GregorianCalendar();
+                  dataconsGC.setTimeInMillis(datacons.getTime());
+                  UtilityExcelX.scriviCella(foglioLavorazioniForniture,indiceColonna++, indiceRiga + i, UtilityDate.convertiData(dataconsGC.getTime(), UtilityDate.FORMATO_GG_MM_AAAA),
+                      stili.get(indiceColonna));
+                }else {
+                  indiceColonna++;
+                }
+                */
+
+                Date datacons  = (Date) SqlManager.getValueFromVectorParam(
+                    record, 14).getValue();
+                if(datacons != null){
+                    SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+                    String formattedDataCons = formatter.format(datacons);
+                  UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                          indiceColonna++, indiceRiga + i, formattedDataCons, stili.get(indiceColonna));
+                }else {
+                  indiceColonna++;
+                }
+
+              }
             }
 
             if (new Long(98).equals(tipoFornitura)) {
@@ -4562,8 +4864,8 @@ public class ImportExportOffertaPrezziManager {
                 Long ivaprod = SqlManager.getValueFromVectorParam(
                     record, 8).longValue();
                 if (ivaprod != null){
-                  UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                      indiceColonna++, indiceRiga + i, ivaprod, null);
+                  UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                      indiceColonna++, indiceRiga + i, ivaprod, stili.get(indiceColonna));
                 } else
                   indiceColonna++;
               }
@@ -4573,8 +4875,8 @@ public class ImportExportOffertaPrezziManager {
                 Double nuniconf = SqlManager.getValueFromVectorParam(
                     record, 1).doubleValue();
                 if (nuniconf != null)
-                  UtilityExcel.scriviCella(foglioLavorazioniForniture,
-                      indiceColonna++, indiceRiga + i, nuniconf, null);
+                  UtilityExcelX.scriviCella(foglioLavorazioniForniture,
+                      indiceColonna++, indiceRiga + i, nuniconf, stili.get(indiceColonna));
                 else
                   indiceColonna++;
               }
@@ -4619,10 +4921,10 @@ public class ImportExportOffertaPrezziManager {
    * @throws GestoreException
    */
   private void setDatiPrincipaliGara(String ngara,
-      HSSFSheet foglioLavorazioniForniture, boolean isCodificaAutomaticaAttiva,
-      DizionarioStiliExcel dizStiliExcel) throws GestoreException {
+      Sheet foglioLavorazioniForniture, boolean isCodificaAutomaticaAttiva,
+      DizionarioStiliExcelX dizStiliExcel) throws GestoreException {
 
-    HSSFRow riga5 = foglioLavorazioniForniture.createRow(4);
+    Row riga5 = foglioLavorazioniForniture.createRow(4);
     if (riga5 != null) {
       // Valori dei campi da databse
       String codiceGara = null;
@@ -4652,29 +4954,29 @@ public class ImportExportOffertaPrezziManager {
         }
 
         // Scrittura valore TORN.CODGAR o GARE.CODGAR1 sul file Excel
-        UtilityExcel.scriviCella(foglioLavorazioniForniture, 1, 5, codiceGara,
-            dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+        UtilityExcelX.scriviCella(foglioLavorazioniForniture, 1, 5, codiceGara,
+            dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
         // Scrittura valore GARE.NGARA sul file Excel
-        UtilityExcel.scriviCella(foglioLavorazioniForniture, 2, 5, ngara,
-            dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+        UtilityExcelX.scriviCella(foglioLavorazioniForniture, 2, 5, ngara,
+            dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
         // Lettura valore GARE.MODLICG sul file Excel
-        UtilityExcel.scriviCella(foglioLavorazioniForniture, 3, 5, modlicg,
-            dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+        UtilityExcelX.scriviCella(foglioLavorazioniForniture, 3, 5, modlicg,
+            dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
         // Lettura valore V_GARE_TORN.ISLOTTI sul file Excel
-        UtilityExcel.scriviCella(foglioLavorazioniForniture, 4, 5, isLotti,
-            dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+        UtilityExcelX.scriviCella(foglioLavorazioniForniture, 4, 5, isLotti,
+            dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
         // Lettura valore V_GARE_TORN.ISGENERE sul file Excel
-        UtilityExcel.scriviCella(foglioLavorazioniForniture, 5, 5, isGenere,
-            dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+        UtilityExcelX.scriviCella(foglioLavorazioniForniture, 5, 5, isGenere,
+            dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
         if (isCodificaAutomaticaAttiva)
-          UtilityExcel.scriviCella(foglioLavorazioniForniture, 6, 5, "1",
-              dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+          UtilityExcelX.scriviCella(foglioLavorazioniForniture, 6, 5, "1",
+              dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
         else
-          UtilityExcel.scriviCella(foglioLavorazioniForniture, 6, 5, "2",
-              dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+          UtilityExcelX.scriviCella(foglioLavorazioniForniture, 6, 5, "2",
+              dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
        //Nuova gestione del campo Soggetto a ribasso
-        UtilityExcel.scriviCella(foglioLavorazioniForniture, 7, 5, "1",
-            dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA));
+        UtilityExcelX.scriviCella(foglioLavorazioniForniture, 7, 5, "1",
+            dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
       } catch (SQLException s) {
         throw new GestoreException("Errore durante la scrittura dei dati "
                 + "principali della gara da usare in fase di import per la "
@@ -4702,14 +5004,14 @@ public class ImportExportOffertaPrezziManager {
    * @throws GestoreException
    */
   private boolean verifichePreliminari(String ngara,
-      HSSFSheet foglioLavorazioniForniture, boolean isCodificaAutomaticaAttiva)
+      Sheet foglioLavorazioniForniture, boolean isCodificaAutomaticaAttiva)
       throws GestoreException {
     boolean result = true;
 
     if (logger.isDebugEnabled())
       logger.debug("verifichePreliminari: inizio metodo");
 
-    HSSFRow riga5 = foglioLavorazioniForniture.getRow(4);
+    Row riga5 = foglioLavorazioniForniture.getRow(4);
     if (riga5 != null && riga5.getPhysicalNumberOfCells() > 0) {
       // Valori dei campi da databse
       String codiceGara = null;
@@ -4751,21 +5053,21 @@ public class ImportExportOffertaPrezziManager {
 
         if (continuaConfronto) {
           // Lettura valore TORN.CODGAR o GARE.CODGAR1 dal file Excel
-          codiceGaraXLS = UtilityExcel.leggiCellaString(
+          codiceGaraXLS = UtilityExcelX.leggiCellaString(
               foglioLavorazioniForniture, 1, 5);
           // Lettura valore GARE.NGARA dal file Excel
-          numeroLottoXLS = UtilityExcel.leggiCellaString(
+          numeroLottoXLS = UtilityExcelX.leggiCellaString(
               foglioLavorazioniForniture, 2, 5);
           // Lettura valore GARE.MODLICG dal file Excel
-          modlicgXLS = UtilityExcel.leggiCellaString(
+          modlicgXLS = UtilityExcelX.leggiCellaString(
               foglioLavorazioniForniture, 3, 5);
           // Lettura valore V_GARE_TORN.ISLOTTI dal file Excel
-          isLottiXLS = UtilityExcel.leggiCellaString(
+          isLottiXLS = UtilityExcelX.leggiCellaString(
               foglioLavorazioniForniture, 4, 5);
           // Lettura valore V_GARE_TORN.ISGENERE dal file Excel
-          isGenereXLS = UtilityExcel.leggiCellaString(
+          isGenereXLS = UtilityExcelX.leggiCellaString(
               foglioLavorazioniForniture, 5, 5);
-          String tmp = UtilityExcel.leggiCellaString(
+          String tmp = UtilityExcelX.leggiCellaString(
               foglioLavorazioniForniture, 6, 5);
           if ("1".equals(tmp)) isCodificaAutomaticaXLS = true;
 
@@ -4910,13 +5212,13 @@ public class ImportExportOffertaPrezziManager {
    *         e forniture', sottoforma di lista di oggetti Campo. La lista e'
    *         vuota se nella riga non si trova nessun nome fisico
    */
-  private Map<String,List<?>> getListaCampiDaImportare(HSSFSheet foglio, String nomeFoglio,
+  private Map<String,List<?>> getListaCampiDaImportare(Sheet foglio, String nomeFoglio,
       String entita) {
     if (logger.isDebugEnabled())
       logger.debug("getListaCampiDaImportare: inizio metodo");
 
     DizionarioCampi dizCampi = DizionarioCampi.getInstance();
-    HSSFRow riga = foglio.getRow(FOGLIO_LAVORAZIONE_E_FORNITURE_RIGA_NOME_FISICO_CAMPI - 1);
+    Row riga = foglio.getRow(FOGLIO_LAVORAZIONE_E_FORNITURE_RIGA_NOME_FISICO_CAMPI - 1);
     Map<String,List<?>> mappa = new HashMap<String,List<?>>();
     List<String> listaNomiFisiciCampiDaImportare = new ArrayList<String>();
     List<Long> listaIndiceColonnaCampiDaImportare = new ArrayList<Long>();
@@ -4978,8 +5280,8 @@ public class ImportExportOffertaPrezziManager {
       }
 
       for (int i = 0; i < maxColNumber; i++) {
-        HSSFCell cella = riga.getCell(i);
-        String carattereColonna = UtilityExcel.conversioneNumeroColonna(i + 1);
+        Cell cella = riga.getCell(i);
+        String carattereColonna = UtilityExcelX.conversioneNumeroColonna(i + 1);
         if (cella != null) {
           if (logger.isDebugEnabled())
             logger.debug("getListaCampiDaImportare: inizio lettura della "
@@ -4987,8 +5289,8 @@ public class ImportExportOffertaPrezziManager {
                 + carattereColonna
                 + (riga.getRowNum() + 1));
 
-          if (cella.getCellType() == HSSFCell.CELL_TYPE_STRING) {
-            HSSFRichTextString richTextString = cella.getRichStringCellValue();
+          if (cella.getCellType() == Cell.CELL_TYPE_STRING) {
+            RichTextString richTextString = cella.getRichStringCellValue();
             if (richTextString != null) {
               String valoreCella = richTextString.getString();
               if (valoreCella != null && valoreCella.trim().length() > 0) {
@@ -5199,7 +5501,7 @@ public class ImportExportOffertaPrezziManager {
     boolean rigaImportabile = true;
     for (int colonna = 0; colonna < listaCampiImportExcel.size(); colonna++) {
       CampoImportExcel tmpCampo = listaCampiImportExcel.get(colonna);
-      String strCellaExcel = UtilityExcel.conversioneNumeroColonna(tmpCampo.getColonnaCampo())
+      String strCellaExcel = UtilityExcelX.conversioneNumeroColonna(tmpCampo.getColonnaCampo())
           + (indiceRiga + 1);
       Object valore = valoriCampiRigaExcel.get(colonna);
       if (valore == null) {
@@ -5477,7 +5779,7 @@ public class ImportExportOffertaPrezziManager {
               if (!(valore instanceof Date)) {
                 tmpListaMsg.add("- la cella "
                     + strCellaExcel
-                    + " non e' in formato data.");
+                    + " non e' in formato data o non e' nel formato data previsto(gg/mm/aaaa).");
                 valoriCampiRigaExcel.set(colonna, null);
               }
               break;
@@ -5490,51 +5792,57 @@ public class ImportExportOffertaPrezziManager {
     return rigaImportabile;
   }
 
-  private List<Object> letturaRiga(HSSFRow rigaFoglioExcel, List<CampoImportExcel> listaCampiDaImportare) {
+  private List<Object> letturaRiga(Row rigaFoglioExcel, List<CampoImportExcel> listaCampiDaImportare) {
     List<Object> valoriCampi = new ArrayList<Object>();
-    HSSFCell cella = null;
-    HSSFFormulaEvaluator evaluator = new HSSFFormulaEvaluator(workBook);
+    Cell cella = null;
+    FormulaEvaluator evaluator = workBook.getCreationHelper().createFormulaEvaluator();
     for (int i = 0; i < listaCampiDaImportare.size(); i++) {
       CampoImportExcel campoImportExcel = listaCampiDaImportare.get(i);
       cella = rigaFoglioExcel.getCell(campoImportExcel.getColonnaCampo() - 1);
       if (cella != null) {
         switch (cella.getCellType()) {
-        case HSSFCell.CELL_TYPE_STRING:
-          valoriCampi.add(cella.getRichStringCellValue().toString());
+        case Cell.CELL_TYPE_STRING:
+          //Le date in excel dovrebbero essere gestite internamente come Double, quindi per le date si dovrebbe passare per la
+          //gestione presente nel caso di "CELL_TYPE_NUMERIC". Però accade che le date vengano viste come stringhe, quindi si
+          //deve verificare se la stringa contenga una data
+          if(!isValidDate(cella.getRichStringCellValue().toString()))
+            valoriCampi.add(cella.getRichStringCellValue().toString());
+          else
+            valoriCampi.add(UtilityDate.convertiData(cella.getRichStringCellValue().toString(), UtilityDate.FORMATO_GG_MM_AAAA));
           break;
-        case HSSFCell.CELL_TYPE_NUMERIC:
+        case Cell.CELL_TYPE_NUMERIC:
           if (HSSFDateUtil.isCellDateFormatted(cella))
             valoriCampi.add(HSSFDateUtil.getJavaDate(cella.getNumericCellValue()));
           else
             valoriCampi.add(new Double(cella.getNumericCellValue()));
           break;
-        case HSSFCell.CELL_TYPE_BOOLEAN:
+        case Cell.CELL_TYPE_BOOLEAN:
           valoriCampi.add(new Boolean(cella.getBooleanCellValue()));
           break;
-        case HSSFCell.CELL_TYPE_BLANK:
+        case Cell.CELL_TYPE_BLANK:
           valoriCampi.add(null);
           break;
-        case HSSFCell.CELL_TYPE_ERROR:
+        case Cell.CELL_TYPE_ERROR:
           valoriCampi.add(new Error("Cella con errore"));
           break;
-        case HSSFCell.CELL_TYPE_FORMULA:
+        case Cell.CELL_TYPE_FORMULA:
           switch (evaluator.evaluateFormulaCell(cella)) {
-          case HSSFCell.CELL_TYPE_BOOLEAN:
+          case Cell.CELL_TYPE_BOOLEAN:
             valoriCampi.add(new Boolean(cella.getBooleanCellValue()));
             break;
-          case HSSFCell.CELL_TYPE_NUMERIC:
+          case Cell.CELL_TYPE_NUMERIC:
             if (HSSFDateUtil.isCellDateFormatted(cella))
               valoriCampi.add(HSSFDateUtil.getJavaDate(cella.getNumericCellValue()));
             else
               valoriCampi.add(new Double(cella.getNumericCellValue()));
             break;
-          case HSSFCell.CELL_TYPE_STRING:
+          case Cell.CELL_TYPE_STRING:
             valoriCampi.add(cella.getRichStringCellValue().toString());
             break;
-          case HSSFCell.CELL_TYPE_BLANK:
+          case Cell.CELL_TYPE_BLANK:
             valoriCampi.add(null);
             break;
-          case HSSFCell.CELL_TYPE_ERROR:
+          case Cell.CELL_TYPE_ERROR:
             valoriCampi.add(new Error(
                 "Cella con formula, il cui risultato e' un errore"));
             break;
@@ -5542,7 +5850,7 @@ public class ImportExportOffertaPrezziManager {
           break;
         }
       } else {
-        String letteraColonna = UtilityExcel.conversioneNumeroColonna(i + 1);
+        String letteraColonna = UtilityExcelX.conversioneNumeroColonna(i + 1);
         if (logger.isDebugEnabled())
           logger.debug("La cella "
               + letteraColonna
@@ -5558,7 +5866,7 @@ public class ImportExportOffertaPrezziManager {
     return valoriCampi;
   }
 
-  private void importOffertaPrezziDitta(HSSFSheet foglio, String ngara,
+  private void importOffertaPrezziDitta(Sheet foglio, String ngara,
       String codiceDitta, List<CampoImportExcel> listaCampiImportExcel,
       boolean isGaraLottiConOffertaUnica, String isPrequalifica, HttpSession session,
       LoggerImportOffertaPrezzi loggerImport,
@@ -5844,7 +6152,7 @@ public class ImportExportOffertaPrezziManager {
       if (logger.isDebugEnabled())
         logger.debug("Inizio lettura della riga " + (indiceRiga + 1));
 
-      HSSFRow rigaFoglioExcel = foglio.getRow(indiceRiga);
+      Row rigaFoglioExcel = foglio.getRow(indiceRiga);
       if (rigaFoglioExcel != null) {
         // Lista valori di GCAP
         List<Object> valoriCampiRigaExcel = this.letturaRiga(rigaFoglioExcel,
@@ -5893,7 +6201,7 @@ public class ImportExportOffertaPrezziManager {
           String codiceLavorazioneFornitura = this.getCodvocString(valoriCampiRigaExcel.get(colonnaCodiceLavorazioneFornitura));
           Long valoreContafCella=null;
           //Lettura del valore di contaf memorizzato nel foglio
-          HSSFCell cella = rigaFoglioExcel.getCell(this.posCampoContaf);
+          Cell cella = rigaFoglioExcel.getCell(this.posCampoContaf);
           if (cella != null) {
             Double valTmp = new Double(cella.getNumericCellValue());
             if(valTmp!=null)
@@ -6028,7 +6336,7 @@ public class ImportExportOffertaPrezziManager {
                     + (indiceRiga + 1)
                     + " non è stata importata:");
                 loggerImport.addMessaggioErrore("- la cella "
-                    + UtilityExcel.conversioneNumeroColonna(colonnaCodiceLotto + 1)
+                    + UtilityExcelX.conversioneNumeroColonna(colonnaCodiceLotto + 1)
                     + (indiceRiga + 1)
                     + " presenta un codice lotto inesistente o "
                     + "con criterio di aggiudicazione diverso da offerta "
@@ -6129,7 +6437,7 @@ public class ImportExportOffertaPrezziManager {
                     + (indiceRiga + 1)
                     + " non importata:");
                 loggerImport.addMessaggioErrore("- la cella "
-                    + UtilityExcel.conversioneNumeroColonna(colonnaCodiceLotto + 1)
+                    + UtilityExcelX.conversioneNumeroColonna(colonnaCodiceLotto + 1)
                     + (indiceRiga + 1)
                     + " presenta un codice lotto inesistente o "
                     + "con criterio di aggiudicazione diverso da offerta "
@@ -6266,7 +6574,7 @@ public class ImportExportOffertaPrezziManager {
                   + (indiceRiga + 1)
                   + " non importata:");
               loggerImport.addMessaggioErrore("- la cella "
-                  + UtilityExcel.conversioneNumeroColonna(colonnaCodiceLotto + 1)
+                  + UtilityExcelX.conversioneNumeroColonna(colonnaCodiceLotto + 1)
                   + (indiceRiga + 1)
                   + " presenta un codice lotto inesistente o "
                   + "con criterio di aggiudicazione diverso da offerta "
@@ -6642,7 +6950,7 @@ public class ImportExportOffertaPrezziManager {
                   // a quanto salvato nel database
                   for (int i = 0; i < listaCampiImportExcel.size(); i++) {
                     CampoImportExcel campoImportExcel = listaCampiImportExcel.get(i);
-                    String letteraColonna = UtilityExcel.conversioneNumeroColonna(campoImportExcel.getColonnaCampo());
+                    String letteraColonna = UtilityExcelX.conversioneNumeroColonna(campoImportExcel.getColonnaCampo());
                     String tmp = null;
 
                     if(new Long(98).equals(tipoFornitura)){
@@ -6974,7 +7282,7 @@ public class ImportExportOffertaPrezziManager {
                         + ") non "+label1+": ");
 
                   loggerImport.addMessaggioErrore(" - la cella "
-                      + UtilityExcel.conversioneNumeroColonna(campoPrezzoUnitario.getColonnaCampo())
+                      + UtilityExcelX.conversioneNumeroColonna(campoPrezzoUnitario.getColonnaCampo())
                       + (indiceRiga + 1)
                       + " non e' valorizzata");
                   loggerImport.incrementaRecordNonAggiornati();
@@ -7352,7 +7660,7 @@ public class ImportExportOffertaPrezziManager {
                       + ") non "+label1+": ");
 
                 loggerImport.addMessaggioErrore(" - la cella "
-                    + UtilityExcel.conversioneNumeroColonna(campoPrezUnitario.getColonnaCampo())
+                    + UtilityExcelX.conversioneNumeroColonna(campoPrezUnitario.getColonnaCampo())
                     + (indiceRiga + 1)
                     + " non e' valorizzata");
                 loggerImport.incrementaRecordNonImportati();
@@ -7421,7 +7729,7 @@ public class ImportExportOffertaPrezziManager {
   }
 
   private void insertDPRE_SAN(List<CampoImportExcel> listaCampiImportExcelDPRE_SAN,
-      List<Object> valoriCampiRigaExcelDPRE_SAN, HSSFRow rigaFoglioExcel, String ngara,
+      List<Object> valoriCampiRigaExcelDPRE_SAN, Row rigaFoglioExcel, String ngara,
       String dittao, Long contaf) throws SQLException {
 
     if (listaCampiImportExcelDPRE_SAN != null
@@ -7456,7 +7764,7 @@ public class ImportExportOffertaPrezziManager {
   }
 
   private void updateDPRE(List<CampoImportExcel> listaCampiImportExcelDPRE,
-      List<Object> valoriCampiRigaExcelDPRE, HSSFRow rigaFoglioExcel, String ngara,
+      List<Object> valoriCampiRigaExcelDPRE, Row rigaFoglioExcel, String ngara,
       String dittao, Long contaf) throws SQLException {
 
     if (listaCampiImportExcelDPRE != null && valoriCampiRigaExcelDPRE != null) {
@@ -7483,7 +7791,7 @@ public class ImportExportOffertaPrezziManager {
   }
 
   private void insertGCAP_SAN(List<CampoImportExcel> listaCampiImportExcelGCAP_SAN,
-      List<Object> valoriCampiRigaExcelGCAP_SAN, HSSFRow rigaFoglioExcel, String ngara,
+      List<Object> valoriCampiRigaExcelGCAP_SAN, Row rigaFoglioExcel, String ngara,
       Long contaf) throws SQLException {
 
     if (listaCampiImportExcelGCAP_SAN != null
@@ -7791,19 +8099,108 @@ public class ImportExportOffertaPrezziManager {
     }
 
     boolean gestioneRibassoPesato = "3".equals(ribcal);
-    this.setDefinizioni(null,ngara,gestioneRibassoPesato);
 
-    this.workBook = new HSSFWorkbook();
+    Long tipoFornitura = null;
+    Long iterga = null;
+
+    Vector<?> datiTORN = this.sqlDao.getVectorQuery(
+        "select torn.tipforn,torn.iterga from torn, gare where torn.codgar = gare.codgar1 and gare.ngara = ?",
+        new Object[] { ngara });
+    if (datiTORN != null && datiTORN.size() > 0) {
+      if (SqlManager.getValueFromVectorParam(datiTORN, 0) != null) {
+        tipoFornitura = SqlManager.getValueFromVectorParam(datiTORN, 0).longValue();
+        iterga = SqlManager.getValueFromVectorParam(datiTORN, 1).longValue();
+      }
+    }
+
+    if(Long.valueOf(8).equals(iterga)) {
+    	this.setDefinizioni(Long.valueOf(8),ngara,gestioneRibassoPesato, null);
+    }else {
+    	this.setDefinizioni(null,ngara,gestioneRibassoPesato,null);
+    }
+
+    this.workBook = new XSSFWorkbook();
     // Creazione del dizionario degli stili delle celle dell'intero file Excel
-    DizionarioStiliExcel dizStiliExcel = new DizionarioStiliExcel(this.workBook);
+    DizionarioStiliExcelX dizStiliExcel = new DizionarioStiliExcelX((XSSFWorkbook) this.workBook);
 
     // Scrittura sul foglio Excel dei dati generali della gara
     this.setDatiGeneraliGara(ngara, profiloAttivo, isGaraLottiConOffertaUnica,
         dizStiliExcel);
 
     // Scrittura sul foglio Excel dei dati dell'offerta prezzi
-    this.setOffertaPrezzi(ngara, profiloAttivo, isGaraLottiConOffertaUnica,
-        dizStiliExcel, gestioneRibassoPesato);
+    if(Long.valueOf(8).equals(iterga)) {
+        this.setOffertaPrezzi(ngara, Long.valueOf(8), profiloAttivo, isGaraLottiConOffertaUnica,
+                dizStiliExcel, gestioneRibassoPesato);
+        Sheet sheet = this.workBook.getSheet(FOGLIO_OFFERTA_PREZZI[0]);
+        SheetConditionalFormatting sheetCF = sheet.getSheetConditionalFormatting();
+
+        //per ogni font ARIAL assegno un nuovo colore
+        Font defaultFont;
+        Short numFonts = this.workBook.getNumberOfFonts();
+        for(Short i=0; i<numFonts; i++) {
+           defaultFont = this.workBook.getFontAt(i);
+           if(defaultFont.getFontName().equals(HSSFFont.FONT_ARIAL)){
+               defaultFont.setColor(IndexedColors.DARK_BLUE.index);
+           }
+        }
+        //blocco la prima riga
+        sheet.createFreezePane(0, 1);
+        //parametrizzo le colonne, setto un valore di default
+        String voceIndex="";
+        String importoIndex="";
+        String aggiudicatarioIndex="";
+        for(int i=0; i<sheet.getRow(0).getLastCellNum();i++) {
+           String toCompare = sheet.getRow(0).getCell(i).getStringCellValue();
+          if("Voce".equals(toCompare)) {
+            voceIndex=CellReference.convertNumToColString(i);
+          }
+          if("Prezzo unitario".equals(toCompare)) {
+            importoIndex=CellReference.convertNumToColString(i);
+          }
+          if("Aggiudicatario?".equals(toCompare)) {
+            aggiudicatarioIndex=CellReference.convertNumToColString(i);
+          }
+        }
+        int totRows=sheet.getLastRowNum()+1+FOGLIO_OFFERTA_PREZZI_ULTERIORI_RIGHE_DA_FORMATTARE;
+        //Colonna AGGIUDICATARIO?
+        ConditionalFormattingRule rule1 = sheetCF.createConditionalFormattingRule(
+            "$"+aggiudicatarioIndex+FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE+"=\"si\"");
+        PatternFormatting fill = rule1.createPatternFormatting();
+        fill.setFillBackgroundColor(IndexedColors.YELLOW.index);
+        fill.setFillPattern(PatternFormatting.SOLID_FOREGROUND);
+        FontFormatting a = rule1.createFontFormatting();
+        a.setFontColorIndex(IndexedColors.RED.index);
+        a.setFontStyle(false,true);
+
+        ConditionalFormattingRule rule2 = sheetCF.createConditionalFormattingRule(
+            "$"+aggiudicatarioIndex+FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE+"=\"*\"");
+        fill = rule2.createPatternFormatting();
+        fill.setFillBackgroundColor(IndexedColors.GREY_25_PERCENT.index);
+        fill.setFillPattern(PatternFormatting.SOLID_FOREGROUND);
+
+        //colonna PREZZO UNITARIO
+        ConditionalFormattingRule[] cfRules = new ConditionalFormattingRule[]{rule1, rule2};
+        CellRangeAddress[] regions = new CellRangeAddress[]{CellRangeAddress.valueOf(
+            importoIndex+FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE+":"+importoIndex+totRows)};
+        sheetCF.addConditionalFormatting(regions, cfRules);
+
+        //colonna VOCE
+        ConditionalFormattingRule rule3 = sheetCF.createConditionalFormattingRule(
+            "$"+voceIndex+FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE+"<>$"+voceIndex+(FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE+1));
+        BorderFormatting border = rule3.createBorderFormatting();
+        border.setBorderBottom(CellStyle.BORDER_THIN);
+        border.setBottomBorderColor(IndexedColors.DARK_BLUE.index);
+
+        //tutte le colonne da VOCE ad AGGIUDICATARIO
+        cfRules = new ConditionalFormattingRule[]{rule3};
+        regions = new CellRangeAddress[]{CellRangeAddress.valueOf(
+            voceIndex+FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE+":"+aggiudicatarioIndex+totRows)};
+        sheetCF.addConditionalFormatting(regions, cfRules);
+    }else {
+        this.setOffertaPrezzi(ngara, null, profiloAttivo, isGaraLottiConOffertaUnica,
+                dizStiliExcel, gestioneRibassoPesato);
+    }
+
 
     this.workBook.setActiveSheet(this.workBook.getSheetIndex(FOGLIO_OFFERTA_PREZZI[0]));
     this.workBook.setSelectedTab(this.workBook.getSheetIndex(FOGLIO_OFFERTA_PREZZI[0]));
@@ -7811,8 +8208,13 @@ public class ImportExportOffertaPrezziManager {
     // Creazione di un file temporaneo nella cartella temporanea e salvataggio
     // del suo nome in sessione nell'oggetto TempfileDeleter
     String nomeFile = ngara.toUpperCase().replaceAll("/", "_");
-    nomeFile += "_" + FilenameUtils.getBaseName(NOME_FILE_EXPORT_OFFERTA_PREZZI) + "." +
-        FilenameUtils.getExtension(NOME_FILE_EXPORT_OFFERTA_PREZZI);
+    if(Long.valueOf(8).equals(iterga)) {
+        nomeFile += "_" + FilenameUtils.getBaseName(NOME_FILE_EXPORT_VALUTAZIONE_PRODOTTI) + "." +
+                FilenameUtils.getExtension(NOME_FILE_EXPORT_VALUTAZIONE_PRODOTTI);
+    }else {
+        nomeFile += "_" + FilenameUtils.getBaseName(NOME_FILE_EXPORT_OFFERTA_PREZZI) + "." +
+                FilenameUtils.getExtension(NOME_FILE_EXPORT_OFFERTA_PREZZI);
+    }
     File tempFile = null;
     if (session == null) {
       tempFile = new File( new File(System.getProperty("java.io.tmpdir")),nomeFile);
@@ -7841,11 +8243,11 @@ public class ImportExportOffertaPrezziManager {
    * @throws GestoreException
    * @throws SQLException
    */
-  private void setOffertaPrezzi(String ngara, String profiloAttivo,
-      boolean isGaraLottiConOffertaUnica, DizionarioStiliExcel dizStiliExcel, boolean gestioneRibassoPesato)
+  private void setOffertaPrezzi(String ngara, Long tipoFornitura, String profiloAttivo,
+      boolean isGaraLottiConOffertaUnica, DizionarioStiliExcelX dizStiliExcel, boolean gestioneRibassoPesato)
       throws GestoreException, SQLException {
 
-    HSSFSheet foglioOffertaPrezzi=null;
+    Sheet foglioOffertaPrezzi=null;
     foglioOffertaPrezzi = workBook.createSheet(FOGLIO_OFFERTA_PREZZI[0]);
 
     boolean isCodificaAutomaticaAttiva = this.geneManager.isCodificaAutomatica(
@@ -7940,68 +8342,153 @@ public class ImportExportOffertaPrezziManager {
     int indiceColonnaImporto = arrayIndiceColonnaCampi[arrayIndiceColonnaCampi.length - 1] + 1;
     indiceColonnaImporto = arrayIndiceColonnaCampi[15] + 1;
     String selectDati = null;
+    if (Long.valueOf(8).equals(tipoFornitura)) {
+        if (it.eldasoft.utils.sql.comp.SqlManager.DATABASE_ORACLE.equals(SqlManager.getTipoDB())) {
+            selectDati = "select V_GCAP_DPRE.NGARA, " //0
+                + " V_GCAP_DPRE.CODIGA, " //1
+                + " IMPR.NOMEST, " //2
+                + " IMPR.CFIMP, " //3
+                + " V_GCAP_DPRE.CODVOC," //4
+                + " V_GCAP_DPRE.VOCE, " //5
+                + " GCAP.CLASI1, " //6
+                + " V_GCAP_DPRE.SOLSIC, " //7
+                + " V_GCAP_DPRE.SOGRIB, " //8
+                + " UNIMIS.DESUNI, " //9
+                + " V_GCAP_DPRE.QUANTIEFF, " //10
+                + " V_GCAP_DPRE.PREOFF, " //11
+                + " V_GCAP_DPRE.IMPOFF, " //12
+                + " V_GCAP_DPRE.CONTAF, " //13
+                + " V_GCAP_DPRE.COD_DITTA, " //14
+                + " V_GCAP_DPRE.PERCIVAEFF, " //15
+                + " V_GCAP_DPRE.PERRIB, "  //16
+                + " V_GCAP_DPRE.PESO, "  //17
+                + " V_GCAP_DPRE.RIBPESO, "  //18
+	            + " V_GCAP_DPRE.DATACONS, "  //19
+	            + " V_GCAP_DPRE.DATACONSOFF, "  //20
+	            + " GCAP.PREZUN, " //21
+	            + " round(V_GCAP_DPRE.QUANTIEFF*GCAP.PREZUN,5), " //22
+	            + " V_GCAP_DPRE.TIPOLOGIA, "  //23
+	            + " V_GCAP_DPRE.NOTE, "  //24
+	            + " V_GCAP_DPRE.QTAORDINATA, "  //25
+	            + " V_GCAP_DPRE.ISPRODNEG "  //26
+                + " from  V_GCAP_DPRE, UNIMIS, DITG, IMPR, GCAP "
+                + " where  V_GCAP_DPRE.UNIMIS = UNIMIS.TIPO(+) "
+                + " and V_GCAP_DPRE.NGARA = ? "
+               // + " and V_GCAP_DPRE.PREOFF is not null "
+                + " and V_GCAP_DPRE.COD_DITTA=IMPR.CODIMP "
+                + " and UNIMIS.CONTA(+) = -1 "
+                + " and V_GCAP_DPRE.NGARA = DITG.NGARA5 "
+                + " and V_GCAP_DPRE.CODGAR = DITG.CODGAR5 "
+                + " and V_GCAP_DPRE.COD_DITTA = DITG.DITTAO "
+                + " and GCAP.NGARA=V_GCAP_DPRE.NGARA  "
+                + " and GCAP.CONTAF=V_GCAP_DPRE.CONTAF "
+                + " and (DITG.FASGAR>5 or DITG.FASGAR is null)"
+                + " order by V_GCAP_DPRE.CODVOC,IMPR.NOMEST ";
+          } else if (it.eldasoft.utils.sql.comp.SqlManager.DATABASE_SQL_SERVER.equals(SqlManager.getTipoDB()) ||
+              it.eldasoft.utils.sql.comp.SqlManager.DATABASE_POSTGRES.equals(SqlManager.getTipoDB())) {
+        	  selectDati = "select V_GCAP_DPRE.NGARA, " //0
+	              + " V_GCAP_DPRE.CODIGA, " //1
+	              + " IMPR.NOMEST, " //2
+	              + " IMPR.CFIMP, " //3
+	              + " V_GCAP_DPRE.CODVOC," //4
+	              + " V_GCAP_DPRE.VOCE, " //5
+	              + " GCAP.CLASI1, " //6
+	              + " V_GCAP_DPRE.SOLSIC, " //7
+	              + " V_GCAP_DPRE.SOGRIB, " //8
+	              + " UNIMIS_1.DESUNI, " //9
+	              + " V_GCAP_DPRE.QUANTIEFF, " //10
+	              + " V_GCAP_DPRE.PREOFF, " //11
+	              + " V_GCAP_DPRE.IMPOFF, " //12
+	              + " V_GCAP_DPRE.CONTAF, " //13
+	              + " V_GCAP_DPRE.COD_DITTA, " //14
+	              + " V_GCAP_DPRE.PERCIVAEFF, " //15
+	              + " V_GCAP_DPRE.PERRIB, "  //16
+	              + " V_GCAP_DPRE.PESO, "  //17
+	              + " V_GCAP_DPRE.RIBPESO, "  //18
+	              + " V_GCAP_DPRE.DATACONS, "  //19
+	              + " V_GCAP_DPRE.DATACONSOFF, "  //20
+	              + " GCAP.PREZUN, " //21
+	              + " round(V_GCAP_DPRE.QUANTIEFF*GCAP.PREZUN,5), " //22
+	              + " V_GCAP_DPRE.TIPOLOGIA, "  //23
+	              + " V_GCAP_DPRE.NOTE, "  //24
+	              + " V_GCAP_DPRE.QTAORDINATA, "  //25
+	              + " V_GCAP_DPRE.ISPRODNEG "  //26
+	              + " from (V_GCAP_DPRE left outer join (select * from unimis where conta=-1) unimis_1 on v_gcap_dpre.unimis = unimis_1.tipo) "
+	              + " INNER JOIN IMPR ON (V_GCAP_DPRE.COD_DITTA=IMPR.CODIMP) "
+	              + " INNER JOIN DITG ON (V_GCAP_DPRE.NGARA = DITG.NGARA5 and V_GCAP_DPRE.CODGAR = DITG.CODGAR5 and V_GCAP_DPRE.COD_DITTA = DITG.DITTAO "
+	              + " and (DITG.FASGAR>5 or DITG.FASGAR is null)) "
+	              + " INNER JOIN GCAP ON ( GCAP.NGARA=V_GCAP_DPRE.NGARA and GCAP.CONTAF=V_GCAP_DPRE.CONTAF) "
+	              + " where V_GCAP_DPRE.NGARA = ? "
+	              //+ "and V_GCAP_DPRE.PREOFF is not null"
+	              + " order by V_GCAP_DPRE.CODVOC,IMPR.NOMEST asc  ";
+          }
 
-      if (it.eldasoft.utils.sql.comp.SqlManager.DATABASE_ORACLE.equals(SqlManager.getTipoDB())) {
-        selectDati = "select V_GCAP_DPRE.NGARA, " //0
-            + " V_GCAP_DPRE.CODIGA, " //1
-            + " IMPR.NOMEST, " //2
-            + " IMPR.CFIMP, " //3
-            + " V_GCAP_DPRE.CODVOC," //4
-            + " V_GCAP_DPRE.VOCE, " //5
-            + " GCAP.CLASI1, " //6
-            + " V_GCAP_DPRE.SOLSIC, " //7
-            + " V_GCAP_DPRE.SOGRIB, " //8
-            + " UNIMIS.DESUNI, " //9
-            + " V_GCAP_DPRE.QUANTIEFF, " //10
-            + " V_GCAP_DPRE.PREOFF, " //11
-            + " V_GCAP_DPRE.IMPOFF, " //12
-            + " V_GCAP_DPRE.CONTAF, " //13
-            + " V_GCAP_DPRE.COD_DITTA, " //14
-            + " V_GCAP_DPRE.PERCIVAEFF, " //15
-            + " V_GCAP_DPRE.PERRIB, "  //16
-            + " V_GCAP_DPRE.PESO, "  //17
-            + " V_GCAP_DPRE.RIBPESO "  //18
-            + " from  V_GCAP_DPRE, UNIMIS, DITG, IMPR, GCAP "
-            + " where  V_GCAP_DPRE.UNIMIS = UNIMIS.TIPO(+) "
-            + " and  V_GCAP_DPRE.NGARA = ? "
-            + " and  V_GCAP_DPRE.COD_DITTA=IMPR.CODIMP "
-            + " and UNIMIS.CONTA(+) = -1 "
-            + " and V_GCAP_DPRE.NGARA = DITG.NGARA5 "
-            + " and V_GCAP_DPRE.CODGAR = DITG.CODGAR5 "
-            + " and V_GCAP_DPRE.COD_DITTA = DITG.DITTAO "
-            + " and GCAP.NGARA=V_GCAP_DPRE.NGARA  "
-            + " and GCAP.CONTAF=V_GCAP_DPRE.CONTAF "
-            + " and (DITG.FASGAR>5 or DITG.FASGAR is null)"
-            + " order by V_GCAP_DPRE.COD_DITTA, V_GCAP_DPRE.NORVOC asc, V_GCAP_DPRE.CONTAF asc  ";
-      } else if (it.eldasoft.utils.sql.comp.SqlManager.DATABASE_SQL_SERVER.equals(SqlManager.getTipoDB()) ||
-          it.eldasoft.utils.sql.comp.SqlManager.DATABASE_POSTGRES.equals(SqlManager.getTipoDB())) {
-        selectDati = "select V_GCAP_DPRE.NGARA, " //0
-            + " V_GCAP_DPRE.CODIGA, " //1
-            + " IMPR.NOMEST, " //2
-            + " IMPR.CFIMP, " //3
-            + " V_GCAP_DPRE.CODVOC," //4
-            + " V_GCAP_DPRE.VOCE, " //5
-            + " GCAP.CLASI1, " //6
-            + " V_GCAP_DPRE.SOLSIC, " //7
-            + " V_GCAP_DPRE.SOGRIB, " //8
-            + " UNIMIS_1.DESUNI, " //9
-            + " V_GCAP_DPRE.QUANTIEFF, " //10
-            + " V_GCAP_DPRE.PREOFF, " //11
-            + " V_GCAP_DPRE.IMPOFF, " //12
-            + " V_GCAP_DPRE.CONTAF, " //13
-            + " V_GCAP_DPRE.COD_DITTA, " //14
-            + " V_GCAP_DPRE.PERCIVAEFF, " //15
-            + " V_GCAP_DPRE.PERRIB, "  //16
-            + " V_GCAP_DPRE.PESO, "  //17
-            + " V_GCAP_DPRE.RIBPESO "  //18
-            + " from (V_GCAP_DPRE left outer join (select * from unimis where conta=-1) unimis_1 on v_gcap_dpre.unimis = unimis_1.tipo) "
-            + " INNER JOIN IMPR ON (V_GCAP_DPRE.COD_DITTA=IMPR.CODIMP) "
-            + " INNER JOIN DITG ON (V_GCAP_DPRE.NGARA = DITG.NGARA5 and V_GCAP_DPRE.CODGAR = DITG.CODGAR5 and V_GCAP_DPRE.COD_DITTA = DITG.DITTAO "
-            + " and (DITG.FASGAR>5 or DITG.FASGAR is null)) "
-            + " INNER JOIN GCAP ON ( GCAP.NGARA=V_GCAP_DPRE.NGARA and GCAP.CONTAF=V_GCAP_DPRE.CONTAF) "
-            + " where V_GCAP_DPRE.NGARA = ? "
-            + " order by V_GCAP_DPRE.COD_DITTA, V_GCAP_DPRE.NORVOC asc, V_GCAP_DPRE.CONTAF asc  ";
-      }
+    }else {
+        if (it.eldasoft.utils.sql.comp.SqlManager.DATABASE_ORACLE.equals(SqlManager.getTipoDB())) {
+            selectDati = "select V_GCAP_DPRE.NGARA, " //0
+                + " V_GCAP_DPRE.CODIGA, " //1
+                + " IMPR.NOMEST, " //2
+                + " IMPR.CFIMP, " //3
+                + " V_GCAP_DPRE.CODVOC," //4
+                + " V_GCAP_DPRE.VOCE, " //5
+                + " GCAP.CLASI1, " //6
+                + " V_GCAP_DPRE.SOLSIC, " //7
+                + " V_GCAP_DPRE.SOGRIB, " //8
+                + " UNIMIS.DESUNI, " //9
+                + " V_GCAP_DPRE.QUANTIEFF, " //10
+                + " V_GCAP_DPRE.PREOFF, " //11
+                + " V_GCAP_DPRE.IMPOFF, " //12
+                + " V_GCAP_DPRE.CONTAF, " //13
+                + " V_GCAP_DPRE.COD_DITTA, " //14
+                + " V_GCAP_DPRE.PERCIVAEFF, " //15
+                + " V_GCAP_DPRE.PERRIB, "  //16
+                + " V_GCAP_DPRE.PESO, "  //17
+                + " V_GCAP_DPRE.RIBPESO "  //18
+                + " from  V_GCAP_DPRE, UNIMIS, DITG, IMPR, GCAP "
+                + " where  V_GCAP_DPRE.UNIMIS = UNIMIS.TIPO(+) "
+                + " and  V_GCAP_DPRE.NGARA = ? "
+                + " and  V_GCAP_DPRE.COD_DITTA=IMPR.CODIMP "
+                + " and UNIMIS.CONTA(+) = -1 "
+                + " and V_GCAP_DPRE.NGARA = DITG.NGARA5 "
+                + " and V_GCAP_DPRE.CODGAR = DITG.CODGAR5 "
+                + " and V_GCAP_DPRE.COD_DITTA = DITG.DITTAO "
+                + " and GCAP.NGARA=V_GCAP_DPRE.NGARA  "
+                + " and GCAP.CONTAF=V_GCAP_DPRE.CONTAF "
+                + " and (DITG.FASGAR>5 or DITG.FASGAR is null)"
+                + " order by V_GCAP_DPRE.COD_DITTA, V_GCAP_DPRE.NORVOC asc, V_GCAP_DPRE.CONTAF asc  ";
+          } else if (it.eldasoft.utils.sql.comp.SqlManager.DATABASE_SQL_SERVER.equals(SqlManager.getTipoDB()) ||
+              it.eldasoft.utils.sql.comp.SqlManager.DATABASE_POSTGRES.equals(SqlManager.getTipoDB())) {
+            selectDati = "select V_GCAP_DPRE.NGARA, " //0
+                + " V_GCAP_DPRE.CODIGA, " //1
+                + " IMPR.NOMEST, " //2
+                + " IMPR.CFIMP, " //3
+                + " V_GCAP_DPRE.CODVOC," //4
+                + " V_GCAP_DPRE.VOCE, " //5
+                + " GCAP.CLASI1, " //6
+                + " V_GCAP_DPRE.SOLSIC, " //7
+                + " V_GCAP_DPRE.SOGRIB, " //8
+                + " UNIMIS_1.DESUNI, " //9
+                + " V_GCAP_DPRE.QUANTIEFF, " //10
+                + " V_GCAP_DPRE.PREOFF, " //11
+                + " V_GCAP_DPRE.IMPOFF, " //12
+                + " V_GCAP_DPRE.CONTAF, " //13
+                + " V_GCAP_DPRE.COD_DITTA, " //14
+                + " V_GCAP_DPRE.PERCIVAEFF, " //15
+                + " V_GCAP_DPRE.PERRIB, "  //16
+                + " V_GCAP_DPRE.PESO, "  //17
+                + " V_GCAP_DPRE.RIBPESO "  //18
+                + " from (V_GCAP_DPRE left outer join (select * from unimis where conta=-1) unimis_1 on v_gcap_dpre.unimis = unimis_1.tipo) "
+                + " INNER JOIN IMPR ON (V_GCAP_DPRE.COD_DITTA=IMPR.CODIMP) "
+                + " INNER JOIN DITG ON (V_GCAP_DPRE.NGARA = DITG.NGARA5 and V_GCAP_DPRE.CODGAR = DITG.CODGAR5 and V_GCAP_DPRE.COD_DITTA = DITG.DITTAO "
+                + " and (DITG.FASGAR>5 or DITG.FASGAR is null)) "
+                + " INNER JOIN GCAP ON ( GCAP.NGARA=V_GCAP_DPRE.NGARA and GCAP.CONTAF=V_GCAP_DPRE.CONTAF) "
+                + " where V_GCAP_DPRE.NGARA = ? "
+                + " order by V_GCAP_DPRE.COD_DITTA, V_GCAP_DPRE.NORVOC asc, V_GCAP_DPRE.CONTAF asc  ";
+          }
+
+    }
+
+
 
 
     // Per le gare a lotti con offerta unica, si estraggono la lista dei lotti
@@ -8066,87 +8553,117 @@ public class ImportExportOffertaPrezziManager {
         numeroRigheDaFormattare = 10000;
       // Convalida dati per CODIGA
       if (arrayCampiVisibili[1]) {
+
+
       CellRangeAddressList addressList = new CellRangeAddressList(
             FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE - 1,
             FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE
                 + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[1] - 1,
             arrayIndiceColonnaCampi[1] - 1);
-        DVConstraint validazioneCODIGA = DVConstraint.createNumericConstraint(
-            DVConstraint.ValidationType.INTEGER, DVConstraint.OperatorType.BETWEEN, "0",
-            "999");
-        HSSFDataValidation dataValidation = new HSSFDataValidation(addressList,
-            validazioneCODIGA);
+
+      DataValidationHelper dvHelper = foglioOffertaPrezzi.getDataValidationHelper();
+      DataValidationConstraint validazioneCODIGA = dvHelper.createNumericConstraint(
+          DataValidationConstraint.ValidationType.INTEGER, DataValidationConstraint.OperatorType.BETWEEN, "0",
+          "999");
+      DataValidation dataValidation = dvHelper.createValidation(
+          validazioneCODIGA, addressList);
+        dataValidation.setSuppressDropDownArrow(true);
+        dataValidation.setShowErrorBox(true);
+
         foglioOffertaPrezzi.addValidationData(dataValidation);
      }
 
+      if (Long.valueOf(8).equals(tipoFornitura)) {
+    	  ;//non metto il cntrollo di validita',e' sola lettura.
+      }else {
+          // Convalida dati per CLASI1
+          if (arrayCampiVisibili[7]) {
+            CellRangeAddressList addressList = new CellRangeAddressList(
+                FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE - 1,
+                FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE
+                    + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[7] - 1,
+                arrayIndiceColonnaCampi[7] - 1);
 
-      // Convalida dati per CLASI1
-      if (arrayCampiVisibili[7]) {
-        CellRangeAddressList addressList = new CellRangeAddressList(
-            FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE - 1,
-            FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE
-                + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[7] - 1,
-            arrayIndiceColonnaCampi[7] - 1);
-        HSSFDataValidation dataValidation = new HSSFDataValidation(addressList,
-            DATA_VALIDATION_CONSTRAINT_CORPO_MISURA);
-        dataValidation.setSuppressDropDownArrow(false);
-        foglioOffertaPrezzi.addValidationData(dataValidation);
+            DataValidationHelper dvHelper = foglioOffertaPrezzi.getDataValidationHelper();
+            DataValidation dataValidation = dvHelper.createValidation(
+            dvHelper.createExplicitListConstraint(DATA_VALIDATION_CONSTRAINT_CORPO_MISURA), addressList);
+            dataValidation.setSuppressDropDownArrow(true);
+            dataValidation.setShowErrorBox(true);
+
+            foglioOffertaPrezzi.addValidationData(dataValidation);
+          }
+
+          // Convalida dati per SOLSIC
+          if (arrayCampiVisibili[8]) {
+            CellRangeAddressList addressList = new CellRangeAddressList(
+                FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE - 1,
+                FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE
+                    + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[8] - 1,
+                arrayIndiceColonnaCampi[8] - 1);
+
+            DataValidationHelper dvHelper = foglioOffertaPrezzi.getDataValidationHelper();
+            DataValidation dataValidation = dvHelper.createValidation(
+            dvHelper.createExplicitListConstraint(DATA_VALIDATION_CONSTRAINT_SI_NO), addressList);
+            dataValidation.setSuppressDropDownArrow(true);
+            dataValidation.setShowErrorBox(true);
+
+            foglioOffertaPrezzi.addValidationData(dataValidation);
+          }
+
+          // Convalida dati per SOGRIB
+          if (arrayCampiVisibili[9]) {
+            CellRangeAddressList addressList = new CellRangeAddressList(
+                FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE - 1,
+                FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE
+                    + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[9] - 1,
+                arrayIndiceColonnaCampi[9] - 1);
+
+            DataValidationHelper dvHelper = foglioOffertaPrezzi.getDataValidationHelper();
+            DataValidation dataValidation = dvHelper.createValidation(
+            dvHelper.createExplicitListConstraint(DATA_VALIDATION_CONSTRAINT_SI_NO), addressList);
+            dataValidation.setSuppressDropDownArrow(true);
+            dataValidation.setShowErrorBox(true);
+
+            foglioOffertaPrezzi.addValidationData(dataValidation);
+          }
       }
 
-      // Convalida dati per SOLSIC
-      if (arrayCampiVisibili[8]) {
-        CellRangeAddressList addressList = new CellRangeAddressList(
-            FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE - 1,
-            FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE
-                + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[8] - 1,
-            arrayIndiceColonnaCampi[8] - 1);
-        HSSFDataValidation dataValidation = new HSSFDataValidation(addressList,
-            DATA_VALIDATION_CONSTRAINT_SI_NO);
-        dataValidation.setSuppressDropDownArrow(false);
-        foglioOffertaPrezzi.addValidationData(dataValidation);
-      }
-
-      // Convalida dati per SOGRIB
-      if (arrayCampiVisibili[9]) {
-        CellRangeAddressList addressList = new CellRangeAddressList(
-            FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE - 1,
-            FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE
-                + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[9] - 1,
-            arrayIndiceColonnaCampi[9] - 1);
-        HSSFDataValidation dataValidation = new HSSFDataValidation(addressList,
-            DATA_VALIDATION_CONSTRAINT_SI_NO);
-        dataValidation.setSuppressDropDownArrow(false);
-        foglioOffertaPrezzi.addValidationData(dataValidation);
-      }
 
       int indiceColonna = 1;
       DizionarioCampi dizCampi = DizionarioCampi.getInstance();
       Campo campo = null;
-      HSSFRow riga = null;
+      Row riga = null;
+
+      List<CellStyle> stili = new ArrayList<CellStyle>();
+      stili.add(dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA)); //fittizi, per sincronizzare gli indici. Non saranno mai utilizzato
+      stili.add(dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA));
 
       for (int ii = 0; ii < arrayCampi.length; ii++) {
-        if (arrayCampiVisibili[ii])
+        if (arrayCampiVisibili[ii]) {
           foglioOffertaPrezzi.setDefaultColumnStyle(
               (short) (arrayIndiceColonnaCampi[ii] - 1),
               dizStiliExcel.getStileExcel(arrayStiliCampi[ii]));
+          stili.add(dizStiliExcel.getStileExcel(arrayStiliCampi[ii]));
+        }
       }
       // Il formato della colonna Importo: decimale a 5 cifre con allineamento
       // a destra
       foglioOffertaPrezzi.setDefaultColumnStyle(
           (short) (indiceColonnaImporto - 1),
-          dizStiliExcel.getStileExcel(DizionarioStiliExcel.DECIMALE5_ALIGN_RIGHT));
+          dizStiliExcel.getStileExcel(DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT));
+      stili.add(dizStiliExcel.getStileExcel(DizionarioStiliExcelX.DECIMALE5_ALIGN_RIGHT));
 
       foglioOffertaPrezzi.setPrintGridlines(true);
       // (0.77 inc <=> 2 cm)
-      foglioOffertaPrezzi.setMargin(HSSFSheet.TopMargin, 0.77);
-      foglioOffertaPrezzi.setMargin(HSSFSheet.BottomMargin, 0.77);
-      foglioOffertaPrezzi.setMargin(HSSFSheet.LeftMargin, 0.77);
-      foglioOffertaPrezzi.setMargin(HSSFSheet.RightMargin, 0.77);
+      foglioOffertaPrezzi.setMargin(Sheet.TopMargin, 0.77);
+      foglioOffertaPrezzi.setMargin(Sheet.BottomMargin, 0.77);
+      foglioOffertaPrezzi.setMargin(Sheet.LeftMargin, 0.77);
+      foglioOffertaPrezzi.setMargin(Sheet.RightMargin, 0.77);
 
       // Set delle informazioni per l'area di stampa dei dati del foglio
-      HSSFPrintSetup printSetup = foglioOffertaPrezzi.getPrintSetup();
+      PrintSetup printSetup = foglioOffertaPrezzi.getPrintSetup();
       printSetup.setLandscape(true);
-      printSetup.setPaperSize(HSSFPrintSetup.A4_PAPERSIZE);
+      printSetup.setPaperSize(PrintSetup.A4_PAPERSIZE);
 
       if (isGaraLottiConOffertaUnica && isCodificaAutomaticaAttiva)
         printSetup.setScale((short) 62); // Presumo significhi zoom al 62%
@@ -8158,31 +8675,38 @@ public class ImportExportOffertaPrezziManager {
       // Scrittura dell'intestazione della foglio
       for (int indiceRigaIntestazione = 0; indiceRigaIntestazione < FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE; indiceRigaIntestazione++) {
         riga = foglioOffertaPrezzi.createRow(indiceRigaIntestazione);
-        HSSFCellStyle stile = null;
+        CellStyle stile = null;
         for (int ii = 0; ii < arrayCampi.length; ii++) {
           if (arrayCampiVisibili[ii]) {
             switch (indiceRigaIntestazione) {
             case 0:
               // Prima riga: Nomi delle colonne
               // Gestione dei colori delle intestazioni
-              if (ii <= 11) {
-                stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_INTESTAZIONE);
-              } else {
-                stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_INTESTAZIONE_ARANCIONE);
-              }
-
-              UtilityExcel.scriviCella(foglioOffertaPrezzi,
+        	  if (Long.valueOf(8).equals(tipoFornitura)) {
+	              if (ii <= 12) {
+	                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_INTESTAZIONE);
+	                } else {
+	                  stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_INTESTAZIONE_ARANCIONE);
+	                }
+        	  }else {
+                  if (ii <= 11) {
+                      stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_INTESTAZIONE);
+                    } else {
+                      stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_INTESTAZIONE_ARANCIONE);
+                    }
+        	  }
+              UtilityExcelX.scriviCella(foglioOffertaPrezzi,
                   arrayIndiceColonnaCampi[ii], indiceRigaIntestazione + 1,
                   arrayTitoloColonne[ii], stile);
-              UtilityExcel.setLarghezzaColonna(foglioOffertaPrezzi,
+              UtilityExcelX.setLarghezzaColonna(foglioOffertaPrezzi,
                   arrayIndiceColonnaCampi[ii], arrayLarghezzaColonne[ii]);
               break;
             case FOGLIO_OFFERTA_DITTE_RIGA_NOME_FISICO_CAMPI - 1:
               // Seconda riga: nomi fisici dei campi
               if (stile == null)
-                stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_NASCOSTA);
+                stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_NASCOSTA);
               campo = dizCampi.getCampoByNomeFisico(arrayCampi[ii].substring(arrayCampi[ii].indexOf(".") + 1));
-              UtilityExcel.scriviCella(foglioOffertaPrezzi,
+              UtilityExcelX.scriviCella(foglioOffertaPrezzi,
                   arrayIndiceColonnaCampi[ii], indiceRigaIntestazione + 1,
                   SCHEMA_CAMPI.concat(".").concat(campo.getNomeFisicoCampo()),
                   stile);
@@ -8191,9 +8715,9 @@ public class ImportExportOffertaPrezziManager {
               // Riga separatrice intestazione dai dati
 
               // Gestione dei colori
-              stile = dizStiliExcel.getStileExcel(DizionarioStiliExcel.CELLA_SEPARATRICE);
+              stile = dizStiliExcel.getStileExcel(DizionarioStiliExcelX.CELLA_SEPARATRICE);
 
-              UtilityExcel.scriviCella(foglioOffertaPrezzi,
+              UtilityExcelX.scriviCella(foglioOffertaPrezzi,
                   arrayIndiceColonnaCampi[ii], indiceRigaIntestazione + 1, " ",
                   stile);
               break;
@@ -8214,6 +8738,20 @@ public class ImportExportOffertaPrezziManager {
       }
 
       int indiceRiga = FOGLIO_OFFERTA_PREZZI_RIGA_INIZIALE;
+
+      //creo un nuovo stile di cella
+      CellStyle voidRedCell = this.workBook.createCellStyle();
+      voidRedCell.setFillForegroundColor(HSSFColor.RED.index);
+      voidRedCell.setFillPattern(CellStyle.SOLID_FOREGROUND);
+      
+      CellStyle voidRoseCell = this.workBook.createCellStyle();
+      voidRoseCell.setFillForegroundColor(HSSFColor.ROSE.index);
+      voidRoseCell.setFillPattern(CellStyle.SOLID_FOREGROUND);
+      Font fontArial8pt = this.workBook.createFont();
+      fontArial8pt.setFontName("Arial");
+      fontArial8pt.setFontHeightInPoints((short)8);
+      voidRoseCell.setFont(fontArial8pt);
+
       for (int ef = 0; ef < listaLottiDiGara.size(); ef++) {
         String tmpNgara = listaLottiDiGara.get(ef);
 
@@ -8223,271 +8761,692 @@ public class ImportExportOffertaPrezziManager {
         if (listaOffertaPrezzi != null && listaOffertaPrezzi.size() > 0) {
           Map<String,String> mappaTabelleatoA1051 = this.getMappaTabellato("A1051");
 
-          // Reset dell'indice di colonna
-          indiceColonna = 1;
+          //salvo gli importi e le date minori per ogni articolo //TODO
+          HashMap<String,Double> itemValues = new HashMap<String,Double>();
+          HashMap<String,Timestamp> itemTimes = new HashMap<String,Timestamp>();
+          HashMap<String, Boolean> itemAggiudicato = new HashMap<String, Boolean>();
+          HashMap<String, Boolean> itemConOfferta = new  HashMap<String, Boolean>();
+
+          HashMap<String,Double> item2destroyValues = new HashMap<String,Double>();
+          HashMap<String,Timestamp> item2destroyTimes = new HashMap<String,Timestamp>();
+
+
           for (int i = 0; i < listaOffertaPrezzi.size(); i++) {
             Vector<?> record = (Vector<?>) listaOffertaPrezzi.get(i);
-            if (record != null && record.size() > 0) {
-              // Campo NGARA (campo visibile se gara a lotti con offerta unica)
-              if (isGaraLottiConOffertaUnica && arrayCampiVisibili[0]) {
-                UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                    indiceColonna++, indiceRiga + i, tmpNgara, null);
-              }
-
-              // Campo CODIGA (campo visibile se gara a lotti con offerta unica
-              // e con codifica automatica)
-              if (isGaraLottiConOffertaUnica && isCodificaAutomaticaAttiva) {
-                String codiga = SqlManager.getValueFromVectorParam( record, 1).stringValue();
-                if (codiga != null && codiga.length() > 0) {
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i, codiga, null);
-                } else
-                  indiceColonna++;
-              }
-
-              // Campo NOMEST
-              if (arrayCampiVisibili[2]) {
-                String nomest = SqlManager.getValueFromVectorParam(
-                    record, 2).toString();
-                if (nomest != null && nomest.length() > 0)
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i, nomest, null);
-                else
-                  indiceColonna++;
-              }
-
-              // Campo CFIMP
-              if (arrayCampiVisibili[3]) {
-                String cfimp = SqlManager.getValueFromVectorParam(
-                    record, 3).toString();
-                if (cfimp != null && cfimp.length() > 0)
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i, cfimp, null);
-                else
-                  indiceColonna++;
-              }
-
-              // Campo CODVOC
-              if (arrayCampiVisibili[4]) {
-                String voce = SqlManager.getValueFromVectorParam(
-                    record, 4).toString();
-                if (voce != null && voce.length() > 0)
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i, voce, null);
-                else
-                  indiceColonna++;
-              }
-
-              // Campo VOCE
-              if (arrayCampiVisibili[5]) {
-                String voce = SqlManager.getValueFromVectorParam(
-                    record, 5).toString();
-                if (voce != null && voce.length() > 0)
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i, voce, null);
-                else
-                  indiceColonna++;
-              }
-
-              Long contaf = SqlManager.getValueFromVectorParam(record, 13).longValue();
-              // Campo DESEST
-              if (arrayCampiVisibili[6]) {
-                String desest = null;
-                Vector<?> res = this.sqlDao.getVectorQuery(
-                    "select DESEST from GCAP_EST where NGARA = ? and CONTAF = ? ",
-                    new Object[] { tmpNgara, contaf });
-                if (res != null && res.size() > 0) {
-                  JdbcParametro result = (JdbcParametro) res.get(0);
-                  if (result != null && result.getValue() != null)
-                    desest = (String) result.getValue();
-                }
-
-                if (desest != null && desest.length() > 0) {
-                  if (desest.length() > 32766)
-                    desest = desest.substring(0, 32759).concat(" [...]");
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i, desest, null);
-                } else
-                  indiceColonna++;
-              }
-
-              // Campo CLASI1
-              if (arrayCampiVisibili[7]) {
-                Long clasi1 = SqlManager.getValueFromVectorParam(record, 6).longValue();
-                if (clasi1 != null)
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++,  indiceRiga + i,
-                      (mappaTabelleatoA1051.get(clasi1.toString())).toLowerCase(),
-                      null);
-                else
-                  indiceColonna++;
-              }
-
-              // Campo SOLSIC
-              String solsic = null;
-              if (arrayCampiVisibili[8]) {
-                solsic = SqlManager.getValueFromVectorParam(record, 7).toString();
-                if (solsic != null && solsic.length() > 0)
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i,
-                      solsic.equals("1") ? "si" : "no", null);
-                else
-                  indiceColonna++;
-              }
-
-              // Campo SOGRIB
-              String sogrib = null;
-              if (arrayCampiVisibili[9]) {
-                sogrib = SqlManager.getValueFromVectorParam(record, 8).toString();
-                if (sogrib != null && sogrib.length() > 0) {
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i,
-                      sogrib.equals("1") ? "no" : "si", null);
-                } else
-                  indiceColonna++;
-              }
-
-              // Campo DESUNI
-              if (arrayCampiVisibili[10]) {
-                String desuni = SqlManager.getValueFromVectorParam(
-                    record, 9).toString();
-                if (desuni != null && desuni.length() > 0)
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i, desuni, null);
-                else
-                  indiceColonna++;
-              }
-
-              // Campo QUANTIEFF
-              if (arrayCampiVisibili[11]) {
-                Double quanti = SqlManager.getValueFromVectorParam(
-                    record, 10).doubleValue();
-                if (quanti != null)
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i, quanti, null);
-                else
-                  indiceColonna++;
-              }
-
-              // Campo PERRIB
-              if (arrayCampiVisibili[12]) {
-                Double perrib = SqlManager.getValueFromVectorParam(
-                    record, 16).doubleValue();
-                if (perrib != null)
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i, perrib, null);
-                else
-                  indiceColonna++;
-              }
-
-              //Campo PREOFF
-              if (arrayCampiVisibili[13]) {
-                Double preoff = SqlManager.getValueFromVectorParam(
-                    record, 11).doubleValue();
-                if (preoff != null)
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i, preoff, null);
-                else
-                  indiceColonna++;
-              } else
-                indiceColonna += 2;
-
-              // Campo PERCIVAEFF
-              if (arrayCampiVisibili[14]) {
-                Double perciva = SqlManager.getValueFromVectorParam(
-                    record, 15).doubleValue();
-                if (perciva != null)
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i, perciva, null);
-                else
-                  indiceColonna++;
-              }
-
-              //Campo IMPOFF
-              if (arrayCampiVisibili[15]) {
-                Double impoff = SqlManager.getValueFromVectorParam(
-                    record, 12).doubleValue();
-                if (impoff != null)
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i, impoff, null);
-                else
-                  indiceColonna++;
-              }
-
-              // Campo PESO
-              if (arrayCampiVisibili[16]) {
-                Double peso = SqlManager.getValueFromVectorParam(
-                    record, 17).doubleValue();
-                if (peso != null)
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i, peso, null);
-                else
-                  indiceColonna++;
-              }
-
-              // Campo RIBPESO
-              if (arrayCampiVisibili[17]) {
-                Double ribpeso = SqlManager.getValueFromVectorParam(
-                    record, 18).doubleValue();
-                if (ribpeso != null)
-                  UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                      indiceColonna++, indiceRiga + i, ribpeso, null);
-                else
-                  indiceColonna++;
-              }
-
-              //Gestione eventuali campi di XDPRE associati alla gara
-              if (listaDatiXdpre != null && listaDatiXdpre.size() > 0) {
-                for (int j=0; j<listaDatiXdpre.size(); j++) {
-                  Vector<?> recordXDPRE = (Vector<?>) listaDatiXdpre.get(j);
-                  if (recordXDPRE != null && recordXDPRE.size() > 0) {
-                    String nomeCampo =  SqlManager.getValueFromVectorParam(recordXDPRE, 0).stringValue();
-                    String tabellato = SqlManager.getValueFromVectorParam(recordXDPRE, 4).stringValue();
-                    String codDitta = SqlManager.getValueFromVectorParam(record, 14).stringValue();
-                    Vector<?> datoXdpre = sqlDao.getVectorQuery(
-                        "select " + nomeCampo + "  from xdpre where xngara=? and xcontaf=? and xdittao = ?",
-                        new Object[] { tmpNgara, contaf, codDitta});
-                    if (datoXdpre != null && datoXdpre.size() > 0) {
-                      JdbcParametro result = (JdbcParametro) datoXdpre.get(0);
-                      if (result != null && result.getValue() != null){
-                        if("DT".equals(arrayFormatoCampiXdpre[j])){
-                          Date dato = (Date) result.getValue();
-                          UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                              indiceColonna++, indiceRiga + i, UtilityDate.convertiData(dato, UtilityDate.FORMATO_GG_MM_AAAA), null);
-                        } else if("TABELLATO".equals(arrayFormatoCampiXdpre[j])) {
-                          Long dato = (Long) result.getValue();
-                          Map<String,String> mappaTabelleatoXDPRE = this.getMappaTabellato(tabellato);
-                          UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                              indiceColonna++,  indiceRiga + i,
-                              (mappaTabelleatoXDPRE.get(dato.toString())).toLowerCase(),
-                              null);
-                        } else if("LONG".equals(arrayFormatoCampiXdpre[j])) {
-                          Long dato = (Long) result.getValue();
-                          UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                              indiceColonna++, indiceRiga + i, dato, null);
-                        } else if("DOUBLE".equals(arrayFormatoCampiXdpre[j])) {
-                          Double dato = (Double) result.getValue();
-                          UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                              indiceColonna++, indiceRiga + i, dato, null);
-                        } else if("STRING".equals(arrayFormatoCampiXdpre[j])) {
-                          String dato = (String) result.getValue();
-                          if (dato.length() > 32766)
-                            dato = dato.substring(0, 32759).concat(" [...]");
-                          UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                              indiceColonna++, indiceRiga + i, dato, null);
-                        } else if("SN".equals(arrayFormatoCampiXdpre[j])) {
-                          String dato = (String) result.getValue();
-                          UtilityExcel.scriviCella(foglioOffertaPrezzi,
-                            indiceColonna++, indiceRiga + i,
-                            dato.equals("1") ? "si" : "no", null);
-                        }
-                      } else
-                        indiceColonna++;
-                    } else
-                      indiceColonna++;
+            String item = SqlManager.getValueFromVectorParam(record, 13).toString();
+            Double qtaordinata = null;
+            if(SqlManager.getValueFromVectorParam(record, 25)!=null) {
+              qtaordinata = SqlManager.getValueFromVectorParam(record, 25).doubleValue();
+            }
+            if(qtaordinata!=null) { //verifico che l'articolo abbia un aggiudicatario
+              itemAggiudicato.put(item, true);
+            }
+            Double offerta = null;
+            if(SqlManager.getValueFromVectorParam(record, 11)!=null) {
+              offerta = SqlManager.getValueFromVectorParam(record, 11).doubleValue();
+            }
+            if(offerta!=null) { //verifico che l'articolo abbia un aggiudicatario
+              itemConOfferta.put(item, true);
+            }
+            Double value = null;
+            Timestamp time = null;
+            if(SqlManager.getValueFromVectorParam(record, 12)!=null) {
+              value = SqlManager.getValueFromVectorParam(record, 12).doubleValue();
+            }
+            if(SqlManager.getValueFromVectorParam(record, 20)!=null) {
+              time = SqlManager.getValueFromVectorParam(record, 20).dataValue();
+            }
+            if(value!=null && time!=null ) { //se non c'è l'importo o la data non faccio nulla
+              if(itemValues.containsKey(item)){
+                if(value.equals(itemValues.get(item))) {// se l'importo è uguale, verifico la data
+                  if(time.before(itemTimes.get(item))) {
+                    itemTimes.replace(item, time);
+                  }
+                  if(time.equals(itemTimes.get(item))) {//mi segno i valori se l'articolo non è aggiudicabile
+                    item2destroyValues.put(item,value);
+                    item2destroyTimes.put(item,time);
                   }
                 }
+                if(value < itemValues.get(item)){ // se l'importo è minore
+                  itemValues.replace(item, value);
+                  itemTimes.replace(item, time);
+                }
               }
+              else {
+                itemValues.put(item,value);
+                itemTimes.put(item, time);
+              }
+            }
+          }
+          //tolgo dalle hashmap se l'articolo non è aggiudicabile
+          for(String item : item2destroyValues.keySet()) {
+            itemValues.remove(item,item2destroyValues.get(item));
+          }
+          for(String item : item2destroyTimes.keySet()) {
+            itemValues.remove(item,item2destroyTimes.get(item));
+          }
+
+          // Reset dell'indice di colonna
+          indiceColonna = 1;
+          //devo usare un nuovo counter per le righe se devo saltare dei record
+          int row = 0;
+          for (int i = 0; i < listaOffertaPrezzi.size(); i++) {
+            Vector<?> record = (Vector<?>) listaOffertaPrezzi.get(i);
+            boolean checkOffertaValorizzata = false;
+            if(SqlManager.getValueFromVectorParam(record, 11)!=null) { //voglio escludere dall'export le righe senza offerta
+              if(SqlManager.getValueFromVectorParam(record, 11).doubleValue()!=null) {
+                checkOffertaValorizzata = true;
+              }
+            }
+            if(SqlManager.getValueFromVectorParam(record, 13).toString()!=null) {
+              String voce = SqlManager.getValueFromVectorParam(record, 13).toString();
+              if(!itemConOfferta.containsKey(voce)) {//se l'articolo è senza offerte, voglio comunque stampare una riga riassuntiva
+                itemConOfferta.put(voce, false); //inserisco l'item ma con valorizzazione a false, al prossimo giro non entro nell'if
+                checkOffertaValorizzata = true;
+              }
+            }
+            
+            boolean skipDatiAzi = false;
+            //se il record non ha un'offerta, non scrivo i campi i dati azienda-specifici
+            if(SqlManager.getValueFromVectorParam(record, 13)!=null) {
+              String itemID = SqlManager.getValueFromVectorParam(record, 13).toString();
+              if(itemConOfferta.containsKey(itemID)) {
+                if(!itemConOfferta.get(itemID)) { 
+                 skipDatiAzi=true;
+                
+                }
+              }
+            }
+            
+            if (record != null && record.size() > 0) {          
+	        	if (Long.valueOf(8).equals(tipoFornitura)) { //..o se per l'articolo, l'offerta è "deserta" #issue-1030
+	        	  if(checkOffertaValorizzata) {
+	                // Campo NGARA (campo visibile se gara a lotti con offerta unica)
+	                if (isGaraLottiConOffertaUnica && arrayCampiVisibili[0]) {
+	                  UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                      indiceColonna++, indiceRiga + row, tmpNgara, stili.get(indiceColonna));
+	                }
+
+	                // Campo CODIGA (campo visibile se gara a lotti con offerta unica
+	                // e con codifica automatica)
+	                if (isGaraLottiConOffertaUnica && isCodificaAutomaticaAttiva) {
+	                  String codiga = SqlManager.getValueFromVectorParam( record, 1).stringValue();
+	                  if (codiga != null && codiga.length() > 0) {
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row, codiga, stili.get(indiceColonna));
+	                  } else
+	                    indiceColonna++;
+	                }
+
+	                // Campo CODVOC
+	                if (arrayCampiVisibili[2]) {
+	                  String voce = SqlManager.getValueFromVectorParam(
+	                      record, 4).toString();
+	                  if (voce != null && voce.length() > 0)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row, voce, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo VOCE
+	                if (arrayCampiVisibili[3]) {
+	                  //appendo la descrizione estesa //APPALTI-965
+	                  String desest = null;
+	                  Long contaf = SqlManager.getValueFromVectorParam(record, 13).longValue();
+                      Vector<?> res = this.sqlDao.getVectorQuery(
+                          "select DESEST from GCAP_EST where NGARA = ? and CONTAF = ? ",
+                          new Object[] { tmpNgara, contaf });
+                      if (res != null && res.size() > 0) {
+                        JdbcParametro result = (JdbcParametro) res.get(0);
+                        if (result != null && result.getValue() != stili.get(indiceColonna))
+                          desest = (String) result.getValue();
+                      }
+                      if (desest != null && desest.length() > 0) {
+                        if (desest.length() > 32766)
+                          desest = desest.substring(0, 32759).concat(" [...]");
+                      }
+                      else {
+                        desest="";
+                      }
+                       //da qui normale gestione
+	                  String voce = SqlManager.getValueFromVectorParam(
+	                      record, 5).toString();
+	                  if (voce != null && voce.length() > 0)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row, voce+desest, stili.get(indiceColonna)); //appendo la desc estesa
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                Long contaf = SqlManager.getValueFromVectorParam(record, 13).longValue();
+	                // Campo DESEST
+	                if (arrayCampiVisibili[4]) {
+	                  String desest = null;
+	                  Vector<?> res = this.sqlDao.getVectorQuery(
+	                      "select DESEST from GCAP_EST where NGARA = ? and CONTAF = ? ",
+	                      new Object[] { tmpNgara, contaf });
+	                  if (res != null && res.size() > 0) {
+	                    JdbcParametro result = (JdbcParametro) res.get(0);
+	                    if (result != null && result.getValue() != stili.get(indiceColonna))
+	                      desest = (String) result.getValue();
+	                  }
+
+	                  if (desest != null && desest.length() > 0) {
+	                    if (desest.length() > 32766)
+	                      desest = desest.substring(0, 32759).concat(" [...]");
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row, desest, stili.get(indiceColonna));
+	                  } else
+	                    indiceColonna++;
+	                }
+
+	                // Campo CLASI1
+	                if (arrayCampiVisibili[5]) {
+	                  Long clasi1 = SqlManager.getValueFromVectorParam(record, 6).longValue();
+	                  if (clasi1 != null)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++,  indiceRiga + row,
+	                        (mappaTabelleatoA1051.get(clasi1.toString())).toLowerCase(),
+	                        stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo SOLSIC
+	                String solsic = null;
+	                if (arrayCampiVisibili[6]) {
+	                  solsic = SqlManager.getValueFromVectorParam(record, 7).toString();
+	                  if (solsic != null && solsic.length() > 0)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row,
+	                        solsic.equals("1") ? "si" : "no", stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo SOGRIB
+	                String sogrib = null;
+	                if (arrayCampiVisibili[7]) {
+	                  sogrib = SqlManager.getValueFromVectorParam(record, 8).toString();
+	                  if (sogrib != null && sogrib.length() > 0) {
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row,
+	                        sogrib.equals("1") ? "no" : "si", stili.get(indiceColonna));
+	                  } else
+	                    indiceColonna++;
+	                }
+
+	                // Campo DATACONS
+	                if (arrayCampiVisibili[8]) {
+
+	                  Date datacons  = (Date) SqlManager.getValueFromVectorParam(
+	                      record, 19).getValue();
+                      if(datacons != null){
+                          SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+                          String formattedDataCons = formatter.format(datacons);
+  	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+  		                        indiceColonna++, indiceRiga + row, formattedDataCons, stili.get(indiceColonna));
+
+                      }else {
+                    	indiceColonna++;
+                      }
+
+	                }
+
+
+	                // Campo DESUNI
+	                if (arrayCampiVisibili[9]) {
+	                  String desuni = SqlManager.getValueFromVectorParam(
+	                      record, 9).toString();
+	                  if (desuni != null && desuni.length() > 0)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row, desuni, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo QUANTIEFF
+	                if (arrayCampiVisibili[10]) {
+	                  Double quanti = SqlManager.getValueFromVectorParam(
+	                      record, 10).doubleValue();
+	                  if (quanti != null)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row, quanti, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                //Campo PREZUN
+	                if (arrayCampiVisibili[11]) {
+	                  Double preoff = SqlManager.getValueFromVectorParam(
+	                      record, 21).doubleValue();
+	                  if (preoff != null)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row, preoff, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                } else
+	                  indiceColonna += 2;
+
+
+	                //Campo IMPOFF
+	                if (arrayCampiVisibili[12]) {
+	                  Double impoff = SqlManager.getValueFromVectorParam(
+	                      record, 22).doubleValue();
+	                  if (impoff != null)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row, impoff, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+	                
+	                
+	                // Campo NOMEST
+	                if (arrayCampiVisibili[13] ) {
+	                  String nomest = SqlManager.getValueFromVectorParam(
+	                      record, 2).toString();
+	                  if (nomest != null && nomest.length() > 0 && !skipDatiAzi)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row, nomest, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo CFIMP
+	                if (arrayCampiVisibili[14]) {
+	                  String cfimp = SqlManager.getValueFromVectorParam(
+	                      record, 3).toString();
+	                  if (cfimp != null && cfimp.length() > 0 && !skipDatiAzi)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row, cfimp, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo DATACONSOFF
+	                if (arrayCampiVisibili[15]) {
+
+	                  Date dataconsoff  = (Date) SqlManager.getValueFromVectorParam(
+	                      record, 20).getValue();
+                      if(dataconsoff != null  && !skipDatiAzi){
+                          SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+                          String formattedDataConsOff = formatter.format(dataconsoff);
+  	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+  		                        indiceColonna++, indiceRiga + row, formattedDataConsOff, stili.get(indiceColonna));
+
+                      }else {
+                    	indiceColonna++;
+                      }
+
+	                }
+
+	                //Campo PREOFF
+	                if (arrayCampiVisibili[16]) {
+	                  Double preoff = SqlManager.getValueFromVectorParam(
+	                      record, 11).doubleValue();
+	                  String isNonAssegnato = SqlManager.getValueFromVectorParam(
+	                      record, 26).getStringValue();
+
+	                  if (isNonAssegnato != null && "1".equals(isNonAssegnato))
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+                            indiceColonna++, indiceRiga + row, preoff, voidRoseCell);
+	                  else if(preoff != null)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+                            indiceColonna++, indiceRiga + row, preoff, stili.get(indiceColonna));
+	                  else if(skipDatiAzi) { //se devo saltare i dati, sono nel caso di articolo senza offerte e segno la cella in rosso
+	                      UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+                            indiceColonna++, indiceRiga + row, preoff, voidRedCell);
+	                      
+	                  }else {
+	                    indiceColonna++;
+	                  }
+	                } else
+	                  indiceColonna += 2;
+
+
+	                //Campo IMPOFF
+	                if (arrayCampiVisibili[17]) {
+	                  Double impoff = SqlManager.getValueFromVectorParam(
+	                      record, 12).doubleValue();
+	                  if (impoff != null  && !skipDatiAzi)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row, impoff, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                //Campo TIPOLOGIA
+	                if (arrayCampiVisibili[18]) {
+	                  Long tipologia = (Long) SqlManager.getValueFromVectorParam(
+	                      record, 23).getValue();
+	                  if (tipologia != null  && !skipDatiAzi) {
+	                	  String descA1192 = this.tabellatiManager.getDescrTabellato("A1192", tipologia.toString());
+		                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+			                        indiceColonna++, indiceRiga + row, descA1192, stili.get(indiceColonna));
+
+	                  }else {
+	                	  indiceColonna++;
+	                  }
+
+	                }
+
+	                //Campo NOTE
+	                if (arrayCampiVisibili[19]) {
+	                  String note = SqlManager.getValueFromVectorParam(
+	                      record, 24).getStringValue();
+	                  if (note != null  && !skipDatiAzi)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row, note, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+
+	                //Campo AGGIUDICATARIO
+	                if (arrayCampiVisibili[20]) {
+	                  String aggiudicatario=null;
+	                  Double qtaordinata = null;
+	                  String itemID = null;
+	                  Double importo = null;
+	                  Timestamp data = null;
+
+	                  if(SqlManager.getValueFromVectorParam(record, 25)!=null)
+	                  qtaordinata = SqlManager.getValueFromVectorParam(record, 25).doubleValue();
+
+	                  if(SqlManager.getValueFromVectorParam(record, 13)!=null)
+	                  itemID = SqlManager.getValueFromVectorParam(record, 13).toString();
+
+	                  if(SqlManager.getValueFromVectorParam(record, 12)!=null)
+	                  importo = SqlManager.getValueFromVectorParam(record, 12).doubleValue();
+
+	                  if(SqlManager.getValueFromVectorParam(record, 20)!=null)
+	                    data = SqlManager.getValueFromVectorParam(record, 20).dataValue();
+
+	                  if(itemValues.containsKey(itemID) && itemTimes.containsKey(itemID) && itemAggiudicato.get(itemID)!=null) { //solo se esiste almeno un importo e una data, e se l'articolo è aggiudicato
+	                    if(itemValues.get(itemID).equals(importo) && itemTimes.get(itemID).equals(data)) { //se l'importo è il più basso per l'articolo, il record è marcato con *
+	                      aggiudicatario="0";
+    	                 }
+	                  }
+	                  if(qtaordinata!=null && Long.valueOf(0)<qtaordinata) {
+	                	  aggiudicatario="1";
+	                  }
+
+	                  if (aggiudicatario != null && aggiudicatario.length() > 0  && !skipDatiAzi) {
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + row,
+	                        aggiudicatario.equals("1") ? "si" : "*", stili.get(indiceColonna));
+	                  } else
+	                    indiceColonna++;
+	                }
+	                //incremento la variabile row
+	                row++;
+	        	  }
+
+	        	}else {
+	                // Campo NGARA (campo visibile se gara a lotti con offerta unica)
+	                if (isGaraLottiConOffertaUnica && arrayCampiVisibili[0]) {
+	                  UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                      indiceColonna++, indiceRiga + i, tmpNgara, stili.get(indiceColonna));
+	                }
+
+	                // Campo CODIGA (campo visibile se gara a lotti con offerta unica
+	                // e con codifica automatica)
+	                if (isGaraLottiConOffertaUnica && isCodificaAutomaticaAttiva) {
+	                  String codiga = SqlManager.getValueFromVectorParam( record, 1).stringValue();
+	                  if (codiga != null && codiga.length() > 0) {
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i, codiga, stili.get(indiceColonna));
+	                  } else
+	                    indiceColonna++;
+	                }
+
+	                // Campo NOMEST
+	                if (arrayCampiVisibili[2]) {
+	                  String nomest = SqlManager.getValueFromVectorParam(
+	                      record, 2).toString();
+	                  if (nomest != null && nomest.length() > 0)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i, nomest, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo CFIMP
+	                if (arrayCampiVisibili[3]) {
+	                  String cfimp = SqlManager.getValueFromVectorParam(
+	                      record, 3).toString();
+	                  if (cfimp != null && cfimp.length() > 0)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i, cfimp, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo CODVOC
+	                if (arrayCampiVisibili[4]) {
+	                  String voce = SqlManager.getValueFromVectorParam(
+	                      record, 4).toString();
+	                  if (voce != null && voce.length() > 0)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i, voce, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo VOCE
+	                if (arrayCampiVisibili[5]) {
+	                  String voce = SqlManager.getValueFromVectorParam(
+	                      record, 5).toString();
+	                  if (voce != null && voce.length() > 0)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i, voce, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                Long contaf = SqlManager.getValueFromVectorParam(record, 13).longValue();
+	                // Campo DESEST
+	                if (arrayCampiVisibili[6]) {
+	                  String desest = null;
+	                  Vector<?> res = this.sqlDao.getVectorQuery(
+	                      "select DESEST from GCAP_EST where NGARA = ? and CONTAF = ? ",
+	                      new Object[] { tmpNgara, contaf });
+	                  if (res != null && res.size() > 0) {
+	                    JdbcParametro result = (JdbcParametro) res.get(0);
+	                    if (result != null && result.getValue() != null)
+	                      desest = (String) result.getValue();
+	                  }
+
+	                  if (desest != null && desest.length() > 0) {
+	                    if (desest.length() > 32766)
+	                      desest = desest.substring(0, 32759).concat(" [...]");
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i, desest, stili.get(indiceColonna));
+	                  } else
+	                    indiceColonna++;
+	                }
+
+	                // Campo CLASI1
+	                if (arrayCampiVisibili[7]) {
+	                  Long clasi1 = SqlManager.getValueFromVectorParam(record, 6).longValue();
+	                  if (clasi1 != null)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++,  indiceRiga + i,
+	                        (mappaTabelleatoA1051.get(clasi1.toString())).toLowerCase(),
+	                        stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo SOLSIC
+	                String solsic = null;
+	                if (arrayCampiVisibili[8]) {
+	                  solsic = SqlManager.getValueFromVectorParam(record, 7).toString();
+	                  if (solsic != null && solsic.length() > 0)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i,
+	                        solsic.equals("1") ? "si" : "no", stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo SOGRIB
+	                String sogrib = null;
+	                if (arrayCampiVisibili[9]) {
+	                  sogrib = SqlManager.getValueFromVectorParam(record, 8).toString();
+	                  if (sogrib != null && sogrib.length() > 0) {
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i,
+	                        sogrib.equals("1") ? "no" : "si", stili.get(indiceColonna));
+	                  } else
+	                    indiceColonna++;
+	                }
+
+	                // Campo DESUNI
+	                if (arrayCampiVisibili[10]) {
+	                  String desuni = SqlManager.getValueFromVectorParam(
+	                      record, 9).toString();
+	                  if (desuni != null && desuni.length() > 0)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i, desuni, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo QUANTIEFF
+	                if (arrayCampiVisibili[11]) {
+	                  Double quanti = SqlManager.getValueFromVectorParam(
+	                      record, 10).doubleValue();
+	                  if (quanti != null)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i, quanti, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo PERRIB
+	                if (arrayCampiVisibili[12]) {
+	                  Double perrib = SqlManager.getValueFromVectorParam(
+	                      record, 16).doubleValue();
+	                  if (perrib != null)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i, perrib, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                //Campo PREOFF
+	                if (arrayCampiVisibili[13]) {
+	                  Double preoff = SqlManager.getValueFromVectorParam(
+	                      record, 11).doubleValue();
+	                  if (preoff != null)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i, preoff, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                } else
+	                  indiceColonna += 2;
+
+	                // Campo PERCIVAEFF
+	                if (arrayCampiVisibili[14]) {
+	                  Double perciva = SqlManager.getValueFromVectorParam(
+	                      record, 15).doubleValue();
+	                  if (perciva != null)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i, perciva, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                //Campo IMPOFF
+	                if (arrayCampiVisibili[15]) {
+	                  Double impoff = SqlManager.getValueFromVectorParam(
+	                      record, 12).doubleValue();
+	                  if (impoff != null)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i, impoff, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo PESO
+	                if (arrayCampiVisibili[16]) {
+	                  Double peso = SqlManager.getValueFromVectorParam(
+	                      record, 17).doubleValue();
+	                  if (peso != null)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i, peso, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                // Campo RIBPESO
+	                if (arrayCampiVisibili[17]) {
+	                  Double ribpeso = SqlManager.getValueFromVectorParam(
+	                      record, 18).doubleValue();
+	                  if (ribpeso != null)
+	                    UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                        indiceColonna++, indiceRiga + i, ribpeso, stili.get(indiceColonna));
+	                  else
+	                    indiceColonna++;
+	                }
+
+	                //Gestione eventuali campi di XDPRE associati alla gara
+	                if (listaDatiXdpre != null && listaDatiXdpre.size() > 0) {
+	                  for (int j=0; j<listaDatiXdpre.size(); j++) {
+	                    Vector<?> recordXDPRE = (Vector<?>) listaDatiXdpre.get(j);
+	                    if (recordXDPRE != null && recordXDPRE.size() > 0) {
+	                      String nomeCampo =  SqlManager.getValueFromVectorParam(recordXDPRE, 0).stringValue();
+	                      String tabellato = SqlManager.getValueFromVectorParam(recordXDPRE, 4).stringValue();
+	                      String codDitta = SqlManager.getValueFromVectorParam(record, 14).stringValue();
+	                      Vector<?> datoXdpre = sqlDao.getVectorQuery(
+	                          "select " + nomeCampo + "  from xdpre where xngara=? and xcontaf=? and xdittao = ?",
+	                          new Object[] { tmpNgara, contaf, codDitta});
+	                      if (datoXdpre != null && datoXdpre.size() > 0) {
+	                        JdbcParametro result = (JdbcParametro) datoXdpre.get(0);
+	                        if (result != null && result.getValue() != null){
+	                          if("DT".equals(arrayFormatoCampiXdpre[j])){
+	                            Date dato = (Date) result.getValue();
+	                            UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                                indiceColonna++, indiceRiga + i, UtilityDate.convertiData(dato, UtilityDate.FORMATO_GG_MM_AAAA), stili.get(indiceColonna));
+	                          } else if("TABELLATO".equals(arrayFormatoCampiXdpre[j])) {
+	                            Long dato = (Long) result.getValue();
+	                            Map<String,String> mappaTabelleatoXDPRE = this.getMappaTabellato(tabellato);
+	                            UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                                indiceColonna++,  indiceRiga + i,
+	                                (mappaTabelleatoXDPRE.get(dato.toString())).toLowerCase(),
+	                                stili.get(indiceColonna));
+	                          } else if("LONG".equals(arrayFormatoCampiXdpre[j])) {
+	                            Long dato = (Long) result.getValue();
+	                            UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                                indiceColonna++, indiceRiga + i, dato, stili.get(indiceColonna));
+	                          } else if("DOUBLE".equals(arrayFormatoCampiXdpre[j])) {
+	                            Double dato = (Double) result.getValue();
+	                            UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                                indiceColonna++, indiceRiga + i, dato, stili.get(indiceColonna));
+	                          } else if("STRING".equals(arrayFormatoCampiXdpre[j])) {
+	                            String dato = (String) result.getValue();
+	                            if (dato.length() > 32766)
+	                              dato = dato.substring(0, 32759).concat(" [...]");
+	                            UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                                indiceColonna++, indiceRiga + i, dato, stili.get(indiceColonna));
+	                          } else if("SN".equals(arrayFormatoCampiXdpre[j])) {
+	                            String dato = (String) result.getValue();
+	                            UtilityExcelX.scriviCella(foglioOffertaPrezzi,
+	                              indiceColonna++, indiceRiga + i,
+	                              dato.equals("1") ? "si" : "no", stili.get(indiceColonna));
+	                          }
+	                        } else
+	                          indiceColonna++;
+	                      } else
+	                        indiceColonna++;
+	                    }
+	                  }
+	                }
+
+	        	}// not iterga=8
+
             }
             // Reset dell'indice di colonna
             indiceColonna = 1;
@@ -8559,13 +9518,13 @@ public class ImportExportOffertaPrezziManager {
    }
 
    if (tipoFornitura == null) tipoFornitura = new Long(3);
-   this.setDefinizioni(tipoFornitura,null,false);
+   this.setDefinizioni(tipoFornitura,null,false,null);
 
    LoggerImportOffertaPrezzi loggerImport = new LoggerImportOffertaPrezzi();
-   this.workBook = new HSSFWorkbook(
+   this.workBook =  WorkbookFactory.create(
        fileExcel.getSelezioneFile().getInputStream());
 
-   HSSFSheet foglioLavorazioniForniture = null;
+   Sheet foglioLavorazioniForniture = null;
    int indiceFoglio = -1;
    // Flag per indicare se eseguire il controllo delle informazioni preliminari
    // del foglio Excel che si sta importando: se il foglio Excel e' esportato
@@ -8727,7 +9686,7 @@ public class ImportExportOffertaPrezziManager {
   * @throws SQLException
   * @throws SqlComposerException
   */
- private void updateVariazionePrezzi(HSSFSheet foglio, String ngara,
+ private void updateVariazionePrezzi(Sheet foglio, String ngara,
      String codiceDitta, List<CampoImportExcel> listaCampiImportExcel,
      boolean isGaraLottiConOffertaUnica, HttpSession session,
      LoggerImportOffertaPrezzi loggerImport, Long tipoFornitura,
@@ -8839,7 +9798,7 @@ public class ImportExportOffertaPrezziManager {
      if (logger.isDebugEnabled())
        logger.debug("Inizio lettura della riga " + (indiceRiga + 1));
 
-     HSSFRow rigaFoglioExcel = foglio.getRow(indiceRiga);
+     Row rigaFoglioExcel = foglio.getRow(indiceRiga);
      if (rigaFoglioExcel != null) {
        // Lista valori di GCAP
        List<Object> valoriCampiRigaExcel = this.letturaRiga(rigaFoglioExcel,
@@ -8868,15 +9827,15 @@ public class ImportExportOffertaPrezziManager {
 
          String codiceLavorazioneFornitura = this.getCodvocString(valoriCampiRigaExcel.get(colonnaCodiceLavorazioneFornitura));
 
-         String strCellaExcelPrezun = UtilityExcel.conversioneNumeroColonna(campoPrezzoUnitario.getColonnaCampo())
+         String strCellaExcelPrezun = UtilityExcelX.conversioneNumeroColonna(campoPrezzoUnitario.getColonnaCampo())
              + (indiceRiga + 1);
 
-         String strCellaExcelQuantita = UtilityExcel.conversioneNumeroColonna(campoQuantita.getColonnaCampo())
+         String strCellaExcelQuantita = UtilityExcelX.conversioneNumeroColonna(campoQuantita.getColonnaCampo())
              + (indiceRiga + 1);
 
          // Controllo del prezzo unitario
          /*
-         String strCellaExcelPrezun = UtilityExcel.conversioneNumeroColonna(campoPrezzoUnitario.getColonnaCampo())
+         String strCellaExcelPrezun = UtilityExcelX.conversioneNumeroColonna(campoPrezzoUnitario.getColonnaCampo())
              + (indiceRiga + 1);
          int colonnaPrezzun = campoPrezzoUnitario.getColonnaArrayValori();
          Object valore = valoriCampiRigaExcel.get(colonnaPrezzun);
@@ -8940,7 +9899,7 @@ public class ImportExportOffertaPrezziManager {
 
          Long valoreContafCella=null;
          //Lettura del valore di contaf memorizzato nel foglio
-         HSSFCell cella = rigaFoglioExcel.getCell(this.posCampoContaf);
+         Cell cella = rigaFoglioExcel.getCell(this.posCampoContaf);
          if (cella != null) {
            Double valTmp = new Double(cella.getNumericCellValue());
            if(valTmp!=null)
@@ -9401,7 +10360,7 @@ public class ImportExportOffertaPrezziManager {
                        + ") non "+label1+": ");
 
                  loggerImport.addMessaggioErrore(" - la cella "
-                     + UtilityExcel.conversioneNumeroColonna(campoPrezzoUnitario.getColonnaCampo())
+                     + UtilityExcelX.conversioneNumeroColonna(campoPrezzoUnitario.getColonnaCampo())
                      + (indiceRiga + 1)
                      + " non e' valorizzata");
                  loggerImport.incrementaRecordNonAggiornati();
@@ -9611,5 +10570,19 @@ public class ImportExportOffertaPrezziManager {
        stringa=(String)stringaObj;
    }
    return stringa;
+ }
+
+ /**
+  * si verifica se la stringa passata in ingresso è una data nel formato gg/mm/yyyy
+  * @param dateString
+  * @return boolean
+  */
+ private boolean isValidDate(String dateString) {
+   SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+   try { df.parse(dateString);
+     return true;
+   }catch (ParseException e) {
+     return false;
+   }
  }
 }

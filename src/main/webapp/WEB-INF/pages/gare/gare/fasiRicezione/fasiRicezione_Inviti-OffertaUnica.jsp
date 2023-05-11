@@ -30,6 +30,8 @@
 <script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.pg.titoli.js"></script>
 <script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.pg.hrefProtocollo.js"></script>	
 
+<c:set var="listaOpzioniDisponibili" value="${fn:join(opzDisponibili,'#')}#"/>
+
 <c:set var="codgar1" value='${gene:getValCampo(key, "TORN.CODGAR")}' />
 <c:set var="genereGara" value="3" scope="request"/>
 <c:set var="tmp" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.CaricaDescPuntiContattoFunction",  pageContext, codgar1, "TORN","")}'/>
@@ -37,8 +39,10 @@
 <c:set var="condizioniDocumentazioneRichiesta" value='${gene:checkProt(pageContext,"SEZ.VIS.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMCONC") }'/>
 
 <c:set var="condizioniAtti" value='${gene:checkProt(pageContext,"SEZ.VIS.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMGARA")}'/>
-<c:set var="firmaRemota" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "firmaremota.auto.url")}'/>
-
+<c:set var="firmaProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:if test='${firmaProvider eq 2}'>
+	<c:set var="firmaRemota" value="true"/>
+</c:if>
 <c:set var="isFaseRicezione" value='true' scope="request"/>
 
 <c:set var="bustalotti" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetBustalottiFunction", pageContext, key)}' scope="request" />
@@ -51,6 +55,11 @@
 
 <c:set var="gestioneUrl" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsGestioneUrlDocumentazioneFunction", pageContext)}' scope="request"/>
 <c:set var="richiestaFirma" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "documentiDb.richiestaFirma")}'/>
+
+<c:set var="bloccoPubblicazionePortale13" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteBloccoPubblicazionePortaleFunction", pageContext, codgar1,"BANDO13","false")}' />
+<c:if test="${bloccoPubblicazionePortale13 eq 'TRUE'}">
+	<c:set var="numDitteGaraCorso" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.ConteggioDitteFunction", pageContext, codgar1,"ACQUISIZIONE = 9 AND AMMGAR = 2")}' scope="request"/>
+</c:if>
 
 <c:set var="isNavigazioneDisattiva" value="${isNavigazioneDisabilitata}" />
 
@@ -121,7 +130,7 @@
 							<gene:redefineInsert name="addToAzioni">
 								
 								<c:if test='${autorizzatoModifiche ne 2 and modoAperturaScheda eq "VISUALIZZA" and isIntegrazionePortaleAlice eq "true"  and (itergaMacro eq "3" || itergaMacro eq "2") and bloccoPubblicazionePortale ne "SI" and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.TORN-OFFUNICA-scheda.RICINV.PubblicaSuAreaRiservata")
-									and (isProceduraTelematica ne "true" or (isProceduraTelematica eq "true" and meruolo eq "1" and (faseGara eq "-3" || faseGara eq "-4")))}'>
+									and (isProceduraTelematica ne "true" or (isProceduraTelematica eq "true" and (meruolo eq "1" or meruolo eq "3") and (faseGara eq "-3" || faseGara eq "-4")))}'>
 									<c:set var="vocePubblicaPortale" value="Pubblica su portale Appalti"/>
 									<c:if test='${isProceduraTelematica eq "true"}'>
 										<c:set var="vocePubblicaPortale" value="Invia invito e pubblica su portale Appalti"/>
@@ -129,13 +138,27 @@
 									<tr>
 										<td class="vocemenulaterale" >
 											<c:if test='${isNavigazioneDisattiva ne "1"}'>
-												<a href="javascript:pubblicaSuAreaRiservata()" title="${vocePubblicaPortale}" tabindex="1502">
+												<a href="javascript:pubblicaSuAreaRiservata(3)" title="${vocePubblicaPortale}" tabindex="1502">
 											</c:if>
 												${vocePubblicaPortale}
 											<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
 										</td>
 									</tr>
 								</c:if>	
+								
+								<c:if test='${autorizzatoModifiche ne 2 and modoAperturaScheda eq "VISUALIZZA" and isIntegrazionePortaleAlice eq "true" and bloccoPubblicazionePortale13 eq "TRUE" and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.GARE-scheda.RICINV.InvioInvitiAGaraCorso")
+								   and isProceduraTelematica eq "true" and (meruolo eq "1" or meruolo eq "3") and faseGara eq 1 and (!empty numDitteGaraCorso and numDitteGaraCorso ne "" and numDitteGaraCorso ne "0")}' >
+									<tr>
+										<td class="vocemenulaterale" >
+											<c:if test='${isNavigazioneDisattiva ne "1"}'>
+												<a href="javascript:pubblicaSuAreaRiservata(5)" title="Invia invito a gara in corso" tabindex="1502">
+											</c:if>
+												Invia invito a gara in corso
+											<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
+										</td>
+									</tr>
+								</c:if>	
+								
 								
 								<c:if test='${autorizzatoModifiche ne "2" and modo eq "VISUALIZZA" and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.RettificaTermini" ) 
 									and tipoDoc eq 1 and (datiRiga.TORN_GARTEL ne 1 or (datiRiga.TORN_GARTEL eq 1 and bloccoPubblicazionePortale eq "SI"))}'>
@@ -297,6 +320,8 @@
 										scheda=''
 										schedaPopUp="gene/punticon/punticon-scheda-popup.jsp"
 										campi="PUNTICON.CODEIN;PUNTICON.NUMPUN;PUNTICON.NOMPUN" 
+										functionId="default"
+										parametriWhere="T:${datiRiga.TORN_CENINT}"
 										chiave="TORN_PCOOFF;CENINT_PCOOFF"
 										formName="formPuntiContPresentazioneOfferta"
 										inseribile="false">
@@ -355,6 +380,8 @@
 								scheda=''
 								schedaPopUp="gene/punticon/punticon-scheda-popup.jsp"
 								campi="PUNTICON.CODEIN;PUNTICON.NUMPUN;PUNTICON.NOMPUN" 
+								functionId="default"
+								parametriWhere="T:${datiRiga.TORN_CENINT}"
 								chiave="TORN_PCOGAR;CENINT_PCOGAR"
 								formName="formPuntiContAperturaPlichi"
 								inseribile="false">
@@ -385,6 +412,16 @@
 							</gene:campoScheda>
 							<gene:campoScheda campo="TIPPUB" entita="PUBBLI" where="TORN.CODGAR=PUBBLI.CODGAR9 and (TIPPUB=13 or TIPPUB=23)" modificabile="false"/>
 							<gene:campoScheda campo="DATPUB" entita="PUBBLI" where="TORN.CODGAR=PUBBLI.CODGAR9 and (TIPPUB=13 or TIPPUB=23)" modificabile="false"/>
+							<c:if test="${modo eq 'VISUALIZZA' }">
+								<c:set var="whereNumComunicazioni" value="idprg='PG' and comstato = '15' and comkey1='${codgar1 }'"/>
+								<c:set var="numComunicazioniErrore" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext,"count(idcom)","W_INVCOM",whereNumComunicazioni)}'/>
+								<c:if test='${!empty numComunicazioniErrore and numComunicazioniErrore ne "" and numComunicazioniErrore ne "0" }'>
+									<gene:campoScheda>
+										<td class="etichetta-dato"><span style="color:red" ><b>ATTENZIONE:</b></span></td>
+										<td class="valore-dato"><span style="color:red" ><b>${numComunicazioniErrore }</b> inviti non sono stati inviati in seguito a errore in protocollazione</span></td>
+									</gene:campoScheda>
+								</c:if>
+							</c:if>
 						</gene:gruppoCampi>
 						</c:if>
 						
@@ -411,7 +448,8 @@
 								<c:set var="dati" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetTipologieDocumentiJsonFunction", pageContext,codiceGara,numeroGara)}'></c:set>
 							</c:when>
 							<c:otherwise>
-								<c:set var="dati" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetBusteDocumentiConcorrentiJsonFunction", pageContext,codiceGara,numeroGara)}'></c:set>
+								<c:set var="varQuestionari" value="${gestioneQuestionariPreq},${gestioneQuestionariAmm},${gestioneQuestionariTec},${gestioneQuestionariEco}" />
+								<c:set var="dati" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetBusteDocumentiConcorrentiJsonFunction", pageContext,codiceGara,numeroGara,varQuestionari)}'></c:set>
 							</c:otherwise>
 						</c:choose>
 		
@@ -511,6 +549,7 @@
 												
 						<input type="hidden" id="updateLista" name="updateLista" value="${updateLista}" />
 					<input type="hidden" name="isGaraLottiConOffertaUnica" id="isGaraLottiConOffertaUnica" value="${isGaraLottiConOffertaUnica}" />
+					<input type="hidden" name="entitaPrincipaleModificabile" id="entitaPrincipaleModificabile" value="${sessionScope.entitaPrincipaleModificabile}" />
 				</gene:formScheda>
 				<jsp:include page="/WEB-INF/pages/gene/system/firmadigitale/modalPopupFirmaDigitaleRemota.jsp" />
 				<form name="formVisFirmaDigitale" id="formVisFirmaDigitale" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
@@ -518,6 +557,9 @@
 					<input type="hidden" name="idprg" id="idprg" value="" />
 					<input type="hidden" name="iddocdig" id="iddocdig" value="" />
 				</form>
+				<c:if test="${tipoDoc eq 3 and fn:contains(listaOpzioniDisponibili, 'OP135#')}">
+					<jsp:include page="/WEB-INF/pages/gare/commons/modalePopupInserimentodocumenti.jsp" />
+				</c:if>
 			</td>
 		</tr>
 		<form name="formVisualizzaDocumenti" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
@@ -533,18 +575,22 @@
 			<input type="hidden" name="busta" value="" />
 			<input type="hidden" name="titoloBusta" value="" />
 			<input type="hidden" name="bustalotti" value="${bustalotti}" />
+			<input type="hidden" name="modoQform" id="modoQform" value="" />
 		</form> 
 		
 <gene:javaScript>
 
 //Apertura popup per la pubblicazione su Area Riservata portale Alice Gare
-function pubblicaSuAreaRiservata() {
+//La funzione viene adoperata nel caso di bando=3 per l'invio invito e pubblicazione portale Appalti
+//nel caso di bando=5 per l'invito a gara in corso
+function pubblicaSuAreaRiservata(bando) {
 	var isProceduraTelematica = ${isProceduraTelematica };
 	var integrazioneWSDM = "${integrazioneWSDM}";
 	var href = "href=gare/commons/popupPubblicaSuPortale.jsp?codgar="+getValue("GARE_CODGAR1")+"&bando=3&isProceduraTelematica=" + isProceduraTelematica + "&step=1";
+	var href = "href=gare/commons/popupPubblicaSuPortale.jsp?codgar="+getValue("GARE_CODGAR1")+"&bando=" + bando +"&isProceduraTelematica=" + isProceduraTelematica + "&step=1";
 	dim1 = 800;
 	dim2 = 650;
-	if(isProceduraTelematica){
+	if(isProceduraTelematica && bando==3){
 		dim1=850;
 		<c:choose>
 			<c:when test="${cifraturaBuste eq '1'}">
@@ -554,6 +600,8 @@ function pubblicaSuAreaRiservata() {
 				dim2=600;
 			</c:otherwise>
 		</c:choose>
+	}else if(isProceduraTelematica && bando==5){
+		dim2=650;
 	}
 	if(integrazioneWSDM =='1'){
 		if(!isProceduraTelematica){
@@ -649,16 +697,6 @@ function calcolaTermineMinimo(campo){
 				return false;
 		}
 		return true;
-	}
-	
-	
-	var cenint = getValue("TORN_CENINT");
-	if(cenint!=""){
-		if(document.formPuntiContPresentazioneOfferta!=null)
-			document.formPuntiContPresentazioneOfferta.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		if(document.formPuntiContAperturaPlichi!=null)
-			document.formPuntiContAperturaPlichi.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		
 	}
 	
 	function puntiContattoSezioneTerminiPresDomandaOfferta(){
@@ -930,13 +968,60 @@ function calcolaTermineMinimo(campo){
 	formVisualizzaDocumenti.gruppo.value = gruppo;
 	formVisualizzaDocumenti.submit();
 	}
+	
 	function visualizzaDocumentiConcorrenti(codgar,busta,titoloBusta){
-	var href = contextPath + "/ApriPagina.do?href=gare/documgara/documenti-tipologia.jsp";
-	formVisualizzaDocumenti.key.value = "TORN.CODGAR=T:" + codgar;
-	formVisualizzaDocumenti.busta.value = busta;
-	formVisualizzaDocumenti.titoloBusta.value = titoloBusta;
-	formVisualizzaDocumenti.gruppo.value = 3;
-	formVisualizzaDocumenti.submit();
+	var gestioneQuestionariPreq = $('#gestioneQuestionariPreq').val();
+		var gestioneQuestionariAmm = $('#gestioneQuestionariAmm').val();
+		var gestioneQuestionariTec = $('#gestioneQuestionariTec').val();
+		var gestioneQuestionariEco = $('#gestioneQuestionariEco').val();
+		var noModaleDocumentiQform = $('#noModaleDocumentiQform').val();
+		if(noModaleDocumentiQform=="true"){
+			if(gestioneQuestionariPreq=="INSQFORM")
+				gestioneQuestionariPreq = "MODALE-INSQFORM";
+			if(gestioneQuestionariAmm=="INSQFORM")
+				gestioneQuestionariAmm = "MODALE-INSQFORM";
+			if(gestioneQuestionariTec=="INSQFORM")
+				gestioneQuestionariTec = "MODALE-INSQFORM";
+			if(gestioneQuestionariEco=="INSQFORM")
+				gestioneQuestionariEco = "MODALE-INSQFORM";
+		}
+		var autorizzatoModifiche = "${autorizzatoModifiche}";
+		if((busta == 2 && gestioneQuestionariTec=="listaTEC") || (busta == 3 && gestioneQuestionariEco=="listaECO")){
+			var href = contextPath + "/ApriPagina.do?href=gare/documgara/lista-lotti.jsp";
+			formVisualizzaDocumenti.href.value="gare/documgara/lista-lotti.jsp";
+			formVisualizzaDocumenti.key.value = "GARE.NGARA=T:" + codgar;
+			formVisualizzaDocumenti.busta.value = busta;
+			formVisualizzaDocumenti.titoloBusta.value = titoloBusta;
+			formVisualizzaDocumenti.gruppo.value = 3;
+			formVisualizzaDocumenti.submit();
+		}else if(((busta == 4 && gestioneQuestionariPreq=="INSQFORM") || (busta == 1 && gestioneQuestionariAmm=="INSQFORM")) && autorizzatoModifiche != "2" ){
+			apriModaleQform(codgar,busta, titoloBusta);
+		}else if(((busta == 4 && gestioneQuestionariPreq=="MODALE-INSQFORM") || (busta == 1 && gestioneQuestionariAmm=="MODALE-INSQFORM") || (busta == 2 && gestioneQuestionariTec=="MODALE-INSQFORM") || (busta == 3 && gestioneQuestionariEco=="MODALE-INSQFORM")) && autorizzatoModifiche != "2" ){
+			var href = contextPath + "/ApriPagina.do?href=gare/documgara/qform.jsp";
+			formVisualizzaDocumenti.href.value="gare/documgara/qform.jsp";
+			formVisualizzaDocumenti.key.value = "GARE.NGARA=T:" + codgar;
+			formVisualizzaDocumenti.busta.value = busta;
+			formVisualizzaDocumenti.titoloBusta.value = titoloBusta;
+			formVisualizzaDocumenti.gruppo.value = 3;
+			formVisualizzaDocumenti.modoQform.value="INSQFORM";
+			formVisualizzaDocumenti.submit();
+		}else if((busta == 4 && gestioneQuestionariPreq=="VISQFORM") || (busta == 1 && gestioneQuestionariAmm=="VISQFORM") || (busta == 2 && gestioneQuestionariTec=="VISQFORM") || (busta == 3 && gestioneQuestionariEco=="VISQFORM")){
+			var href = contextPath + "/ApriPagina.do?href=gare/documgara/qform.jsp";
+			formVisualizzaDocumenti.href.value="gare/documgara/qform.jsp";
+			formVisualizzaDocumenti.key.value = "GARE.NGARA=T:" + codgar;
+			formVisualizzaDocumenti.busta.value = busta;
+			formVisualizzaDocumenti.titoloBusta.value = titoloBusta;
+			formVisualizzaDocumenti.gruppo.value = 3;
+			formVisualizzaDocumenti.modoQform.value="VISQFORM";
+			formVisualizzaDocumenti.submit();
+		}else {
+			var href = contextPath + "/ApriPagina.do?href=gare/documgara/documenti-tipologia.jsp";
+			formVisualizzaDocumenti.key.value = "TORN.CODGAR=T:" + codgar;
+			formVisualizzaDocumenti.busta.value = busta;
+			formVisualizzaDocumenti.titoloBusta.value = titoloBusta;
+			formVisualizzaDocumenti.gruppo.value = 3;
+			formVisualizzaDocumenti.submit();
+		}
 	}						
 	</c:if>
 	

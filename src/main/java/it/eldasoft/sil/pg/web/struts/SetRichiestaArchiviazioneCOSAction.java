@@ -1,21 +1,20 @@
 package it.eldasoft.sil.pg.web.struts;
 
-import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
-import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
-import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
-import it.eldasoft.sil.pg.bl.tasks.ArchiviazioneDocumentiManager;
-
 import java.io.PrintWriter;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import net.sf.json.JSONObject;
-
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
+
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
+import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
+import it.eldasoft.sil.pg.bl.tasks.ArchiviazioneDocumentiManager;
+import net.sf.json.JSONObject;
 
 public class SetRichiestaArchiviazioneCOSAction extends Action {
 
@@ -51,7 +50,7 @@ public class SetRichiestaArchiviazioneCOSAction extends Action {
     syscon = new Long(profiloUtente.getId());;
 
     //INSERIMENTO in GARDOC_JOBS
-    _idRichiesta = archiviazioneDocumentiManager.insertJobArchiviazioneDocumenti(syscon, codgar, "", "", "", "", "", "", "", "","","","", tipo_archiviazione,null);
+    _idRichiesta = archiviazioneDocumentiManager.insertJobArchiviazioneDocumenti(syscon, codgar, "", "", "", "", "", "", "", "", "","","","", tipo_archiviazione,null);
     result.put("idRichiesta", _idRichiesta);
 
     out.println(result);

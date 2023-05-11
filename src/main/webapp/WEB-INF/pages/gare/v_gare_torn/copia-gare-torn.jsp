@@ -269,8 +269,9 @@
 						scheda=""
 						schedaPopUp=""
 						campi="V_GARE_TORN.CODICE;TORN.TIPGAR"
+						functionId="gareALotti"
+						parametriWhere="N:${tipoGara}"
 						chiave=""
-						where="V_GARE_TORN.TIPGEN = ${tipoDiGara} and V_GARE_TORN.GENERE = '1'"
 						formName="formGareALotti"
 						inseribile="false">
 						<gene:campoScheda campo="CODICE_GARA" title="Codice gara di destinazione" definizione="T21;0" campoFittizio="true" modificabile="true" obbligatorio='${isCodificaAutomatica eq "false"}' />
@@ -303,8 +304,9 @@
 							scheda=""
 							schedaPopUp=""
 							campi="V_GARE_TORN.CODICE;TORN.TIPGAR"
+							functionId="gareALotti"
+							parametriWhere="N:${tipoGara}"
 							chiave=""
-							where="V_GARE_TORN.TIPGEN = ${tipoDiGara} and V_GARE_TORN.GENERE = '1' "
 							formName="formGareALotti"
 							inseribile="false">
 							<gene:campoScheda campo="CODICE_GARA" title="Codice gara di destinazione" definizione="T21;0" campoFittizio="true" modificabile="true" value="" obbligatorio="true"/>
@@ -317,8 +319,9 @@
 							scheda=""
 							schedaPopUp=""
 							campi="V_GARE_TORN.CODICE;TORN.TIPGAR"
+							functionId="gareALotti"
+							parametriWhere="N:${tipoGara}"
 							chiave=""
-							where="V_GARE_TORN.TIPGEN = ${tipoDiGara} and V_GARE_TORN.GENERE = '1' "
 							formName="formGareALotti"
 							inseribile="false">
 							<gene:campoScheda campo="CODICE_GARA" title="Codice gara di destinazione" definizione="T21;0" campoFittizio="true" modificabile="true" value="${param.codgar}" obbligatorio="true"/>

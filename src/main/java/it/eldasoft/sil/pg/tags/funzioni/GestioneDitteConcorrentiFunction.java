@@ -10,9 +10,19 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
+import java.sql.Date;
+import java.sql.SQLException;
+import java.util.Vector;
+
+import javax.servlet.http.HttpSession;
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.PageContext;
+
 import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.TabellatiManager;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
 import it.eldasoft.gene.tags.utils.UtilityTags;
@@ -21,14 +31,6 @@ import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
-
-import java.sql.Date;
-import java.sql.SQLException;
-import java.util.Vector;
-
-import javax.servlet.http.HttpSession;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 /**
  * Gestione delle inizializzazione della pagina gare-pg-ditteConcorrenti.jsp
@@ -243,7 +245,9 @@ public class GestioneDitteConcorrentiFunction extends AbstractFunzioneTag {
             "degli operatori da selezionare", e);
       }
 
-      String modalitaSelezione = pgManager.getModalitaSelezioneDitteElenco();
+      ProfiloUtente profiloUtente = (ProfiloUtente) this.getRequest().getSession().getAttribute(
+          CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+      String modalitaSelezione = pgManager.getModalitaSelezioneDitteElenco(profiloUtente);
       pageContext.setAttribute("modalitaSelezioneDitteElenco", modalitaSelezione, PageContext.REQUEST_SCOPE);
     }
 
@@ -266,6 +270,8 @@ public class GestioneDitteConcorrentiFunction extends AbstractFunzioneTag {
     //Valori in sessione adoperati per il filtro della pagina di selezione operatori economici
     HttpSession sessione = pageContext.getSession();
     sessione.setAttribute("filtro", null);
+    sessione.setAttribute("modalitaFiltroCategorie", null);
+    sessione.setAttribute("applicatoFiltroInOr", null);
     sessione.setAttribute("elencoUlterioriCategorie", null);
     sessione.setAttribute("elencoNumcla", null);
     sessione.setAttribute("elencoTiplavgUltCategorie", null);

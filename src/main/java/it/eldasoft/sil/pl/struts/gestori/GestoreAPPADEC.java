@@ -1,5 +1,18 @@
 package it.eldasoft.sil.pl.struts.gestori;
 
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Vector;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang.time.DateUtils;
+import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
@@ -18,19 +31,6 @@ import it.eldasoft.utils.metadata.domain.Campo;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityStringhe;
-
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Vector;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.commons.lang.time.DateUtils;
-import org.apache.log4j.Logger;
-import org.springframework.transaction.TransactionStatus;
 
 public class GestoreAPPADEC extends AbstractGestoreEntita {
 
@@ -667,30 +667,6 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
       String ditta = (String) SqlManager.getValueFromVectorParam(datiGARA, 2).getValue();
 
       if (genere != null && new Long(3).equals(genere)) {
-        Vector datiTorn = this.sqlManager.getVector("select altrisog,accqua,modcont,aqoper from torn where codgar=?", new Object[]{codgar1});
-        //Long altrisog = (Long) this.sqlManager.getObject("select altrisog from torn where codgar=?", new Object[]{codgar1});
-        Long altrisog = null;
-        String accqua = null;
-        Long aqoper = null;
-        Long modcont = null;
-        String esecscig = "";
-        if(datiTorn!=null && datiTorn.size()>0){
-          altrisog = SqlManager.getValueFromVectorParam(datiTorn, 0).longValue();
-          accqua= SqlManager.getValueFromVectorParam(datiTorn, 1).getStringValue();
-          modcont = SqlManager.getValueFromVectorParam(datiTorn, 2).longValue();
-          aqoper = SqlManager.getValueFromVectorParam(datiTorn, 3).longValue();
-          if("1".equals(accqua)){
-            String selectGarecont = "select esecscig from garecont where ngara=? and ncont=?";
-            esecscig = (String) this.sqlManager.getObject(selectGarecont, new Object[]{codgar1,ncont});
-            esecscig = UtilityStringhe.convertiNullInStringaVuota(esecscig);
-          }
-        }
-
-        String nomeCampo="APPACIG.CIG";
-        if(("1".equals(accqua) && new Long(1).equals(aqoper) && !"1".equals(esecscig)) ||
-            (!("1".equals(accqua) && new Long(1).equals(aqoper)) && altrisog!=null && altrisog.longValue()==2)){
-          nomeCampo="APPACIG.CIGMASTER";
-        }
 
         String selectCIG = "select codcig, not_gar from gare where codgar1 = ? and ditta = ? and genere is null";
         List<?> datiCIG = this.sqlManager.getListVector(selectCIG, new Object[] { codgar1, ditta });
@@ -704,18 +680,13 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
             dccAPPACIG.getColumn("APPACIG.CODLAV").setChiave(true);
             dccAPPACIG.getColumn("APPACIG.NAPPAL").setChiave(true);
             dccAPPACIG.getColumn("APPACIG.NUM").setChiave(true);
-            dccAPPACIG.addColumn(nomeCampo, JdbcParametro.TIPO_TESTO,
+            dccAPPACIG.addColumn("APPACIG.CIG", JdbcParametro.TIPO_TESTO,
                 SqlManager.getValueFromVectorParam(datiCIG.get(i), 0).getValue());
             dccAPPACIG.addColumn("APPACIG.DESCRIZIONE", JdbcParametro.TIPO_TESTO,
                 SqlManager.getValueFromVectorParam(datiCIG.get(i), 1).getValue());
 
             dccAPPACIG.insert("APPACIG", this.sqlManager);
 
-          }
-
-          if(("1".equals(accqua) && new Long(1).equals(aqoper) && !"1".equals(esecscig)) ||
-              (!("1".equals(accqua) && new Long(1).equals(aqoper)) && altrisog!=null && altrisog.longValue()==2)){
-            this.sqlManager.update("update appa set flag_cm = ? where codlav=? and nappal=?", new Object[]{"1", codlav, nappal});
           }
 
         }
@@ -1122,7 +1093,8 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
         + "torn.tattot, "   //15
         + "torn.nattot, "   //16
         + "torn.dattot, "    //17
-        + "torn.sommaur "  //18
+        + "torn.sommaur, "  //18
+        + "torn.accqua "  // 19
         + "from gare,torn where "
         + "gare.codgar1 = torn.codgar and "
         + "ngara = ?";
@@ -1142,6 +1114,7 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
           modcont = (Long)SqlManager.getValueFromVectorParam(datiGARAGenere3, 14).getValue();
         }
       }
+      String accqua = null;
 
       //Recupero inizialmente i dati di GARECONT e GARE1 che mi servono per stabilire il campo CIG
       Object param[] = null;
@@ -1173,40 +1146,36 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
       String codcig = null;
       Date dacqcig = null;
       String numavcp = null;
-      String campoCig="APPA.CODCIG";
       if (genere != null && new Long(3).equals(genere)) {
         if (datiGARAGenere3 != null && datiGARAGenere3.size() > 0) {
           dacqcig = (Date) SqlManager.getValueFromVectorParam(datiGARAGenere3, 3).getValue();
           numavcp = (String) SqlManager.getValueFromVectorParam(datiGARAGenere3, 13).getValue();
+          accqua = (String) SqlManager.getValueFromVectorParam(datiGARAGenere3, 19).getValue();
         }
       } else {
         dacqcig = (Date) SqlManager.getValueFromVectorParam(datiGARA, 3).getValue();
         numavcp = (String) SqlManager.getValueFromVectorParam(datiGARA, 41).getValue();
+        accqua = (String) SqlManager.getValueFromVectorParam(datiGARA, 37).getValue();
       }
       dccAPPA.setValue("APPA.IDGARA", numavcp);
 
       //Nella gestione del codice CIG, il caso di gare ad offerta unica con modcont=1 deve
       //essere gestito come lotto unico
       if((new Long(3).equals(genere) && new Long(1).equals(modcont)) || (genere!=null && genere.longValue()!=3)){
-        Long altrisog = (Long) SqlManager.getValueFromVectorParam(datiGARA, 36).getValue();
-        String accqua = (String) SqlManager.getValueFromVectorParam(datiGARA, 37).getValue();
         String isadesione = (String) SqlManager.getValueFromVectorParam(datiGARA, 38).getValue();
         String codcigaq = (String) SqlManager.getValueFromVectorParam(datiGARA, 39).getValue();
-        if("1".equals(isadesione) && !(new Long(2)).equals(altrisog)){
-          dccAPPA.setValue("APPA.FLAG_CM", "1");
-          dccAPPA.setValue("APPA.CIGMASTER", codcigaq);
-        }else if(("1".equals(accqua) && new Long(1).equals(aqoper) && !"1".equals(esecscig)) ||
-            (!("1".equals(accqua) && new Long(1).equals(aqoper)) && altrisog!=null && altrisog.longValue()==2)){
-          campoCig="APPA.CIGMASTER";
-          dccAPPA.setValue("APPA.FLAG_CM", "1");
-        }
-        codcig = (String) SqlManager.getValueFromVectorParam(datiGARA, 2).getValue();
+
+      	if ("1".equals(isadesione)) {
+      	dccAPPA.setValue("APPA.FLAG_CM", "1");
+      	dccAPPA.setValue("APPA.CIGMASTER", codcigaq);
+		}
+
+		codcig = (String) SqlManager.getValueFromVectorParam(datiGARA, 2).getValue();
       }
-      dccAPPA.setValue(campoCig, codcig);
-      if("APPA.CIGMASTER".equals(campoCig))
-        dccAPPA.removeColumns(new String[]{"APPA.DACQCIG"});
-      else
-        dccAPPA.setValue("APPA.DACQCIG", dacqcig);
+
+      dccAPPA.setValue("APPA.CODCIG", codcig);
+      dccAPPA.setValue("APPA.DACQCIG", dacqcig);
+      dccAPPA.setValue("APPA.FLAG_ACQ", accqua);
 
       dccAPPA.setValue("APPA.DAVVIS", SqlManager.getValueFromVectorParam(datiGARA, 34).getValue());
       dccAPPA.setValue("APPA.DPROFF", SqlManager.getValueFromVectorParam(datiGARA, 5).getValue());
@@ -1251,24 +1220,18 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
 
       dccAPPA.setValue("APPA.DAGG", SqlManager.getValueFromVectorParam(datiGARA, 11).getValue());
 
-      Long tattoa = null;
-      String nattoa = null;
-      Date dattoa = null;
+      Long tattoa = (Long) SqlManager.getValueFromVectorParam(datiGARA, 12).getValue();
+      String nattoa = (String) SqlManager.getValueFromVectorParam(datiGARA, 13).getValue();
+      Date dattoa = (Date) SqlManager.getValueFromVectorParam(datiGARA, 14).getValue();
       Date dcomag = null;
       String ncomag = null;
 
       if (genere != null && new Long(3).equals(genere)) {
         if (datiGARAGenere3 != null && datiGARAGenere3.size() > 0) {
-          tattoa = (Long) SqlManager.getValueFromVectorParam(datiGARAGenere3, 0).getValue();
-          nattoa = (String) SqlManager.getValueFromVectorParam(datiGARAGenere3, 1).getValue();
-          dattoa = (Date) SqlManager.getValueFromVectorParam(datiGARAGenere3, 2).getValue();
           dcomag = (Date) SqlManager.getValueFromVectorParam(datiGARAGenere3, 4).getValue();
           ncomag = (String) SqlManager.getValueFromVectorParam(datiGARAGenere3, 5).getValue();
         }
       } else {
-        tattoa = (Long) SqlManager.getValueFromVectorParam(datiGARA, 12).getValue();
-        nattoa = (String) SqlManager.getValueFromVectorParam(datiGARA, 13).getValue();
-        dattoa = (Date) SqlManager.getValueFromVectorParam(datiGARA, 14).getValue();
         dcomag = (Date) SqlManager.getValueFromVectorParam(datiGARA, 15).getValue();
         ncomag = (String) SqlManager.getValueFromVectorParam(datiGARA, 16).getValue();
       }
@@ -1574,7 +1537,7 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
         + "gare.riboepv "  //21
         + "from gare, v_gare_torn, torn where ngara = ? and gare.codgar1 = v_gare_torn.codgar and gare.codgar1 = torn.codgar";
 
-    String selectGARECONT = "select lregco, nregco, dregco, numcont, dscapo, dconsd, numcont from garecont where ngara = ? and ncont = ? ";
+    String selectGARECONT = "select lregco, nregco, dregco, numcont, nproat, dproat, dscapo, dconsd, numcont from garecont where ngara = ? and ncont = ? ";
 
     List<?> datiGARA = this.sqlManager.getVector(selectGARA, new Object[] { ngara });
     if (datiGARA != null && datiGARA.size() > 0) {
@@ -1623,18 +1586,52 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
       }
       dccCONT.setValue("CONT.NIMPCO", iaggiu);
 
-      // Calcolo dell'IVA
+
       String codlav = dccCONT.getString("CONT.CODLAV");
       Long nappal = dccCONT.getLong("CONT.NAPPAL");
       Long nproat = dccCONT.getLong("CONT.NPROAT");
-      Long neseco = (Long) this.sqlManager.getObject("select neseco from cont where codlav = ? and nappal = ? and nproat = ?",
-          new Object[] { codlav, nappal, nproat });
-      Double impiva = null;
-      if (neseco != null && iaggiu != null) {
-        impiva = new Double(iaggiu.doubleValue() * neseco.doubleValue() / 100.0);
-        impiva = new Double((double) Math.round(impiva.doubleValue() * 100) / 100);
+      Long pcprev = null;
+      Long neseco = null;
+      List<?> datiCONT = this.sqlManager.getVector("select pcprev,neseco from cont where codlav = ? and nappal = ? and nproat = ?",
+              new Object[] { codlav, nappal, nproat });
+      if (datiCONT != null && datiCONT.size() > 0) {
+    	  pcprev = (Long) SqlManager.getValueFromVectorParam(datiCONT, 0).getValue();
+    	  neseco = (Long) SqlManager.getValueFromVectorParam(datiCONT, 1).getValue();
       }
+
+      Double icprev = null;
+      if (pcprev != null && iaggiu != null) {
+    	  icprev = new Double(pcprev.doubleValue() * iaggiu.doubleValue() / 100.0);
+    	  icprev = new Double((double) Math.round(icprev.doubleValue() * 100) / 100);
+      }
+      dccCONT.setValue("CONT.ICPREV", icprev);
+
+      // Calcolo dell'IVA
+      Double impiva = null;
+		if (neseco != null && iaggiu != null) {
+			impiva = new Double(iaggiu.doubleValue() * neseco.doubleValue() / 100.0);
+			if (icprev != null) {
+				impiva = new Double(impiva + (icprev.doubleValue() * neseco.doubleValue() / 100.0) + icprev);
+			}
+			impiva = new Double((double) Math.round(impiva.doubleValue() * 100) / 100);
+		}
       dccCONT.setValue("CONT.IMPIVA", impiva);
+
+      Double itotcont = null;
+      if (iaggiu != null) {
+    	itotcont = new Double(iaggiu.doubleValue());
+        if (impiva != null) {
+      	  itotcont=new Double(itotcont + impiva.doubleValue());
+        }
+      }else {
+    	  if (impiva != null) {
+    		  itotcont=new Double(impiva.doubleValue());
+    	  }
+      }
+      if (itotcont != null) {
+      	  itotcont = new Double((double) Math.round(itotcont.doubleValue() * 100) / 100);
+      }
+      dccCONT.setValue("CONT.ITOTCONT", itotcont);
 
       Double ribagg = (Double) SqlManager.getValueFromVectorParam(datiGARA, 11).getValue();
       Double riboepv = (Double) SqlManager.getValueFromVectorParam(datiGARA, 21).getValue();
@@ -1721,23 +1718,23 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
           dccCONT.setValue("CONT.NUMEROCONTRATTO", SqlManager.getValueFromVectorParam(datiGARECONT, 3).getValue());
         }
         if(SqlManager.getValueFromVectorParam(datiGARECONT, 4).getValue()!=null){
-          dccCONT.setValue("CONT.DSCADCADE", SqlManager.getValueFromVectorParam(datiGARECONT, 4).getValue());
-        }
+            dccCONT.setValue("CONT.NUMEROPROTOCOLLO", SqlManager.getValueFromVectorParam(datiGARECONT, 4).getValue());
+          }
         if(SqlManager.getValueFromVectorParam(datiGARECONT, 5).getValue()!=null){
-          dccAPPA.setValue("APPA.DCONSD", SqlManager.getValueFromVectorParam(datiGARECONT, 5).getValue());
-          dccAPPA.setValue("APPA.DINLAV", SqlManager.getValueFromVectorParam(datiGARECONT, 5).getValue());
+            dccCONT.setValue("CONT.DATAPROTOCOLLO", SqlManager.getValueFromVectorParam(datiGARECONT, 5).getValue());
+          }
+        if(SqlManager.getValueFromVectorParam(datiGARECONT, 6).getValue()!=null){
+          dccCONT.setValue("CONT.DSCADCADE", SqlManager.getValueFromVectorParam(datiGARECONT, 6).getValue());
+        }
+        if(SqlManager.getValueFromVectorParam(datiGARECONT, 7).getValue()!=null){
+          dccAPPA.setValue("APPA.DCONSD", SqlManager.getValueFromVectorParam(datiGARECONT, 7).getValue());
+          dccAPPA.setValue("APPA.DINLAV", SqlManager.getValueFromVectorParam(datiGARECONT, 7).getValue());
           aggAppa =true;
         }
-        if(SqlManager.getValueFromVectorParam(datiGARECONT, 6).getValue()!=null){
-          dccCONT.setValue("CONT.NUMEROCONTRATTO", SqlManager.getValueFromVectorParam(datiGARECONT, 6).getValue());
+        if(SqlManager.getValueFromVectorParam(datiGARECONT, 8).getValue()!=null){
+          dccCONT.setValue("CONT.NUMEROCONTRATTO", SqlManager.getValueFromVectorParam(datiGARECONT, 8).getValue());
         }
       }
-      
-      if (modlicg != null && (Long.valueOf(5).equals(modlicg) || Long.valueOf(14).equals(modlicg) || Long.valueOf(6).equals(modlicg))) {
-    	 dccCONT.setValue("CONT.NORIB", "1");
-	  } else {
-	      dccCONT.setValue("CONT.NORIB", "2");
-	  }
 
     }
 

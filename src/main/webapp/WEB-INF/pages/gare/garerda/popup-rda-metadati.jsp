@@ -362,12 +362,21 @@
 		/*
 	     * Gestione utente ed attributi per il collegamento remoto
 	     */
-	     if(${tipoWSERP eq "FNM" || tipoWSERP eq "CAV"}){
+	     if(${tipoWSERP eq "FNM" || tipoWSERP eq "CAV" || tipoWSERP eq "AMIU" || tipoWSERP eq "RAIWAY"}){
 	      if(${tipoWSERP eq "FNM"}){
 	     	_getWSERPRda('${numeroRda}','${esercizio}');
 	      }
+	      
 	      if(${tipoWSERP eq "CAV"}){
 				_creaPopolaSchedaRda('${numeroRda}','${esercizio}');
+	      }
+	      
+	      if(${tipoWSERP eq "AMIU"}){
+				_creaPopolaRdaAmiu('${numeroRda}');
+	      }
+
+	      if(${tipoWSERP eq "RAIWAY"}){
+				_creaPopolaRdaRaiway('${numeroRda}');
 	      }
 	     	
 	     }else{

@@ -10,6 +10,16 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.Date;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Vector;
+
+import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.GenChiaviManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.db.datautils.DataColumn;
@@ -22,16 +32,6 @@ import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.ElencoOperatoriManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityNumeri;
-
-import java.sql.Date;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore non standard che si occupa di preparare i dati prelevati dalle
@@ -120,6 +120,8 @@ public class GestorePopupAssociaOperatoriEconomici extends GestoreFasiRicezione 
     }
 
     int pgCorrente = Integer.parseInt(UtilityStruts.getParametroString(this.getRequest(),"pgCorrente"));
+
+    String modalitaFiltroCategorie = UtilityStruts.getParametroString(this.getRequest(),"modalitaFiltroCategorie");
 
     //variabili per tracciatura eventi
     String oggEvento = ngara;
@@ -542,7 +544,12 @@ public class GestorePopupAssociaOperatoriEconomici extends GestoreFasiRicezione 
           if(filtroCategoria == null || "".equals(filtroCategoria))
             filtroCategoria = "nessuna categoria selezionata";
           errMsgEvento = errMsgEvento+ "\nCriterio di filtro: Vengono considerate le ditte abilitate all'elenco operatori economici "+
-                "a cui è stato assegnato un numero ordine e qualificate per le seguenti categorie o prestazioni della gara corrente:\n" + filtroCategoria;
+                "a cui è stato assegnato un numero ordine e qualificate per ";
+          if("2".equals(modalitaFiltroCategorie))
+            errMsgEvento +="almeno una delle";
+          else
+            errMsgEvento +="tute le";
+          errMsgEvento +=" seguenti categorie o prestazioni della gara corrente:\n" + filtroCategoria;
           if((filtriUlteriori != null && !"".equals(filtriUlteriori)) || (filtriZone != null && !"".equals(filtriZone))){
             errMsgEvento = errMsgEvento+ "\nGli operatori sono ulteriormente filtrati in base ai seguenti criteri:";
           }

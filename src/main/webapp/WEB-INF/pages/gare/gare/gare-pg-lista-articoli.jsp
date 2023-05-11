@@ -78,9 +78,8 @@
 
 	<tr>
 		<td>
-			<gene:formLista entita="MEARTCAT" pagesize="20" sortColumn="6" where="MEARTCAT.NGARA = #GARE.NGARA#"
-											tableclass="datilista" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreMEARTCAT">
-
+			<gene:formLista entita="MEARTCAT" pagesize="20" sortColumn="6" where="MEARTCAT.NGARA = #GARE.NGARA#" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreSearchArticoli" 
+					tableclass="datilista" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreMEARTCAT">
 				
 				<jsp:include page="/WEB-INF/pages/commons/bloccaModifica-pg-lista-scheda.jsp">
 					<jsp:param name="entita" value="V_GARE_TORN"/>
@@ -151,6 +150,11 @@
 </table>
 
 <gene:javaScript>
+	document.forms[0].tipo.value = '${param.tipo}';
+	document.forms[0].cod.value = '${param.cod}';
+	document.forms[0].descr.value = '${param.descr}';
+	document.forms[0].stato.value = '${param.stato}';
+	document.forms[0].colore.value = '${param.colore}';
 
 	$('#filtrotipo').val('${param.tipo}');
 	$('#filtrocod').val('${param.cod}');
@@ -160,94 +164,32 @@
 
 	$('#filtrocod, #filtrodescr, #filtrocolore').keyup(function() {
 		delay(function(){
-			searchArticoli();
+				fillFilters();
+				listaVaiAPagina(0);
 			}, 600);
 	});
 
 	$('#filtrotipo, #filtrostato').change(function() {
 		delay(function(){
-			searchArticoli();
+				fillFilters();
+				listaVaiAPagina(0);
 			}, 600);
 	});
-
-	function searchArticoli() {
-
-		var filtrotipo = $("#filtrotipo").val();
-		var filtrocod = $("#filtrocod").val();
-		var filtrodescr = $("#filtrodescr").val();
-		var filtrostato = $("#filtrostato").val();
-		var filtrocolore = $("#filtrocolore").val();
-
-		document.forms[0].tipo.value=filtrotipo;
-		document.forms[0].cod.value=filtrocod;
-		document.forms[0].descr.value=filtrodescr;
-		document.forms[0].stato.value=filtrostato;
-		document.forms[0].colore.value=filtrocolore;
-
-		var addwhere = "";
-		var parameter = "";
-
-		if (filtrotipo != "") {
-			addwhere += "MEARTCAT.TIPO = ?";
-			parameter += "N:" + filtrotipo;
-		}
-
-		if (filtrocod != "") {
-			if (addwhere != "") {
-				addwhere += " AND ";
-			}
-			addwhere += "UPPER(MEARTCAT.COD) like ?";
-			if (parameter != "") {
-				parameter += ";";
-			}
-			parameter += "T:%" + filtrocod.toUpperCase() + "%";
-		}
-
-		if (filtrodescr != "") {
-			if (addwhere != "") {
-				addwhere += " AND ";
-			}
-			addwhere += "UPPER(MEARTCAT.DESCR) like ?";
-			if (parameter != "") {
-				parameter += ";";
-			}
-			parameter += "T:%" + filtrodescr.toUpperCase() + "%";
-		}
-
-		if (filtrostato != "") {
-			if (addwhere != "") {
-				addwhere += " AND ";
-			}
-			addwhere += "MEARTCAT.STATO = ?";
-			if (parameter != "") {
-				parameter += ";";
-			}
-			parameter += "N:" + filtrostato;
-		}
-
-		if (filtrocolore != "") {
-			if (addwhere != "") {
-				addwhere += " AND ";
-			}
-			addwhere += "UPPER(MEARTCAT.COLORE) like ?";
-			if (parameter != "") {
-				parameter += ";";
-			}
-			parameter += "T:%" + filtrocolore.toUpperCase() + "%";
-		}
-
-		document.forms[0].trovaAddWhere.value = addwhere;
-		document.forms[0].trovaParameter.value = parameter;
-		bloccaRichiesteServer();
-		listaVaiAPagina(0);
-		}
-
-		var delay = (function(){
-			var timer = 0;
-			return function(callback, ms){
-				clearTimeout (timer);
-				timer = setTimeout(callback, ms);
-			};
+	
+	function fillFilters() {
+		document.forms[0].tipo.value = $("#filtrotipo").val();
+		document.forms[0].cod.value = $("#filtrocod").val();
+		document.forms[0].descr.value = $("#filtrodescr").val();
+		document.forms[0].stato.value = $("#filtrostato").val();
+		document.forms[0].colore.value = $("#filtrocolore").val();
+	}
+	
+	var delay = (function(){
+		var timer = 0;
+		return function(callback, ms){
+			clearTimeout (timer);
+			timer = setTimeout(callback, ms);
+		};
 	})();
 	
 	function scaricaModello(){

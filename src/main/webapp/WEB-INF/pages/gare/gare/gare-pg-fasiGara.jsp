@@ -22,6 +22,8 @@
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>		
 </gene:redefineInsert>
 
+<c:set var="showDgueColumn" value="false" />
+<c:set var="showDgueExport" value="false" />
 
 <c:choose>
 	<c:when test='${not empty param.bustalotti}'>
@@ -42,6 +44,8 @@
 		<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.GestioneAggiudProvDefOffertaUnicaFunction" parametro="${key}" />
 	</c:otherwise>
 </c:choose>
+
+<c:set var="tmp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GestioneLogAperturaFaseGaraOffFunction",pageContext,key,paginaAttivaWizard)}' />
 
 <c:set var="iconaNoteAttiva" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "listaDitte.gare.note")}' scope="request"/>
 
@@ -68,8 +72,19 @@
 	</c:otherwise>
 </c:choose>
 
+<c:set var="propertyDGUE" value='${not empty gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction",  "integrazioneMDgue.url") and not empty gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction",  "integrazioneMDgue.url.info")}' scope="request"/>
+<c:if test="${! empty propertyDGUE and propertyDGUE ne 'false'}">
+	<c:set var="isDGUEAbilitato" value='1' scope="request"/>
+</c:if>	
+
 <c:if test='${updateLista eq 1}' >
 	<c:set var="isNavigazioneDisabilitata" value="1" scope="request" />
+</c:if>
+<c:if test="${offtel eq 3 and modalitaAggiudicazioneGara ne 6}">
+	<c:set var="ditteRibassoNullo" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsistonoDitteRiammesseFunction",pageContext,gene:getValCampo(key,"NGARA"),"false")}'/>
+		<c:if test="${ditteRibassoNullo eq 'true'}">
+			<c:set var="calcoloGradQform" value="true"/>
+		</c:if>
 </c:if>
 
 <%// Gestione dell'ordinamento delle diverse pagine del wizard: per le prime
@@ -82,22 +97,32 @@
 <c:if test="${updateLista ne 1}" >
 	<c:choose>
 	  <c:when test='${paginaAttivaWizard >= step1Wizard and paginaAttivaWizard <= step7Wizard}' >
-			<c:set var="sortingList" value="5;6" scope="request" />
+			<c:set var="sortingList" value="5;7" scope="request" />
 		</c:when>
-		<c:when test='${paginaAttivaWizard eq step8Wizard and modalitaAggiudicazioneGara eq 17}' >
-			<c:set var="sortingList" value="-15;17;5" scope="request" />
+		<c:when test="${paginaAttivaWizard eq step8Wizard and modalitaAggiudicazioneGara ne 6 and calcoloGradQform eq 'true' and empty ULTDETLIC}">
+	  		<c:set var="tipoOrdinamento" value=""/>
+	  		<c:if test="${modalitaAggiudicazioneGara eq 17}">
+	  			<c:set var="tipoOrdinamento" value="-"/>
+	  		</c:if>
+	  		<c:set var="sortingList" value="${tipoOrdinamento}17;5" scope="request" />
 	  	</c:when>
-		<c:when test='${paginaAttivaWizard eq step8Wizard and modalitaAggiudicazioneGara eq 6 and empty ULTDETLIC}' >
-			<c:set var="sortingList" value="-15;17;5" scope="request" />
+	  	<c:when test="${paginaAttivaWizard eq step8Wizard and modalitaAggiudicazioneGara ne 6 and calcoloGradQform eq 'true' and !empty ULTDETLIC}">
+	  		<c:set var="sortingList" value="19;5" scope="request" />
+	  	</c:when>
+		<c:when test='${paginaAttivaWizard eq step8Wizard and modalitaAggiudicazioneGara eq 17}' >
+			<c:set var="sortingList" value="-16;18;5" scope="request" />
+	  	</c:when>
+	  	<c:when test='${paginaAttivaWizard eq step8Wizard and modalitaAggiudicazioneGara eq 6 and empty ULTDETLIC}' >
+			<c:set var="sortingList" value="-16;18;5" scope="request" />
 	  	</c:when>
 		<c:when test='${paginaAttivaWizard eq step8Wizard and modalitaAggiudicazioneGara ne 6 and empty ULTDETLIC}' >
-			<c:set var="sortingList" value="15;17;5" scope="request" />
+			<c:set var="sortingList" value="16;18;5" scope="request" />
 		</c:when>
 		<c:when test='${paginaAttivaWizard eq step8Wizard and modalitaAggiudicazioneGara eq 6 and !empty ULTDETLIC}' >
-			<c:set var="sortingList" value="-15;18;5" scope="request" />
+			<c:set var="sortingList" value="-16;19;5" scope="request" />
 	  	</c:when>
 		<c:when test='${paginaAttivaWizard eq step8Wizard and modalitaAggiudicazioneGara ne 6 and !empty ULTDETLIC}' >
-			<c:set var="sortingList" value="15;18;5" scope="request" />
+			<c:set var="sortingList" value="16;19;5" scope="request" />
 		</c:when>
 	</c:choose>
 </c:if>
@@ -149,7 +174,6 @@
 		<table class="dettaglio-notab">
 	</c:when>
 </c:choose>
-
 	<tr>
 		<td>&nbsp;</td>
 	</tr>
@@ -170,7 +194,6 @@
 			<span class="avanzamento-paginevisitate"><c:out value="${fn:trim(strPagineVisitate)}" escapeXml="true" /></span><span class="avanzamento-paginedavisitare"><c:out value="${strPagineDaVisitare}" escapeXml="true" /></span>
 		</td>
 	</tr>
-
 <c:choose>
 	<c:when test='${gene:checkProt(pageContext, strProtVisualizzaFasiGara)}' >
 		<c:set var="stileDati" value="" scope="request" />
@@ -431,6 +454,13 @@
 						<b>Riparametrazione ?</b> ${msgRiptec }
 					</td>
 				</tr>
+				<c:if test='${STATOCG eq 1}'>
+				<tr>
+					<td ${stileDati} >
+						<br><b><span style="color: red;">Valutazione in corso su M-Eval</span></b>
+					</td>
+				</tr>
+				</c:if>
 			</c:when>
 
 			<c:when test='${paginaAttivaWizard eq step7Wizard and gene:checkProt(pageContext, strProtVisualizzaFasiGara) and modalitaAggiudicazioneGara eq 6 and isGaraLottiConOffertaUnica ne "true"}'>
@@ -490,6 +520,8 @@
 				<c:set var="valoreNGARA" value='${ gene:getValCampo(key,"CODGAR") }' scope="request"/>
 			</c:otherwise>
 		</c:choose>
+		
+		<c:set var="espleco" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetEsplecoFunction", pageContext, valoreNGARA)}'/>
 		
 		<c:if test='${paginaAttivaWizard eq step8Wizard or paginaAttivaWizard eq step7Wizard}'>
 			<c:set var="ditta" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetDittaFunction", pageContext, gene:getValCampo(key,"NGARA"))}'/>
@@ -553,7 +585,12 @@
 			</c:if>
 		</c:if>
 		
-		<c:set var="riboepvVis" value="${modalitaAggiudicazioneGara eq 6 and (isVecchiaOepv or formato51) and visOffertaEco}"/>	
+		<c:set var="riboepvVis" value="${modalitaAggiudicazioneGara eq 6 and ((isVecchiaOepv or formato51) and visOffertaEco) }"/>	
+		
+		<c:if test='${isGaraLottiConOffertaUnica ne "true"}'>
+			<c:set var="whereNobustamm" value="codgar='${codiceGara  }'"/>
+			<c:set var="nobustamm" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "nobustamm","torn", whereNobustamm)}' />
+		</c:if>
 		<tr>
 			<td ${stileDati} >
 				<gene:formLista entita="DITG" where='${whereDITG} ${filtroFaseGara}${filtroDitte }${filtroValutazione}' tableclass="datilista" sortColumn="${sortingList}" pagesize="${requestScope.risultatiPerPagina}" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreFasiGara" gestisciProtezioni="true" >
@@ -584,7 +621,7 @@
 											and ((isGaraLottiConOffertaUnica ne "true" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE-scheda.FASIGARA.Calcolo-soglia-anomalia"))
 											 or (isGaraLottiConOffertaUnica eq "true" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE-AGGIUDPROVDEF.Calcolo-soglia-anomalia")))}'>
 										<c:set var="titoloCalcoloSogliaAnomalia" value="Calcolo soglia anomalia" />
-										<c:if test='${(aggiudicazioneEsclusAutom eq 2 and calcoloSogliaAnomalia eq 2) or ((isGaraDLGS2016 or isGaraDLGS2017 or isGaraDL2019) and !esitoControlloDitteDLGS2016 and modalitaAggiudicazioneGara ne 6) or oepvDL_32_2019 eq "graduatoria"}' >
+										<c:if test='${(aggiudicazioneEsclusAutom eq 2 and calcoloSogliaAnomalia eq 2) or ((isGaraDLGS2016 or isGaraDLGS2017 or isGaraDL2019) and !esitoControlloDitteDLGS2016 and modalitaAggiudicazioneGara ne 6) or oepvDL_32_2019 eq "graduatoria" or calcoloGradQform eq "true"}' >
 											<c:set var="titoloCalcoloSogliaAnomalia" value="Calcolo graduatoria" />
 										</c:if>
 										<tr>
@@ -628,14 +665,13 @@
 								
 								<c:set var="condizioneModifica" value='${autorizzatoModifiche ne 2 and modificaGaraTelematica and paginaAttivaWizard ne step8Wizard and gene:checkProt(pageContext, strProtVisualizzaFasiGara) and gene:checkProt(pageContext, strProtModificaFasiGara) and datiRiga.rowCount > 0 and (paginaAttivaWizard eq step9Wizard or (paginaAttivaWizard < step8Wizard and paginaAttivaWizard != step6Wizard and paginaAttivaWizard != step7Wizard and bloccoAggiudicazione ne 1) or (paginaAttivaWizard == step6Wizard and not esistonoDitteConPunteggio and bloccoAggiudicazione ne 1) or (paginaAttivaWizard == step7Wizard and not esistonoDitteConPunteggio and bloccoAggiudicazione ne 1))}' />
 								<c:if test='${condizioneModifica}'>
-									
-										<tr>
-											<td class="vocemenulaterale">
-												<a href="javascript:modificaLista();" title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' tabindex="1499">
-													${gene:resource("label.tags.template.dettaglio.schedaModifica")}
-												</a>
-											</td>
-										</tr>
+									<tr>
+										<td class="vocemenulaterale">
+											<a href="javascript:modificaLista();" title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' tabindex="1499">
+												${gene:resource("label.tags.template.dettaglio.schedaModifica")}
+											</a>
+										</td>
+									</tr>
 									
 								</c:if>
 								
@@ -792,13 +828,22 @@
 												</td>
 											</tr>
 										</c:if>
+										<c:if test='${paginaAttivaWizard eq step6Wizard && STATOCG eq 2 && faseGara eq 5 && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE-scheda.FASIGARA.RipristinaValutazioneEval")}'>
+											<tr>
+												<td class="vocemenulaterale">
+													<a href="javascript:apriPopupRipristinaValutazioneMEVAL('${codiceGara}','${gene:getValCampo(key,"NGARA")}');" title='Ripristina valutazione su M-Eval' tabindex="1508">
+														Ripristina valutazione su M-Eval
+													</a>
+												</td>
+											</tr>
+										</c:if>	
 									</c:if>
 								</c:if>
 								
 								<c:if test='${modalitaAggiudicazioneGara eq 6 and (((paginaAttivaWizard eq step6Wizard or paginaAttivaWizard eq step7Wizard) and isGaraLottiConOffertaUnica ne "true") or (paginaAttivaWizard eq step8Wizard)) and updateLista ne 1 }'>
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:apriPopupProspettoPunteggi('${key}');" title='Prospetto punteggi ditte' tabindex="1508">
+											<a href="javascript:apriPopupProspettoPunteggi('${key}');" title='Prospetto punteggi ditte' tabindex="1509">
 												Prospetto punteggi ditte
 											</a>
 										</td>
@@ -808,7 +853,7 @@
 								<c:if test="${modalitaAggiudicazioneGara eq 6 and isGaraLottiConOffertaUnica ne 'true' and (paginaAttivaWizard eq step6Wizard  or paginaAttivaWizard eq step7Wizard) and gene:checkProt(pageContext, strProtVisualizzaFasiGara) and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIGARA.ImpostaFiltroVerificaValutazione')}">
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:impostaFiltroVerificaValutazione('${gene:getValCampo(key,"NGARA")}');" title='Verifica dettaglio valutazione completato' tabindex="1509">
+											<a href="javascript:impostaFiltroVerificaValutazione('${gene:getValCampo(key,"NGARA")}');" title='Verifica dettaglio valutazione completato' tabindex="1510">
 												Verifica dettaglio valutaz.completato
 											</a>
 										</td>
@@ -818,8 +863,27 @@
 								<c:if test='${((modlicg eq "6" and (isVecchiaOepv or formato52)) or modlicg eq "5" or modlicg eq "14" or modlicg eq "16") and paginaAttivaWizard eq step7Wizard and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE-scheda.FASIGARA.Esporta-excel-offertaPrezzi")}'>
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:apriPopupEsportaInExcelOffertaPrezzi('${valoreNGARA}');" title='Esporta dettaglio offerta prezzi in Excel' tabindex="1510">
+											<a href="javascript:apriPopupEsportaInExcelOffertaPrezzi('${valoreNGARA}');" title='Esporta dettaglio offerta prezzi in Excel' tabindex="1511">
 												Esporta dettaglio offerta prezzi in Excel
+											</a>
+										</td>
+									</tr>
+								</c:if>
+								
+								<c:if test="${autorizzatoModifiche ne '2' and paginaAttivaWizard eq step1Wizard and gene:checkProt(pageContext, 'COLS.VIS.GARE.DITG.STATODGUEAMM') and isDGUEAbilitato eq '1'}">
+									<tr>
+										<td class="vocemenulaterale">
+											<a href="javascript:analisiDocumentiDGUE('');" title='Analizza DGUE' tabindex="1512">
+												Analizza DGUE
+											</a>
+										</td>
+									</tr>
+								</c:if>
+								<c:if test="${paginaAttivaWizard eq step1Wizard and gene:checkProt(pageContext, 'COLS.VIS.GARE.DITG.STATODGUEAMM') and isDGUEAbilitato eq '1'}">
+									<tr id="dgue_export">
+										<td class="vocemenulaterale">
+											<a href="javascript:exportExcelDGUE('');" title='Esporta in excel analisi DGUE' tabindex="1513">
+												Esporta in excel analisi DGUE
 											</a>
 										</td>
 									</tr>
@@ -828,7 +892,7 @@
 								<c:if test="${paginaAttivaWizard < step8Wizard and gene:checkProt(pageContext, strProtVisualizzaFasiGara)}">
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:impostaFiltro();" title='Imposta filtro' tabindex="1511">
+											<a href="javascript:impostaFiltro();" title='Imposta filtro' tabindex="1514">
 												Imposta filtro
 											</a>
 										</td>
@@ -838,7 +902,7 @@
 								<c:if test="${gestioneSogliaManuale eq 'true' or gestioneSogliaAutomatica eq 'true'}">
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:consultaMetodoCalcoloAnomalia();" title='Consulta metodo calcolo anomalia' tabindex="1512">
+											<a href="javascript:consultaMetodoCalcoloAnomalia();" title='Consulta metodo calcolo anomalia' tabindex="1515">
 												Consulta metodo calcolo anomalia
 											</a>
 										</td>
@@ -857,7 +921,7 @@
 									<c:if test="${visualizzaFunzione }">
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:sorteggioDitteVerificaRequisiti();" title='Sorteggio ditte per verifica requisiti' tabindex="1513">
+											<a href="javascript:sorteggioDitteVerificaRequisiti();" title='Sorteggio ditte per verifica requisiti' tabindex="1516">
 												Sorteggio ditte per verifica requisiti
 											</a>
 										</td>
@@ -871,7 +935,7 @@
 											<c:if test="${(faseGara eq '5' and param.paginaFasiGara ne 'aperturaOffAggProvLottoOffUnica') or (faseGara eq '5' and param.paginaFasiGara eq 'aperturaOffAggProvLottoOffUnica' and (modlicg eq '6' or attivaValutazioneTec eq 'true' ))}">
 												<tr>
 													<td class="vocemenulaterale">
-														<a href="javascript:AttivaAperturaEconomiche();" title='Attiva apertura offerte economiche' tabindex="1514">
+														<a href="javascript:AttivaAperturaEconomiche();" title='Attiva apertura offerte economiche' tabindex="1517">
 															Attiva apertura offerte economiche
 														</a>
 													</td>
@@ -881,11 +945,11 @@
 									</c:if>
 								</c:if>
 								
-								<c:if test="${bustalotti ne '1' && isProceduraTelematica eq 'true' && updateLista ne 1 && meruolo eq '1'  && autorizzatoModifiche ne 2 
+								<c:if test="${bustalotti ne '1' && isProceduraTelematica eq 'true' && updateLista ne 1 && (meruolo eq '1' or meruolo eq '3') && autorizzatoModifiche ne 2 && nobustamm ne '1'
 									&& ((paginaAttivaWizard eq step6Wizard && faseGara eq 5) || (paginaAttivaWizard eq step7Wizard && faseGara eq 6)) && gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIGARA.AnnullaAperturaOfferte')}">
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:AnnullaAperturaOfferte('${key}','${bustalotti }');" title='Annulla apertura offerte' tabindex="1515">
+											<a href="javascript:AnnullaAperturaOfferte('${key}','${bustalotti }');" title='Annulla apertura offerte' tabindex="1518">
 												Annulla apertura offerte
 											</a>
 										</td>
@@ -895,7 +959,7 @@
 								<c:if test='${autorizzatoModifiche ne "2" and riservatezzaAttiva eq "1" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIGARA.AnnullaRiservatezza")}' >
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:apriPopupAnnullaRiservatezza('${valoreChiaveRiservatezza}','${idconfi}');" title='Annulla riservatezza su documentale' tabindex="1516">
+											<a href="javascript:apriPopupAnnullaRiservatezza('${valoreChiaveRiservatezza}','${idconfi}');" title='Annulla riservatezza su documentale' tabindex="1519">
 												Annulla riservatezza su documentale
 											</a>
 										</td>
@@ -908,7 +972,7 @@
 								!attivaValutazioneTec && modalitaAggiudicazioneGara ne "6") )}'>
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:indietro();" title='Fase precedente' tabindex="1517">
+											<a href="javascript:indietro();" title='Fase precedente' tabindex="1519">
 												< Fase precedente
 											</a>
 										</td>
@@ -919,7 +983,7 @@
 							<c:if test='${paginaAttivaWizard eq step7Wizard and faseGara <7  and autorizzatoModifiche ne 2}'>
 								<tr>
 									<td class="vocemenulaterale">
-										<a href="javascript:confermaChiusuraAperturaFasi('ATTIVA','${bustalotti}');" title='Attiva calcolo aggiudicazione' tabindex="1518">
+										<a href="javascript:confermaChiusuraAperturaFasi('ATTIVA','${bustalotti}');" title='Attiva calcolo aggiudicazione' tabindex="1520">
 											Attiva calcolo aggiudicazione
 										</a>
 									</td>
@@ -929,7 +993,7 @@
 								<c:when test='${empty param.aggiudProvDefOffertaUnica and paginaAttivaWizard > step1Wizard}'>
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:indietro();" title='Fase precedente' tabindex="1519">
+											<a href="javascript:indietro();" title='Fase precedente' tabindex="1521">
 												< Fase precedente
 											</a>
 										</td>
@@ -938,7 +1002,7 @@
 								<c:when test='${not empty param.aggiudProvDefOffertaUnica and paginaAttivaWizard > step8Wizard}'>
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:indietro();" title='Fase precedente' tabindex="1519">
+											<a href="javascript:indietro();" title='Fase precedente' tabindex="1522">
 												< Fase precedente
 											</a>
 										</td>
@@ -949,12 +1013,12 @@
 					</c:choose>
 
 					<c:choose>
-						<c:when test='${isGaraLottiConOffertaUnica ne "true"}'>
+						<c:when test='${isGaraLottiConOffertaUnica ne "true" and !(param.isRicercaMercatoNegoziata eq "true")}'>
 							<c:if test="${(paginaAttivaWizard < step9Wizard and isProceduraTelematica ne 'true') or (paginaAttivaWizard < step9Wizard and paginaAttivaWizard != step3Wizard and paginaAttivaWizard != step5Wizard and paginaAttivaWizard != step6_5Wizard and isProceduraTelematica eq 'true') or (paginaAttivaWizard == step3Wizard and !(isProceduraTelematica eq 'true' and (faseGara eq '2' or faseGara eq '3' or faseGara eq '4')))
 									or (paginaAttivaWizard == step5Wizard and !(isProceduraTelematica eq 'true' and (faseGara eq '2' or faseGara eq '3' or faseGara eq '4'))) or (paginaAttivaWizard == step6_5Wizard and !(isProceduraTelematica eq 'true' and (faseGara eq '2' or faseGara eq '3' or faseGara eq '4' or faseGara eq '5')))}"> <!-- c'rea il valore 8 -->
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:avanti();" title='Fase seguente' tabindex="1520">
+											<a href="javascript:avanti();" title='Fase seguente' tabindex="1523">
 												Fase seguente >
 											</a>
 										</td>
@@ -968,7 +1032,7 @@
 									or (paginaAttivaWizard == step5Wizard and !(isProceduraTelematica eq 'true' and (faseGara eq '2' or faseGara eq '3' or faseGara eq '4'))) or (paginaAttivaWizard == step6_5Wizard and !(isProceduraTelematica eq 'true' and (faseGara eq '2' or faseGara eq '3' or faseGara eq '4' or faseGara eq '5'))))}">
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:avanti();" title='Fase seguente' tabindex="1520">
+											<a href="javascript:avanti();" title='Fase seguente' tabindex="1523">
 												Fase seguente >
 											</a>
 										</td>
@@ -977,7 +1041,7 @@
 								<c:when test='${not empty param.aggiudProvDefOffertaUnica and paginaAttivaWizard < step9Wizard}'>
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:avanti();" title='Fase seguente' tabindex="1520">
+											<a href="javascript:avanti();" title='Fase seguente' tabindex="1523">
 												Fase seguente >
 											</a>
 										</td>
@@ -1011,10 +1075,10 @@
 							</c:choose>
 							<gene:campoLista title='' width='25'  >
 								<gene:PopUp variableJs="rigaPopUpMenu${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'" >
-									<c:if test='${paginaAttivaWizard == step1Wizard and (tipoImpresa == "2" || tipoImpresa == "11") and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.dettaglioDitteConsorziate")}'>
+									<c:if test='${paginaAttivaWizard == step1Wizard and (tipoImpresa == "2" || tipoImpresa == "11") and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.dettaglioDitteConsorziate") and nobustamm ne "1"}'>
 										<gene:PopUpItem title="Dettaglio consorziate esecutrici" href="listaDitteConsorziate('${chiaveRigaJava}')" />
 									</c:if>
-									<c:if test='${paginaAttivaWizard == step1Wizard and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.RicorsoAvvalimento")}'>
+									<c:if test='${paginaAttivaWizard == step1Wizard and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.RicorsoAvvalimento") and nobustamm ne "1"}'>
 										<gene:PopUpItem title="Avvalimento ${numAvvalimentiDitta}" href="dettaglioAvvalimento('${chiaveRigaJava}')" />
 									</c:if>
 									<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InvioComunicazione") }'>
@@ -1045,6 +1109,9 @@
 											</c:if>
 											
 										</c:if>
+										<c:if test='${paginaAttivaWizard == step1Wizard and gene:checkProt(pageContext, "COLS.VIS.GARE.DITG.STATODGUEAMM") and isDGUEAbilitato eq "1"}'>
+											<gene:PopUpItem title="Analizza DGUE" href="analisiDocumentiDGUE('${datiRiga.DITG_DITTAO}')" />
+										</c:if>
 								</gene:PopUp>
 							</gene:campoLista>
 						</c:when>
@@ -1058,6 +1125,7 @@
 					<gene:campoLista campo="NGARA5"  visibile="false" edit="${updateLista eq 1}" />
 					<gene:campoLista title="N.pl" campo="NUMORDPL" headerClass="sortable" width="32" />
 					<c:set var="link" value='javascript:archivioImpresa("${datiRiga.DITG_DITTAO}");' />
+					<gene:campoLista campo="IDANONIMO_FIT"  title="Id valutaz. anonima" visibile="${paginaAttivaWizard eq step6Wizard && isconcprog eq '1'}" edit="false" width="100" campoFittizio="true" definizione="T50" value="${gene:if(fn:startsWith(datiRiga.DITG_IDANONIMO, 'operatore'), datiRiga.DITG_IDANONIMO, '')}"/>
 					<gene:campoLista campo="NOMIMO" headerClass="sortable" href='${gene:if(gene:checkProt(pageContext, "MASC.VIS.GENE.ImprScheda"), link, "")}' />
 					
 					<gene:campoLista campo="AMMGAR" entita="V_DITGAMMIS" where="V_DITGAMMIS.CODGAR=DITG.CODGAR5 and V_DITGAMMIS.NGARA=DITG.NGARA5 and V_DITGAMMIS.DITTAO=DITG.DITTAO and V_DITGAMMIS.FASGAR=${varTmp}" width="80" headerClass="sortable" ordinabile ="true" visibile="${paginaAttivaWizard eq step1Wizard or (paginaAttivaWizard >= step4Wizard and paginaAttivaWizard <= step7Wizard)}"  edit="${updateLista eq 1  and (modGaraInversa ne 'true' or (modGaraInversa eq 'true' and (empty faseGara or faseGara <5)))}" />
@@ -1088,16 +1156,16 @@
 							<gene:campoLista title="Punteggio" width="130" campo="RIBAUO" headerClass="sortable" visibile="${paginaAttivaWizard eq step8Wizard}" edit="false" definizione="F13.9;0;;;RIBAUO"/>
 						</c:when>
 						<c:when test='${paginaAttivaWizard eq step8Wizard and modalitaAggiudicazioneGara ne 6}'>
-							<gene:campoLista title="${tooltipRibauo }" tooltip="${tooltipRibauo }" width="130" campo="RIBAUO" headerClass="sortable" visibile="${paginaAttivaWizard eq step7Wizard or paginaAttivaWizard eq step8Wizard}" edit="${updateLista eq 1 and paginaAttivaWizard ne step8Wizard}" definizione="F13.9;0;;PRC;RIBAUO"/>
+							<gene:campoLista title="${tooltipRibauo }" tooltip="${tooltipRibauo }" width="130" campo="RIBAUO" headerClass="sortable" visibile="${(paginaAttivaWizard eq step7Wizard or paginaAttivaWizard eq step8Wizard) and espleco ne 2 and espleco ne 3}" edit="${updateLista eq 1 and paginaAttivaWizard ne step8Wizard}" definizione="F13.9;0;;PRC;RIBAUO"/>
 						</c:when>
 						<c:when test='${paginaAttivaWizard eq step7Wizard and isGaraLottiConOffertaUnica eq "true"}'>
 							<gene:campoLista title="${tooltipRibauo }" tooltip="${tooltipRibauo }" width="130" campo="RIBAUO" visibile="false" edit="${updateLista eq 1}" definizione="F13.9;0;;PRC;RIBAUO"/>
 						</c:when>
 						<c:otherwise>
-							<gene:campoLista title="${tooltipRibauo }" tooltip="${tooltipRibauo }" width="130" campo="RIBAUO" headerClass="sortable" visibile="${modalitaAggiudicazioneGara ne 6 and (paginaAttivaWizard eq step7Wizard or paginaAttivaWizard eq step8Wizard)}" edit="${updateLista eq 1 and paginaAttivaWizard ne step8Wizard}" definizione="F13.9;0;;PRC;RIBAUO"/>
+							<gene:campoLista title="${tooltipRibauo }" tooltip="${tooltipRibauo }" width="130" campo="RIBAUO" headerClass="sortable" visibile="${modalitaAggiudicazioneGara ne 6 and (paginaAttivaWizard eq step7Wizard or paginaAttivaWizard eq step8Wizard) and espleco ne 2 and espleco ne 3}" edit="${updateLista eq 1 and paginaAttivaWizard ne step8Wizard}" definizione="F13.9;0;;PRC;RIBAUO"/>
 						</c:otherwise>
 					</c:choose>
-					<gene:campoLista title="Ribasso offerto" tooltip="Ribasso offerto" width="130" campo="RIBOEPV" headerClass="sortable" visibile="${riboepvVis and ((paginaAttivaWizard eq step7Wizard and isGaraLottiConOffertaUnica ne 'true' ) or paginaAttivaWizard eq step8Wizard)  }" edit="${updateLista eq 1 and paginaAttivaWizard ne step8Wizard and offtel ne '1' }" definizione="F13.9;0;;PRC;G1RIBOEPV"/>
+					<gene:campoLista title="Ribasso offerto" tooltip="Ribasso offerto" width="130" campo="RIBOEPV" headerClass="sortable" visibile="${riboepvVis and ((paginaAttivaWizard eq step7Wizard and isGaraLottiConOffertaUnica ne 'true' ) or paginaAttivaWizard eq step8Wizard) and espleco ne 2 and espleco ne 3  }" edit="${updateLista eq 1 and paginaAttivaWizard ne step8Wizard and offtel ne '1' and offtel ne '3'  }" definizione="F13.9;0;;PRC;G1RIBOEPV"/>
 					<c:choose>
 						<c:when test='${paginaAttivaWizard eq step7Wizard and isGaraLottiConOffertaUnica eq "true"}'>
 							<gene:campoLista  campo="IMPOFF" title="Importo" visibile="false" edit="${updateLista eq 1}" />
@@ -1108,7 +1176,7 @@
 							<gene:campoLista title="Offerta congiunta" computed = "true" ordinabile = "false" campo="IMPOFF - ${gene:getDBFunction(pageContext,'isnull','IMPPERM;0')} + ${gene:getDBFunction(pageContext,'isnull','IMPCANO;0')}" definizione="N24.5;0;;MONEY" visibile="true" />
 						</c:when>
 						<c:otherwise>
-							<c:set var="ImportoVisibile" value="${(paginaAttivaWizard eq step7Wizard or paginaAttivaWizard eq step8Wizard) and (detlicg eq 4 or modalitaAggiudicazioneGara eq 5 or (modalitaAggiudicazioneGara eq 6 and (isVecchiaOepv or formato50 or formato52)) or modalitaAggiudicazioneGara eq 14 or modalitaAggiudicazioneGara eq 16) and visOffertaEco}"/>
+							<c:set var="ImportoVisibile" value="${(paginaAttivaWizard eq step7Wizard or paginaAttivaWizard eq step8Wizard) and (detlicg eq 4 or modalitaAggiudicazioneGara eq 5 or (modalitaAggiudicazioneGara eq 6 and (isVecchiaOepv or formato50 or formato52 or offtel eq '3')) or modalitaAggiudicazioneGara eq 14 or modalitaAggiudicazioneGara eq 16) and visOffertaEco and espleco ne 1 and espleco ne 3}"/>
 							<gene:campoLista campo="IMPOFF" title="Importo" width="${gene:if(updateLista eq 1, '150', '')}" headerClass="sortable" tooltip="${labelImpoff }" visibile="${ImportoVisibile}" edit="${updateLista eq 1 and paginaAttivaWizard ne step8Wizard}" />
 						</c:otherwise>
 					</c:choose>
@@ -1339,7 +1407,7 @@
 				</gene:campoLista>
 			</c:if>
 					
-					<c:if test="${(paginaAttivaWizard eq step7Wizard and isGaraLottiConOffertaUnica ne 'true' ) and (modlicg eq '5' or modlicg eq '14' or modlicg eq '16' or (modlicg eq '6' and (isVecchiaOepv or formato52))) and (updateLista ne 1) and gene:checkProtFunz(pageContext, 'ALT', 'VisualizzaDettaglioPrezzi')}" >
+					<c:if test="${(paginaAttivaWizard eq step7Wizard and isGaraLottiConOffertaUnica ne 'true' ) and (modlicg eq '5' or modlicg eq '14' or modlicg eq '16' or (modlicg eq '6' and (isVecchiaOepv or formato52))) and (updateLista ne 1) and gene:checkProtFunz(pageContext, 'ALT', 'VisualizzaDettaglioPrezzi') and offtel ne 3}" >
 						<gene:campoLista title="&nbsp;" width="20">
 							<c:if test="${datiRiga.DITG_PARTGAR ne 2 }">
 								<c:if test="${linkAbilitatoFS11C}"><a href="javascript:chiaveRiga='${chiaveRigaJava}';DettaglioOffertaPrezzi('${chiaveRigaJava}');" title="Dettaglio offerta prezzi" ></c:if>
@@ -1373,6 +1441,39 @@
 							<c:if test="${linkAbilitato}"><a href="javascript:chiaveRiga='${chiaveRigaJava}';verificaDocumentiRichiesti('${chiaveRigaJava}','VERIFICA','1','false','${autorizzatoModifiche }');" title="Verifica documenti richiesti" ></c:if>
 								<img width="16" height="16" title="Verifica documenti richiesti" alt="Verifica documenti richiesti" src="${pageContext.request.contextPath}/img/documentazione${estensioneDisabilitata}.png"/>
 							<c:if test="${linkAbilitato}"></a></c:if>
+						</gene:campoLista>
+					</c:if>
+					<c:if test='${fn:contains(step1Wizard, paginaAttivaWizard) and updateLista ne 1 and gene:checkProt(pageContext, "COLS.VIS.GARE.DITG.STATODGUEAMM") and isDGUEAbilitato eq "1"}' >
+						<gene:campoLista title="&nbsp;" width="20" headerClass ="dgue_column">
+							<c:choose>	
+							<c:when test='${(not empty datiRiga.DITG_STATODGUEAMM and datiRiga.DITG_STATODGUEAMM != "")}' >
+								<c:set var="showDgueColumn" value="true"/>
+								<c:set var="descStatoDGUE" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1186", datiRiga.DITG_STATODGUEAMM, "false")}'/>
+								<c:if test="${datiRiga.DITG_STATODGUEAMM ne '1'}">
+									<c:set var="showDgueExport" value="true" />
+									<a href="javascript:chiaveRiga='${chiaveRigaJava}';esitoAnalisiDocumentiDGUE('${datiRiga.DITG_CODGAR5}','${datiRiga.DITG_NGARA5}','${datiRiga.DITG_DITTAO}','1',${datiRiga.DITG_STATODGUEAMM});" title="Stato analisi DGUE" >
+								</c:if>
+								<c:choose>
+									<c:when test="${datiRiga.DITG_STATODGUEAMM eq 4}">
+										<c:set var="mdgue_tootltip" value="presenti file xml non validi"/>
+									</c:when>
+									<c:when test="${datiRiga.DITG_STATODGUEAMM eq 5}">
+										<c:set var="mdgue_tootltip" value="presenti DGUE con dichiarati criteri di esclusione"/>
+									</c:when>
+									<c:when test="${datiRiga.DITG_STATODGUEAMM eq 3}">
+										<c:set var="mdgue_tootltip" value="nessun DGUE con criteri di esclusione dichiarati"/>
+									</c:when>
+									<c:otherwise>
+										<c:set var="mdgue_tootltip" value="${descStatoDGUE}"/>
+									</c:otherwise>
+								</c:choose>
+								<img width="16" height="16" title="Stato analisi documenti DGUE: ${mdgue_tootltip}" alt="Stato analisi documenti DGUE: ${descStatoDGUE}" src="${pageContext.request.contextPath}/img/statoMDGUE_${datiRiga.DITG_STATODGUEAMM}.png"/>
+							</c:when>
+							<c:otherwise>
+								<c:set var="descStatoDGUE" value='Stato analisi documenti DGUE nessuno documento da elaborare'/>
+								<% // <img width="16" height="16" title="${descStatoDGUE}" alt="${descStatoDGUE}" src="${pageContext.request.contextPath}/img/statoMDGUE_dis.png"/>%>
+							</c:otherwise>
+							</c:choose>	
 						</gene:campoLista>
 					</c:if>
 					<c:if test="${paginaAttivaWizard eq step1Wizard and updateLista ne 1 and !empty codiceElenco and codiceElenco != '' and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.VerificaDocumentiSelezioneDitteElenco')}" >
@@ -1585,6 +1686,8 @@
 					<gene:campoLista campo="IMPPERM" visibile="false" edit="${updateLista eq 1}" />
 					<gene:campoLista campo="IMPCANO" visibile="false" edit="${updateLista eq 1}" />
 					
+					<gene:campoLista campo="STATODGUEAMM" visibile="false" />
+					
 					<c:if test="${(paginaAttivaWizard == step1Wizard or paginaAttivaWizard == step6Wizard or paginaAttivaWizard == step7Wizard) and updateLista ne 1}">
 						<gene:campoLista campo="AMMGAR" visibile="false" />
 						<gene:campoLista campo="DITG_AMMGAR" visibile="false" edit="true" campoFittizio="true" definizione="N7" value="${datiRiga.DITG_AMMGAR}"/>
@@ -1598,6 +1701,13 @@
 					<c:if test='${updateLista eq 0 and paginaAttivaWizard eq step1Wizard and isProceduraTelematica}' >
 						<gene:campoLista campo="DITG_ESTIMP_FITTIZIO" visibile="false" edit="true" campoFittizio="true" definizione="N7" value="${datiRiga.DITG_ESTIMP}" />
 					</c:if>
+					
+					<c:if test='${param.isRicercaMercatoNegoziata}' >
+						<c:set var="isProdottiValutatiDitta" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.isProdottiValutatiDittaFunction", pageContext, datiRiga.DITG_NGARA5,datiRiga.DITG_DITTAO)}'/>
+						<gene:campoLista campo="IS_PRODOTTI_VALUTATI_DITTA" campoFittizio="true" definizione="T10" value="${isProdottiValutatiDitta}" edit="${updateLista eq 1}" visibile="false"/>
+					</c:if>
+					
+					<gene:campoLista campo="IDANONIMO"  visibile="false"/>
 					
 					<input type="hidden" id="ditteVincitrici_escluseDaAltriLotti" name="ditteVincitrici_escluseDaAltriLotti" value="" />
 					<input type="hidden" name="WIZARD_PAGINA_ATTIVA" value="${paginaAttivaWizard}" />
@@ -1614,6 +1724,8 @@
 					<input type="hidden" name="bustalotti" id="bustalotti" value="${bustalotti}" />
 					<input type="hidden" name="filtroValutazione" id="filtroValutazione" value="" />
 					<input type="hidden" name="idconfi" id="idconfi" value="${idconfi}" />
+					<input type="hidden" name="isRicercaMercatoNegoziata" id="isRicercaMercatoNegoziata" value="${param.isRicercaMercatoNegoziata}" />
+					<input type="hidden" name="entitaPrincipaleModificabile" id="entitaPrincipaleModificabile" value="${sessionScope.entitaPrincipaleModificabile}" />
 				</gene:formLista>
 			</td>
 		</tr>
@@ -1719,6 +1831,7 @@
 					<c:if test='${(paginaAttivaWizard < step8Wizard and datiRiga.rowCount > 0 and bloccoAggiudicazione ne 1 and paginaAttivaWizard ne step6Wizard and paginaAttivaWizard ne step7Wizard) or paginaAttivaWizard eq step9Wizard or ((paginaAttivaWizard eq step3Wizard or paginaAttivaWizard eq step5Wizard or (paginaAttivaWizard eq step6Wizard and not esistonoDitteConPunteggio) or (paginaAttivaWizard eq step7Wizard and not esistonoDitteConPunteggio) or paginaAttivaWizard eq step6_5Wizard or paginaAttivaWizard eq step7_5Wizard) and bloccoAggiudicazione ne 1)}'>
 						<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtVisualizzaFasiGara) and gene:checkProt(pageContext, strProtModificaFasiGara)}'>
 							<c:if test='${modificaGaraTelematica and pgAsta ne 3}'>
+							
 								<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' onclick="javascript:modificaLista();">&nbsp;&nbsp;&nbsp;
 							</c:if>
 						</c:if>
@@ -1775,6 +1888,9 @@
 					
 					<c:choose>
 						<c:when test='${isGaraLottiConOffertaUnica ne "true"}'>
+							 <c:if test="${(param.isRicercaMercatoNegoziata eq 'true') and (paginaAttivaWizard eq step7Wizard)}">
+								<INPUT type="button"  class="bottone-azione" value="Valutazione prodotti" title="Valutazione prodotti" onclick="javascript:apriListaProdotti('${gene:getValCampo(key,'NGARA')}','${codiceGara}');">&nbsp;
+							 </c:if>
 							<c:if test='${paginaAttivaWizard > step1Wizard && (paginaAttivaWizard ne step6Wizard  && !(paginaAttivaWizard eq step7Wizard && 
 								!attivaValutazioneTec && modalitaAggiudicazioneGara ne "6") )}'>
 								<INPUT type="button"  class="bottone-azione" value='< Fase precedente' title='Fase precedente' onclick="javascript:indietro();">
@@ -1800,11 +1916,22 @@
 
 					<c:choose>
 						<c:when test='${isGaraLottiConOffertaUnica ne "true"}'>
+						 <c:choose>
+							<c:when test="${param.isRicercaMercatoNegoziata eq 'true'}">
+							 <c:if test="${(paginaAttivaWizard < step7Wizard and isProceduraTelematica ne 'true') or (paginaAttivaWizard < step7Wizard and paginaAttivaWizard != step3Wizard and paginaAttivaWizard != step5Wizard and paginaAttivaWizard != step6_5Wizard and paginaAttivaWizard != step7_5Wizard and isProceduraTelematica eq 'true') or (paginaAttivaWizard == step3Wizard and !(isProceduraTelematica eq 'true' and (faseGara eq '2' or faseGara eq '3' or faseGara eq '4'))) 
+								or (paginaAttivaWizard == step5Wizard  and !(isProceduraTelematica eq 'true' and (faseGara eq '2' or faseGara eq '3' or faseGara eq '4'))) or (paginaAttivaWizard == step6_5Wizard and !(isProceduraTelematica eq 'true' and (faseGara eq '2' or faseGara eq '3' or faseGara eq '4' or (faseGara eq '5' and visOffertaEco))))
+								or (paginaAttivaWizard == step7_5Wizard && stepgar > 65)}"> <!-- c'rea il valore 8 -->
+								<INPUT type="button"  class="bottone-azione" value='Fase seguente >' title='Fase seguente' onclick="javascript:avanti();">
+							 </c:if>
+						 </c:when>
+						 <c:otherwise>
 							<c:if test="${(paginaAttivaWizard < step9Wizard and isProceduraTelematica ne 'true') or (paginaAttivaWizard < step9Wizard and paginaAttivaWizard != step3Wizard and paginaAttivaWizard != step5Wizard and paginaAttivaWizard != step6_5Wizard and paginaAttivaWizard != step7_5Wizard and isProceduraTelematica eq 'true') or (paginaAttivaWizard == step3Wizard and !(isProceduraTelematica eq 'true' and (faseGara eq '2' or faseGara eq '3' or faseGara eq '4'))) 
 								or (paginaAttivaWizard == step5Wizard and !(isProceduraTelematica eq 'true' and (faseGara eq '2' or faseGara eq '3' or faseGara eq '4'))) or (paginaAttivaWizard == step6_5Wizard and !(isProceduraTelematica eq 'true' and (faseGara eq '2' or faseGara eq '3' or faseGara eq '4' or (faseGara eq '5' and visOffertaEco))))
 								or (paginaAttivaWizard == step7_5Wizard && stepgar > 65)}"> <!-- c'rea il valore 8 -->
 								<INPUT type="button"  class="bottone-azione" value='Fase seguente >' title='Fase seguente' onclick="javascript:avanti();">
 							</c:if>
+						 </c:otherwise>
+						 </c:choose>													
 						</c:when>
 						<c:when test='${isGaraLottiConOffertaUnica eq "true"}'>
 							<c:choose>
@@ -1859,7 +1986,7 @@
 						</c:if>
 					</c:if>
 					
-					<c:if test='${autorizzatoModifiche ne 2 and datiRiga.GARE_FASGAR eq 6 and meruolo eq "1" and paginaAttivaWizard eq step7_5Wizard and pgAsta eq 2  and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InviaInvitoAstaElettronica")}'>
+					<c:if test='${autorizzatoModifiche ne 2 and datiRiga.GARE_FASGAR eq 6 and (meruolo eq "1" or meruolo eq "3") and paginaAttivaWizard eq step7_5Wizard and pgAsta eq 2  and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InviaInvitoAstaElettronica")}'>
 						<br><br>
 						<INPUT type="button"  class="bottone-azione" value="Invia invito all'asta elettronica" title="Invia invito all'asta elettronica" onclick="javascript:apriPopupInviaInvito('${gene:getValCampo(key,'NGARA')}','${codiceGara}','${integrazioneWSDM }','${idconfi}');">&nbsp;
 					</c:if>
@@ -1907,7 +2034,6 @@ setRowCount(${datiRiga.rowCount });
 setCodiceElenco("${codiceElenco }");
 setMeruolo("${meruolo }");
 setIsW_CONFCOMPopolata("${IsW_CONFCOMPopolata }");
-setWhereBusteAttiveWizard("${whereBusteAttiveWizard }");
 setLottoDiGara("${lottoDiGara }");
 setBloccoAggiudicazione("${bloccoAggiudicazione }");
 setFaseGara("${faseGara }");
@@ -1931,6 +2057,7 @@ setGaraInversa("${garaInversa }");
 setCompreq("${compreq}");
 setSezionitec("${sezionitec}");
 setNumDitteStatoSoccorso("${numDitteStatoSoccorso}");
+setStatocg("${STATOCG}");
 
 <c:if test='${updateLista eq 1}'>
 	
@@ -1963,7 +2090,8 @@ setNumDitteStatoSoccorso("${numDitteStatoSoccorso}");
 			document.getElementById("V_DITGAMMIS_AMMGAR_" + i).onchange = aggiornaPerCambioAmmessaGara;
 			document.getElementById("DITG_PARTGAR_" + i).onchange = aggiornaPerCambioPartecipazioneGara;
 			<c:if test='${ribcal eq "2" and isGaraLottiConOffertaUnica ne "true"}'>
-				document.getElementById("DITG_IMPOFF_" + i).onchange = aggiornaPerCambioImportoOfferto;
+				if(document.getElementById("DITG_IMPOFF_" + i)!=null)
+					document.getElementById("DITG_IMPOFF_" + i).onchange = aggiornaPerCambioImportoOfferto;
 			</c:if>
 			
 			<c:choose>
@@ -1972,12 +2100,13 @@ setNumDitteStatoSoccorso("${numDitteStatoSoccorso}");
 					<c:if test="${ isGaraLottiConOffertaUnica ne 'true'  }">
 						if(document.getElementById("DITG_RIBOEPV_" + i)!=null)
 							document.getElementById("DITG_RIBOEPV_" + i).onchange = aggiornaPerCambioRibassoOEPV;
-						<c:if test="${riboepvVis and offtel ne '1'}">
+						<c:if test="${riboepvVis and offtel ne '1' and offtel ne '3'}">
 							document.getElementById("DITG_IMPOFF_" + i).onchange = aggiornaRIBOEPVPerCambioImporto;
 						</c:if>
 					</c:if>
 				</c:when>
 				<c:otherwise>
+					if(document.getElementById("DITG_RIBAUO_" + i)!=null)
 					document.getElementById("DITG_RIBAUO_" + i).onchange = aggiornaPerCambioRibassoAumento;
 				</c:otherwise>
 			</c:choose>
@@ -2216,24 +2345,22 @@ setNumDitteStatoSoccorso("${numDitteStatoSoccorso}");
 					var tmp = null;
 					tmp = getValue("DITG_PARTGAR_" + numeroRiga);
 					var riboepv = this.value;
+										
+					//Aggiornamento di impoff
 					
-					<c:if test="${ribcal eq '1'}" >
-						//Aggiornamento di impoff
-						
-						if(riboepv != null && riboepv!=""){
-							riboepv = toVal(riboepv);
-							var importo1 = ${importo1 };
-							importo1 = parseFloat(importo1);
-							var importo2 = ${importo2 }; 
-							importo2 = parseFloat(importo2);
-							var impoff = (importo1 * (1 + riboepv/100)) + importo2;
-							setValue("DITG_IMPOFF_" + numeroRiga, round(impoff,5));
-						
-						}else{
-							setValue("DITG_IMPOFF_" + numeroRiga, "");
-						}
-					</c:if>
+					if(riboepv != null && riboepv!=""){
+						riboepv = toVal(riboepv);
+						var importo1 = ${importo1 };
+						importo1 = parseFloat(importo1);
+						var importo2 = ${importo2 }; 
+						importo2 = parseFloat(importo2);
+						var impoff = (importo1 * (1 + riboepv/100)) + importo2;
+						setValue("DITG_IMPOFF_" + numeroRiga, round(impoff,5));
 					
+					}else{
+						setValue("DITG_IMPOFF_" + numeroRiga, "");
+					}
+										
 				}
 			}
 	
@@ -2385,6 +2512,8 @@ setNumDitteStatoSoccorso("${numDitteStatoSoccorso}");
 				var sogliaDitteOepv = "${sogliaNumDitteOEPV }";
 				href += "&sogliaDitteOepv=" + sogliaDitteOepv;
 			</c:if>
+			var ditteInGara = "${ditteInGara}";
+			href += "&ditteInGara=" + ditteInGara;
 			openPopUpCustom(href, "sogliaAnomalia", 700, 580, "yes", "yes");
 		}
 
@@ -2466,6 +2595,9 @@ setNumDitteStatoSoccorso("${numDitteStatoSoccorso}");
 			href += "&isGaraTelematica=${isProceduraTelematica }";
 			href += "&modlicg=${modlicg }";
 			href += "&riboepvVis=${riboepvVis }";
+			<c:if test="${(param.isRicercaMercatoNegoziata eq 'true')}" >
+				href += "&isRicercaMercatoNegoziata=true";
+			</c:if>
 			document.location.href = href;
 		}
 	</c:if>
@@ -2632,4 +2764,116 @@ setNumDitteStatoSoccorso("${numDitteStatoSoccorso}");
 			var lotto=(garaLottoUnico=="false" && lottoDiGara== "true" && lottoOffertaUnica == "false");
 			apriDettaglioSorteggioDitteVerificaRequisiti("${valoreNGARA }",lotto);
 		}	
+		
+	function analisiDocumentiDGUE(dittao) {
+		var chiave="${key}";
+		var faseCall = 'Apertura doc. amministrativa'
+		var ngara = chiave.substr(chiave.lastIndexOf(":") + 1);
+		<c:choose>
+			<c:when test='${isGaraLottiConOffertaUnica eq "false"}'>
+				var codiceGara = "${codgar1 }";
+			</c:when>
+			<c:otherwise>
+				var codiceGara = "${codiceGara }";		
+			</c:otherwise>
+		</c:choose>
+		href = "href=gare/gare/gare-popup-analisiDocumentiDGUE.jsp&ngara=" + ngara + "&codiceGara=" + codiceGara + "&codimp=" + dittao + "&faseCall=" + faseCall;
+		openPopUpCustom(href, "analisiDocumentiDGUE", 450, 350, "yes", "yes");
+	}
+	
+	
+	function apriListaProdotti(ngara,codgar){
+			//controlli
+			var ammgarTuttiValorizzati=true;
+			var eseguireControllo=true;
+			if(rowCount>0 && eseguireControllo ){
+				for(var i=0; i < currentRow + 1; i++){
+					var temp = getValue("V_DITGAMMIS_AMMGAR_FITTIZIO_" + (i+1));
+					if(temp==null || temp==""){
+						ammgarTuttiValorizzati = false;
+						break;
+					}
+				}
+			}
+			if(!ammgarTuttiValorizzati){
+				alert("Per procedere alla fase seguente deve essere specificato lo stato di ammissione per ogni ditta nella lista");
+				return;
+			}
+			
+			if(numDitteStatoSoccorso != null && numDitteStatoSoccorso !="" && numDitteStatoSoccorso !="0"){
+				alert("Per procedere alla fase seguente non ci devono essere ditte nella lista con soccorso istruttorio in corso");
+				return;
+			}
+			
+			if(esistonoAcquisizioniOfferteDaElaborareFS11C == "true" && isProceduraTelematica == "true"){
+				alert("Per procedere alla fase seguente deve essere acquisita la busta economica per ogni ditta nella lista");
+				return;
+			}
+			
+			var valoriTuttiPresenti=true;
+			var msg="";
+			
+			for(var i=0; i < currentRow + 1; i++){
+				var ribauo = getValue("RIBAUO_FIT_" + (i+1));
+				var impoff = getValue("IMPOFF_FIT_" + (i+1));
+				var ammessa = getValue("DITG_AMMGAR_" + (i+1));
+				if((ammessa=="1" && isProceduraTelematica == "true") || (isProceduraTelematica != "true" && (ammessa=="1" || ammessa== null || ammessa == ""))){
+					if(((ribauo==null || ribauo=="") && offtel != '3') || (impoff=="" || impoff==null)){
+						valoriTuttiPresenti = false;
+						msg="Per procedere alla fase seguente deve essere specificato il ribasso e l'importo offerto per ogni ditta nella lista";
+						if( offtel == '3'){
+							msg="Per procedere alla fase seguente deve essere specificato l'importo offerto per ogni ditta nella lista";
+						}
+							
+						break;
+					}
+				}
+			}
+			
+			if(!valoriTuttiPresenti){
+				alert(msg);
+				return;
+			}
+			
+			//fine controlli
+			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/gcap/gcap-listaLavoriForniture.jsp";
+			href += "&key=${key}";
+			href += "&offtel=${offtel }";
+			href += "&stepWizard=${paginaAttivaWizard }";
+			href += "&faseGara=${faseGara }";
+			href += "&isGaraTelematica=${isProceduraTelematica }";
+			href += "&modlicg=${modlicg }";
+			href += "&riboepvVis=${riboepvVis }";
+			document.location.href = href;
+	}
+		
+	function exportExcelDGUE(codimp) {
+			var chiave="${key}";
+			var faseCall = 'Apertura doc. amministrativa'
+			var ngara = chiave.substr(chiave.lastIndexOf(":") + 1);
+			<c:choose>
+				<c:when test='${isGaraLottiConOffertaUnica eq "false"}'>
+					var codgar = "${codgar1 }";
+				</c:when>
+				<c:otherwise>
+					var codgar = "${codiceGara }";		
+				</c:otherwise>
+			</c:choose>
+			href = "href=gare/gare/gare-popup-esportaDocumentoDGUE.jsp&codgar=" + codgar +"&ngara=" + ngara + "&codimp=" + codimp + "&faseCall=" + faseCall;
+			openPopUpCustom(href, "analisiDocumentiDGUE", 450, 350, "yes", "yes");
+		}
+		
+		$(document).ready(function(){
+			var showDgueColumn = "${showDgueColumn}";
+			var showDgueExport = "${showDgueExport}";
+			if(showDgueColumn=="false"){
+				var index =$('.dgue_column').index();
+				$('.dgue_column').closest('table').find('thead tr').find('th:eq('+index+')').hide();
+				$('.dgue_column').closest('table').find('tbody tr').find('td:eq('+index+')').hide();
+			}
+			if(showDgueExport=="false"){
+				$('#dgue_export').hide();
+			}
+		})
+		
 </gene:javaScript>

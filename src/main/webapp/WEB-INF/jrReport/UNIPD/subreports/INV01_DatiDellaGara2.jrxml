@@ -305,7 +305,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<textElement>
 						<font fontName="Times New Roman" size="10"/>
 					</textElement>
-					<text><![CDATA[Contributo della ditta all'AVCP]]></text>
+					<text><![CDATA[Contributo della ditta all'ANAC]]></text>
 				</staticText>
 				<textField isStretchWithOverflow="true" pattern="#,##0.00 €" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="e21549fd-8ad7-4c4f-8525-9a640e58dc24"/>
@@ -341,7 +341,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<textElement>
 						<font fontName="Times New Roman" size="10"/>
 					</textElement>
-					<text><![CDATA[Percentuale cauzione provvisoria]]></text>
+					<text><![CDATA[Percentuale garanzia provvisoria]]></text>
 				</staticText>
 				<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="4c744b14-3c2d-49c8-ab3b-b4a8d471f30b"/>
@@ -377,7 +377,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<textElement>
 						<font fontName="Times New Roman" size="10"/>
 					</textElement>
-					<text><![CDATA[Importo cauzione provvisoria]]></text>
+					<text><![CDATA[Importo garanzia provvisoria]]></text>
 				</staticText>
 				<textField isStretchWithOverflow="true" pattern="#,##0.00 €" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="fd8b4a08-094e-4e15-841b-8c55b4c3d0ef"/>

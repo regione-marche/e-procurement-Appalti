@@ -35,7 +35,6 @@
 		var keyParent = "${param.keyParent}";
 		var ditta = "${param.ditta}";
 		var stepWizard = "${param.stepWizard}";
-		var whereBusteAttiveWizard = "${param.whereBusteAttiveWizard}";
 		var genere = "${genere}";
 		var entitaWSDM = "${param.entitaWSDM}";
 		var chiaveWSDM = "${param.chiaveWSDM}";
@@ -61,8 +60,6 @@
 			parametri+="&ditta=" + ditta;
 		if(stepWizard!="" && stepWizard!=null)
 			parametri+="&stepWizard=" + stepWizard;
-		if(whereBusteAttiveWizard!="" && whereBusteAttiveWizard!=null)
-			parametri+="&whereBusteAttiveWizard=" + whereBusteAttiveWizard;
 		if(genere!="" && genere!=null)
 			parametri+="&tipo=" + genere;
 		//listaNuovo.action = document.listaNuovo.action + "&numModello=" + numModello + "&keyAdd=" + keyAdd + "&keyParent=" + keyParent;

@@ -30,7 +30,7 @@ public class GestoreCampoSceltacontr extends AbstractGestoreCampoTabellato {
   public SqlSelect getSql() {
     return new SqlSelect("select tab1tip,tab1desc from tab1 "
         + "where  tab1cod = ? and tab1tip >= ? and tab1tip <= ? "
-        + "order by tab1nord,tab1tip", new Object[]{"A2044", new Long(51), new Long(88)});
+        + "order by tab1nord,tab1tip", new Object[]{"A2044", new Long(51), new Long(89)});
   }
 
 }

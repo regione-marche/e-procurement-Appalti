@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="InfoConsegnaFatturazione" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+<!-- Created with Jaspersoft Studio version 6.16.0.final utlizzo versione della libreria JasperReports6.16.0-48579d909b7943b64690c65c71e07e0b80981928  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="InfoConsegnaFatturazione" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="526f26de-5d63-4bc6-bcfa-d8973ca68717">
 	<property name="ireport.zoom" value="1.3310000000000006"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
-	<subDataset name="percentuali_iva">
+	<subDataset name="percentuali_iva" uuid="a0427b40-323d-48a2-b285-ec9202ed42f4">
 		<parameter name="NUMERO_GARA" class="java.lang.String"/>
 		<queryString>
 			<![CDATA[SELECT
@@ -18,7 +19,7 @@ ORDER BY GAREIVA.PERCIVA]]>
 		<field name="ALIQUOTA" class="java.lang.String"/>
 		<field name="IMPORTO" class="java.lang.String"/>
 	</subDataset>
-	<subDataset name="parziali_prodotti">
+	<subDataset name="parziali_prodotti" uuid="d898748b-c66d-47a5-b37b-223c641b6b10">
 		<parameter name="NUMERO_GARA" class="java.lang.String"/>
 		<queryString>
 			<![CDATA[SELECT
@@ -63,7 +64,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 	<detail>
 		<band height="20" splitType="Immediate">
 			<staticText>
-				<reportElement mode="Opaque" x="0" y="0" width="482" height="20" backcolor="#CCCCCC"/>
+				<reportElement mode="Opaque" x="0" y="0" width="482" height="20" backcolor="#CCCCCC" uuid="873b5b6f-127e-405b-af0c-3a27366e5b74"/>
 				<box topPadding="2" leftPadding="0" bottomPadding="0">
 					<pen lineWidth="0.5"/>
 					<topPen lineWidth="0.5"/>
@@ -72,26 +73,26 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
-					<font size="12" isBold="true" isPdfEmbedded="true"/>
+					<font size="12" isBold="true"/>
 				</textElement>
 				<text><![CDATA[RIEPILOGO ECONOMICO]]></text>
 			</staticText>
 		</band>
 		<band height="20">
 			<componentElement>
-				<reportElement key="table" positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement key="table" positionType="Float" x="0" y="0" width="482" height="20" uuid="8d451918-bd3a-4e7d-8530-e617c23764c3"/>
 				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
-					<datasetRun subDataset="parziali_prodotti">
+					<datasetRun subDataset="parziali_prodotti" uuid="2c9a08e5-58e4-4d93-ab01-6856c884bedf">
 						<datasetParameter name="NUMERO_GARA">
 							<datasetParameterExpression><![CDATA[$P{NUMERO_GARA}]]></datasetParameterExpression>
 						</datasetParameter>
 						<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
 					</datasetRun>
-					<jr:columnGroup width="482">
-						<jr:column width="50">
+					<jr:columnGroup width="482" uuid="09e37f42-f7d4-40d2-b3c3-220083cfedb6">
+						<jr:column width="50" uuid="8f28ac6d-86d6-4045-af35-5cf48e3a4f36">
 							<jr:columnHeader height="28" rowSpan="1">
 								<staticText>
-									<reportElement x="0" y="0" width="50" height="28"/>
+									<reportElement x="0" y="0" width="50" height="28" uuid="7735c4a2-bb9f-4771-9052-96bf282d67b6"/>
 									<box topPadding="0" leftPadding="2" bottomPadding="0" rightPadding="2">
 										<topPen lineWidth="0.5"/>
 										<leftPen lineWidth="0.5"/>
@@ -105,25 +106,26 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 								</staticText>
 							</jr:columnHeader>
 							<jr:detailCell height="15" rowSpan="1">
-								<textField isStretchWithOverflow="true" evaluationTime="Group" evaluationGroup="Prodotto" pattern="" isBlankWhenNull="true">
-									<reportElement positionType="Float" stretchType="RelativeToBandHeight" mode="Transparent" x="0" y="0" width="50" height="15" forecolor="#000000" backcolor="#FFFFFF"/>
+								<textField textAdjust="StretchHeight" evaluationTime="Group" evaluationGroup="Prodotto" pattern="" isBlankWhenNull="true">
+									<reportElement positionType="Float" stretchType="RelativeToBandHeight" mode="Transparent" x="0" y="0" width="50" height="15" forecolor="#000000" backcolor="#FFFFFF" uuid="38058d76-63b0-4d69-8aa6-ee95b9bc4f50"/>
 									<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 										<topPen lineWidth="0.5"/>
 										<leftPen lineWidth="0.5"/>
 										<bottomPen lineWidth="0.5"/>
 										<rightPen lineWidth="0.5"/>
 									</box>
-									<textElement textAlignment="Right" verticalAlignment="Top" rotation="None" lineSpacing="Single" markup="none">
-										<font fontName="SansSerif" size="11" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+									<textElement textAlignment="Right" verticalAlignment="Top" rotation="None" markup="none">
+										<font fontName="Arial" size="11" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" isPdfEmbedded="false"/>
+										<paragraph lineSpacing="Single"/>
 									</textElement>
-									<textFieldExpression class="java.lang.Integer"><![CDATA[$V{REPORT_COUNT}]]></textFieldExpression>
+									<textFieldExpression><![CDATA[$V{REPORT_COUNT}]]></textFieldExpression>
 								</textField>
 							</jr:detailCell>
 						</jr:column>
-						<jr:column width="152">
+						<jr:column width="152" uuid="224d3af5-ad57-4b78-ad6e-af10045924d6">
 							<jr:columnHeader height="28" rowSpan="1">
 								<staticText>
-									<reportElement x="0" y="0" width="152" height="28"/>
+									<reportElement x="0" y="0" width="152" height="28" uuid="8e4b2e78-660a-46a8-a520-6747e4573286"/>
 									<box topPadding="0" leftPadding="2" bottomPadding="0" rightPadding="2">
 										<topPen lineWidth="0.5"/>
 										<leftPen lineWidth="0.5"/>
@@ -137,23 +139,22 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 								</staticText>
 							</jr:columnHeader>
 							<jr:detailCell height="15" rowSpan="1">
-								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-									<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="152" height="15"/>
+								<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+									<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="152" height="15" uuid="174cef97-f884-4db7-ba46-99803917f5f4"/>
 									<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 										<topPen lineWidth="0.5"/>
 										<leftPen lineWidth="0.5"/>
 										<bottomPen lineWidth="0.5"/>
 										<rightPen lineWidth="0.5"/>
 									</box>
-									<textElement/>
-									<textFieldExpression class="java.lang.String"><![CDATA[$F{NOME_COMMERCIALE}]]></textFieldExpression>
+									<textFieldExpression><![CDATA[$F{NOME_COMMERCIALE}]]></textFieldExpression>
 								</textField>
 							</jr:detailCell>
 						</jr:column>
-						<jr:column width="70">
+						<jr:column width="70" uuid="2210f10b-5e2e-41db-b307-217ca7b7652c">
 							<jr:columnHeader height="28" rowSpan="1">
 								<staticText>
-									<reportElement x="0" y="0" width="70" height="28"/>
+									<reportElement x="0" y="0" width="70" height="28" uuid="1db1f3bb-7fdc-46ae-a148-f27c6625451a"/>
 									<box topPadding="0" leftPadding="2" bottomPadding="0" rightPadding="2">
 										<topPen lineWidth="0.5"/>
 										<leftPen lineWidth="0.5"/>
@@ -168,8 +169,8 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 								</staticText>
 							</jr:columnHeader>
 							<jr:detailCell height="15" rowSpan="1">
-								<textField isStretchWithOverflow="true" pattern="#,##0.##### € " isBlankWhenNull="true">
-									<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="70" height="15"/>
+								<textField textAdjust="StretchHeight" pattern="#,##0.##### € " isBlankWhenNull="true">
+									<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="70" height="15" uuid="0898b7c4-be3e-4bf0-8aa1-c5aa20c0b55a"/>
 									<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 										<topPen lineWidth="0.5"/>
 										<leftPen lineWidth="0.5"/>
@@ -179,14 +180,14 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 									<textElement textAlignment="Right">
 										<font size="11"/>
 									</textElement>
-									<textFieldExpression class="java.lang.Double"><![CDATA[$F{PREZZO_UNITARIO} != null ? Double.valueOf($F{PREZZO_UNITARIO}) : null]]></textFieldExpression>
+									<textFieldExpression><![CDATA[$F{PREZZO_UNITARIO} != null ? Double.valueOf($F{PREZZO_UNITARIO}) : null]]></textFieldExpression>
 								</textField>
 							</jr:detailCell>
 						</jr:column>
-						<jr:column width="70">
+						<jr:column width="70" uuid="97aeeec7-0462-462c-915b-95d39a477e89">
 							<jr:columnHeader height="28" rowSpan="1">
 								<staticText>
-									<reportElement x="0" y="0" width="70" height="28"/>
+									<reportElement x="0" y="0" width="70" height="28" uuid="d36f940c-d2a1-421b-b3cd-c5f919b0a82a"/>
 									<box topPadding="0" leftPadding="2" bottomPadding="0" rightPadding="2">
 										<topPen lineWidth="0.5"/>
 										<leftPen lineWidth="0.5"/>
@@ -200,8 +201,8 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 								</staticText>
 							</jr:columnHeader>
 							<jr:detailCell height="15" rowSpan="1">
-								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-									<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="70" height="15"/>
+								<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+									<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="70" height="15" uuid="06a4553d-cc12-43d5-9fee-749257d0901a"/>
 									<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 										<topPen lineWidth="0.5"/>
 										<leftPen lineWidth="0.5"/>
@@ -211,14 +212,14 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 									<textElement textAlignment="Right">
 										<font size="11"/>
 									</textElement>
-									<textFieldExpression class="java.lang.String"><![CDATA[$F{QUANTITA_ORDINATA}]]></textFieldExpression>
+									<textFieldExpression><![CDATA[$F{QUANTITA_ORDINATA}]]></textFieldExpression>
 								</textField>
 							</jr:detailCell>
 						</jr:column>
-						<jr:column width="70">
+						<jr:column width="70" uuid="fe7e969f-607e-48e8-ba2e-561063eb8176">
 							<jr:columnHeader height="28" rowSpan="1">
 								<staticText>
-									<reportElement x="0" y="0" width="70" height="28"/>
+									<reportElement x="0" y="0" width="70" height="28" uuid="e25a68cc-f5ce-462e-b8ec-ca727e9623c4"/>
 									<box topPadding="0" leftPadding="2" bottomPadding="0" rightPadding="2">
 										<topPen lineWidth="0.5"/>
 										<leftPen lineWidth="0.5"/>
@@ -232,8 +233,8 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 								</staticText>
 							</jr:columnHeader>
 							<jr:detailCell height="15" rowSpan="1">
-								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-									<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="70" height="15"/>
+								<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+									<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="70" height="15" uuid="84bc78da-5e01-4fd9-bdbb-7b37898680f4"/>
 									<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 										<topPen lineWidth="0.5"/>
 										<leftPen lineWidth="0.5"/>
@@ -243,14 +244,14 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 									<textElement textAlignment="Right">
 										<font size="11"/>
 									</textElement>
-									<textFieldExpression class="java.lang.String"><![CDATA[$F{ALIQUOTA_IVA}]]></textFieldExpression>
+									<textFieldExpression><![CDATA[$F{ALIQUOTA_IVA}]]></textFieldExpression>
 								</textField>
 							</jr:detailCell>
 						</jr:column>
-						<jr:column width="70">
+						<jr:column width="70" uuid="d41e8ec8-b1b4-4214-a1a0-e77ee8dd34c7">
 							<jr:columnHeader height="28" rowSpan="1">
 								<staticText>
-									<reportElement x="0" y="0" width="70" height="28"/>
+									<reportElement x="0" y="0" width="70" height="28" uuid="26cafa2b-ea00-458c-a10c-04da08aaf3f8"/>
 									<box topPadding="0" leftPadding="2" bottomPadding="0" rightPadding="2">
 										<topPen lineWidth="0.5"/>
 										<leftPen lineWidth="0.5"/>
@@ -264,8 +265,8 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 								</staticText>
 							</jr:columnHeader>
 							<jr:detailCell height="15" rowSpan="1">
-								<textField isStretchWithOverflow="true" pattern="#,##0.00 € " isBlankWhenNull="true">
-									<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="70" height="15"/>
+								<textField textAdjust="StretchHeight" pattern="#,##0.00 € " isBlankWhenNull="true">
+									<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="70" height="15" uuid="82cd24ae-3d02-4bab-97c1-2ea10f9e5c07"/>
 									<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 										<topPen lineWidth="0.5"/>
 										<leftPen lineWidth="0.5"/>
@@ -275,7 +276,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 									<textElement textAlignment="Right">
 										<font size="11"/>
 									</textElement>
-									<textFieldExpression class="java.lang.Double"><![CDATA[$F{TOTALE_PRODOTTO} != null ? Double.valueOf($F{TOTALE_PRODOTTO}) : null]]></textFieldExpression>
+									<textFieldExpression><![CDATA[$F{TOTALE_PRODOTTO} != null ? Double.valueOf($F{TOTALE_PRODOTTO}) : null]]></textFieldExpression>
 								</textField>
 							</jr:detailCell>
 						</jr:column>
@@ -285,45 +286,47 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 		</band>
 		<band height="18">
 			<textField pattern="" isBlankWhenNull="false">
-				<reportElement positionType="Float" mode="Transparent" x="0" y="0" width="412" height="18" forecolor="#000000" backcolor="#CCCCCC"/>
+				<reportElement positionType="Float" mode="Transparent" x="0" y="0" width="412" height="18" forecolor="#000000" backcolor="#CCCCCC" uuid="88a310cc-219b-40bc-9abf-ee982065bbef"/>
 				<box topPadding="0" leftPadding="2" bottomPadding="0" rightPadding="2">
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
 					<bottomPen lineWidth="0.5"/>
 					<rightPen lineWidth="0.5"/>
 				</box>
-				<textElement textAlignment="Right" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
-					<font fontName="SansSerif" size="12" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="true"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="Arial" size="12" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica"/>
+					<paragraph lineSpacing="Single"/>
 				</textElement>
-				<textFieldExpression class="java.lang.String"><![CDATA["IMPONIBILE"]]></textFieldExpression>
+				<textFieldExpression><![CDATA["IMPONIBILE"]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00 € " isBlankWhenNull="true">
-				<reportElement positionType="Float" mode="Transparent" x="412" y="0" width="70" height="18" forecolor="#000000" backcolor="#CCCCCC"/>
+				<reportElement positionType="Float" mode="Transparent" x="412" y="0" width="70" height="18" forecolor="#000000" backcolor="#CCCCCC" uuid="7820cfec-6cb5-4e97-967f-2ed6f711a711"/>
 				<box topPadding="0" leftPadding="2" bottomPadding="0" rightPadding="5">
 					<topPen lineWidth="0.5"/>
 					<bottomPen lineWidth="0.5"/>
 					<rightPen lineWidth="0.5"/>
 				</box>
-				<textElement textAlignment="Right" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
-					<font fontName="SansSerif" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="true"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="Arial" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica"/>
+					<paragraph lineSpacing="Single"/>
 				</textElement>
-				<textFieldExpression class="java.lang.Double"><![CDATA[$F{TOTALE_NETTO_IVA} != null ? Double.valueOf($F{TOTALE_NETTO_IVA}) : ""]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{TOTALE_NETTO_IVA} != null ? Double.valueOf($F{TOTALE_NETTO_IVA}) : ""]]></textFieldExpression>
 			</textField>
 		</band>
 		<band height="20">
 			<componentElement>
-				<reportElement key="table" positionType="Float" x="0" y="0" width="482" height="20"/>
+				<reportElement key="table" positionType="Float" x="0" y="0" width="482" height="20" uuid="2651a715-a53b-47f9-a01c-746f5dd36080"/>
 				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
-					<datasetRun subDataset="percentuali_iva">
+					<datasetRun subDataset="percentuali_iva" uuid="3785ee91-1d74-40ed-ac96-e5df8da73f53">
 						<datasetParameter name="NUMERO_GARA">
 							<datasetParameterExpression><![CDATA[$P{NUMERO_GARA}]]></datasetParameterExpression>
 						</datasetParameter>
 						<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
 					</datasetRun>
-					<jr:column width="412">
+					<jr:column width="412" uuid="0953d952-1653-4efe-ad52-8faa98d73cfe">
 						<jr:detailCell height="15" rowSpan="1">
 							<textField isBlankWhenNull="false">
-								<reportElement positionType="Float" x="0" y="0" width="412" height="15"/>
+								<reportElement positionType="Float" x="0" y="0" width="412" height="15" uuid="3681bb49-736d-4679-a445-c4c8ea30ca2f"/>
 								<box topPadding="0" leftPadding="2" bottomPadding="0" rightPadding="2">
 									<topPen lineWidth="0.5"/>
 									<leftPen lineWidth="0.5"/>
@@ -333,14 +336,14 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 								<textElement textAlignment="Right">
 									<font size="11" isBold="true"/>
 								</textElement>
-								<textFieldExpression class="java.lang.String"><![CDATA["IVA " + $F{ALIQUOTA} + "%"]]></textFieldExpression>
+								<textFieldExpression><![CDATA["IVA " + $F{ALIQUOTA} + "%"]]></textFieldExpression>
 							</textField>
 						</jr:detailCell>
 					</jr:column>
-					<jr:column width="70">
+					<jr:column width="70" uuid="88097d8e-8247-4deb-9ba8-13e0e9806209">
 						<jr:detailCell height="15" rowSpan="1">
 							<textField pattern="#,##0.00 € ">
-								<reportElement x="0" y="0" width="70" height="15"/>
+								<reportElement x="0" y="0" width="70" height="15" uuid="e748a127-98eb-4d1f-baf1-f6fdeecdae8f"/>
 								<box topPadding="0" leftPadding="2" bottomPadding="0" rightPadding="5">
 									<topPen lineWidth="0.5"/>
 									<leftPen lineWidth="0.5"/>
@@ -350,7 +353,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 								<textElement textAlignment="Right">
 									<font size="11"/>
 								</textElement>
-								<textFieldExpression class="java.lang.Double"><![CDATA[$F{IMPORTO} != null ? Double.valueOf($F{IMPORTO}) : null]]></textFieldExpression>
+								<textFieldExpression><![CDATA[$F{IMPORTO} != null ? Double.valueOf($F{IMPORTO}) : null]]></textFieldExpression>
 							</textField>
 						</jr:detailCell>
 					</jr:column>
@@ -359,32 +362,34 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 		</band>
 		<band height="38">
 			<textField pattern="" isBlankWhenNull="false">
-				<reportElement positionType="Float" mode="Transparent" x="0" y="0" width="412" height="18" forecolor="#000000" backcolor="#CCCCCC"/>
+				<reportElement positionType="Float" mode="Transparent" x="0" y="0" width="412" height="18" forecolor="#000000" backcolor="#CCCCCC" uuid="ee587270-546a-4f0c-b7fe-f649f7b1106f"/>
 				<box topPadding="0" leftPadding="2" bottomPadding="0" rightPadding="2">
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
 					<bottomPen lineWidth="0.5"/>
 					<rightPen lineWidth="0.5"/>
 				</box>
-				<textElement textAlignment="Right" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
-					<font fontName="SansSerif" size="12" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="true"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="Arial" size="12" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica"/>
+					<paragraph lineSpacing="Single"/>
 				</textElement>
-				<textFieldExpression class="java.lang.String"><![CDATA["TOTALE ORDINE"]]></textFieldExpression>
+				<textFieldExpression><![CDATA["TOTALE ORDINE"]]></textFieldExpression>
 			</textField>
 			<frame>
-				<reportElement positionType="Float" x="0" y="18" width="482" height="20"/>
+				<reportElement positionType="Float" x="0" y="18" width="482" height="20" uuid="2ee2f920-ffb0-4ece-936a-c75d87a86045"/>
 			</frame>
 			<textField pattern="#,##0.00 € " isBlankWhenNull="true">
-				<reportElement positionType="Float" mode="Transparent" x="412" y="0" width="70" height="18" forecolor="#000000" backcolor="#CCCCCC"/>
+				<reportElement positionType="Float" mode="Transparent" x="412" y="0" width="70" height="18" forecolor="#000000" backcolor="#CCCCCC" uuid="105840e2-6732-4389-badb-cbe770a9714e"/>
 				<box topPadding="0" leftPadding="2" bottomPadding="0" rightPadding="5">
 					<topPen lineWidth="0.5"/>
 					<bottomPen lineWidth="0.5"/>
 					<rightPen lineWidth="0.5"/>
 				</box>
-				<textElement textAlignment="Right" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
-					<font fontName="SansSerif" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="true"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="Arial" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica"/>
+					<paragraph lineSpacing="Single"/>
 				</textElement>
-				<textFieldExpression class="java.lang.Double"><![CDATA[$F{TOTALE_ORDINE} != null ? Double.valueOf($F{TOTALE_ORDINE}) : null]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{TOTALE_ORDINE} != null ? Double.valueOf($F{TOTALE_ORDINE}) : null]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>

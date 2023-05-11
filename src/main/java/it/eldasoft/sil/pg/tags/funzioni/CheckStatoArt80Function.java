@@ -10,17 +10,17 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
+import java.sql.SQLException;
+
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.PageContext;
+
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityStringhe;
-
-import java.sql.SQLException;
-
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 /**
  * Funzione che data una ditta verifica lo stato della verifica  art. 80
@@ -42,7 +42,7 @@ public class CheckStatoArt80Function extends AbstractFunzioneTag {
 
     String codein=(String) this.getRequest().getSession().getAttribute(CostantiGenerali.UFFICIO_INTESTATARIO_ATTIVO);
     boolean art80Gateway=false;
-    if(codein!=null && !"".equals(codein)  && "1".equals(ConfigManager.getValore("art80.ws.url.gateway")))
+    if(codein!=null && !"".equals(codein)  && "1".equals(ConfigManager.getValore("art80.ws.url.gateway")) && "1".equals(ConfigManager.getValore("art80.gateway.multiuffint")))
       art80Gateway=true;
 
     if(!"".equals(codimp)){

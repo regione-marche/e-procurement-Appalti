@@ -49,7 +49,7 @@ public class GestioneOfferteTecnicheEconomicheDittaFunction extends
   public String function(PageContext pageContext, Object[] params)
 			throws JspException {
 
-	  GestioneFasiGaraFunction.setPaginazione(pageContext);
+	  GestioneFasiGaraFunction.setPaginazione(pageContext,false);
     SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",
         pageContext, SqlManager.class);
     TabellatiManager tabellatiManager = (TabellatiManager) UtilitySpring.getBean(
@@ -433,11 +433,13 @@ public class GestioneOfferteTecnicheEconomicheDittaFunction extends
           chiavePerControllo = numeroGara;
           tuttiLotti=false;
           Long riptec=null;
+          Long statocg=null;
           try {
-            Vector<?> datiGare1 = sqlManager.getVector("select riptec, ripcritec from gare1 where ngara=?", new Object[]{numeroGara});
+            Vector<?> datiGare1 = sqlManager.getVector("select riptec, ripcritec, statocg from gare1 where ngara=?", new Object[]{numeroGara});
             if(datiGare1!=null && datiGare1.size()>0){
               riptec = SqlManager.getValueFromVectorParam(datiGare1, 0).longValue();
               Long ripcritec = SqlManager.getValueFromVectorParam(datiGare1, 1).longValue();
+              statocg = SqlManager.getValueFromVectorParam(datiGare1, 2).longValue();
               if(riptec==null)
                 riptec = new Long(3);
 
@@ -452,6 +454,7 @@ public class GestioneOfferteTecnicheEconomicheDittaFunction extends
             throw new JspException("Errore nella lettura del campo GARE1.RIPECO",e);
           }
           pageContext.setAttribute("RIPTEC",riptec, PageContext.REQUEST_SCOPE);
+          pageContext.setAttribute("STATOCG",statocg, PageContext.REQUEST_SCOPE);
         }
         pageContext.setAttribute("lottiOEPVRiparamTecPresenti",new Boolean(this.riparametrazioneAttiva(chiavePerControllo, sqlManager, "TEC",tuttiLotti)),PageContext.REQUEST_SCOPE);
 
@@ -498,11 +501,13 @@ public class GestioneOfferteTecnicheEconomicheDittaFunction extends
           chiavePerControllo = numeroGara;
           tuttiLotti=false;
           Long ripeco = null;
+          Long statocg=null;
           try {
-            Vector<?> datiGare1 = sqlManager.getVector("select ripeco, ripcrieco from gare1 where ngara=?", new Object[]{numeroGara});
+            Vector<?> datiGare1 = sqlManager.getVector("select ripeco, ripcrieco, statocg from gare1 where ngara=?", new Object[]{numeroGara});
             if(datiGare1!=null && datiGare1.size()>0){
               ripeco = SqlManager.getValueFromVectorParam(datiGare1, 0).longValue();
               Long ripcrieco = SqlManager.getValueFromVectorParam(datiGare1, 1).longValue();
+              statocg = SqlManager.getValueFromVectorParam(datiGare1, 2).longValue();
               if(ripeco==null)
                 ripeco = new Long(3);
 
@@ -517,6 +522,7 @@ public class GestioneOfferteTecnicheEconomicheDittaFunction extends
             throw new JspException("Errore nella lettura del campo GARE1.RIPECO",e);
           }
           pageContext.setAttribute("RIPECO",ripeco, PageContext.REQUEST_SCOPE);
+          pageContext.setAttribute("STATOCG",statocg, PageContext.REQUEST_SCOPE);
         }
         pageContext.setAttribute("lottiOEPVRiparamEcoPresenti",new Boolean(this.riparametrazioneAttiva(chiavePerControllo, sqlManager, "ECO",tuttiLotti)),PageContext.REQUEST_SCOPE);
 

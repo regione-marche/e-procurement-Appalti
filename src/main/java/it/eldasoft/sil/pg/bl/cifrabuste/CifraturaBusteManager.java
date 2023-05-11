@@ -10,13 +10,6 @@
  */
 package it.eldasoft.sil.pg.bl.cifrabuste;
 
-import it.eldasoft.gene.bl.GenChiaviManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.maggioli.eldasoft.security.PGPEncryptionUtils;
-import it.maggioli.eldasoft.security.PGPKeyPairGenerator;
-import it.maggioli.eldasoft.security.SymmetricEncryptionUtils;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -36,6 +29,13 @@ import javax.crypto.NoSuchPaddingException;
 import org.apache.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPException;
+
+import it.eldasoft.gene.bl.GenChiaviManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.maggioli.eldasoft.security.PGPEncryptionUtils;
+import it.maggioli.eldasoft.security.PGPKeyPairGenerator;
+import it.maggioli.eldasoft.security.SymmetricEncryptionUtils;
 
 
 public class CifraturaBusteManager {
@@ -126,17 +126,20 @@ public class CifraturaBusteManager {
       try {
 
         //Chiavi per busta Amministrativa
-        ByteArrayOutputStream chiavi[] = this.getChiavi(pinA);
+        ByteArrayOutputStream chiavi[] = null;
 
-        //fare controllo sull'esistenza della busta
         Long id = null;
         Long conteggio=null;
         final String select="select count(id) from chiavibuste where ngara=? and busta=?";
-        conteggio = (Long)this.sqlManager.getObject(select, new Object[]{ngara,"FS11A"});
-        if(conteggio == null || (conteggio!=null &&conteggio.longValue()==0)){
-          id = new Long(this.genChiaviManager.getNextId("CHIAVIBUSTE"));
-          this.sqlManager.update("insert into chiavibuste (id, ngara, busta, uuid, chiavepubb, chiavepriv) values (?, ?, ?, ?, ?, ?)", new Object[] {
-              id, ngara, "FS11A", null, chiavi[1].toString(), chiavi[0].toString()});
+        //fare controllo sull'esistenza della busta
+        if(pinA!=null ){
+          chiavi = this.getChiavi(pinA);
+          conteggio = (Long)this.sqlManager.getObject(select, new Object[]{ngara,"FS11A"});
+          if(conteggio == null || (conteggio!=null &&conteggio.longValue()==0)){
+            id = new Long(this.genChiaviManager.getNextId("CHIAVIBUSTE"));
+            this.sqlManager.update("insert into chiavibuste (id, ngara, busta, uuid, chiavepubb, chiavepriv) values (?, ?, ?, ?, ?, ?)", new Object[] {
+                id, ngara, "FS11A", null, chiavi[1].toString(), chiavi[0].toString()});
+          }
         }
 
         //Chiavi per busta Tecnica

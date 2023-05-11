@@ -12,6 +12,12 @@
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 
+<% // Validazione parametri tramite regex %>
+<c:if test='${not empty param.aut and gene:matches(param.aut, "^0|1|2$", true)}' />
+<c:if test='${not empty param.comunicazioniVis and gene:matches(param.comunicazioniVis, "^0|1$", true)}' />
+<c:if test='${not empty param.stepWizard and gene:matches(param.stepWizard, "^-?[0-9]+$", true)}' />
+<c:if test='${not empty param.tipo and gene:matches(param.tipo, "^VERIFICA|CONSULTAZIONE$", true)}' />
+
 <c:set var="codiceGara" value='${gene:getValCampo(key, "DITG.CODGAR5")}' />
 <c:set var="numeroGara" value='${gene:getValCampo(key, "DITG.NGARA5")}' />
 <c:set var="codiceDitta" value='${gene:getValCampo(key, "DITG.DITTAO")}' />

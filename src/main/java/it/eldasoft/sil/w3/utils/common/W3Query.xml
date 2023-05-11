@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Classe nome="W3Query" versione="1.0.0" autore="Eliseo Marini">
+
+<!-- Select -->
+    <metodo nome="selectObject">
+    	<query nome="W3GARA" tipo="select">
+    		select 	OGGETTO, ID_STAZIONE_APPALTANTE, DENOM_STAZIONE_APPALTANTE, 
+    				CF_AMMINISTRAZIONE, DENOM_AMMINISTRAZIONE, CF_UTENTE 
+			from W3GARA 
+			where GARA_ID = (SELECT GARA_ID 
+							 FROM W3SCHE 
+							 WHERE SCHEDA_ID = ?
+							)
+    	</query>
+    	<query nome="W3LOTT" tipo="select">
+    		select 	OGGETTO, SOMMA_URGENZA, IMPORTO_LOTTO, IMPORTO_SA, IMPORTO_IMPRESA, CPV,
+    				ID_SCELTA_CONTRAENTE, 	ID_CATEGORIA_PREVALENTE, 
+    				DATA_PUBBLICAZIONE, DATA_SCADENZA_PAGAMENTI, DATA_COMUNICAZIONE, DATA_INIB_PAGAMENTO
+			from W3LOTT 
+			where LOTTO_ID = (SELECT LOTTO_ID 
+							 FROM W3SCHE 
+							 WHERE SCHEDA_ID = ?
+							)
+    	</query>
+    	<query nome="W3LOTTCATE" tipo="select">
+			select CATEGORIA
+			from W3LOTTCATE
+			  left outer join W3SCHE on (W3SCHE.GARA_ID = W3LOTTCATE.GARA_ID AND W3SCHE.LOTTO_ID = W3LOTTCATE.LOTTO_ID)
+			where W3SCHE.SCHEDA_ID = ?
+    	</query>
+    	<query nome="W3MOTI" tipo="select">
+    		select W3MOTI.ID_MOTIVO_VAR
+    		from W3MOTI
+      		where W3MOTI.SCHEDACOMPLETA_ID = ?      		
+      		AND W3MOTI.NUM = ?
+    	</query>
+	</metodo>
+</Classe>

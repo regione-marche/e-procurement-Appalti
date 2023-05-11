@@ -111,7 +111,9 @@ public class GetWSERPAttributiFornitoreAction extends Action {
 
 
             if(nazimp==null || new Long(1).equals(nazimp)){
-              pivimp = "IT" + pivimp;
+              if(!("ATAC".equals(tipoWSERP))){
+                pivimp = "IT" + pivimp;
+              }
             }
             String capimp = (String) SqlManager.getValueFromVectorParam(datiIMPR.get(0), 6).getValue();
             String nciimp = (String) SqlManager.getValueFromVectorParam(datiIMPR.get(0), 7).getValue();
@@ -562,7 +564,117 @@ public class GetWSERPAttributiFornitoreAction extends Action {
                 }
               }
             }
+            
+            if("RAIWAY".equals(tipoWSERP)){
+                Object[] row0 = new Object[2];
+                row0[0] = "Codice ERP Fornitore";
+                row0[1] = cgenimp;
+                jsonArray.add(row0);
+                request.setAttribute("idFornitore", cgenimp);
+            }
+            
+            
+            if("ATAC".equals(tipoWSERP)){
+              if(!"".equals(cfimp) || !"".equals(pivimp)){
+                WSERPFornitoreType fornitoreSearch = new WSERPFornitoreType();
+                fornitoreSearch.setIdFornitore(cgenimp);
+                fornitoreSearch.setRagioneSociale(nomimp);
+                String esitoControlli = "";
+                WSERPFornitoreResType wserpFornitoreRes = gestioneWSERPManager.wserpDettaglioFornitore(username, password, servizio, cfimp, pivimp, fornitoreSearch );
+                if(wserpFornitoreRes.isEsito()){
+                  //Long stato = wserpFornitoreRes.getStato();
+/*
+                  String wsIdFornitore = "";
+                  String wsRagioneSociale = "";
+                  String wsCodiceFiscale = "";
+                  String wsPartitaIva = "";
+                  String wsIban = "";
+                  if(new Long(1).equals(stato)){//caso buono,trovato
+                    WSERPFornitoreType fornitore = wserpFornitoreRes.getFornitore();
+                    wsIdFornitore = fornitore.getIdFornitore();
+                    wsIdFornitore = UtilityStringhe.convertiNullInStringaVuota(wsIdFornitore);
 
+                    wsRagioneSociale = fornitore.getRagioneSociale();
+                    wsRagioneSociale = UtilityStringhe.convertiNullInStringaVuota(wsRagioneSociale);
+                    if("".equals(wsRagioneSociale)){
+                      wsRagioneSociale = "Non presente";
+                    }
+                    wsCodiceFiscale = fornitore.getCodiceFiscale();
+                    wsCodiceFiscale = UtilityStringhe.convertiNullInStringaVuota(wsCodiceFiscale);
+                    if("".equals(wsCodiceFiscale)){
+                      wsCodiceFiscale = "Non presente";
+                    }
+                    wsPartitaIva = fornitore.getPartitaIva();
+                    wsPartitaIva = UtilityStringhe.convertiNullInStringaVuota(wsPartitaIva);
+                    if("".equals(wsPartitaIva)){
+                      wsPartitaIva = "Non presente";
+                    }
+                    wsIban = fornitore.getIban();
+                    wsIban = UtilityStringhe.convertiNullInStringaVuota(wsIban);
+                    if("".equals(wsIban)){
+                      wsIban = "Non presente";
+                    }
+                  }
+
+                    Object[] row0 = new Object[3];
+                    row0[0] = "Id Fornitore";
+                    cgenimp = UtilityStringhe.convertiNullInStringaVuota(cgenimp);
+                    if(!"".equals(cgenimp)){
+                      row0[1] = cgenimp;
+                    }else{
+                      if(!"".equals(wsIdFornitore)){
+                        row0[1] = wsIdFornitore;
+                      }
+                    }
+                    row0[2] = wsIdFornitore;
+                    jsonArray.add(row0);
+
+
+
+                    Object[] rowragsoc = new Object[3];
+                    rowragsoc[0] = "Ragione sociale";
+                    if(mandataria != null && mandataria != ""){
+                      rowragsoc[1] = nomimp + " Capogruppo";
+                      rowragsoc[2] = wsRagioneSociale + " Capogruppo";
+                    }else{
+                      rowragsoc[1] = nomimp;
+                      rowragsoc[2] = wsRagioneSociale;
+                    }
+                    jsonArray.add(rowragsoc);
+
+                    Object[] rowpiva = new Object[3];
+                    rowpiva[0] = "Partita IVA";
+                    rowpiva[1] = pivimp;
+                    rowpiva[2] = wsPartitaIva;
+                    jsonArray.add(rowpiva);
+
+                    Object[] rowcf = new Object[3];
+                    rowcf[0] = "Codice fiscale";
+                    rowcf[1] = cfimp;
+                    rowcf[2] = wsCodiceFiscale;
+                    jsonArray.add(rowcf);
+
+                    Object[] rowiban = new Object[3];
+                    rowiban[0] = "Iban";
+                    rowiban[1] = iban;
+                    rowiban[2] = wsIban;
+                    jsonArray.add(rowiban);
+
+                    request.setAttribute("idFornitore", wsIdFornitore);
+*/
+                
+                }
+                else
+                {
+                  if(wserpFornitoreRes.getMessaggio().equals("PIVA_KO")) {
+                    esitoControlli = "Attenzione: il fornitore non esiste. Creare l'anagrafica in SAP per poter procedere alla creazione dell'ODA.";
+                  } else {
+                    esitoControlli = "--------";
+                  }
+                }
+                request.setAttribute("esitoControlli", esitoControlli);
+              }
+            }
 
 
         }

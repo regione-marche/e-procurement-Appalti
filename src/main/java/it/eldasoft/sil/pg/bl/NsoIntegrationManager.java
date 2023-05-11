@@ -50,7 +50,6 @@ import oasisNamesSpecificationUblSchemaXsdCommonAggregateComponents2.MonetaryTot
 import oasisNamesSpecificationUblSchemaXsdCommonAggregateComponents2.OrderLineType;
 import oasisNamesSpecificationUblSchemaXsdCommonAggregateComponents2.PartyTaxSchemeType;
 import oasisNamesSpecificationUblSchemaXsdCommonAggregateComponents2.PartyType;
-import oasisNamesSpecificationUblSchemaXsdCommonAggregateComponents2.PaymentTermsType;
 import oasisNamesSpecificationUblSchemaXsdCommonAggregateComponents2.PeriodType;
 import oasisNamesSpecificationUblSchemaXsdCommonAggregateComponents2.PriceType;
 import oasisNamesSpecificationUblSchemaXsdCommonAggregateComponents2.SupplierPartyType;
@@ -245,6 +244,7 @@ public class NsoIntegrationManager {
     if("OrderLine".equalsIgnoreCase(secondReference)) {
       return "Verificare la sezione linee ordine.";
     }
+    logger.warn(firstReference +"-"+ secondReference);
     return "Errore Generico. Verificare la congruenza dei dati inseriti.";
   }
 
@@ -299,10 +299,24 @@ public class NsoIntegrationManager {
       
       Ordinante ordi = nsoOrdiniDao.getBuyerCustomerPartyByNsoOrdiniIdAndTypeOne(ord.getId());
       request.setEndPoint(ordi.getEndpoint());
+      request.setSender(ordi.getEndpoint());
+      
+      if(StringUtils.isNotBlank(ordi.getCodipa())) {
+        request.setSender("0201:"+ordi.getCodipa());
+      }
+      
+      if(StringUtils.indexOf("0201:", request.getSender())==-1) {
+        request.setSender("0201:"+request.getSender());
+      }
       
       Fornitore seller = nsoOrdiniDao.getSellerSupplierPartyByNsoOrdiniId(ord.getId());
       if(seller != null) {
         request.setCodimp(seller.getCodimp());
+        if("PF".equalsIgnoreCase(seller.getType())) {
+          request.setReceiver("0210:"+StringUtils.upperCase(seller.getCodnaz())+seller.getCfimp());
+        } else {
+          request.setReceiver("0211:"+StringUtils.upperCase(seller.getCodnaz())+seller.getCfimp());
+        }
       }
       request.setHasAttachment(Boolean.FALSE);
       if(order.getOrder().getAdditionalDocumentReferenceArray()!=null) {
@@ -318,7 +332,6 @@ public class NsoIntegrationManager {
       request.setFileName(sb.toString());
       
       logger.info(request);
-    
       Response res = clientNso.processOrder(request);
       if(HttpStatus.SC_OK==res.getStatus()) {
         nsoOrdiniManager.variazStatoOrdineToInviato(Long.valueOf(orderId));
@@ -459,12 +472,12 @@ public class NsoIntegrationManager {
       
       
       // aggiunta di accountingCustomerParty
-      accountingCustomerParty = ordXml.addNewAccountingCustomerParty();
-      accountingParty = accountingCustomerParty.addNewParty();
-      
-      accountingPartyTaxScheme = accountingParty.addNewPartyTaxScheme();
-      accountingPartyTaxScheme.addNewTaxScheme().addNewID().setStringValue("VAT");
-      accountingParty.addNewPartyLegalEntity().addNewRegistrationName().setStringValue(ord.getNomein());
+//      accountingCustomerParty = ordXml.addNewAccountingCustomerParty();
+//      accountingParty = accountingCustomerParty.addNewParty();
+//      
+//      accountingPartyTaxScheme = accountingParty.addNewPartyTaxScheme();
+//      accountingPartyTaxScheme.addNewTaxScheme().addNewID().setStringValue("VAT");
+//      accountingParty.addNewPartyLegalEntity().addNewRegistrationName().setStringValue(ord.getNomein());
       
     }
     
@@ -527,10 +540,10 @@ public class NsoIntegrationManager {
       SupplierPartyType sParty = ordXml.addNewSellerSupplierParty();
       party = sParty.addNewParty();
       EndpointIDType endId = party.addNewEndpointID();
-      endId.setSchemeID("9906");
+      endId.setSchemeID("0211");
       endId.setStringValue(StringUtils.upperCase(seller.getCodnaz())+seller.getCfimp());
       if("PF".equalsIgnoreCase(seller.getType())) {
-        endId.setSchemeID("9907");
+        endId.setSchemeID("0210");
       }
       
       if(StringUtils.isNotEmpty(seller.getCfimp())) {
@@ -882,12 +895,16 @@ public class NsoIntegrationManager {
     OrderDocument doc = OrderDocument.Factory.newInstance(opts);
     
     OrderType order = doc.addNewOrder();
-    order.addNewCustomizationID().setStringValue("urn:fdc:peppol.eu:poacc:trns:order:3");
+//    order.addNewCustomizationID().setStringValue("urn:fdc:peppol.eu:poacc:trns:order:3");
+    order.addNewCustomizationID().setStringValue("urn:fdc:peppol.eu:poacc:trns:order:3:restrictive:urn:www.agid.gov.it:trns:ordine:3.1");
     order.addNewProfileID().setStringValue("urn:fdc:peppol.eu:poacc:bis:ordering:3");
     order.addNewOrderTypeCode().setStringValue("220");
     order.addNewDocumentCurrencyCode().setStringValue("EUR");
     
     doc.setOrder(order);
+    
+    
+    
     return doc;
   }
   
@@ -940,5 +957,91 @@ public class NsoIntegrationManager {
   public byte[] getFileXmlFromNsoWsOrdiniByFileName(String fileName) throws GestoreException {
     return this.nsoOrdiniDao.getNsoWsOrdineFileXmlFromFileName(fileName);
 //    return this.nsoOrdiniManager.getFileXmlFromNsoWsOrdiniByFileName(fileName);
+  }
+  
+  @SuppressWarnings("unchecked")
+  public String revokeOrder(String orderId) {
+    JSONObject json = new JSONObject();
+    json.put("result","OK");
+    try {
+      
+      Ordine ord = nsoOrdiniDao.getOrderById(Long.parseLong(orderId));
+     
+    //TODO generate XML for Revocation
+    //TODO send request to api
+    //return result
+      XmlOptions opts = new XmlOptions();
+      opts.setCharacterEncoding(charset);
+      OrderDocument doc = OrderDocument.Factory.newInstance(opts);
+      
+      OrderType order = doc.addNewOrder();
+      order.addNewCustomizationID().setStringValue("urn:fdc:peppol.eu:poacc:trns:order:3");
+      order.addNewProfileID().setStringValue("urn:fdc:peppol.eu:poacc:bis:ordering:3");
+      order.addNewOrderTypeCode().setStringValue("220");
+      order.addNewDocumentCurrencyCode().setStringValue("EUR");
+      
+      doc.setOrder(order);
+      
+      
+      StringBuffer linkedId = new StringBuffer();
+      linkedId.append(ord.getCodord());
+      linkedId.append("#");
+      linkedId.append(dateFormatter.format(ord.getData_ordine()));
+      linkedId.append("#");
+      List<Ordinante> ordiList = nsoOrdiniDao.getBuyerCustomerPartiesByNsoOrdiniId(ord.getId());
+      for(Ordinante ordi : ordiList) {
+        if(1==ordi.getTipo().intValue()) {
+          linkedId.append(ordi.getCodipa());   
+          break;
+        }
+      }
+      linkedId.append("#");
+      linkedId.append("Revised");
+      order.addNewOrderDocumentReference().addNewID().setStringValue(linkedId.toString());
+      LineItemType line = order.addNewOrderLine().addNewLineItem();
+      line.addNewID().setStringValue("NA");
+      line.addNewQuantity().setUnitCode("C62");
+      line.getQuantity().setBigDecimalValue(BigDecimal.valueOf(0));
+      line.addNewItem().addNewName().setStringValue("N/A");
+      
+      printLogOrder(doc);
+      OrderNsoRequest orderReq = new OrderNsoRequest();
+      orderReq.setOrderId(orderId);
+      orderReq.setOrderXml(produceUBLOrderAsInputStream(doc));
+      orderReq.setOrderDate(dateFormatter.format(ord.getData_ordine()));
+      orderReq.setOrderCode(ord.getCodord());
+      StringBuffer sb = new StringBuffer();
+      sb.append(StringUtils.upperCase(ord.getCodnaz()));
+      sb.append(StringUtils.upperCase(ord.getPiva()));
+      sb.append("_OZ_");
+      sb.append(StringUtils.leftPad(this.fromBase10(Integer.parseInt(StringUtils.substring(ord.getCodord(), 1))), 5, "0"));
+      sb.append(".xml");
+      orderReq.setFileName(sb.toString());
+      Fornitore seller = nsoOrdiniDao.getSellerSupplierPartyByNsoOrdiniId(ord.getId());
+      if(seller != null) {
+        orderReq.setCodimp(seller.getCodimp());
+      }
+      Ordinante ordi = nsoOrdiniDao.getBuyerCustomerPartyByNsoOrdiniIdAndTypeOne(ord.getId());
+      orderReq.setEndPoint(ordi.getEndpoint());
+      logger.info("orderReq: "+orderReq);
+      Response res = clientNso.revokeOrder(orderReq);
+      if(HttpStatus.SC_OK==res.getStatus()) {
+        nsoOrdiniManager.variazStatoOrdineToRevocato(Long.valueOf(orderId));
+      }
+      if(HttpStatus.SC_OK!=res.getStatus()) {
+        json.put("result","ERROR");
+        logger.info("Response: "+res.getEntity());
+        if(res.hasEntity()) {
+          json.put("entity", res.readEntity(JSONObject.class));
+        } else {
+          json.put("entity", "");
+        }
+      }
+    } catch(Exception e) {
+      logger.error("Error on revocation ",e);
+      json.put("result","ERROR");
+      json.put("entity", e.getMessage());
+    }
+    return json.toJSONString();
   }
 }

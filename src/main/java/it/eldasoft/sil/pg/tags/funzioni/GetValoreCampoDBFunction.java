@@ -10,6 +10,12 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
+import java.sql.SQLException;
+import java.util.Date;
+
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.PageContext;
+
 /**
  * La funzione legge un campo di una tabella eseguendo la where passata come parametro.
  * Il valore ritornato dal db viene convertito in stringa
@@ -21,18 +27,17 @@ import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
 
-import java.sql.SQLException;
-import java.util.Date;
-
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
-
 public class GetValoreCampoDBFunction extends AbstractFunzioneTag {
 
   public GetValoreCampoDBFunction() {
     super(4, new Class[] {PageContext.class, String.class, String.class,String.class });
   }
 
+  /**
+   * params[1] : campo
+   * params[2] : entita
+   * params[3] : where
+   */
   @Override
   public String function(PageContext pageContext, Object[] params)
       throws JspException {

@@ -139,6 +139,16 @@ public class NsoOrdiniManager {
     return idNuovoOrdine;
   }
 
+  public void variazStatoOrdineToRevocato(Long idOrdine) throws GestoreException {
+    try {
+      this.geneManager.getSql().update(
+          "update nso_ordini set stato_ordine = 8 where  id = ?",
+          new Object[] { idOrdine });
+
+    } catch (SQLException e) {
+      throw new GestoreException("Errore nell'aggiornamento dello stato dell'ordine ", "variazioneOrdine", e);
+    }
+  }
   public void variazStatoOrdineToInviato(Long idOrdine) throws GestoreException {
     try {
       this.geneManager.getSql().update(
@@ -333,9 +343,23 @@ public class NsoOrdiniManager {
   try {
 
     if(!"".equals(arrmultikey)){
-      String[] ContafVect = arrmultikey.split(";");
-      String inClause = arrmultikey.replace(";", ",");
-      inClause = inClause.substring(0, inClause.length()-1);
+//      String[] ContafVect = arrmultikey.split(";");
+//      String inClause = arrmultikey.replace(";", ",");
+//      inClause = inClause.substring(0, inClause.length()-1);   
+      List<Object> parameters = new ArrayList<Object>();
+      String[] contaf = arrmultikey.substring(0, arrmultikey.length()-1).split(";");
+      
+      parameters.add(numeroGara);
+      parameters.add(codiceDitta);
+      
+      String inClause = "";
+      for(int i=0;i<contaf.length;i++) {
+        if(i>0) {
+          inClause += ", ";
+        }
+        inClause += "?";
+        parameters.add(contaf[i]);
+      }
 
       //recupero i dati di gara/lotto
       Vector<?> datiGaraLottoOrdine = this.geneManager.getSql().getVector("select g.codiga,g.not_gar,g.iaggiu,g.notega,c.codcpv,o.centro_costo" +
@@ -360,7 +384,7 @@ public class NsoOrdiniManager {
       List listaProdottiAggiudicataria  = this.geneManager.getSql().getListVector(
           "select CODGAR,NGARA,CODVOC,VOCE,UNIMISEFF,QUANTIEFF,PREOFF" +
           " from V_GCAP_DPRE where NGARA= ? and COD_DITTA = ? and CONTAF in("+ inClause + ")",
-          new Object[] { numeroGara,codiceDitta });
+          parameters.toArray());
       if (listaProdottiAggiudicataria != null && listaProdottiAggiudicataria.size() > 0) {
         for (int k = 0; k < listaProdottiAggiudicataria.size(); k++) {
           Vector vectProdottiAgg = (Vector) listaProdottiAggiudicataria.get(k);

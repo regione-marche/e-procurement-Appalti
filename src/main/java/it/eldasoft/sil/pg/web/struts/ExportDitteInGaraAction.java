@@ -164,7 +164,7 @@ public class ExportDitteInGaraAction extends DispatchActionBaseNoOpzioni {
           request.getSession());
       FileOutputStream os = new FileOutputStream(tempFile);
       String tempString = obj.toString();
-      os.write(tempString.getBytes(), 0, tempString.length());
+      os.write(tempString.getBytes());
       
       request.setAttribute("nomeFile", ngara + "_DitteGara.json");
       request.setAttribute("esito", "ok");

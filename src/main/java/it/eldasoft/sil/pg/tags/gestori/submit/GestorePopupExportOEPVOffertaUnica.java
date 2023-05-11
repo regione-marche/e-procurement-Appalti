@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.log4j.Logger;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.transaction.TransactionStatus;
 
 public class GestorePopupExportOEPVOffertaUnica extends AbstractGestoreEntita {
@@ -113,7 +113,7 @@ public class GestorePopupExportOEPVOffertaUnica extends AbstractGestoreEntita {
 		// *** ESPORTAZIONE ***
 		if ("ESPORTA".equals(modoRichiamo)) {
 			try {
-				HSSFWorkbook XLS = importExportOEPVManager.esportazione(
+				XSSFWorkbook XLS = importExportOEPVManager.esportazione(
 						lottoselezionato, archiviaXLSDocAss, codgar,step,campo);
 
 				int stepAttuale = Integer.parseInt(step);

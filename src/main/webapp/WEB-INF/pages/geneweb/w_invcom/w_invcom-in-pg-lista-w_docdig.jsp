@@ -64,6 +64,17 @@
 	</c:otherwise>
 </c:choose>
 
+<c:set var="digitalSignatureUrlCheck" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-check-url")}'/>
+<c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:choose>
+	<c:when test="${!empty digitalSignatureUrlCheck && !empty digitalSignatureProvider && (digitalSignatureProvider eq 1 || digitalSignatureProvider eq 2)}">
+		<c:set var="digitalSignatureWsCheck" value='1'/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="digitalSignatureWsCheck" value='0'/>
+	</c:otherwise>
+</c:choose>
+
 <c:set var="idprg" value='${gene:getValCampo(key,"IDPRG")}' scope='request'/>
 <c:set var="idcom" value='${gene:getValCampo(key,"IDCOM")}' scope='request'/>
 
@@ -79,8 +90,20 @@
 			<gene:campoLista campo="IDPRG" visibile="false"/>
 			<gene:campoLista title="N°" width="40" campo="IDDOCDIG" visibile="false"/>
 			
+			<gene:campoLista campo="FIRMACHECK" ordinabile="false" visibile="false"  />
+			<gene:campoLista campo="FIRMACHECKTS" ordinabile="false" visibile="false" />
 			<gene:campoLista campo="DIGDESDOC" />
-			<gene:campoLista campo="DIGNOMDOC" />
+			<gene:campoLista campo="DIGNOMDOC" >
+			</gene:campoLista>
+			<gene:campoLista campo="FIRMA_FIT" campoFittizio="true"  title ="" width="24" definizione="T2;;;;G1_DIGFIRMACHECK_DD"  >
+				<%-- gestione controllo firma elettronica --%>
+				<c:if test="${not empty datiRiga.W_DOCDIG_FIRMACHECK and datiRiga.W_DOCDIG_FIRMACHECK=='1'}">
+					&nbsp;<img src="${pageContext.request.contextPath}/img/firmaRemota-valid.png" title="Verifica automatica firma digitale riuscita (data verifica ${datiRiga.W_DOCDIG_FIRMACHECKTS})" alt="Verifica automatica firma digitale riuscita" width="16" height="16">
+				</c:if>	
+				<c:if test="${not empty datiRiga.W_DOCDIG_FIRMACHECK and datiRiga.W_DOCDIG_FIRMACHECK=='2'}">
+					&nbsp;<img src="${pageContext.request.contextPath}/img/firmaRemota-notvalid.png" title="Verifica automatica firma digitale NON riuscita (data verifica ${datiRiga.W_DOCDIG_FIRMACHECKTS})" alt="Verifica automatica firma digitale NON riuscita" width="16" height="16">
+				</c:if>
+			</gene:campoLista>
 			<gene:campoLista title="&nbsp;" width="24">
 				<c:set var="nomDoc" value="${gene:string4Js(datiRiga.W_DOCDIG_DIGNOMDOC)}"/>
 				<c:set var="nomDoc" value="${fn:replace(nomDoc,'\"','&#34;')}"/>
@@ -137,15 +160,30 @@
 		ext = ext.toUpperCase();
 		
 		tracciamentoDownloadFS12(idprg, iddocdig,gara,comkey1);
-		if(ext=='P7M' || ext=='TSD'){
-			document.formVisFirmaDigitale.idprg.value = idprg;
-			document.formVisFirmaDigitale.iddocdig.value = iddocdig;
-			document.formVisFirmaDigitale.ckdate.value = "${datins}";
-			document.formVisFirmaDigitale.submit();
-		}else{
-			var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-			document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
-		}
+		<c:choose>
+			<c:when test="${digitalSignatureWsCheck eq 0}">
+				if(ext=='P7M' || ext=='TSD'){
+					document.formVisFirmaDigitale.idprg.value = idprg;
+					document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+					document.formVisFirmaDigitale.ckdate.value = "${datins}";
+					document.formVisFirmaDigitale.submit();
+				}else{
+					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				}
+			</c:when>
+			<c:otherwise>
+				if(ext=='P7M' || ext=='TSD' || ext=='XML' || ext=='PDF'){
+					document.formVisFirmaDigitale.idprg.value = idprg;
+					document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+					document.formVisFirmaDigitale.ckdate.value = "${datins}";
+					document.formVisFirmaDigitale.submit();
+				}else{
+					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				}
+			</c:otherwise>
+		</c:choose>
 	}	
 	
 	var selezionaPaginaDefault = selezionaPagina;

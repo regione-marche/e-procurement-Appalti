@@ -104,6 +104,21 @@ public class GetMailPecModelloFunction extends AbstractFunzioneTag {
 		  String dataOdiernaStr = UtilityDate.convertiData(UtilityDate.getDataOdiernaAsDate(), UtilityDate.FORMATO_GG_MM_AAAA);
 		  testoMail = testoMail.replace("dd/mm/yyyy", dataOdiernaStr);
 		}
+		
+		if (genereModelloComunicazione.equals("57") && testoMail!=null && !"".equals(testoMail)) {
+			  //Sostituzione mnemonici
+			  String codiceStipula = "";
+			  String oggettoStipula = "";
+			  Vector datiStipula = sqlManager.getVector("select codstipula,oggetto from g1stipula where id=?", new Object[]{Long.valueOf(ngara)});
+			  if(datiStipula!=null){
+				  codiceStipula = sqlManager.getValueFromVectorParam(datiStipula, 0).getStringValue();
+				  oggettoStipula = sqlManager.getValueFromVectorParam(datiStipula, 1).getStringValue();
+			  }
+			  String REPLACEMENT_CODICE_STIPULA = "#G1ST_CODSTIPULA#";
+			  String REPLACEMENT_TITOLO_STIPULA = "#G1ST_OGGETTO#";
+			  testoMail = StringUtils.replace(testoMail, REPLACEMENT_CODICE_STIPULA, codiceStipula);
+			  testoMail = StringUtils.replace(testoMail, REPLACEMENT_TITOLO_STIPULA, oggettoStipula);
+		}
 
 		if(ngara!=null){
   		  String codiceGara=null;

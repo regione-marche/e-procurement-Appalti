@@ -10,6 +10,13 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.SQLException;
+import java.util.Vector;
+
+import org.apache.log4j.Logger;
+import org.apache.xmlbeans.XmlException;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
@@ -24,13 +31,6 @@ import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.portgare.datatypes.RichiestaVariazioneDocument;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.sql.SQLException;
-import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.apache.xmlbeans.XmlException;
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore non standard per l'acquisizione delle Variazioni Dati Identificativi
@@ -157,7 +157,7 @@ public class GestorePopupAcquisisciVariazioneDatiIdentificativi extends Abstract
             //Viene popolata la G_NOTEAVVISI
             ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
                 CostantiGenerali.PROFILO_UTENTE_SESSIONE);
-            pgManager.InserisciVariazioni(document, codiceDitta,"INS",profilo,null,false);
+            pgManager.InserisciVariazioni(document, codiceDitta,"INS",profilo,null,false,null);
 
             //Aggiornamento dello stato a processata
             gacqport.aggiornaStatoW_INVOCM(idcom,"6");

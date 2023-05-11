@@ -22,6 +22,10 @@
 <c:set var="uffintGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetUffintGaraFunction",  pageContext,gene:getValCampo(key,"CODGAR"))}' scope="request"/>
 <c:set var="idconfi" value='${gene:callFunction3("it.eldasoft.gene.tags.functions.GetWSDMConfiAttivaFunction",  pageContext,uffintGara,sessionScope.moduloAttivo)}' scope="request"/>
 
+<c:set var="faseRicezione" value="false" />
+<c:set var="faseGara-Apertura_doc_amm" value="false" />
+<c:set var="faseGaraOff" value="false" />
+
 <c:choose>
 	<c:when test="${itergaMacro eq 1}">
 		<c:set var="titleFasiRicezione" value="Ricezione offerte" />
@@ -72,6 +76,7 @@
 				<jsp:include page="/WEB-INF/pages/gare/gare/gare-pg-seduteDiGara.jsp" />
 			</gene:pagina>
 			<gene:pagina title="1. ${titleFasiRicezione}" idProtezioni="FASIRICEZIONE">
+				<c:set var="faseRicezione" value="true" />
 				<jsp:include page="/WEB-INF/pages/gare/gare/gare-pg-fasiRicezione.jsp" />
 			</gene:pagina>
 			<gene:pagina title="Ditte concorrenti" idProtezioni="DITTECONCORRENTI"  visibile='${not lottoOffertaUnica}'>
@@ -80,11 +85,13 @@
 			<c:choose>
 				<c:when test="${ bustalotti eq 1}">
 					<gene:pagina title="2. Apertura doc.ammin." idProtezioni="FASIGARA-APERTURA_DOC_AMM" selezionabile="${faseGara >= 2}" >
+						<c:set var="faseGara-Apertura_doc_amm" value="true" />
 						<jsp:include page="/WEB-INF/pages/gare/gare/gare-pg-fasiAperturaDocAmm.jsp" >
 							<jsp:param name="paginaFasiGara" value="aperturaOffAggProvOffUnica"/>  
 						</jsp:include>
 					</gene:pagina>
 					<gene:pagina title="3. Apertura offerte e calcolo aggiud." idProtezioni="OFFAGGPROVV" selezionabile="${faseGara >= 5}">
+						<c:set var="faseGaraOff" value="true" />
 						<jsp:include page="/WEB-INF/pages/gare/gare/gare-pg-lista-lotti-offertaUnica.jsp" />
 					</gene:pagina>		
 				</c:when>
@@ -146,3 +153,35 @@
 	</gene:pagina>
 	
 </gene:formPagine>
+
+<gene:javaScript>
+			
+var selezionaPaginaOld = selezionaPagina;
+
+selezionaPagina = function(pageNumber) {
+var formDaEstendere = $('form[name="pagineForm"]');
+<c:if test="${!faseRicezione}">
+$('<input>').attr({
+    type: 'hidden',
+    name: 'logAccessoFasiRic',
+	value: '1'
+}).appendTo(formDaEstendere);
+</c:if>
+<c:if test="${!faseGaraApertura_doc_amm}">
+$('<input>').attr({
+    type: 'hidden',
+    name: 'logAccessoFasiAperturaDocAmm',
+	value: '1'
+}).appendTo(formDaEstendere);
+</c:if>
+<c:if test="${!faseGaraOff}">
+$('<input>').attr({
+    type: 'hidden',
+    name: 'logAccessoFasiGara',
+	value: '1'
+}).appendTo(formDaEstendere);
+</c:if>
+return selezionaPaginaOld(pageNumber);
+}
+
+</gene:javaScript>

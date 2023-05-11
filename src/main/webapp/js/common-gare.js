@@ -57,7 +57,6 @@ var numeroDitteSorteggiate;
 var codiceElenco;
 var meruolo;
 var IsW_CONFCOMPopolata;
-var whereBusteAttiveWizard;
 var lottoDiGara;
 var bloccoAggiudicazione;
 var faseGara;
@@ -86,6 +85,9 @@ var modGaraInversa;
 var compreq;
 var sezionitec;
 var numDitteStatoSoccorso;
+var isConcProg="";
+var gestioneConcProg="";
+var statocg="";
 
 function setImportoVisibile(importoVis){
 	importoVisibile = importoVis;
@@ -221,10 +223,6 @@ function setIsW_CONFCOMPopolata(valore){
 	IsW_CONFCOMPopolata = valore;
 }
 
-function setWhereBusteAttiveWizard(valore){
-	whereBusteAttiveWizard = valore;
-}
-
 function setLottoDiGara(valore){
 	lottoDiGara= valore;
 }
@@ -339,6 +337,18 @@ function setNumDitteStatoSoccorso(valore){
 	numDitteStatoSoccorso=valore;
 }
 
+function setIsConcProg(valore){
+	isConcProg=valore;
+}
+
+function setGestioneConcProg(valore){
+	gestioneConcProg=valore;
+}
+
+function setStatocg(valore){
+	statocg=valore;
+}
+
 function calcolaRIBAUO(impapp, onprge, impsic, impnrl, sicinc, impoff, onsogrib) {
 	var ribauo = 0;
 
@@ -395,8 +405,10 @@ function conferma(){
 							
 				if(document.getElementById("V_DITGAMMIS_AMMGAR_" + (i+1))!=null)
 					document.getElementById("V_DITGAMMIS_AMMGAR_" + (i+1)).disabled = false;
-				document.getElementById("DITG_RIBAUO_" + (i+1)).disabled = false;
-				document.getElementById("DITG_IMPOFF_" + (i+1)).disabled = false;
+				if(document.getElementById("DITG_RIBAUO_" + (i+1))!=null)
+					document.getElementById("DITG_RIBAUO_" + (i+1)).disabled = false;
+				if(document.getElementById("DITG_IMPOFF_" + (i+1))!=null)
+					document.getElementById("DITG_IMPOFF_" + (i+1)).disabled = false;
 				if(document.getElementById("DITG_REQMIN_" + (i+1))!=null)
 					document.getElementById("DITG_REQMIN_" + (i+1)).disabled = false;
 				document.getElementById("DITG_PARTGAR_" + (i+1)).disabled = false;
@@ -450,7 +462,7 @@ function inizializzaLista(){
 					
 				}
 			}
-			if( offtel == '1'){
+			if( offtel == '1' || offtel == '3'){
 				document.getElementById("DITG_RIBAUO_" + (t+1)).disabled = true;
 				document.getElementById("DITG_IMPOFF_" + (t+1)).disabled = true;
 			}
@@ -504,8 +516,10 @@ function aggiornaPerCambioAmmessaGara(){
 			}
 		}else if(paginaAttivaWizard == step7Wizard && offtel != '1'){
 			if(getValue("DITG_PARTGAR_" + numeroRiga)!=2){
-				document.getElementById("DITG_IMPOFF_" + numeroRiga).disabled = false;
-				document.getElementById("DITG_RIBAUO_" + numeroRiga).disabled = false;
+				if(document.getElementById("DITG_IMPOFF_" + numeroRiga)!=null)
+					document.getElementById("DITG_IMPOFF_" + numeroRiga).disabled = false;
+				if(document.getElementById("DITG_RIBAUO_" + numeroRiga)!=null)
+					document.getElementById("DITG_RIBAUO_" + numeroRiga).disabled = false;
 			}
 		}
 		document.getElementById("DITG_PARTGAR_" + numeroRiga).disabled = false;
@@ -533,6 +547,14 @@ function aggiornaPerCambioAmmessaGara(){
 				showObj("colDITG_AMMINVERSA_" + numeroRiga, true);	
 		}
 	}
+	
+	if(paginaAttivaWizard == step7Wizard && document.forms[0].isRicercaMercatoNegoziata.value == "true" ){
+		if(getValue("IS_PRODOTTI_VALUTATI_DITTA_" + numeroRiga)=='true'){
+			alert('Non risulta possibile cambiare lo stato di ammissione per questa ditta: esistono prodotti assegnati!');
+			setValue("V_DITGAMMIS_AMMGAR_" + numeroRiga, getOriginalValue("V_DITGAMMIS_AMMGAR_" + numeroRiga));
+		}
+	}
+	
 }
 
 
@@ -596,6 +618,11 @@ function avanti(){
 	
 	if(isProceduraTelematica =="true" && paginaAttivaWizard == step7_5Wizard && updateLista != 1 && stepgar < step8Wizard){
 		alert("Per procedere alla fase seguente deve essere conclusa l'asta.");
+		return;
+	}
+	
+	if(modlicg=="6" && statocg=="1" && paginaAttivaWizard == step6Wizard && updateLista != 1){
+		alert("Non e' possibile procedere alla fase seguente in quanto e' in corso la valutazione su M-Eval");
 		return;
 	}
 	
@@ -761,10 +788,12 @@ function avanti(){
 				var impoff = getValue("IMPOFF_FIT_" + (i+1));
 				var ammessa = getValue("DITG_AMMGAR_" + (i+1));
 				if((ammessa=="1" && isProceduraTelematica == "true") || (isProceduraTelematica != "true" && (ammessa=="1" || ammessa== null || ammessa == ""))){
-					if((ribauo==null || ribauo=="") || (impoff=="" || impoff==null)){
+					if(((ribauo==null || ribauo=="") && offtel != '3') || (impoff=="" || impoff==null)){
 						valoriTuttiPresenti = false;
 						msg="Per procedere alla fase seguente deve essere specificato il ribasso e l'importo offerto per ogni ditta nella lista";
-						if(modlicg=="17"){
+						if( offtel == '3')
+							msg="Per procedere alla fase seguente deve essere specificato l'importo offerto per ogni ditta nella lista";
+						if(modlicg=="17" && offtel != '3'){
 							msg="Per procedere alla fase seguente deve essere specificato il rialzo e l'importo offerto per ogni ditta nella lista";
 						}
 						break;
@@ -777,7 +806,7 @@ function avanti(){
 			for(var i=0; i < currentRow + 1; i++){
 				var ribauo = getValue("RIBAUO_FIT_" + (i+1));
 				var ammessa = getValue("DITG_AMMGAR_" + (i+1));
-				if((ammessa=="1" && isProceduraTelematica == "true") || (isProceduraTelematica != "true" && (ammessa=="1" || ammessa== null || ammessa == ""))){
+				if((ammessa=="1" && isProceduraTelematica == "true" && offtel !=3) || (isProceduraTelematica != "true" && (ammessa=="1" || ammessa== null || ammessa == ""))){
 					if(ribauo==null || ribauo==""){
 						valoriTuttiPresenti = false;
 						msg="Per procedere alla fase seguente deve essere specificato il ribasso offerto per ogni ditta nella lista";
@@ -812,6 +841,8 @@ function avanti(){
 			}
 		}
 	}
+	
+	
 	
 	if(document.forms[0].action.indexOf("Scheda.do") >= 0){
 		document.forms[0].action = contextPath + "/Lista.do?"+csrfToken;
@@ -953,6 +984,18 @@ function verificaDocumentiRichiesti(chiaveRiga,tipo,comunicazioniVis,documentiEl
 		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href;
 	//openPopUpCustom(href, "verificaDocumentiRichiesti", 1100, 550, "yes", "yes");
 }
+
+function esitoAnalisiDocumentiDGUE(codgar,ngara,dittao,fase,statoDGUE){
+	
+	var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/dgue_elaborazioni/listaStatoAnalisiDgue.jsp";
+	
+	href += "&codgar="+codgar;
+	href += "&ngara="+ngara;
+	href += "&dittao="+dittao;
+	href += "&fase=" + fase;
+	href += "&statoDGUE=" + statoDGUE;
+	document.location.href = href;
+}
 	
 //Funzione che blocca l'invio sui campi editabili
 function stopRKey(evt) {
@@ -978,10 +1021,21 @@ function impostaFiltroLotti(){
 }
 
 function integraCodiceCig(ngara,codgar1,isPlicoUnico,cig,numavcp){
+	if ("" != cig) {
+		if ((cig.indexOf("X") == 0 || cig.indexOf("Y") == 0 || cig.indexOf("Z") == 0) && "" != numavcp) {
+			alert('Funzione non disponibile per smartcig');
+		} else {
+			cig = encodeURIComponent(cig);
+			var href = "href=gare/commons/popup-IntegraCodiceCig.jsp";
+			href+="&ngara=" + ngara + "&codgar1=" + codgar1 + "&isPlicoUnico=" + isPlicoUnico + "&codcig=" + cig + "&numavcp=" + numavcp;
+			openPopUpCustom(href, "integraCodiceCig", 700, 400, "yes", "yes");
+		}
+	} else{
 	cig = encodeURIComponent(cig);
 	var href = "href=gare/commons/popup-IntegraCodiceCig.jsp";
 	href+="&ngara=" + ngara + "&codgar1=" + codgar1 + "&isPlicoUnico=" + isPlicoUnico + "&codcig=" + cig + "&numavcp=" + numavcp;
 	openPopUpCustom(href, "integraCodiceCig", 700, 400, "yes", "yes");
+	}
 }
 	
 function AnnullaFiltro(annulla){
@@ -1016,12 +1070,6 @@ function inviaComunicazione(chiaveRiga,inviaComunicazioneAbilitato,idconfi){
 	}else if(inviaComunicazioneAbilitato=="NoMailRTI"){
 		alert("Non e' possibile procedere.\nLa mandataria del raggruppamento selezionato non ha un indirizzo PEC o E-mail specificato in anagrafica");
 		return;
-	}else if(inviaComunicazioneAbilitato=="NoMailFax"){
-		alert("Non e' possibile procedere.\nLa ditta selezionata non ha un indirizzo PEC o E-mail o un numero fax specificato in anagrafica");
-		return;
-	}else if(inviaComunicazioneAbilitato=="NoMailFaxRTI"){
-		alert("Non e' possibile procedere.\nLa mandataria del raggruppamento selezionato non ha un indirizzo PEC o E-mail o un numero fax specificato in anagrafica");
-		return;
 	}else if(inviaComunicazioneAbilitato=="NoMandatariaRTI"){
 		alert("Non e' possibile procedere.\nNell'anagrafica del raggruppamento selezionato non e' specificata la mandataria");
 		return;
@@ -1040,7 +1088,7 @@ function inviaComunicazione(chiaveRiga,inviaComunicazioneAbilitato,idconfi){
 			}else{
 				href += "&keyParent=TORN.CODGAR=T:" + numeroGara;
 			}
-			href += "&ditta=" + codiceDitta + "&stepWizard=" + faseCalcolata + "&whereBusteAttiveWizard=" + whereBusteAttiveWizard;
+			href += "&ditta=" + codiceDitta + "&stepWizard=" + faseCalcolata;
 		}else{
 			var href = contextPath + "/Lista.do?numModello=0&keyAdd=W_INVCOM.COMKEY1=T:" + numeroGara ;
 			if(isGaraLottiConOffertaUnica != "true" && !(bustalotti == 1 && paginaFasiGara == "aperturaOffAggProvLottoOffUnica")){
@@ -1084,6 +1132,8 @@ function confermaChiusuraAperturaFasi(operazione,bustalotti){
 	var ngara = chiave.substr(chiave.lastIndexOf(":") + 1);
 	var href = "href=gare/commons/popupChiusuraAperturaFasi.jsp&ngara=" + ngara + "&isGaraLottiConOffertaUnica=" + isGaraLottiConOffertaUnica + "&operazione=" + operazione;
 	href += "&bustalotti=" + bustalotti + "&isProceduraTelematica=" + isProceduraTelematica + "&paginaAttivaWizard=" + paginaAttivaWizard;
+	href += "&isConcProg="+isConcProg;
+	href += "&gestioneConcProg="+gestioneConcProg;
 	openPopUpCustom(href, "conferma_chiusura_apertura_fasi", "450", "350", "no", "no");
 }
 
@@ -1218,6 +1268,13 @@ function verificaPassword(pwd, pwd1, tipo){
 	return 1;
 }
 
+
+function aperturaBusteTecnicheAnonime(ngara,codiceGara) {
+	var pagina="gare-popup-acquisizioniBusteTecniche.jsp";
+	href = "href=gare/gare/" + pagina + "&ngara=" + ngara + "&codgar=" + codiceGara + "&dittao=&bustalotti=0";
+	href += "&anonima=1";
+	openPopUpCustom(href, "bustaTecAnonima", 500, 350, "yes", "yes");
+}
 
 /*
  * La funzione effettua il calcolo di IMPGAR alla modifica di IMPQUA,
@@ -1647,10 +1704,10 @@ function calcoloValmax(imprin,impserv,imppror,impaltro,impapp){
 }
 
 function gestioneTipneg_Alteng(iterga,entita) {
-	//Se iterga != 1,2 si visualizzano alteng e tipneg, altrimenti si nascondono
+	//Se iterga != 1,2,7 si visualizzano alteng e tipneg, altrimenti si nascondono
 	var vis = true;
 	var campoTipneg=entita+"_TIPNEG";
-	if(iterga=="1" || iterga =="2" || iterga=="" || iterga==null)
+	if(iterga=="1" || iterga =="2" || iterga =="7" || iterga =="8" || iterga=="" || iterga==null)
 		vis=false;
 	showObj("row" + campoTipneg,vis);
 	showObj("rowTORN_ALTNEG",vis);
@@ -1812,6 +1869,26 @@ function tracciamentoDownloadDocimpresa(idprg, iddocdg,ngara,dittao,doctel){
 	
 }
 
+function tracciamentoDownloadDocgara(idprg,iddocdig,key,gruppo,busta,tipologia){
+	$.ajax({
+		type: "POST",
+		dataType: "json",
+		async: false,
+		beforeSend: function(x) {
+			if(x && x.overrideMimeType) {
+				x.overrideMimeType("application/json;charset=UTF-8");
+			}
+		},
+		url: contextPath+"/pg/TracciamentoDownloadDocgara.do",
+		data: "idprg=" + idprg + "&iddocdig=" + iddocdig + "&key=" + key + "&gruppo=" + gruppo + "&busta=" + busta + "&tipologia=" + tipologia,
+		error: function(e){
+			alert("Errore durante la tracciatura dell'operazione di download del file");
+		}
+	});
+	
+}
+
+
 function tracciamentoDownloadFS12(idprg, iddocdg,gara,comkey1){
 	$.ajax({
 		type: "POST",
@@ -1857,13 +1934,19 @@ function annullaRicezionePlichiDomande(tipo,ngara,iterga,codgar,genere){
 	openPopUpCustom(href, "annullaRicezionePlichiDomand", 500, 300, "no", "no");
 }
 
-function apriCreaFascicolo(ngara,codiceGara,idconfi,genere){
+function apriCreaFascicolo(ngara,codiceGara,idconfi,genere, fascicoloEsistente){
 	var href = "href=gare/commons/popupCreaFascicolo.jsp";
-	href += "?ngara=" + ngara + "&codiceGara=" + codiceGara + "&idconfi="+ idconfi + "&genere=" + genere;
+	href += "?ngara=" + ngara + "&codiceGara=" + codiceGara + "&idconfi="+ idconfi + "&genere=" + genere + "&fascicoloEsistente=" + fascicoloEsistente;
 	openPopUpCustom(href, "creaFascicolo", 800, 550, "no", "no");
 }
 
-function bloccaDopoPubblicazione(bloccoModificatiDati) {
+function apriCreaFascicoloStipula(idstipula,codStipula, idconfi, garaStipula){
+	var href = "href=gare/commons/popupCreaFascicolo.jsp";
+	href += "?idstipula=" + idstipula + "&codStipula=" + codStipula + "&idconfi="+ idconfi + "&garaStipula="+ garaStipula;
+	openPopUpCustom(href, "creaFascicolo", 800, 550, "no", "no");
+}
+
+function bloccaDopoPubblicazione(bloccoModificatiDati,offtel) {
 	if (bloccoModificatiDati=='true') {
 		var notInput="";
 		var notJsPopUp="";
@@ -1899,6 +1982,11 @@ function bloccaDopoPubblicazione(bloccoModificatiDati) {
 			{"campo" : "TORN_NGADIT"},
 			{"campo" : "TORN_CONTOECO"}
 		];
+		if(offtel==3){
+			arrayInput.push({"campo" : "GARE_IMPMIS"},{"campo" : "GARE_IMPNRM"},{"campo" : "GARE_IMPSMI"},{"campo" : "GARE_NOTMIS"},{"campo" : "GARE_IMPCOR"});
+			arrayInput.push({"campo" : "GARE_IMPNRC"},{"campo" : "GARE_IMPSCO"},{"campo" : "GARE_NOTCOR"},{"campo" : "GARE_ONPRGE"},{"campo" : "GARE_IMPAPP"});
+			arrayInput.push({"campo" : "GARE_IMPNRL"},{"campo" : "GARE_IMPSIC"},{"campo" : "GARE1_IMPMANO"});			
+		}
 		 $.each(arrayInput,function( index, value ) {
 			notInput =   notInput+":not('#"+value.campo+"')";
 			notJsPopUp = notJsPopUp+":not('#jsPopUp"+value.campo+"')";
@@ -1918,7 +2006,9 @@ function bloccaDopoPubblicazione(bloccoModificatiDati) {
 			{"campo" : "TORN_PAGDOC"},
 			{"campo" : "TORN_MODFIN"},
 			{"campo" : "TORN_PROGEU"},
-			{"campo" : "TORN_SELOPE"}
+			{"campo" : "TORN_SELOPE"},
+			{"campo" : "TORN_DESGREEN"},
+			{"campo" : "GARSOSPE_NOTE"}
 		];
 		var notText="";
 		 $.each(arrayText,function( index, value ) {
@@ -1937,6 +2027,9 @@ function bloccaDopoPubblicazione(bloccoModificatiDati) {
 			{"campo" : "GARE_TEMESI"},
 			{"campo" : "GARE_SEGRETA"},
 			{"campo" : "GARE_TIPLAV"},
+			{"campo" : "GARE1_ESPLPORT"},
+			{"campo" : "GARE1_ESPLECO"},
+			{"campo" : "GARE1_ESPLBASE"},
 			{"campo" : "TORN_AQTEMPO"},
 			{"campo" : "TORN_SOMMAUR"},
 			{"campo" : "TORN_CODNUTS"},
@@ -1962,8 +2055,18 @@ function bloccaDopoPubblicazione(bloccoModificatiDati) {
 			{"campo" : "TORN_NORMA"},
 			{"campo" : "TORN_NORMA1"},
 			{"campo" : "TORN_TUS"},
-			{"campo" : "TORN_URBASCO"}
+			{"campo" : "TORN_URBASCO"},
+			{"campo" : "TORN_ISGREEN"},
+			{"campo" : "TORN_ISRECYCLE"},
+			{"campo" : "TORN_ISPNRR"},
+			{"campo" : "GARE1_MOTESENTECIG"},
+			{"campo" : "TORN_CLIV2"},
+			{"campo" : "TORN_ISARCHI"}
+
 		];
+		if(offtel==3){
+			arraySelect.push({"campo" : "GARE_ONSOGRIB"});			
+		}
 		var notSelect="";
 		 $.each(arraySelect,function( index, value ) {
 			notSelect =   notSelect+":not('#"+value.campo+"')";
@@ -2034,3 +2137,49 @@ function richiestaSoccorsoIstruttorio(chiaveRiga,modelloSoccoroIstruttorioConfig
 	
 	
 }	
+
+/*
+* Converte la stringa con formato gg/mm/aaaa hh:mm:ss in un oggetto data
+*/
+function daStringaAData(dataStringa){
+	var d = new Date();
+	var parteData = dataStringa.substring(0,10);
+	var vet = parteData.split("/");
+	var giorno = vet[0];
+	var mese = vet[1];
+	var anno = vet[2];
+	giorno = parseInt(giorno);
+	anno = parseInt(anno);
+	mese = parseInt(mese) - 1;
+	d.setFullYear(anno, mese, giorno);
+    if(dataStringa.length > 18){
+		var parteOrario = dataStringa.substring(11);
+		vet = parteOrario.split(":");
+		var ore = vet[0];
+		var minuti = vet[1];
+		var secondi = vet[2];
+		d.setHours(ore);
+		d.setMinutes(minuti);
+		d.setSeconds(secondi);
+    }else{
+		d.setHours(0);
+		d.setMinutes(0);
+		d.setSeconds(0);
+	}
+	return d;
+}
+
+function exportZipBusteAnonime(ngara) {
+	href = "href=gare/gare/gare-popup-exportSuZipBusteAnonime.jsp&ngara=" + ngara;
+	openPopUpCustom(href, "exportZipBusteAnonime", 500, 350, "yes", "yes");
+}
+
+function apriPopupRipristinaValutazioneMEVAL(gara,lotto){
+	var href = "href=gare/gare/gare-popup-ripristinaValutazione-MEval.jsp?codgar=" + gara +"&lotto=" + lotto;
+	openPopUpCustom(href, "ripristinaValutazione", 700, 300, "no", "no");
+}
+
+function apriPopupModificaUOCompetenza(gara,entita,idconfi){
+	var href = "href=gare/wsdm/popup-aggiornaUOCompetenza-DB.jsp?gara=" + gara +"&entita=" + entita + "&idconfi=" + idconfi;
+	openPopUpCustom(href, "modificaUOCompetenza", 700, 500, "no", "no");
+}

@@ -113,7 +113,7 @@ public class GestorePopupAttivaElencoDitteDaInvitare extends AbstractGestoreEnti
                 		  new Object[] { codgar, ngara, codiceDitta, Long.valueOf(-4) });
                   if (count_ditgammis != null && count_ditgammis.longValue() > 0) {
                     // Aggiornamento
-                    this.sqlManager.update(updateDITGAMMIS, new Object[] { new Long(2), codgar, ngara, codiceDitta, Long.valueOf(-4) });
+                    this.sqlManager.update(updateDITGAMMIS, new Object[] { new Long(7), codgar, ngara, codiceDitta, Long.valueOf(-4) });
                   } else {
                     // Inserimento
                     this.sqlManager.update(insertDITGAMMIS, new Object[] { codgar, ngara, codiceDitta, Long.valueOf(-4), Long.valueOf(7) });

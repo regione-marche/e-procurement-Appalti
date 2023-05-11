@@ -13,9 +13,13 @@ import org.apache.log4j.Logger;
 
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.WebUtilities;
+import it.eldasoft.gene.db.domain.LogEvento;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.sil.pg.bl.SFTPManager;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.utility.UtilityStringhe;
 
 /**
@@ -99,11 +103,12 @@ public class ArchiviaEsportaDocumentiTask {
       String struttura = null;
       String supporto = null;
       String sottotipo = null;
+      String entitaGardoc = null;
 
       boolean tabellatiInDb= this.gestioneWSDMManager.isTabellatiInDb();
 
       String selRichiesteDaElaborare = "select j.id_archiviazione, j.codgara, j.syscon, j.classifica, j.cod_reg,"
-          + " j.tipo_doc, j.mitt_int, j.indice, j.classifica_tit, j.uo_mittdest, j.mezzo, j.struttura, j.supporto, j.sottotipo "
+          + " j.tipo_doc, j.mitt_int, j.indice, j.classifica_tit, j.uo_mittdest, j.mezzo, j.struttura, j.supporto, j.sottotipo, j.entita "
           + " from gardoc_jobs j"
           + " where j.tipo_archiviazione = ? and j.da_processare = ?  ";
 
@@ -124,6 +129,7 @@ public class ArchiviaEsportaDocumentiTask {
 
             idArchiviazione = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 0).longValue();
             codgara = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 1).getStringValue();
+            entitaGardoc = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 14).getStringValue();
             sysconRichiesta = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 2).longValue();
             classificadocumento = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 3).getStringValue();
             codiceregistrodocumento = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 4).getStringValue();
@@ -137,15 +143,23 @@ public class ArchiviaEsportaDocumentiTask {
             struttura = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 11).getStringValue();
             supporto = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 12).getStringValue();
             sottotipo= SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 13).getStringValue();
-            String selectCodiceGara = "select codice,genere from v_gare_genere where codgar = ? and genere < 100";
-            Vector<?> datiGareGenere = sqlManager.getVector(selectCodiceGara, new Object[] {codgara });
-            if (datiGareGenere != null && datiGareGenere.size() > 0) {
-              codice = SqlManager.getValueFromVectorParam(datiGareGenere, 0).stringValue();
-              codice = UtilityStringhe.convertiNullInStringaVuota(codice);
-              genere = (Long) SqlManager.getValueFromVectorParam(datiGareGenere, 1).getValue();
+
+            Long idconfi = null;
+            if("G1STIPULA".equals(entitaGardoc)) {
+              idconfi = this.gestioneWSDMManager.getWsdmConfigurazioneFromIdStipula(new Long(codgara), "PG");
+              codice = (String)sqlManager.getObject("select codstipula from g1stipula where id=?", new Object[] {new Long(codgara)});
+            }else {
+              String selectCodiceGara = "select codice,genere from v_gare_genere where codgar = ? and genere < 100";
+              Vector<?> datiGareGenere = sqlManager.getVector(selectCodiceGara, new Object[] {codgara });
+              if (datiGareGenere != null && datiGareGenere.size() > 0) {
+                codice = SqlManager.getValueFromVectorParam(datiGareGenere, 0).stringValue();
+                codice = UtilityStringhe.convertiNullInStringaVuota(codice);
+                genere = (Long) SqlManager.getValueFromVectorParam(datiGareGenere, 1).getValue();
+              }
+              idconfi = this.gestioneWSDMManager.getWsdmConfigurazioneFromCodgar(codgara, "PG");
             }
 
-            Long idconfi = this.gestioneWSDMManager.getWsdmConfigurazioneFromCodgar(codgara, "PG");
+
             if(idconfi!=null){
               Vector<?> datiWslogin = sqlManager.getVector(selectWslogin, new Object[] {idconfi, "DOCUMENTALE" });
               if (datiWslogin != null && datiWslogin.size() > 0) {
@@ -201,6 +215,7 @@ public class ArchiviaEsportaDocumentiTask {
                   datiWSDM.put("tipoCollegamento", tipoCollegamento);
                   datiWSDM.put("idconfi", idconfi.toString());
                   datiWSDM.put("sottotipo", sottotipo);
+                  datiWSDM.put("entita", entitaGardoc);
                   int esitoTrasferimento = archiviazioneDocumentiManager.trasferisciAlDocumentale(codice, genere, idDoc, key1Doc, key2Doc,
                       provenienza, datiWSDM);
                   if (esitoTrasferimento < 0) {
@@ -233,6 +248,9 @@ public class ArchiviaEsportaDocumentiTask {
       // INIZIO GESTIONE TRASFERIMENTO A COS
       if (logger.isDebugEnabled())
         logger.debug("Gestione trasferimento a COS: avvio trasferimento ad area FTP");
+      
+      List<Long> docInseriti = new ArrayList<Long>();
+      List<Long> docNonInseriti = new ArrayList<Long>();
 
       // Esportazione documentazione di gara/elenco/catalogo
       // creazioneArchivioDocumentiGaraManager.creazioneArchivioDocumentiGara();
@@ -301,12 +319,24 @@ public class ArchiviaEsportaDocumentiTask {
 
               try {
                 int esito = 1;
-                for (int i = 0; i < documenti.size(); i++) {
-                  esito = archiviazioneDocumentiManager.trasferisciAreaFTPCOS(documenti.get(i));
+                
+                SFTPManager sftp = new SFTPManager();
+                sftp.connect();
+                
+                for (int i = 0; i < documenti.size(); i++) {   
+                  Long iddocu = (Long) documenti.get(i).get("idDoc");
+                  esito = archiviazioneDocumentiManager.trasferisciAreaFTPCOS(documenti.get(i),sftp);
+                  if(esito==1)
+                    docInseriti.add(iddocu);
                   if(esito == 0){
+                    docNonInseriti.add(iddocu);
                     numDocEsitoNegativo++;
+                    //a fronte di un problema, apro una nuova connessione
+                    sftp = new SFTPManager();
+                    sftp.connect();
                   }
                 }
+                sftp.disconnect();
               } catch (Exception e) {
                 logger.error("Errore durante la selezione dei documenti della gara da archiviare " + e.getMessage());
               }
@@ -321,10 +351,28 @@ public class ArchiviaEsportaDocumentiTask {
             // aggiorno la riga di archiviazione
             archiviazioneDocumentiManager.updateJobArchiviazioneDocumenti(idArchiviazione, statoGardocJobs, numDocEsitoNegativo,
                 messaggioApp, codgara, codice, genere, sysconRichiesta);
-
+ 
+            String errMsg = null;
+            int livEvento = 1;
+            if(docNonInseriti.size()>0) {
+              errMsg = "Trasferimento ad area ftp fallito per i seguenti documenti (GARDOC_WSDM.ID): "+docNonInseriti.toString();
+              livEvento=3;
+            }
+            try {
+              LogEvento logEvento = new LogEvento();
+              logEvento.setCodApplicazione("PG");
+              logEvento.setOggEvento(codgara.replace("$", ""));
+              logEvento.setLivEvento(livEvento);
+              logEvento.setCodEvento("GA_COS_TRASFERIMENTOFTP");
+              logEvento.setDescr("Trasferimento ad area FTP (GARDOC_JOBS.ID_ARCHIVIAZIONE="+idArchiviazione+")");
+              logEvento.setErrmsg(errMsg);
+              LogEventiUtils.insertLogEventi(logEvento);
+            } catch (Exception le) {
+              logger.error("Errore inaspettato durante la tracciatura su w_logeventi", le);
+            }
           } // for listaRichiesteDaElaborare
-
         } // if listaRichiesteDaElaborare
+        
 
       } catch (SQLException e) {
         throw new GestoreException("Errore nella lettura della lista dei documenti da trasferire a COS", null, e);

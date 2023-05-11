@@ -82,7 +82,7 @@ public class GetDatiComunicazioniDitteAction extends Action {
     String genereGara = request.getParameter("genereGara");
     String riceviComunicazioni = request.getParameter("riceviComunicazioni");
     String soccorsoIstruttorio = request.getParameter("soccorsoIstruttorio");
-    String whereBusteAttiveWizard = request.getParameter("whereBusteAttiveWizard");
+    String whereBusteAttiveWizard = (String) request.getSession().getAttribute("whereBusteAttiveWizard");
 
     String entita = "GARE";
     if ("3".equals(genereGara)) {

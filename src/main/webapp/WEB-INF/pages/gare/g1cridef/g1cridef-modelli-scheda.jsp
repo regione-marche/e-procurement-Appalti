@@ -51,6 +51,7 @@
 				<gene:campoScheda campo="MODPUNTI" modificabile="true" obbligatorio="true"/>
 				<gene:campoScheda campo="MODMANU" modificabile="true" obbligatorio="true"/>
 				<gene:campoScheda campo="FORMULA" obbligatorio="true"/>
+				<gene:campoScheda campo="ESPONENTE" visibile="${datiRiga.G1CRIDEF_FORMULA eq '11' or datiRiga.G1CRIDEF_FORMULA eq '13' or datiRiga.G1CRIDEF_FORMULA eq '14' or datiRiga.G1CRIDEF_FORMULA eq '15' }"/>
 				<gene:campoScheda campo="DESCRI" />
 
 				<gene:fnJavaScriptScheda funzione='formatoOnChangeInit("#G1CRIDEF_FORMATO#")' elencocampi='G1CRIDEF_FORMATO' esegui="true" />
@@ -261,7 +262,7 @@
 			}
 			
 			function modpuntiOnChange(modpunti) {
-				if (modpunti == 1) {
+				if (modpunti == 1 || modpunti == 3) {
 					showObj("rowG1CRIDEF_MODMANU", true);
 					showObj("rowG1CRIDEF_FORMULA", false);
 					$("#G1CRIDEF_MODMANU", "").val(1);

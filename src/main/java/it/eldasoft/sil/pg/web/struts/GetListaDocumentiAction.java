@@ -1,11 +1,5 @@
 package it.eldasoft.sil.pg.web.struts;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.utils.properties.ConfigManager;
-import it.eldasoft.utils.utility.UtilityStringhe;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.MessageDigest;
@@ -21,12 +15,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspException;
 
-import net.sf.json.JSONObject;
-
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.utility.UtilityStringhe;
+import net.sf.json.JSONObject;
 
 public class GetListaDocumentiAction extends Action {
 
@@ -62,7 +61,11 @@ public class GetListaDocumentiAction extends Action {
     String operation = request.getParameter("operation");
     String codgar = request.getParameter("codgar");
     String genere = request.getParameter("genere");
+    String key1 = request.getParameter("key1");
+    String chiaveOriginale = request.getParameter("chiaveOriginale");
+    String stipula = request.getParameter("stipula");
     String oggetto = "gara";
+    Long idStipula=null;
 
     try {
 
@@ -73,7 +76,91 @@ public class GetListaDocumentiAction extends Action {
       String queryDocComAllaDitta = "";
       String queryDocComDallaDitta = "";
 
-      String condizioneAppend = this.sqlManager.getDBFunction("concat",  new String[] {"'Documentazione '" , "'" + oggetto + "'" });
+      String queryDocStipula = "";
+      String queryDocAssociatiStipula = "";
+      String queryDocComAllaDittaStipula = "";
+      String queryDocComDallaDittaStipula = "";
+
+      if("true".equals(stipula)) {
+        idStipula = new Long(key1);
+        oggetto = "stipula contratto";
+        String condizioneAppend = this.sqlManager.getDBFunction("concat",  new String[] {"'Documentazione '" , "'" + oggetto + "'" });
+
+        String castDATA="DATE";
+        if("POS".equals(this.sqlManager.getTipoDB()))
+          castDATA="TIMESTAMP";
+        else if("MSQ".equals(this.sqlManager.getTipoDB()))
+          castDATA="DATETIME";
+
+        String condizioneAppend1 = this.sqlManager.getDBFunction("concat",  new String[] {"'Documento contratto - '" , "t.tab1desc" });
+
+        //Documentazione contratto
+        queryDocStipula = "select " + condizioneAppend + " as ARGOMENTO, " + condizioneAppend1 + " as GRUPPO,  cast(null as varchar(20)) as LOTTO," +
+            " cast(null as varchar(16)) as CFDITTA, cast(null as varchar(120)) as DITTA, " +
+            " TITOLO as DESCRIZIONE, w.IDPRG, w.IDDOCDIG, w.DIGNOMDOC, cast(null as varchar(2)) as ARCHIVIATO, " +
+            "cast(null as " + castDATA + ") as DATA " +
+            "from G1DOCSTIPULA  d join V_GARE_DOCSTIPULA w on w.id=d.id join tab1 t on t.tab1tip=d.visibilita " +
+            "where d.idstipula = ? and w.idprg is not null and w.IDDOCDIG is not null and t.tab1cod='A1182' ";
+        /*
+        " UNION select " + condizioneAppend + " as ARGOMENTO, t.tab1desc as GRUPPO, cast(null as varchar(20)) as LOTTO, " +
+            " cast(null as varchar(16)) as CFDITTA, cast(null as varchar(120)) as DITTA, " +
+            " TITOLO as DESCRIZIONE, cast(null as varchar(3)) as IDPRG , cast(null as numeric(12)) as IDDOCDIG, cast(null as varchar(100)) as DIGNOMDOC, " +
+            "cast(null as varchar(2)) as ARCHIVIATO, cast(null as " + castDATA + ") as DATA " +
+            "from G1DOCSTIPULA  join tab1 t on t.tab1tip=visibilita where idstipula = ? and visibilita= 3 and statodoc = 3  and t.tab1cod='A1182'" ;
+*/
+        //DOCUMENTI ASSOCIATI
+        String sqlSintassi= this.sqlManager.getDBFunction("inttostr",  new String[] {"g.id"});
+        if (documentiAssociatiDB.equals("1")) {
+          queryDocAssociatiStipula = "select " + condizioneAppend + " as ARGOMENTO," +
+                " cast('Documento associato' as varchar(100)) as GRUPPO, cast(null as varchar(20)) as LOTTO, " +
+          "cast(null as varchar(16)) as CFDITTA, cast(null as varchar(120)) as DITTA, " +
+          "c.c0atit as DESCRIZIONE , w.idprg, w.iddocdig, c.c0anomogg as DIGNOMDOC, cast(null as varchar(2)) as ARCHIVIATO, coalesce(" +
+          this.sqlManager.getDBFunction("datetimetostring",  new String[] {"c.C0ADATTO"}) +"," +
+          this.sqlManager.getDBFunction("datetimetostring",  new String[] {"c.C0ADPROT"}) +"," +
+          this.sqlManager.getDBFunction("datetimetostring",  new String[] {"c.c0adat"}) + ") as DATA " +
+          "from c0oggass c join G1STIPULA g on c.c0akey1=" + sqlSintassi + " join w_docdig w on c.c0acod=w.digkey1 and c.c0aprg=w.idprg and w.digent='C0OGGASS' " +
+          "where g.id = ? and c.c0aent in ('G1STIPULA','G1DOCSTIPULA') " ;
+
+        } else {
+          queryDocAssociatiStipula = "select " + condizioneAppend + " as ARGOMENTO," +
+                  " cast('Documento associato' as varchar(100)) as GRUPPO, cast(null as varchar(20)) as LOTTO, " +
+            "cast(null as varchar(16)) as CFDITTA, cast(null as varchar(120)) as DITTA, " +
+            "c.c0atit as DESCRIZIONE, c.c0aprg as IDPRG, c.c0acod as IDDOCDIG, c.c0anomogg as DIGNOMDOC, cast(null as varchar(2)) as ARCHIVIATO, coalesce(" +
+            this.sqlManager.getDBFunction("datetimetostring",  new String[] {"c.C0ADATTO"}) +"," +
+            this.sqlManager.getDBFunction("datetimetostring",  new String[] {"c.C0ADPROT"}) +"," +
+            this.sqlManager.getDBFunction("datetimetostring",  new String[] {"c.c0adat"}) + ") as DATA " +
+            "from c0oggass c join G1STIPULA g on c.c0akey1= " + sqlSintassi +
+            "where g.id = ? and c.c0aent in ('G1STIPULA','G1DOCSTIPULA') " ;
+
+        }
+
+        //Documenti inviati alla ditta
+        queryDocComAllaDittaStipula = "select DISTINCT 'Documentazione delle ditte' as ARGOMENTO," +
+            " cast('Documento inviato alla ditta' as varchar(100))   as GRUPPO, cast(null as varchar(20)) as LOTTO, " +
+           " cast(null as varchar(16)) as CFDITTA, id.descodsog as DITTA, " +
+           this.sqlManager.getDBFunction("concat",  new String[] {this.sqlManager.getDBFunction("concat",  new String[] {"i.commsgogg" , "' - '" }) , "w.DIGDESDOC" }) + " as DESCRIZIONE," +
+           " w.IDPRG, w.IDDOCDIG, w.DIGNOMDOC, cast(null as varchar(2)) as ARCHIVIATO, " +
+            this.sqlManager.getDBFunction("datetimetostring",  new String[] {"id.DESDATINV"}) + " as DATA, id.idcom as IDCOM, DESCODENT " +
+          "from w_invcom i join w_docdig w on " + this.sqlManager.getDBFunction("inttostr",  new String[] {"i.idcom"}) + "=w.digkey2 and w.digkey1=i.idprg " +
+            "and w.digent='W_INVCOM' join g1stipula g on i.comkey1= g.codstipula"  +
+          " join (select DISTINCT idprg,idcom,descodsog,descodent,DESSTATO,MIN(DESDATINV) as DESDATINV from w_invcomdes group by idprg,idcom,descodsog,descodent,DESSTATO) id on id.idprg = i.idprg and id.idcom = i.idcom " +
+          "where g.id = ? and i.compub <> '1' and (COMTIPO is null or COMTIPO<>'FS12') and (id.DESSTATO = '2' or id.DESSTATO = '4') order by DITTA,IDCOM,IDDOCDIG";
+
+
+        //Documenti inviati dalla ditta
+
+        queryDocComDallaDittaStipula = "select cast('Documentazione delle ditte' as varchar(100)) as ARGOMENTO, cast('Documento ricevuto dalla ditta' as varchar(100)) as GRUPPO, " +
+            "cast(null as varchar(20)) as LOTTO, cast(null as varchar(16)) as CFDITTA, comkey1 as DITTA, " +
+          this.sqlManager.getDBFunction("concat",  new String[] {this.sqlManager.getDBFunction("concat",  new String[] {"i.commsgogg" , "' - '" }) , "w.DIGDESDOC" }) + " as DESCRIZIONE, " +
+          "w.IDPRG, w.IDDOCDIG, w.DIGNOMDOC, cast(null as varchar(2)) as ARCHIVIATO, " +
+          this.sqlManager.getDBFunction("datetimetostring",  new String[] {"i.COMDATINS"}) + " as DATA " +
+          "from w_invcom i join w_docdig w on " + this.sqlManager.getDBFunction("inttostr",  new String[] {"i.idcom"}) + " = w.digkey1 and i.idprg = w.idprg and w.digent = 'W_INVCOM' " +
+          "join g1stipula g on i.comkey2=g.codstipula " +
+          "where g.id = ? and i.compub <> '1' and COMTIPO='FS12' and COMSTATO='3' and COMENT = 'G1STIPULA' order by ditta,i.idcom,iddocdig";
+
+
+      }else{
+        String condizioneAppend = this.sqlManager.getDBFunction("concat",  new String[] {"'Documentazione '" , "'" + oggetto + "'" });
           //Documentazione di gara
           queryDocGara = "select " + condizioneAppend + " as ARGOMENTO, GRUPPO, NGARA as LOTTO," +
           		" cast(null as varchar(16)) as CFDITTA, cast(null as varchar(120)) as DITTA, " +
@@ -95,10 +182,11 @@ public class GetListaDocumentiAction extends Action {
           //Documenti presentati dalla ditta
           queryDocDitta = "select " + this.sqlManager.getDBFunction("concat",  new String[] {"'Documentazione presentata dalle ditte '" ,  "d.ngara" }) + " as ARGOMENTO, coalesce(d.bustadesc,'Documento presentato dalla ditta') as GRUPPO, d.ngara as LOTTO," +
                 " cast(null as varchar(16)) as CFDITTA, d.codimp as DITTA, " +
-          		" d.descrizione as DESCRIZIONE, d.IDPRG, d.iddocdg as IDDOCDIG, d.DIGNOMDOC , cast(null as varchar(2)) as ARCHIVIATO, " +
-          		this.sqlManager.getDBFunction("datetimetostring",  new String[] {"d.datarilascio"})  + " as DATA , d.orarilascio as ORA  " +
+          		" d.descrizione as DESCRIZIONE, d.IDPRG, d.iddocdg as IDDOCDIG, d.DIGNOMDOC , (case when docannul='1' then '3' else cast(null as varchar(2)) end) as ARCHIVIATO, " +
+          		this.sqlManager.getDBFunction("datetimetostring",  new String[] {"d.datarilascio"})  + " as DATA , d.orarilascio as ORA  , d.doctel as DOCTEL, i.uuid as UUID " +
           "from v_gare_docditta d join w_docdig w on d.iddocdg=w.iddocdig and d.idprg=w.idprg " +
-          "where d.codgar = ? and d.idprg is not null and d.iddocdg is not null order by d.codgar, d.ngara, d.bustaord, d.codimp, d.norddoci";
+          "join imprdocg i on d.codgar = i.codgar and d.ngara = i.ngara and d.codimp = i.codimp and d.norddoci = i.norddoci and d.proveni = i.proveni " +
+          "where d.codgar = ? and d.idprg is not null and d.iddocdg is not null order by d.codgar, d.ngara, d.bustaord, d.numord, d.codimp, d.norddoci";
 
           if (documentiAssociatiDB.equals("1")) {
               queryDocAssociati = "select " + this.sqlManager.getDBFunction("concat",  new String[] {"'Documentazione '" ,  "'" + oggetto + "'" }) + " as ARGOMENTO," +
@@ -168,7 +256,7 @@ public class GetListaDocumentiAction extends Action {
             this.sqlManager.getDBFunction("datetimetostring",  new String[] {"i.COMDATINS"}) + " as DATA " +
             "from w_invcom i join w_docdig w on " + this.sqlManager.getDBFunction("inttostr",  new String[] {"i.idcom"}) + " = w.digkey1 and i.idprg = w.idprg and w.digent = 'W_INVCOM' " +
             "join torn t on (i.comkey2=t.codgar) " +
-            "where t.codgar = ? and i.compub <> '1' and COMTIPO='FS12' order by ditta,i.idcom,w.iddocdig";
+            "where t.codgar = ? and i.compub <> '1' and COMTIPO='FS12' and COMSTATO='3' and COMENT IS NULL order by ditta,i.idcom,w.iddocdig";
           }else{
             queryDocComDallaDitta = "select cast('Documentazione presentata dalle ditte' as varchar(100)) as ARGOMENTO, cast('Documento inviato dalla ditta' as varchar(100)) as GRUPPO, comkey2 as LOTTO, " +
             "cast(null as varchar(16)) as CFDITTA, comkey1 as DITTA, " +
@@ -177,12 +265,17 @@ public class GetListaDocumentiAction extends Action {
             this.sqlManager.getDBFunction("datetimetostring",  new String[] {"i.COMDATINS"}) + " as DATA " +
             "from w_invcom i join w_docdig w on " + this.sqlManager.getDBFunction("inttostr",  new String[] {"i.idcom"}) + " = w.digkey1 and i.idprg = w.idprg and w.digent = 'W_INVCOM' " +
             "join gare g on i.comkey2=g.ngara " +
-            "where g.codgar1 = ? and i.compub <> '1' and COMTIPO='FS12' order by ditta,i.idcom,iddocdig";
+            "where g.codgar1 = ? and i.compub <> '1' and COMTIPO='FS12' and COMSTATO='3' and COMENT IS NULL order by ditta,i.idcom,iddocdig";
           }
+      }
 
-
-          List<HashMap> hmDocGara = sqlManager.getListHashMap(queryDocGara, new Object[] { codgar });
-          if(hmDocGara.size() >0 ){
+      List<HashMap> hmDocGara = null;
+      if("true".equals(stipula)) {
+        hmDocGara = sqlManager.getListHashMap(queryDocStipula, new Object[] { idStipula });
+      }else {
+        hmDocGara = sqlManager.getListHashMap(queryDocGara, new Object[] { codgar });
+      }
+        if(hmDocGara.size() >0 ){
             for(int j=0; j<hmDocGara.size();j++) {
               HashMap hmj = hmDocGara.get(j);
               JdbcParametro jdbcLotto = (JdbcParametro) hmj.get("LOTTO");
@@ -231,7 +324,7 @@ public class GetListaDocumentiAction extends Action {
                 stato_archiviazione_cos = (Long) SqlManager
                     .getValueFromVectorParam(listaDatiGardocCOS.get(0), 0).getValue();
               }
-              
+
               hmj.put("IDWSDOC", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, idwsdoc));
               hmj.put("STATO", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, stato_archiviazione));
               hmj.put("STATO_COS", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, stato_archiviazione_cos));
@@ -244,6 +337,7 @@ public class GetListaDocumentiAction extends Action {
             }//for
           }
 
+          if(!"true".equals(stipula)) {
           List<HashMap> hmDocComunicazioni = sqlManager.getListHashMap(queryDocComunicazioni, new Object[] { codgar });
           if(hmDocComunicazioni.size() >0 ){
             for(int j=0; j<hmDocComunicazioni.size();j++) {
@@ -291,7 +385,7 @@ public class GetListaDocumentiAction extends Action {
                 stato_archiviazione_cos = (Long) SqlManager
                     .getValueFromVectorParam(listaDatiGardocCOS.get(0), 0).getValue();
               }
-              
+
               hmj.put("IDWSDOC", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, idwsdoc));
               hmj.put("STATO", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, stato_archiviazione));
               hmj.put("STATO_COS", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, stato_archiviazione_cos));
@@ -304,9 +398,16 @@ public class GetListaDocumentiAction extends Action {
               hmDocGara.add(hmDocComunicazioni.get(j));
             }
           }
+          }
 
           //DOCUMENTI ASSOCIATI
-          List<HashMap> hmDocAssociati = sqlManager.getListHashMap(queryDocAssociati, new Object[] { codgar,codgar });
+          List<HashMap> hmDocAssociati = null;
+          if("true".equals(stipula)) {
+            hmDocAssociati = sqlManager.getListHashMap(queryDocAssociatiStipula, new Object[] { idStipula });
+          }else {
+            hmDocAssociati = sqlManager.getListHashMap(queryDocAssociati, new Object[] { codgar,codgar });
+          }
+
           if(hmDocAssociati.size() >0 ){
             for(int j=0; j<hmDocAssociati.size();j++) {
               HashMap hmj = hmDocAssociati.get(j);
@@ -409,11 +510,36 @@ public class GetListaDocumentiAction extends Action {
             }
           }
 
-
+          if(!"true".equals(stipula)) {
           List<HashMap> hmDocDitta = sqlManager.getListHashMap(queryDocDitta, new Object[] { codgar });
           if(hmDocDitta.size() >0 ){
+            String selecStatoComunicazione = "select i.comstato from w_invcom i,w_docdig d where d.idprg=? and d.digkey3=? and i.idprg=d.idprg and i.idcom=" + this.sqlManager.getDBFunction("strtoint",  new String[] {"d.digkey1" });
             for(int j=0; j<hmDocDitta.size();j++) {
               HashMap hmj = hmDocDitta.get(j);
+
+              String idprg = null;
+              Long iddocdig = null;
+              JdbcParametro jdbcIdprg = (JdbcParametro) hmj.get("IDPRG");
+              if (jdbcIdprg != null){
+                idprg = jdbcIdprg.stringValue();
+              }
+
+              JdbcParametro jdbcIddocdig = (JdbcParametro) hmj.get("IDDOCDIG");
+              if (jdbcIddocdig != null){
+                iddocdig = jdbcIddocdig.longValue();
+              }
+
+              JdbcParametro jdbcDoctel = (JdbcParametro) hmj.get("DOCTEL");
+              JdbcParametro jdbcUuid = (JdbcParametro) hmj.get("UUID");
+              if(jdbcDoctel!=null && jdbcUuid != null) {
+                String doctel = jdbcDoctel.stringValue();
+                String uuid = jdbcUuid.stringValue();
+                if("1".equals(doctel) && uuid!=null && !"".equals(uuid)) {
+                  String comstato = (String)this.sqlManager.getObject(selecStatoComunicazione, new Object[]{idprg,uuid});
+                  if("13".equals(comstato) || "20".equals(comstato))
+                    continue;
+                }
+              }
 
               JdbcParametro jdbcLotto = (JdbcParametro) hmj.get("LOTTO");
               if (jdbcLotto != null) {
@@ -460,20 +586,11 @@ public class GetListaDocumentiAction extends Action {
               }
 
                 //inserisco gli attributi per wsallegati e per gardoc_wsdm
-                String idprg = null;
-                Long iddocdig = null;
+
                 Long idwsdoc = null;
                 Long stato_archiviazione = null;
                 String esito = null;
-                JdbcParametro jdbcIdprg = (JdbcParametro) hmj.get("IDPRG");
-                if (jdbcIdprg != null){
-                  idprg = jdbcIdprg.stringValue();
-                }
 
-                JdbcParametro jdbcIddocdig = (JdbcParametro) hmj.get("IDDOCDIG");
-                if (jdbcIddocdig != null){
-                  iddocdig = jdbcIddocdig.longValue();
-                }
                 HashMap hmAllegato = new HashMap();
 
                 Vector<?> datiAllegati = this.sqlManager.getVector("select ws.idwsdoc from wsallegati ws  where ws.key1 = ? and ws.key2 = ? and ws.entita='W_DOCDIG'", new Object[]{idprg,iddocdig});
@@ -489,7 +606,7 @@ public class GetListaDocumentiAction extends Action {
                   stato_archiviazione = (Long) SqlManager.getValueFromVectorParam(listaDatiGardocWsdm.get(0), 0).getValue();
                   esito = SqlManager.getValueFromVectorParam(listaDatiGardocWsdm.get(0), 1).getStringValue();
                 }
-                
+
                 Long stato_archiviazione_cos = null;
                 String selectGARDOC_COS = null;
                 selectGARDOC_COS = "select gwsdm1.stato_archiviazione,gwsdm1.esito from gardoc_wsdm gwsdm1 join gardoc_jobs job on gwsdm1.id_archiviazione = job.id_archiviazione where job.tipo_archiviazione = 3 and gwsdm1.entita='W_DOCDIG' and gwsdm1.key1 = ? and gwsdm1.key2 = ? order by gwsdm1.id_archiviazione desc";
@@ -515,12 +632,15 @@ public class GetListaDocumentiAction extends Action {
 
             }//for
           }//hmDocDitta
+          }
 
+          List<HashMap> hmDocComAllaDitta = null;
+          if("true".equals(stipula)) {
+            hmDocComAllaDitta = sqlManager.getListHashMap(queryDocComAllaDittaStipula, new Object[] { idStipula });
+          }else {
+            hmDocComAllaDitta = sqlManager.getListHashMap(queryDocComAllaDitta, new Object[] { codgar });
+          }
 
-
-
-
-          List<HashMap> hmDocComAllaDitta = sqlManager.getListHashMap(queryDocComAllaDitta, new Object[] { codgar });
           if(hmDocComAllaDitta.size() >0 ){
             for(int j=0; j<hmDocComAllaDitta.size();j++) {
               HashMap hmj = hmDocComAllaDitta.get(j);
@@ -627,7 +747,7 @@ public class GetListaDocumentiAction extends Action {
                 stato_archiviazione_cos = (Long) SqlManager
                     .getValueFromVectorParam(listaDatiGardocCOS.get(0), 0).getValue();
               }
-              
+
               hmj.put("IDWSDOC", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, idwsdoc));
               hmj.put("STATO", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, stato_archiviazione));
               hmj.put("STATO_COS", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, stato_archiviazione_cos));
@@ -644,7 +764,13 @@ public class GetListaDocumentiAction extends Action {
 
           //Documenti inviati dalla ditta
 
-          List<HashMap> hmDocComDallaDitta = sqlManager.getListHashMap(queryDocComDallaDitta, new Object[] { codgar });
+          List<HashMap> hmDocComDallaDitta = null;
+          if("true".equals(stipula)) {
+            hmDocComDallaDitta = sqlManager.getListHashMap(queryDocComDallaDittaStipula, new Object[] { idStipula });
+          }else {
+            hmDocComDallaDitta = sqlManager.getListHashMap(queryDocComDallaDitta, new Object[] { codgar });
+          }
+
           if(hmDocComDallaDitta.size() >0 ){
             for(int j=0; j<hmDocComDallaDitta.size();j++) {
               HashMap hmj = hmDocComDallaDitta.get(j);
@@ -725,7 +851,7 @@ public class GetListaDocumentiAction extends Action {
                 stato_archiviazione = (Long) SqlManager.getValueFromVectorParam(listaDatiGardocWsdm.get(0), 0).getValue();
                 esito = SqlManager.getValueFromVectorParam(listaDatiGardocWsdm.get(0), 1).getStringValue();
               }
-              
+
               Long stato_archiviazione_cos = null;
               String selectGARDOC_COS = null;
               selectGARDOC_COS = "select gwsdm1.stato_archiviazione,gwsdm1.esito from gardoc_wsdm gwsdm1 join gardoc_jobs job on gwsdm1.id_archiviazione = job.id_archiviazione where job.tipo_archiviazione = 3 and gwsdm1.entita='W_DOCDIG' and gwsdm1.key1 = ? and gwsdm1.key2 = ? order by gwsdm1.id_archiviazione desc";
@@ -777,7 +903,7 @@ public class GetListaDocumentiAction extends Action {
             if (parametrodata.getValue() == null) {
               stato = new Long(-1);
             }
-    
+
             String nomeFile = ((JdbcParametro) hm.get("DIGNOMDOC")).stringValue();
             Boolean fine = false;
             while (true)
@@ -806,7 +932,7 @@ public class GetListaDocumentiAction extends Action {
               hm.put("STATO_COS", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, stato));
             }
           }
-          
+
           result.put("iTotalRecords", total);
           result.put("iTotalDisplayRecords", totalAfterFilter);
           result.put("data", hmDocGara);
@@ -821,7 +947,7 @@ public class GetListaDocumentiAction extends Action {
     return null;
 
   }
-  
+
   public String escape(String s) {
     return s.replace('|', '-').replace(';', '-');
 }
@@ -841,6 +967,6 @@ public class GetListaDocumentiAction extends Action {
 //return new sun.misc.HexDumpEncoder().encode(hash);
     return javax.xml.bind.DatatypeConverter.printHexBinary(hash);
 }
-  
+
 }
 

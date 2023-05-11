@@ -87,19 +87,43 @@
 							<gene:redefineInsert name="addToAzioni">
 														
 								
-								<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtModificaFasiGara) and bloccoAggiudicazione ne 1 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIGARA.AttivaAperturaOfferte")}'>
+								<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtModificaFasiGara) and bloccoAggiudicazione ne 1 }'>
 									<c:choose>
 										<c:when test='${(empty datiRiga.GARE_FASGAR or datiRiga.GARE_FASGAR eq "") or (not empty datiRiga.GARE_FASGAR and datiRiga.GARE_FASGAR ne "" and datiRiga.GARE_FASGAR < 5)}' >
 											<c:set var="faseAperturaDocAmmChiusa" value="2" scope="request" />
-											<tr>
-												<td class="vocemenulaterale">
-													<a href="javascript:confermaChiusuraAperturaFasi('ATTIVA','');" title='Attiva apertura offerte' tabindex="1504">Attiva apertura offerte</a>
-												</td>
-							                </tr>
+											<c:choose>
+												<c:when test="${param.gestioneGaraConcorsoProgAttiva}">
+													<c:set var="etichettaPulsanteApOff" value="${etichettaInserimentoPunteggiAnonima}"  />
+													<c:if test="${ gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIGARA.AcquisizioneTecAnonima') }">
+													<tr>
+														<td class="vocemenulaterale">
+															<a href="javascript:aperturaBusteTecnicheAnonime('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}');" title='${etichettaAcquisizioneAnonima }' tabindex="1504">${etichettaAcquisizioneAnonima}</a>
+														</td>
+									                </tr>
+									                </c:if>
+									                <c:if test="${ gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIGARA.ScaricaZipBusteAnonime') }">
+									                <tr>
+														<td class="vocemenulaterale">
+															<a href="javascript:exportZipBusteAnonime('${datiRiga.GARE_NGARA}');" title='${etichettaScaricaZipAnonima}' tabindex="1504">${etichettaScaricaZipAnonima}</a>
+														</td>
+									                </tr>
+									                </c:if>
+									            </c:when>
+												<c:otherwise>
+													<c:set var="etichettaPulsanteApOff" value="Attiva apertura offerte"  />
+												</c:otherwise>
+											</c:choose>
+											<c:if test="${gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIGARA.AttivaAperturaOfferte') }">
+												<tr>
+													<td class="vocemenulaterale">
+														<a href="javascript:confermaChiusuraAperturaFasi('ATTIVA','');" title='${etichettaPulsanteApOff}' tabindex="1504">${etichettaPulsanteApOff}</a>
+													</td>
+								                </tr>
+							                </c:if>
 										</c:when>
 										<c:otherwise>
 											<c:set var="faseAperturaDocAmmChiusa" value="1" scope="request" />
-											<c:if test="${isProceduraTelematica ne 'true' }">
+											<c:if test="${isProceduraTelematica ne 'true' and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIGARA.AttivaAperturaOfferte') }">
 												<tr>
 													<td class="vocemenulaterale">
 														<a href="javascript:confermaChiusuraAperturaFasi('DISATTIVA','');" title='Disattiva apertura offerte' tabindex="1504">Disattiva apertura offerte</a>
@@ -150,6 +174,8 @@
 						<input type="hidden" name="isGaraLottiConOffertaUnica" id="isGaraLottiConOffertaUnica" value="${isGaraLottiConOffertaUnica}" />
 
 						<input type="hidden" id="updateLista" name="updateLista" value="${updateLista}" />
+						<input type="hidden" name="entitaPrincipaleModificabile" id="entitaPrincipaleModificabile" value="${sessionScope.entitaPrincipaleModificabile}" />
+						
 						<gene:campoScheda campo="NGARA" visibile="false" />
 						<gene:campoScheda campo="CODGAR1" visibile="false" />
 					<c:if test='${isGaraLottiConOffertaUnica eq "true"}'>

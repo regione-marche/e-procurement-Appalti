@@ -25,6 +25,7 @@
 			scheda=""
 			schedaPopUp=""
 			campi="V_SMAT_RDA.DATA_APPROVAZIONE;V_SMAT_RDA.NUMERO_RDA"
+			functionId="skip"
 			chiave=""
 			formName="formAttoAutorizzativoRda${param.contatore}"
 			inseribile="false">
@@ -43,6 +44,7 @@
 			scheda=""
 			schedaPopUp=""
 			campi="V_SMAT_RDA.DATA_APPROVAZIONE;V_SMAT_RDA.NUMERO_RDA"
+			functionId="skip"
 			chiave=""
 			formName="formAttoAutorizzativoRda${param.contatore}"
 			inseribile="false">

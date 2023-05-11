@@ -13,6 +13,7 @@ package it.eldasoft.sil.pg.bl;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.security.GeneralSecurityException;
 import java.security.Security;
 import java.sql.SQLException;
@@ -25,6 +26,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
@@ -33,6 +35,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.xmlbeans.XmlException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -56,6 +59,8 @@ import it.eldasoft.gene.tags.utils.UtilityTags;
 import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.cifrabuste.CifraturaBusteManager;
+import it.eldasoft.sil.pg.bl.utils.ListaDocumentiPortaleUtilities;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiGaraFunction;
 import it.eldasoft.sil.pg.tags.gestori.submit.GestoreDITG;
 import it.eldasoft.sil.portgare.datatypes.AttributoGenericoType;
@@ -77,7 +82,6 @@ import it.eldasoft.sil.portgare.datatypes.TipoPartecipazioneDocument;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityNumeri;
-import it.eldasoft.utils.utility.UtilityStringhe;
 import it.maggioli.eldasoft.security.SymmetricEncryptionUtils;
 import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
 import it.maggioli.eldasoft.ws.dm.WSDMInviaMailType;
@@ -85,6 +89,9 @@ import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAnagraficaType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoInType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoResType;
+import it.maggioli.eldasoft.ws.dm.WSDMTipoVoceRubricaType;
+import net.sf.json.JSONObject;
+import net.sf.json.JSONSerializer;
 
 /**
  * Classe di gestione delle funzionalita' inerenti il Mercato Elettronico
@@ -144,6 +151,10 @@ public class MEPAManager {
 
 	private static final String selectW_INVCOM_FILTRO_COMKEY3 = "select idprg, idcom, comkey1, comkeysess, comstato, comkey3 from w_invcom where comkey2 = ? and (comstato = '5' or comstato='13') and comtipo = ? and comkey3 = ?";
 
+	private static final String selectW_INVCOM_SCARTATE = "select count(*) from w_invcom where comkey2 = ? and (comstato = '8' or comstato='20') and comtipo = ?";
+
+	private static final String selectW_INVCOM_SCARTATE_FILTRO_COMKEY3 = "select count(*) from w_invcom where comkey2 = ? and (comstato = '8' or comstato='20') and comtipo = ? and comkey3 = ?";
+
 	private static final String selectW_INVCOM_STEP2 = "select idprg, idcom, comkey1, comkeysess, comstato, comkey3 from w_invcom where comkey2 = ? and comstato = '16' and comtipo = ?";
 
 	private static final String selectW_INVCOM_FILTRO_COMKEY3_STEP2 = "select idprg, idcom, comkey1, comkeysess, comstato, comkey3 from w_invcom where comkey2 = ? and comstato = '16' and comtipo = ? and comkey3 = ?";
@@ -161,7 +172,7 @@ public class MEPAManager {
 
 	private static final String selectOfftel = "select offtel from torn where codgar=?";
 
-	private static final String selectDatiDitg = "select ammgar,fasgar,datoff,oraoff from ditg where codgar5 = ? and ngara5 = ? and dittao = ?";
+	private static final String selectDatiDitg = "select ammgar,fasgar,datoff,oraoff,idanonimo from ditg where codgar5 = ? and ngara5 = ? and dittao = ?";
 
 	private static final String selectDatiDitg_FS10A = "select ammgar,fasgar,dricind,oradom from ditg where codgar5 = ? and ngara5 = ? and dittao = ?";
 
@@ -886,7 +897,13 @@ public class MEPAManager {
         elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGENT", new JdbcParametro(JdbcParametro.TIPO_TESTO, "MEALLISCRIZPROD")));
         elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGNOMDOC", new JdbcParametro(JdbcParametro.TIPO_TESTO, nomeFile)));
         elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGOGG", new JdbcParametro(JdbcParametro.TIPO_BINARIO, baos)));
-
+        logger.info("documento.getFirmacheck(): "+documento.getFirmacheck());
+        if(StringUtils.isNotBlank(documento.getFirmacheck())){
+        	elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.FIRMACHECK", new JdbcParametro(JdbcParametro.TIPO_TESTO, documento.getFirmacheck())));
+        	if(documento.getFirmacheckts()!=null) {
+        		elencoCampiW_DOCDIG.add(new DataColumn("W_DOCDIG.FIRMACHECKTS", new JdbcParametro(JdbcParametro.TIPO_DATA_FULL, documento.getFirmacheckts().getTime())));
+        	}
+        }
         DataColumnContainer containerW_DOCDIG = new DataColumnContainer(elencoCampiW_DOCDIG);
 
         containerW_DOCDIG.insert("W_DOCDIG", sqlManager);
@@ -1613,27 +1630,48 @@ public class MEPAManager {
       sez = "2";
     }
 
+    String anonima = request.getParameter("anonima");
+    boolean decodificaIdanonimo=false;
     try {
 
       String codgar1 = (String) this.sqlManager.getObject("select codgar1 from gare where ngara = ?", new Object[] {ngara});
       Long bustalotti = (Long)this.sqlManager.getObject("select bustalotti from gare where ngara=?", new Object[]{codgar1});
 
+      String isconcprog=null;
+      if("FS11B".equals(comtipo) && !"1".equals(anonima) && sez==null) {
+        isconcprog = (String) this.sqlManager.getObject("select isconcprog from torn where codgar = ?", new Object[] {codgar1});
+        if("1".equals(isconcprog))
+          decodificaIdanonimo = true;
+      }
+
       List<?> datiW_INVCOM  = null;
       boolean gestioneSingolaDitta= false;
+      String selectComScartate=selectW_INVCOM_SCARTATE;
+      Object param[] = null;
       if(dittao!=null && !"".equals(dittao)){
         gestioneSingolaDitta=true;
         String ncomope = (String) this.sqlManager.getObject("select ncomope from ditg where ngara5=? and dittao=?", new Object[]{ngara,dittao});
         String select = selectW_INVCOM_FILTRO_COMKEY3;
         if ("2".equals(sez))
           select = selectW_INVCOM_FILTRO_COMKEY3_STEP2;
-        datiW_INVCOM = this.sqlManager.getListVector(select, new Object[] {ngara, comtipo, ncomope});
+        selectComScartate=selectW_INVCOM_SCARTATE_FILTRO_COMKEY3;
+        param = new Object[] {ngara, comtipo, ncomope};
+        datiW_INVCOM = this.sqlManager.getListVector(select, param);
       } else {
         String select = selectW_INVCOM;
         if ("2".equals(sez))
           select = selectW_INVCOM_STEP2;
-        datiW_INVCOM = this.sqlManager.getListVector(select, new Object[] {ngara, comtipo});
+        param = new Object[] {ngara, comtipo};
+        datiW_INVCOM = this.sqlManager.getListVector(select, param);
       }
 
+      if("FS11B".equals(comtipo) && "1".equals(anonima)) {
+        //Le comunicazioni vengono scartate con operazioni eseguite precedentemente, quindi per sapere
+        //il numero di comunicazione scartate(in stato 8 e 20), devo leggere direttamente dal db
+        Long conteggioComunicazioniScartate = (Long)this.sqlManager.getObject(selectComScartate, param);
+        if(conteggioComunicazioniScartate!=null)
+          numeroAcquisizioniScartate = conteggioComunicazioniScartate.intValue();
+      }
 
       if (datiW_INVCOM != null && datiW_INVCOM.size() > 0) {
 
@@ -1674,8 +1712,14 @@ public class MEPAManager {
               descEvento = "Apertura busta tecnica sezione quantitativa";
             } else {
               nomeCampo="DATFS11B";
-              codEvento="GA_APERTURA_BUSTA_TEC";
-              descEvento = "Apertura busta tecnica";
+              if("1".equals(anonima)) {
+                codEvento="GA_APERTURA_BUSTA_TEC_ANO";
+                descEvento = "Apertura busta tecnica anonima";
+              }else {
+                codEvento="GA_APERTURA_BUSTA_TEC";
+                descEvento = "Apertura busta tecnica";
+              }
+
            }
           }else if("FS11C".equals(comtipo)){
             nomeCampo="DATFS11C";
@@ -1690,6 +1734,7 @@ public class MEPAManager {
             boolean acquisito = false;
             boolean esisteDITG = false;
             boolean saltareAcquisizione = false;
+            String idanonimo = null;
 
             String w_invcom_idprg = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 0).getValue();
             w_invcom_idcom = (Long) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 1).getValue();
@@ -1737,6 +1782,7 @@ public class MEPAManager {
               Long fasgar = null;
               Timestamp data =null;
               String ora = null;
+
               String selectDatiDITG = selectDatiDitg;
               if("FS10A".equals(comtipo))
                 selectDatiDITG = selectDatiDitg_FS10A;
@@ -1753,6 +1799,8 @@ public class MEPAManager {
                 fasgar = SqlManager.getValueFromVectorParam(datiDitg, 1).longValue();
                 data = SqlManager.getValueFromVectorParam(datiDitg, 2).dataValue();
                 ora = SqlManager.getValueFromVectorParam(datiDitg, 3).stringValue();
+                if(decodificaIdanonimo && datiDitg.size()>4)
+                  idanonimo=SqlManager.getValueFromVectorParam(datiDitg, 4).stringValue();
               }
               int faseConfronto = 2;
               if("FS11B".equals(comtipo))
@@ -1773,6 +1821,8 @@ public class MEPAManager {
                     fasgar = SqlManager.getValueFromVectorParam(datiDitg, 1).longValue();
                     data = SqlManager.getValueFromVectorParam(datiDitg, 2).dataValue();
                     ora = SqlManager.getValueFromVectorParam(datiDitg, 3).stringValue();
+                    if(decodificaIdanonimo && datiDitg.size()>4)
+                      idanonimo=SqlManager.getValueFromVectorParam(datiDitg, 4).stringValue();
                   }
                   if("2".equals(ammgar) && fasgar!=null && fasgar.longValue() < faseConfronto)
                     saltareAcquisizione =true;
@@ -1816,6 +1866,8 @@ public class MEPAManager {
                       //Gestione offerta economica
                       if(new Long(1).equals(offtel) && "FS11C".equals(comtipo)){
                         acquisito = this.inserimentoOffertadaXML(ngara,codgar1,userkey1,offertaEconomica,decoder);
+                      }else if(new Long(3).equals(offtel) && "FS11C".equals(comtipo)){
+                        acquisito = this.inserimentoOffertadaJson(listaDocumenti,ngara,codgar1,userkey1,w_invcom_idcom.toString(),decoder);
                       }else{
                         if(new Long(1).equals(offtel) && controlliOepvManager.checkQualuqueFormatoDefinito(ngara, new Long(1)) && "FS11B".equals(comtipo)){
                           acquisito = inserimentoOfferteTecnicheDaXML(ngara, codgar1, userkey1, listaCriteriValutazioneTec, decoder, 1, sez);
@@ -1839,7 +1891,8 @@ public class MEPAManager {
                 String stato = "6";
                 if ("1".equals(sez)) {
                   stato = "16";
-                }
+                }else if("FS11B".equals(comtipo) && "1".equals(anonima))
+                  stato = "13";
                 aggiornaStatoW_INVOCM(w_invcom_idcom, stato);
                 numeroAcquisizioni++;
                 commitTransaction = true;
@@ -1871,6 +1924,10 @@ public class MEPAManager {
                 this.aggiornaDitgEventi(ngara, codgar1, userkey1, nomeCampo);
                 //Nel caso di stato=13 si deve solamente aggiornare lo stato
                 aggiornaStatoW_INVOCM(w_invcom_idcom,"6");
+                if(decodificaIdanonimo && idanonimo!= null) {
+                  idanonimo = ScaricaDocumentiManager.decifraIdAnonimo(idanonimo);
+                  this.sqlManager.update("update ditg set idanonimo=? where ngara5=? and dittao=? and codgar5=?", new Object[] {idanonimo, ngara,userkey1,codgar1});
+                }
                 numeroAcquisizioni++;
                 commitTransaction = true;
                 esitoAquisizione=1;
@@ -1974,9 +2031,19 @@ public class MEPAManager {
         bustaFS = "FS11B";
         sezTec = "2";
       }
-      for (int j = 0; j < listaDocumenti.sizeOfDocumentoArray(); j++) {
-        DocumentoType documento = listaDocumenti.getDocumentoArray(j);
+      String nomeFile = null;
+      DocumentoType documento = null;
+      String updateIMPRDOCG = "update IMPRDOCG set IDPRG = ?, IDDOCDG = ?, DATARILASCIO = ?, ORARILASCIO = ?, SITUAZDOCI = ?, UUID =? where CODGAR=? and CODIMP=? and NORDDOCI=? and PROVENI=?";
+      String uuid=null;
 
+      Iterator<DocumentoType> iterator = ListaDocumentiPortaleUtilities.getIteratore(listaDocumenti.getDocumentoArray());
+      while(iterator.hasNext()) {
+        documento = iterator.next();
+        nomeFile = documento.getNomeFile();
+        if(CostantiAppalti.nomeFileQestionario.equals(nomeFile))
+          continue;
+
+        uuid = documento.getUuid();
         long id = -1;
         if (documento.isSetId()) id = documento.getId();
 
@@ -2002,7 +2069,6 @@ public class MEPAManager {
         }
 
         if (elaborare) {
-          String nomeFile = documento.getNomeFile();
           String descrizione = documento.getDescrizione();
           byte[] file = this.pgManager.getFileFromDocumento(documento,idCom);
           if(file==null){
@@ -2036,7 +2102,14 @@ public class MEPAManager {
             vectorW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGENT", new JdbcParametro(JdbcParametro.TIPO_TESTO, "IMPRDOCG")));
             vectorW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGNOMDOC", new JdbcParametro(JdbcParametro.TIPO_TESTO, nomeFile)));
             vectorW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGOGG", new JdbcParametro(JdbcParametro.TIPO_BINARIO, baos)));
+            if(StringUtils.isNotBlank(documento.getFirmacheck())){
+            	logger.info("firmacheck impostato nella busta.xml");
+            	vectorW_DOCDIG.add(new DataColumn("W_DOCDIG.FIRMACHECK", new JdbcParametro(JdbcParametro.TIPO_TESTO, Boolean.valueOf(documento.getFirmacheck())?"1":"2")));
+            	if(documento.getFirmacheckts()!=null) {
+            		vectorW_DOCDIG.add(new DataColumn("W_DOCDIG.FIRMACHECKTS", new JdbcParametro(JdbcParametro.TIPO_DATA_FULL, documento.getFirmacheckts().getTime())));
+            	}
 
+            }
             DataColumnContainer dataColumnContainerW_DOCDIG = new DataColumnContainer(vectorW_DOCDIG);
             dataColumnContainerW_DOCDIG.insert("W_DOCDIG", sqlManager);
 
@@ -2051,12 +2124,10 @@ public class MEPAManager {
               Long bustalotti = (Long)sqlManager.getObject("select bustalotti from gare where ngara=? and codgar1=ngara", new Object[]{codgar});
               if((new Long(1)).equals(bustalotti) && (bustaFS.equals("FS11B") || bustaFS.equals("FS11C") ))
                 sqlManager.update(
-                    "update IMPRDOCG set IDPRG = ?, IDDOCDG = ?, DATARILASCIO = ?, ORARILASCIO = ?, SITUAZDOCI = ? where CODGAR=? and CODIMP=? and NORDDOCI=? and PROVENI=? and NGARA=?",
-                    new Object[] { "PA", newProgressivoW_DOCDIG, data, ora, new Long(2), codgar, codimp, progressivo, new Long(1), ngara });
+                    updateIMPRDOCG + " and NGARA=?",
+                    new Object[] { "PA", newProgressivoW_DOCDIG, data, ora, new Long(2), uuid, codgar, codimp, progressivo, new Long(1), ngara });
               else
-                sqlManager.update(
-                  "update IMPRDOCG set IDPRG = ?, IDDOCDG = ?, DATARILASCIO = ?, ORARILASCIO = ?, SITUAZDOCI = ? where CODGAR=? and CODIMP=? and NORDDOCI=? and PROVENI=?",
-                  new Object[] { "PA", newProgressivoW_DOCDIG, data, ora, new Long(2), codgar, codimp, progressivo, new Long(1) });
+                sqlManager.update(updateIMPRDOCG, new Object[] { "PA", newProgressivoW_DOCDIG, data, ora, new Long(2), uuid, codgar, codimp, progressivo, new Long(1) });
             } else {
               String selectIMPRDOCG_MAX = "select max(NORDDOCI) from IMPRDOCG where CODGAR=? and CODIMP=?";
               Long nProgressivoIMPRDOCG = (Long) sqlManager.getObject(selectIMPRDOCG_MAX, new Object[] { codgar, codimp });
@@ -2085,6 +2156,7 @@ public class MEPAManager {
               vectorIMPRDOCG.add(new DataColumn("IMPRDOCG.DATARILASCIO", new JdbcParametro(JdbcParametro.TIPO_DATA, data)));
               vectorIMPRDOCG.add(new DataColumn("IMPRDOCG.ORARILASCIO", new JdbcParametro(JdbcParametro.TIPO_TESTO, ora)));
               vectorIMPRDOCG.add(new DataColumn("IMPRDOCG.DOCTEL", new JdbcParametro(JdbcParametro.TIPO_TESTO, "1")));
+              vectorIMPRDOCG.add(new DataColumn("IMPRDOCG.UUID", new JdbcParametro(JdbcParametro.TIPO_TESTO, uuid)));
 
               // Busta
               Long busta = null;
@@ -2107,10 +2179,11 @@ public class MEPAManager {
             }
 
             // Aggiornamento di W_DOCDIG con il riferimento a IMPRDOCG
-            sqlManager.update("update W_DOCDIG set DIGKEY1 = ?, DIGKEY2 = ? where IDPRG=? and IDDOCDIG=?",
-                new Object[] { codgar, progressivo.toString(), "PA", newProgressivoW_DOCDIG });
-
+            sqlManager.update("update W_DOCDIG set DIGKEY1 = ?, DIGKEY2 = ?, DIGKEY3 = ? where IDPRG=? and IDDOCDIG=?",
+                new Object[] { codgar, progressivo.toString(), codimp, "PA", newProgressivoW_DOCDIG });
+            logger.info("All OK");
           } catch (SQLException e) {
+        	  logger.error("All KO",e);
             throw new GestoreException("Errore nell'acquisizione della documentazione della ditta " + codimp + " per la gara " + ngara, null, e);
           }
         }
@@ -2118,13 +2191,41 @@ public class MEPAManager {
     }
   }
 
+  /**
+   *
+   * @param profilo
+   * @param nGara
+   * @param codGar
+   * @param nomeEntita
+   * @param nCont
+   * @param codImpr
+   * @param ragioneSocialeOperatore
+   * @param destinatarioMail
+   * @param oggettoMail
+   * @param abilitaIntestazioneVariabile
+   * @param testoInHtml
+   * @param testoMail
+   * @param mittenteMail
+   * @param idcfg
+   * @param flagMailPec
+   * @param nomeFile
+   * @param baos
+   * @param integrazioneWSDM
+   * @param datiWSDM
+   * @param listaDocumenti
+   * @param request
+   * @throws SQLException
+   * @throws GestoreException
+   * @throws DocumentException
+   * @throws IOException
+   */
 	public void inviaComunicazioneOrdine(ProfiloUtente profilo, String nGara, String codGar,
 					String nomeEntita, Long nCont, String codImpr,
 					String ragioneSocialeOperatore, String destinatarioMail, String oggettoMail,
 					String abilitaIntestazioneVariabile, String testoInHtml,
 					String testoMail, String mittenteMail, String idcfg, String flagMailPec,
 					String nomeFile, byte[] baos, String integrazioneWSDM,
-					HashMap<String,String> datiWSDM, List listaDocumenti) throws SQLException, GestoreException, DocumentException, IOException {
+					HashMap<String,String> datiWSDM, List listaDocumenti,HttpServletRequest request) throws SQLException, GestoreException, DocumentException, IOException {
 
 		if (logger.isDebugEnabled()) {
 			logger.debug("inviaComunicazioneOrdine: inizio metodo");
@@ -2172,10 +2273,13 @@ public class MEPAManager {
 	      String sottotipo = null;
 	    boolean abilitatoInvioMailDocumentale = false;
 	    String tipoWSDM = null;
-	    String idconfi = datiWSDM.get("idconfi");
+	    String idconfi = null;
+	    String uocompetenza = null;
+	    String uocompetenzadescrizione = null;
 
 	    if("1".equals(integrazioneWSDM)){
-          abilitatoInvioMailDocumentale = gestioneWSDMManager.abilitatoInvioMailDocumentale("FASCICOLOPROTOCOLLO",idconfi);
+	      idconfi = datiWSDM.get("idconfi");
+	      abilitatoInvioMailDocumentale = gestioneWSDMManager.abilitatoInvioMailDocumentale("FASCICOLOPROTOCOLLO",idconfi);
 	      WSDMConfigurazioneOutType configurazione = gestioneWSDMManager.wsdmConfigurazioneLeggi("FASCICOLOPROTOCOLLO",idconfi);
 
           if (configurazione.isEsito())
@@ -2301,6 +2405,12 @@ public class MEPAManager {
           allegati[indiceAllegati].setContenuto(baos);
           if("TITULUS".equals(tipoWSDM))
             allegati[indiceAllegati].setIdAllegato("W_DOCDIG|PG|" + newIddocdig.toString());
+
+          if("NUMIX".equals(tipoWSDM)) {
+            allegati[indiceAllegati] = GestioneWSDMManager.popolaAllegatoInfo(nomeFile,allegati[indiceAllegati]);
+            if(indiceAllegati ==0 )
+              allegati[indiceAllegati].setIsSealed(new Long(1));
+          }
         }
         //Aggiornamento della W_DOCDIG con gli allegati all'ordine (DOCUMGARA=11)
         //Nel caso sia presente l'integrazione WSDM si devono inviare a WSDM sia i documenti che vengono allegati alla comunicazione
@@ -2347,11 +2457,21 @@ public class MEPAManager {
               allegati[indiceAllegati + 1 + i].setContenuto(fileAllegato.getStream());
               if("TITULUS".equals(tipoWSDM))
                 allegati[indiceAllegati + 1 + i].setIdAllegato("W_DOCDIG|PG|" + newIdDocdig.toString());
+              if("NUMIX".equals(tipoWSDM)) {
+                allegati[indiceAllegati + 1 + i] = GestioneWSDMManager.popolaAllegatoInfo(dignomdoc,allegati[indiceAllegati + 1 + i]);
+              }
             }
           }
         }
 
-		parametri = new Object[6];
+        if(!"1".equals(integrazioneWSDM)){
+          HashMap<String, Object> ret = gestioneWSDMManager.aggiungiAllegatoSintesi(nGara, null, oggettoMail, testoMail, idprg, newIdcom, entita,request);
+          if(ret==null) {
+            throw new GestoreException("Errore nella creazione della marca temporale dell'allegato di sintesi","marcaTemporale",null, new Exception());
+          }
+        }
+
+        parametri = new Object[6];
 		parametri[0] = 4;	//STATO
 		parametri[1] = dataOdierna;	//DATTRA
 		parametri[2] = newIddocdig;	//IDDOCDG
@@ -2367,7 +2487,36 @@ public class MEPAManager {
           if (testoMail == null){
             testoMail = "[testo vuoto]";
           }
-          String contenutoPdf = this.gestioneWSDMManager.getTestoComunicazioneFormattato(nGara, null, oggettoMail, testoMail);
+
+          //gestione allegato sintesi
+          byte[] contenutoPdf = null;
+          Long idAllegatoSintesi = gestioneWSDMManager.cancellaAllegatoSintesi(idprg,newIdcom);
+          String nomeFileSintesi=null;
+          String estensioneFile = "pdf";
+          String titoloFile = null;
+          if(idAllegatoSintesi==null) {
+            HashMap<String, Object> ret = gestioneWSDMManager.aggiungiAllegatoSintesi(nGara, null, oggettoMail, testoMail, idprg, newIdcom, entita, request);
+            if(ret==null) {
+              String messaggio = "Errore nella creazione del file di sintesi della comunicazione";
+              throw new GestoreException("Errore nella protocollazione del fascicolo","wsdm.fascicoloprotocollo.protocollazione.error",new Object[]{messaggio}, new Exception());
+            }else {
+              idAllegatoSintesi = (Long)ret.get("idAllegatoSintesi");
+              nomeFileSintesi = (String)ret.get("nomeFile");
+              estensioneFile = (String)ret.get("estensioneFile");
+              titoloFile = (String)ret.get("titoloFile");
+              contenutoPdf = (byte[]) ret.get("pdf");
+            }
+          }else {
+            Vector<?> datiAllegato = this.sqlManager.getVector("select dignomdoc, digdesdoc from  w_docdig where idprg=? and iddocdig=?", new Object[] {idprg,idAllegatoSintesi});
+            if(datiAllegato!=null && datiAllegato.size()>0) {
+              nomeFileSintesi = SqlManager.getValueFromVectorParam(datiAllegato, 0).getStringValue();
+              titoloFile = SqlManager.getValueFromVectorParam(datiAllegato, 1).getStringValue();
+              if(nomeFile.endsWith(".tsd"))
+              estensioneFile = "tsd";
+            }
+            BlobFile digogg = fileAllegatoManager.getFileAllegato(idprg, idAllegatoSintesi);
+            contenutoPdf = digogg.getStream();
+          }
 
           int indiceAllegatoTesto = numAll + 1;
           if ("1".equals(posizioneAllegatoComunicazione))
@@ -2382,13 +2531,21 @@ public class MEPAManager {
             allegati[indiceAllegatoTesto].setContenuto(testoMail.getBytes());
           } else {
             allegati[indiceAllegatoTesto] = new WSDMProtocolloAllegatoType();
-            allegati[indiceAllegatoTesto].setNome("Comunicazione.pdf");
-            allegati[indiceAllegatoTesto].setTipo("pdf");
-            allegati[indiceAllegatoTesto].setTitolo("Testo della comunicazione");
-            allegati[indiceAllegatoTesto].setContenuto(UtilityStringhe.string2Pdf(contenutoPdf));
+            allegati[indiceAllegatoTesto].setNome(nomeFileSintesi);
+            allegati[indiceAllegatoTesto].setTipo(estensioneFile);
+            allegati[indiceAllegatoTesto].setTitolo(titoloFile);
+            allegati[indiceAllegatoTesto].setContenuto(contenutoPdf);
           }
           if("TITULUS".equals(tipoWSDM))
             allegati[indiceAllegatoTesto].setIdAllegato("W_INVCOM|" + idprg + "|" + newIdcom.toString());
+
+          if("NUMIX".equals(tipoWSDM)) {
+            if(!"1".equals(testoInHtml)) {
+              allegati[indiceAllegatoTesto] = GestioneWSDMManager.popolaAllegatoInfo(nomeFileSintesi,allegati[indiceAllegatoTesto]);
+            }
+            if(indiceAllegatoTesto ==0 )
+              allegati[indiceAllegatoTesto].setIsSealed(new Long(1));
+          }
 
           //Popolamento contenitore dati per  WSDM
            String classificadocumento = datiWSDM.get("classificadocumento");
@@ -2444,9 +2601,13 @@ public class MEPAManager {
              sottotipo = datiWSDM.get("sottotipo");
            }
 
+           uocompetenza = datiWSDM.get(GestioneWSDMManager.LABEL_UOCOMPETENZA);
+           uocompetenza = datiWSDM.get(GestioneWSDMManager.LABEL_DESCRIZIONE_UOCOMPETENZA);
+
            boolean inserimentoFascicoloArchiflowfa=false;
            boolean inserimentoFascicoloFolium = false;
            boolean inserimentoFascicoloPrisma = false;
+           boolean inserimentoFascicoloItalprot = false;
 
            HashMap<String,Object> par = new HashMap<String,Object>();
            par.put("tipodocumento", tipodocumento);
@@ -2485,15 +2646,18 @@ public class MEPAManager {
            par.put("nomeRup", datiWSDM.get("nomeRup"));
            par.put("acronimoRup", datiWSDM.get("acronimoRup"));
            par.put("sottotipo", datiWSDM.get("sottotipo"));
+           par.put(GestioneWSDMManager.LABEL_UOCOMPETENZA, uocompetenza);
            wsdmProtocolloDocumentoIn = this.gestioneWSDMManager.wsdmProtocolloDocumentoPopola(par,datiWSDM.get("idconfi"));
 
-           if(("ARCHIFLOWFA".equals(tipoWSDM) || "FOLIUM".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM))  && "SI_FASCICOLO_NUOVO".equals(inserimentoinfascicolo)){
+           if(("ARCHIFLOWFA".equals(tipoWSDM) || "FOLIUM".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM))  && "SI_FASCICOLO_NUOVO".equals(inserimentoinfascicolo)){
              if("ARCHIFLOWFA".equals(tipoWSDM))
                inserimentoFascicoloArchiflowfa=true;
              if("FOLIUM".equals(tipoWSDM))
                inserimentoFascicoloFolium=true;
              if("PRISMA".equals(tipoWSDM))
                inserimentoFascicoloPrisma = true;
+             if("ITALPROT".equals(tipoWSDM))
+               inserimentoFascicoloItalprot = true;
            }
 
            //Destinatario
@@ -2517,6 +2681,7 @@ public class MEPAManager {
              destinatari[0].setEmailAggiuntiva(datiImpr.get("emaiip"));
              destinatari[0].setProvinciaResidenza(datiImpr.get("proimp"));
              destinatari[0].setCapResidenza(datiImpr.get("capimp"));
+             destinatari[0].setTipoVoceRubrica(WSDMTipoVoceRubricaType.IMPRESA);
 
              wsdmProtocolloDocumentoIn.setDestinatari(destinatari);
              wsdmProtocolloDocumentoIn.setDestinatarioPrincipale(datiImpr.get("cognomeIntestazione"));
@@ -2525,7 +2690,7 @@ public class MEPAManager {
            wsdmProtocolloDocumentoIn.setAllegati(allegati);
 
 
-           if(abilitatoInvioMailDocumentale && ("ENGINEERING".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM))){
+           if(abilitatoInvioMailDocumentale && ("ENGINEERING".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM))){
              WSDMInviaMailType inviaMail = new WSDMInviaMailType();
              // Testo email
              inviaMail.setTestoMail(testoMail);
@@ -2550,17 +2715,28 @@ public class MEPAManager {
                ruolo, nome, cognome, codiceuo, idutente, idutenteunop, codiceaoo, codiceufficio, wsdmProtocolloDocumentoIn,datiWSDM.get("idconfi"));
 
            if (wsdmProtocolloDocumentoRes.isEsito()) {
-             String numeroDocumento = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroDocumento();
-             Long annoProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getAnnoProtocollo();
-             String numeroProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroProtocollo();
+             String numeroDocumento = null;
+             if(!"LAPISOPERA".equals(tipoWSDM))
+               numeroDocumento = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroDocumento();
+             Long annoProtocollo = null;
+             if(!"LAPISOPERA".equals(tipoWSDM))
+               annoProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getAnnoProtocollo();
+             String numeroProtocollo = null;
+             if("LAPISOPERA".equals(tipoWSDM))
+               numeroProtocollo = GestioneWSDMManager.PREFISSO_COD_FASCICOLO_LAPISOPERA + wsdmProtocolloDocumentoRes.getProtocolloDocumento().getGenericS11();
+             else
+               numeroProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroProtocollo();
              String indirizzoMittente = datiWSDM.get("indirizzomittente");
 
              Timestamp dataProtocollo= this.gestioneWSDMManager.getDataProtocollo(wsdmProtocolloDocumentoRes);
-             if(annoProtocollo==null)
+             String annoProtocolloString=null;
+             if(annoProtocollo==null && !"LAPISOPERA".equals(tipoWSDM)) {
                annoProtocollo= this.gestioneWSDMManager.getAnnoFromDate(dataProtocollo);
+               annoProtocolloString = annoProtocollo.toString();
+             }
 
              datiWSDM.put("numeroDocumento", numeroDocumento);
-             datiWSDM.put("annoProtocollo", annoProtocollo.toString());
+             datiWSDM.put("annoProtocollo", annoProtocolloString);
              datiWSDM.put("numeroProtocollo", numeroProtocollo);
              datiWSDM.put("oggettodocumento", oggettodocumento);
              datiWSDM.put("testoMail", testoMail);
@@ -2593,7 +2769,7 @@ public class MEPAManager {
                String codiceFascicoloNUOVO = null;
                Long annoFascicoloNUOVO = null;
                String numeroFascicoloNUOVO = null;
-               if(!inserimentoFascicoloArchiflowfa && !inserimentoFascicoloFolium && !inserimentoFascicoloPrisma){
+               if(!inserimentoFascicoloArchiflowfa && !inserimentoFascicoloFolium && !inserimentoFascicoloPrisma && !inserimentoFascicoloItalprot){
                  codiceFascicoloNUOVO = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getFascicolo().getCodiceFascicolo();
                  if (wsdmProtocolloDocumentoRes.getProtocolloDocumento().getFascicolo().getAnnoFascicolo() != null) {
                    annoFascicoloNUOVO = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getFascicolo().getAnnoFascicolo();
@@ -2608,11 +2784,19 @@ public class MEPAManager {
                  codiceFascicoloNUOVO= datiWSDM.get("codicefascicolo");
                  annoFascicoloNUOVO=new Long(datiWSDM.get("annofascicolo"));
                  numeroFascicoloNUOVO=datiWSDM.get("numerofascicolo");
+               }else if(inserimentoFascicoloItalprot){
+                 codiceFascicoloNUOVO= datiWSDM.get("codicefascicolo");
+                 annoFascicoloNUOVO=new Long(datiWSDM.get("annofascicolo"));
                } else
                  codiceFascicoloNUOVO= datiWSDM.get("codicefascicolo");
 
                if("TITULUS".equals(tipoWSDM))
                  classificafascicolo = classificadocumento;
+
+               if("ENGINEERINGDOC".equals(tipoWSDM)) {
+                 codiceufficio = uocompetenza;
+                 codiceufficiodes = uocompetenzadescrizione;
+               }
 
                this.gestioneWSDMManager.setWSFascicolo(entita, key1, null, null, null, codiceFascicoloNUOVO, annoFascicoloNUOVO,
                    numeroFascicoloNUOVO, classificafascicolo,codiceaoo, codiceufficio,struttura,null,classificadescrizione,voce,codiceaoodes,codiceufficiodes);
@@ -2636,6 +2820,10 @@ public class MEPAManager {
                  Long iddocdig =idAllegatiNuovi[i];
                  this.gestioneWSDMManager.setWSAllegati("W_DOCDIG", idprg, iddocdig.toString(), null, null, idWSDocumento);
                }
+
+               //Inserimento allegato di sintesi
+               this.gestioneWSDMManager.setWSAllegati("W_DOCDIG", idprg, idAllegatoSintesi.toString(), null, null, idWSDocumento);
+
              }
 
            }else{
@@ -2752,7 +2940,7 @@ public class MEPAManager {
 
 
 	/**
-     * Viene inserita inserita l'offerta Economica proveniente dai messaggi FS11C
+     * Viene inserita inserita l'offerta Economica proveniente dai messaggi xml della busta FS11C
      *
      * @param ngara
      * @param codgar
@@ -2859,7 +3047,8 @@ public class MEPAManager {
           ribasso=new Double(this.aggiudicazioneManager.calcolaRIBAUO(importoBaseGara, importoOneriProgettazione, importoSicurezza, importoNonSoggettoRibasso, sicinc, importoOfferto, onsogrib));
           String cifreRibasso=this.pgManagerEst1.getNumeroDecimaliRibasso(codgar);
           if(cifreRibasso!=null && !"".equals(cifreRibasso)){
-            ribasso = (Double)UtilityNumeri.arrotondaNumero(ribasso, new Integer(cifreRibasso));
+            Number ribassoNumber = UtilityNumeri.arrotondaNumero(ribasso, new Integer(cifreRibasso));
+            ribasso = new Double(ribassoNumber.doubleValue());
           }
 
           elencoCampiDITG.add(new DataColumn("DITG.IMPOFF", new JdbcParametro(JdbcParametro.TIPO_DECIMALE, importoOfferto)));
@@ -2971,6 +3160,10 @@ public class MEPAManager {
               int id;
               Double prezzoUnitario = null;
               Double importo = null;
+              Double qta = null;
+              Date dataConsegnaOfferta = null;
+              Long tipologia = null;
+              String note =null;
               String codiceCampoAggiuntivo=null;
               Object valoreCampoAggiuntivo=null;
               String insertXDPRE = null;
@@ -2980,116 +3173,170 @@ public class MEPAManager {
               Object parametriXDPRE[]= null;
               Double ribassoPesato = null;
               Double ribassoPrezzoUnit = null;
+              Boolean isRicercaMercatoNegoziata = false;
               String insertDPRE = "insert into dpre(ngara,contaf,dittao,preoff,impoff";
               String insertDPREValori = "values(?,?,?,?,?";
+              Long iterga = (Long) this.sqlManager.getObject("select t.iterga from gare g,torn t where g.codgar1=t.codgar and g.ngara=?", new Object[]{ngara});
+              //nel caso di ricerca di mercato negoziata copio quanti.gcap->qtaordinabile.dpre
+              //cf060422
+              if(Long.valueOf(8).equals(iterga)) {
+          		isRicercaMercatoNegoziata = true;
+          	  }
               if( new Long(3).equals(ribcal)){
                 //Gestione ribasso pesato
                 insertDPRE += ",perrib,ribpeso";
                 insertDPREValori += ",?,?";
                 parametri = new Object[7];
               }else{
-                parametri = new Object[5];
+                  if(isRicercaMercatoNegoziata) {
+                      insertDPRE += ",qtaordinabile";
+                      insertDPREValori += ",?";
+                      insertDPRE += ",datacons";
+                      insertDPREValori += ",?";
+                      insertDPRE += ",tipologia";
+                      insertDPREValori += ",?";
+                      insertDPRE += ",note";
+                      insertDPREValori += ",?";
+                	  parametri = new Object[9];
+                  }else {
+                	  parametri = new Object[5];
+                  }
               }
               insertDPRE +=")";
               insertDPREValori +=")";
               for(int i=0;i<listaComponentiOfferta.sizeOfComponenteDettaglioArray();i++){
+            	Boolean isRigaOffertaCaricabile=true;
                 id=listaComponentiOfferta.getComponenteDettaglioArray(i).getId();
-                if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitario() && !listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitarioCifrato())
-                  prezzoUnitario= new Double(listaComponentiOfferta.getComponenteDettaglioArray(i).getPrezzoUnitario());
-                else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitarioCifrato() && decoder!=null) {
-                  datoCifrato = listaComponentiOfferta.getComponenteDettaglioArray(i).getPrezzoUnitarioCifrato();
-                  datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
-                  prezzoUnitario = Double.valueOf(new String(datoDecifrato));
-                }else
-                  prezzoUnitario = null;
-                if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitario() && !listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitarioCifrato())
-                  importo= new Double(listaComponentiOfferta.getComponenteDettaglioArray(i).getImporto());
-                else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetImportoCifrato() && decoder!=null) {
-                  datoCifrato = listaComponentiOfferta.getComponenteDettaglioArray(i).getImportoCifrato();
-                  datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
-                  importo = Double.valueOf(new String(datoDecifrato));
-                }else
-                  importo = null;
-
-
-                if( new Long(3).equals(ribcal)){
-                  //Gestione ribasso pesato
-                  if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibasso() && !listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoCifrato())
-                    ribassoPrezzoUnit= new Double(-listaComponentiOfferta.getComponenteDettaglioArray(i).getRibasso());
-                  else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoCifrato() && decoder!=null) {
-                    datoCifrato = listaComponentiOfferta.getComponenteDettaglioArray(i).getRibassoCifrato();
-                    datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
-                    ribassoPrezzoUnit = Double.valueOf(new String(datoDecifrato));
-                    ribassoPrezzoUnit = new Double(-ribassoPrezzoUnit.doubleValue());
-                  }else
-                    ribassoPrezzoUnit = null;
-
-                  if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoPesato() && !listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoPesatoCifrato())
-                    ribassoPesato= new Double(-listaComponentiOfferta.getComponenteDettaglioArray(i).getRibassoPesato());
-                  else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoPesatoCifrato() && decoder!=null) {
-                    datoCifrato = listaComponentiOfferta.getComponenteDettaglioArray(i).getRibassoPesatoCifrato();
-                    datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
-                    ribassoPesato = Double.valueOf(new String(datoDecifrato));
-                    ribassoPesato = new Double(-ribassoPesato.doubleValue());
-                  }else
-                    ribassoPesato = null;
+                if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetQuantitaOfferta()) {
+                	Double quantitaOfferta = listaComponentiOfferta.getComponenteDettaglioArray(i).getQuantitaOfferta();
+                    if(quantitaOfferta != null && Double.valueOf(0).equals(quantitaOfferta)) {
+                    	isRigaOffertaCaricabile=false;
+                    }
                 }
+                if(isRigaOffertaCaricabile) {
+                    if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitario() && !listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitarioCifrato())
+                        prezzoUnitario= new Double(listaComponentiOfferta.getComponenteDettaglioArray(i).getPrezzoUnitario());
+                      else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitarioCifrato() && decoder!=null) {
+                        datoCifrato = listaComponentiOfferta.getComponenteDettaglioArray(i).getPrezzoUnitarioCifrato();
+                        datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+                        prezzoUnitario = Double.valueOf(new String(datoDecifrato));
+                      }else
+                        prezzoUnitario = null;
+                      if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitario() && !listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitarioCifrato())
+                        importo= new Double(listaComponentiOfferta.getComponenteDettaglioArray(i).getImporto());
+                      else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetImportoCifrato() && decoder!=null) {
+                        datoCifrato = listaComponentiOfferta.getComponenteDettaglioArray(i).getImportoCifrato();
+                        datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+                        importo = Double.valueOf(new String(datoDecifrato));
+                      }else
+                        importo = null;
 
 
+                      if( new Long(3).equals(ribcal)){
+                        //Gestione ribasso pesato
+                        if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibasso() && !listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoCifrato())
+                          ribassoPrezzoUnit= new Double(-listaComponentiOfferta.getComponenteDettaglioArray(i).getRibasso());
+                        else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoCifrato() && decoder!=null) {
+                          datoCifrato = listaComponentiOfferta.getComponenteDettaglioArray(i).getRibassoCifrato();
+                          datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+                          ribassoPrezzoUnit = Double.valueOf(new String(datoDecifrato));
+                          ribassoPrezzoUnit = new Double(-ribassoPrezzoUnit.doubleValue());
+                        }else
+                          ribassoPrezzoUnit = null;
 
-                parametri[0]= ngara;
-                parametri[1]= new Long(id);
-                parametri[2]= codimp;
-                parametri[3]= prezzoUnitario;
-                parametri[4]= importo;
-                if( new Long(3).equals(ribcal)){
-                  parametri[5]= ribassoPrezzoUnit;
-                  parametri[6]= ribassoPesato;
-                }
-
-                this.sqlManager.update(insertDPRE + " " + insertDPREValori,parametri);
-
-                //Inserimento campi aggiuntivi XDPRE se presenti nel xml
-                AttributoGenericoType vettoreComponenteDettaglio[] = listaComponentiOfferta.getComponenteDettaglioArray(i).getAttributoAggiuntivoArray();
-                if(vettoreComponenteDettaglio!=null && vettoreComponenteDettaglio.length>0){
-                  insertXDPRE = "insert into xdpre(xngara,xcontaf,xdittao";
-                  insertXDPREValori = "values(?,?,?";
-                  parametriXDPRE = new Object[vettoreComponenteDettaglio.length + 3];
-                  parametriXDPRE[0]= ngara;
-                  parametriXDPRE[1]= new Long(id);
-                  parametriXDPRE[2]= codimp;
-                  for(int j=0;j<vettoreComponenteDettaglio.length;j++){
-                    codiceCampoAggiuntivo=vettoreComponenteDettaglio[j].getCodice();
-                    if(vettoreComponenteDettaglio[j].isSetValoreData()){
-                      valoreCampoAggiuntivo = vettoreComponenteDettaglio[j].getValoreData().getTime();
-                    }else if(vettoreComponenteDettaglio[j].isSetValoreNumerico()){
-                      double valoreTmp = vettoreComponenteDettaglio[j].getValoreNumerico();
-                      valoreCampoAggiuntivo = new Double(valoreTmp);
-                    }else if(vettoreComponenteDettaglio[j].isSetValoreStringa()){
-                      if(vettoreComponenteDettaglio[j].getValoreStringa()=="" || vettoreComponenteDettaglio[j].isNil())
-                        valoreCampoAggiuntivo = null;
-                      else{
-                        //Da portale arrivano come stringa anche i valori tabellati, che invece sono numerici,
-                        //quindi si deve controllare se al campo è associato un tabellato, ed in questo caso
-                        //si deve convertire in intero
-                        codiceTabellato = (String)this.sqlManager.getObject("select dyncam_tab from dyncam_gen where dynent_name=? and dyncam_name=?", new Object[]{"XDPRE",codiceCampoAggiuntivo.toUpperCase()});
-                        if(codiceTabellato!=null && !"".equals(codiceTabellato))
-                          valoreCampoAggiuntivo = new Long(vettoreComponenteDettaglio[j].getValoreStringa());
-                        else
-                          valoreCampoAggiuntivo = vettoreComponenteDettaglio[j].getValoreStringa();
+                        if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoPesato() && !listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoPesatoCifrato())
+                          ribassoPesato= new Double(-listaComponentiOfferta.getComponenteDettaglioArray(i).getRibassoPesato());
+                        else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoPesatoCifrato() && decoder!=null) {
+                          datoCifrato = listaComponentiOfferta.getComponenteDettaglioArray(i).getRibassoPesatoCifrato();
+                          datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+                          ribassoPesato = Double.valueOf(new String(datoDecifrato));
+                          ribassoPesato = new Double(-ribassoPesato.doubleValue());
+                        }else
+                          ribassoPesato = null;
                       }
-                    }else
-                      valoreCampoAggiuntivo = null;
-                    insertXDPRE+="," + codiceCampoAggiuntivo;
-                    insertXDPREValori+=",?";
-                    parametriXDPRE[j+3]= valoreCampoAggiuntivo;
-                  }
-                  insertXDPRE+=") ";
-                  insertXDPREValori+=")";
-                  this.sqlManager.update(insertXDPRE + insertXDPREValori,parametriXDPRE);
-                }
 
-              }
+                      if(isRicercaMercatoNegoziata) {
+                    		//Attenzione a Oracle
+                    		qta = (Double) this.sqlManager.getObject("select quanti from gcap where ngara=? and contaf=?", new Object[]{ngara,Long.valueOf(id)});
+                    		if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetDataConsegnaOfferta()) {
+                    			Calendar calDataConsegnaOfferta = listaComponentiOfferta.getComponenteDettaglioArray(i).getDataConsegnaOfferta();
+                    			if(calDataConsegnaOfferta!=null) {
+                    				dataConsegnaOfferta = calDataConsegnaOfferta.getTime();
+                    			}
+                    		}
+                    		if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetTipo()) {
+                    			String tipo = listaComponentiOfferta.getComponenteDettaglioArray(i).getTipo();
+                    			tipo = StringUtils.stripToEmpty(tipo);
+                    			if(!"".equals(tipo)) {
+                    				tipologia = Long.valueOf(tipo);
+                    			}
+                    		}
+                    		if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetNote()) {
+                    			note = listaComponentiOfferta.getComponenteDettaglioArray(i).getNote();
+                    		}
+                      }
+
+                      parametri[0]= ngara;
+                      parametri[1]= new Long(id);
+                      parametri[2]= codimp;
+                      parametri[3]= prezzoUnitario;
+                      parametri[4]= importo;
+                      if( new Long(3).equals(ribcal)){
+                        parametri[5]= ribassoPrezzoUnit;
+                        parametri[6]= ribassoPesato;
+                      }else {
+                          if(isRicercaMercatoNegoziata) {
+                          	parametri[5]= qta;
+                          	parametri[6]= dataConsegnaOfferta;
+                          	parametri[7]= tipologia;
+                          	parametri[8]= note;
+                          }
+                      }
+
+                      this.sqlManager.update(insertDPRE + " " + insertDPREValori,parametri);
+
+                      //Inserimento campi aggiuntivi XDPRE se presenti nel xml
+                      AttributoGenericoType vettoreComponenteDettaglio[] = listaComponentiOfferta.getComponenteDettaglioArray(i).getAttributoAggiuntivoArray();
+                      if(vettoreComponenteDettaglio!=null && vettoreComponenteDettaglio.length>0){
+                        insertXDPRE = "insert into xdpre(xngara,xcontaf,xdittao";
+                        insertXDPREValori = "values(?,?,?";
+                        parametriXDPRE = new Object[vettoreComponenteDettaglio.length + 3];
+                        parametriXDPRE[0]= ngara;
+                        parametriXDPRE[1]= new Long(id);
+                        parametriXDPRE[2]= codimp;
+                        for(int j=0;j<vettoreComponenteDettaglio.length;j++){
+                          codiceCampoAggiuntivo=vettoreComponenteDettaglio[j].getCodice();
+                          if(vettoreComponenteDettaglio[j].isSetValoreData()){
+                            valoreCampoAggiuntivo = vettoreComponenteDettaglio[j].getValoreData().getTime();
+                          }else if(vettoreComponenteDettaglio[j].isSetValoreNumerico()){
+                            double valoreTmp = vettoreComponenteDettaglio[j].getValoreNumerico();
+                            valoreCampoAggiuntivo = new Double(valoreTmp);
+                          }else if(vettoreComponenteDettaglio[j].isSetValoreStringa()){
+                            if(vettoreComponenteDettaglio[j].getValoreStringa()=="" || vettoreComponenteDettaglio[j].isNil())
+                              valoreCampoAggiuntivo = null;
+                            else{
+                              //Da portale arrivano come stringa anche i valori tabellati, che invece sono numerici,
+                              //quindi si deve controllare se al campo è associato un tabellato, ed in questo caso
+                              //si deve convertire in intero
+                              codiceTabellato = (String)this.sqlManager.getObject("select dyncam_tab from dyncam_gen where dynent_name=? and dyncam_name=?", new Object[]{"XDPRE",codiceCampoAggiuntivo.toUpperCase()});
+                              if(codiceTabellato!=null && !"".equals(codiceTabellato))
+                                valoreCampoAggiuntivo = new Long(vettoreComponenteDettaglio[j].getValoreStringa().trim());
+                              else
+                                valoreCampoAggiuntivo = vettoreComponenteDettaglio[j].getValoreStringa();
+                            }
+                          }else
+                            valoreCampoAggiuntivo = null;
+                          insertXDPRE+="," + codiceCampoAggiuntivo;
+                          insertXDPREValori+=",?";
+                          parametriXDPRE[j+3]= valoreCampoAggiuntivo;
+                        }
+                        insertXDPRE+=") ";
+                        insertXDPREValori+=")";
+                        this.sqlManager.update(insertXDPRE + insertXDPREValori,parametriXDPRE);
+                      }
+                }//riga offerta caricabile
+
+              }//for
             }
           }
 
@@ -3102,6 +3349,105 @@ public class MEPAManager {
       }
       return true;
 	}
+
+	/**
+	 * Viene acquisita l'offerta con i valori presenti nel file json del questionario prodotto dal portale
+	 * @param listaDocumenti
+	 * @param ngara
+	 * @param codgar
+	 * @param codimp
+	 * @param idCom
+	 * @param decoder
+	 * @return boolean
+	 * @throws GestoreException
+	 * @throws GeneralSecurityException
+	 */
+	private boolean inserimentoOffertadaJson(ListaDocumentiType listaDocumenti, String ngara,String codgar, String codimp, String idCom,Cipher decoder) throws GestoreException, GeneralSecurityException{
+	  Double ribasso = null;
+      Double importoOfferto = null;
+	  byte[] file = null;
+	  boolean esito = false;
+	  if (listaDocumenti != null) {
+	    DocumentoType documento = null;
+	    String nomeFile= null;
+	    for (int j = 0; j < listaDocumenti.sizeOfDocumentoArray(); j++) {
+	        documento = listaDocumenti.getDocumentoArray(j);
+	        nomeFile = documento.getNomeFile();
+	        if(CostantiAppalti.nomeFileQestionario.equals(nomeFile)){
+	          file = this.pgManager.getFileFromDocumento(documento,idCom);
+	          if(file==null){
+	            throw new GestoreException("Errore nell'acquisizione della documentazione della ditta " + codimp + " per la gara " + ngara + ". Viene fatto riferimento a allegati non disponibili", null, new Exception());
+	          }
+
+	          break;
+	        }
+	    }
+	  }
+
+	  if(file != null && file.length>0) {
+	    if(decoder!=null)
+	      file = SymmetricEncryptionUtils.translate(decoder, file);
+	    //Conversione in json della stringa
+	    String json = new String(file);
+        JSONObject jsonOggetto = (JSONObject)JSONSerializer.toJSON(json);
+        JSONObject surveyType = ((JSONObject)jsonOggetto.get(CostantiAppalti.sezioneDatiQuestionario));
+
+        JSONObject result = ((JSONObject)surveyType.get("result"));
+        if(result.get(CostantiAppalti.importoOffertoQuestionario) instanceof Double)
+          importoOfferto = result.getDouble(CostantiAppalti.importoOffertoQuestionario);
+        else if(result.get(CostantiAppalti.importoOffertoQuestionario) instanceof Integer)
+          importoOfferto = new Double(result.getInt(CostantiAppalti.importoOffertoQuestionario)).doubleValue();
+        else {
+          importoOfferto = null;
+        }
+        if(result.get(CostantiAppalti.ribassoOffertoQuestionario) instanceof Double)
+          ribasso = result.getDouble(CostantiAppalti.ribassoOffertoQuestionario);
+        else if(result.get(CostantiAppalti.ribassoOffertoQuestionario) instanceof Integer)
+          ribasso = new Double(result.getInt(CostantiAppalti.ribassoOffertoQuestionario)).doubleValue();
+        else {
+          ribasso = null;
+        }
+        if (ribasso!=null && ribasso.doubleValue()!= 0) {
+          BigDecimal bdImportoOfferto = BigDecimal.valueOf(ribasso.doubleValue()).setScale(5, BigDecimal.ROUND_HALF_UP);
+          ribasso = bdImportoOfferto.negate().doubleValue();
+        }
+        esito = true;
+
+        Vector<DataColumn> elencoCampiDITG = new Vector<DataColumn>();
+        try {
+          Long modlicg =(Long)this.sqlManager.getObject("select modlicg from gare where ngara=?", new Object[] {ngara});
+          elencoCampiDITG.add(new DataColumn("DITG.IMPOFF", new JdbcParametro(JdbcParametro.TIPO_DECIMALE, importoOfferto)));
+          String campoRiabsso="DITG.RIBAUO";
+          if(new Long(6).equals(modlicg))
+            campoRiabsso="DITG.RIBOEPV ";
+          DataColumn colRibasso = new DataColumn(campoRiabsso, new JdbcParametro(JdbcParametro.TIPO_DECIMALE, ribasso));
+          if(ribasso==null)
+            colRibasso.setOriginalValue(new JdbcParametro(JdbcParametro.TIPO_DECIMALE, new Double(0)));
+          elencoCampiDITG.add(colRibasso);
+
+          //Aggiornamento DITG
+          elencoCampiDITG.add(new DataColumn("DITG.PARTGAR", new JdbcParametro(JdbcParametro.TIPO_TESTO, "1")));
+          elencoCampiDITG.add(new DataColumn("DITG.NGARA5", new JdbcParametro(JdbcParametro.TIPO_TESTO, ngara)));
+          elencoCampiDITG.add(new DataColumn("DITG.CODGAR5", new JdbcParametro(JdbcParametro.TIPO_TESTO, codgar)));
+          elencoCampiDITG.add(new DataColumn("DITG.DITTAO", new JdbcParametro(JdbcParametro.TIPO_TESTO, codimp)));
+
+          DataColumnContainer containerDITG = new DataColumnContainer(elencoCampiDITG);
+          containerDITG.getColumn("DITG.NGARA5").setObjectOriginalValue(ngara);
+          containerDITG.getColumn("DITG.NGARA5").setChiave(true);
+          containerDITG.getColumn("DITG.CODGAR5").setObjectOriginalValue(codgar);
+          containerDITG.getColumn("DITG.CODGAR5").setChiave(true);
+          containerDITG.getColumn("DITG.DITTAO").setObjectOriginalValue(codimp);
+          containerDITG.getColumn("DITG.DITTAO").setChiave(true);
+
+          containerDITG.update("DITG", sqlManager);
+
+        } catch (SQLException e) {
+          throw new GestoreException("Errore nell'acquisizione dell'offerta economica", null, e);
+        }
+	  }
+
+      return esito;
+    }
 
 	/**
      * Viene eseguito il controllo che i punteggi dei criteri
@@ -3276,6 +3622,40 @@ public class MEPAManager {
     }
 
     /**
+     * Viene eseguito per la gara/lotto passato come parametro il controllo all'esistenza
+     * di comunicazioni di tipo FS11A','FS11B' e 'FS11C'(nel caso si consideri l'offerta,
+     * altrimenti FS10) con stato=13 associate a ditte non ammese.
+     * Se queste esistono ne viene impostato lo stato a 20
+     *
+     * @param ngara
+     * @param tipo ("OFFERTE", "OFFERTE_ECO_LOTTI_DISTINTI", "DOC_AMM", "DOMANDE")
+     *
+     * @throws SQLException
+     */
+    public void impostaComunicazioniAnonimeAScartate(String ngara, String tipo) throws SQLException{
+
+     this.impostaComunicazioniA(ngara, tipo, 20);
+
+    }
+
+
+    /**
+     * Viene eseguito per la gara/lotto passato come parametro il controllo all'esistenza
+     * di comunicazioni di tipo 'FS11B' e 'FS11C' in stato 20 associate a ditte ammese.
+     * Se queste esistono ne viene impostato lo stato a 13
+     *
+     * @param ngara
+     * @param tipo
+     *
+     * @throws SQLException
+     */
+    public void impostaComunicazioniAnonimeDaRiaquisire(String ngara) throws SQLException{
+
+     this.impostaComunicazioniA(ngara, "OFFERTE", 13);
+
+    }
+
+    /**
      * Viene eseguito per il lotto di una gara a lotti plico unico con offerte distinte
      * passato come parametro il controllo all'esistenza di comunicazioni di tipo 'FS11B'
      * e 'FS11C' in stato 8 associate a ditte ammese.
@@ -3304,7 +3684,9 @@ public class MEPAManager {
      * Le comunicazioni di tipo 'FS11A' vengono analizzate solo per applicare lo stato a 8 nel caso non
      * vi sia la corrispondente occorrenza di ditg
      * il tipo OFFERTE_ECO_LOTTI_DISTINTI indica il caso in cui la funzione va lanciata da un lotto di gara
-     * ad offerta unica, lotti distinti, per cui le informazioni sulle ditte vanno prese a livello di lotto e non di gara
+     * ad offerta unica, lotti distinti, per cui le informazioni sulle ditte vanno prese a livello di lotto e non di gara.
+     * E' stata ampliata la gestione per includere gli stati 13 e 20, in particolare lo stato 13 ha la stessa gestione dello stato 5,
+     * mentre lo stato 20 ha la stessa gestione dello stato 8.
      *
      * @param ngara
      * @param tipo ("OFFERTE", "OFFERTE_ECO_LOTTI_DISTINTI", "DOC_AMM", "DOMANDE")
@@ -3325,6 +3707,10 @@ public class MEPAManager {
      int statoIniziale=5;
      if(statoDaImpostare==5)
        statoIniziale=8;
+     else if(statoDaImpostare==13)
+       statoIniziale=20;
+     else if(statoDaImpostare==20)
+       statoIniziale=13;
      Object parametriW_invcom[] = new Object[1];
      //Nel caso di bustalotti=1, la busta FS11A è associata alla gara, mentre le buste FS11B e FS11C sono associate ai lotti.
      //Nel caso di chiamata della funziona dall'attivazione dell'apertura/chiusura della documentazione amministrativa, ngara è
@@ -3405,13 +3791,13 @@ public class MEPAManager {
            String ammgar =(String)this.sqlManager.getObject(selectAmmgar, par1);
            if(ammgar==null)
              ammgar="";
-           if(("2".equals(ammgar) && statoDaImpostare == 8) || (("1".equals(ammgar) || "".equals(ammgar) ) && statoDaImpostare == 5)){
-             sqlManager.update("update W_INVCOM set COMSTATO = ?, COMDATASTATO = ? where IDPRG=? and IDCOM=?", new Object[] { Integer.toString(statoDaImpostare),
+           if(("2".equals(ammgar) && (statoDaImpostare == 8 || statoDaImpostare == 20)) || (("1".equals(ammgar) || "".equals(ammgar) ) && (statoDaImpostare == 5 || statoDaImpostare == 13))){
+             this.sqlManager.update("update W_INVCOM set COMSTATO = ?, COMDATASTATO = ? where IDPRG=? and IDCOM=?", new Object[] { Integer.toString(statoDaImpostare),
                  new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()), "PA", w_invcom_idcom });
            }
-         }else if(!esisteDITG && statoDaImpostare==8){
+         }else if(!esisteDITG && (statoDaImpostare==8 || statoDaImpostare==20)){
            //Se l'imprese non partecipa alla gara allora si deve impostare lo stato della comunicazione ad 8
-           sqlManager.update("update W_INVCOM set COMSTATO = ?, COMDATASTATO = ? where IDPRG=? and IDCOM=?", new Object[] { "8",
+           this.sqlManager.update("update W_INVCOM set COMSTATO = ?, COMDATASTATO = ? where IDPRG=? and IDCOM=?", new Object[] { Integer.toString(statoDaImpostare),
                new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()), "PA", w_invcom_idcom });
          }
 
@@ -4127,6 +4513,4 @@ public class MEPAManager {
         this.sqlManager.update(sqlInsert, new Object[]{ngara,userkey1,codgar1, new Timestamp(dataCorrente.getTime())});
       }
     }
-
-
 }

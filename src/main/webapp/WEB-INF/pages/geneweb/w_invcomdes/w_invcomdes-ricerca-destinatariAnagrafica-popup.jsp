@@ -22,6 +22,7 @@
 <div style="width:97%;">
 
 <gene:template file="popup-template.jsp">
+<c:set var="descc" value="${param.descc}" />
 	
 	<c:choose>
 		<c:when test='${not empty param.idprg}'>
@@ -63,23 +64,16 @@
 		<c:when test="${filtroRadio eq '1'}">
 			<c:set var="msgSelect" value="Visualizza imprese non inserite tra i destinatari"/>
 			<c:set var="msgEtichetta" value="Visualizza solo imprese non ancora inserite tra i destinatari?"/>
-			<c:set var="filtroGaraLotto1" value="IMPR.CODIMP NOT IN (select DESCODSOG from w_invcomdes where IDPRG = '${idprg}' and IDCOM = ${idcom} AND DESCODENT='IMPR' AND DESCODSOG is not null) and (IMPR.TIPIMP is null or (IMPR.TIPIMP <> 3 and IMPR.TIPIMP <> 10))" />
-			<c:set var="filtroGaraLotto2" value="IMPR.TIPIMP is null or (IMPR.TIPIMP <> 3 and IMPR.TIPIMP <> 10)" />
 			<c:set var="entitaRicerca" value="IMPR" />
 		</c:when>
 		<c:when test="${filtroRadio eq '2'}">
 			<c:set var="msgSelect" value="Visualizza tecnici non inseriti tra i destinatari"/>
 			<c:set var="msgEtichetta" value="Visualizza solo tecnici non ancora inseriti tra i destinatari?"/>
-			<c:set var="filtroGaraLotto1" value="TECNI.CODTEC NOT IN (select DESCODSOG from w_invcomdes where IDPRG = '${idprg}' and IDCOM = ${idcom} AND DESCODENT='TECNI' AND DESCODSOG is not null)" />
-			<c:set var="filtroGaraLotto2" value="" />
 			<c:set var="entitaRicerca" value="TECNI" />
 		</c:when>
 		<c:otherwise>
 			<c:set var="msgSelect" value="Visualizza utenti/RUP non inseriti tra i destinatari"/>
 			<c:set var="msgEtichetta" value="Visualizza solo utenti/RUP non ancora inseriti tra i destinatari?"/>
-			<c:set var="filtroGaraLotto1" value="and TECNI.CODTEC NOT IN (select DESCODSOG from w_invcomdes where IDPRG = '${idprg}' and IDCOM = ${idcom} AND DESCODENT='TECNI' AND DESCODSOG is not null)" />
-			<c:set var="filtroGaraLotto2" value="" />
-			<c:set var="joinUsrsys" value=" exists (select *  from USRSYS where USRSYS.SYSCF = TECNI.CFTEC) " />
 			<c:set var="entitaRicerca" value="TECNI" />
 		</c:otherwise>
 	</c:choose>
@@ -87,8 +81,9 @@
 	<gene:setString name="titoloMaschera" value="Ricerca destinatari da anagrafica" />
 			
 	<gene:redefineInsert name="corpo">
-		<gene:formTrova entita="${entitaRicerca }" filtro="${joinUsrsys} ${filtroGaraLotto1}" gestisciProtezioni="true"
-			lista="geneweb/w_invcomdes/w_invcomdes-lista-destinatariAnagrafica-popup.jsp">
+		<gene:formTrova entita="${entitaRicerca }" gestisciProtezioni="true"
+			lista="geneweb/w_invcomdes/w_invcomdes-lista-destinatariAnagrafica-popup.jsp"
+			gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.trova.gestori.DestinatariAnagraficaGestoreTrova">
 			
 			<tr>
 				<td colspan="3">
@@ -129,6 +124,7 @@
 					<gene:campoTrova campo="CODEIN" entita="USR_EIN" from="USRSYS" where="USR_EIN.SYSCON = USRSYS.SYSCON AND USRSYS.SYSCF = TECNI.CFTEC" title="Codice amministrazione"/>
 					<gene:campoTrova campo="NOMEIN" entita="UFFINT" from="USRSYS,USR_EIN" where="UFFINT.CODEIN = USR_EIN.CODEIN AND USR_EIN.SYSCON = USRSYS.SYSCON AND USRSYS.SYSCF = TECNI.CFTEC"/>
 					<gene:campoTrova campo="CFEIN" entita="UFFINT" from="USRSYS,USR_EIN" where="UFFINT.CODEIN = USR_EIN.CODEIN AND USR_EIN.SYSCON = USRSYS.SYSCON AND USRSYS.SYSCF = TECNI.CFTEC" title="Codice fiscale amministrazione"/>
+					<gene:campoTrova campo="NOMTEC" title="Intestazione anagrafica tecnico" />
 					<gene:campoTrova campo="EMATEC" />
 					<gene:campoTrova campo="EMA2TEC" />
 				</c:otherwise>
@@ -144,7 +140,7 @@
 				<td class="etichetta-dato">${msgEtichetta }</td>
 				<td class="operatore-trova"/>
 				<td class="valore-dato-trova">
-					<select id="CampoFitt" name="CampoFitt" title="${msgSelect }" onchange="javascript:impostaFiltro(this.options[this.selectedIndex].value);"   >
+					<select id="CampoFitt" name="CampoFitt" title="${msgSelect }">
 						<option value="1" selected="selected">Si</option>
 						<option value="2" >No</option>
 					</select>
@@ -156,6 +152,7 @@
 			<input type="hidden" name="idconfi" value="${idconfi}" />
 			<input type="hidden" name="filtroRadio" value="${filtroRadio}" />
 			<input type="hidden" name="entitaRicerca" value="${entitaRicerca}" />
+			<input type="hidden" name="descc" value="${descc}" />
 						
 				
 		</gene:formTrova>
@@ -171,18 +168,6 @@
 				}
 				trovaClear();		
 			}
-			
-			function impostaFiltro(valore){
-				
-				var filtro1 = "${filtroGaraLotto1}";
-				var filtro2 = "${filtroGaraLotto2}";
-				if(valore==1)
-					document.forms[0].filtro.value = filtro1;
-				else
-					document.forms[0].filtro.value = filtro2;
-				
-			}
-			
 		</gene:javaScript>
 		
 		

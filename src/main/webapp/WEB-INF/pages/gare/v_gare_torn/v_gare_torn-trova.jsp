@@ -12,6 +12,8 @@
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
+
+<jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
 <% // i filtri applicati sono il filtro sul livello utente ed il filtro sul codice profilo %>
 <c:set var="filtroLivelloUtente"
 	value='${gene:callFunction2("it.eldasoft.gene.tags.utils.functions.FiltroLivelloUtenteFunction", pageContext, "V_GARE_TORN")}' />
@@ -37,6 +39,12 @@
 <c:set var="visualizzazioneGareALottoUnico" value='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.GARE.GestioneGareALottoUnico") }'/>
 <c:set var="IsProfiloRDOFunction" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsProfiloRDOFunction", pageContext)}' />
 <c:set var="listaOpzioniDisponibili" value="${fn:join(opzDisponibili,'#')}#"/>
+
+<c:set var="propertyCig" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction",  urlWsCig)}' scope="request"/>
+<c:if test="${empty propertyCig and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.RichiestaCIG')}">
+	<c:set var="isCigAbilitato" value='1'/>
+</c:if>	
+
 
 <c:if test="${!visualizzazioneGareALotti}">
 	<c:if test ="${!empty filtro}">
@@ -116,6 +124,12 @@
 					<gene:campoTrova entita="UFFINT" campo="NOMEIN" from="GARALTSOG, GARE" where="GARALTSOG.CENINT =  UFFINT.CODEIN and GARALTSOG.NGARA = GARE.NGARA and GARE.CODGAR1 = V_GARE_TORN.CODGAR" title="Soggetto per cui agisce la centrale di committenza"/>
 				</c:if>
 			</c:if>
+			<c:if test="${isCigAbilitato eq '1' }">
+				<gene:campoTrova entita="V_W3GARE" campo="STATO_GARA" where="v_w3gare.codgar = v_gare_torn.codgar" />
+			</c:if>
+			<c:if test="${gene:checkProt(pageContext, 'COLS.VIS.GARE.TORN.CLIV2')}">
+				<gene:campoTrova entita="USRSYS" campo="SYSUTE" where="USRSYS.SYSCON=V_GARE_TORN.CLIV2" title="Referente"/>
+			</c:if>
 			<c:if test='${fn:contains(listaOpzioniDisponibili, "OP114#") && fn:contains(listaOpzioniDisponibili, "OP132#")}'>			
 				<gene:campoTrova campo="GARTEL" />
 			</c:if>
@@ -151,10 +165,10 @@
 		</gene:gruppoCampi>
 		<gene:gruppoCampi idProtezioni="CONTR">
 			<tr id="rowTITOLO_CONTRATTO"><td colspan="3"><b>Contratto</b></td></tr>
-			<gene:campoTrova entita="GARE" campo="NREPAT" id="GARE_NREPAT" where="gare.codgar1 = v_gare_torn.codgar" title="Num.repertorio atto contrattuale"/>
-			<gene:campoTrova entita="GARE" campo="DAATTO" id="GARE_DAATTO" where="gare.codgar1 = v_gare_torn.codgar" title="Data atto contrattuale"/>
-			<gene:campoTrova entita="GARECONT" campo="NPROAT" id="GARECONT_NPROAT" from="GARE" where="GARECONT.NGARA = GARE.NGARA and gare.codgar1 = v_gare_torn.codgar" title="Num.prot. atto contrattuale"/>
-			<gene:campoTrova entita="GARECONT" campo="DATRES" id="GARECONT_DATRES" from="GARE" where="GARECONT.NGARA = GARE.NGARA and gare.codgar1 = v_gare_torn.codgar" title="Data restituz.per accettazione atto contrattuale"/>
+			<gene:campoTrova entita="GARE" campo="NREPAT" id="GARE_NREPAT" where="gare.codgar1 = v_gare_torn.codgar" title="Num.repertorio contratto"/>
+			<gene:campoTrova entita="GARE" campo="DAATTO" id="GARE_DAATTO" where="gare.codgar1 = v_gare_torn.codgar" title="Data contratto"/>
+			<gene:campoTrova entita="GARECONT" campo="NPROAT" id="GARECONT_NPROAT" from="GARE" where="GARECONT.NGARA = GARE.NGARA and gare.codgar1 = v_gare_torn.codgar" title="Num.prot. contratto"/>
+			<gene:campoTrova entita="GARECONT" campo="DATRES" id="GARECONT_DATRES" from="GARE" where="GARECONT.NGARA = GARE.NGARA and gare.codgar1 = v_gare_torn.codgar" title="Data restituz.per accettazione contratto"/>
 			
 			<gene:campoTrova entita="GARECONT" campo="DVERBC"  from="GARE" where="GARECONT.NGARA = GARE.NGARA and gare.codgar1 = v_gare_torn.codgar" title="Data inizio esecuzione"/>
 			<gene:campoTrova entita="GARECONT" campo="DCERTU"  from="GARE" where="GARECONT.NGARA = GARE.NGARA and gare.codgar1 = v_gare_torn.codgar" />

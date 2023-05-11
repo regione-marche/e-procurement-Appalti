@@ -28,6 +28,7 @@ public class GetWSDMListaUfficiAction extends Action {
   private static final String PROP_WSDM_JIRIDE_MITTENTE_INTERNO   = "mittenteinterno";
   private static final String PROP_WSDM_JIRIDE_STURTTURA          = "struttura";
   private static final String PROP_WSDM_TITULUS_UFFICI            = "uffici";
+  private static final String PROP_WSDM_ENGINEERINGDOC_UNITA_OP   = "unitaOp";
 
   private GestioneWSDMManager gestioneWSDMManager;
   private SqlManager          sqlManager;
@@ -63,6 +64,11 @@ public class GetWSDMListaUfficiAction extends Action {
     String idprofiloutente = request.getParameter("idprofiloutente");
     String tipo = request.getParameter("tipo");
     String gara = request.getParameter("gara");
+    String descrizioneUfficio = request.getParameter("descrizioneUfficio");
+    if("".equals(codiceAoo))
+      codiceAoo=null;
+    if("".equals(descrizioneUfficio))
+      descrizioneUfficio=null;
 
     if(username!=null && !"".equals(username)){
 
@@ -84,8 +90,8 @@ public class GetWSDMListaUfficiAction extends Action {
       }
 
       WSDMListaUfficiResType wsdmUfficiRes = null;
-      if (PROP_WSDM_JIRIDE_MITTENTE_INTERNO.equals(tipo) || PROP_WSDM_TITULUS_UFFICI.equals(tipo) || PROP_WSDM_JIRIDE_STURTTURA.equals(tipo)) {
-        wsdmUfficiRes = this.gestioneWSDMManager.wsdmGetListaUffici(username, password, servizio,codiceAoo, ruolo,null, utente,idconfi);
+      if (PROP_WSDM_JIRIDE_MITTENTE_INTERNO.equals(tipo) || PROP_WSDM_TITULUS_UFFICI.equals(tipo) || PROP_WSDM_JIRIDE_STURTTURA.equals(tipo) || PROP_WSDM_ENGINEERINGDOC_UNITA_OP.equals(tipo)) {
+        wsdmUfficiRes = this.gestioneWSDMManager.wsdmGetListaUffici(username, password, servizio,codiceAoo, ruolo,descrizioneUfficio, utente,idconfi);
         if (wsdmUfficiRes.isEsito()) {
           if (wsdmUfficiRes.getListaUffici() != null) {
 

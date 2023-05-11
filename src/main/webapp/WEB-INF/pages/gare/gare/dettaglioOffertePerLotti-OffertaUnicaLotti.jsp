@@ -27,7 +27,6 @@
 <%@ taglib uri="http://www.eldasoft.it/tags" prefix="elda" %>
 
 
-
 <jsp:include page="../gare/fasiGara/defStepWizardFasiGara.jsp" />
 
 <c:set var="risultatiPerPagina" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.sil.pg.fasi.paginazione")}' scope="request"/>
@@ -79,18 +78,20 @@
 	<jsp:param name="updateLista" value="${updateLista}" />
 </jsp:include>
 
-
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, codiceGara, "SC", "21")}
+<c:set var="parametri" value="T:${codiceGara}"/>
 <c:choose>
 	<c:when test='${paginaAttivaWizard eq step6Wizard}'>
 		<gene:setString name="titoloMaschera" value='Valutazione tecnica per lotto della gara ${codiceGara }' />
-		<c:set var="where" value=" GARE.CODGAR1 = '${codiceGara }' and GARE.GENERE is null AND (GARE.MODLICG = 6 or exists (select ngara from gare1 where gare.ngara=gare1.ngara and gare1.valtec='1'))"/>
+		<c:set var="where" value=" GARE.CODGAR1 = ? and GARE.GENERE is null AND (GARE.MODLICG = 6 or exists (select ngara from gare1 where gare.ngara=gare1.ngara and gare1.valtec='1'))"/>
 	</c:when>
 	<c:when test='${paginaAttivaWizard eq step7Wizard}'>
 		<gene:setString name="titoloMaschera" value='Valutazione economica per lotto della gara ${codiceGara }' />
-		<c:set var="where" value=" GARE.CODGAR1 = '${codiceGara }' and GARE.GENERE is null AND GARE.MODLICG = 6 and ngara in (select ngara from gare1 where gare.ngara=gare1.ngara and (gare1.costofisso is null or gare1.costofisso<>'1'))"/>
+		<c:set var="where" value=" GARE.CODGAR1 = ? and GARE.GENERE is null AND GARE.MODLICG = 6 and ngara in (select ngara from gare1 where gare.ngara=gare1.ngara and (gare1.costofisso is null or gare1.costofisso<>'1'))"/>
 	</c:when>
 	
 </c:choose>
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunction", pageContext, "GARE", where, parametri)}
 
 <gene:redefineInsert name="corpo">
 
@@ -101,7 +102,7 @@
 
 		<tr>
 			<td >
-				<gene:formLista entita="GARE" where='${where}' tableclass="datilista" sortColumn="2" pagesize="20" >
+				<gene:formLista entita="GARE" tableclass="datilista" sortColumn="2" pagesize="20" >
 					<gene:redefineInsert name="listaNuovo" />
 					<gene:redefineInsert name="listaEliminaSelezione" />
 										
@@ -137,7 +138,7 @@
 <gene:javaScript>
 	function dettaglioOffertaPerLotto(ngara){
 		var codgar="${codiceGara }";
-		var chiave="DITG.CODGAR5=T:" + codgar + ";DITG.NGARA5=T:"+ngara;
+		var chiave="DITG.CODGAR5=T:" + codgar + ";DITG.NGARA5=T:"+ngara+";DITG.DITTAO=T:AAA";
 		var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/ditg/dettaglioOfferteDitta-OffertaUnicaLotti.jsp";
 		href += "&key=" + chiave + "&paginaAttivaWizard=${paginaAttivaWizard}&isOffertaPerLotto=true";
 		document.location.href = href;

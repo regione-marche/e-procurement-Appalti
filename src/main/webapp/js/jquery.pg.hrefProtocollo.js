@@ -48,6 +48,7 @@
 		 {"entita" : "GARE",          "campo" : "NPROREQ"      	},
 		 {"entita" : "GARE",          "campo" : "NCOMAG"       	},
 		 {"entita" : "GARE",          "campo" : "NCOMNG"       	},
+		 {"entita" : "GARE",          "campo" : "NPROAA"       	},
 		 {"entita" : "GARE",          "campo" : "NCOMDITTAGG" 	},
 		 {"entita" : "GARE",          "campo" : "NCOMDITTNAG"  	},
 		 {"entita" : "GARE1",         "campo" : "NPLETTAGGPROVV"},

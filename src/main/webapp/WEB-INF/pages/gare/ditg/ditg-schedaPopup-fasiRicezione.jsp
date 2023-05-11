@@ -18,6 +18,13 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <%@ taglib uri="http://www.eldasoft.it/tags" prefix="elda" %>
 
+<% // Validazione parametri tramite regex %>
+<c:if test='${not empty param.indiceRiga and gene:matches(param.indiceRiga, "^-?[0-9]+$", true)}' />
+<c:if test='${not empty param.isGaraCatalogo and gene:matches(param.isGaraCatalogo, "^true|false$", true)}' />
+<c:if test='${not empty param.isGaraElenco and gene:matches(param.isGaraElenco, "^true|false$", true)}' />
+<c:if test='${not empty param.paginaAttivaWizard and gene:matches(param.paginaAttivaWizard, "^-?[0-9]+$", true)}' />
+<c:if test='${not empty param.stepWizard and gene:matches(param.stepWizard, "^-?[0-9]+$", true)}' />
+
 <style type="text/css">
 	
 	TABLE.grigliaDataProt {
@@ -83,7 +90,6 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 }
 
 </style>
-
 
 <jsp:include page="../gare/fasiRicezione/defStepWizardFasiRicezione.jsp" />
 
@@ -243,6 +249,8 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 			<gene:campoScheda campo="DINVIG" visibile="${tmpPaginaAttivaWizard eq step3Wizard && (isGaraElenco ne true && isGaraCatalogo ne true)}"/>
 			<gene:campoScheda campo="INVOFF" modificabile="false" visibile="${tmpPaginaAttivaWizard eq step5Wizard}"/>
  			<gene:campoScheda campo="TIPRIN" visibile="${tmpPaginaAttivaWizard eq step5Wizard }"/>
+			<gene:campoScheda campo="MOTRINUNCIA" modificabile="false" visibile="${tmpPaginaAttivaWizard eq step5Wizard and datiRiga.DITG_INVOFF eq '2' and garaTelematica eq 'true'}"/>
+			<gene:campoScheda campo="DATRINUNCIA" modificabile="false" visibile="${tmpPaginaAttivaWizard eq step5Wizard and datiRiga.DITG_INVOFF eq '2' and garaTelematica eq 'true'}"/>
  			<gene:campoScheda campo="DATOFF" visibile="${tmpPaginaAttivaWizard eq step5Wizard}" modificabile="${garaTelematica ne 'true' }"/>
 			<gene:campoScheda campo="ORAOFF" visibile="${tmpPaginaAttivaWizard eq step5Wizard}" modificabile="${garaTelematica ne 'true' }"/>
 			<gene:campoScheda campo="NPROFF" visibile="${tmpPaginaAttivaWizard eq step5Wizard}"/>
@@ -285,10 +293,14 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 			<c:if test="${(isGaraElenco eq true || isGaraCatalogo eq true)  && (tmpPaginaAttivaWizard eq step2Wizard || tmpPaginaAttivaWizard eq step3Wizard)}">
 				<gene:campoScheda campo="COORDSIC" visibile="false" entita="GAREALBO" where="GAREALBO.NGARA=DITG.NGARA5"/>
 				<gene:campoScheda campo="COORDSIC" visibile="${datiRiga.GAREALBO_COORDSIC eq '1'}"/>
+
+				<gene:campoScheda campo="REQTORRE" visibile="false" entita="GAREALBO" where="GAREALBO.NGARA=DITG.NGARA5"/>
+				<gene:campoScheda campo="REQTORRE" visibile="${datiRiga.GAREALBO_REQTORRE eq '1'}"/>
 			</c:if>
 			<gene:campoScheda campo="DATFS10" title="Data acquisizione domanda di partecipazione" entita='DITGEVENTI' where="DITGEVENTI.NGARA=DITG.NGARA5 and DITGEVENTI.DITTAO=DITG.DITTAO and DITGEVENTI.CODGAR=DITG.CODGAR5" visibile="${tmpPaginaAttivaWizard eq step1Wizard and garaTelematica eq 'true'}" modificabile="false"/>
 			<gene:campoScheda campo="DATFS10A" title="Data apertura busta prequalifica" entita='DITGEVENTI' where="DITGEVENTI.NGARA=DITG.NGARA5 and DITGEVENTI.DITTAO=DITG.DITTAO and DITGEVENTI.CODGAR=DITG.CODGAR5" visibile="${tmpPaginaAttivaWizard eq step2Wizard and garaTelematica eq 'true'}" modificabile="false"/>
-			<gene:campoScheda campo="DATFS11" title="Data acquisizione offerta" entita='DITGEVENTI' where="DITGEVENTI.NGARA=DITG.NGARA5 and DITGEVENTI.DITTAO=DITG.DITTAO and DITGEVENTI.CODGAR=DITG.CODGAR5" visibile="${tmpPaginaAttivaWizard eq step5Wizard and garaTelematica eq 'true'}" modificabile="false"/>
+			<gene:campoScheda campo="DATFS11" title="Data acquisizione offerta" entita='DITGEVENTI' where="DITGEVENTI.NGARA=DITG.NGARA5 and DITGEVENTI.DITTAO=DITG.DITTAO and DITGEVENTI.CODGAR=DITG.CODGAR5 and DITG.INVOFF<>'2'" visibile="${tmpPaginaAttivaWizard eq step5Wizard and datiRiga.DITG_INVOFF ne '2' and garaTelematica eq 'true'}" modificabile="false"/>
+			<gene:campoScheda campo="DATFS14" title="Data acquisizione rinuncia" entita='DITGEVENTI' where="DITGEVENTI.NGARA=DITG.NGARA5 and DITGEVENTI.DITTAO=DITG.DITTAO and DITGEVENTI.CODGAR=DITG.CODGAR5 and DITG.INVOFF='2'" visibile="${tmpPaginaAttivaWizard eq step5Wizard and datiRiga.DITG_INVOFF eq '2' and garaTelematica eq 'true'}" modificabile="false"/>
 			<gene:campoScheda campo="ALTNOT" />
 			<c:if test="${(isGaraElenco eq true || isGaraCatalogo eq true) && tmpPaginaAttivaWizard eq step2Wizard}">
 				<gene:campoScheda campo="ESTIMP_FIT" campoFittizio="true" visibile="false" value="${datiRiga.DITG_ESTIMP}" definizione="T2"/>
@@ -769,6 +781,7 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 			setValue("DITG_ESTIMP",  ${gene:string4Js(requestScope.valoreDITG_ESTIMP)});
 			setValue("DITG_INOSSERV",  ${gene:string4Js(requestScope.valoreDITG_INOSSERV)});
 			setValue("DITG_COORDSIC",  ${gene:string4Js(requestScope.valoreDITG_COORDSIC)});
+			setValue("DITG_REQTORRE",  ${gene:string4Js(requestScope.valoreDITG_REQTORRE)});
 			setValue("DITG_DSORTEV",  ${gene:string4Js(requestScope.valoreDITG_DSORTEV)});
 		</c:if>		
 		

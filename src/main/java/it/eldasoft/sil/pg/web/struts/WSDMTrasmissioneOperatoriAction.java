@@ -12,6 +12,7 @@ import it.maggioli.eldasoft.ws.dm.WSDMTrasmissioneResType;
 import it.maggioli.eldasoft.ws.dm.WSDMTrasmissioneUtenteType;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -86,8 +87,19 @@ public class WSDMTrasmissioneOperatoriAction extends Action {
       trasmissioneUtente[0] = new WSDMTrasmissioneUtenteType();
       trasmissioneUtente[0].setTipoTrasmissione(tipoTrasmissione);
       trasmissioneUtente[0].setOperatore(operatoreType);
+      
+      List<Object> parameters = new ArrayList<Object>();
+      String[] vect = vettIdWsdoc.split(",");
+      String inClause = "";
+      for(int index=0; index <vect.length; index++) {
+        if(index>0) {
+          inClause += ",";
+        }
+        inClause += "?";
+        parameters.add(vect[index]);
+      }
 
-      List listaWsdocumento = this.sqlManager.getListVector("select numerodoc from wsdocumento where id in (" + vettIdWsdoc + ")", null);
+      List listaWsdocumento = this.sqlManager.getListVector("select numerodoc from wsdocumento where id in (" + inClause + ")", parameters.toArray());
       if(listaWsdocumento!=null && listaWsdocumento.size()>0){
         WSDMTrasmissioneDocumentoType[] trasmissioneDoc = new WSDMTrasmissioneDocumentoType[listaWsdocumento.size()];
         String numeroDocumento = null;

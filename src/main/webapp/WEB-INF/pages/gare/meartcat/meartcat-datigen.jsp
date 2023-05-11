@@ -76,7 +76,7 @@
 				
 				<c:if test="${modo ne 'NUOVO'}">
 					<c:set var="id" value='${gene:getValCampo(key,"ID")}' scope="request" />
-					<c:set var="result" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetValoriMEALLARTCATFunction", pageContext, id)}' />
+					<c:set var="result" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetValoriMEALLARTCATFunction", pageContext, id, "1")}' />
 				</c:if>
 				
 				<c:if test="${modo eq 'NUOVO'  || modo eq 'MODIFICA' || (modo eq 'VISUALIZZA' && !empty  datiMEALLARTCAT)}"> 
@@ -91,7 +91,7 @@
 						<jsp:param name="nomeAttributoLista" value='datiMEALLARTCAT' />
 						<jsp:param name="idProtezioni" value="MEALLARTCAT" />
 						<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/meallartcat/meallartcat-interno-scheda.jsp"/>
-						<jsp:param name="arrayCampi" value="'MEALLARTCAT_ID_', 'MEALLARTCAT_IDARTCAT_', 'MEALLARTCAT_IDPRG_','MEALLARTCAT_IDDOCDIG_', 'W_DOCDIG_IDPRG_', 'W_DOCDIG_IDDOCDIG_', 'W_DOCDIG_DIGNOMDOC_','selezioneFile_'"/>		
+						<jsp:param name="arrayCampi" value="'MEALLARTCAT_ID_', 'MEALLARTCAT_IDARTCAT_', 'MEALLARTCAT_TIPOALL_', 'MEALLARTCAT_IDPRG_','MEALLARTCAT_IDDOCDIG_', 'W_DOCDIG_IDPRG_', 'W_DOCDIG_IDDOCDIG_', 'W_DOCDIG_DIGNOMDOC_','selezioneFile_'"/>		
 						<jsp:param name="titoloSezione" value="Facsimile certificato" />
 						<jsp:param name="titoloNuovaSezione" value="Nuovo facsimile certificato" />
 						<jsp:param name="descEntitaVociLink" value="facsimile certificato" />
@@ -154,6 +154,8 @@
 				<gene:campoScheda campo="GPP" obbligatorio="true"/>
 				<gene:campoScheda campo="CHKPROD" obbligatorio="true"/>
 				<gene:campoScheda campo="NOTE" />
+				<gene:campoScheda campo="PARTNUMBER" />
+				<gene:campoScheda campo="TIPORICAMBIO" />
 
 				<gene:campoScheda>
 					<jsp:include page="/WEB-INF/pages/commons/bloccaModifica-scheda.jsp">

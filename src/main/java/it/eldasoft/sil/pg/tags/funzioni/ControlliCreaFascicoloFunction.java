@@ -12,20 +12,20 @@ package it.eldasoft.sil.pg.tags.funzioni;
 
 
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.utils.spring.UtilitySpring;
-
 import java.sql.SQLException;
 import java.util.Vector;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.utils.spring.UtilitySpring;
+
 public class ControlliCreaFascicoloFunction extends AbstractFunzioneTag {
 
 	public ControlliCreaFascicoloFunction() {
-		super(4, new Class[] { PageContext.class, String.class, String.class , String.class  });
+		super(5, new Class[] { PageContext.class, String.class, String.class , String.class,String.class  });
 	}
 
 	@Override
@@ -36,11 +36,14 @@ public class ControlliCreaFascicoloFunction extends AbstractFunzioneTag {
 	            pageContext, SqlManager.class);
 
 		String controlloSuperato = "SI";
-		String msgErrori="<b>Non è possibile procedere con la creazione del fascicolo documentale.</b><br>";
-	    String ngara = new String((String) params[1]);
-		String codgar = new String((String) params[2]);
-		String genere = new String((String) params[3]);
+		String msgErrori="<b>Non è possibile procedere con <span id='tipoOp'>la creazione</span> del fascicolo documentale.</b><br>";
+	    String chiave1 = new String((String) params[1]); //ngara
+		String chiave2 = new String((String) params[2]); //codgar
+		String genere = (String)params[3];
+		String entita = (String) params[4];
 		String select="select cenint, nomein, codrup, cogtei, nometei,destor from torn left join uffint on  cenint=codein  left join tecni on  codrup = codtec where codgar=?";
+		if("G1STIPULA".equals(entita))
+		  select="select cenint, nomein, codrup, cogtei, nometei,destor from gare join torn on codgar=codgar1 join uffint on cenint=codein left join tecni on codrup = codtec where ngara=?";
 		String cenint = null;
 		String nomein = null;
 		String codrup = null;
@@ -48,7 +51,8 @@ public class ControlliCreaFascicoloFunction extends AbstractFunzioneTag {
 		String nometei = null;
 		String oggetto = null;
 		try {
-		  Vector datiTorn = sqlManager.getVector(select, new Object[]{codgar});
+
+		  Vector datiTorn = sqlManager.getVector(select, new Object[]{chiave2});
 
 
 		  if(datiTorn!=null && datiTorn.size()>0){
@@ -61,8 +65,13 @@ public class ControlliCreaFascicoloFunction extends AbstractFunzioneTag {
 
 		  }
 
+		  Object[] par= new Object[] {chiave1};
 		  String messaggioDet = " della gara.";
-		  if( "2".equals(genere)){
+		  if("G1STIPULA".equals(entita)) {
+		    select ="select oggetto from g1stipula where id = ?";
+		    messaggioDet = " della stipula";
+		    par[0] = new Long(chiave1);
+		  }else if( "2".equals(genere)){
 		    select ="select not_gar from gare where ngara=?";
 		  }else if( "10".equals(genere) || "20".equals(genere)){
 		    select ="select oggetto from garealbo where ngara=?";
@@ -74,7 +83,7 @@ public class ControlliCreaFascicoloFunction extends AbstractFunzioneTag {
             messaggioDet = " dell'avviso.";
           }
 		  if( !"1".equals(genere) && !"3".equals(genere))
-		    oggetto = (String)sqlManager.getObject(select, new Object[]{ngara});
+		    oggetto = (String)sqlManager.getObject(select, par);
 
 
 		  if(cenint == null || "".equals(cenint)){
@@ -104,7 +113,7 @@ public class ControlliCreaFascicoloFunction extends AbstractFunzioneTag {
               msgErrori+="<br>Il nome del responsabile unico procedimento non e' valorizzato.";
             }
           }
-		  if(oggetto == null || "".equals(oggetto)){
+		  if(oggetto == null || "".equals(oggetto.trim())){
 		    controlloSuperato = "NO";
             msgErrori+="<br>Non è stata inserito l'oggetto " + messaggioDet;
           }

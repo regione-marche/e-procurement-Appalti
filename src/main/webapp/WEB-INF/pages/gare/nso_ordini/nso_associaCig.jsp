@@ -22,7 +22,7 @@
 	<gene:redefineInsert name="schedaConferma" >
 		<tr>
 			<td class="vocemenulaterale">
-				<a href="javascript:creaNuovaGara();" title="Avanti" tabindex="1502">
+				<a href="javascript:creaNuovoOrdineNso();" title="Avanti" tabindex="1502">
 					Avanti &gt;
 				</a>
 			</td>
@@ -62,8 +62,8 @@
 				scheda="" 
 				schedaPopUp="" 
 				campi="GARE.CODCIG;GARE.NOT_GAR;GARE.CODGAR1;GARE.NGARA;GARE.DITTA" 
+				functionId="skip"
 				chiave=""
-				where=""
 				formName="formArchivioCigOggettoOrdine">	
 				<gene:campoScheda campo="CODCIG" entita="GARE" where="NSO_ORDINI.NGARA=GARE.NGARA" />
 				<gene:campoScheda campo="NOT_GAR" entita="GARE" where="NSO_ORDINI.NGARA=GARE.NGARA" gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote" />

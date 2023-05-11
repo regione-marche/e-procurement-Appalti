@@ -16,6 +16,7 @@ import it.eldasoft.gene.db.datautils.DataColumn;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.domain.BlobFile;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
@@ -70,7 +71,7 @@ public class GestoreInsertDocumentiPredefiniti extends
 
   @Override
   public String getEntita() {
-    return "TORN";
+    return "G1DOCUMOD";
   }
 
   @Override
@@ -93,52 +94,6 @@ public class GestoreInsertDocumentiPredefiniti extends
   @Override
   public void preInsert(TransactionStatus status, DataColumnContainer datiForm)
       throws GestoreException {
-
-    // lettura dei parametri di input
-    String codgar = datiForm.getString("CODGAR");
-    String ngara = datiForm.getString("NGARA");
-    String tiplav = datiForm.getString("TIPLAV");
-    String tipgarg = datiForm.getString("TIPGARG");
-    String lottoDiGara = datiForm.getString("LOTTODIGARA");
-    Integer valenza = new Integer(0);
-    String isOffertaUnica = datiForm.getString("ISOFFERTAUNICA");
-    Double importo = datiForm.getDouble("IMPORTO");
-    Long critlic = datiForm.getLong("CRITLIC");
-    String faseInvito = datiForm.getString("FASEINVITO");
-    String isProceduraTelematica = datiForm.getString("ISPROCEDURATELEMATICA");
-    Long tipologia = datiForm.getLong("TIPOLOGIA");
-    Long busta = datiForm.getLong("BUSTA");
-    Long gruppo = datiForm.getLong("GRUPPO");
-    if(lottoDiGara!=null && "1".equals(lottoDiGara))
-      valenza = new Integer(2);
-
-    // estrae l'elenco dei documenti d'archivio
-    List listaDocumenti = this.getListaDocumentazione(codgar,tiplav,tipgarg,importo,critlic,faseInvito, isProceduraTelematica,gruppo,busta);
-
-    // esegue gli inserimenti
-    this.insertElencoDocumentazionePredefinita(status, codgar, ngara,valenza,listaDocumenti,isOffertaUnica,tipologia,isProceduraTelematica);
-
-    ////////////////////////////////////////////////////////////////////////////////
-    //Ricalcolo NUMORD.DOCUMGARA    
-    PgManagerEst1 pgManagerEst1 = (PgManagerEst1) UtilitySpring.getBean("pgManagerEst1",
-        this.getServletContext(), PgManagerEst1.class);
-    gruppo= null;
-    Map<Integer, Long> gruppiAggiornati = new HashMap<Integer, Long>();
-    if (listaDocumenti != null && listaDocumenti.size() > 0) {
-      for (int i = 0; i < listaDocumenti.size(); i++) {
-        gruppo = SqlManager.getValueFromVectorParam(listaDocumenti.get(i), 0).longValue();
-        //se un gruppo è già stato aggiornato, evito il ricalcolo
-        if (!gruppiAggiornati.containsValue(gruppo)) {
-          pgManagerEst1.ricalcNumordDocGara(codgar, gruppo);
-          gruppiAggiornati.put(i,gruppo);
-        }
-      }
-    }    
-    ////////////////////////////////////////////////////////////////////////////////
-
-    // setta l'operazione a completata, in modo da scatenare il reload della
-    // pagina principale
-    this.getRequest().setAttribute("documentiInseriti", "1");
   }
 
 
@@ -159,37 +114,18 @@ public class GestoreInsertDocumentiPredefiniti extends
    *
    * @throws GestoreException
    */
-  private List getListaDocumentazione(String codgar, String tiplav,String tipgarg,Double importo,Long critlic,
-      String faseInvito, String isProceduraTelematica, Long gruppo, Long busta) throws GestoreException {
+  private List getListaDocumentazione(String modelloSelezionato) throws GestoreException {
 
-    //LA SELECT SEGUENTE, A PARTE I CAMPI ESTRATTI, E' IDENTICA A QUELLA ESEGUITA NEL
-    //GESTORE DI PLUGIN GESTOREINSDATIDOCUMENTI.
-    //SE SI MODIFICA LA SELECT SEGUENTE SI DEVE MODIFICARE ANCHE IL GESTORE DI PLUGIN!
-
-    String gartel= "";
     String select = null;
+    modelloSelezionato = modelloSelezionato.substring(modelloSelezionato.indexOf(':') + 1);
 
     List listaDocumenti = null;
     try {
 
-        select="select gruppo, busta, reqcap, tipodoc, contestoval, descrizione, obbligatorio, modfirma, idstampa, allmail, idprg, iddocdg" +
-          " from archdocg where (tipogara = ? or tipogara is null) and " +
-          " (tipoproc =? or tipoproc is null) and (gartel = ? or gartel is null) and " +
-          " (LIMINF <= ? or LIMINF is null) and " +
-          " (LIMSUP > ? or LIMSUP is null) and (critlic =? or critlic is null or critlic=0) and gruppo = ?";
-
-        if("true".equals(isProceduraTelematica)){
-          gartel = "1";
-        }else{
-          gartel = "2";
-        }
-        
-        if(busta != null){
-          select+=" and busta = ?";
-          listaDocumenti = this.sqlManager.getListVector(select,new Object[] { tiplav,tipgarg,gartel,importo,importo,critlic,gruppo,busta});
-        }else{
-          listaDocumenti = this.sqlManager.getListVector(select,new Object[] { tiplav,tipgarg,gartel,importo,importo,critlic,gruppo });
-        }
+        select="select g.gruppo, g.busta, ga.reqcap, ga.tipodoc, ga.contestoval, ga.descrizione, ga.obbligatorio, ga.modfirma, ga.idstampa, ga.allmail, ga.idprg, ga.iddocdg" +
+          " from g1documod g, g1arcdocumod ga where g.id=? and g.id=ga.iddocumod order by ga.numord,ga.id";
+ 
+        listaDocumenti = this.sqlManager.getListVector(select,new Object[] { modelloSelezionato});
 
     } catch (SQLException e) {
       throw new GestoreException(
@@ -197,17 +133,6 @@ public class GestoreInsertDocumentiPredefiniti extends
           null, e);
     }
 
-
-
-    /*
-    try {
-      listaDocumenti = this.sqlManager.getListVector(select,new Object[] { tiplav,tipgarg,ngara });
-    } catch (SQLException e) {
-      throw new GestoreException(
-          "Errore durante l'estrazione della tabella dei documenti predefiniti",
-          null, e);
-    }
-    */
     return listaDocumenti;
   }
 
@@ -397,6 +322,118 @@ public class GestoreInsertDocumentiPredefiniti extends
   @Override
   public void preUpdate(TransactionStatus status, DataColumnContainer datiForm)
       throws GestoreException {
+	    // lettura dei parametri di input
+	  	String  codgar = UtilityStruts.getParametroString(this.getRequest(),"codgar");
+		String modelloSelezionato = this.getRequest().getParameter("modello");
+		modelloSelezionato = modelloSelezionato.substring(modelloSelezionato.indexOf(':') + 1);	
+		String  ngara = UtilityStruts.getParametroString(this.getRequest(),"ngara");
+		String  tiplav = UtilityStruts.getParametroString(this.getRequest(),"tiplav");
+		String  tipgarg = UtilityStruts.getParametroString(this.getRequest(),"tipgarg");
+		String  lottoDiGara = UtilityStruts.getParametroString(this.getRequest(),"lottoDiGara");
+	    Integer valenza = new Integer(0);
+	    String  isOffertaUnica = UtilityStruts.getParametroString(this.getRequest(),"isOffertaUnica");
+		Long critlic=null;
+		String critlicStr=UtilityStruts.getParametroString(this.getRequest(),"critlic");
+		if(!"".equals(critlicStr) && critlicStr!=null) {
+			critlic = Long.valueOf(critlicStr);
+		}
+		String  faseInvito = UtilityStruts.getParametroString(this.getRequest(),"faseInvito");
+		String  isProceduraTelematica = UtilityStruts.getParametroString(this.getRequest(),"isProceduraTelematica");
+		Long tipologia = null;
+		String tipologiaStr=UtilityStruts.getParametroString(this.getRequest(),"tipologia");
+		if(!"".equals(tipologiaStr) && tipologiaStr!=null) {
+			tipologia = Long.valueOf(tipologiaStr);
+		}
+		Long busta=null;
+		String bustaStr=UtilityStruts.getParametroString(this.getRequest(),"busta");
+		if(!"".equals(bustaStr) && bustaStr!=null) {
+			busta = Long.valueOf(bustaStr);
+		}
+		Long gruppo=null;
+		String gruppoStr=UtilityStruts.getParametroString(this.getRequest(),"gruppo");
+		if(!"".equals(gruppoStr) && gruppoStr!=null) {
+			gruppo = Long.valueOf(gruppoStr);
+		}
+		
+	    if(lottoDiGara!=null && "1".equals(lottoDiGara))
+	      valenza = new Integer(2);
+
+	    // estrae l'elenco dei documenti d'archivio
+	    List listaDocumenti = this.getListaDocumentazione(modelloSelezionato);
+	    
+	    // verifico presenza documenti M-DGUE
+	    if(!verificaMDGUEMultipli(codgar,modelloSelezionato,busta,gruppo)) {
+	    throw new GestoreException(
+                "Errore nell'inserimento dei documenti predefiniti causa M-DGUE multipli", "presenzaDocumentiMDGUEMultipli", null);
+	    };
+	    
+	    // esegue gli inserimenti
+	    this.insertElencoDocumentazionePredefinita(status, codgar, ngara,valenza,listaDocumenti,isOffertaUnica,tipologia,isProceduraTelematica);
+
+	    ////////////////////////////////////////////////////////////////////////////////
+	    //Ricalcolo NUMORD.DOCUMGARA    
+	    PgManagerEst1 pgManagerEst1 = (PgManagerEst1) UtilitySpring.getBean("pgManagerEst1",
+	        this.getServletContext(), PgManagerEst1.class);
+	    gruppo= null;
+	    Map<Integer, Long> gruppiAggiornati = new HashMap<Integer, Long>();
+	    if (listaDocumenti != null && listaDocumenti.size() > 0) {
+	      for (int i = 0; i < listaDocumenti.size(); i++) {
+	        gruppo = SqlManager.getValueFromVectorParam(listaDocumenti.get(i), 0).longValue();
+	        //se un gruppo è già stato aggiornato, evito il ricalcolo
+	        if (!gruppiAggiornati.containsValue(gruppo)) {
+	          pgManagerEst1.ricalcNumordDocGara(codgar, gruppo);
+	          gruppiAggiornati.put(i,gruppo);
+	        }
+	      }
+	    }    
+	    ////////////////////////////////////////////////////////////////////////////////
+
+	    // setta l'operazione a completata, in modo da scatenare il reload della
+	    // pagina principale
+	    this.getRequest().setAttribute("documentiInseriti", "1");
+  }
+  
+  /**
+   * Dato codgar e modelloSelezionato verifica che sia presente al più un documento M-DGUE
+   *
+   * @param codgar
+   *        codgar della gara
+   * @param modelloSelezionato
+   *        modello predefinito selezionato
+   * @throws GestoreException
+   */
+  private boolean verificaMDGUEMultipli(String codgar,String modelloSelezionato,Long busta,Long gruppo) throws GestoreException {
+	  
+	  String selectCountMDGUEDocumgara = "select count(*) from documgara where codgar=? and IDSTAMPA = 'DGUE' and gruppo=? ";
+	  String selectCountMDGUEG1arcdocumod = "select count(*) from g1arcdocumod where iddocumod=? and IDSTAMPA = 'DGUE'";
+	  if(busta!=null){
+		  selectCountMDGUEDocumgara = selectCountMDGUEDocumgara + "and busta=? ";
+	  }
+	  Long countOccMDGUEDocumgara;
+	  Long countOcccountMDGUEG1arcdocumod;
+	  Long totale=new Long(0);
+	  boolean res=true;
+	  
+	  try {
+		  if(busta!=null) {
+			  countOccMDGUEDocumgara = (Long)this.sqlManager.getObject(selectCountMDGUEDocumgara,new Object[] { codgar,gruppo,busta});
+		  }
+		  else {
+			  countOccMDGUEDocumgara = (Long)this.sqlManager.getObject(selectCountMDGUEDocumgara,new Object[] { codgar,gruppo});
+		  }
+		  countOcccountMDGUEG1arcdocumod = (Long)this.sqlManager.getObject(selectCountMDGUEG1arcdocumod,new Object[] { modelloSelezionato});
+	  }
+	  catch (SQLException e) {
+          throw new GestoreException(
+              "Errore nel conteggio dei documenti M-DGUE in DOCUMGARA e G1ARCDOCUMOD", "insertElencoDocumentazionePredefinita", e);
+      }
+	  
+	  totale=countOccMDGUEDocumgara+countOcccountMDGUEG1arcdocumod;
+	  if(totale>1) {
+		  res=false;
+	  }
+	  
+	  return res;
   }
 
 }

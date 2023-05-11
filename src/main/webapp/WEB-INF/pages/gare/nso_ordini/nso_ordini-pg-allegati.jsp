@@ -20,12 +20,29 @@
 
 		<gene:redefineInsert name="head">
 				<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>
-				<script type="text/javascript" src="${pageContext.request.contextPath}/js/nso-ordini.js"></script>
+				<script type="text/javascript" src="${pageContext.request.contextPath}/js/nso-ordini.js?t=<%=System.currentTimeMillis()%>"></script>
 		</gene:redefineInsert>
+		<c:if test='${(requestScope.statoOrdine ne 1 && requestScope.statoOrdine ne 2)}'>
+				<gene:redefineInsert name="schedaModifica" />
+				<gene:redefineInsert name="pulsanteModifica" />
+		 </c:if>
 		
 		<gene:formScheda entita="NSO_ORDINI" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreOrdiniNso" >
-		
+			<c:if test="${requestScope.statoOrdine eq 8}">
+				<%/*
+					se l'ordine è revocato non devo permettere alcuna modifica
+				*/ %>
+				<gene:redefineInsert name="schedaModifica"></gene:redefineInsert>
+				<gene:redefineInsert name="pulsanteModifica"></gene:redefineInsert>
+			</c:if>
 			<gene:redefineInsert name="addToAzioni" >
+				<c:if test='${(requestScope.statoOrdine eq 4 || requestScope.statoOrdine eq 5 || requestScope.statoOrdine eq 6) && requestScope.isPeriodoVariazione eq 1}' >
+					<tr>
+						<td class="vocemenulaterale">
+								<a href="javascript:revocaOrdineNso();" id="menuValidaOrdine" title="Revoca Ordine" tabindex="1510">Revoca Ordine</a>
+						</td>
+					</tr>
+				</c:if>
 				<c:if test="${(requestScope.statoOrdine eq 1) || (requestScope.statoOrdine eq 2)}">
 					<tr>
 						<td class="vocemenulaterale">
@@ -111,6 +128,11 @@
 			<div id="nso-dialog-verification" title="Verifica Ordine NSO" style="display:none">
 			  <p id="nso-dialog-verification-content">
 				
+			  </p>
+			</div>
+			<div id="nso-dialog-revocation" title="Revoca Ordine NSO" style="display:none">
+			  <p id="nso-dialog-revocation-content">
+			  	Vuoi revocare l&#39;ordine?<br>Questa operazione non si pu&ograve; annullare.
 			  </p>
 			</div>
 

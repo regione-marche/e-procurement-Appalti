@@ -15,6 +15,8 @@
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 
+<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.archWhereFunctions.ComponiWhereGAREALBOFunction" />
+
 <gene:template file="popup-template.jsp">
 	<gene:setString name="titoloMaschera" value="Selezione elenco operatori economici o catalogo elettronico"/>
 	<gene:redefineInsert name="corpo">

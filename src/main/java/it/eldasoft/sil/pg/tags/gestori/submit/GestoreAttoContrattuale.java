@@ -19,6 +19,8 @@ import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveIDAutoincrementante;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.GestioneProgrammazioneManager;
+import it.eldasoft.utils.spring.UtilitySpring;
 
 import java.sql.SQLException;
 
@@ -48,6 +50,23 @@ public class GestoreAttoContrattuale extends
 
   @Override
   public void postUpdate(DataColumnContainer datiForm) throws GestoreException {
+    
+  }
+  
+  @Override
+  public void afterUpdateEntita(TransactionStatus status, DataColumnContainer datiForm)
+      throws GestoreException {
+    GestioneProgrammazioneManager gestioneProgrammazioneManager = (GestioneProgrammazioneManager) UtilitySpring.getBean("gestioneProgrammazioneManager",
+        this.getServletContext(), GestioneProgrammazioneManager.class);
+    
+    //Integrazione programmazione
+    if(gestioneProgrammazioneManager.isAttivaIntegrazioneProgrammazione()){
+      String modcont = this.getRequest().getParameter("MODCONT");
+      if("2".equals(modcont)) //se sono in stipula per aggiudicatario, aggiorno tutte le sue occorrenze
+        gestioneProgrammazioneManager.aggiornaRdaGara(datiForm.getString("GARE.CODGAR1"),null,datiForm.getString("GARE.DITTA"));
+      else //aggiorno il lotto singolo
+        gestioneProgrammazioneManager.aggiornaRdaGara(datiForm.getString("GARE.CODGAR1"),datiForm.getString("GARE.NGARA"),null);
+    }
   }
 
   @Override

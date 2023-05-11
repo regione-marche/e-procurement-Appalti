@@ -105,6 +105,13 @@
 
 	<gene:javaScript>
 	
+		//gestita al salvataggio del dettaglio dell'allegato (sia in inserimento che in modifica), 
+		//la visualizzazione della lista degli allegati invece della scheda di dettaglio stesso
+		var salvataggioOK = '${requestScope.salvataggioOK}';
+		if(salvataggioOK != '' && salvataggioOK){
+			historyVaiIndietroDi(1);
+		}
+	
 		document.forms[0].encoding="multipart/form-data";
 	
 		function scegliFile(valore) {

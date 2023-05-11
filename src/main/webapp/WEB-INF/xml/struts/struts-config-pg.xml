@@ -9,6 +9,8 @@
 		
 		<form-bean name="trovaConcorrentiAURForm" type="it.eldasoft.sil.pg.web.struts.TrovaConcorrentiAURForm"/>
 		
+		<form-bean name="ImportExcelANACForm" type="it.eldasoft.sil.pg.web.struts.ImportExcelANACForm"/>
+		
 	</form-beans>
 
 	<global-forwards>
@@ -20,12 +22,25 @@
 		<action path="/InitNuovaGara" type="it.eldasoft.gene.commons.web.struts.DisabilitaNavigazioneAction" scope="request" validate="false">
 			<forward name="success" path="nuovaGaraDef" />
 		</action>
-
-		<action path="/StampaEtichetta" type="org.springframework.web.struts.DelegatingActionProxy" 
-						scope="request" validate="false" parameter="metodo">
-			<forward name="successStampa" path="/WEB-INF/pages/gare/ditg/popupStampaEtichetta.jsp" module="/" />
-			<forward name="successStampaDaBarcode" path="/WEB-INF/pages/gare/ditg/popupStampaEtichettaDaBarcode.jsp" module="/" />
-			<forward name="successCancellaEtichettaDaBarcode" path="/WEB-INF/pages/gare/commons/initLeggiBarcode.jsp" module="/" />
+		
+		<action path="/VisualizzaGareProfilo" type="it.eldasoft.sil.pg.web.struts.VisualizzaGareProfiloAction" scope="request" validate="false">
+			<forward name="success" path="/SetProfiloVisualizzaGare.do" />
+		</action>
+		
+		<action path="/SetProfiloVisualizzaGare"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+			<forward name="success" path="/CheckVersione.do" module="/" />
+		</action>
+		
+		<action path="/ProcessHome" type="org.springframework.web.struts.DelegatingActionProxy" 
+				parameter="metodo" scope="request" validate="false">
+			<forward name="success" path="ApriPagina.do" module="/" />
+		</action>
+		
+		<action path="/SearchArticoli" type="org.springframework.web.struts.DelegatingActionProxy"
+				scope="request" validate="false">
+			<forward name="success" path="ApriPagina.do" />
 		</action>
 
 		<action path="/StampaRitiroDefinitivo" type="org.springframework.web.struts.DelegatingActionProxy" 
@@ -66,6 +81,14 @@
 			<forward name="success" path="successExportLottiGara" module="/" />
 			<forward name="errorExport" path="exportLottiGara" module="/" />
 		</action>
+		
+		<action path="/InitExportOperatoriIscritti" forward="exportOperatoriIscritti" />
+		
+		<action path="/EseguiExportOperatoriIscritti" type="org.springframework.web.struts.DelegatingActionProxy"
+						scope="request" validate="false" >
+			<forward name="success" path="successExportOperatoriIscritti" module="/" />
+			<forward name="errorExport" path="exportOperatoriIscritti" module="/" />
+		</action>
 
 		<action path="/InitImportLottiGara" forward="importLottiGara" />
 		
@@ -74,6 +97,15 @@
 						scope="request" validate="false" >
 			<forward name="success" path="successImportLottiGara" module="/" />
 			<forward name="errorImport" path="importLottiGara" module="/" />
+		</action>
+
+		<action path="/InitImportDitteGaraExcel" forward="importDitteGaraExcel" />
+
+		<action path="/EseguiImportDitteGaraExcel" name="uploadFileForm"
+						type="org.springframework.web.struts.DelegatingActionProxy"
+						scope="request" validate="false" >
+			<forward name="success" path="successImportDitteGaraExcel" module="/" />
+			<forward name="errorImport" path="importDitteGaraExcel" module="/" />
 		</action>
 
 		<action path="/InitImportLavorazioniFornitureGara" forward="importOffertaPrezzi" />
@@ -132,14 +164,6 @@
 			<forward name="errore" path="/ApriPagina.do" module="/" />
 		</action >
 		
-		<action path="/initLeggiBarcode" type="it.eldasoft.gene.commons.web.struts.ForwardAction" scope="request" parameter="/WEB-INF/pages/gare/commons/initLeggiBarcode.jsp" />
-		
-		<action path="/LeggiBarcode" type="org.springframework.web.struts.DelegatingActionProxy" 
-						scope="request" validate="false">
-			<forward name="codiceNOK" path="/WEB-INF/pages/gare/commons/initLeggiBarcode.jsp" module="/" />
-			<forward name="success" path="/ApriPagina.do?href=gare/ditg/ditg-schedaInsert-Barcode.jsp" module="/" />
-		</action>
-		
 		<action path="/CarrelloFabbisogni" type="it.eldasoft.sil.pg.web.struts.CarrelloFabbisogniAction"
 						scope="request" validate="false" >
 			<forward name="success" path="listaCarrelli" module="/" />
@@ -153,6 +177,11 @@
 			<forward name="errorTrova" path="/ElencoFornitori.do?metodo=initTrovaDitta" />
 			<forward name="successTrova" path="elencoFornitori" module="/" />
 			<forward name="errore"   path="elencoFornitori" module="/" />
+		</action>
+		
+		<action path="/ImportExcelANAC" name="ImportExcelANACForm"
+						type="org.springframework.web.struts.DelegatingActionProxy"
+						scope="request" validate="false" >
 		</action>
 		
 		<action path="/InserimentoConcorrenti" type="org.springframework.web.struts.DelegatingActionProxy" 
@@ -224,6 +253,17 @@
 			<forward name="inviadatirichiestacigerror" path="/WEB-INF/pages/gare/commons/popup-invia-dati-richiesta-cig.jsp" module="/" />
 		</action>
 		
+		<action path="/PopolaAnagraficaSimog"
+						type="org.springframework.web.struts.DelegatingActionProxy"
+						scope="request" validate="false" >
+			<forward name="anagraficacigsuccess" path="/WEB-INF/pages/w3/w3gara/w3gara-scheda.jsp" module="/" />
+			<forward name="anagraficasmartcigsuccess" path="/WEB-INF/pages/w3/w3smartcig/w3smartcig-scheda.jsp" module="/" />
+			<forward name="anagraficasimogerroribloccanti" path="/WEB-INF/pages/gare/commons/richiestaCig.jsp" module="/" />
+			<forward name="anagraficasimogerrorinonbloccanti" path="/WEB-INF/pages/gare/commons/richiestaCig.jsp" module="/" />
+			<forward name="anagraficasimogerror" path="/WEB-INF/pages/gare/commons/richiestaCig.jsp" module="/" />
+			<forward name="anagraficasimogback" path="/History.do?metodo=back" module="/" />
+		</action>
+
 		<action path="/InviaRichiestaExportDocumenti"
 						type="org.springframework.web.struts.DelegatingActionProxy"
 						scope="request" validate="false" >
@@ -240,6 +280,12 @@
 						type="org.springframework.web.struts.DelegatingActionProxy"
 						scope="request" validate="false" >
 			<forward name="errorDownload" path="/ApriPagina.do?href=gare/anticor/popup-scarica-modello-excel.jsp" module="/"/>
+		</action>
+		
+		<action path="/ExportDitteGara"
+						type="org.springframework.web.struts.DelegatingActionProxy"
+						scope="request" validate="false" >
+			<forward name="errorDownload" path="/ApriPagina.do?href=gare/gare/gare-popup-importDitteGaraExcel.jsp" module="/"/>
 		</action>
 		
 		<action path="/ImportAdempimenti190" name="uploadFileForm" type="org.springframework.web.struts.DelegatingActionProxy" 
@@ -362,6 +408,10 @@
 			scope="request" validate="false" >
 		</action>
 		
+		<action path="/AnalisiDocumentiDGUE" type="org.springframework.web.struts.DelegatingActionProxy" 
+			scope="request" validate="false" >
+		</action>
+		
 		<action path="/AcquisisciDomandePartecipazioneDaPortale" type="org.springframework.web.struts.DelegatingActionProxy" 
 			scope="request" validate="false" >
 		</action>
@@ -389,7 +439,17 @@
 			<forward name="aggiornagaraidssuccess" path="/WEB-INF/pages/gare/v_lista_ids/popup-lista-ids-success.jsp" module="/" />
 		</action>
 		
+		<action path="/CreaAffValutazioneProdotti" type="org.springframework.web.struts.DelegatingActionProxy" scope="request" validate="false" >
+			<forward name="affvalproderror" 	path="/History.do?metodo=back" module="/" />
+			<forward name="affvalprodsuccess"   path="/History.do?metodo=back" module="/" />
+			<forward name="affvalprodlista" path="/WEB-INF/pages/gare/gare/gare-popup-prodotti-valutati.jsp" module="/" />
+		</action>
+		
 		<action path="/GetRettificaTermini" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+		</action>
+		
+		<action path="/GetCigAssegnatiCancellati" type="org.springframework.web.struts.DelegatingActionProxy"
 			scope="request" validate="false">
 		</action>
 		
@@ -481,10 +541,6 @@
 			scope="request" validate="false">
 		</action>
 
-		<action path="/GetListaW_INVCOM" type="org.springframework.web.struts.DelegatingActionProxy"
-			scope="request" validate="false">
-		</action>
-
 		<action path="/ProtocollaComunicazione" type="org.springframework.web.struts.DelegatingActionProxy"
 			scope="request" validate="false">
 		</action>
@@ -539,6 +595,11 @@
 			<forward name="error" path="/WEB-INF/pages/gare/commons/popup-ModificaOrdinamentoDocumentazione.jsp" module="/"/>
 		</action>
 		
+		<action path="/AggiornaNumOrdineDocStipula" type="org.springframework.web.struts.DelegatingActionProxy" scope="request" validate="false">
+			<forward name="success" path="/WEB-INF/pages/gare/commons/popup-ModificaOrdinamentoDocStipula.jsp"  module="/"/>
+			<forward name="error" path="/WEB-INF/pages/gare/commons/popup-ModificaOrdinamentoDocStipula.jsp" module="/"/>
+		</action>
+		
 		<action path="/InitExportOffertaPrezziOEPV" forward="exportOffertaPrezziOEPV" />
 
 		<action path="/ExportOffertaPrezziExcel" type="org.springframework.web.struts.DelegatingActionProxy"
@@ -587,6 +648,8 @@
 		<action path="/AttivaApDocAJAX" type="org.springframework.web.struts.DelegatingActionProxy" scope="request" validate="false" />
 		
 		<action path="/AttivaApTecAJAX" type="org.springframework.web.struts.DelegatingActionProxy"	scope="request" validate="false" />
+		
+		<action path="/AttivaApMassivaTecAnonimeAJAX" type="org.springframework.web.struts.DelegatingActionProxy"	scope="request" validate="false" />
 
 		<action path="/AttivaApEcoAJAX" type="org.springframework.web.struts.DelegatingActionProxy"	scope="request" validate="false" />
 		
@@ -641,6 +704,25 @@
 		<action path="/SetPermessiRicercaMercato" type="org.springframework.web.struts.DelegatingActionProxy"
 			scope="request" validate="false" />
 
+		<action path="/SetPermessiStipula" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" />
+			
+		<action path="/SetStatoStipula" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" />
+			
+		<action path="/SetNOrdine" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" />
+			
+		<action path="/SetStatoDocumentoStipula" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+			<forward name="aggstatosuccess" path="/WEB-INF/pages/gare/g1stipula/g1stipula-RiportaInCompilazioneDoc.jsp" module="/" />
+			<forward name="aggstatoerror" path="/WEB-INF/pages/gare/g1stipula/g1stipula-RiportaInCompilazioneDoc.jsp" module="/" />
+		</action>
+		
+		<action path="/GetPermessiUtenteStipula" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+		</action>
+
 		<action path="/GetListaBeniServizi" type="org.springframework.web.struts.DelegatingActionProxy" scope="request" validate="false"/>
 		
 		<action path="/GetURL" type="org.springframework.web.struts.DelegatingActionProxy" scope="request" validate="false" />
@@ -692,6 +774,12 @@
 			<forward name="visualizza" path="/WEB-INF/pages/gare/commons/permessi-scheda-commissione.jsp" module="/" />
 			<forward name="success"    path="/WEB-INF/pages/gare/commons/permessi-scheda-commissione.jsp" module="/" />
 		</action>
+
+		<action path="/VisualizzaPermessiUtentiStipula" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" parameter="metodo">
+			<forward name="visualizza" path="/WEB-INF/pages/gare/commons/permessi-scheda-stipula.jsp" module="/" />
+			<forward name="success"    path="/WEB-INF/pages/gare/commons/permessi-scheda-stipula.jsp" module="/" />
+		</action>
 		
 		<action path="/GetListaPermessiUtenti" type="org.springframework.web.struts.DelegatingActionProxy"
 			scope="request" validate="false" />
@@ -709,6 +797,9 @@
 			scope="request" validate="false" />
 			
 		<action path="/GetListaPermessiUtentiCommissione" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" />
+
+		<action path="/GetListaPermessiUtentiStipula" type="org.springframework.web.struts.DelegatingActionProxy"
 			scope="request" validate="false" />
 
 		<action path="/GetTabellatoJSON"
@@ -756,6 +847,12 @@
 			<forward name="modifica" path="/WEB-INF/pages/gare/commons/permessi-scheda-commissione.jsp" module="/" />
 		</action>
 		
+		<action path="/ModificaPermessiUtentiStipula"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" >
+			<forward name="modifica" path="/WEB-INF/pages/gare/commons/permessi-scheda-stipula.jsp" module="/" />
+		</action>
+
 		<action path="/GetWSERPRemote" type="org.springframework.web.struts.DelegatingActionProxy"
 			scope="request" validate="false">
 		</action>
@@ -778,6 +875,10 @@
 
 		<action path="/SetWSERPRdaInGara" type="org.springframework.web.struts.DelegatingActionProxy"
 			scope="request" validate="false">
+		</action>
+
+		<action path="/SetWSERPPosRdaInGara" type="org.springframework.web.struts.DelegatingActionProxy"
+				scope="request" validate="false">
 		</action>
 
 		<action path="/VisWSERPAllegato" type="org.springframework.web.struts.DelegatingActionProxy"
@@ -808,15 +909,22 @@
 			scope="request" validate="false">
 		</action>
 
+		<action path="/GetWSERPSceltaContraente" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+		</action>
+
+        <action path="/GetWSERPAlboFornitori" scope="request"
+            type="org.springframework.web.struts.DelegatingActionProxy" validate="false">
+            <forward module="/" name="listafalbosuccess" path="/WEB-INF/pages/gare/gare/alboFornitori/albo-popup-success-lista.jsp"/>
+            <forward module="/" name="listafalboerror" path="/WEB-INF/pages/gare/gare/alboFornitori/albo-popup-richiesta-lista.jsp"/>
+        </action>
+		
+
 		<action path="/GestioneAlberoNUTS" type="org.springframework.web.struts.DelegatingActionProxy"
 			scope="request" validate="false">
 		</action>
 		
 		<action path="/GestioneAlberoCpvVP" type="org.springframework.web.struts.DelegatingActionProxy"
-			scope="request" validate="false">
-		</action>
-		
-		<action path="/GestioneAlberoCpvVSUPP" type="org.springframework.web.struts.DelegatingActionProxy"
 			scope="request" validate="false">
 		</action>
 		
@@ -849,6 +957,10 @@
 		<action path="/ScaricaTuttiDocumentiBusta" type="org.springframework.web.struts.DelegatingActionProxy" parameter="metodo" scope="request" validate="false" />
 		
 		<action path="/ScaricaTuttiAllegatiComunicazione" type="org.springframework.web.struts.DelegatingActionProxy" parameter="metodo" scope="request" validate="false" />
+		
+		<action path="/EsportaRiepilogoComunicazione" type="org.springframework.web.struts.DelegatingActionProxy" parameter="metodo" scope="request" validate="false" >
+			<forward module="/" name="success" path="/WEB-INF/pages/geneweb/w_invcom/w_invcom-popup-reportComunicazione.jsp"/>
+		</action>
 		
 		<action path="/GetIPTSchedaIntervento" type="org.springframework.web.struts.DelegatingActionProxy"
 			scope="request" validate="false">
@@ -892,9 +1004,22 @@
 		<action path="/NsoIntegration" type="org.springframework.web.struts.DelegatingActionProxy"
 			scope="request" validate="false" parameter="method" >
 		</action>
+		
+		<action path="/DgueGenToken" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" parameter="method" >
+			<!-- <forward name="goOutside" redirect="true" path="external"></forward> -->
+		</action>
+		<action path="/VisualizzaDgueApp" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" parameter="method" >
+			
+		</action>
 
 		
 		<action path="/TracciamentoDownloadDocimpresa" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+		</action>
+		
+		<action path="/TracciamentoDownloadDocgara" type="org.springframework.web.struts.DelegatingActionProxy"
 			scope="request" validate="false">
 		</action>
 		
@@ -960,6 +1085,10 @@
 			scope="request" validate="false">
 		</action>
 		
+		<action path="/CreaFascicoloPregresso" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+		</action>
+		
 		<action path="/CopiaAllegatiComunicazioniDitte" type="org.springframework.web.struts.DelegatingActionProxy"
 			scope="request" validate="false">
 		</action>
@@ -976,6 +1105,109 @@
 			scope="request" validate="false">
 		</action>
 		
+		<action path="/EliminaQform" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+		</action>
+		
+		<action path="/AggiungiDestinatariNotifiche"
+			type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false" >
+			<forward name="aggiungidestinatarinotificheerror" path="/WEB-INF/pages/geneweb/w_discuss_p/w_discuss_p-aggiungi-destinatari-popup.jsp" module="/" />
+			<forward name="aggiungidestinatarinotifichesuccess" path="/WEB-INF/pages/geneweb/w_discuss_p/w_discuss_p-aggiungi-destinatari-success-popup.jsp" module="/" />
+		</action>
+		
+		<action path="/GetDescrizioneUtenteStipula" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+		</action>
+		
+		<action path="/GetListaUtentiStipula" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+		</action>
+		
+		<action path="/GetListaCartelleStipula" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+		</action>
+		
+		<action path="/GetDettaglioGareQformlib" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+		</action>
+		
+		<action path="/GetWSDMListaFascicoli" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+		</action>
+		
+		<action path="/InserimentoFornitoreAlbo" type="org.springframework.web.struts.DelegatingActionProxy" 
+						scope="request" validate="false">
+			<forward name="errore" path="/WEB-INF/pages/gare/gare/alboFornitori/albo-popup-success-lista.jsp" module="/" />
+			<forward name="success" path="/WEB-INF/pages/gare/gare/alboFornitori/albo-popup-success-lista.jsp" module="/" />
+		</action>
+		
+		<action path="/SetRichiestaFirma" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+		</action>
+		
+		<action path="/GetListaIvr" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+			<forward name="success" path="/WEB-INF/pages/gare/vendor_rating/gare-popup-elencoIVR.jsp" module="/" />
+		</action>
+		
+		<action path="/GetWSDettaglioIvr" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+			<forward name="success" path="/WEB-INF/pages/gare/vendor_rating/gare-popup-dettaglioIVR.jsp" module="/" />
+		</action>
+		
+		<action path="/AvanzamentoCreazioneFascicoliAJAX" type="org.springframework.web.struts.DelegatingActionProxy" scope="request" validate="false" />
+		
+		<action path="/AnteprimaDocumentoAllegato" type="org.springframework.web.struts.DelegatingActionProxy" 
+			scope="request" validate="false">
+		</action>
+		
+		<action path="/GetWsfascicoloByGara" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+		</action>
+		
+		<action path="/GetRagioneSocialeDitta" type="org.springframework.web.struts.DelegatingActionProxy"
+			scope="request" validate="false">
+		</action>
+		
+		<action path="/CodificaAnonimaDitte" type="org.springframework.web.struts.DelegatingActionProxy"	scope="request" validate="false" />
+		
+		<action path="/ScaricaDocumentiTecAnonimi" type="org.springframework.web.struts.DelegatingActionProxy" parameter="metodo" scope="request" validate="false" />
+		
+		<action path="/ImpostaAttoLotti" type="org.springframework.web.struts.DelegatingActionProxy"	scope="request" validate="false" />
+		
+		<action path="/GetGaraStipula" type="org.springframework.web.struts.DelegatingActionProxy"	scope="request" validate="false" />
+		
+		<action path="/SetUnitaCompetenza" type="org.springframework.web.struts.DelegatingActionProxy"	scope="request" validate="false" />
+
+		<action path="/EseguiExportOperatoriEconomiciDGUE" type="org.springframework.web.struts.DelegatingActionProxy"
+						scope="request" validate="false" >		
+			<forward name="success" path="/WEB-INF/pages/gare/gare/gare-popup-esportaDocumentoDGUE.jsp" module="/" />
+			<forward name="error" path="/WEB-INF/pages/gare/gare/gare-popup-esportaDocumentoDGUE.jsp" module="/" />
+		</action>
+		
+		<action path="/CollegaScollegaRda" type="org.springframework.web.struts.DelegatingActionProxy"
+						scope="request" validate="false" >		
+			<forward name="success" path="/WEB-INF/pages/gare/commons/lista-integrazione-rda-scheda.jsp" module="/" />
+			<forward name="error" path="/WEB-INF/pages/gare/commons/lista-integrazione-rda-scheda.jsp" module="/" />
+		</action>
+		
+		<action path="/GetRdaRdi" scope="request"
+            type="org.springframework.web.struts.DelegatingActionProxy" validate="false">
+        </action>
+        
+        <action path="/EseguiImportRda" scope="request"
+            type="org.springframework.web.struts.DelegatingActionProxy" validate="false">
+            <forward name="success" path="/WEB-INF/pages/gare/gare/gare-popup-importaLavorazioniRda.jsp" module="/" />
+			<forward name="error" path="/WEB-INF/pages/gare/gare/gare-popup-importaLavorazioniRda.jsp" module="/" />
+        </action>
+
+		<action path="/CalcolaImportoRdA" scope="request" 
+		type="org.springframework.web.struts.DelegatingActionProxy" validate="false">
+			<forward name="success" path="/WEB-INF/pages/gare/commons/lista-integrazione-rda-scheda.jsp" module="/" />
+			<forward name="error" path="/WEB-INF/pages/gare/commons/lista-integrazione-rda-scheda.jsp" module="/" />
+		</action>
+        
 	</action-mappings>
 
 	<plug-in className="org.apache.struts.tiles.TilesPlugin">

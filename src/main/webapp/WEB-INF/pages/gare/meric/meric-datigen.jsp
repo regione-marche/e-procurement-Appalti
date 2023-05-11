@@ -109,7 +109,7 @@
 			 schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda-popup.jsp","")}'
 			 campi="UFFINT.CODEIN;UFFINT.NOMEIN"
 			 chiave="MERIC_CENINT"
-			 where="UFFINT.DATFIN IS NULL"
+			 functionId="skip|abilitazione:1_parentFormName:formGAREAVVISSITORN"
 			 formName="formGAREAVVISSITORN">
 				<gene:campoScheda campo="CENINT" defaultValue="${requestScope.initCENINT}" obbligatorio="true" modificabile="${empty sessionScope.uffint }">
 					<gene:checkCampoScheda funzione='checkPuntiContatto()' obbligatorio="true" messaggio="Non è possibile modificare il valore perchè ci sono riferimenti ai relativi punti di contatto negli ordini di acquisto" onsubmit="false"/>
@@ -125,6 +125,7 @@
 			 scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda.jsp","")}'
 			 schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda-popup.jsp","")}'
 			 campi="TECNI.CODTEC;TECNI.NOMTEC"
+			 functionId="skip"
 			 chiave="MERIC_CODRUP"
 			 inseribile="true">
 				<gene:campoScheda campo="CODRUP"  />
@@ -149,7 +150,7 @@
 			 campi="GAREALBO.NGARA;GAREALBO.OGGETTO"
 			 chiave="MERIC_CODCATA"
 			 inseribile="false"
-			 where="${requestScope.whereGarealbo}" >
+			 functionId="skip" >
 				<gene:campoScheda campo="CODCATA"  defaultValue="${requestScope.initCODCATA}" obbligatorio="true" />
 				<gene:campoScheda campo="OGGETTO" title="Oggetto del catalogo" entita="GAREALBO" where="MERIC.CODCATA=GAREALBO.NGARA" 
 					modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.MERIC.CODCATA")}' 

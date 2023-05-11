@@ -15,6 +15,9 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <%@ taglib uri="http://www.eldasoft.it/tags" prefix="elda" %>
 
+<c:set var="showDgueColumn" value="false" />
+<c:set var="showDgueExport" value="false" />
+
 <gene:redefineInsert name="head">
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>		
 </gene:redefineInsert>
@@ -45,6 +48,14 @@
   // paginaAttivaWizard = -5 o 1, a causa della presenza della colonna 'Opzioni'
   // le colonne di tali campi sono rispettivamente 5 e 6.
 %>
+
+<c:set var="tmp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GestioneLogAperturaFaseRicezioneFunction",pageContext,key,paginaAttivaWizard)}' />
+
+<c:set var="propertyDGUE" value='${not empty gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction",  "integrazioneMDgue.url") and not empty gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction",  "integrazioneMDgue.url.info")}' scope="request"/>
+<c:if test="${! empty propertyDGUE and propertyDGUE ne 'false'}">
+	<c:set var="isDGUEAbilitato" value='1' scope="request"/>
+</c:if>	
+
 <c:if test='${updateLista ne 1}' >
 	<c:choose>
 	  <c:when test='${((paginaAttivaWizard eq step1Wizard and not isProceduraAggiudicazioneAperta)) and autorizzatoModifiche ne 2 and (gene:checkProtFunz(pageContext, "DEL","DEL") or gene:checkProtFunz(pageContext,"DEL","LISTADELSEL")) }' >
@@ -241,6 +252,7 @@
 
 <c:set var="visualizzareExportDitte" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext,"A1164","1","true")}' />
 <c:set var="visualizzareImportDitte" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext,"A1164","2","true")}' />
+<c:set var="visualizzareExportDitteExcel" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext,"A1193","1","true")}' />
 
 <c:if test="${paginaAttivaWizard <= step3Wizard }">
 	<c:set var="whereTorn" value="CODGAR='${codiceGara }'"/>
@@ -295,6 +307,10 @@
 	
 	<c:set var = "aggiungiDittaStep3" value='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) and gene:checkProtFunz(pageContext, "INS","INS") and bloccoAggiudicazione ne 1
 									and isProceduraTelematica eq "true" and isProceduraRistretta and paginaAttivaWizard eq step3Wizard and faseGara eq "-3" and isGaraLottiConOffertaUnica ne "true"}'/>
+	
+	<c:set var = "aggiungiDittaGaraInCorso" value='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) and gene:checkProtFunz(pageContext, "INS","INS") and bloccoAggiudicazione ne 1
+									and isProceduraTelematica eq "true" and ((isProceduraRistretta and isGaraLottiConOffertaUnica ne "true") or isProceduraNegoziata)  
+									and paginaAttivaWizard eq step3Wizard and (faseGara eq "-3" or faseGara eq "1") and bloccoPubblicazionePortale13 eq "TRUE"}'/>
 									
 	<tr>
 		<td ${stileDati} >
@@ -404,6 +420,17 @@
 									</tr>
 								</c:if>
 								
+								<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.ImportaDitteInGaraExcel") and bloccoAggiudicazione ne 1
+									and (isProceduraTelematica ne "true" or isInserimentoTelematica eq "true") and  (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA") and empty ngaraaq and visualizzareExportDitteExcel eq "1"}'>
+										<tr>
+											<td class="vocemenulaterale">
+												<a href="javascript:importaDitteDaExcel('');" title='Importa ditte da excel' tabindex="1502">
+													Importa ditte da excel
+												</a>
+											</td>
+										</tr>
+								</c:if>
+								
 								<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) and !empty preced
 										and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selDitteRilancio") and isInserimentoTelematica eq "true"}'>
 									<tr>
@@ -426,7 +453,7 @@
 								</c:if>
 							</c:if>
 							
-							<c:if test='${aggiungiDittaStep3}'>
+							<c:if test='${(aggiungiDittaStep3 || aggiungiDittaGaraInCorso) and  (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA")}'>
 								<tr>
 									<td class="vocemenulaterale">
 										<a href="javascript:aggiungiDitta();" title='Aggiungi ditta da anagrafica' tabindex="1502">
@@ -473,7 +500,7 @@
 								</c:if>
 							</c:if>
 							
-							<c:if test='${paginaAttivaWizard eq step1Wizard and fn:contains(listaOpzioniDisponibili, "OP114#") and isProceduraRistretta and isProceduraTelematica eq "true" and faseGara eq "-5"
+							<c:if test='${paginaAttivaWizard eq step1Wizard and fn:contains(listaOpzioniDisponibili, "OP114#") and (isProceduraRistretta or isIndagineMercato) and isProceduraTelematica eq "true" and faseGara eq "-5"
 								and bloccoAggiudicazione ne 1 and autorizzatoModifiche ne 2  and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione)}'>
 								<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.AcquisisciDomandePartecipazioneDaPortale")}'>
 									<tr>
@@ -496,8 +523,8 @@
 								</c:if>
 							</c:if>
 							<c:set var="listaOpzioniUtenteAbilitate" value="${fn:join(profiloUtente.funzioniUtenteAbilitate,'#')}#" />
-							<c:if test='${paginaAttivaWizard eq step1Wizard and isProceduraRistretta and isProceduraTelematica eq "true" and faseGara < 1
-								 and autorizzatoModifiche ne 2  and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) and fn:contains(listaOpzioniUtenteAbilitate, "ou89#") }'>
+							<c:if test='${paginaAttivaWizard eq step1Wizard and (isProceduraRistretta or isIndagineMercato) and isProceduraTelematica eq "true" and faseGara < 1
+								 and autorizzatoModifiche ne 2  and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) and (fn:contains(listaOpzioniUtenteAbilitate, "ou89#") or fn:contains(listaOpzioniUtenteAbilitate, "ou233#")) }'>
 								
 								<c:choose>
 									<c:when test="${isGaraLottiConOffertaUnica eq 'true' }">
@@ -531,7 +558,7 @@
 							 
 							</c:if>								
 								
-							<c:if test='${paginaAttivaWizard eq step2Wizard and isProceduraTelematica eq "true" and faseGara < "-3"
+							<c:if test='${paginaAttivaWizard eq step2Wizard and isProceduraTelematica eq "true" and faseGara < "-3" and not isIndagineMercato
 								and bloccoAggiudicazione ne 1 and autorizzatoModifiche ne 2  and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione)}'>
 								
 								<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.AttivaDitteDaInvitare")}'>
@@ -558,31 +585,50 @@
 									</td>
 								</tr>
 							</c:if>
+							<c:if test="${autorizzatoModifiche ne '2' and paginaAttivaWizard eq step2Wizard and gene:checkProt(pageContext, 'COLS.VIS.GARE.DITG.STATODGUEPREQ') and isDGUEAbilitato eq '1'}">
+								<tr>
+									<td class="vocemenulaterale">
+										<a href="javascript:analisiDocumentiDGUE('');" title='Analizza DGUE' tabindex="1512">
+											Analizza DGUE
+										</a>
+									</td>
+								</tr>
+							</c:if>
+							<c:if test="${paginaAttivaWizard eq step2Wizard and gene:checkProt(pageContext, 'COLS.VIS.GARE.DITG.STATODGUEAMM') and isDGUEAbilitato eq '1'}">
+									<tr id="dgue_export">
+										<td class="vocemenulaterale">
+											<a href="javascript:exportExcelDGUE('');" title='Esporta in excel analisi DGUE' tabindex="1513">
+												Esporta in excel analisi DGUE
+											</a>
+										</td>
+									</tr>
+								</c:if>
 							<c:if test='${gene:checkProt(pageContext, strProtVisualizzaFasiRicezione)}'>
 								<tr>
 									<td class="vocemenulaterale">
-										<a href="javascript:impostaFiltro();" title='Imposta filtro' tabindex="1512">
+										<a href="javascript:impostaFiltro();" title='Imposta filtro' tabindex="1514">
 											Imposta filtro
 										</a>
 									</td>
 								</tr>
 							</c:if>
-								
+															
                             <c:if test='${(paginaAttivaWizard > step1Wizard and not (isProceduraAggiudicazioneAperta or isProceduraNegoziata)) or (paginaAttivaWizard > step3Wizard and isProceduraNegoziata) or (paginaAttivaWizard > step5Wizard and isProceduraAggiudicazioneAperta)}'>
 								<tr>
 									<td class="vocemenulaterale">
-										<a href="javascript:indietro();" title='Fase precedente' tabindex="1513">
+										<a href="javascript:indietro();" title='Fase precedente' tabindex="1515">
 											< Fase precedente
 										</a>
 									</td>
 								</tr>
 							</c:if>
-							<c:if test='${(paginaAttivaWizard < step6Wizard and paginaAttivaWizard != step1Wizard and paginaAttivaWizard != step2Wizard and (isProceduraTelematica ne "true" or not empty faseGara))
-									or (paginaAttivaWizard == step1Wizard and !(isProceduraTelematica eq "true" and (faseGara <-4 or empty faseGara)))
-									or (paginaAttivaWizard == step2Wizard and !(isProceduraTelematica eq "true" and (faseGara <-3 or empty faseGara))) }'>
+							<c:if test='${(paginaAttivaWizard < step6Wizard and paginaAttivaWizard != step1Wizard and paginaAttivaWizard != step2Wizard and (isProceduraTelematica ne "true" or not empty faseGara) and not isIndagineMercato)
+									or (paginaAttivaWizard == step1Wizard and !(isProceduraTelematica eq "true" and (faseGara <-4 or empty faseGara)) and not isIndagineMercato)
+									or (paginaAttivaWizard == step2Wizard and !(isProceduraTelematica eq "true" and (faseGara <-3 or empty faseGara)) and not isIndagineMercato) 
+									or (paginaAttivaWizard == step1Wizard and isIndagineMercato and !(isProceduraTelematica eq "true" and (faseGara <-4 or empty faseGara)))}'>
 								<tr>
 									<td class="vocemenulaterale">
-										<a href="javascript:avanti();" title='Fase seguente' tabindex="1514">
+										<a href="javascript:avanti();" title='Fase seguente' tabindex="1516">
 											Fase seguente >
 										</a>
 									</td>
@@ -602,12 +648,16 @@
 		
 		<c:set var="primoStep" value='${(paginaAttivaWizard eq step1Wizard and not isProceduraAggiudicazioneAperta) or (paginaAttivaWizard eq step5Wizard and isProceduraAggiudicazioneAperta) or (paginaAttivaWizard eq step3Wizard and isProceduraNegoziata)}' />
 		
-		<c:set var="eliminazionetep3" value='${paginaAttivaWizard eq step3Wizard and isProceduraRistretta and isProceduraTelematica eq "true" and (empty updateLista or updateLista ne 1) and autorizzatoModifiche ne 2 and (gene:checkProtFunz(pageContext, "DEL","DEL") 
-			     or gene:checkProtFunz(pageContext,"DEL","LISTADELSEL")) and bloccoAggiudicazione ne 1}' />
-			
+		<c:set var="eliminazioneStep3" value='${paginaAttivaWizard eq step3Wizard and isProceduraRistretta and isProceduraTelematica eq "true" and (empty updateLista or updateLista ne 1) and autorizzatoModifiche ne 2 and (gene:checkProtFunz(pageContext, "DEL","DEL") 
+			     or gene:checkProtFunz(pageContext,"DEL","LISTADELSEL")) and bloccoAggiudicazione ne 1 and bloccoPubblicazionePortale13 ne "TRUE"}' />
+			     
+	 	<c:set var = "eliminazioneDittaGaraInCorso" value='${autorizzatoModifiche ne 2 and (empty updateLista or updateLista ne 1) and gene:checkProtFunz(pageContext, "DEL","DEL") and bloccoAggiudicazione ne 1
+									and isProceduraTelematica eq "true" and ((isProceduraRistretta and isGaraLottiConOffertaUnica ne "true") or isProceduraNegoziata)  
+									and paginaAttivaWizard eq step3Wizard and faseGara <= 1 and bloccoPubblicazionePortale13 eq "TRUE"}'/>
+									
 		<c:choose>
 			<c:when test='${(empty updateLista or updateLista ne 1) and autorizzatoModifiche ne 2 and (gene:checkProtFunz(pageContext, "DEL","DEL") 
-			     or gene:checkProtFunz(pageContext,"DEL","LISTADELSEL")) and primoStep  and bloccoAggiudicazione ne 1 }' >
+			     or gene:checkProtFunz(pageContext,"DEL","LISTADELSEL")) and primoStep and not eliminazioneDittaGaraInCorso and bloccoAggiudicazione ne 1 }' >
 				<gene:set name="titoloMenu">
 					<jsp:include page="/WEB-INF/pages/commons/iconeCheckUncheck.jsp" />
 				</gene:set>
@@ -647,11 +697,11 @@
 					</c:if>
 				</gene:campoLista>
 			</c:when>
-			<c:when test='${(empty updateLista or updateLista ne 1) and (gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InvioComunicazione") || gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.OffertaRaggruppamentoTemporaneo") || eliminazionetep3 || 
-					(gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.RichiestaSoccorsoIstruttorio")  and paginaAttivaWizard == step2Wizard))}' >
+			<c:when test='${(empty updateLista or updateLista ne 1) and (gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InvioComunicazione") || gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.OffertaRaggruppamentoTemporaneo") || eliminazioneStep3 || 
+					(gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.RichiestaSoccorsoIstruttorio")  and paginaAttivaWizard == step2Wizard) || eliminazioneDittaGaraInCorso)}' >
 				<gene:campoLista title='' width='25'  >
 					<gene:PopUp variableJs="rigaPopUpMenu${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'" >
-						<c:if test="${datiRiga.DITG_ACQUISIZIONE eq 8 and modificaConsentita eq 'true' and paginaAttivaWizard eq step3Wizard}">
+						<c:if test="${((datiRiga.DITG_ACQUISIZIONE eq 8 and eliminazioneStep3 and modificaConsentita eq 'true') or (datiRiga.DITG_ACQUISIZIONE eq 9 and datiRiga.DITG_AMMGAR eq '2' and eliminazioneDittaGaraInCorso)) }">
 							<gene:PopUpItem title="Elimina ditta" href="listaElimina()" />
 						</c:if>
 						<c:if test="${isProceduraTelematica ne 'true' and tipoImpresa != '3' and tipoImpresa != '10' and (empty datiRiga.V_DITGAMMIS_AMMGAR or (datiRiga.V_DITGAMMIS_AMMGAR != '2' and datiRiga.V_DITGAMMIS_AMMGAR != '6' and datiRiga.V_DITGAMMIS_AMMGAR != '9')) 
@@ -686,6 +736,9 @@
 							<c:if test="${statoSoccIstr eq 10 }">
 								<gene:PopUpItem title="Richiedi soccorso istruttorio" href="richiestaSoccorsoIstruttorio('${chiaveRigaJava}','${modelloSoccoroIstruttorioConfigurato }','${idconfi}','${numeroModello }','${varTmp}')" />
 							</c:if>
+						</c:if>
+						<c:if test='${paginaAttivaWizard eq step2Wizard and gene:checkProt(pageContext, "COLS.VIS.GARE.DITG.STATODGUEPREQ") and isDGUEAbilitato eq "1"}'>
+							<gene:PopUpItem title="Analizza DGUE" href="analisiDocumentiDGUE('${datiRiga.DITG_DITTAO}')" />
 						</c:if>
 					</gene:PopUp>
 				</gene:campoLista>
@@ -759,6 +812,7 @@
 				<gene:campoLista campo="NPROTG" width="40" headerClass="sortable" visibile="false" edit="${updateLista eq 1}" />
 				<gene:campoLista campo="DINVIG" title="Data" headerClass="sortable" visibile="false" edit="${updateLista eq 1}" />
 				<gene:campoLista campo="PARTGAR" title="Partecipa al lotto?" headerClass="sortable" edit="${updateLista eq 1}" visibile="false" />
+				<gene:campoLista campo="STATODGUEPREQ" visibile="false" />
 				
 				<c:set var="estensioneDisabilitata" value=''/>
 				<c:set var="linkAbilitato" value='true'/>
@@ -796,6 +850,41 @@
 						<c:if test="${linkAbilitato}"></a></c:if>
 					</gene:campoLista>
 				</c:if>
+				
+				<c:if test='${fn:contains(step2Wizard, paginaAttivaWizard) and updateLista ne 1 and gene:checkProt(pageContext, "COLS.VIS.GARE.DITG.STATODGUEPREQ") and isDGUEAbilitato eq "1"}' >
+						<gene:campoLista title="&nbsp;" width="20" headerClass ="dgue_column">
+						<c:choose>	
+						<c:when test='${(not empty datiRiga.DITG_STATODGUEPREQ and datiRiga.DITG_STATODGUEPREQ != "")}' >
+							<c:set var="showDgueColumn" value="true"/>
+							<c:set var="descStatoDGUE" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1186", datiRiga.DITG_STATODGUEPREQ, "false")}'/>
+							<c:if test="${datiRiga.DITG_STATODGUEPREQ ne '1'}">
+								<c:set var="showDgueExport" value="true" />
+								<a href="javascript:chiaveRiga='${chiaveRigaJava}';esitoAnalisiDocumentiDGUE('${datiRiga.DITG_CODGAR5}','${datiRiga.DITG_NGARA5}','${datiRiga.DITG_DITTAO}','4',${datiRiga.DITG_STATODGUEPREQ});" title="Stato analisi DGUE" >
+							</c:if>
+							<c:choose>
+									<c:when test="${datiRiga.DITG_STATODGUEPREQ eq 4}">
+										<c:set var="mdgue_tootltip" value="presenti file xml non validi"/>
+									</c:when>
+									<c:when test="${datiRiga.DITG_STATODGUEPREQ eq 5}">
+										<c:set var="mdgue_tootltip" value="presenti DGUE con dichiarati criteri di esclusione"/>
+									</c:when>
+									<c:when test="${datiRiga.DITG_STATODGUEPREQ eq 3}">
+										<c:set var="mdgue_tootltip" value="nessun DGUE con criteri di esclusione dichiarati"/>
+									</c:when>
+									<c:otherwise>
+										<c:set var="mdgue_tootltip" value="${descStatoDGUE}"/>
+									</c:otherwise>
+								</c:choose>
+								<img width="16" height="16" title="Stato analisi documenti DGUE: ${mdgue_tootltip}" alt="Stato analisi documenti DGUE: ${mdgue_tootltip}" src="${pageContext.request.contextPath}/img/statoMDGUE_${datiRiga.DITG_STATODGUEPREQ}.png"/>
+						</c:when>
+						<c:otherwise>
+								<c:set var="descStatoDGUE" value='Stato analisi documenti DGUE nessuno documento da elaborare'/>
+								<% // <img width="16" height="16" title="${descStatoDGUE}" alt="${descStatoDGUE}" src="${pageContext.request.contextPath}/img/statoMDGUE_dis.png"/>%>
+						</c:otherwise>
+						</c:choose>	
+					</gene:campoLista>
+				</c:if>
+				
 				<c:if test="${((paginaAttivaWizard eq step1Wizard and not isProceduraAggiudicazioneAperta) or (paginaAttivaWizard eq step3Wizard and isProceduraNegoziata)) 
 					 and (updateLista ne 1) and !empty codiceElenco and codiceElenco != '' and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.VerificaDocumentiSelezioneDitteElenco')}">
 					<gene:campoLista title="&nbsp;" width="20" >
@@ -935,7 +1024,14 @@
 						<c:set var="impresaRegistrata" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.ImpresaRegistrataSuPortaleFunction",  pageContext, dittaoIcona )}'/>
 						<gene:campoLista title="&nbsp;" width="20" >
 							<c:if test="${impresaRegistrata == 'SI'}">
-								<img width="16" height="16" title="Ditta registrata su portale" alt="Ditta registrata su portale" src="${pageContext.request.contextPath}/img/ditta_acquisita.png"/>
+								<c:choose>
+								<c:when test="${requestScope.registrazioneImpPortaleNonCompleta == 'SI'}">
+									<img width="16" height="16" title="Impresa con registrazione non completa su portale" alt="Impresa con registrazione non completa su portale" src="${pageContext.request.contextPath}/img/ditta_acquisita_noncompleta.png"/>
+								</c:when>
+								<c:otherwise>
+									<img width="16" height="16" title="Impresa registrata su portale" alt="Impresa registrata su portale" src="${pageContext.request.contextPath}/img/ditta_acquisita.png"/>				
+								</c:otherwise>
+								</c:choose>
 							</c:if>
 						</gene:campoLista>
 					</c:if>
@@ -996,6 +1092,7 @@
 				<input type="hidden" name="garaLottiOmogenea" id="garaLottiOmogenea" value="${garaLottiOmogenea}" />
 				<input type="hidden" name="numeroDitte" id="numeroDitte" value="" />
 				<input type="hidden" name="isGaraLottiConOffertaUnica" id="isGaraLottiConOffertaUnica" value="${isGaraLottiConOffertaUnica}" />
+				<input type="hidden" name="entitaPrincipaleModificabile" id="entitaPrincipaleModificabile" value="${sessionScope.entitaPrincipaleModificabile}" />
 				
 				<gene:campoLista visibile="false">
 					<input type="hidden" name="counter" id="counter" value="${datiRiga.rowCount}" />
@@ -1041,14 +1138,19 @@
 						<INPUT type="button"  class="bottone-azione" value='< Fase precedente' title='Fase precedente' onclick="javascript:indietro();">
 					</c:if>
 					<c:choose>
-						<c:when test='${not empty isGaraLottiConOffertaUnica and isGaraLottiConOffertaUnica eq "true" and (paginaAttivaWizard < step4Wizard and paginaAttivaWizard != step1Wizard and !(paginaAttivaWizard eq step2Wizard and isProceduraTelematica eq "true" and faseGara < "-3") and ((isProceduraTelematica ne "true" or not empty faseGara))
-								or (paginaAttivaWizard == step1Wizard and !(isProceduraTelematica eq "true" and (faseGara <-4 or empty faseGara))))}'>
+						<c:when test='${not empty isGaraLottiConOffertaUnica and isGaraLottiConOffertaUnica eq "true" and ((paginaAttivaWizard < step4Wizard and paginaAttivaWizard != step1Wizard 
+							and !(paginaAttivaWizard eq step2Wizard and isProceduraTelematica eq "true" and faseGara < "-3") 
+							and (isProceduraTelematica ne "true" or not empty faseGara) and  not isIndagineMercato
+							or (paginaAttivaWizard == step1Wizard and !(isProceduraTelematica eq "true" and (faseGara <-4 or empty faseGara)) and not isIndagineMercato)
+							) or (paginaAttivaWizard == step1Wizard and !(isProceduraTelematica eq "true" and (faseGara <-4 or empty faseGara)) and isIndagineMercato))}'>
 							<INPUT type="button"  class="bottone-azione" value='Fase seguente >' title='Fase seguente' onclick="javascript:avanti();">
 						</c:when>
-						<c:when test='${(paginaAttivaWizard < step6Wizard and paginaAttivaWizard != step1Wizard and paginaAttivaWizard != step2Wizard and paginaAttivaWizard != step4Wizard and (isProceduraTelematica ne "true" or not empty faseGara))
+						<c:when test='${(paginaAttivaWizard < step6Wizard and paginaAttivaWizard != step1Wizard and paginaAttivaWizard != step2Wizard and paginaAttivaWizard != step4Wizard 
+								and (isProceduraTelematica ne "true" or not empty faseGara) and not isIndagineMercato)
 							 or (paginaAttivaWizard == step4Wizard and !(isProceduraTelematica eq "true" and faseGara <1))
-							 or (paginaAttivaWizard == step1Wizard and !(isProceduraTelematica eq "true" and (faseGara <-4 or empty faseGara)))
-							 or (paginaAttivaWizard == step2Wizard and !(isProceduraTelematica eq "true" and (faseGara <-3 or empty faseGara)))}'>
+							 or (paginaAttivaWizard == step1Wizard and !(isProceduraTelematica eq "true" and (faseGara <-4 or empty faseGara)) and not isIndagineMercato)
+							 or (paginaAttivaWizard == step2Wizard and !(isProceduraTelematica eq "true" and (faseGara <-3 or empty faseGara)) and not isIndagineMercato)
+							 or (paginaAttivaWizard == step1Wizard and isIndagineMercato and !(isProceduraTelematica eq "true" and (faseGara <-4 or empty faseGara)))}'>
 							<INPUT type="button"  class="bottone-azione" value='Fase seguente >' title='Fase seguente' onclick="javascript:avanti();">						
 						</c:when>
 					</c:choose>
@@ -1057,17 +1159,24 @@
 					   and (itergaMacro eq "3" or itergaMacro eq "2") and bloccoPubblicazionePortale eq "FALSE" and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.GARE-scheda.RICINV.PubblicaSuAreaRiservata")
 					   and (faseGara eq "-3" || faseGara eq "-4")}' >
 					   	<c:choose>
-						   <c:when test='${isProceduraTelematica eq "true" and meruolo eq "1"}'>
+						   <c:when test='${isProceduraTelematica eq "true" and (meruolo eq "1" or meruolo eq "3")}'>
 								<br><br>
-								<INPUT type="button"  class="bottone-azione" value='Invia invito e pubblica su portale Appalti' title='Invia invito e pubblica su portale Appalti' onclick="javascript:pubblicaSuAreaRiservata();">&nbsp;
+								<INPUT type="button"  class="bottone-azione" value='Invia invito e pubblica su portale Appalti' title='Invia invito e pubblica su portale Appalti' onclick="javascript:pubblicaSuAreaRiservata(3);">&nbsp;
 							</c:when>
 							<c:when test='${isProceduraTelematica ne "true"}'>
 								<br><br>
-								<INPUT type="button"  class="bottone-azione" value='Pubblica su portale Appalti' title='Pubblica su portale Appalti' onclick="javascript:pubblicaSuAreaRiservata();">&nbsp;
+								<INPUT type="button"  class="bottone-azione" value='Pubblica su portale Appalti' title='Pubblica su portale Appalti' onclick="javascript:pubblicaSuAreaRiservata(3);">&nbsp;
 							</c:when>
 						</c:choose>
 					</c:if>	
-
+					
+					<c:if test='${autorizzatoModifiche ne 2 and modoAperturaScheda eq "VISUALIZZA" and isIntegrazionePortaleAlice eq "true" and bloccoPubblicazionePortale13 eq "TRUE" and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.GARE-scheda.RICINV.InvioInvitiAGaraCorso")
+								   and isProceduraTelematica eq "true" and (meruolo eq "1" or meruolo eq "3") and faseGara eq 1 and (!empty numDitteGaraCorso and numDitteGaraCorso ne "" and numDitteGaraCorso ne "0")}' >
+					   	<br><br>
+						<INPUT type="button"  class="bottone-azione" value='Invia invito a gara in corso' title='Invia invito a gara in corso' onclick="javascript:pubblicaSuAreaRiservata(5);">&nbsp;
+					</c:if>	
+					
+					
 					<c:if test='${paginaAttivaWizard eq step5Wizard and fn:contains(listaOpzioniDisponibili, "OP114#")
 						and bloccoAggiudicazione ne 1 and autorizzatoModifiche ne 2 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.AcquisisciOfferteDaPortale") and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione)}'>
 						<c:if test="${isProceduraTelematica eq 'true' and faseGara eq '1'}">
@@ -1076,7 +1185,7 @@
 						</c:if>
 					</c:if>
 					
-					<c:if test='${paginaAttivaWizard eq step1Wizard and fn:contains(listaOpzioniDisponibili, "OP114#") and isProceduraRistretta and isProceduraTelematica eq "true" and faseGara eq "-5" 
+					<c:if test='${paginaAttivaWizard eq step1Wizard and fn:contains(listaOpzioniDisponibili, "OP114#") and (isProceduraRistretta or isIndagineMercato) and isProceduraTelematica eq "true" and faseGara eq "-5" 
 						and bloccoAggiudicazione ne 1 and autorizzatoModifiche ne 2  and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione)}'>
 						<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.AcquisisciDomandePartecipazioneDaPortale") }'>
 							<br><br>
@@ -1088,7 +1197,7 @@
 						</c:if>
 					</c:if>
 					
-					<c:if test='${paginaAttivaWizard eq step2Wizard and isProceduraTelematica eq "true" and faseGara < "-3"
+					<c:if test='${paginaAttivaWizard eq step2Wizard and isProceduraTelematica eq "true" and faseGara < "-3" and not isIndagineMercato
 								and bloccoAggiudicazione ne 1 and autorizzatoModifiche ne 2  and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) and 
 								gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.AttivaDitteDaInvitare")}'>
 							<br><br>
@@ -1099,13 +1208,24 @@
 					</c:if>
 					
 					<c:if test="${gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIRICEZIONE.AttivaAperturaDoc') and autorizzatoModifiche ne 2}">
+						<c:set var="whereNobustamm" value="codgar='${datiRiga.GARE_CODGAR1  }'"/>
+						<c:set var="nobustamm" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "nobustamm","torn", whereNobustamm)}' />
+						<c:choose>
+							<c:when test='${ nobustamm ne "1"}'>
+								<c:set var="msg" value="documentazione amministrativa"/>
+							</c:when>
+							<c:otherwise>
+								<c:set var="msg" value="offerte"/>
+							</c:otherwise>
+						</c:choose>
+							
 						<c:if test='${paginaAttivaWizard > step5Wizard and faseRicezioneChiusa eq 1 and bloccoAggiudicazione ne 1 and isProceduraTelematica ne "true"}'>
 							<br><br>
-							<INPUT type="button"  class="bottone-azione" value='Disattiva apertura documentazione amministrativa' title='Disattiva apertura documentazione amministrativa' onclick="javascript:confermaChiusuraRicezione('DISATTIVA');">&nbsp;
+							<INPUT type="button"  class="bottone-azione" value='Disattiva apertura ${msg}' title='Disattiva apertura ${msg}' onclick="javascript:confermaChiusuraRicezione('DISATTIVA');">&nbsp;
 						</c:if>
 						<c:if test='${paginaAttivaWizard > step5Wizard and faseRicezioneChiusa eq 2 and bloccoAggiudicazione ne 1}'>
 							<br><br>
-							<INPUT type="button"  class="bottone-azione" value='Attiva apertura documentazione amministrativa' title='Attiva apertura documentazione amministrativa' onclick="javascript:confermaChiusuraRicezione('ATTIVA');">&nbsp;
+							<INPUT type="button"  class="bottone-azione" value='Attiva apertura ${msg}' title='Attiva apertura ${msg}' onclick="javascript:confermaChiusuraRicezione('ATTIVA');">&nbsp;
 						</c:if>
 					</c:if>
 
@@ -1117,6 +1237,15 @@
 						<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) 
 								and (isProceduraTelematica ne "true" or isInserimentoTelematica eq "true") and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA")}'>
 							<br><br>
+							<c:if test='${integrazioneWSERP eq "1" && isProceduraNegoziata}'>
+								<c:choose>
+									<c:when test='${tipoWSERP eq "RAI"}'>
+										<INPUT type="button"  class="bottone-azione" value='Seleziona operatori da Albo Fornitori SAP' title='Seleziona operatori da Albo Fornitori SAP' onclick="javascript:selAlboFornitori();">
+									</c:when>
+									<c:otherwise>
+									</c:otherwise>
+								</c:choose>
+							</c:if>
 							<c:if test='${gene:checkProtFunz(pageContext, "INS", "INS") and empty ngaraaq}'>
 								<INPUT type="button"  class="bottone-azione" value='Aggiungi ditta da anagrafica' title='Aggiungi ditta da anagrafica' onclick="javascript:aggiungiDitta();">&nbsp;&nbsp;&nbsp;
 							</c:if>
@@ -1165,6 +1294,7 @@
 							<INPUT type="button"  class="bottone-azione" value='Importa da formato M-Appalti' title='Importa da formato M-Appalti' onclick="javascript:importDitte();">
 						</c:if>
 					</c:if>
+					
 				</c:otherwise>
 			</c:choose>
 			&nbsp;
@@ -1682,6 +1812,7 @@ var idconfi = '${idconfi}';
 			href += "&faseGara=" + faseGara;
 			href += "&isGaraLottiConOffertaUnica=${isGaraLottiConOffertaUnica}";
 			href += "&codiceGara=${codiceGara}";
+			href += "&calcoloSogliaAnomaliaExDLgs2017=${calcoloSogliaAnomaliaExDLgs2017}";
 			openPopUpCustom(href, "conferma_chiusura_fasi_ricezione", "550", "350", "no", "no");
 		}
 		
@@ -1806,7 +1937,7 @@ var idconfi = '${idconfi}';
 	</c:if>
 
 	<c:if test='${updateLista ne "1" and ((paginaAttivaWizard eq step1Wizard and not isProceduraAggiudicazioneAperta) or (paginaAttivaWizard eq step5Wizard and isProceduraAggiudicazioneAperta) or (paginaAttivaWizard eq step3Wizard and isProceduraNegoziata)
-				or aggiungiDittaStep3 eq "true")}' >
+				or aggiungiDittaStep3 eq "true" or aggiungiDittaGaraInCorso eq "true")}' >
 		function aggiungiDitta(){
 			var href = "href=gare/ditg/ditg-schedaPopup-insert.jsp";
 			href += "&modo=NUOVO&faseRicezione=${paginaAttivaWizard}";
@@ -1815,6 +1946,9 @@ var idconfi = '${idconfi}';
 		</c:if>
 		<c:if test="${aggiungiDittaStep3 eq 'true' }" >
 			href += "&initAcquisizione=8";
+		</c:if>
+		<c:if test="${aggiungiDittaGaraInCorso eq 'true' }" >
+			href += "&initAcquisizione=9";
 		</c:if>
 			openPopUpCustom(href, "aggiungiDitta", 800, 600, "yes", "yes");
 		}
@@ -2143,12 +2277,6 @@ var idconfi = '${idconfi}';
 			}else if(inviaComunicazioneAbilitato=="NoMailRTI"){
 				alert("Non è possibile procedere.\nLa mandataria del raggruppamento selezionato non ha un indirizzo PEC o E-mail specificato in anagrafica");
 				return;
-			}else if(inviaComunicazioneAbilitato=="NoMailFax"){
-				alert("Non è possibile procedere.\nLa ditta selezionata non ha un indirizzo PEC o E-mail o un numero fax specificato in anagrafica");
-				return;
-			}else if(inviaComunicazioneAbilitato=="NoMailFaxRTI"){
-				alert("Non è possibile procedere.\nLa mandataria del raggruppamento selezionato non ha un indirizzo PEC o E-mail o un numero fax specificato in anagrafica");
-				return;
 			}else if(inviaComunicazioneAbilitato=="NoMandatariaRTI"){
 				alert("Non è possibile procedere.\nNell'anagrafica del raggruppamento selezionato non è specificata la mandataria");
 				return;
@@ -2168,7 +2296,7 @@ var idconfi = '${idconfi}';
 							href += "&keyParent=TORN.CODGAR=T:" + numeroGara;
 						 </c:otherwise>
 					</c:choose>
-					href += "&ditta=" + codiceDitta + "&stepWizard=${varTmp}" + "&whereBusteAttiveWizard=${whereBusteAttiveWizard}";
+					href += "&ditta=" + codiceDitta + "&stepWizard=${varTmp}";
 				}else{
 					var href = contextPath + "/Lista.do?"+csrfToken+"&numModello=0&keyAdd=W_INVCOM.COMKEY1=T:" + numeroGara ;
 					<c:choose>
@@ -2202,13 +2330,16 @@ var idconfi = '${idconfi}';
 		
 		<c:if test='${isGaraLottiConOffertaUnica ne "true"}'>
 			//Apertura popup per la pubblicazione su Area Riservata portale Appalti
-			function pubblicaSuAreaRiservata() {
+			//La funzione viene adoperata nel caso di bando=3 per l'invio invito e pubblicazione portale Appalti
+			//nel caso di bando=5 per l'invito a gara in corso
+			function pubblicaSuAreaRiservata(bando) {
 				var isProceduraTelematica = ${isProceduraTelematica };
 				var integrazioneWSDM = "${integrazioneWSDM}";
-				var href = "href=gare/commons/popupPubblicaSuPortale.jsp?codgar="+getValue("GARE_CODGAR1")+"&ngara="+getValue("GARE_NGARA")+"&bando=3&isProceduraTelematica=" + isProceduraTelematica + "&step=1";
+				//var href = "href=gare/commons/popupPubblicaSuPortale.jsp?codgar="+getValue("GARE_CODGAR1")+"&ngara="+getValue("GARE_NGARA")+"&bando=3&isProceduraTelematica=" + isProceduraTelematica + "&step=1";
+				var href = "href=gare/commons/popupPubblicaSuPortale.jsp?codgar="+getValue("GARE_CODGAR1")+"&ngara="+getValue("GARE_NGARA")+"&bando=" + bando +"&isProceduraTelematica=" + isProceduraTelematica + "&step=1";
 				dim1 = 800;
 				dim2 = 650;
-				if(isProceduraTelematica){
+				if(isProceduraTelematica && bando==3){
 					<c:choose>
 						<c:when test="${cifraturaBuste eq '1'}">
 							dim2=850;
@@ -2217,6 +2348,8 @@ var idconfi = '${idconfi}';
 							dim2=650;
 						</c:otherwise>
 					</c:choose>
+				} else if(isProceduraTelematica && bando==5){
+					dim2=650;
 				}
 				if(integrazioneWSDM =='1'){
 					var entita="GARE";
@@ -2306,6 +2439,27 @@ var idconfi = '${idconfi}';
 		openPopUpCustom(href, "sorteggioDitteVerificaRequisiti", 700, 300, "no", "no");
 	}	
 	
+	function selAlboFornitori(){
+		var codgar="${codiceGara}";
+		var chiave="${key}";
+		var numeroFaseAttiva="${paginaAttivaWizard}";
+		var ngara = chiave.substr(chiave.lastIndexOf(":") + 1);
+		var href = "href=gare/gare/alboFornitori/albo-popup-richiesta-lista.jsp&modo=NUOVO";
+		href += "&ngara=" + ngara;
+		href += "&codgar=" + codgar;
+		href += "&numeroFaseAttiva=" + numeroFaseAttiva;
+		<c:choose>
+		  <c:when test='${tipologiaGara eq "3"}'>
+		  	var garaLottiConOffertaUnica="1";
+		  </c:when>
+		  <c:otherwise>
+		  	var garaLottiConOffertaUnica="2";
+		  </c:otherwise>
+		</c:choose>
+		href += "&garaLottiConOffertaUnica=" + garaLottiConOffertaUnica;
+		openPopUpCustom(href, "richiestaAlbo", 800, 450, "yes", "yes");
+	}
+	
 	/*
 	function richiestaSoccorsoIstruttorio(chiaveRiga,modelloSoccoroIstruttorioConfigurato,idconfi){
 		var numeroModello;
@@ -2351,4 +2505,63 @@ var idconfi = '${idconfi}';
 			
 		}
 		*/	
+		
+	function analisiDocumentiDGUE(dittao) {
+		var chiave="${key}";
+		var faseCall = 'Apertura domanda partecipazione'
+		var ngara = chiave.substr(chiave.lastIndexOf(":") + 1);
+		<c:choose>
+			<c:when test='${isGaraLottiConOffertaUnica eq "false"}'>
+				var codiceGara = "${codgar1 }";
+			</c:when>
+			<c:otherwise>
+				var codiceGara = "${codiceGara }";		
+			</c:otherwise>
+		</c:choose>
+		href = "href=gare/gare/gare-popup-analisiDocumentiDGUE.jsp&ngara=" + ngara + "&codiceGara=" + codiceGara + "&codimp=" + dittao + "&faseCall=" + faseCall;
+		openPopUpCustom(href, "analisiDocumentiDGUE", 450, 350, "yes", "yes");
+		}
+		
+	function importaDitteDaExcel(){
+	  var chiave="${key}";
+   	  var ngara = document.forms[0].keyParent.value;
+	  var genereGara = "${genereGara}";
+	  if(genereGara==""){
+			genereGara = "3";
+	  }
+	  var act = "${pageContext.request.contextPath}/pg/InitImportDitteGaraExcel.do";
+	  var par = "ngara=" + ngara.substring(ngara.indexOf(":")+1);
+	  par += "&genereGara=" + genereGara;
+	  openPopUpActionCustom(act, par, 'importDitteGaraExcel', 700, 500, "yes", "yes");
+	}
+	
+	function exportExcelDGUE(codimp) {
+			var chiave="${key}";
+			var faseCall = 'Ricezione domande e offerte'
+			var ngara = chiave.substr(chiave.lastIndexOf(":") + 1);
+			<c:choose>
+				<c:when test='${isGaraLottiConOffertaUnica eq "false"}'>
+					var codgar = "${codgar1 }";
+				</c:when>
+				<c:otherwise>
+					var codgar = "${codiceGara }";		
+				</c:otherwise>
+			</c:choose>
+			href = "href=gare/gare/gare-popup-esportaDocumentoDGUE.jsp&codgar=" + codgar +"&ngara=" + ngara + "&codimp=" + codimp + "&faseCall=" + faseCall;
+			openPopUpCustom(href, "analisiDocumentiDGUE", 450, 350, "yes", "yes");
+		}
+		
+	$(document).ready(function(){
+		var showDgueColumn = "${showDgueColumn}";
+		var showDgueExport = "${showDgueExport}";
+			if(showDgueColumn=="false"){
+				var index =$('.dgue_column').index();
+				$('.dgue_column').closest('table').find('thead tr').find('th:eq('+index+')').hide();
+				$('.dgue_column').closest('table').find('tbody tr').find('td:eq('+index+')').hide();
+			}
+			if(showDgueExport=="false"){
+				$('#dgue_export').hide();
+			}
+	})
+		
 </gene:javaScript>

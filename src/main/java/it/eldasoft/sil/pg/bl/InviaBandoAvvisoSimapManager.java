@@ -1296,6 +1296,11 @@ public class InviaBandoAvvisoSimapManager {
       }
 
       //avvisoAggiudicazione.setAGREETOPUBLISH(null);
+      
+      //aggiunto il numero del bando (Numero avviso GU/S sezione IV.2.1 -> W3FS3.NOTICE_NUMBER_OJ).
+      String navpub = (String) sqlManager.getObject("select navpub from pubbli where codgar9 = ? and tippub=3 and navpub is not null order by numpub desc", 
+          new Object[] { codgar });
+      if(navpub != null) avvisoAggiudicazione.setNOTICENUMBEROJ(navpub);
 
       //FINE DELLA SCRITTURA
     }
@@ -1991,6 +1996,9 @@ public class InviaBandoAvvisoSimapManager {
        if(aqdurata != null && (accqua != null && accqua.equals("1")) && (aqtempo != null && aqtempo == 2)){
          lottoCommon.setWORKMONTH((aqdurata.intValue())*12);
        }
+       if(aqdurata != null && (accqua != null && accqua.equals("1")) && (aqtempo != null && aqtempo == 3)){
+           lottoCommon.setWORKDAYS(aqdurata.intValue());
+       }
      }
      if(teutil != null && temesi != null && temesi == 1 && (accqua == null || accqua.equals("2"))){
        lottoCommon.setWORKDAYS(teutil.intValue());
@@ -2398,7 +2406,7 @@ public AvvisoAggiudicazioneLottoType getLottoAggiudicazioneInfo(String ngara, St
         //lottoAggiudicato.setTENDERSEXCLUDED(null);
       }//fine ditta non esiste
 
-      if(accqua.equals("1")){
+      if("1".equals(accqua)){
         Number impqua = (Number) sqlManager.getObject(selectGarecont,new Object[] { ngara });
         if(impqua != null){
           lottoAggiudicato.setFINALCOST(impqua.doubleValue());}

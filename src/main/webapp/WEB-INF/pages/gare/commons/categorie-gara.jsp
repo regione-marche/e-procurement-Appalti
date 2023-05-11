@@ -101,7 +101,8 @@
 			schedaPopUp=""
 			campi="V_CAIS_TIT.CAISIM;V_CAIS_TIT.DESCAT;V_CAIS_TIT.ACONTEC;V_CAIS_TIT.QUAOBB;V_CAIS_TIT.TIPLAVG;V_CAIS_TIT.ISFOGLIA"
 			chiave=""
-			where="${whereCategoriaParent}"
+			functionId="categorieGara"
+			parametriWhere="T:${param.codiceGara};T:${param.codiceGara}"
 			formName="formCategoriaPrevalenteGare"
 			inseribile="false">
 			<gene:campoScheda campo="CATIGA" title='${gene:if(param.tipgen eq "1", "Codice categoria", "Codice prestazione")}' entita="CATG" where="CATG.CATIGA=CAIS.CAISIM " obbligatorio="${datiRiga.TORN_TIPGEN eq '1'}" defaultValue="${requestScope.initCATG[0]}"  modificabile="${campiModificabili}"/>
@@ -165,7 +166,8 @@
 						schedaPopUp=""
 						campi="V_CAIS_TIT.CAISIM;V_CAIS_TIT.DESCAT;V_CAIS_TIT.ACONTEC;V_CAIS_TIT.QUAOBB;V_CAIS_TIT.TIPLAVG;V_CAIS_TIT.ISFOGLIA"
 						chiave=""
-						where="${whereCategoriaParent}"
+						functionId="categorieGara"
+						parametriWhere="T:${param.codiceGara};T:${param.codiceGara}"
 						formName="formUlterioreCategoriaGare${contatore}"
 						inseribile="false" >
 						<gene:campoScheda title='${gene:if(param.tipgen eq "1", "Codice categoria", "Codice prestazione")}' campo="CATOFF_${contatore}" entita="OPES" campoFittizio="true" definizione="T30;0;;;CATOFF" value="${item[0]}"  modificabile="${campiModificabili}"/>
@@ -239,7 +241,8 @@
 						schedaPopUp=""
 						campi="V_CAIS_TIT.CAISIM;V_CAIS_TIT.DESCAT;V_CAIS_TIT.ACONTEC;V_CAIS_TIT.QUAOBB;V_CAIS_TIT.TIPLAVG;V_CAIS_TIT.ISFOGLIA"
 						chiave=""
-						where="${whereCategoriaParent}"
+						functionId="categorieGara"
+						parametriWhere="T:${param.codiceGara};T:${param.codiceGara}"
 						formName="formUlterioreCategoriaGare${contatore}"
 						inseribile="false" >
 						<gene:campoScheda title='${gene:if(param.tipgen eq "1", "Codice categoria", "Codice prestazione")}' campo="CATOFF_${contatore}" entita="OPES" campoFittizio="true" definizione="T30;0;;;CATOFF" defaultValue="${item[0]}"  modificabile="${campiModificabili}"/>
@@ -314,7 +317,8 @@
 				schedaPopUp=""
 				campi="V_CAIS_TIT.CAISIM;V_CAIS_TIT.DESCAT;V_CAIS_TIT.ACONTEC;V_CAIS_TIT.QUAOBB;V_CAIS_TIT.TIPLAVG;V_CAIS_TIT.ISFOGLIA"
 				chiave=""
-				where="${whereCategoriaParent}"
+				functionId="categorieGara"
+				parametriWhere="T:${param.codiceGara};T:${param.codiceGara}"
 				formName="formUlterioreCategoriaGare${contatore}" inseribile="false">
 				<gene:campoScheda title='${gene:if(param.tipgen eq "1", "Codice categoria", "Codice prestazione")}' campo="CATOFF_${contatore}" entita="OPES" campoFittizio="true" definizione="T30;0;;;CATOFF"  modificabile="${campiModificabili}"/>
 				<gene:campoScheda title="Descrizione" campo="DESCAT_${contatore}" entita="CAIS" campoFittizio="true" definizione="T2000;0;;;DESCAT" modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.OPES.CATOFF") and campiModificabili}' visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.OPES.CATOFF")}' />
@@ -415,6 +419,7 @@
 	
 	var arrayImportiIscrizioneLavori = new Array(); //Il vettore contiene a sua volta il vettore[importo,numero classifica]
 	var numeroClassiNegative = 0;
+	var numeroClassiZero = 0;
 	var indice=0;
         <c:forEach items="${importiIscrizioneLavori}" var="parametro" varStatus="ciclo">
 			<c:if test='${empty parametro.arcTabellato  or parametro.arcTabellato != "1"}'>
@@ -422,42 +427,36 @@
     		    indice++;
                 if (${parametro.tipoTabellato < 0})
     				numeroClassiNegative = numeroClassiNegative + 1;
+    			else if(${parametro.tipoTabellato == 0})
+    				numeroClassiZero += 1;
             </c:if>
 	</c:forEach>
 
-	var arrayImportiIscrizioneForniture = new Array();
-	indice=0;
+	var mapImportiIscrizioneForniture = new Map();
 	<c:forEach items="${importiIscrizioneForniture}" var="parametro" varStatus="ciclo">
 		<c:if test='${empty parametro.arcTabellato  or parametro.arcTabellato != "1"}'>
-			arrayImportiIscrizioneForniture[${ciclo.index}] = "${fn:trim(parametro.datoSupplementare)}";
-			indice++;
-		</c:if>	
+			mapImportiIscrizioneForniture.set("${parametro.tipoTabellato}","${fn:trim(parametro.datoSupplementare)}");
+		</c:if>
 	</c:forEach>
 	
-	var arrayImportiIscrizioneServizi = new Array();
-	indice=0;
+	var mapImportiIscrizioneServizi = new Map();
 	<c:forEach items="${importiIscrizioneServizi}" var="parametro" varStatus="ciclo">
 		<c:if test='${empty parametro.arcTabellato  or parametro.arcTabellato != "1"}'>
-			arrayImportiIscrizioneServizi[${ciclo.index}] = "${fn:trim(parametro.datoSupplementare)}";
-			indice++;
-		</c:if>
-	</c:forEach>
-
-	var arrayImportiIscrizioneLavori150 = new Array();
-	indice=0;
-	<c:forEach items="${importiIscrizioneLavori150}" var="parametro" varStatus="ciclo">
-		<c:if test='${empty parametro.arcTabellato  or parametro.arcTabellato != "1"}'>
-			arrayImportiIscrizioneLavori150[${ciclo.index}] = "${fn:trim(parametro.datoSupplementare)}";
-			indice++;
+			mapImportiIscrizioneServizi.set("${parametro.tipoTabellato}","${fn:trim(parametro.datoSupplementare)}");
 		</c:if>
 	</c:forEach>
 	
-	var arrayImportiIscrizioneServiziProfessionali = new Array();
-	indice=0;
+	var mapImportiIscrizioneLavori150 = new Map();
+	<c:forEach items="${importiIscrizioneLavori150}" var="parametro" varStatus="ciclo">
+		<c:if test='${empty parametro.arcTabellato  or parametro.arcTabellato != "1"}'>
+			mapImportiIscrizioneLavori150.set("${parametro.tipoTabellato}","${fn:trim(parametro.datoSupplementare)}");
+		</c:if>
+	</c:forEach>
+	
+	var mapImportiIscrizioneServiziProfessionali = new Map();
 	<c:forEach items="${importiIscrizioneServiziProfessionali}" var="parametro" varStatus="ciclo">
 		<c:if test='${empty parametro.arcTabellato  or parametro.arcTabellato != "1"}'>
-			arrayImportiIscrizioneServiziProfessionali[${ciclo.index}] = "${fn:trim(parametro.datoSupplementare)}";
-			indice++;
+			mapImportiIscrizioneServiziProfessionali.set("${parametro.tipoTabellato}","${fn:trim(parametro.datoSupplementare)}");
 		</c:if>
 	</c:forEach>
 	
@@ -614,27 +613,30 @@
 						setValue(campoImportoIscrizione, arrayImportiIscrizioneLavori[i][0]);
 				}
 			}else if(tipoAppalto == "2")
-				setValue(campoImportoIscrizione, arrayImportiIscrizioneForniture[toNum(numeroClassifica) - 1]);
+				setValue(campoImportoIscrizione, mapImportiIscrizioneForniture.get(numeroClassifica));
 			else if(tipoAppalto == "3")
-				setValue(campoImportoIscrizione, arrayImportiIscrizioneServizi[toNum(numeroClassifica) - 1]);
+				setValue(campoImportoIscrizione, mapImportiIscrizioneServizi.get(numeroClassifica));
 			else if(tipoAppalto == "4")
-				setValue(campoImportoIscrizione, arrayImportiIscrizioneLavori150[toNum(numeroClassifica) - 1]);
+				setValue(campoImportoIscrizione, mapImportiIscrizioneLavori150.get(numeroClassifica));
 			else if(tipoAppalto == "5")
-				setValue(campoImportoIscrizione, arrayImportiIscrizioneServiziProfessionali[toNum(numeroClassifica) - 1]);
+				setValue(campoImportoIscrizione, mapImportiIscrizioneServiziProfessionali.get(numeroClassifica));
 		} else
 			setValue(campoImportoIscrizione, "");
 	}
 
 	function aggiornaCategorieAppalto(campoModificato){
-		if(campoModificato == "GARE_IMPAPP" || campoModificato == "CATG_IMPBASG"){
-			aggiornaClassificaCategoriaPrevalente();
-			if(campoModificato == "GARE_IMPAPP"){
-				for(var j=1; j <= maxIdUlterioreCategoriaVisualizzabile; j++)
-					calcoloPercentualeCategoria(j);
+		var bloccoModificatiDati= "${param.bloccoModificatiDati}";
+		if(bloccoModificatiDati!="true"){
+			if(campoModificato == "GARE_IMPAPP" || campoModificato == "CATG_IMPBASG"){
+				aggiornaClassificaCategoriaPrevalente();
+				if(campoModificato == "GARE_IMPAPP"){
+					for(var j=1; j <= maxIdUlterioreCategoriaVisualizzabile; j++)
+						calcoloPercentualeCategoria(j);
+				}
+			} else {
+				aggiornaClassificaCategoriaUlteriore(campoModificato);
+				calcoloPercentualeCategoria(campoModificato.substr(campoModificato.lastIndexOf("_")+1));
 			}
-		} else {
-			aggiornaClassificaCategoriaUlteriore(campoModificato);
-			calcoloPercentualeCategoria(campoModificato.substr(campoModificato.lastIndexOf("_")+1));
 		}
 	}
 
@@ -651,20 +653,29 @@
 		if(getValue("CAIS_TIPLAVG") == "1" && getValue("GARE_IMPAPP") != ""){
 			var importoIscrizione = toNum(getValue("GARE_IMPAPP")) - importoOneriProgettazione;
 			
-			if(importoIscrizione > 0){
-				importoIscrizione = importoIscrizione / 1.2;
-				
-				var numcla = 0;
-				var impiga = 0; 
-				for(i=0 + numeroClassiNegative; i< arrayImportiIscrizioneLavori.length; i++){
-					numcla=arrayImportiIscrizioneLavori[i][1];
-					impiga=arrayImportiIscrizioneLavori[i][0];
-					if(toNum(arrayImportiIscrizioneLavori[i][0]) >= importoIscrizione)
-					break;
+			if(importoIscrizione > 0 ){
+				//nel caso di importo inferiore a 150.000 euro e numeroClassiNegative >0 o numeroClassiZero > 0 non si deve eseguire il calcolo
+				if(importoIscrizione < 150000 && (numeroClassiNegative > 0 || numeroClassiZero > 0)){
+					if(getValue("CATG_NUMCLA") != null && getValue("CATG_NUMCLA") > 0){
+						setValue("CATG_NUMCLA", "");
+						setValue("CATG_NUMCLA_CAT_PRE_LAVORI", "");
+						setValue("CATG_IMPIGA", "");
+					}
+				} else {
+					importoIscrizione = importoIscrizione / 1.2;
+					
+					var numcla = 0;
+					var impiga = 0; 
+					for(i=0 + numeroClassiNegative; i< arrayImportiIscrizioneLavori.length; i++){
+						numcla=arrayImportiIscrizioneLavori[i][1];
+						impiga=arrayImportiIscrizioneLavori[i][0];
+						if(toNum(arrayImportiIscrizioneLavori[i][0]) >= importoIscrizione)
+						break;
+					}
+					setValue("CATG_NUMCLA", numcla);
+					setValue("CATG_NUMCLA_CAT_PRE_LAVORI", numcla);
+					setValue("CATG_IMPIGA", impiga);
 				}
-				setValue("CATG_NUMCLA", numcla);
-				setValue("CATG_NUMCLA_CAT_PRE_LAVORI", numcla);
-				setValue("CATG_IMPIGA", impiga);
 			}
 		}
 	}
@@ -676,19 +687,30 @@
 		if(getValue("CAIS_TIPLAVG_" + indiceUlterioreCategoria) == "1"){
 			if(getValue(campoModificato) != null && getValue(campoModificato) != ""){
 				//Solo se categoria per lavori, calcola l'importo della classifica
-					var importoIscrizione = eval(eval(getValue(campoModificato)) / 1.2);
+					var importoIscrizione = eval(getValue(campoModificato));
 					if(tmp == "1"){
-						var numcla=0;
-				        var impiga=0;
-				        for(i=0 + numeroClassiNegative; i< arrayImportiIscrizioneLavori.length; i++){
-							numcla=arrayImportiIscrizioneLavori[i][1];
-							impiga=arrayImportiIscrizioneLavori[i][0];
-							if(toNum(arrayImportiIscrizioneLavori[i][0]) >= importoIscrizione)
-							break;
+						//nel caso di importo inferiore a 150.000 euro e numeroClassiNegative >0 o numeroClassiZero > 0 non si deve eseguire il calcolo
+						if(importoIscrizione < 150000 && (numeroClassiNegative > 0 || numeroClassiZero > 0)){
+							if(getValue("OPES_NUMCLU_" + indiceUlterioreCategoria) != null && getValue("OPES_NUMCLU_" + indiceUlterioreCategoria) > 0){
+								setValue("OPES_NUMCLU_" + indiceUlterioreCategoria, "");
+								setValue("OPES_NUMCLU_CAT_PRE_LAVORI_" + indiceUlterioreCategoria, "");
+								setValue("OPES_ISCOFF_" + indiceUlterioreCategoria, "");
+								return;
+							}
+						} else {
+							importoIscrizione = eval(importoIscrizione / 1.2);
+							var numcla=0;
+					        var impiga=0;
+					        for(i=0 + numeroClassiNegative; i< arrayImportiIscrizioneLavori.length; i++){
+								numcla=arrayImportiIscrizioneLavori[i][1];
+								impiga=arrayImportiIscrizioneLavori[i][0];
+								if(toNum(arrayImportiIscrizioneLavori[i][0]) >= importoIscrizione)
+								break;
+							}
+							setValue("OPES_NUMCLU_" + indiceUlterioreCategoria, numcla);
+							setValue("OPES_NUMCLU_CAT_PRE_LAVORI_" + indiceUlterioreCategoria, numcla);
+							setValue("OPES_ISCOFF_" + indiceUlterioreCategoria, impiga);
 						}
-						setValue("OPES_NUMCLU_" + indiceUlterioreCategoria, numcla);
-						setValue("OPES_NUMCLU_CAT_PRE_LAVORI_" + indiceUlterioreCategoria, numcla);
-						setValue("OPES_ISCOFF_" + indiceUlterioreCategoria, impiga);
 					}
 					setDivietoSubAppalto_QualifObbligatoria(indiceUlterioreCategoria);
 			} else {
@@ -742,7 +764,7 @@
 			var importoAppalto = toVal(getValue("GARE_IMPAPP"));
 			var importoOneriProg = toVal(getValue("GARE_ONPRGE"));
 	
-			if(importoCateg != 0){
+			if(importoCateg != 0 && importoAppalto!=0){
 				//alert("progressivo = " + progressivo + "\nimportoCateg = " + importoCateg + "\nimportoAppalto = " + importoAppalto +"\nimportoOneriProg = " + importoOneriProg +"\nPercentuale = " + "" + (importoCateg * 100/(importoAppalto - importoOneriProg)).toFixed(2) + " %" );
 				setValue("OPES_PERCEN_CATEG_" + progressivo, "" + (importoCateg * 100/(importoAppalto - importoOneriProg)).toFixed(2) + " %");
 			} else {

@@ -67,8 +67,12 @@ public class GetITERGAMacroFunction extends AbstractFunzioneTag {
             case 3:
             case 5:
             case 6:
+            case 8:
                 result = "3";
                 break;
+            case 7:
+              result = "7";
+              break;
             default:
               result = "2";
               break;

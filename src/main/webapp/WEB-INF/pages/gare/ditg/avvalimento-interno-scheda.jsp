@@ -31,9 +31,11 @@
 				lista="gene/impr/impr-lista-popup.jsp"
 				scheda="gene/impr/impr-scheda.jsp"
 				schedaPopUp="gene/impr/impr-scheda-popup.jsp"
+				inseribile = "false"
 				campi="IMPR.CODIMP;IMPR.NOMEST"
-				chiave="DITGAVVAL_DITTART_${param.contatore}"
-				where="CODIMP in (select coddic from ragimp where codime9 = '${codiceDitta}')">
+				functionId="ditteRaggruppamentoAvvalimentoInterno"
+				parametriWhere="T:${codiceDitta}"
+				chiave="DITGAVVAL_DITTART_${param.contatore}" >
 				<gene:campoScheda entita="DITGAVVAL" campo="DITTART_${param.contatore}" campoFittizio="true" obbligatorio="true" visibile="true" definizione="T10;0;;;G1DITTART" value="${item[4]}" />
 				<gene:campoScheda title="Ragione sociale" entita="IMPR" campo="NOMEST1_${param.contatore}" campoFittizio="true" visibile="true" definizione="T2000;0;;;NOMIMP" value="${item[5]}" />
 			</gene:archivio>
@@ -43,8 +45,9 @@
 			scheda="gene/impr/impr-scheda.jsp"
 			schedaPopUp="gene/impr/impr-scheda-popup.jsp"
 			campi="IMPR.CODIMP;IMPR.NOMEST"
-			chiave="DITGAVVAL_DITTAAV_${param.contatore}"
-			where="CODIMP <> '${codiceDitta}' and TIPIMP not in (3,10)">
+			functionId="ditteAvvalimentoInterno"
+			parametriWhere="T:${codiceDitta}"
+			chiave="DITGAVVAL_DITTAAV_${param.contatore}" >
 			<gene:campoScheda entita="DITGAVVAL" campo="DITTAAV_${param.contatore}" campoFittizio="true" obbligatorio="true" visibile="true" definizione="T10;0;;;G1DITTAAV" value="${item[6]}" />
 			<gene:campoScheda title="Ragione sociale" entita="IMPR" campo="NOMEST2_${param.contatore}" campoFittizio="true" visibile="true" definizione="T2000;0;;;NOMIMP" value="${item[7]}" />
 		</gene:archivio>
@@ -53,8 +56,9 @@
 			scheda=""
 			schedaPopUp=""
 			campi="V_CAIS_TIT.CAISIM;V_CAIS_TIT.DESCAT"
-			chiave="DITGAVVAL_CODCAT_${param.contatore}"
-			where="V_CAIS_TIT.TIPLAVG=1">
+			functionId="default"
+			parametriWhere="N:1"
+			chiave="DITGAVVAL_CODCAT_${param.contatore}" >
 			<gene:campoScheda entita="DITGAVVAL" campo="CODCAT_${param.contatore}" campoFittizio="true" visibile="true" definizione="T30;0;;;G1CODCATAVL" value="${item[8]}" />
 			<gene:campoScheda title="Descrizione" entita="V_CAIS_TIT" campo="DESCAT_${param.contatore}" campoFittizio="true" visibile="true" definizione="T2000;0;;;DESCAT" value="${item[9]}" />
 		</gene:archivio>
@@ -71,9 +75,11 @@
 				lista="gene/impr/impr-lista-popup.jsp"
 				scheda="gene/impr/impr-scheda.jsp"
 				schedaPopUp="gene/impr/impr-scheda-popup.jsp"
+				inseribile = "false"
 				campi="IMPR.CODIMP;IMPR.NOMEST"
-				chiave="DITGAVVAL_DITTART_${param.contatore}"
-				where="CODIMP in (select coddic from ragimp where codime9 = '${codiceDitta}')">
+				functionId="ditteRaggruppamentoAvvalimentoInterno"
+				parametriWhere="T:${codiceDitta}"
+				chiave="DITGAVVAL_DITTART_${param.contatore}" >
 				<gene:campoScheda entita="DITGAVVAL" campo="DITTART_${param.contatore}" campoFittizio="true" obbligatorio="true" visibile="true" definizione="T10;0;;;G1DITTART" />
 				<gene:campoScheda title="Ragione sociale" entita="IMPR" campo="NOMEST1_${param.contatore}" campoFittizio="true" visibile="true" definizione="T2000;0;;;NOMIMP" />
 			</gene:archivio>
@@ -83,8 +89,9 @@
 			scheda="gene/impr/impr-scheda.jsp"
 			schedaPopUp="gene/impr/impr-scheda-popup.jsp"
 			campi="IMPR.CODIMP;IMPR.NOMEST"
-			chiave="DITGAVVAL_DITTAAV_${param.contatore}"
-			where="CODIMP <> '${codiceDitta}' and TIPIMP not in (3,10)">
+			functionId="ditteAvvalimentoInterno"
+			parametriWhere="T:${codiceDitta}"
+			chiave="DITGAVVAL_DITTAAV_${param.contatore}" >
 			<gene:campoScheda entita="DITGAVVAL" campo="DITTAAV_${param.contatore}" campoFittizio="true" obbligatorio="true" visibile="true" definizione="T10;0;;;G1DITTAAV"  />
 			<gene:campoScheda title="Ragione sociale" entita="IMPR" campo="NOMEST2_${param.contatore}" campoFittizio="true" visibile="true" definizione="T2000;0;;;NOMIMP"  />
 		</gene:archivio>
@@ -93,8 +100,9 @@
 			scheda=""
 			schedaPopUp=""
 			campi="V_CAIS_TIT.CAISIM;V_CAIS_TIT.DESCAT"
-			chiave="DITGAVVAL_CODCAT_${param.contatore}"
-			where="V_CAIS_TIT.TIPLAVG=1">
+			functionId="default"
+			parametriWhere="N:1"
+			chiave="DITGAVVAL_CODCAT_${param.contatore}" >
 			<gene:campoScheda entita="DITGAVVAL" campo="CODCAT_${param.contatore}" campoFittizio="true" visibile="true" definizione="T30;0;;;G1CODCATAVL" />
 			<gene:campoScheda title="Descrizione" entita="V_CAIS_TIT" campo="DESCAT_${param.contatore}" campoFittizio="true" visibile="true" definizione="T2000;0;;;DESCAT" />
 		</gene:archivio>

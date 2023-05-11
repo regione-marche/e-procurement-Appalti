@@ -74,6 +74,27 @@
 	<gene:redefineInsert name="schedaNuovo" />
 	<gene:redefineInsert name="pulsanteNuovo"/>
 	
+	<gene:redefineInsert name="documentiAssociati" >
+	<c:choose>
+		  <c:when test='${isNavigazioneDisabilitata ne "1"}'>
+		  <c:set var="addWhere" value="COAKEY1=${datiRiga.GARECONT_NGARA};COAKEY2=${ncont}"/>
+		  <c:set var="fictitiousVar" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetNumDocAssociatiCustomFunction", pageContext, "GARECONT", addWhere)}' />
+			<tr>
+				<td class="vocemenulaterale">
+					<a href='javascript:documentiAssociatiGarecont();' title="Documenti associati contratto" tabindex="1522">
+						Documenti associati stipula <c:if test="${not empty requestScope.numRecordDocAssociatiCustom}">(${requestScope.numRecordDocAssociatiCustom})</c:if>
+					</a>
+				</td>
+			</tr>
+		</c:when>
+		        <c:otherwise>
+		          	<td>
+						Documenti associati stipula
+					</td>
+		        </c:otherwise>
+			</c:choose>
+		</gene:redefineInsert>
+	
 	<jsp:include page="gare-interno-contratto-OffertaUnica.jsp">
 		<jsp:param name="modcont" value="${modcont}"/>
 		<jsp:param name="tipoContratto" value="stipula"/>
@@ -187,6 +208,13 @@
 		document.pagineForm.action += "&modcont=" + modcont + "&isAccordoQuadro=" + isAccordoQuadro + "&codcont=" + codcont + "&ncont=" + ncont + "&ngaral=" + ngaral + "&codimp=" + codimp;
 		selezionaPaginaDefault(pageNumber);
 	}
+	
+	function documentiAssociatiGarecont(){
+		var keys = "GARECONT.NGARA=T:"+getValue("GARECONT_NGARA")+";GARECONT.NCONT=N:"+${ncont};
+		var href = contextPath+'/ListaDocumentiAssociati.do?'+csrfToken+'&metodo=visualizza&entita=GARECONT&valori='+keys;
+		document.location.href = href;
+	}
+	
 	
 		
 </gene:javaScript>

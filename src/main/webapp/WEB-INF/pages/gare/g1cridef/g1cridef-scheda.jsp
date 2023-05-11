@@ -80,11 +80,13 @@
 				<gene:campoScheda campo="CODGAR" entita="TORN" visibile="false" where="TORN.CODGAR='${codiceGara}'"/>
 				
 				<c:choose>
-					<c:when test='${datiRiga.TORN_OFFTEL eq 2 or empty datiRiga.TORN_OFFTEL}'>
+					<c:when test='${datiRiga.TORN_OFFTEL eq 2 or datiRiga.TORN_OFFTEL eq 3 or empty datiRiga.TORN_OFFTEL}'>
 						<gene:campoScheda campo="FORMATO" modificabile="false" defaultValue="100"  obbligatorio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoCriterioFormato"/>
 					</c:when>
 					<c:otherwise>
-						<gene:campoScheda campo="FORMATO" modificabile="true" obbligatorio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoCriterioFormato" />
+						<gene:campoScheda campo="FORMATO" modificabile="true" obbligatorio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoCriterioFormato" >
+							<gene:checkCampoScheda funzione='validazioneDaFormato("##")' obbligatorio="true" messaggio="Non è possibile impostare la modalita' di assegnazione del punteggio 'automatica' quando il formato del valore offerto è 'testo' o 'data' oppure non è definito" onsubmit="false"/>
+						</gene:campoScheda>
 					</c:otherwise>
 				</c:choose>
 				<gene:campoScheda campo="NUMDECI" obbligatorio="true">
@@ -93,14 +95,9 @@
 				<gene:campoScheda campo="SICINC" entita="GARE" where="GARE.NGARA = '${ngara}'" modificabile='false'/>
 				<gene:campoScheda campo="ULTDETLIC" entita="GARE1" where="GARE1.NGARA = '${ngara}'" modificabile='false' />
 				
-				<c:choose>
-					<c:when test='${datiRiga.TORN_OFFTEL eq 2 or empty datiRiga.TORN_OFFTEL}'>
-						<gene:campoScheda campo="MODPUNTI" modificabile="false" obbligatorio="true"/>
-					</c:when>
-					<c:otherwise>
-						<gene:campoScheda campo="MODPUNTI" modificabile="true" obbligatorio="true"/>
-					</c:otherwise>
-				</c:choose>
+				<gene:campoScheda campo="MODPUNTI" modificabile="true" obbligatorio="true">
+					<gene:checkCampoScheda funzione='validazioneDaModpunti("##")' obbligatorio="true" messaggio="Non è possibile impostare la modalita' di assegnazione del punteggio 'automatica' quando il formato del valore offerto è 'testo' o 'data' oppure non è definito" onsubmit="false"/>
+				</gene:campoScheda>
 				
 				<gene:campoScheda campo="MODMANU" modificabile="true" obbligatorio="true"/>
 				
@@ -111,16 +108,16 @@
 					</a>
 					</span>
 				</gene:campoScheda>
-				
+				<gene:campoScheda campo="ESPONENTE" modificabile="true" obbligatorio="true"/>
 				<gene:campoScheda campo="DESCRI" />
 
 				<gene:fnJavaScriptScheda funzione='formatoOnChangeInit("#G1CRIDEF_FORMATO#")' elencocampi='G1CRIDEF_FORMATO' esegui="true" />
 				<gene:fnJavaScriptScheda funzione='formatoOnChange("#G1CRIDEF_FORMATO#")' elencocampi='G1CRIDEF_FORMATO' esegui="false" />
 				<gene:fnJavaScriptScheda funzione='formulaOnChange("#G1CRIDEF_FORMULA#")' elencocampi='G1CRIDEF_FORMULA' esegui="false" />
 				<gene:fnJavaScriptScheda funzione='modpuntiOnChange("#G1CRIDEF_MODPUNTI#")' elencocampi='G1CRIDEF_MODPUNTI' esegui="true" />
-				<gene:fnJavaScriptScheda funzione='setModManu("#G1CRIDEF_MODPUNTI#")' elencocampi='G1CRIDEF_MODPUNTI' esegui="false" />
+				<gene:fnJavaScriptScheda funzione='setModManu("#G1CRIDEF_MODPUNTI#")' elencocampi='G1CRIDEF_MODPUNTI' esegui="true" />
 				<gene:fnJavaScriptScheda funzione='gestioneSezioneValoriAmmessi("#G1CRIDEF_FORMULA#","#G1CRIDEF_FORMATO#")' elencocampi='G1CRIDEF_FORMULA;G1CRIDEF_FORMATO' esegui="true" />
-				
+				<gene:fnJavaScriptScheda funzione='gestioneEsponente("#G1CRIDEF_FORMULA#")' elencocampi='G1CRIDEF_FORMULA' esegui="true" />
 			</gene:gruppoCampi>
 			
 			<gene:gruppoCampi>
@@ -194,6 +191,11 @@
 
 	</gene:redefineInsert>
 	<gene:javaScript>
+			
+			<c:if test='${datiRiga.TORN_OFFTEL eq 2 or datiRiga.TORN_OFFTEL eq 3 or empty datiRiga.TORN_OFFTEL}'>
+				$("#G1CRIDEF_MODPUNTI option[value='2']").remove();
+			</c:if>
+			
 			var gFormula = $("#G1CRIDEF_FORMULA").val();
 			var gFormato = $("#G1CRIDEF_FORMATO").val();
 			
@@ -216,13 +218,8 @@
 				righeInseribili = 1;
 				if (formato == 1 || formato == 4 || formato == 100) {
 					var val = getValue("G1CRIDEF_MODPUNTI");
-					modpuntiOnChange(1);
-					if(offtel != 2){
-						$("#G1CRIDEF_MODPUNTI").prop('disabled', true);
-						$("#G1CRIDEF_MODPUNTI").css('color', '#888');
-						$("#G1CRIDEF_MODPUNTI").val(1);
-						$("#G1CRIDEF_FORMULA").val("");
-					}
+					//modpuntiOnChange(1);
+					
 				}else{
 					$("#G1CRIDEF_MODPUNTI").prop('disabled', false);
 					$("#G1CRIDEF_MODPUNTI").css('color', '#000');
@@ -267,6 +264,7 @@
 			function formatoOnChange(formato){
 				righeVisualizzate = 0;
 				$("#G1CRIDEF_FORMULA").val("");
+				gestioneEsponente("");
 				countdownrighe = 0;
 				showObj("rowMsgLastG1CRIREG", false);
 				for (var cont = 1; cont <= MaxNumValori; cont++ ){
@@ -377,7 +375,7 @@
 			}
 			
 			function modpuntiOnChange(modpunti) {
-				if (modpunti == 1) {
+				if (modpunti == 1 || modpunti == 3) {
 					showObj("rowG1CRIDEF_MODMANU", true);
 					showObj("rowG1CRIDEF_FORMULA", false);
 					$("#G1CRIDEF_FORMULA").val("");
@@ -391,8 +389,13 @@
 			}
 			
 			function setModManu(modpunti) {
-				if (modpunti == 1) {
+				if (modpunti == 3) {
+					$("#G1CRIDEF_MODMANU").prop('disabled', true);
+					$("#G1CRIDEF_MODMANU").css('color', '#888');
 					$("#G1CRIDEF_MODMANU", "").val(1);
+				}else{
+					$("#G1CRIDEF_MODMANU").prop('disabled', false);
+					$("#G1CRIDEF_MODMANU").css('color', '#000');
 				}
 			}
 			
@@ -422,7 +425,31 @@
 			
 			var schedaConfermaDefault = schedaConferma;
 			function schedaConfermaCustom(){
+				var formula= $("#G1CRIDEF_FORMULA").val();
+				if(formula==11 || formula==13 || formula==14 || formula==15){
+					var esponente=$("#G1CRIDEF_ESPONENTE").val();
+					if(esponente!=null && esponente!=""){
+						var esponenteNum = parseFloat(esponente);
+						if(esponenteNum<=0 && (formula==11 || formula==13)){
+							alert("L'esponente deve essere maggiore di zero");
+							return;
+						}else if(esponenteNum<=1 && (formula==14 || formula==15)){
+							alert("L'esponente deve essere maggiore di uno");
+							return;
+						}else{
+							var esponenteString = esponenteNum.toString();
+							if(esponenteString.includes(".")){
+								var array = esponenteString.split(".");
+								if(array[1].length > 1){
+									alert("L'esponente puo' avere al piu' una cifra decimale");
+									return;
+								}
+							}
+						}
+					}
+				}
 				$("#G1CRIDEF_MODPUNTI").prop('disabled', false);
+				$("#G1CRIDEF_MODMANU").prop('disabled', false);
 				var findedError;
 				var valminValmaxTrovati;
 				var coeffiTrovato;
@@ -533,14 +560,21 @@
 					$("#G1CRIDEF_FORMULA").find("option:nth-child(9)").addClass("removed");
 					$("#G1CRIDEF_FORMULA").find("option:nth-child(10)").addClass("removed");
 					$("#G1CRIDEF_FORMULA").find("option:nth-child(11)").addClass("removed");
+					$("#G1CRIDEF_FORMULA").find("option:nth-child(12)").addClass("removed");
+					$("#G1CRIDEF_FORMULA").find("option:nth-child(13)").addClass("removed");
+					$("#G1CRIDEF_FORMULA").find("option:nth-child(14)").addClass("removed");
+					$("#G1CRIDEF_FORMULA").find("option:nth-child(15)").addClass("removed");
+					$("#G1CRIDEF_FORMULA").find("option:nth-child(16)").addClass("removed");
 				}
 				else{
 					if(formato == 51){
 						$("#G1CRIDEF_FORMULA").find("option:nth-child(2)").addClass("removed");
-						$("#G1CRIDEF_FORMULA").find("option:nth-child(8)").addClass("removed");
-						$("#G1CRIDEF_FORMULA").find("option:nth-child(9)").addClass("removed");
 						$("#G1CRIDEF_FORMULA").find("option:nth-child(10)").addClass("removed");
 						$("#G1CRIDEF_FORMULA").find("option:nth-child(11)").addClass("removed");
+						$("#G1CRIDEF_FORMULA").find("option:nth-child(12)").addClass("removed");
+						$("#G1CRIDEF_FORMULA").find("option:nth-child(13)").addClass("removed");
+						$("#G1CRIDEF_FORMULA").find("option:nth-child(14)").addClass("removed");
+						$("#G1CRIDEF_FORMULA").find("option:nth-child(15)").addClass("removed");
 					}
 					else{
 						if(formato == 50 || formato == 52){
@@ -549,12 +583,18 @@
 							$("#G1CRIDEF_FORMULA").find("option:nth-child(5)").addClass("removed");
 							$("#G1CRIDEF_FORMULA").find("option:nth-child(6)").addClass("removed");
 							$("#G1CRIDEF_FORMULA").find("option:nth-child(7)").addClass("removed");
+							$("#G1CRIDEF_FORMULA").find("option:nth-child(8)").addClass("removed");
+							$("#G1CRIDEF_FORMULA").find("option:nth-child(9)").addClass("removed");
 						}
 						else{
 							$("#G1CRIDEF_FORMULA").find("option:nth-child(2)").addClass("removed");
 							$("#G1CRIDEF_FORMULA").find("option:nth-child(9)").addClass("removed");
 							$("#G1CRIDEF_FORMULA").find("option:nth-child(10)").addClass("removed");
 							$("#G1CRIDEF_FORMULA").find("option:nth-child(11)").addClass("removed");
+							$("#G1CRIDEF_FORMULA").find("option:nth-child(12)").addClass("removed");
+							$("#G1CRIDEF_FORMULA").find("option:nth-child(13)").addClass("removed");
+							$("#G1CRIDEF_FORMULA").find("option:nth-child(14)").addClass("removed");
+							$("#G1CRIDEF_FORMULA").find("option:nth-child(15)").addClass("removed");
 						}
 					}
 				}
@@ -597,5 +637,32 @@
 					}
 			}
 			
+			function gestioneEsponente(formula){
+				if(formula==11 || formula==13 || formula==14 || formula==15){
+					showObj("rowG1CRIDEF_ESPONENTE", true);
+				}else{
+					showObj("rowG1CRIDEF_ESPONENTE", false);
+					$("#G1CRIDEF_ESPONENTE").val("");
+				}
+			}
+			
+			function validazioneDaModpunti(modpunti){
+				var formato = $("#G1CRIDEF_FORMATO").val();
+				return validazioneModpuntiFormato(modpunti,formato);
+				
+			}
+			
+			function validazioneDaFormato(formato){
+				var modpunti = $("#G1CRIDEF_MODPUNTI").val();
+				return validazioneModpuntiFormato(modpunti,formato);
+				
+			}
+			
+			function validazioneModpuntiFormato(modpunti,formato){
+			 	var esitoControllo=true;
+			 	if(modpunti==2 && (formato==1 || formato ==4 || formato == 100))
+			 	 esitoControllo=false;
+			 	return esitoControllo;
+			 }
 	</gene:javaScript>
 </gene:template>

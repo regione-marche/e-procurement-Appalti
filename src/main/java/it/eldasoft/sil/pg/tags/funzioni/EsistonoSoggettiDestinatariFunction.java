@@ -39,7 +39,7 @@ public class EsistonoSoggettiDestinatariFunction extends AbstractFunzioneTag {
     try {
       Long conteggio = (Long) sqlManager.getObject(
           "select count(*) from w_invcomdes where "
-              + " idprg = ? and idcom = ?", new Object[] { idprg, idcom });
+              + " idprg = ? and idcom = ? and (descc is null or descc <> '1')", new Object[] { idprg, idcom });
       if (conteggio != null && conteggio.longValue() > 0)
         esistonoSoggettiDestinatari = "TRUE";
     } catch (SQLException e) {

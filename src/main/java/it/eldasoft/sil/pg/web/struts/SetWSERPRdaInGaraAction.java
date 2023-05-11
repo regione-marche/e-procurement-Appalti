@@ -105,7 +105,7 @@ public class SetWSERPRdaInGaraAction extends Action {
               "wserp.erp.associarda.remote.error", null);
         }else{
           WSERPRdaType[] rdaArray = wserpRdaRes.getRdaArray();
-          wserpRdaRes = this.gestioneWSERPManager.wserpAssociaRdaGara(username, password, servizio, codiceCarrello, codiceRda, posizioneRda, codiceLotto, true);
+          wserpRdaRes = this.gestioneWSERPManager.wserpAssociaRdaGara(username, password, servizio, codiceCarrello, codiceRda, posizioneRda, codiceLotto, null, true);
           if(!wserpRdaRes.isEsito()){
             throw new GestoreException("Si e' verificato un errore durante la associazione delle RdA: " + wserpRdaRes.getMessaggio(),
                 "wserp.erp.associarda.remote.error", null);
@@ -151,7 +151,7 @@ public class SetWSERPRdaInGaraAction extends Action {
             }else{
               WSERPRdaType[] rdaArray = wserpRdaRes.getRdaArray();
               if(!"FNM".equals(tipoWSERP)){
-                wserpRdaRes = this.gestioneWSERPManager.wserpAssociaRdaGara(username, password, servizio, codiceCarrello, codiceRda, posizioneRda, codiceLotto, true);
+                wserpRdaRes = this.gestioneWSERPManager.wserpAssociaRdaGara(username, password, servizio, codiceCarrello, codiceRda, posizioneRda, codiceLotto, null, true);
                 if(!wserpRdaRes.isEsito()){
                   if("AVM".equals(tipoWSERP)){
                     result.put("Esito", "2");

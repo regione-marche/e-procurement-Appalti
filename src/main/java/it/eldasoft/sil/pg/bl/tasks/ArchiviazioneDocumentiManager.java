@@ -10,6 +10,23 @@
  */
 package it.eldasoft.sil.pg.bl.tasks;
 
+import java.io.File;
+import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Vector;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
+
 import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.bl.GenChiaviManager;
 import it.eldasoft.gene.bl.SqlManager;
@@ -28,35 +45,16 @@ import it.eldasoft.utils.sicurezza.ICriptazioneByte;
 import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityStringhe;
 import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
-import it.maggioli.eldasoft.ws.conf.WSDMTabellatoElementoType;
-import it.maggioli.eldasoft.ws.conf.WSDMTabellatoType;
 import it.maggioli.eldasoft.ws.dm.WSDMAggiungiAllegatiResType;
 import it.maggioli.eldasoft.ws.dm.WSDMDocumentoCollegaResType;
 import it.maggioli.eldasoft.ws.dm.WSDMFascicoloType;
 import it.maggioli.eldasoft.ws.dm.WSDMInserimentoInFascicoloType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
+import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAnagraficaType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoInType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoResType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloInOutType;
-
-import java.io.File;
-import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Vector;
-
 import net.schmizz.sshj.xfer.FileSystemFile;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
 
 public class ArchiviazioneDocumentiManager {
 
@@ -180,6 +178,11 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
       String classificaDescrizione = null;
       String associaDocumentiProtocollo = ConfigManager.getValore("wsdm.associaDocumentiProtocollo."+ idconfi);
       String sottotipo = (String) datiWSDM.get("sottotipo");
+      String entita=(String) datiWSDM.get("entita");
+
+      String tipofirma=null;
+      String idunitaoperativamittente=null;
+      String idunitaoperativamittenteDesc = null;
 
       String RUP = null;
       String nomeRup = null;
@@ -193,20 +196,28 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
       String codimp = null;
 
       String oggetto = "gara";
-      if (genere.equals(new Long(10))) {
-          oggetto = "elenco operatori";
-      } else if (genere.equals(new Long(20))) {
-          oggetto = "catalogo elettronico";
+      if(!"G1STIPULA".equals(entita)) {
+        if (genere.equals(new Long(10))) {
+            oggetto = "elenco operatori";
+        } else if (genere.equals(new Long(20))) {
+            oggetto = "catalogo elettronico";
+        }
       }
 
       String entitaAllegato = null;
       String entitaFascicolo = null;
 
-      if (genere.equals(new Long(1))) {
-        entitaFascicolo = "TORN";
-      }else{
-        entitaFascicolo = "GARE";
+
+      if("G1STIPULA".equals(entita)) {
+        entitaFascicolo = entita;
+      }else {
+        if (genere.equals(new Long(1))) {
+          entitaFascicolo = "TORN";
+        }else{
+          entitaFascicolo = "GARE";
+        }
       }
+
 
       String doctel = null;
 
@@ -217,7 +228,7 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
             // Dati generali dell'elemento documentale
             wsdmProtocolloDocumentoIn.setClassifica(classificadocumento);
             wsdmProtocolloDocumentoIn.setTipoDocumento(tipodocumento);
-            /*
+            /* PEr le gare
              * 1 = Doc Gara
              * 2 = Doc Comunicazioni pubbliche
              * 3 = Doc Ditta
@@ -227,17 +238,35 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
              * 7 = Doc Associati in DB
              */
 
+            /* PEr le stipule
+             * 1 = Doc Contratto
+             * 4 = Doc Associati su FileSystem
+             * 5 = Doc Com alla Ditta
+             * 6 = Doc Com Dalla ditta
+             * 7 = Doc Associati in DB
+             */
+
+
             String idDocumentale=null;
             if (!"".equals(provenienza)) {
               int codProvenienza = Integer.parseInt(provenienza);
               switch(codProvenienza) {
                 case 1:
                   inout = "INT";
-                  idDocumentale = "DOCUMGARA|";
-                  selDatiSpecifici = "select d.gruppo, d.descrizione, " +
-                        "d.codgar, d.ngara, d.norddocg" +
-                        " from documgara d join w_docdig w on d.iddocdg=w.iddocdig and d.idprg=w.idprg and digent='DOCUMGARA'" +
-                        " and w.idprg = ? and w.iddocdig = ? ";
+                  if("G1STIPULA".equals(entita)) {
+                    idDocumentale = "G1DOCSTIPULA|";
+                    String condizioneAppend = this.sqlManager.getDBFunction("concat",  new String[] {"'Documento contratto  - '" , "t.tab1desc" });
+                    selDatiSpecifici = "select " + condizioneAppend + ", titolo" +
+                        " from V_GARE_DOCSTIPULA w join tab1 t on t.tab1tip=w.visibilita join g1docstipula d on  w.id=d.id" +
+                        " where w.idprg = ? and w.iddocdig = ? and t.tab1cod='A1182'";
+                  }else {
+                    idDocumentale = "DOCUMGARA|";
+                    selDatiSpecifici = "select d.gruppo, d.descrizione, " +
+                          "d.codgar, d.ngara, d.norddocg" +
+                          " from documgara d join w_docdig w on d.iddocdg=w.iddocdig and d.idprg=w.idprg and digent='DOCUMGARA'" +
+                          " and w.idprg = ? and w.iddocdig = ? ";
+                  }
+
                   break;
                 case 2:
                   inout = "INT";
@@ -294,35 +323,40 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
               Vector<?> datiDoc = this.sqlManager.getVector(selDatiSpecifici, new Object[]{key1Doc,new Long(key2Doc)});
               if(datiDoc != null){
                 if("1".equals(provenienza)){
-                  gruppo = (Long) SqlManager.getValueFromVectorParam(datiDoc, 0).getValue();
-                  if(gruppo != null){
-                    switch(gruppo.intValue()) {
-                    case 1: tipologiaDesc = "Documenti del bando/avviso"; break;
-                    case 2:
-                        if("10".equals(genere) || "20".equals(genere)){
-                          tipologiaDesc = "Requisiti degli operatori"; break;
-                        }else{
-                          tipologiaDesc = "Requisiti dei concorrenti"; break;
-                        }
-                    case 3:
-                        if("10".equals(genere) || "20".equals(genere)){
-                          tipologiaDesc = "Fac-simile documento richiesto agli operatori"; break;
-                        }else{
-                          tipologiaDesc = "Fac-simile documento richiesto ai concorrenti"; break;
-                        }
-                    case 4: tipologiaDesc = "Documento dell'esito"; break;
-                    case 5: tipologiaDesc = "Documento per la trasparenza"; break;
-                    case 6 : tipologiaDesc = "Documento dell'invito a presentare offerta"; break;
-                    case 10: tipologiaDesc = "Atto o documento art.29 c.1 DLgs.50/2016"; break;
-                    case 11: tipologiaDesc = "Documento allegato all'ordine di acquisto"; break;
-                    case 12: tipologiaDesc = "Documento dell'invito all'asta elettronica"; break;
+                  if("G1STIPULA".equals(entita)) {
+                    tipologiaDesc = (String)SqlManager.getValueFromVectorParam(datiDoc, 0).getValue();
+                  }else {
+                    gruppo = (Long) SqlManager.getValueFromVectorParam(datiDoc, 0).getValue();
+                    if(gruppo != null){
+                      switch(gruppo.intValue()) {
+                      case 1: tipologiaDesc = "Documenti del bando/avviso"; break;
+                      case 2:
+                          if("10".equals(genere) || "20".equals(genere)){
+                            tipologiaDesc = "Requisiti degli operatori"; break;
+                          }else{
+                            tipologiaDesc = "Requisiti dei concorrenti"; break;
+                          }
+                      case 3:
+                          if("10".equals(genere) || "20".equals(genere)){
+                            tipologiaDesc = "Fac-simile documento richiesto agli operatori"; break;
+                          }else{
+                            tipologiaDesc = "Fac-simile documento richiesto ai concorrenti"; break;
+                          }
+                      case 4: tipologiaDesc = "Documento dell'esito"; break;
+                      case 5: tipologiaDesc = "Documento per la trasparenza"; break;
+                      case 6 : tipologiaDesc = "Documento dell'invito a presentare offerta"; break;
+                      case 10: tipologiaDesc = "Atto o documento art.29 c.1 DLgs.50/2016"; break;
+                      case 11: tipologiaDesc = "Documento allegato all'ordine di acquisto"; break;
+                      case 12: tipologiaDesc = "Documento dell'invito all'asta elettronica"; break;
 
-                    default:
-                      tipologiaDesc = "Documentazione " + oggetto; break;
+                      default:
+                        tipologiaDesc = "Documentazione " + oggetto; break;
+                      }
+                    }else{
+                      tipologiaDesc= "Documentazione " + oggetto;
                     }
-                  }else{
-                    tipologiaDesc= "Documentazione " + oggetto;
                   }
+
                 }else{
                   tipologiaDesc = SqlManager.getValueFromVectorParam(datiDoc, 0).getStringValue();
                 }
@@ -359,9 +393,23 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
                 if(configurazione.isEsito())
                   tipoWSDM = configurazione.getRemotewsdm();
 
-                String cig = (String)sqlManager.getObject("select codcig from v_gare_torn where codgar=?", new Object[]{codgara});
+                String ngaraStipula=null;
+                String cig=null;
+                String oggettoGara = null;
+                if("G1STIPULA".equals(entita)) {
+                  oggettoGara = this.pgManagerEst1.getOggettoGara(codgara, null,null, true);
+                  ngaraStipula = (String)sqlManager.getObject("select ngara from g1stipula where id=?", new Object[]{new Long(codgara)});
+                  /*
+                  if("JIRIDE".equals(tipoWSDM)) {
+                    oggettodocumento = codice + "(rif.gara: " + ngaraStipula + ") - " + oggettoGara;
+                  }
+                  */
+                }else {
+                  cig = (String)sqlManager.getObject("select codcig from v_gare_torn where codgar=?", new Object[]{codgara});
+                  oggettoGara = this.pgManagerEst1.getOggettoGara(codice, codgara, genere);
+                }
 
-                String oggettoGara = this.pgManagerEst1.getOggettoGara(codice, codgara, genere);
+
                 if("TITULUS".equals(tipoWSDM)){
                   oggettodocumento += ": " + oggettoGara;
                   int genereGara = genere.intValue();
@@ -383,6 +431,21 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
                   if(genereGara!=10 && genereGara!=11 && genereGara!=20)
                     oggettodocumento += " - CIG:" + cig;
 
+                }else if("ENGINEERINGDOC".equals(tipoWSDM)) {
+                  oggettodocumento = codice + " - " + oggettodocumento;
+                }
+
+                //Per l'integrazione DOCER adopero alcuni campi di GARDOC_JOBS per contentere dei dati che non sono allineati col nome del campo:
+                //struttura conterrà idunitaoperativamittenteDesc, ossia la descrizione del tabellato unità operativa mittente
+                //supporto conterrà idunitaoperativamittente, ossia il valore del tabellato unità operativa mittente
+                //mezzo conterrà tipofirma
+                if("DOCER".equals(tipoWSDM)){
+                  idunitaoperativamittente = supporto;
+                  idunitaoperativamittenteDesc = struttura;
+                  tipofirma = mezzo;
+                  supporto=null;
+                  struttura = null;
+                  mezzo = null;
                 }
 
                 wsdmProtocolloDocumentoIn.setOggetto(oggettodocumento);
@@ -401,7 +464,7 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
                   unitaOperativaMittente = idunitaoperativadestinataria;
                 }
 
-                if("ARCHIFLOWFA".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM))
+                if("ARCHIFLOWFA".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM))
                   wsdmProtocolloDocumentoIn.setStruttura(struttura);
 
                 wsdmProtocolloDocumentoIn.setIdUnitaOperativaMittente(unitaOperativaMittente);
@@ -454,7 +517,7 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
 
                 if("JDOC".equals(tipoWSDM)){
                   String select = "select nometei,cogtei from torn, tecni where codgar = ? and codrup=codtec";
-                  Vector datiRup =  sqlManager.getVector(select, new Object[]{codgara});
+                  Vector<?> datiRup =  sqlManager.getVector(select, new Object[]{codgara});
                   if(datiRup!=null && datiRup.size()>0){
                     String nomeR = SqlManager.getValueFromVectorParam(datiRup, 0).getStringValue();
                     String cognomeR = SqlManager.getValueFromVectorParam(datiRup, 1).getStringValue();
@@ -462,47 +525,31 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
                       nomeR="";
                     if(cognomeR==null)
                       cognomeR="";
-                   RUP = nomeR + " " + cognomeR;
-                   nomeRup = RUP;
+                   nomeRup = cognomeR + " " + nomeR;
                    if(nomeR.length()>0)
                      acronimoRup +=nomeR.substring(0, 1);
                    if(cognomeR.length()>0)
                      acronimoRup +=cognomeR.substring(0, 1);
                   }
                   wsdmProtocolloDocumentoIn.setGenericS11(sottotipo);
-                  wsdmProtocolloDocumentoIn.setGenericS12(RUP);
+                  wsdmProtocolloDocumentoIn.setGenericS12(nomeRup);
+                  wsdmProtocolloDocumentoIn.setGenericS45(acronimoRup);
 
                 }
+
+
 
                 //CALCOLO qui se la fascicolazione risulta abilitata
                 String valAbilitazioneFascicolazione = ConfigManager.getValore("pg.wsdm.applicaFascicolazione."+idconfi);
                 if("1".equals(valAbilitazioneFascicolazione)){
-                  if("ENGINEERINGDOC".equals(tipoWSDM)){
-                    //Si deve caricare il codice del fascicolo dal file di configurazione dei tabellati
-                    if (configurazione.getTabellati() != null) {
-                      WSDMTabellatoType[] wsdmTabellati = configurazione.getTabellati();
-                      if (wsdmTabellati != null && wsdmTabellati.length > 0) {
-                        for (int t = 0; t < wsdmTabellati.length; t++) {
-                          if ("idfolder".equals(wsdmTabellati[t].getNome())) {
-                            WSDMTabellatoElementoType[] elementi = wsdmTabellati[t].getElementi();
-                            if (elementi != null && elementi.length > 0) {
-                              for (int e = 0; e < elementi.length; e++) {
-                                codicefascicolo = elementi[e].getCodice();
-                                inserimentoinfascicolo = "SI_FASCICOLO_ESISTENTE";
-                                break;
-                              }
-                            }
-                            break;
-                          }
-                        }
-                      }
-                    }
-                  }else{
+
                     //ocorre recuperare sia il codice che il numero del fascicolo,in quanto abbiamo il caso di ENGINEERING
                     //che non mi restituisce in creazione il codice ma il numero
                     String selectFascicolo = "select wsf.codice,wsf.numero,wsf.anno, wsf.codaoo, wsf.coduff, wsf.classifica,wsf.desclassi,wsf.desvoce from wsfascicolo wsf ,v_gare_genere v" +
                     " where wsf.key1= v.codice and  wsf.entita = ? and v.codgar = ?";
-                    Vector fascicolo = sqlManager.getVector(selectFascicolo, new Object[] { entitaFascicolo, codgara});
+                    if("G1STIPULA".equals(entitaFascicolo))
+                      selectFascicolo = "select codice,numero,anno, codaoo, coduff, classifica,desclassi,desvoce from wsfascicolo where entita = ? and key1= ?  ";
+                    Vector fascicolo = sqlManager.getVector(selectFascicolo, new Object[] { entitaFascicolo, codgara });
                     if (fascicolo != null && fascicolo.size() > 0){
                       codicefascicolo = (String) SqlManager.getValueFromVectorParam(fascicolo, 0).getValue();
                       numerofascicolo = (String) SqlManager.getValueFromVectorParam(fascicolo, 1).getValue();
@@ -520,7 +567,11 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
                     }else{
                       inserimentoinfascicolo = "SI_FASCICOLO_ESISTENTE";
                     }
-                  }
+
+                }
+
+                if("ENGINEERINGDOC".equals(tipoWSDM)){
+                  wsdmProtocolloDocumentoIn.setGenericS31(codiceufficio);
                 }
 
                 // Inserimento in fascicolo
@@ -538,10 +589,10 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
                     //si deve impostare l'oggetto del fascicolo
                     wsdmFascicolo.setOggettoFascicolo(oggettoGara);
                   }
-                  if("ARCHIFLOWFA".equals(tipoWSDM) || "INFOR".equals(tipoWSDM)){
+                  if("ARCHIFLOWFA".equals(tipoWSDM) || "INFOR".equals(tipoWSDM) || "DOCER".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM)){
                     wsdmFascicolo.setClassificaFascicolo(classificafascicolo);
                   }
-                  if("JIRIDE".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM)){
+                  if("JIRIDE".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM)  || "INFOR".equals(tipoWSDM)){
                     wsdmFascicolo.setStruttura(struttura);
                   }
                   if("JDOC".equals(tipoWSDM)){
@@ -560,19 +611,34 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
                 }
 
                 //Valorizzazione dei nuovi campi: societa,codicegaralotto,cig e destinatarioprincipale
-                String cenint=(String)sqlManager.getObject("select cenint from torn where codgar=?",new Object[]{codgara});
+                String cenint=null;
+                if("G1STIPULA".equals(entita)) {
+                  cenint=(String)sqlManager.getObject("select cenint from torn,gare where ngara=? and codgar=codgar1",new Object[]{ngaraStipula});
+                }else {
+                  cenint=(String)sqlManager.getObject("select cenint from torn where codgar=?",new Object[]{codgara});
+                }
                 wsdmProtocolloDocumentoIn.setSocieta(cenint);
                 wsdmProtocolloDocumentoIn.setDestinatarioPrincipale(cenint);
-                if (genere.equals(new Long(1)))
-                  wsdmProtocolloDocumentoIn.setCodiceGaraLotto(codgara);
-                else
-                  wsdmProtocolloDocumentoIn.setCodiceGaraLotto(codice);
+                if(!"G1STIPULA".equals(entita)) {
+                  if (genere.equals(new Long(1)))
+                    wsdmProtocolloDocumentoIn.setCodiceGaraLotto(codgara);
+                  else
+                    wsdmProtocolloDocumentoIn.setCodiceGaraLotto(codice);
+                }
 
                 wsdmProtocolloDocumentoIn.setCig(cig);
                 wsdmProtocolloDocumentoIn.setMezzo(mezzo);
 
                 wsdmProtocolloDocumentoIn.setClassificaDescrizione(classificaDescrizione);
                 wsdmProtocolloDocumentoIn.setVoce(voce);
+
+                if("DOCER".equals(tipoWSDM)){
+                  wsdmProtocolloDocumentoIn.setGenericS11(tipofirma);
+                  wsdmProtocolloDocumentoIn.setGenericS21(idunitaoperativamittenteDesc);
+                  wsdmProtocolloDocumentoIn.setGenericS22(idunitaoperativamittente);
+                  wsdmProtocolloDocumentoIn.setGenericS31(idunitaoperativamittenteDesc);
+                  wsdmProtocolloDocumentoIn.setGenericS32(idunitaoperativamittente);
+                }
 
                 //ALLEGATI
                 //Ogni documento rappresenta un solo allegato
@@ -601,8 +667,11 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
                       allegato.setContenuto(contenuto);
                       if("TITULUS".equals(tipoWSDM))
                         allegato.setIdAllegato("C0OGGASS|" + key2Doc);
-                      allegati[0] = allegato;
-
+                      if("NUMIX".equals(tipoWSDM)) {
+                        allegato = GestioneWSDMManager.popolaAllegatoInfo(nomeFileAssociato,allegato);
+                        allegato.setIsSealed(new Long(1));
+                      }
+                     allegati[0] = allegato;
                     }
                 }else{
                   selectAllegato = "select digdesdoc, dignomdoc, idprg, iddocdig from w_docdig where idprg = ? and iddocdig = ?";
@@ -627,6 +696,10 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
                     allegato.setContenuto(digogg.getStream());
                     if("TITULUS".equals(tipoWSDM))
                       allegato.setIdAllegato("W_DOCDIG|" + key1Doc + "|" + key2Doc);
+                    if("NUMIX".equals(tipoWSDM)) {
+                      allegato = GestioneWSDMManager.popolaAllegatoInfo(dignomdoc,allegato);
+                      allegato.setIsSealed(new Long(1));
+                    }
                     allegati[0] = allegato;
                   }
                 }
@@ -651,6 +724,50 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
 
                   Long stato_archiviazione = new Long(3);
                   String esito = null;
+
+                  //Nel caso di NUMIX va impostato un destinatario, si è deciso di prendere i dati dalla stazione Appaltante
+                  if("NUMIX".equals(tipoWSDM)){
+                    WSDMProtocolloAnagraficaType[] destinatari = new WSDMProtocolloAnagraficaType[1];
+                    destinatari[0] = new WSDMProtocolloAnagraficaType();
+                    String intestazione=null;
+                    String codfisc=null;
+                    String piva=null;
+                    String email=null;
+                    Vector<?> datiUffint = this.sqlManager.getVector("select nomein, cfein, ivaein, emai2in, emaiin from uffint where codein=?", new Object[] { cenint });
+                    if(datiUffint!=null && datiUffint.size()>0){
+                      intestazione = (String) SqlManager.getValueFromVectorParam(datiUffint,0).getValue();
+                      codfisc = (String) SqlManager.getValueFromVectorParam(datiUffint,1).getValue();
+                      piva = (String) SqlManager.getValueFromVectorParam(datiUffint,2).getValue();
+                      email = (String) SqlManager.getValueFromVectorParam(datiUffint,3).getValue();
+                      if(email == null || "".equals(email))
+                        email = (String) SqlManager.getValueFromVectorParam(datiUffint,4).getValue();
+                    }
+                    destinatari[0].setCognomeointestazione(intestazione);
+                    destinatari[0].setCodiceFiscale(codfisc);
+                    destinatari[0].setPartitaIVA(piva);
+                    destinatari[0].setEmail(email);
+
+                    wsdmProtocolloDocumentoIn.setDestinatari(destinatari);
+
+                    if("3".equals(provenienza) && "1".equals(doctel) && !genere.equals(new Long(10)) && !genere.equals(new Long(20))){
+                      Long busta = SqlManager.getValueFromVectorParam(datiDoc, 7).longValue();
+                      codimp = SqlManager.getValueFromVectorParam(datiDoc, 2).getStringValue();
+                      codimp = UtilityStringhe.convertiNullInStringaVuota(codimp);
+                      Vector<?> datiDitg = this.getDatiProtocolloDitta(codice,codgara , codimp, busta);
+                      if(datiDitg!=null && datiDitg.size()>0){
+                        String numProt = SqlManager.getValueFromVectorParam(datiDitg, 0).stringValue();
+                        String dataProt = SqlManager.getValueFromVectorParam(datiDitg, 2).stringValue();
+                        if(numProt!=null && dataProt!=null){
+                          Date date = UtilityDate.convertiData(dataProt, UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS);
+                          Calendar calendar = Calendar.getInstance();
+                          calendar.setTime(date);
+                          wsdmProtocolloDocumentoIn.setGenericS11(numProt);
+                          wsdmProtocolloDocumentoIn.setGenericD11(calendar);
+                        }
+                      }
+
+                    }
+                  }
 
                   if("JIRIDE".equals(tipoWSDM) && "3".equals(provenienza) && "1".equals(doctel) && "2".equals(associaDocumentiProtocollo) && !genere.equals(new Long(10)) && !genere.equals(new Long(20))){
                     Long busta = SqlManager.getValueFromVectorParam(datiDoc, 7).longValue();
@@ -696,11 +813,14 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
                       //Salvatagio in WSDOCUMENTO
                       Long annoProt=null;
                       String numProt=null;
-                      if("INFOR".equals(tipoWSDM) || "JPROTOCOL".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM)){
+                      if("INFOR".equals(tipoWSDM) || "JPROTOCOL".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM) || "NUMIX".equals(tipoWSDM)){
                         numProt = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroProtocollo();
                         annoProt = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getAnnoProtocollo();
                       }
-                      Long idWSDocumento = this.gestioneWSDMManager.setWSDocumento(entitaFascicolo, codice, null, null, null, numeroDocumento, annoProt, numProt, oggettodocumento,inout);
+                      String chiave=codice;
+                      if("G1STIPULA".equals(entita))
+                        chiave=codgara;
+                      Long idWSDocumento = this.gestioneWSDMManager.setWSDocumento(entitaFascicolo, chiave, null, null, null, numeroDocumento, annoProt, numProt, oggettodocumento,inout);
 
                       if("4".equals(provenienza)){
                         entitaAllegato = "C0OGGASS";
@@ -747,7 +867,7 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
    * @throws SQLException
    *
    */
-  public int trasferisciAreaFTPCOS(HashMap<String, Object> doc)
+  public int trasferisciAreaFTPCOS(HashMap<String, Object> doc, SFTPManager sftp)
     throws GestoreException, IOException, SQLException{
 
     String idprg = (String)doc.get(this.KEY1);
@@ -761,7 +881,6 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
       if (logger.isDebugEnabled())
         logger.debug("trasferisciAreaFTPCOS: inizio metodo");
 
-      SFTPManager sftp = new SFTPManager();
       String alias_sp = ConfigManager.getValore("cos.sftp.aliasSp");
       String alias_da = ConfigManager.getValore("cos.sftp.aliasDa");
       String pathBase = ConfigManager.getValore("cos.sftp.pathBase");
@@ -771,7 +890,7 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
       String base = pathBase + alias_sp + "/" + alias_da + "/Documenti/";
       if (logger.isDebugEnabled())
         logger.debug("trasferisciAreaFTPCOS: path = " + base);
-      sftp.connect();
+
       sftp.existsDirs(base);
       int esito = 1;
 
@@ -824,12 +943,10 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
             }
           }
           int numerofile = 1;
-          List<String> files = sftp.GetFiles(base);
-          for (int j = 0; j < files.size(); j++) {
-            String jfile = files.get(j);
-            if (jfile.contains(impronta)) {
-              numerofile++;
-            }
+          Long lastCosNomeFile= (Long) this.sqlManager.getObject("select count(*) from gardoc_wsdm where cos_nome_file like ?" ,
+              new Object[] {impronta + "%"});
+          if(lastCosNomeFile>0) {
+            numerofile += lastCosNomeFile;
           }
           String newNomeFile = impronta + "-" + numerofile + estensioni;
           percorso = base + newNomeFile;
@@ -883,17 +1000,17 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
     return javax.xml.bind.DatatypeConverter.printHexBinary(hash);
   }
 
-  public Long insertJobArchiviazioneDocumenti(Long syscon, String codgar, String tipoWSDM, String classifica, String codiceRegistro, String tipoDocumento, String mittInterno,
+  public Long insertJobArchiviazioneDocumenti(Long syscon, String codgar, String entita, String tipoWSDM, String classifica, String codiceRegistro, String tipoDocumento, String mittInterno,
       String classificaTitolazione, String indice, String unitaOperativaMittente, String mezzo, String struttura, String supporto, Long tipo_archiviazione, String sottotipo) {
     Long idArchiviazione = null;
     try {
       idArchiviazione = new Long(genChiaviManager.getNextId("GARDOC_JOBS"));
         //aggiorno flag di esecuzione nella lista record da elaborare
         this.sqlManager.update("insert into gardoc_jobs(id_archiviazione, syscon, codgara, data_inserimento, da_processare, tipo_archiviazione, classifica, cod_reg," +
-                " tipo_doc, mitt_int, classifica_tit, indice, uo_mittdest, mezzo, struttura, supporto,sottotipo)" +
-                " values(?,?,?,?,'1',?,?,?,?,?,?,?,?,?,?,?,?)",
+                " tipo_doc, mitt_int, classifica_tit, indice, uo_mittdest, mezzo, struttura, supporto,sottotipo, entita)" +
+                " values(?,?,?,?,'1',?,?,?,?,?,?,?,?,?,?,?,?,?)",
             new Object[]{idArchiviazione, syscon, codgar, new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()), tipo_archiviazione, classifica, codiceRegistro,
-            tipoDocumento, mittInterno, classificaTitolazione, indice, unitaOperativaMittente,mezzo,struttura,supporto,sottotipo});
+            tipoDocumento, mittInterno, classificaTitolazione, indice, unitaOperativaMittente,mezzo,struttura,supporto,sottotipo,entita});
 
     } catch (Exception e) {
         logger.error("archiviazioneDocumentiGara.insertJob : errore durante l'inserimento del job di archiviazione documenti per la gara " + codgar, e);
@@ -924,7 +1041,9 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
     //idArchiviazione, statoGardocJobs, numDocEsitoNegativo, messaggioApp, codgara , codice, genere
     String msgGenere = "";
     String message = "";
-    if (new Long(10).equals(genere)){
+    if(genere == null) {
+      msgGenere = "la stipula  ";
+    }else if (new Long(10).equals(genere)){
       msgGenere = "l' elenco operatori ";
     }else if(new Long(20).equals(genere)){
       msgGenere = "il catalogo elettronico ";
@@ -954,7 +1073,12 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
 
 
     } catch (Exception e) {
-        logger.error("archiviazioneDocumentiGara.insertJob : errore durante l'aggiornamento del job di archiviazione documenti per la gara " + codgar, e);
+      String msg = "archiviazioneDocumentiGara.insertJob : errore durante l'aggiornamento del job di archiviazione documenti per la";
+      if(genere == null)
+        msg +="la stipula" + codice;
+      else
+        msg +="la gara" + codgar;
+      logger.error(msg, e);
     }
     return id_archiviazione;
   }
@@ -993,6 +1117,25 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
     this.sqlManager.update("update gardoc_wsdm set esito = ?, stato_archiviazione= 2 where id = ? and id_archiviazione = ?",
                       new Object[]{ esito, idDoc, idArchiviazione });
   }
+
+  public void updateStatoEsito(Long stato, String esito, Long idDoc, Long idArchiviazione) throws SQLException{
+    this.sqlManager.update("update gardoc_wsdm set stato_archiviazione= ?, esito = ? where id = ? and id_archiviazione = ?",
+                      new Object[]{stato, esito, idDoc, idArchiviazione });
+  }
+
+  public void updateStatoEsitoGlobale(Long stato, String esito, String cos_indice, Long idDoc) throws SQLException, GestoreException{
+        this.sqlManager.update("update gardoc_wsdm set stato_archiviazione= ?, cos_indice = ?, esito = ? where id = ?",
+                          new Object[]{stato, cos_indice, esito, idDoc});
+  }
+
+  public void insertMsg(String messaggio, Long destinatario) throws SQLException, GestoreException{
+    String insertW_MESSAGE_IN = "insert into w_message_in (message_id, message_date, message_subject, message_body, message_sender_syscon, message_recipient_syscon, message_recipient_read) values (?,?,?,?,?,?,?)";
+    Long maxMessageIdIn = (Long) this.sqlManager.getObject("select max(message_id) from w_message_in", new Object[] {});
+    if (maxMessageIdIn == null) maxMessageIdIn = new Long(0);
+    maxMessageIdIn = new Long(maxMessageIdIn.longValue() + 1);
+    this.sqlManager.update(insertW_MESSAGE_IN, new Object[] { maxMessageIdIn, new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()),
+        messaggio, null, 50, destinatario, new Long(0) });
+}
 
   /**
    * Funzione valida solo per JIRIDE
@@ -1070,23 +1213,17 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
     WSDMAggiungiAllegatiResType  ret = null;
 
     String selectNumeroDocumento="select numerodoc from wsdocumento where numeroprot=? and annoprot = ? and inout=?";
-    String selectDitg="select nprdom, dprdom from ditg where ngara5=? and dittao=?";
-    if(!new Long(4).equals(busta))
-      selectDitg="select nproff, dproff from ditg where ngara5=? and dittao=?";
+
     try {
       //Se numeroDoc è nullo, lo si deve ricavare
-        String chiaveGara=ngara;
-        Long genere = (Long)this.sqlManager.getObject("select genere from v_gare_genere where codgar=?", new Object[]{codgar});
-        if(new Long(3).equals(genere))
-          chiaveGara = codgar;
-        Vector datiDITG = this.sqlManager.getVector(selectDitg, new Object[]{chiaveGara, codDitta});
+
+        Vector<?> datiDITG = this.getDatiProtocolloDitta(ngara,codgar,codDitta,busta);
         if(datiDITG!=null && datiDITG.size()>0){
           String numProt = SqlManager.getValueFromVectorParam(datiDITG, 0).stringValue();
           Timestamp dataProt = SqlManager.getValueFromVectorParam(datiDITG, 1).dataValue();
           if(numProt!=null && dataProt!=null){
-            Date date = new Date(dataProt.getTime());
             Calendar calendar = Calendar.getInstance();
-            calendar.setTime(date);
+            calendar.setTimeInMillis(dataProt.getTime());
             int annoProt = calendar.get(Calendar.YEAR);
             String numDoc =(String)this.sqlManager.getObject(selectNumeroDocumento, new Object[]{numProt, new Long(annoProt), "IN"});
             ret = this.gestioneWSDMManager.WSDMAggiungiAllegati(username, ruolo, GestioneWSDMManager.SERVIZIO_DOCUMENTALE, numDoc,annoProt,numProt,allegati,idconfi);
@@ -1104,6 +1241,33 @@ public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
     }
 
     return ret;
+  }
+
+  /**
+   * Vengono estratti i campi nprdom, dprdom (o nproff, dproff nel caso di busta=4) della ditta
+   * @param ngara
+   * @param codgar
+   * @param codDitta
+   * @param busta
+   * @return Vector<?>
+   * @throws SQLException
+   */
+  private Vector<?> getDatiProtocolloDitta(String ngara, String codgar, String codDitta, Long busta) throws SQLException {
+    String dbFunctionDateToString = sqlManager.getDBFunction("DATETIMETOSTRING",
+        new String[] { "dprdom" });
+    String selectDitg="select nprdom, dprdom, " + dbFunctionDateToString + " from ditg where ngara5=? and dittao=?";
+    if(!new Long(4).equals(busta)) {
+      dbFunctionDateToString = sqlManager.getDBFunction("DATETIMETOSTRING",
+          new String[] { "dproff" });
+      selectDitg="select nproff, dproff, " + dbFunctionDateToString + " from ditg where ngara5=? and dittao=?";
+    }
+    String chiaveGara=ngara;
+    Long genere = (Long)this.sqlManager.getObject("select genere from v_gare_genere where codgar=?", new Object[]{codgar});
+    if(new Long(3).equals(genere))
+      chiaveGara = codgar;
+    Vector<?> datiDITG = this.sqlManager.getVector(selectDitg, new Object[]{chiaveGara, codDitta});
+    return datiDITG;
+
   }
 
 }

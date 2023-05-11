@@ -33,7 +33,7 @@ GROUP BY GARECONT.STATO]]>
 			<printWhenExpression><![CDATA[$F{STATO} == 2]]></printWhenExpression>
 			<image>
 				<reportElement x="0" y="0" width="399" height="113" uuid="fe0af087-a4a2-4157-9aed-5a34c80641b5"/>
-				<imageExpression><![CDATA[$P{IMAGES_DIR} + "bozza_ordine.png"]]></imageExpression>
+				<imageExpression><![CDATA[$P{IMAGES_DIR} + "bozza_ordine.jpg"]]></imageExpression>
 			</image>
 			<frame>
 				<reportElement positionType="Float" x="0" y="113" width="483" height="18" uuid="434bf1f6-7fb8-4c1e-88f0-db2e866e7cba"/>

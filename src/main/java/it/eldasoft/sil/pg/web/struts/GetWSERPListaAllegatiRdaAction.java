@@ -157,6 +157,12 @@ public class GetWSERPListaAllegatiRdaAction extends Action {
           countRda = (Long) sqlManager.getObject(
               "select count(*) from garerda where codgar in (select codgar1 from gare where ngara = ?)",new Object[] { codice });
         }
+        
+        if("AMIU".equals(tipoWSERP)){
+            countRda = (Long) sqlManager.getObject(
+                "select count(*) from garerda where codgar = ?",new Object[] { codice });
+        }
+
 
         if("AVM".equals(tipoWSERP)){
           if(new Long(0).equals(countRda)){
@@ -186,8 +192,12 @@ public class GetWSERPListaAllegatiRdaAction extends Action {
             selRdaGara = "select codrda,posrda,codcarr,codvoc from gcap where ngara = ? order by codcarr,codrda,posrda";
           }else{
             linkrda = "1";
-            selRdaGara = "select numrda,posrda from garerda" +
-            " where codgar in (select codgar1 from gare where ngara = ?) order by numrda,posrda";
+            if("AMIU".equals(tipoWSERP)){
+                selRdaGara = "select numrda,posrda from garerda where codgar = ? order by numrda,posrda";
+            }else {
+                selRdaGara = "select numrda,posrda from garerda" +
+                        " where codgar in (select codgar1 from gare where ngara = ?) order by numrda,posrda";
+            }
           }
 
           List<Vector> rdaGara = sqlManager.getListVector(selRdaGara, new Object[] { codice });
@@ -238,13 +248,20 @@ public class GetWSERPListaAllegatiRdaAction extends Action {
               for (int a = 0; a < allegatiArray.length; a++) {
                 HashMap<String, Object> hMap = new HashMap<String, Object>();
                 if(codiceRda!= null && allegatiArray[a] != null){
-                  hMap.put("codiceCarrello", codiceCarrello);
-                  hMap.put("codiceRda", codiceRda);
-                  hMap.put("descrRda", descrRda);
-                  hMap.put("titolo", allegatiArray[a].getTitolo());
-                  hMap.put("nome", allegatiArray[a].getNome());
-                  hMap.put("tipo", allegatiArray[a].getTipo());
-                  hMap.put("path", allegatiArray[a].getPath());
+                	if("AMIU".equals(tipoWSERP)){
+                        hMap.put("titoloallegato", codiceRda);
+                        hMap.put("tipoallegato", allegatiArray[a].getTipo());
+                        hMap.put("nomeallegato", allegatiArray[a].getNome());
+                        hMap.put("idfile", allegatiArray[a].getPath());
+                	}else {
+                        hMap.put("codiceCarrello", codiceCarrello);
+                        hMap.put("codiceRda", codiceRda);
+                        hMap.put("descrRda", descrRda);
+                        hMap.put("titolo", allegatiArray[a].getTitolo());
+                        hMap.put("nome", allegatiArray[a].getNome());
+                        hMap.put("tipo", allegatiArray[a].getTipo());
+                        hMap.put("path", allegatiArray[a].getPath());
+                	}
                   hMapAllegatiRda.add(hMap);
                 }
 
@@ -260,10 +277,16 @@ public class GetWSERPListaAllegatiRdaAction extends Action {
       totalAfterFilterAllegatiRda = hMapAllegatiRda.size();
     }
 
+    if("AMIU".equals(tipoWSERP)) {
+        result.put("iTotalRecordsALLEGATI", totalAllegatiRda);
+        result.put("iTotalDisplayRecordsALLEGATI", totalAfterFilterAllegatiRda);
+        result.put("dataALLEGATI", hMapAllegatiRda);
+    }else {
+        result.put("iTotalRecords", totalAllegatiRda);
+        result.put("iTotalDisplayRecords", totalAfterFilterAllegatiRda);
+        result.put("data", hMapAllegatiRda);
+    }
 
-    result.put("iTotalRecords", totalAllegatiRda);
-    result.put("iTotalDisplayRecords", totalAfterFilterAllegatiRda);
-    result.put("data", hMapAllegatiRda);
 
     out.print(result);
     out.flush();

@@ -1,13 +1,7 @@
 package it.eldasoft.sil.pg.web.struts;
 
-import it.eldasoft.gene.bl.FileManager;
-import it.eldasoft.gene.bl.FileManagerException;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
-import it.eldasoft.gene.commons.web.struts.CostantiGeneraliStruts;
-import it.eldasoft.utils.properties.ConfigManager;
-
 import java.io.IOException;
+import java.util.Vector;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -18,6 +12,13 @@ import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 import org.springframework.dao.DataAccessException;
+
+import it.eldasoft.gene.bl.FileManager;
+import it.eldasoft.gene.bl.FileManagerException;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
+import it.eldasoft.gene.commons.web.struts.CostantiGeneraliStruts;
+import it.eldasoft.utils.properties.ConfigManager;
 
 public class DownloadExportDocumentiAction extends ActionBaseNoOpzioni {
 
@@ -56,7 +57,18 @@ public class DownloadExportDocumentiAction extends ActionBaseNoOpzioni {
     if(idRichiesta != null) {
     	long id = Long.parseLong(idRichiesta);
     	try {
-    		String codgar = (String)this.sqlManager.getObject("select codgara from gardoc_jobs where id_archiviazione = ?", new Object[] { id });
+    	  Vector<?> dati_Gardoc = this.sqlManager.getVector("select codgara,entita from gardoc_jobs where id_archiviazione = ?", new Object[] { id });
+    	  String codgar = null;
+    	  String entita= null;
+    	  if(dati_Gardoc!=null && dati_Gardoc.size()>0) {
+    	    codgar = SqlManager.getValueFromVectorParam(dati_Gardoc, 0).getStringValue();
+    	    entita = SqlManager.getValueFromVectorParam(dati_Gardoc, 1).getStringValue();
+
+    	    if("G1STIPULA".equals(entita))
+              codgar = (String)this.sqlManager.getObject("select codstipula from g1stipula where id = ?", new Object[] {new Long(codgar)});
+    	  }
+
+
     		String codgarApp = codgar;
       	  	if (codgar.startsWith("$")) {
       	  		codgarApp = codgar.substring(1);

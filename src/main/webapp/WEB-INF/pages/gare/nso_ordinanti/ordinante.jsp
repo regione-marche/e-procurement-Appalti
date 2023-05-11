@@ -30,6 +30,7 @@
 			 schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda-popup.jsp","")}'
 			 campi="UFFINT.CODEIN;UFFINT.NOMEIN;UFFINT.ENDPOINT_NSO;UFFINT.VIAEIN;UFFINT.CITEIN;UFFINT.CAPEIN;UFFINT.CODNAZ;UFFINT.IVAEIN"
 			 chiave="NSO_ORDINANTI_CODEIN_${param.contatore}"
+			 functionId="skip|abilitazione:1"
 			 inseribile="true">
 				<gene:campoScheda title="Codice" campo="CODEIN_${param.contatore}" entita="NSO_ORDINANTI" campoFittizio="true" definizione="T16;;;;NSO_ON_CODEIN" value="${item[3]}" />
 				<gene:campoScheda title="Denominazione" campo="NOMEIN_${param.contatore}" entita="NSO_ORDINANTI" modificabile="false" campoFittizio="true" definizione="T254;;;;NSO_ON_NOMEIN" value="${item[4]}" />
@@ -54,6 +55,7 @@
 			 schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda-popup.jsp","")}'
 			 campi="UFFINT.CODEIN;UFFINT.NOMEIN;UFFINT.ENDPOINT_NSO;UFFINT.VIAEIN;UFFINT.CITEIN;UFFINT.CAPEIN;UFFINT.CODNAZ;UFFINT.IVAEIN"
 			 chiave="NSO_ORDINANTI_CODEIN_${param.contatore}"
+			 functionId="skip|abilitazione:1"
 			 inseribile="true">
 				<gene:campoScheda title="Codice" campo="CODEIN_${param.contatore}" entita="NSO_ORDINANTI" campoFittizio="true" definizione="T16;;;;NSO_ON_CODEIN"  />
 				<gene:campoScheda title="Denominazione" campo="NOMEIN_${param.contatore}" entita="NSO_ORDINANTI" modificabile="false" campoFittizio="true" definizione="T254;;;;NSO_ON_NOMEIN"  />

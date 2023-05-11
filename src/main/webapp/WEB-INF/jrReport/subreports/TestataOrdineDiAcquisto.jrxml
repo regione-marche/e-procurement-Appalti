@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="TestataOrdineDiAcquisto" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+<!-- Created with Jaspersoft Studio version 6.16.0.final utlizzo versione della libreria JasperReports6.16.0-48579d909b7943b64690c65c71e07e0b80981928  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="TestataOrdineDiAcquisto" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="37dfba09-c440-4e82-930c-340149e8f77d">
 	<property name="ireport.zoom" value="1.2100000000000004"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
@@ -29,7 +30,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 	<detail>
 		<band height="20" splitType="Immediate">
 			<staticText>
-				<reportElement mode="Opaque" x="0" y="0" width="482" height="20" backcolor="#CCCCCC"/>
+				<reportElement mode="Opaque" x="0" y="0" width="482" height="20" backcolor="#CCCCCC" uuid="d7405ade-2b77-4587-8b36-3f870192a3a8"/>
 				<box topPadding="2" leftPadding="0" bottomPadding="0">
 					<pen lineWidth="0.5"/>
 					<topPen lineWidth="0.5"/>
@@ -38,14 +39,14 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
-					<font size="12" isBold="true" isPdfEmbedded="true"/>
+					<font size="12" isBold="true"/>
 				</textElement>
 				<text><![CDATA[ORDINE DIRETTO DI ACQUISTO]]></text>
 			</staticText>
 		</band>
 		<band height="15">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="9da49c62-71d5-4371-ab8f-af8a85bc2a78"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -53,7 +54,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="61d69d0f-618e-4121-b427-2b04a19d9919"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<rightPen lineWidth="0.5"/>
 					</box>
@@ -62,21 +63,21 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Codice ordine di acquisto]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="e9d4240f-f802-4df7-9daf-556e39867c6d"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$P{NUMERO_GARA}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$P{NUMERO_GARA}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="15">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="f09fb767-5dc1-4190-87cd-002d622e7b90"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -84,28 +85,28 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="6b2775cf-afc0-4c6b-8677-43b3b40ffa7e"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
 					<textElement>
 						<font size="11"/>
 					</textElement>
 					<text><![CDATA[Nr. Identificativo Ordine]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="11b81ca3-f9bc-4a72-b2ce-8a45ef61e1c2"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{NR_ORDINE}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{NR_ORDINE}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="15">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="4ecb3393-9396-420d-bb64-3a771adef19e"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -113,28 +114,28 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="82a685e2-87c2-48c2-a1b4-bc0929b08f31"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
 					<textElement>
 						<font size="11"/>
 					</textElement>
 					<text><![CDATA[CIG]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="f6e4c332-368e-40c6-b0bb-f940332b1cb3"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{CIG}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{CIG}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="15">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="b46dbc64-2860-4a25-b758-92bd2596a129"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -142,7 +143,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="0a5ad020-6c57-47fe-ac7a-d98192c6dc06"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
 					<textElement>
 						<font size="11"/>
@@ -150,7 +151,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<text><![CDATA[Strumento d'acquisto]]></text>
 				</staticText>
 				<staticText>
-					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="35cf57d0-ccb4-4f69-8c48-22ca797135ca"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
@@ -163,25 +164,25 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 		</band>
 		<band height="15">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="5938c4fc-cbc4-4e7b-9afa-f0113a423b54"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
 					<bottomPen lineWidth="0.5"/>
 					<rightPen lineWidth="0.5"/>
 				</box>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="14f935b2-7c90-4715-9b9c-0a20377bd986"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{OGGETTO}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{OGGETTO}]]></textFieldExpression>
 				</textField>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="6e7c026b-0259-4a18-abdd-5a3eefaca81e"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
 					<textElement>
 						<font size="11"/>
@@ -192,7 +193,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 		</band>
 		<band height="15">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="0d9b75d7-bb89-4d18-9290-f18240dd5058"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -200,46 +201,46 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="0e688ec0-665c-4e12-adf3-40e8102d5007"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
 					<textElement>
 						<font size="11"/>
 					</textElement>
 					<text><![CDATA[Data Creazione Ordine]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+				<textField textAdjust="StretchHeight" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="cd7d690f-52b5-4de7-8238-dbd4f1cd7e6b"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.util.Date"><![CDATA[$F{DATA_CREAZIONE} != null ? (new SimpleDateFormat("yyyy-MM-dd")).parse($F{DATA_CREAZIONE}.substring(0,10)) : null]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{DATA_CREAZIONE} != null ? (new SimpleDateFormat("yyyy-MM-dd")).parse($F{DATA_CREAZIONE}.substring(0,10)) : null]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="15">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="7dd551f2-c0db-4f4b-82c1-900a3ceca388"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
 					<bottomPen lineWidth="0.5"/>
 					<rightPen lineWidth="0.5"/>
 				</box>
-				<textField isStretchWithOverflow="true" pattern="#,##0.00 € " isBlankWhenNull="false">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+				<textField textAdjust="StretchHeight" pattern="#,##0.00 € " isBlankWhenNull="false">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="246d6593-3168-4256-9e92-a99a9059de11"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.Double"><![CDATA[$F{TOT_NO_IVA} != null ? Double.valueOf($F{TOT_NO_IVA}) : null]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{TOT_NO_IVA} != null ? Double.valueOf($F{TOT_NO_IVA}) : null]]></textFieldExpression>
 				</textField>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="c5b19ecc-65c8-4f3e-b925-7c4f2573cf5c"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
 					<textElement>
 						<font size="11"/>
@@ -250,7 +251,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 		</band>
 		<band height="15">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="2b1a4d05-b017-4f07-a09e-64db95ca0349"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -258,28 +259,28 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="4cf9936e-dfa2-405c-931c-29e591ac3695"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
 					<textElement>
 						<font size="11"/>
 					</textElement>
 					<text><![CDATA[TOTALE (IVA inclusa)]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" pattern="#,##0.00 € " isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+				<textField textAdjust="StretchHeight" pattern="#,##0.00 € " isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="f540857d-9a82-46e6-b545-868404d18aac"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.Double"><![CDATA[$F{TOT_IVA} != null ? Double.valueOf($F{TOT_IVA}) : null]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{TOT_IVA} != null ? Double.valueOf($F{TOT_IVA}) : null]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>
 		<band height="15">
 			<frame>
-				<reportElement positionType="Float" x="0" y="0" width="482" height="15"/>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="15" uuid="3bddc579-932e-4faf-905b-f72d3fc001b2"/>
 				<box>
 					<topPen lineWidth="0.5"/>
 					<leftPen lineWidth="0.5"/>
@@ -287,22 +288,22 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<staticText>
-					<reportElement positionType="Float" x="0" y="0" width="241" height="15"/>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="15" uuid="7896483f-4d4c-4d7c-bfe3-584473fd18d9"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2"/>
 					<textElement>
 						<font size="11"/>
 					</textElement>
 					<text><![CDATA[Modalità di pagamento]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement positionType="Float" x="241" y="0" width="241" height="15"/>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement positionType="Float" x="241" y="0" width="241" height="15" uuid="2442f1f3-8756-4bbc-aa48-845c653f440f"/>
 					<box topPadding="0" leftPadding="5" bottomPadding="0" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
 					</box>
 					<textElement>
 						<font size="11"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{MODO_PAGAMENTO}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$F{MODO_PAGAMENTO}]]></textFieldExpression>
 				</textField>
 			</frame>
 		</band>

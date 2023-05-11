@@ -20,6 +20,16 @@
 <jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
 
 <c:set var="prefissoFileDownloadComBari" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", prefissoFileDownloadComuneBari)}'/>
+<c:set var="digitalSignatureUrlCheck" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-check-url")}'/>
+<c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:choose>
+	<c:when test="${!empty digitalSignatureUrlCheck && !empty digitalSignatureProvider && (digitalSignatureProvider eq 1 || digitalSignatureProvider eq 2)}">
+		<c:set var="digitalSignatureWsCheck" value='1'/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="digitalSignatureWsCheck" value='0'/>
+	</c:otherwise>
+</c:choose>
 
 <c:choose>
 	<c:when test='${not empty param.genereGara}'>
@@ -94,6 +104,8 @@
 			<c:set var="whereV_GARE_DOCDITTA" value="${whereV_GARE_DOCDITTA} and (V_GARE_DOCDITTA.CONTESTOVAL is null or V_GARE_DOCDITTA.CONTESTOVAL = ${tipoImpresa })"/>
 		</c:otherwise>
 	</c:choose>
+	
+	<c:set var="whereV_GARE_DOCDITTA" value="${whereV_GARE_DOCDITTA} and (V_GARE_DOCDITTA.DOCANNUL is null or  V_GARE_DOCDITTA.DOCANNUL <> '1')"/>
 	
 	<gene:redefineInsert name="corpo">
 				
@@ -174,40 +186,80 @@
 		var vet = dignomdoc.split(".");
 		var ext = vet[vet.length-1];
 		ext = ext.toUpperCase(); 
-		if(ext=='P7M' || ext=='TSD'){
-			if(dataril!=null && dataril!=''){
-				var res1 = dataril.substring(0,2);
-				var res2 = dataril.substring(3,5);
-				var res3 = dataril.substring(6,10);
-				var fdataril = res3+res2+res1;
-				if(oraril!=null && oraril!="")
-					fdataril+=" " + oraril +":00";
-				if($("#ckdate").size() == 0){
-					var _input = $("<input/>", {"type": "hidden","id": "ckdate", "name": "ckdate", value:""});
-					$("#formVisFirmaDigitale").append(_input);
+		<c:choose>
+			<c:when test="${digitalSignatureWsCheck eq 0}">
+				if(ext=='P7M' || ext=='TSD'){
+					if(dataril!=null && dataril!=''){
+						var res1 = dataril.substring(0,2);
+						var res2 = dataril.substring(3,5);
+						var res3 = dataril.substring(6,10);
+						var fdataril = res3+res2+res1;
+						if(oraril!=null && oraril!="")
+							fdataril+=" " + oraril +":00";
+						if($("#ckdate").size() == 0){
+							var _input = $("<input/>", {"type": "hidden","id": "ckdate", "name": "ckdate", value:""});
+							$("#formVisFirmaDigitale").append(_input);
+						}
+						document.formVisFirmaDigitale.ckdate.value = fdataril;
+					}else{
+					 	if($("#ckdate").size() > 0){
+							document.formVisFirmaDigitale.ckdate.remove();
+						}
+					}
+				 	document.formVisFirmaDigitale.idprg.value = idprg;
+					document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+					var l = Math.floor((screen.width-800)/2);
+					var t = Math.floor((screen.height-550)/2);
+					var numOpener = getNumeroPopUp()+1;
+					l = l - 30 + (numOpener * 30);
+					t = t - 50 + (numOpener * 50);
+					tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
+					window.open("","popUpFirma","toolbar=no,menubar=no,width=800,height=550,top="+t+",left="+l+",resizable=yes,scrollbars=yes");
+					document.formVisFirmaDigitale.submit();
+				}else{
+					tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
+					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+					var nomeCodificato = encodeURIComponent(dignomdoc);
+					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + nomeCodificato;
 				}
-				document.formVisFirmaDigitale.ckdate.value = fdataril;
-			}else{
-			 	if($("#ckdate").size() > 0){
-					document.formVisFirmaDigitale.ckdate.remove();
+			</c:when>
+			<c:otherwise>
+				if(ext=='P7M' || ext=='TSD' || ext=='XML' || ext=='PDF'){
+					if(dataril!=null && dataril!=''){
+						var res1 = dataril.substring(0,2);
+						var res2 = dataril.substring(3,5);
+						var res3 = dataril.substring(6,10);
+						var fdataril = res3+res2+res1;
+						if(oraril!=null && oraril!="")
+							fdataril+=" " + oraril +":00";
+						if($("#ckdate").size() == 0){
+							var _input = $("<input/>", {"type": "hidden","id": "ckdate", "name": "ckdate", value:""});
+							$("#formVisFirmaDigitale").append(_input);
+						}
+						document.formVisFirmaDigitale.ckdate.value = fdataril;
+					}else{
+					 	if($("#ckdate").size() > 0){
+							document.formVisFirmaDigitale.ckdate.remove();
+						}
+					}
+				 	document.formVisFirmaDigitale.idprg.value = idprg;
+					document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+					var l = Math.floor((screen.width-800)/2);
+					var t = Math.floor((screen.height-550)/2);
+					var numOpener = getNumeroPopUp()+1;
+					l = l - 30 + (numOpener * 30);
+					t = t - 50 + (numOpener * 50);
+					tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
+					window.open("","popUpFirma","toolbar=no,menubar=no,width=800,height=550,top="+t+",left="+l+",resizable=yes,scrollbars=yes");
+					document.formVisFirmaDigitale.submit();
+				}else{
+					tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
+					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+					var nomeCodificato = encodeURIComponent(dignomdoc);
+					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + nomeCodificato;
 				}
-			}
-		 	document.formVisFirmaDigitale.idprg.value = idprg;
-			document.formVisFirmaDigitale.iddocdig.value = iddocdig;
-			var l = Math.floor((screen.width-800)/2);
-			var t = Math.floor((screen.height-550)/2);
-			var numOpener = getNumeroPopUp()+1;
-			l = l - 30 + (numOpener * 30);
-			t = t - 50 + (numOpener * 50);
-			tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
-			window.open("","popUpFirma","toolbar=no,menubar=no,width=800,height=550,top="+t+",left="+l+",resizable=yes,scrollbars=yes");
-			document.formVisFirmaDigitale.submit();
-		}else{
-			tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
-			var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-			var nomeCodificato = encodeURIComponent(dignomdoc);
-			document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + nomeCodificato;
-		}
+			</c:otherwise>
+		</c:choose>
 	}
 	
 	</gene:javaScript>

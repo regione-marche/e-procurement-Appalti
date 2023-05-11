@@ -38,9 +38,12 @@ Scheda categorie d'iscrizione
 <gene:template file="scheda-template.jsp" gestisciProtezioni="true" schema="GENE" idMaschera="CAIS-scheda">
 	<gene:setString name="titoloMaschera" value="Dettaglio categoria d'iscrizione" />
 	<gene:redefineInsert name="corpo">
-	
+		
+				
 		<gene:formScheda entita="CAIS" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreCAIS">
-			<gene:campoScheda campo="CAISIM" keyCheck="true" modificabile='${modoAperturaScheda eq "NUOVO"}' obbligatorio="true" />
+			<gene:campoScheda campo="CAISIM" keyCheck="true" modificabile='${modoAperturaScheda eq "NUOVO"}' obbligatorio="true" >
+				<gene:checkCampoScheda funzione='"##".indexOf("/") < 0 && "##".indexOf(". ") < 0 && "##".indexOf(" .") < 0' obbligatorio="true" messaggio="Il carattere / e le sequenze ' .' e '. ' non sono accettate nel valore del campo codice categoria" />
+			</gene:campoScheda>
 			<gene:campoScheda campo="DESCAT" />
 			<gene:campoScheda campo="ISARCHI" definizione="T1"  obbligatorio="true" defaultValue="2"/>
 			<gene:campoScheda campo="TITCAT" />

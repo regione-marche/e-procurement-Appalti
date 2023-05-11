@@ -120,6 +120,11 @@ public class SFTPManager {
         sftp.rename(oldpath, newpath);
     }
     
+    public void Remove(String path) throws IOException
+    {
+        sftp.rm(path);
+    }
+    
     public List<String> GetFiles(String path) throws IOException{
         ArrayList<String> retval = new ArrayList<String>();
         List<RemoteResourceInfo> lista = sftp.ls(path);

@@ -128,7 +128,7 @@ public class GestoreCriteriValutazione extends AbstractGestoreEntita {
     if(modpunti == null || modpunti.length()<= 0){
       throw new GestoreException("Modalità assegnazione punteggio non definita","criteri.modalitaCalcoloNonDefinita");
     }
-    if(modpunti.equals("1")){
+    if(modpunti.equals("1") || modpunti.equals("3")){
       String modmanu = datiForm.getColumn("G1CRIDEF.MODMANU").getValue().getStringValue();
       if(modmanu == null || modmanu.length()<= 0){
         throw new GestoreException("Modalità punteggio manuale non definita","criteri.punteggioManualeNonDefinito");
@@ -137,6 +137,9 @@ public class GestoreCriteriValutazione extends AbstractGestoreEntita {
       String formula = datiForm.getColumn("G1CRIDEF.FORMULA").getValue().getStringValue();
       if(formula == null || formula.length()<= 0){
         throw new GestoreException("Formula calcolo punteggio automatico non definita","criteri.punteggioAutomaticoNonDefinito");
+      }
+      if("1".equals(formatoCorrente) || "4".equals(formatoCorrente) || "100".equals(formatoCorrente)) {
+        throw new GestoreException("Modalita' assegnazione punteggio e formato non compatibili","criteri.modpuntiFormatoNonCompatibili");
       }
     }
     if(formatoCorrente.equals("50") || formatoCorrente.equals("51") || formatoCorrente.equals("52")){

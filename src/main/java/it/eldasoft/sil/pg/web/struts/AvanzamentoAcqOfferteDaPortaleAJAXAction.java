@@ -47,10 +47,12 @@ public class AvanzamentoAcqOfferteDaPortaleAJAXAction extends Action {
 
     String ngara = request.getParameter("ngara");
     String comtipo = "FS11";
+    String comtipo2 = "FS14";
+    
 
-    String selectW_INVCOM = "select count(*) from w_invcom where comkey2 = ? and (comstato = '5' or comstato = '13') and comtipo = ?";
+    String selectW_INVCOM = "select count(*) from w_invcom where comkey2 = ? and (comstato = '5' or comstato = '13') and (comtipo = ? or comtipo = ?)";
 
-    Long cnt = (Long) sqlManager.getObject(selectW_INVCOM, new Object[] { ngara, comtipo });
+    Long cnt = (Long) sqlManager.getObject(selectW_INVCOM, new Object[] { ngara, comtipo, comtipo2 });
 
     result.put("cnt", cnt);
 

@@ -1,5 +1,23 @@
 package it.eldasoft.sil.pg.web.struts;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Vector;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.struts.action.Action;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+
+import com.lowagie.text.DocumentException;
+
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
@@ -14,22 +32,7 @@ import it.maggioli.eldasoft.ws.dm.WSDMFascicoloResType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoInType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoResType;
-
-import java.io.PrintWriter;
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Vector;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import net.sf.json.JSONObject;
-
-import org.apache.struts.action.Action;
-import org.apache.struts.action.ActionForm;
-import org.apache.struts.action.ActionForward;
-import org.apache.struts.action.ActionMapping;
 
 public class SetRichiestaArchiviazioneAction extends Action {
 
@@ -122,10 +125,22 @@ public class SetRichiestaArchiviazioneAction extends Action {
     String nomeRup = request.getParameter("nomeRup");
     String acronimoRup = request.getParameter("acronimoRup");
     String sottotipo = request.getParameter("sottotipo");
+    String idunitaoperativamittente = request.getParameter("idunitaoperativamittente");
+    String idunitaoperativamittenteDesc = request.getParameter("idunitaoperativamittenteDesc");
+    String tipofirma = request.getParameter("tipofirma");
+    String entita= request.getParameter("entita");
+    String key1= request.getParameter("key1");
+    String uocompetenza= request.getParameter("uocompetenza");
+    String uocompetenzadescrizione= request.getParameter("uocompetenzadescrizione");
 
-    String entita="GARE";
-    if("1".equals(genere))
-      entita="TORN";
+    if(!"G1STIPULA".equals(entita)) {
+      entita="GARE";
+      if("1".equals(genere))
+        entita="TORN";
+    }else {
+      codgar=key1;
+      codice=key1;
+    }
 
 
     if("TITULUS".equals(tipoWSDM)){
@@ -150,12 +165,17 @@ public class SetRichiestaArchiviazioneAction extends Action {
       boolean esisteFascicoloSMAT=false;
       boolean esisteFascicoloPrisma=false;
       boolean esisteFascicoloArchiflowfa=false;
+      boolean esisteFascicoloItalprot=false;
       String fromWhere = "from wsfascicolo wsf ,v_gare_genere v" +
           " where wsf.key1= v.codice and  wsf.entita = ? and v.codgar = ?";
-      if(!"ENGINEERINGDOC".equals(tipoWSDM) && !"SMAT".equals(tipoWSDM) && !"ARCHIFLOWFA".equals(tipoWSDM)){
+      if(!"SMAT".equals(tipoWSDM) && !"ARCHIFLOWFA".equals(tipoWSDM) && !"ITALPROT".equals(tipoWSDM)){
         String selectFascicolo = "select wsf.codice,wsf.numero " + fromWhere;
         //ocorre recuperare sia il codice che il numero del fascicolo,in quanto abbiamo il caso di ENGINEERING
         //che non mi restituisce in creazione il codice ma il numero
+        if("G1STIPULA".equals(entita))
+          selectFascicolo = "select codice,numero from wsfascicolo where entita = ? and key1 = ?";
+        else
+          selectFascicolo = "select wsf.codice,wsf.numero " + fromWhere;
         Vector fascicolo = sqlManager.getVector(selectFascicolo, new Object[] { entita, codgar});
         if (fascicolo != null && fascicolo.size() > 0){
           if(!"PRISMA".equals(tipoWSDM)){
@@ -166,24 +186,30 @@ public class SetRichiestaArchiviazioneAction extends Action {
             esisteFascicoloTitulus=true;
           if("PRISMA".equals(tipoWSDM))
             esisteFascicoloPrisma=true;
+
         }
-      }else if("SMAT".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM)){
+      }else if("SMAT".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM)){
         String selectFascicolo = "select wsf.codice " + fromWhere;
         String codiceWsfascicolo = (String)sqlManager.getObject(selectFascicolo, new Object[] { entita, codgar});
         if(codiceWsfascicolo!=null && !"".equals(codiceWsfascicolo)){
           if("SMAT".equals(tipoWSDM))
             esisteFascicoloSMAT=true;
+          else if("ITALPROT".equals(tipoWSDM))
+            esisteFascicoloItalprot=true;
           else
             esisteFascicoloArchiflowfa=true;
         }
       }
+
+      if("ENGINEERINGDOC".equals(tipoWSDM))
+        idunitaoperativadestinataria = null;
 
       codicefascicolo = UtilityStringhe.convertiNullInStringaVuota(codicefascicolo);
       numerofascicolo = UtilityStringhe.convertiNullInStringaVuota(numerofascicolo);
       //Nel caso di TITULUS il codice fascicolo viene inizializzato col codice gara, quindi si deve creare il fascicolo
       //anche se il codice fascicolo è valorizzato, ma non è presente l"occorrenza in wsfascicolo
       if(("".equals(codicefascicolo) && "".equals(numerofascicolo)) || ("TITULUS".equals(tipoWSDM) && !esisteFascicoloTitulus) || ("SMAT".equals(tipoWSDM) && !esisteFascicoloSMAT)
-          || ("PRISMA".equals(tipoWSDM) && !esisteFascicoloPrisma) || ("ARCHIFLOWFA".equals(tipoWSDM) && !esisteFascicoloArchiflowfa)){
+          || ("PRISMA".equals(tipoWSDM) && !esisteFascicoloPrisma) || ("ARCHIFLOWFA".equals(tipoWSDM) && !esisteFascicoloArchiflowfa) || ("ITALPROT".equals(tipoWSDM) && !esisteFascicoloItalprot)){
         inserimentoinfascicolo = "SI_FASCICOLO_NUOVO";
       //CREO IL FASCICOLO
         if("PALEO".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM)){
@@ -193,6 +219,7 @@ public class SetRichiestaArchiviazioneAction extends Action {
           WSDMProtocolloDocumentoInType wsdmProtocolloDocumentoIn = null;
           WSDMProtocolloAllegatoType[] allegati = null;
           inserimentoinfascicolo = "SI_FASCICOLO_NUOVO";
+
 
           HashMap<String, Object> par = new HashMap<String, Object>();
           par.put("classificadocumento", classificadocumento);
@@ -250,7 +277,12 @@ public class SetRichiestaArchiviazioneAction extends Action {
             allegati[0].setTitolo("Apertura fascicolo");
             allegati[0].setIdAllegato(idDocumento + "|1");
           }
-          allegati[0].setContenuto(UtilityStringhe.string2Pdf(commsgtes));
+          InputStream iccInputStream = new FileInputStream(request.getSession(true).getServletContext().getRealPath("/WEB-INF/jrReport/sRGB_v4_ICC_preference.icc"));
+          try {
+            allegati[0].setContenuto(UtilityStringhe.string2PdfA(commsgtes,iccInputStream));
+          } catch (com.itextpdf.text.DocumentException e) {
+            throw new DocumentException(e);
+          }
 
           wsdmProtocolloDocumentoIn.setAllegati(allegati);
 
@@ -284,7 +316,7 @@ public class SetRichiestaArchiviazioneAction extends Action {
             throw new GestoreException("Errore nell'inserimento del documento","wsdm.fascicoloprotocollo.documentoinserisci.error",new Object[]{messaggio}, new Exception());
           }
 
-        }else if(!"ENGINEERINGDOC".equals(tipoWSDM) && !"SMAT".equals(tipoWSDM) && !"PRISMA".equals(tipoWSDM) && !"ARCHIFLOWFA".equals(tipoWSDM)){
+        }else if(!"SMAT".equals(tipoWSDM) && !"PRISMA".equals(tipoWSDM) && !"ARCHIFLOWFA".equals(tipoWSDM) && !"ITALPROT".equals(tipoWSDM)){
           WSDMFascicoloInType wsdmFascicoloIn = new WSDMFascicoloInType();
           wsdmFascicoloIn.setClassificaFascicolo(classificafascicolo);
           wsdmFascicoloIn.setDescrizioneFascicolo(descrizionefascicolo);
@@ -297,6 +329,10 @@ public class SetRichiestaArchiviazioneAction extends Action {
             wsdmFascicoloIn.setGenericS11(acronimoRup);
             wsdmFascicoloIn.setGenericS12(nomeRup);
           }
+          if("ENGINEERINGDOC".equals(tipoWSDM) || "INFOR".equals(tipoWSDM)){
+            wsdmFascicoloIn.setStruttura(struttura);
+          }
+
           WSDMFascicoloResType wsdmFascicoloRes = this.gestioneWSDMManager.WSDMFasciloInserisci(username, password,
               ruolo, nome, cognome, codiceuo, idutente, idutenteunop, wsdmFascicoloIn,servizio, codiceaoo, codiceufficio,idconfi);
           if(wsdmFascicoloRes.isEsito()){
@@ -311,14 +347,22 @@ public class SetRichiestaArchiviazioneAction extends Action {
             if(!"0".equals(isRiservatezzaAttiva)){
               riservatezza = new Long(1);
             }
+
+            if("ENGINEERINGDOC".equals(tipoWSDM)) {
+              codiceufficio = uocompetenza;
+              codiceufficiodes = uocompetenzadescrizione;
+            }else {
+              codiceufficio = null;
+              codiceufficiodes = null;
+            }
             this.gestioneWSDMManager.setWSFascicolo(entita, codice, null, null, null, codiceFascicoloNUOVO, annoFascicoloNUOVO,
-                numeroFascicoloNUOVO, classificafascicolo,null,null,struttura,riservatezza,null,null,null,null);
+                numeroFascicoloNUOVO, classificafascicolo,null,codiceufficio,struttura,riservatezza,null,null,null,codiceufficiodes);
 
           }else{
             String messaggio = wsdmFascicoloRes.getMessaggio();
             throw new GestoreException("Errore nell'inserimento del fascicolo","wsdm.fascicoloprotocollo.fascicoloinserisci.error",new Object[]{messaggio}, new Exception());
           }
-        }else if("SMAT".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM)){
+        }else if("SMAT".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM)){
           Long annoFascicoloNUOVO=null;
           if("SMAT".equals(tipoWSDM)){
             Date oggi = new Date();
@@ -348,12 +392,18 @@ public class SetRichiestaArchiviazioneAction extends Action {
       syscon = new Long(profiloUtente.getId());;
     }
 
-
-
-
+    //Per l'integrazione DOCER adopero alcuni campi di GARDOC_JOBS per contentere dei dati che non sono allineati col nome del campo:
+    //struttura conterrà idunitaoperativamittenteDesc, ossia la descrizione del tabellato unità operativa mittente
+    //supporto conterrà idunitaoperativamittente, ossia il valore del tabellato unità operativa mittente
+    //mezzo conterrà tipofirma
+    if("DOCER".equals(tipoWSDM)){
+      struttura=idunitaoperativamittenteDesc;
+      supporto = idunitaoperativamittente;
+      mezzo = tipofirma;
+    }
 
     //INSERIMENTO in GARDOC_JOBS
-    _idRichiesta = archiviazioneDocumentiManager.insertJobArchiviazioneDocumenti(syscon, codgar, tipoWSDM, classificadocumento, codiceregistrodocumento,
+    _idRichiesta = archiviazioneDocumentiManager.insertJobArchiviazioneDocumenti(syscon, codgar, entita, tipoWSDM, classificadocumento, codiceregistrodocumento,
         tipodocumento, mittenteinterno, idtitolazione, idindice, idunitaoperativadestinataria,mezzo, struttura,supporto,tipo_archiviazione,sottotipo);
     result.put("idRichiesta", _idRichiesta);
 

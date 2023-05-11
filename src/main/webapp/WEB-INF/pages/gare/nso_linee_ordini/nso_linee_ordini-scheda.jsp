@@ -45,10 +45,17 @@
 			<gene:redefineInsert name="addToDocumenti" />
 			<gene:redefineInsert name="schedaNuovo" />
 			<gene:redefineInsert name="pulsanteNuovo" />
-			<c:if test='${requestScope.statoOrdine eq 3 || requestScope.statoOrdine eq 4}'>
+			<c:if test='${(requestScope.statoOrdine ne 1 && requestScope.statoOrdine ne 2)}'>
 				<gene:redefineInsert name="schedaModifica" />
 				<gene:redefineInsert name="pulsanteModifica" />
 			</c:if>
+			<%-- <c:if test="${requestScope.statoOrdine eq 8}">
+				<%/*
+					se l'ordine è revocato non devo permettere alcuna modifica
+				*/ %>
+				<gene:redefineInsert name="schedaModifica"></gene:redefineInsert>
+				<gene:redefineInsert name="pulsanteModifica"></gene:redefineInsert>
+			</c:if> --%>
 			
 			<gene:campoScheda campo="ID" visibile='false'/>
 			<gene:campoScheda campo="NSO_ORDINI_ID" defaultValue="${idOrdine}" visibile='false'/>
@@ -111,7 +118,8 @@
 				 scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda.jsp","")}'
 				 schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda-popup.jsp","")}'
 				 campi="UFFINT.CODEIN;UFFINT.NOMEIN"
-				 chiave="NSO_LINEE_ORDINI_CODEIN_RICH" >
+				 chiave="NSO_LINEE_ORDINI_CODEIN_RICH" 
+				 functionId="skip|abilitazione:1">
 					<gene:campoScheda campo="CODEIN_RICH" title="Ufficio richiedente" />
 					<gene:campoScheda campo="NOMEIN" title="Denominazione" entita="UFFINT" where="NSO_LINEE_ORDINI.CODEIN_RICH=UFFINT.CODEIN" 
 						defaultValue="${requestScope.initNOMEIN}" />

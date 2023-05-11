@@ -74,12 +74,17 @@
 				</gene:campoScheda>
 				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" modificabile="false" campoFittizio="true" definizione="T100;0;;;DIGNOMDOC"  value="${documentiInvitoDescFile[(3 * param.contatore) - 2 ]}" href="javascript:visualizzaFileAllegato('${item[5]}','${item[6]}',${gene:string4Js(documentiInvitoDescFile[(3 * param.contatore) - 2 ])});">
 					<c:if test='${modoAperturaScheda eq "VISUALIZZA" }'>
-						<c:if test="${param.richiestaFirma eq '1' and documentiInvitoDescFile[(3 * param.contatore) - 1 ] eq '1'}">
+						<c:if test="${documentiInvitoDescFile[(3 * param.contatore) - 1 ] eq '1'}">
 							<span style="float:right;"><img width="16" height="16" src="${pageContext.request.contextPath}/img/isquantimod.png"/>&nbsp;In attesa di firma</span>
 						</c:if>
 					</c:if>
 					<c:if test='${not empty documentiInvitoDescFile[(3 * param.contatore) - 2 ] and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and item[7] ne "5" and param.autorizzatoModifiche ne "2" and not empty param.firmaRemota and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.FirmaRemotaDocumenti")}'>
 						<a style="float:right;" href="javascript:openModal('${item[5]}','${item[6]}','${documentiInvitoDescFile[(3 * param.contatore) - 2 ]}','${pageContext.request.contextPath}');">
+						<img src="${pageContext.request.contextPath}/img/firmaRemota.png" title="Firma digitale del documento" alt="Firma documento" width="16" height="16">
+						<span title="Firma digitale del documento">Firma documento</span></a>
+					</c:if>
+					<c:if test='${idStampa ne "DGUE" and not empty documentiInvitoDescFile[(3 * param.contatore) - 2 ] and (empty documentiInvitoDescFile[(3 * param.contatore) - 1 ] or documentiInvitoDescFile[(3 * param.contatore) - 1 ] eq "2") and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and param.autorizzatoModifiche ne "2" and param.firmaDocumento eq "1" and item[7] ne "5"}'>
+						<a style="float:right;" href="javascript:apriModaleRichiestaFirma('${item[5]}','${item[6]}','${param.contatore}');">
 						<img src="${pageContext.request.contextPath}/img/firmaRemota.png" title="Firma digitale del documento" alt="Firma documento" width="16" height="16">
 						<span title="Firma digitale del documento">Firma documento</span></a>
 					</c:if>
@@ -103,7 +108,7 @@
 					</gene:campoScheda>
 				</c:if>
 				<gene:campoScheda campo="VALENZA_${param.contatore}" entita="DOCUMGARA" campoFittizio="true" visibile="false" definizione="N2;0;;;VALENZADG" value="${item[11]}" />
-				<c:if test="${param.richiestaFirma eq '1'}">
+				<c:if test="${param.richiestaFirma eq '1' or param.firmaDocumento eq '1'}">
 					<gene:campoScheda campo="DIGFIRMA_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2;0;" value="${documentiInvitoDescFile[(3 * param.contatore) - 1 ]}" />
 				</c:if>
 </c:when>

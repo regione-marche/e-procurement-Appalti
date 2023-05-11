@@ -214,7 +214,8 @@
 	<c:set var="filtroAusilio" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.FiltroHomeRicercaElenchiFunction", pageContext, "paginaHome",findstr)}' />
 </c:if>
 
-<c:if test="${!empty trovaAddWhere && tipoRicerca ne 1}">
+<c:set var="nomeContainerFiltri" value="deftrovaV_GARE_ELEDITTE-${empty param.numeroPopUp ? 0 : param.numeroPopUp}"/> 
+<c:if test="${!empty sessionScope[nomeContainerFiltri].trovaAddWhere && tipoRicerca ne 1}">
 	<c:set var="filtroAusilio" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.FiltroHomeRicercaElenchiFunction", pageContext, "paginaRicerca",findstr)}' />
 </c:if>
 

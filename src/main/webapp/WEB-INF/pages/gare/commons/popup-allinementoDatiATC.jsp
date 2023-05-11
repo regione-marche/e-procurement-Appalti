@@ -73,9 +73,9 @@
 			lista='gare/commons/gare-popup-selezionaGarePubblicateATC.jsp' 
 			scheda="" 
 			schedaPopUp="" 
-			campi="V_GARE_TORN.CODGAR;V_GARE_TORN.CODICE;V_GARE_TORN.GENERE" 
+			campi="V_GARE_TORN.CODGAR;V_GARE_TORN.CODICE;V_GARE_TORN.GENERE"
+			functionId="skip" 
 			chiave="GARE.CODGAR1"
-			where=""
 			inseribile="false"
 			formName="formArchivioPubblicazioniATC">
 			<gene:campoScheda campo="CODGAR1" visibile="false" />

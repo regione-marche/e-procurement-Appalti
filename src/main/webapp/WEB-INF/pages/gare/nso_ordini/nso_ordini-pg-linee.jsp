@@ -24,7 +24,7 @@
 
 <gene:redefineInsert name="head">
 		<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>
-		<script type="text/javascript" src="${pageContext.request.contextPath}/js/nso-ordini.js"></script>
+		<script type="text/javascript" src="${pageContext.request.contextPath}/js/nso-ordini.js?t=<%=System.currentTimeMillis()%>"></script>
 </gene:redefineInsert>
 
 <gene:set name="titoloMenu">
@@ -35,6 +35,13 @@
 	
 	
 	<gene:redefineInsert name="addToAzioni" >
+		<c:if test='${(requestScope.statoOrdine eq 4 || requestScope.statoOrdine eq 5 || requestScope.statoOrdine eq 6) && requestScope.isPeriodoVariazione eq 1}' >
+			<tr>
+				<td class="vocemenulaterale">
+						<a href="javascript:revocaOrdineNso();" id="menuValidaOrdine" title="Revoca Ordine" tabindex="1510">Revoca Ordine</a>
+				</td>
+			</tr>
+		</c:if>
 		<c:if test="${(requestScope.statoOrdine eq 1) || (requestScope.statoOrdine eq 2)}">
 			<tr>
 				<td class="vocemenulaterale">
@@ -76,7 +83,21 @@
 			</gene:redefineInsert>									
 		</c:otherwise>
 		</c:choose>
- 
+ 	<%-- <c:if test="${requestScope.statoOrdine eq 8}">
+		<%/*
+			se l'ordine è revocato non devo permettere alcuna modifica
+		*/ %>
+		<gene:redefineInsert name="schedaModifica"></gene:redefineInsert>
+		<gene:redefineInsert name="pulsanteModifica"></gene:redefineInsert>
+		<gene:redefineInsert name="listaNuovo"></gene:redefineInsert>
+		<gene:redefineInsert name="listaEliminaSelezione"></gene:redefineInsert>
+	</c:if> --%>
+	<c:if test='${(requestScope.statoOrdine ne 1 && requestScope.statoOrdine ne 2)}'>
+				<gene:redefineInsert name="schedaModifica" ></gene:redefineInsert>
+				<gene:redefineInsert name="pulsanteModifica" ></gene:redefineInsert>
+				<gene:redefineInsert name="listaNuovo"></gene:redefineInsert>
+				<gene:redefineInsert name="listaEliminaSelezione"></gene:redefineInsert>
+	 </c:if>
 		<table class="lista">
 			<tr>
 				<td>
@@ -85,7 +106,8 @@
   	
 			<gene:campoLista title="Opzioni<center>${titoloMenu}</center>" width="50">
 				<c:choose>
-				<c:when test='${requestScope.statoOrdine eq 3 || requestScope.statoOrdine eq 4}'>
+<%-- 				<c:when test='${requestScope.statoOrdine eq 3 || requestScope.statoOrdine eq 4 || requestScope.statoOrdine eq 8}'> --%>
+				<c:when test='${(requestScope.statoOrdine ne 1 && requestScope.statoOrdine ne 2)}'>
 					<gene:PopUp variableJs="rigaPopUpMenu${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'">
 							<gene:PopUpItem title="Visualizza linea ordine" href="javascript:listaVisualizza()" />
 					</gene:PopUp>
@@ -137,14 +159,15 @@
 			</tr>
 			<tr>
 				<c:choose>
-				<c:when test='${requestScope.statoOrdine eq 3 || requestScope.statoOrdine eq 4}'>
+<%-- 				<c:when test='${requestScope.statoOrdine eq 3 || requestScope.statoOrdine eq 4 || requestScope.statoOrdine eq 8 }'> --%>
+				<c:when test='${(requestScope.statoOrdine ne 1 && requestScope.statoOrdine ne 2)}'>
 				</c:when>
 				<c:otherwise>
 					<td class="comandi-dettaglio"  colSpan="2">
 						<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "INS","INS")}'>
-						<c:if test='${requestScope.isMonoRiga eq 0}'>
-							<INPUT type="button"  class="bottone-azione" value='Aggiungi linea da gara collegata' title='Aggiungi linea da gara collegata' onclick="javascript:variazioneLavorazioni();">&nbsp;&nbsp;&nbsp;
-						</c:if>
+							<c:if test='${requestScope.isMonoRiga eq 0}'>
+								<INPUT type="button"  class="bottone-azione" value='Aggiungi linea da gara collegata' title='Aggiungi linea da gara collegata' onclick="javascript:variazioneLavorazioni();">&nbsp;&nbsp;&nbsp;
+							</c:if>
 							<INPUT type="button"  class="bottone-azione" value='Inserisci voce libera' title='Inserisci voce libera' onclick="javascript:listaNuovo();">&nbsp;&nbsp;&nbsp;
 						</c:if>
 						<c:if test='${gene:checkProtFunz(pageContext,"DEL","LISTADELSEL")}'>
@@ -162,7 +185,11 @@
   	
   </p>
 </div>		
-  
+  <div id="nso-dialog-revocation" title="Revoca Ordine NSO" style="display:none">
+			  <p id="nso-dialog-revocation-content">
+			  	Vuoi revocare l&#39;ordine?<br>Questa operazione non si pu&ograve; annullare.
+			  </p>
+			</div>
 
 	<gene:javaScript>
 	

@@ -69,7 +69,7 @@ public class GestoreCampoNumeroOfferte extends AbstractGestoreCampo {
 		String select="select count(ngara) from ditg,gare where ditg.dittao = ? and ditg.acquisizione = 3 and " +
             "((ditg.INVOFF is null and ditg.FASGAR >= 1) or (ditg.INVOFF = '1' and (ditg.FASGAR IS NULL OR ditg.FASGAR >= 1)) or" +
             " (ditg.INVOFF = '2' and rtofferta is not null) )" +
-            " and ditg.ngara5=gare.ngara and gare.elencoe = ?";
+            " and gare.codgar1=ditg.codgar5 and ditg.ngara5=gare.ngara and gare.elencoe = ?";
 
 			try {
 				Long numOfferte = (Long)sql.getObject(select, new Object[]{dittao, ngara});

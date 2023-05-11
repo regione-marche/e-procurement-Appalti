@@ -45,6 +45,11 @@
 		<gene:setString name="titoloMaschera" value='Acquisisci offerte da portale Appalti' />
 		
 		<c:set var="isSuperataDataTerminePresentazione" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.IsSuperataDataTerminePresentazioneFunction", pageContext, ngara, "1")}' />
+		<c:set var="codStatoGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetStatoGaraFunction", pageContext, codiceGara)}' />	
+	
+		<c:if test="${isSuperataDataTerminePresentazione ne 'false' }">
+			<c:set var="numDitteGaraCorso" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.ConteggioDitteFunction", pageContext, ngara,"ACQUISIZIONE = 9 AND AMMGAR = 2")}' />
+		</c:if>
 				
 		<gene:redefineInsert name="corpo">
 		
@@ -55,6 +60,13 @@
 				<tr id="sezioneIniziale">
 					<td class="valore-dato" colspan="2">
 						<c:choose>
+							<c:when test="${codStatoGara == '4'}">
+								<br>
+								Non &egrave; possibile procedere con l'acquisizione delle offerte da portale Appalti perch&egrave; la gara risulta sospesa.
+								<br>
+								<br>
+								<c:set var="bloccoOperazione" value="true"/>
+							</c:when>
 							<c:when test="${isSuperataDataTerminePresentazione == 'false'}">
 								<br>
 								Non &egrave; possibile procedere con l'acquisizione delle offerte da portale Appalti perch&egrave; non &egrave; ancora scaduto il termine di presentazione delle offerte.
@@ -63,6 +75,16 @@
 								Il termine per la presentazione delle offerte scade il giorno <b>${dataScadenza}</b> alle ore <b>${oraScadenza}</b>.
 								<br>
 								<br>
+								<c:set var="bloccoOperazione" value="true"/>
+							</c:when>
+							<c:when test='${!empty numDitteGaraCorso and numDitteGaraCorso ne "" and numDitteGaraCorso ne "0"}'>
+								<br>
+								Non &egrave; possibile procedere con l'acquisizione delle offerte da portale Appalti perch&egrave; ci sono ditte in gara, inserite dopo la pubblicazione in area riservata, per cui non è stato fatto l'invio dell'invito.
+								<br>Completare l'invito per queste ditte oppure eliminarle dalla gara.
+								<br>
+								<br>
+								<br>
+								<c:set var="bloccoOperazione" value="true"/>
 							</c:when>
 							<c:otherwise>
 								<br>
@@ -93,11 +115,17 @@
 						L'operazione &egrave; stata eseguita con successo.
 						<br>
 						<br>
-						Numero acquisizioni: <span id="numeroAcquisizioni"></span>
+						Numero acquisizioni offerte: <span id="numeroAcquisizioni"></span>
 						<br>
-						Numero acquisizioni non processate o con errori: <span id="numeroAcquisizioniErrore"></span>
+						Numero acquisizioni offerte non processate o con errori: <span id="numeroAcquisizioniErrore"></span>
 						<br>
-						<br>							
+						<div id="Rinunce" style="display: none;">
+							Numero acquisizioni rinunce: <span id="numeroRinunce"></span>
+							<br>
+							Numero acquisizioni rinunce non processate o con errori: <span id="numeroRinunceErrore"></span>
+							<br>
+						</div>
+						<br>								
 					</td>
 				</tr>
 				
@@ -112,7 +140,7 @@
 				
 				<tr id="sezioneComandiIniziali">
 					<td colspan="2" class="comandi-dettaglio">
-						<c:if test="${isSuperataDataTerminePresentazione == 'true'}">
+						<c:if test="${bloccoOperazione ne 'true'}">
 							<INPUT type="button" class="bottone-azione" value="Conferma" title="Conferma" onclick="javascript:acquisisciAJAX('${ngara}');">
 						</c:if>
 						<INPUT type="button" class="bottone-azione" value="Annulla"	title="Annulla" onclick="javascript:chiudi();">&nbsp;&nbsp;
@@ -211,6 +239,11 @@
 						msgEsito = res.MsgErrore;
 						$("#numeroAcquisizioni").text(res.numeroAcquisizioni);
 						$("#numeroAcquisizioniErrore").text(res.numeroAcquisizioniErrore);
+						if (res.numeroRinunce > 0 || res.numeroRinunceErrore > 0) {
+							$("#numeroRinunce").text(res.numeroRinunce);
+							$("#numeroRinunceErrore").text(res.numeroRinunceErrore);
+							$("#Rinunce").show();
+						}
 						if (res.sezioneAcquisizioniScartate > 0) {
 							$("#sezioneAcquisizioniScartate").show();
 							$("#numeroAcquisizioniScartate").text(res.numeroAcquisizioniScartate);

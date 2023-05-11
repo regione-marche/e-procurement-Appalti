@@ -127,6 +127,7 @@ public class AttivaApTecAJAXAction extends Action {
       }
 
       String messageKey="";
+
       //Controllo che da profilo sia abilitata l'acquisizione di acquisizione, che l'utente abbia i permessi di modifica
       //e che la fase della gara sia quella attesa
 
@@ -136,7 +137,7 @@ public class AttivaApTecAJAXAction extends Action {
           (String) request.getSession().getAttribute(CostantiGenerali.PROFILO_ATTIVO), "FUNZ", "VIS",
           "ALT.GARE.FASIGARA.AttivaAperturaTecniche") || !this.pgManager.getAutorizzatoModificaGara("V_GARE_TORN",
               "CODGAR", ngara, false, "2", request)
-          || (this.mepaManager.esisteBloccoCondizioniFasiAcquisizioni(ngara, new Long(5)) && fasgar!=null )) {
+          || (this.mepaManager.esisteBloccoCondizioniFasiAcquisizioni(ngara, fasgarSuccessivo) && fasgar!=null )) {
         erroreGestito=true;
         messageKey ="errors.gestoreException.*.acquisizione.BustaTec.DatiIncosistenti";
         messaggioPerLog = resBundleGenerale.getString(messageKey);
@@ -145,6 +146,7 @@ public class AttivaApTecAJAXAction extends Action {
         result.put("MsgErrore", messaggioPerLog);
         errMsgEvento = messaggioPerLog;
       }
+
 
       try{
 		  if(pswCryptata.equals("true")){
@@ -171,6 +173,7 @@ public class AttivaApTecAJAXAction extends Action {
           numeroAcquisizioniErrore = (Long) hMap.get("numeroAcquisizioniErrore");
           numeroAcquisizioniScartate = (Long) hMap.get("numeroAcquisizioniScartate");
           request.getSession().setAttribute("passBusteB", password);
+
 
         //best case
           livEvento = 1;

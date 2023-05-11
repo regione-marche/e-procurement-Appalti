@@ -98,6 +98,11 @@
 	<gene:campoScheda title="Unchecked" campo="UNCHECKED" campoFittizio="true" definizione="T2000;0" visibile="false" />
 	<gene:campoScheda title="Undefined" campo="UNDETERMINED" campoFittizio="true" definizione="T2000;0" visibile="false" />
 	<gene:campoScheda title="Abilita ordine minimo" campo="ABILITAORDINEMINIMO" campoFittizio="true" value="${gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.GARE-scheda.CATEGORIEGARA.CATEG-ImpostaOrdineMin')}" definizione="T2000;0" visibile="false" />
+	<gene:campoScheda title="Abilita lista operatori" campo="ABILITALISTAOPERATORI" campoFittizio="true" value="${gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.GARE-scheda.CATEGORIEGARA.OperatoriElencoPerCategoria')}" definizione="T2000;0" visibile="false" />
+
+	<c:if test="${modo ne 'VISUALIZZA'}">
+		<c:set var="categorieDaScartare" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsistonoCategorieDaScartareFunction", pageContext, datiRiga.GAREALBO_TIPOELE)}'/>
+	</c:if>
 
 	<gene:campoScheda visibile="${datiRiga.GARE_GENERE eq '10'}">
 		<td class="etichetta-dato">Legenda</td>
@@ -196,6 +201,12 @@
 		
 	<gene:campoScheda>
 		<td colspan="2" style="padding-top:5px; padding-bottom:5px;">
+			<c:if test="${modo ne 'VISUALIZZA' and categorieDaScartare eq 'TRUE'}">
+				<br><font color='red'>
+				<b>ATTENZIONE:</b> In archivio sono definite categorie che contengono nel codice erroneamente il carattere "/" o le sequenze di caratteri " ." e ". ". Tali categorie non sono riportate nell'albero sottostante. Rimuoverle o rinominare il codice categoria in archivio.
+				</font>
+				<br><br>
+			</c:if>
 			<img alt="Categorie" src="img/open_folder.gif">
 			<span style="vertical-align: middle;">
 				<span style="display: none;" id="attesa" >
@@ -295,8 +306,6 @@
 <form name="formListaArticoli" action="${contextPath}/ApriPagina.do" method="post">
 	<input type="hidden" name="href" value="gare/meartcat/meartcat-lista.jsp" />
 	<input type="hidden" name="entita" value="MEARTCAT" />
-	<input type="hidden" name="trovaAddWhere" value="" />
-	<input type="hidden" name="trovaParameter" value="" /> 
 	<input type="hidden" name="risultatiPerPagina" value="20" />
 	<input type="hidden" name="opes_ngara" value="" />
 	<input type="hidden" name="opes_nopega" value="" />
@@ -316,3 +325,14 @@
 	<input type="hidden" name="cais_descat" value="" />
 </form>	
 
+<form name="formListaOperatoriIscritti" action="${contextPath}/ApriPagina.do" method="post">
+	<input type="hidden" name="href" value="gare/ditg/lista-operatoriIscritti.jsp" />
+	<input type="hidden" name="entita" value="DITG" />
+	<input type="hidden" name="risultatiPerPagina" value="20" />
+	<input type="hidden" name="opes_ngara" value="" />
+	<input type="hidden" name="opes_codgar" value="" />
+	<input type="hidden" name="opes_nopega" value="" />
+	<input type="hidden" name="cais_caisim" value="" />
+	<input type="hidden" name="cais_descat" value="" />
+	<input type="hidden" name="genere" value="" />
+</form>	

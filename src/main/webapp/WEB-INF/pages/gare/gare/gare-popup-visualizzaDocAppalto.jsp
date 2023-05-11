@@ -33,22 +33,15 @@
 <c:set var="descTipgen" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetDescrizioneTipgenFunction", pageContext, tipgen)}' />
 
 <c:choose>
-	<c:when test='${not empty param.clavor}'>
-		<c:set var="clavor" value="${param.clavor}"  />
+	<c:when test='${not empty param.ngara}'>
+		<c:set var="ngara" value="${param.ngara}" />
 	</c:when>
 	<c:otherwise>
-		<c:set var="clavor" value="${clavor}" />
+		<c:set var="ngara" value="${ngara}" />
 	</c:otherwise>
 </c:choose>
 
-<c:choose>
-     <c:when test='${not empty param.numera}'>
-             <c:set var="numera" value="${param.numera}"  />
-     </c:when>
-	<c:otherwise>
-		<c:set var="numera" value="${numera}" />
-	</c:otherwise>
-</c:choose>
+<c:set var="obj" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetAssociazioneGaraLavoroFunction", pageContext, ngara)}' />
 
 <c:set var="where" value="(C0OGGASS.C0AENT='APPA' AND C0OGGASS.C0AKEY1='${clavor}' AND C0OGGASS.C0AKEY2='${numera}') or (C0OGGASS.C0AENT='PERI' AND C0OGGASS.C0AKEY1='${clavor}')" />
 
@@ -103,7 +96,7 @@
 						var tipgen="${tipgen }";
 						var clavor="${clavor }";
 						var numera="${numera }";
-						document.location.href='pg/DocumentoAssociatoAppaltoDaGare.do?"+csrfToken+"&metodo=download&id=' + id + '&tipgen=' + tipgen + '&clavor=' + clavor + '&numera=' + numera;
+						document.location.href='${pageContext.request.contextPath}/pg/DocumentoAssociatoAppaltoDaGare.do?'+csrfToken+'&metodo=download&id=' + id + '&tipgen=' + tipgen + '&clavor=' + clavor + '&numera=' + numera;
 					}
 				</c:otherwise>
 			</c:choose>		

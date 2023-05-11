@@ -57,6 +57,7 @@
  * Crea il link e l'evento associato per richiamare
  * la finestra modale contenente l'albero dei CPV
  */
+ /*
 function _creaLinkAlberoCpvVSUPP(anchor, modo, cpvvsuppref, cpvvsupprefview) {
 	setTimeout(function(){
 		
@@ -103,11 +104,12 @@ function _creaLinkAlberoCpvVSUPP(anchor, modo, cpvvsuppref, cpvvsupprefview) {
 
 	}, 300);
 } 
- 
+ */
 
 /*
  * Crea la finestra (modale) con l'albero dei CPV.
  */
+ /*
 function _popolaFinestraAlberoCpvVSUPP(modo, cpvvsuppref, cpvvsupprefview) {
 	
 	$("#finestraalberocpvvsupp").dialog("open");
@@ -160,6 +162,7 @@ function _popolaFinestraAlberoCpvVSUPP(modo, cpvvsuppref, cpvvsupprefview) {
 	_caricaAlberoCpvVSUPP(modo, cpvvsuppref, cpvvsupprefview);
 
 }	
+*/
 
 
 
@@ -192,6 +195,7 @@ function _associaEventiAlberoCpvVSUPP(modo, cpvvsuppref, cpvvsupprefview) {
 /*
  * Creazione e caricamento dell'albero dei CPV
  */
+ /*
 function _caricaAlberoCpvVSUPP(modo, cpvvsuppref, cpvvsupprefview) {
 	
     $("#cpvvsupptree").jstree(
@@ -297,6 +301,7 @@ function _caricaAlberoCpvVSUPP(modo, cpvvsuppref, cpvvsupprefview) {
     /*
      * Menu' personalizzato
      */
+     /*
     function CpvVSUPPMenu(node) {
     	if (modo != "VISUALIZZA" && node.attr("livello") > 3) {
 	        var items = {
@@ -313,9 +318,10 @@ function _caricaAlberoCpvVSUPP(modo, cpvvsuppref, cpvvsupprefview) {
 	/*
 	 * Associazione eventi all'albero appena creato
 	 */
+	 /*
 	 _associaEventiAlberoCpvVSUPP(modo, cpvvsuppref, cpvvsupprefview);
 	 
-}    
+}    */
 	    
 	    
 /*

@@ -10,24 +10,20 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
-import it.eldasoft.gene.bl.FileAllegatoManager;
-import it.eldasoft.gene.bl.GenChiaviManager;
+import java.util.HashMap;
+
+import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
-import it.eldasoft.gene.db.domain.BlobFile;
 import it.eldasoft.gene.db.domain.LogEvento;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.PgManager;
+import it.eldasoft.sil.pg.bl.ElencoOperatoriManager;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.sql.SQLException;
-import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore non standard per l'acquisizione di un singolo aggiornamento FS2 o FS4 proveniente
@@ -39,9 +35,6 @@ public class GestorePopupAcquisizionePuntualeDaPortale extends AbstractGestoreEn
 
   /** Logger */
   static Logger            logger           = Logger.getLogger(GestorePopupAcquisizionePuntualeDaPortale.class);
-
-  static String     nomeFileXML_Iscrizione = "dati_iscele.xml";
-  static String     nomeFileXML_Aggiornamento = "dati_aggisc.xml";
 
   @Override
   public String getEntita() {
@@ -79,14 +72,9 @@ public class GestorePopupAcquisizionePuntualeDaPortale extends AbstractGestoreEn
     String descrEvento = "";
     String errMsgEvento = "";
 
-    FileAllegatoManager fileAllegatoManager = (FileAllegatoManager) UtilitySpring.getBean("fileAllegatoManager",
-        this.getServletContext(), FileAllegatoManager.class);
 
-    PgManager pgManager = (PgManager) UtilitySpring.getBean("pgManager",
-        this.getServletContext(), PgManager.class);
-
-    GenChiaviManager genChiaviManager = (GenChiaviManager) UtilitySpring.getBean("genChiaviManager",
-        this.getServletContext(), GenChiaviManager.class);
+    ElencoOperatoriManager elencoOperatoriManager = (ElencoOperatoriManager) UtilitySpring.getBean("elencoOperatoriManager",
+        this.getServletContext(), ElencoOperatoriManager.class);
 
     String idocmString = UtilityStruts.getParametroString(this.getRequest(),"idcom");
     Long idcom =  new Long(idocmString);
@@ -96,138 +84,49 @@ public class GestorePopupAcquisizionePuntualeDaPortale extends AbstractGestoreEn
     String messaggioCategorie =  UtilityStruts.getParametroString(this.getRequest(),"messagggioCategorie");
     String saltareAggCateg = UtilityStruts.getParametroString(this.getRequest(),"saltareAggCateg");
     boolean aggiornamentoCategorie = (!"true".equals(saltareAggCateg));
-    String codiceDittaUser=null;
+    String msgAnteprima = UtilityStruts.getParametroString(this.getRequest(),"msgAnteprima");
 
     String profiloAttivo = (String) this.getRequest().getSession().getAttribute("profiloAttivo");
 
     if("FS2".equals(tipo)){
       codEvento = "GA_ACQUISIZIONE_ISCRIZIONE";
-      if("PG_GARE_ELEDITTE".equalsIgnoreCase(profiloAttivo))
-        descrEvento = "Acquisizione iscrizione a elenco operatori da portale Appalti";
-      else
-        descrEvento = "Acquisizione iscrizione a catalogo da portale Appalti";
+      descrEvento = "Acquisizione iscrizione a elenco operatori o catalogo da portale Appalti";
     }else{
       codEvento = "GA_ACQUISIZIONE_INTEGRAZIONE";
-      if("PG_GARE_ELEDITTE".equalsIgnoreCase(profiloAttivo))
-        descrEvento = "Acquisizione integrazione dati/documenti a iscrizione elenco operatori da portale Appalti";
-      else
-        descrEvento = "Acquisizione integrazione dati/documenti a iscrizione catalogo da portale Appalti";
+      descrEvento = "Acquisizione integrazione dati/documenti a iscrizione in elenco operatori o catalogo da portale Appalti";
     }
     oggEvento = ngara;
 
-    String select=null;
-    boolean errori=false;
+    String xml=null;
 
     try{
-      select="select USERKEY1 from w_puser where USERNOME = ? ";
-      String codiceDitta;
-      try {
-        codiceDitta = (String)sqlManager.getObject(select, new Object[]{user});
-      } catch (SQLException e) {
-        this.getRequest().setAttribute("erroreAcquisizione", "1");
-        throw new GestoreException("Errore nella lettura della tabella W_PUSER ",null, e);
-      }
 
-      //Nel caso di FS4 se il richiedente fa parte di una RTI, allora l'aggiornamento deve avvenire
-      //sulla RTI
-      if("FS4".equals(tipo)){
-        //Nella finestra popIscriviAggiornaDaPortale.jsp all'apertura si blocca se non si trova la ditta in gara
-        //quindi in questa fase sono sicuro di trovare la ditta.
-        codiceDittaUser = codiceDitta;
-        String datiControllo[] = pgManager.controlloEsistenzaDittaElencoGara(codiceDitta, ngara, "$" + ngara, null);
-        codiceDitta =datiControllo[1];
-      }
-
-      descrEvento += "(cod. ditta " + codiceDitta + ")";
-      //Vengono letti i documenti associati ad ogni occorrenza di di W_INVCOM
-      select="select idprg,iddocdig from w_docdig where DIGENT = ? and digkey1 = ? and idprg = ? and dignomdoc = ? ";
-      String digent="W_INVCOM";
-      String idprgW_DOCDIG="PA";
-
-      String nomeFile=null;
-      if("FS2".equals(tipo))
-        nomeFile = nomeFileXML_Iscrizione;
-      else
-        nomeFile= nomeFileXML_Aggiornamento;
-
-      Vector datiW_DOCDIG = null;
-      try {
-
-          datiW_DOCDIG = sqlManager.getVector(select,
-              new Object[]{digent, idcom.toString(), idprgW_DOCDIG, nomeFile});
-
-      } catch (SQLException e) {
-        this.getRequest().setAttribute("erroreAcquisizione", "1");
-        throw new GestoreException("Errore nella lettura della tabella W_DOCDIG ",null, e);
-      }
-      String idprgW_INVCOM = null;
-      Long iddocdig = null;
       GestorePopupAcquisisciDaPortale gacqport = new GestorePopupAcquisisciDaPortale();
-      gacqport.setRequest(this.getRequest());
-      if(datiW_DOCDIG != null ){
-        if(((JdbcParametro)datiW_DOCDIG.get(0)).getValue() != null)
-          idprgW_INVCOM = ((JdbcParametro) datiW_DOCDIG.get(0)).getStringValue();
-
-        if(((JdbcParametro)datiW_DOCDIG.get(1)).getValue() != null)
-        try {
-          iddocdig = ((JdbcParametro) datiW_DOCDIG.get(1)).longValue();
-        } catch (GestoreException e2) {
-          this.getRequest().setAttribute("erroreAcquisizione", "1");
-          throw new GestoreException("Errore nella lettura della tabella W_DOCDIG ",null, e2);
-        }
-
-
-        //Lettura del file xml immagazzinato nella tabella W_DOCDIG
-        BlobFile fileAllegato = null;
-        try {
-          fileAllegato = fileAllegatoManager.getFileAllegato(idprgW_INVCOM,iddocdig);
-        } catch (Exception e) {
-          this.getRequest().setAttribute("erroreAcquisizione", "1");
-          throw new GestoreException("Errore nella lettura del file allegato presente nella tabella W_DOCDIG",null, e);
-        }
-        String xml=null;
-        if(fileAllegato!=null && fileAllegato.getStream()!=null){
-          xml = new String(fileAllegato.getStream());
-
-          if("FS2".equals(tipo))
-            gacqport.iscrizioneElencoOperatori(ngara, codiceDitta, status, xml, pgManager, idcom, user, fileAllegatoManager, false);
-          else
-            gacqport.aggiornamentoIscrizioneElencoOperatori(ngara, codiceDitta, codiceDittaUser, status, xml, pgManager, idcom, user, fileAllegatoManager, false, aggiornamentoCategorie);
-
-        }else{
-          //Aggiornamento dello stato a errore
-          gacqport.aggiornaStatoW_INVOCM(idcom,"7");
-          errori=true;
-        }
-      }else{
-      //Aggiornamento dello stato a errore
-        gacqport.aggiornaStatoW_INVOCM(idcom,"7");
-        errori=true;
-      }
-
-      if("FS4".equals(tipo) && aggiornamentoCategorie== false && !errori && messaggioCategorie!=null && !"".equals(messaggioCategorie)){
-        //Si deve popolare la tabella GARACQUISIZ
-        String insert = "insert into GARACQUISIZ(id,ngara,codimp,idprg,idcom,stato,logmsg) values(?,?,?,?,?,?,?)";
-        int id = genChiaviManager.getNextId("GARACQUISIZ");
-        try {
-          sqlManager.update(insert, new Object[]{new Long(id),ngara,codiceDitta,idprgW_DOCDIG,idcom,new Long(1),messaggioCategorie});
-          descrEvento = descrEvento.replace("(cod. ditta", ", con elaborazione delle categorie posticipata (cod. ditta");
-        } catch (SQLException e) {
-          this.getRequest().setAttribute("erroreAcquisizione", "1");
-          throw new GestoreException("Errore nella scrittura sulla tabella GARACQUISIZ",null, e);
-        }
-      }
-
-      if(errori)
-        this.getRequest().setAttribute("erroreAcquisizione", "1");
-      else
+      gacqport.setRequest(getRequest());
+      HashMap<String, Object> ret = elencoOperatoriManager.acquisizioneDaPortaleSingola(idcom, user, ngara, tipo, aggiornamentoCategorie, messaggioCategorie, msgAnteprima, gacqport, status);
+      int esito = ((Integer)ret.get("esito")).intValue();
+      if(ElencoOperatoriManager.OK==esito)
         this.getRequest().setAttribute("acquisizioneEseguita", "1");
+      else
+        this.getRequest().setAttribute("erroreAcquisizione", "1");
+      xml = (String)ret.get("xml");
+      descrEvento += (String)ret.get("descrEvento");
     }catch(GestoreException e){
+      this.getRequest().setAttribute("erroreAcquisizione", "1");
       livEvento = 3;
       errMsgEvento = e.getMessage();
       throw e;
     }finally {
       //Tracciatura eventi
+      if(xml != null && !"".equals(xml)) {
+        if("FS2".equals(tipo))
+          xml = CostantiAppalti.nomeFileXML_Iscrizione + "\r\n" + xml;
+        else
+          xml= CostantiAppalti.nomeFileXML_Aggiornamento + "\r\n" + xml;
+        if(errMsgEvento!="")
+          errMsgEvento+="\r\n\r\n";
+        errMsgEvento+= xml;
+      }
       try {
         LogEvento logEvento = LogEventiUtils.createLogEvento(this.getRequest());
         logEvento.setLivEvento(livEvento);

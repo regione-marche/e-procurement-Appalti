@@ -21,12 +21,13 @@ import javax.servlet.jsp.PageContext;
 public class GetValoriMEALLARTCATFunction extends AbstractFunzioneTag {
 
   public GetValoriMEALLARTCATFunction() {
-    super(2, new Class[] { PageContext.class, String.class });
+    super(3, new Class[] { PageContext.class, String.class });
   }
 
   @Override
   public String function(PageContext pageContext, Object[] params) throws JspException {
     String id = (String) params[1];
+    String tipo = (String) params[2];
 
     SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager", pageContext, SqlManager.class);
     List<?> datiMEALLARTCAT = null;
@@ -34,13 +35,13 @@ public class GetValoriMEALLARTCATFunction extends AbstractFunzioneTag {
     try {
       if(id!=null){
         String selectMEALLARTCAT = "select meallartcat.id, meallartcat.idartcat, "
-            + " meallartcat.idprg, meallartcat.iddocdig, w_docdig.dignomdoc "
+            + " meallartcat.idprg, meallartcat.iddocdig, w_docdig.dignomdoc, meallartcat.tipoall "
             + " from meallartcat, w_docdig "
-            + " where meallartcat.idartcat = ? "
+            + " where meallartcat.idartcat = ? and meallartcat.tipoall = ?"
             + " and meallartcat.idprg = w_docdig.idprg "
             + " and meallartcat.iddocdig = w_docdig.iddocdig";
 
-        datiMEALLARTCAT = sqlManager.getListVector(selectMEALLARTCAT, new Object[] { new Long(id) });
+        datiMEALLARTCAT = sqlManager.getListVector(selectMEALLARTCAT, new Object[] { Long.valueOf(id),Long.valueOf(tipo) });
       }
       pageContext.setAttribute("datiMEALLARTCAT", datiMEALLARTCAT, PageContext.REQUEST_SCOPE);
     } catch (SQLException e) {

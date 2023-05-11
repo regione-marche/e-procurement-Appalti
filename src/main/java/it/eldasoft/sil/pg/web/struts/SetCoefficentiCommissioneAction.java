@@ -1,11 +1,5 @@
 package it.eldasoft.sil.pg.web.struts;
 
-import it.eldasoft.gene.bl.GenChiaviManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
-import it.eldasoft.gene.db.domain.LogEvento;
-import it.eldasoft.gene.utils.LogEventiUtils;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -14,6 +8,12 @@ import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 import org.springframework.transaction.TransactionStatus;
+
+import it.eldasoft.gene.bl.GenChiaviManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
+import it.eldasoft.gene.db.domain.LogEvento;
+import it.eldasoft.gene.utils.LogEventiUtils;
 
 public class SetCoefficentiCommissioneAction extends Action {
 
@@ -49,13 +49,13 @@ public class SetCoefficentiCommissioneAction extends Action {
     if (request.getParameter("length") != null && !"null".equals(request.getParameter("length"))) {
       length = new Long(request.getParameter("length")).intValue();
     }
-    
+
     String oggEvento = ngara;
     int livEvento = 1;
     String codEvento = "GA_OEPV_ASSEGNA_COEFFI_COM";
     String descrEvento = "";
     String errMsgEvento  = "";
-    
+
     TransactionStatus status = null;
     boolean commitTransaction = false;
     try {
@@ -64,44 +64,58 @@ public class SetCoefficentiCommissioneAction extends Action {
       if (idcrival != null) {
         this.sqlManager.update("update g1crival set coeffi = null, punteg = null where id = ?", new Object[] { idcrival });
       } else {
-        idcrival = new Long(this.genChiaviManager.getNextId("G1CRIVAL"));
-        this.sqlManager.update("insert into G1CRIVAL(id, ngara, dittao, necvan, idcridef) values(?,?,?,?,?)",
-            new Object[] { new Long(idcrival), ngara, ditta, necvan, new Long(idCridef) });
+        //In alcuni casi vengono inserite più occorrenze uguali, quindi prima di inserire, si effettua un controllo andando a guardare
+        // i campi ngara, dittao, necvan, idcridef
+        Long id = (Long)this.sqlManager.getObject("select id from g1crival where ngara=? and dittao=? and necvan=? and idcridef=?",
+            new Object[] {ngara, ditta, necvan, new Long(idCridef)});
+        if(id == null) {
+          idcrival = new Long(this.genChiaviManager.getNextId("G1CRIVAL"));
+          this.sqlManager.update("insert into G1CRIVAL(id, ngara, dittao, necvan, idcridef) values(?,?,?,?,?)",
+              new Object[] { new Long(idcrival), ngara, ditta, necvan, new Long(idCridef) });
+        }
       }
-      
+
       String prefixIdgfof ="idgfof_";
       String prefixCoeffi ="coeffCommissario_";
+      String prefixNote ="noteCommissario_";
       String prefixIdcrivalcom ="idcrivalcom_";
       String prefixNomfof ="nomfof_";
       String prefixUpdate ="update_";
       for(int i=0;i<length;i++){
-        
+
         String idcrivalcomStr = request.getParameter(prefixIdcrivalcom+i);
         String idgfofStr = request.getParameter(prefixIdgfof+i);
         String coeffiStr = request.getParameter(prefixCoeffi+i);
+        String note = request.getParameter(prefixNote+i);
         String update = request.getParameter(prefixUpdate+i);
         String nomfof = request.getParameter(prefixNomfof+i);
         Long idcrivalcom = null;
         Long idgfof = null;
         Double coeffi = null;
-        
+
         if("true".equals(update)){
           if(idcrivalcomStr != null && !"null".equals(idcrivalcomStr) && !"".equals(idcrivalcomStr)){ idcrivalcom = new Long(idcrivalcomStr); }
           if(idgfofStr != null && !"null".equals(idgfofStr)){ idgfof = new Long(idgfofStr); }
           if(coeffiStr != null && !"null".equals(coeffiStr) && !"".equals(coeffiStr)){ coeffi = Double.parseDouble(coeffiStr); }
-          
+
           if(idcrivalcom == null){
-            int idInt = this.genChiaviManager.getNextId("G1CRIVALCOM");
-            idcrivalcom =  new Long(idInt);
-            this.sqlManager.update("insert into G1CRIVALCOM(id, idcrival, idgfof, idcridef, coeffi) values(?,?,?,?,?)",
-                new Object[] { idcrivalcom, idcrival, idgfof, new Long(idCridef), coeffi });
+            //In alcuni casi vengono inserite più occorrenze uguali, quindi prima di inserire, si effettua un controllo andando a guardare
+            // i campi idcrival, idgfof, idcridef
+            Long id = (Long)this.sqlManager.getObject("select id from g1crivalcom where idcrival = ? and  idgfof= ? and idcridef = ?",
+                new Object[] {idcrival, idgfof, new Long(idCridef)});
+            if(id == null) {
+              int idInt = this.genChiaviManager.getNextId("G1CRIVALCOM");
+              idcrivalcom =  new Long(idInt);
+              this.sqlManager.update("insert into G1CRIVALCOM(id, idcrival, idgfof, idcridef, coeffi, note) values(?,?,?,?,?,?)",
+                  new Object[] { idcrivalcom, idcrival, idgfof, new Long(idCridef), coeffi ,note});
+            }
           }else {
-            this.sqlManager.update("update g1crivalcom set coeffi = ? where id = ?", new Object[] { coeffi, idcrivalcom });
+            this.sqlManager.update("update g1crivalcom set coeffi = ? , note = ? where id = ?", new Object[] { coeffi,note, idcrivalcom });
           }
-          
+
           descrEvento = "Assegna coefficiente criterio di valutazione per l'operatore '"+ditta+
           "' da parte del commissario '" + nomfof + "' (num.criterio: "+necvan+" - id.g1crivalcom: "+idcrivalcom+")";
-          
+
           LogEvento logEvento = LogEventiUtils.createLogEvento(request);
           logEvento.setCodApplicazione("PG");
           logEvento.setOggEvento(oggEvento);
@@ -110,12 +124,12 @@ public class SetCoefficentiCommissioneAction extends Action {
           logEvento.setDescr(descrEvento);
           logEvento.setErrmsg(errMsgEvento);
           LogEventiUtils.insertLogEventi(logEvento);
-          
+
         }
       }
 
       commitTransaction = true;
-      
+
     } catch (Exception e) {
       commitTransaction = false;
       throw e;

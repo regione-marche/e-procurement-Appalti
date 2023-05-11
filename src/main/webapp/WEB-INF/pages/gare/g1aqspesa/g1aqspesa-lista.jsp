@@ -15,9 +15,23 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<c:choose>
+	<c:when test='${!empty param.ngara}'>
+		<c:set var="ngara" value='${param.ngara}' />
+	</c:when>
+	<c:otherwise>
+		<c:set var="ngara" value="${ngara}" />
+	</c:otherwise>
+</c:choose>
 
-<c:set var="ngara" value='${gene:getValCampo(key,"NGARA") }'/>
-<c:set var="ncont" value='${gene:getValCampo(key,"NCONT") }'/>
+<c:choose>
+	<c:when test='${!empty param.ncont}'>
+		<c:set var="ncont" value='${param.ncont}' />
+	</c:when>
+	<c:otherwise>
+		<c:set var="ncont" value="${ncont}" />
+	</c:otherwise>
+</c:choose>
 
 <c:choose>
 	<c:when test='${!empty param.cenint}'>
@@ -28,9 +42,32 @@
 	</c:otherwise>
 </c:choose>
 
-<c:set var="codimp" value='${gene:getValCampo(key,"CODIMP") }'/>
-<c:set var="ngaral" value='${gene:getValCampo(key,"NGARAL") }'/>
-<c:set var="where" value="G1AQSPESA.NGARA = '${ngara }' and G1AQSPESA.NCONT = ${ncont } and G1AQSPESA.CENINT = '${cenint }'"/>
+<c:choose>
+	<c:when test='${!empty param.codimp}'>
+		<c:set var="codimp" value='${param.codimp}' />
+	</c:when>
+	<c:otherwise>
+		<c:set var="codimp" value="${codimp}" />
+	</c:otherwise>
+</c:choose>
+
+<c:choose>
+	<c:when test='${!empty param.ngaral}'>
+		<c:set var="ngaral" value='${param.ngaral}' />
+	</c:when>
+	<c:otherwise>
+		<c:set var="ngaral" value="${ngaral}" />
+	</c:otherwise>
+</c:choose>
+
+<jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
+
+<c:if test='${not empty ngara and gene:matches(ngara, regExpresValidazStringhe, true)}' />
+<c:if test='${not empty ngaral and gene:matches(ngaral, regExpresValidazStringhe, true)}' />
+<c:if test='${not empty cenint and gene:matches(cenint, regExpresValidazStringhe, true)}' />
+<c:if test='${not empty codimp and gene:matches(codimp, regExpresValidazStringhe, true)}' />
+<c:if test='${not empty ncont and gene:matches(ncont, "^-?[0-9]+$", true)}' />
+
 <c:set var="nomein" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetNOMEINFunction", pageContext, cenint)}'/>
 
 <c:set var="codiceGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetCodiceGaraFunction", pageContext)}' />
@@ -46,7 +83,7 @@
 		</gene:set>
 		<table class="lista">
 		<tr><td >
-			<gene:formLista entita="G1AQSPESA" where="${where }" sortColumn="6;2" pagesize="20" tableclass="datilista"
+			<gene:formLista entita="G1AQSPESA" sortColumn="6;2" pagesize="20" tableclass="datilista" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreG1AQSPESALista"
 			gestisciProtezioni="true" > 
 				
 				<jsp:include page="/WEB-INF/pages/commons/bloccaModifica-pg-lista-scheda.jsp">
@@ -86,6 +123,10 @@
 				<gene:campoLista campo="DATAUT" headerClass="sortable"/>
 				<gene:campoLista campo="IMPAUT" headerClass="sortable"/>
 				<input type="hidden" name="cenint" id="cenint" value="${cenint}"/>
+				<input type="hidden" name="codimp" id="codimp" value="${codimp}"/>
+				<input type="hidden" name="ngaral" id="ngaral" value="${ngaral}"/>
+				<input type="hidden" name="ngara" id="ngara" value="${ngara}"/>
+				<input type="hidden" name="ncont" id="ncont" value="${ncont}"/>
 			</gene:formLista>
 		</td></tr>
 		<tr>

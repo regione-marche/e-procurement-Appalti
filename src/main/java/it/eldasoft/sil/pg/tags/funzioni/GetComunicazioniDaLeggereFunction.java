@@ -10,14 +10,6 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.PgManager;
-import it.eldasoft.sil.pg.bl.PgManagerEst1;
-import it.eldasoft.utils.spring.UtilitySpring;
-import it.eldasoft.utils.utility.UtilityDate;
-
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -28,6 +20,14 @@ import java.util.Vector;
 import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.PgManager;
+import it.eldasoft.sil.pg.bl.PgManagerEst1;
+import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityDate;
 
 /**
  * Viene letto il tabellato 'A1z03' di tab2 per costruire il filtro
@@ -55,6 +55,7 @@ public class GetComunicazioniDaLeggereFunction extends AbstractFunzioneTag {
    *          7 - Affidamenti
    *          8 -
    *          9 - Ordini NSO
+   *         10 - Stipule contratti
    */
   @Override
   public String function(PageContext pageContext, Object[] params)
@@ -106,6 +107,10 @@ public class GetComunicazioniDaLeggereFunction extends AbstractFunzioneTag {
       profiloWeb = (String)sessione.getAttribute("filtroProfiloAttivo");
       filtroUffint = (String)pageContext.getRequest().getAttribute("filtroUffint");
       filtroProfilo = (String)pageContext.getRequest().getAttribute("filtroProfilo");
+    }else if("10".equals(profilo)){
+      filtroUtente = (String)pageContext.getRequest().getAttribute("filtroLivelloUtenteStipuleFS12");
+      profiloWeb = (String)sessione.getAttribute("filtroProfiloAttivo");
+      filtroProfilo = (String)pageContext.getRequest().getAttribute("filtroProfilo");
     }
     PgManager pgManager = (PgManager) UtilitySpring.getBean("pgManager",
             pageContext, PgManager.class);
@@ -122,6 +127,9 @@ public class GetComunicazioniDaLeggereFunction extends AbstractFunzioneTag {
       filtro = "select w_invcom.idprg, w_invcom.idcom, w_invcom.comkey1, w_puser.userdesc, w_invcom.commsgogg, " + dbFunctionDateToString + ", w_invcom.comkey2 ";
       if("9".equals(profilo)) {
         filtro += ", nso.codord ";
+      }
+      if("10".equals(profilo)) {
+        filtro += ", codstipula ";
       }
     }
 

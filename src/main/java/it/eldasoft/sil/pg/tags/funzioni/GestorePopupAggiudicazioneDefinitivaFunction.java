@@ -10,19 +10,19 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.gene.web.struts.tags.UtilityStruts;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.AggiudicazioneManager;
-import it.eldasoft.utils.spring.UtilitySpring;
-
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Vector;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.gene.web.struts.tags.UtilityStruts;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.AggiudicazioneManager;
+import it.eldasoft.utils.spring.UtilitySpring;
 
 /**
  * Inizializzazione della popup di aggiudicazione definitiva per definire la
@@ -73,19 +73,22 @@ public class GestorePopupAggiudicazioneDefinitivaFunction extends AbstractFunzio
     Long esineg = null;
     Timestamp dattoa = null;
     String inversa = null;
+    String codgar = null;
     try {
-      Vector datiGare = sqlManager.getVector("select g.modastg,g.modlicg,g.esineg, g.dattoa,t.inversa from gare g,torn t where g.ngara = ? and t.codgar=g.codgar1", new Object[]{ngara});
+      Vector datiGare = sqlManager.getVector("select g.modastg,g.modlicg,g.esineg, g.dattoa,t.inversa, t.codgar from gare g,torn t where g.ngara = ? and t.codgar=g.codgar1", new Object[]{ngara});
       if(datiGare!=null && datiGare.size()>0){
         modastg=SqlManager.getValueFromVectorParam(datiGare, 0).longValue();
         modlicg=SqlManager.getValueFromVectorParam(datiGare, 1).longValue();
         esineg=SqlManager.getValueFromVectorParam(datiGare, 2).longValue();
         dattoa = SqlManager.getValueFromVectorParam(datiGare, 3).dataValue();
         inversa = SqlManager.getValueFromVectorParam(datiGare, 4).stringValue();
+        codgar = SqlManager.getValueFromVectorParam(datiGare, 5).stringValue();
       }
       pageContext.setAttribute("modastg", modastg, PageContext.REQUEST_SCOPE);
       pageContext.setAttribute("modlicg", modlicg, PageContext.REQUEST_SCOPE);
       pageContext.setAttribute("esineg", esineg, PageContext.REQUEST_SCOPE);
       pageContext.setAttribute("inversa", inversa, PageContext.REQUEST_SCOPE);
+      pageContext.setAttribute("codgar", codgar, PageContext.REQUEST_SCOPE);
 
     } catch (SQLException e) {
       throw new JspException(

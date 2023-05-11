@@ -44,6 +44,7 @@ public class GetWSERPPresenzaRdaFunction extends AbstractFunzioneTag {
     String presenzaRda = "false";
     Long countRdaGcap = new Long(0);
     Long countRdaGarerda = new Long(0);
+    String codiceRda = null;
     try {
       if("SMEUP".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP)){
         countRdaGcap = (Long) sqlManager.getObject("select count(*) from gcap where ngara = ? " +
@@ -52,12 +53,31 @@ public class GetWSERPPresenzaRdaFunction extends AbstractFunzioneTag {
             "and (codcarr is not null or numrda is not null) ", new Object[] { codiceGara });
 
       }else{
-        if("AVM".equals(tipoWSERP) || "CAV".equals(tipoWSERP)){
+        if("AVM".equals(tipoWSERP) || "CAV".equals(tipoWSERP) || "AMIU".equals(tipoWSERP)){
           countRdaGcap = (Long) sqlManager.getObject("select count(*) from gcap where ngara = ? " +
               "and (codrda is not null) ", new Object[] { ngara });
-          countRdaGarerda = (Long) sqlManager.getObject("select count(*) from garerda where codgar = ? " +
-              "and (numrda is not null) ", new Object[] { codiceGara });
+          if("CAV".equals(tipoWSERP)) {
+              Long genere = (Long) sqlManager.getObject("select genere from v_gare_genere where codgar = ? " +
+                      "and codice = ?  ", new Object[] { codiceGara,ngara });
+
+              if(Long.valueOf(300).equals(genere)) {
+                  countRdaGarerda = (Long) sqlManager.getObject("select count(*) from garerda where codgar = ? and ngara = ? " +
+                          "and (numrda is not null) ", new Object[] { codiceGara,ngara });
+              }else {
+                  countRdaGarerda = (Long) sqlManager.getObject("select count(*) from garerda where codgar = ? " +
+                          "and (numrda is not null) ", new Object[] { codiceGara });
+              }
+          }else {
+              countRdaGarerda = (Long) sqlManager.getObject("select count(*) from garerda where codgar = ? " +
+                      "and (numrda is not null) ", new Object[] { codiceGara });
+          }
         }
+      }
+      if("RAIWAY".equals(tipoWSERP)){
+        codiceRda = (String) sqlManager.getObject("select numrda from garerda where codgar = ? ", new Object[] { codiceGara });
+        pageContext.setAttribute("codiceRda", codiceRda, PageContext.REQUEST_SCOPE);
+        countRdaGarerda = (Long) sqlManager.getObject("select count(*) from garerda where codgar = ? " +
+                "and (numrda is not null) ", new Object[] { codiceGara });
       }
       if(countRdaGarerda > 0){
         presenzaRda = "1";

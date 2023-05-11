@@ -10,6 +10,18 @@
  */
 package it.eldasoft.sil.pg.bl;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.sql.Date;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.regex.PatternSyntaxException;
+
+import org.apache.log4j.Logger;
+
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.simap.ws.EsitoSimapWS;
@@ -23,21 +35,8 @@ import it.eldasoft.simap.ws.xmlbeans.AvvisoProfiloCommittenteType;
 import it.eldasoft.simap.ws.xmlbeans.BandoGaraDocument;
 import it.eldasoft.simap.ws.xmlbeans.BandoGaraType;
 import it.eldasoft.simap.ws.xmlbeans.CPVType;
-import it.eldasoft.simap.ws.xmlbeans.EconomicOperatorType;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.utility.UtilityFiscali;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.sql.Date;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.regex.PatternSyntaxException;
-
-import org.apache.log4j.Logger;
 
 
 public class ControllaBandoAvvisoSimapManager {
@@ -1336,54 +1335,7 @@ public class ControllaBandoAvvisoSimapManager {
                    }
                  }
                 }
-              } 
-              if(aqoper != null && aqoper.intValue()==2){
-                List datiDitgaq = sqlManager.getListVector(
-                    "select dittao from ditgaq where ngara = ?",
-                    new Object[] { ngara });
-                if(datiDitgaq != null && datiDitgaq.size()>0){
-                  for(int j=0;j<datiDitgaq.size();j++){
-                    String dittao = (String) SqlManager.getValueFromVectorParam(datiDitgaq.get(j),0).getValue();
-                    Long tipimpAq = (Long) sqlManager.getObject(
-                        "select tipimp from impr where codimp = ?",
-                        new Object[] { dittao });
-                    if(tipimpAq != null && (tipimpAq == 10 || tipimpAq == 3)){
-                      List listRagimp = sqlManager.getListVector("select coddic from ragimp where codime9 = ?",
-                          new Object[] { dittao });
-                      for(int k=0; k<listRagimp.size(); k++) {
-                        String dittaRT  = (String) SqlManager.getValueFromVectorParam(listRagimp.get(k), 0).getValue();
-                        HashMap<String,Boolean> temp = controllaDatiImpresa(dittaRT);
-                        if(temp.get(ERRORI_BLOCCANTI_KEY)){
-                          erroreBloccanteLotto = true;
-                        }
-                        if(temp.get(ERRORI_NON_BLOCCANTI_KEY)){
-                          erroreNonBloccanteLotto = true;
-                        }
-                        if(temp.get(ERRORI_NON_BLOCCANTI_TEL_KEY)){
-                          erroreNonBloccanteTelLotto = true;
-                        }
-                        if(temp.get(ERRORI_NON_BLOCCANTI_FAX_KEY)){
-                          erroreNonBloccanteFaxLotto = true;
-                        }
-                      }
-                    }else{ 
-                      HashMap<String,Boolean> temp = controllaDatiImpresa(dittao);
-                      if(temp.get(ERRORI_BLOCCANTI_KEY)){
-                        erroreBloccanteLotto = true;
-                      }
-                      if(temp.get(ERRORI_NON_BLOCCANTI_KEY)){
-                        erroreNonBloccanteLotto = true;
-                      }
-                      if(temp.get(ERRORI_NON_BLOCCANTI_TEL_KEY)){
-                        erroreNonBloccanteTelLotto = true;
-                      }
-                      if(temp.get(ERRORI_NON_BLOCCANTI_FAX_KEY)){
-                        erroreNonBloccanteFaxLotto = true;
-                      }
-                    }
-                  }
-                }
-              }else{
+              } else{
                HashMap<String,Boolean> temp = controllaDatiImpresa(ditta);
                if(temp.get(ERRORI_BLOCCANTI_KEY)){
                  erroreBloccanteLotto = true;
@@ -1396,6 +1348,53 @@ public class ControllaBandoAvvisoSimapManager {
                }
                if(temp.get(ERRORI_NON_BLOCCANTI_FAX_KEY)){
                  erroreNonBloccanteFaxLotto = true;
+               }
+             }
+             if(aqoper != null && aqoper.intValue()==2){
+               List datiDitgaq = sqlManager.getListVector(
+                   "select dittao from ditgaq where ngara = ?",
+                   new Object[] { ngara });
+               if(datiDitgaq != null && datiDitgaq.size()>0){
+                 for(int j=0;j<datiDitgaq.size();j++){
+                   String dittao = (String) SqlManager.getValueFromVectorParam(datiDitgaq.get(j),0).getValue();
+                   Long tipimpAq = (Long) sqlManager.getObject(
+                       "select tipimp from impr where codimp = ?",
+                       new Object[] { dittao });
+                   if(tipimpAq != null && (tipimpAq == 10 || tipimpAq == 3)){
+                     List listRagimp = sqlManager.getListVector("select coddic from ragimp where codime9 = ?",
+                         new Object[] { dittao });
+                     for(int k=0; k<listRagimp.size(); k++) {
+                       String dittaRT  = (String) SqlManager.getValueFromVectorParam(listRagimp.get(k), 0).getValue();
+                       HashMap<String,Boolean> temp = controllaDatiImpresa(dittaRT);
+                       if(temp.get(ERRORI_BLOCCANTI_KEY)){
+                         erroreBloccanteLotto = true;
+                       }
+                       if(temp.get(ERRORI_NON_BLOCCANTI_KEY)){
+                         erroreNonBloccanteLotto = true;
+                       }
+                       if(temp.get(ERRORI_NON_BLOCCANTI_TEL_KEY)){
+                         erroreNonBloccanteTelLotto = true;
+                       }
+                       if(temp.get(ERRORI_NON_BLOCCANTI_FAX_KEY)){
+                         erroreNonBloccanteFaxLotto = true;
+                       }
+                     }
+                   }else{
+                     HashMap<String,Boolean> temp = controllaDatiImpresa(dittao);
+                     if(temp.get(ERRORI_BLOCCANTI_KEY)){
+                       erroreBloccanteLotto = true;
+                     }
+                     if(temp.get(ERRORI_NON_BLOCCANTI_KEY)){
+                       erroreNonBloccanteLotto = true;
+                     }
+                     if(temp.get(ERRORI_NON_BLOCCANTI_TEL_KEY)){
+                       erroreNonBloccanteTelLotto = true;
+                     }
+                     if(temp.get(ERRORI_NON_BLOCCANTI_FAX_KEY)){
+                       erroreNonBloccanteFaxLotto = true;
+                     }
+                   }
+                 }
                }
              }
             }
@@ -1525,12 +1524,12 @@ public class ControllaBandoAvvisoSimapManager {
        if(imprLocimpr == null){
          risposta.put(ERRORI_NON_BLOCCANTI_KEY, true);
        }
-       
+
        String imprTelimp = (String) SqlManager.getValueFromVectorParam(impresaAgg,
            5).getValue();
        String imprFaximp = (String) SqlManager.getValueFromVectorParam(impresaAgg,
            6).getValue();
-       
+
        if(!validazionePhoneFax(imprTelimp)){
          risposta.put(ERRORI_NON_BLOCCANTI_TEL_KEY, true);
        };
@@ -2302,15 +2301,15 @@ public class ControllaBandoAvvisoSimapManager {
       }
       return errors;
   }
-    
+
   public static boolean validazionePhoneFax(String phoneFax) throws GestoreException {
-      
-    boolean res = true;  
+
+    boolean res = true;
     try {
       // Pattern XSD -->
       // (\+\d{1,3}\s\d+(\-\d+)*((\s)?/(\s)?(\+\d{1,3}\s)?\d+(\-\d+)*)*)
       String regex = "(\\+[0-9]{1,3} [0-9]+(\\-[0-9]+)*(( )?/( )?(\\+[0-9]{1,3} )?[0-9]+(\\-[0-9]+)*)*)";
-  
+
       if (phoneFax != null && !"".equals(phoneFax)) {
         if (!phoneFax.matches(regex) || phoneFax.length()>100) {
           res = false;
@@ -2321,6 +2320,6 @@ public class ControllaBandoAvvisoSimapManager {
     }
     return res;
   }
-    
+
 }
 

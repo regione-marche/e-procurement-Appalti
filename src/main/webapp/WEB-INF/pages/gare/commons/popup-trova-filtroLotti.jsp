@@ -36,7 +36,7 @@
 		
 		<gene:javaScript>	
 			document.forms[0].jspPathTo.value="gare/commons/popup-filtro.jsp";
-			document.forms[0].action+= "?tipo=Lotti";
+			document.forms[0].action+= "?tipo=Lotti&entFiltro=GARE";
 			
 			var lottiPerPagina="${param.lottiPerPagina}";
 			var indiceSelezionato =  document.getElementById('risultatiPerPagina').selectedIndex;

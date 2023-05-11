@@ -36,7 +36,7 @@
 </c:if>
 
 <gene:template file="lista-template.jsp" gestisciProtezioni="true" schema="GARE" idMaschera="SVINCOLOCAUZPROVV-lista" >
-	<gene:setString name="titoloMaschera" value="Comunicazione svincolo cauzione provvisoria" />
+	<gene:setString name="titoloMaschera" value="Comunicazione svincolo garanzia provvisoria" />
 	<gene:setString name="entita" value="DITG" />
 
 	<gene:redefineInsert name="corpo">

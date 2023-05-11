@@ -52,6 +52,8 @@
 		</c:otherwise>
 	</c:choose>
 	
+	${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, ngara, "SC", "20")}
+	
 	<gene:setString name="titoloMaschera" value="Esportazione dei criteri di valutazione ${tipoCriteri} della gara ${ngara}" />
 
 	<gene:redefineInsert name="corpo">
@@ -66,6 +68,7 @@
 			</c:otherwise>
 		</c:choose>
 
+	
 		<gene:formScheda entita="GARE" where="GARE.NGARA = '${chiave}'" 
 			gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupExportOEPV">
 		

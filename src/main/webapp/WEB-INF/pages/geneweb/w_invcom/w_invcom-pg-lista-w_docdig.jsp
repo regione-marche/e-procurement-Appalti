@@ -16,11 +16,26 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<c:set var="digitalSignatureUrlCheck" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-check-url")}'/>
+<c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:choose>
+	<c:when test="${!empty digitalSignatureUrlCheck && !empty digitalSignatureProvider && (digitalSignatureProvider eq 1 || digitalSignatureProvider eq 2)}">
+		<c:set var="digitalSignatureWsCheck" value='1'/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="digitalSignatureWsCheck" value='0'/>
+	</c:otherwise>
+</c:choose>
+
+<jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
 <c:set var="idprg" value='${gene:getValCampo(key,"IDPRG")}' scope="request"/>
 <c:set var="idcom" value='${gene:getValCampo(key,"IDCOM")}' scope="request"/>
 <c:set var="comkey1" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetCOMKEYGaraLottoFunction",pageContext,idprg,idcom)}' />
 
-<c:set var="firmaRemota" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "firmaremota.auto.url")}'/>
+<c:set var="firmaProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:if test='${firmaProvider eq 2}'>
+	<c:set var="firmaRemota" value="true"/>
+</c:if>
 <c:set var="comstato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetCOMSTATOFunction",pageContext,idprg,idcom)}' />
 <c:set var="autorizzatoModificaComunicazione" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.AutorizzatoModificaComunicazioneFunction",pageContext,idprg,idcom,"true")}' />
 <c:set var="codgar" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetCodgar1Function", pageContext, comkey1)}'/>
@@ -28,6 +43,17 @@
 <c:set var="where" value="W_DOCDIG.DIGENT = 'W_INVCOM' AND W_DOCDIG.DIGKEY1 = '${idprg}' AND W_DOCDIG.DIGKEY2 = '${idcom}'"/>
 
 <c:set var="richiestaFirma" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "documentiDb.richiestaFirma")}'/>
+<c:if test="${integrazioneWSDM eq '1' && richiestaFirma ne '1'}">
+	<c:set var="tipoWSDM" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetTipoWSDMFunction", pageContext, "FASCICOLOPROTOCOLLO", "NO",idconfi)}' />
+	<c:if test="${tipoWSDM eq 'ITALPROT'}">
+		<c:set var="firmaDocumento" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.GetPropertyWsdmFunction", firmaDocumenti,idconfi)}' scope="request"/>
+		<c:if test="${firmaDocumento eq '1'}">
+			<c:set var="richiestaFirma" value='1'/>
+			<c:set var="whereW_INVCOM" value="W_INVCOM.IDPRG = 'PG' AND W_INVCOM.IDCOM = ${idcom}"/>
+			<c:set var="oggettoComunic" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "COMMSGOGG", "W_INVCOM", whereW_INVCOM)}'/>
+		</c:if>
+	</c:if>
+</c:if>
 
 <c:choose>
 	<c:when test='${not empty param.keyAdd}'>
@@ -89,6 +115,12 @@
 	<c:set var="numDocAttesaFirma" value="0"/>
 </c:if>
 
+<gene:redefineInsert name="head" >
+		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmsupporto.js?v=${sessionScope.versioneModuloAttivo}"></script>
+		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.validate.min.js"></script>
+		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.documenti.gara.js"></script>
+</gene:redefineInsert>
+
 <table class="dettaglio-tab-lista">
 	<tr>
 		<td><gene:formLista entita="W_DOCDIG" pagesize="0" sortColumn="${gene:if(comstato eq '1' and autorizzatoModificaComunicazione eq 'true',3,2)}"
@@ -135,10 +167,20 @@
 			<c:if test="${richiestaFirma eq '1'}">
 				<gene:campoLista campo="DIGFIRMA" visibile="false"/>
 				<gene:campoLista title="&nbsp;" width="20" >
-					<c:if test="${datiRiga.W_DOCDIG_DIGFIRMA eq '1' }">
-						<img width="16" height="16" title="In attesa di firma" alt="In attesa di firma" src="${pageContext.request.contextPath}/img/isquantimod.png"/>
-						<c:set var="numDocAttesaFirma" value="${numDocAttesaFirma + 1}"/>
-					</c:if>
+					<c:choose>
+						<c:when test="${datiRiga.W_DOCDIG_DIGFIRMA eq '1'}">
+							<img width="16" height="16" title="In attesa di firma" alt="In attesa di firma" src="${pageContext.request.contextPath}/img/isquantimod.png"/>
+							<c:set var="numDocAttesaFirma" value="${numDocAttesaFirma + 1}"/>
+						</c:when>
+						<c:otherwise>
+							<c:if test="${firmaDocumento eq '1' and autorizzatoModificaComunicazione and comstato eq '1'}">
+								<a style="float:right;" href="javascript:preAperturaModaleRichiestaFirma('${datiRiga.W_DOCDIG_IDPRG}','${datiRiga.W_DOCDIG_IDDOCDIG}','${currentRow + 1}');">
+								<img src="${pageContext.request.contextPath}/img/firmaRemota.png" title="Firma digitale del documento" alt="Firma documento" width="16" height="16" style="padding:2 4 6 4">
+								</a>
+							</c:if>
+						</c:otherwise>
+					</c:choose>
+					
 				</gene:campoLista>
 			</c:if>
 			<gene:campoLista title="&nbsp;" width="24">
@@ -166,6 +208,9 @@
 			<input type="hidden" name="entitaWSDM" id="entitaWSDM" value="${entitaWSDM}"/>
 			<input type="hidden" name="comdatins" id="comdatins" value="${comdatins}"/>
 			<input type="hidden" name="cenint" id="cenint" value="${cenint}"/>
+			<input type="hidden" name="idconfi" id="idconfi" value="${idconfi}"/>
+			<input type="hidden" name="integrazioneWSDM" id="integrazioneWSDM" value="${integrazioneWSDM}"/>
+			
 		</gene:formLista></td>
 	</tr>
 	
@@ -273,6 +318,11 @@
 	<jsp:include page="/WEB-INF/pages/gare/commons/modalPopupDownloadAllegatiComunicazioni.jsp" />
 	<jsp:include page="/WEB-INF/pages/gene/system/firmadigitale/modalPopupFirmaDigitaleRemota.jsp" />
 	
+	<jsp:include page="/WEB-INF/pages/gare/commons/modalPopupFirmaDocumento.jsp">
+		<jsp:param name="oggettoDoc" value="${titolo}"/>
+		<jsp:param name="key1" value="${comkey1}"/>
+	</jsp:include>
+	
 	<form name="formVisFirmaDigitale" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
 		<input type="hidden" name="href" value="gene/system/firmadigitale/verifica-firmadigitale.jsp" />
 		<input type="hidden" name="idprg" id="idprg" value="" />
@@ -284,19 +334,34 @@
 	var cenint = "${cenint}";
 	
 	var autorizzatoTelematiche ="${autorizzatoTelematiche }";
+	
 		
 	function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 		var vet = dignomdoc.split(".");
 		var ext = vet[vet.length-1];
 		ext = ext.toUpperCase();
-		if(ext=='P7M' || ext=='TSD'){
-			document.formVisFirmaDigitale.idprg.value = idprg;
-			document.formVisFirmaDigitale.iddocdig.value = iddocdig;
-			document.formVisFirmaDigitale.submit();
-		}else{
-			var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-			document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
-		}
+		<c:choose>
+			<c:when test="${digitalSignatureWsCheck eq 0}">
+				if(ext=='P7M' || ext=='TSD'){
+					document.formVisFirmaDigitale.idprg.value = idprg;
+					document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+					document.formVisFirmaDigitale.submit();
+				}else{
+					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				}
+			</c:when>
+			<c:otherwise>
+				if(ext=='P7M' || ext=='TSD' || ext=='XML' || ext=='PDF'){
+					document.formVisFirmaDigitale.idprg.value = idprg;
+					document.formVisFirmaDigitale.iddocdig.value = iddocdig;
+					document.formVisFirmaDigitale.submit();
+				}else{
+					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				}
+			</c:otherwise>
+		</c:choose>
 	}	
 		
 	function inviacomunicazione(idprg,idcom){
@@ -316,12 +381,19 @@
 	}
 	
 	function protocollacomunicazione(idprg,idcom) {
+		var firmaDocumento="${firmaDocumento }";
+		var numDocAttesaFirma="${numDocAttesaFirma}";
+		 
+		  
 		if(autorizzatoTelematiche == "false"){
 			alert("Non e' possibile procedere.\nLa funzione e' disponibile solo al Punto ordinante");
 			return;
 		}else{
 			if(cenint == ""){
 				alert("Non e' possibile procedere.\nDeve essere specificata la stazione appaltante");
+				return;
+			} else if(numDocAttesaFirma!=null && numDocAttesaFirma!="" && numDocAttesaFirma != "0"){
+				alert("Non e' possibile procedere.\nVi sono degli allegati in attesa di firma");
 				return;
 			}else{
 				document.formprotocollacomunicazione.idprg.value = idprg;
@@ -371,8 +443,16 @@
 		 function rileggiDati(){
 			historyReload();
 		}	
-		 
+	
 	</c:if>
+	
+	function preAperturaModaleRichiestaFirma(idprg,iddocdig,indiceRiga){
+		var oggettoComunic = "${oggettoComunic }";
+		var colonnaDesc=$('#colW_DOCDIG_DIGDESDOC_' + indiceRiga);
+		var desc = colonnaDesc.find("span").text();
+		$('#oggettoDocumento').val(oggettoComunic + " - " + desc);
+		apriModaleRichiestaFirma(idprg, iddocdig,'');
+	}
 </gene:javaScript>
 
 <form name="formprotocollacomunicazione" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">

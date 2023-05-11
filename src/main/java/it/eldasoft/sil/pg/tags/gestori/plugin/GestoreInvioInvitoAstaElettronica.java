@@ -10,16 +10,6 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.plugin;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.tags.BodyTagSupportGene;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
-import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
-import it.eldasoft.utils.properties.ConfigManager;
-import it.eldasoft.utils.utility.UtilityDate;
-import it.eldasoft.utils.utility.UtilityStringhe;
-import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
-
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Calendar;
@@ -30,6 +20,16 @@ import java.util.List;
 import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.tags.BodyTagSupportGene;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
+import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.utility.UtilityDate;
+import it.eldasoft.utils.utility.UtilityStringhe;
+import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
 
 /**
  * Gestore che effettua il controllo della valorizzazione di alcuni
@@ -78,7 +78,7 @@ public class GestoreInvioInvitoAstaElettronica extends GestorePubblicaSuPortale 
 
 
     try {
-      
+
       boolean isIntegrazioneWSDMAttivaValida = gestioneWSDMManager.isIntegrazioneWSDMAttivaValida(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO, idconfi);
       if(isIntegrazioneWSDMAttivaValida)
         integrazioneWSDM="1";
@@ -216,12 +216,13 @@ public class GestoreInvioInvitoAstaElettronica extends GestorePubblicaSuPortale 
             if(valoreWSDM!=null && "1".equals(valoreWSDM))
               delegaInvioMailDocumentaleAbilitata=true;
 
-            if(delegaInvioMailDocumentaleAbilitata && ("PALEO".equals(tipoWSDM) || "JIRIDE".equals(tipoWSDM) || "ENGINEERING".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM)))
+            if(delegaInvioMailDocumentaleAbilitata && ("PALEO".equals(tipoWSDM) || "JIRIDE".equals(tipoWSDM) || "ENGINEERING".equals(tipoWSDM)
+                || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM)))
               delegaInvioDocumentale= true;
           }
 
           //Si devono caricare le ditte della gara con AMMGAR=1 o null.
-          HashMap gestioneDestinatari = this.gestioneDestinatari(ngara, codgar, genere, this.pgManager, delegaInvioDocumentale);
+          HashMap gestioneDestinatari = this.gestioneDestinatari(ngara, codgar, genere, this.pgManager, delegaInvioDocumentale,false);
           if("NO".equals(gestioneDestinatari.get("controlloSuperato"))){
             controlloSuperato = "NO";
             messaggio += (String)gestioneDestinatari.get("messaggio");

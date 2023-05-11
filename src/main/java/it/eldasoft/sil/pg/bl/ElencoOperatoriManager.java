@@ -10,14 +10,36 @@
  */
 package it.eldasoft.sil.pg.bl;
 
-import static it.eldasoft.sil.pg.bl.PgManager.NOME_FILE_RINNOVO_ISCRIZIONE;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Vector;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.log4j.Logger;
+import org.apache.xmlbeans.XmlException;
+import org.springframework.transaction.TransactionStatus;
+
+import com.lowagie.text.DocumentException;
+
 import it.eldasoft.gene.bl.FileAllegatoManager;
+import it.eldasoft.gene.bl.GenChiaviManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.db.domain.BlobFile;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
+import it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAcquisisciDaPortale;
 import it.eldasoft.sil.portgare.datatypes.RinnovoIscrizioneImpresaElencoOperatoriDocument;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.utility.UtilityDate;
@@ -28,20 +50,7 @@ import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAnagraficaType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoInType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoResType;
-
-import java.io.IOException;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.apache.xmlbeans.XmlException;
-
-import com.lowagie.text.DocumentException;
+import it.maggioli.eldasoft.ws.dm.WSDMTipoVoceRubricaType;
 
 /**
  * Manager che raccoglie le funzionalità per elenco operatori
@@ -49,6 +58,9 @@ import com.lowagie.text.DocumentException;
  * @author Cristian.Febas
  */
 public class ElencoOperatoriManager {
+
+  public static final int OK  =   1;
+  public static final int ERRORI = -1;
 
   /** Logger */
   static Logger       logger = Logger.getLogger(ElencoOperatoriManager.class);
@@ -64,6 +76,8 @@ public class ElencoOperatoriManager {
 
   /** Manager per la gestione dell'integrazione con WSDM */
   private GestioneWSDMManager gestioneWSDMManager = null;
+
+  private GenChiaviManager genChiaviManager = null;
 
   /**
    * Set SqlManager
@@ -96,6 +110,10 @@ public class ElencoOperatoriManager {
     this.gestioneWSDMManager = gestioneWSDMManager;
   }
 
+  public void setGenChiaviManager(GenChiaviManager genChiaviManager) {
+    this.genChiaviManager = genChiaviManager;
+  }
+
 
   /**
    * Invia la comunicazione via mail/pec degli operatori che sono appena stati abilitati
@@ -110,6 +128,7 @@ public class ElencoOperatoriManager {
    * @param isOp114
    * @param integrazioneWSDM
    * @param datiWSDM
+   * @param request
    * @return eventuale esito comunicazione
    * @throws GestoreException
    * @throws IOException
@@ -119,7 +138,7 @@ public class ElencoOperatoriManager {
 
   public int inviaComunicazioneAbilitazione(ProfiloUtente profilo, String codiceGara, String listaOperatoriAbilitati,
       String numeroOperatoriAbilitati, String flagMailPec, String oggettoMail, String testoMail, String mittenteMail,
-      String idcfg, boolean isOp114,  String integrazioneWSDM, HashMap<String,String> datiWSDM) throws SQLException, GestoreException, DocumentException, IOException {
+      String idcfg, boolean isOp114,  String integrazioneWSDM, HashMap<String,String> datiWSDM, HttpServletRequest request) throws SQLException, GestoreException, DocumentException, IOException {
 
       if(logger.isDebugEnabled())
       logger.debug("inviaComunicazioneAbilitazione: inizio metodo");
@@ -175,6 +194,10 @@ public class ElencoOperatoriManager {
       String nomeRup = null;
       String acronimoRup = null;
       String sottotipo = null;
+      String tipofirma = null;
+      String idunitaoperativamittenteDesc = null;
+      String uocompetenza = null;
+      String uocompetenzadescrizione = null;
 
       String tipoWSDM = null;
       if("1".equals(integrazioneWSDM)){
@@ -277,7 +300,7 @@ public class ElencoOperatoriManager {
         boolean inserimentoFascicoloArchiflowfa=false;
         boolean inserimentoFascicoloFolium = false;
         boolean inserimentoFascicoloPrisma = false;
-
+        boolean inserimentoFascicoloItalprot = false;
         if("1".equals(integrazioneWSDM)){
            //Popolamento contenitore dati per  WSDM
            classificadocumento = datiWSDM.get("classificadocumento");
@@ -332,6 +355,16 @@ public class ElencoOperatoriManager {
              sottotipo = datiWSDM.get("sottotipo");
            }
 
+           if("DOCER".equals(tipoWSDM)){
+             tipofirma = datiWSDM.get("tipofirma");
+             idunitaoperativamittenteDesc = datiWSDM.get("idunitaoperativamittenteDesc");
+           }
+
+           if("ENGINEERINGDOC".equals(tipoWSDM)) {
+             uocompetenza = datiWSDM.get("uocompetenza");
+             uocompetenzadescrizione = datiWSDM.get("uocompetenzadescrizione");
+           }
+
            HashMap<String,Object> par = new HashMap<String,Object>();
            par.put("classificadocumento", classificadocumento);
            par.put("tipodocumento", tipodocumento);
@@ -370,6 +403,9 @@ public class ElencoOperatoriManager {
            par.put("RUP", RUP );
            par.put("nomeRup", nomeRup );
            par.put("acronimoRup", acronimoRup );
+           par.put("tipofirma", tipofirma);
+           par.put("idunitaoperativamittenteDesc", idunitaoperativamittenteDesc);
+           par.put("uocompetenza", uocompetenza);
            wsdmProtocolloDocumentoIn = this.gestioneWSDMManager.wsdmProtocolloDocumentoPopola(par,datiWSDM.get("idconfi"));
 
            if("TITULUS".equals(tipoWSDM)){
@@ -378,13 +414,15 @@ public class ElencoOperatoriManager {
            }
 
 
-           if(("ARCHIFLOWFA".equals(tipoWSDM) || "FOLIUM".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM)) && "SI_FASCICOLO_NUOVO".equals(inserimentoinfascicolo)){
+           if(("ARCHIFLOWFA".equals(tipoWSDM) || "FOLIUM".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM)) && "SI_FASCICOLO_NUOVO".equals(inserimentoinfascicolo)){
              if("ARCHIFLOWFA".equals(tipoWSDM))
                inserimentoFascicoloArchiflowfa=true;
              if("FOLIUM".equals(tipoWSDM))
                inserimentoFascicoloFolium = true;
              if("PRISMA".equals(tipoWSDM))
                inserimentoFascicoloPrisma = true;
+             if("ITALPROT".equals(tipoWSDM))
+               inserimentoFascicoloItalprot = true;
            }
 
         }
@@ -455,6 +493,7 @@ public class ElencoOperatoriManager {
               destinatari[i].setEmailAggiuntiva((String) (ListaDestinatari.get(i)).get(8));
               destinatari[i].setProvinciaResidenza((String) (ListaDestinatari.get(i)).get(9));
               destinatari[i].setCapResidenza((String) (ListaDestinatari.get(i)).get(10));
+              destinatari[i].setTipoVoceRubrica(WSDMTipoVoceRubricaType.IMPRESA);
             }
           }
           if("1".equals(integrazioneWSDM)){
@@ -466,7 +505,7 @@ public class ElencoOperatoriManager {
 
         if("1".equals(integrazioneWSDM)){
           // Invio mail mediante servizi di protocollazione per ENGINEERING
-          if(abilitatoInvioMailDocumentale && ("ENGINEERING".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM))){
+          if(abilitatoInvioMailDocumentale && ("ENGINEERING".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM)  || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM))){
             WSDMInviaMailType inviaMail = new WSDMInviaMailType();
             if("ENGINEERING".equals(tipoWSDM)){
               // Oggetto email
@@ -487,22 +526,48 @@ public class ElencoOperatoriManager {
             wsdmProtocolloDocumentoIn.setInviaMail(inviaMail);
           }
 
-          if (testomail == null){
-            testomail = "[testo vuoto]";
+
+          //gestione allegato sintesi
+          Long idAllegatoSintesi = gestioneWSDMManager.cancellaAllegatoSintesi(idprg,newIdcom);
+          String nomeFile=null;
+          String estensioneFile = "pdf";
+          String titoloFile = null;
+          byte[] pdf = null;
+          if(idAllegatoSintesi==null) {
+            HashMap<String, Object> ret = gestioneWSDMManager.aggiungiAllegatoSintesi(key1, null, oggettoMail, testoMail, idprg, newIdcom, entita,request);
+            idAllegatoSintesi = (Long)ret.get("idAllegatoSintesi");
+            nomeFile = (String)ret.get("nomeFile");
+            estensioneFile = (String)ret.get("estensioneFile");
+            titoloFile = (String)ret.get("titoloFile");
+            pdf = (byte[]) ret.get("pdf");
+          }else {
+            Vector<?> datiAllegato = this.sqlManager.getVector("select dignomdoc, digdesdoc from  w_docdig where idprg=? and iddocdig=?", new Object[] {idprg,idAllegatoSintesi});
+            if(datiAllegato!=null && datiAllegato.size()>0) {
+              nomeFile = SqlManager.getValueFromVectorParam(datiAllegato, 0).getStringValue();
+              titoloFile = SqlManager.getValueFromVectorParam(datiAllegato, 1).getStringValue();
+              if(nomeFile.endsWith(".tsd"))
+              estensioneFile = "tsd";
+            }
+            BlobFile digogg = fileAllegatoManager.getFileAllegato(idprg, idAllegatoSintesi);
+            pdf = digogg.getStream();
           }
-          String contenutoPdf = this.gestioneWSDMManager.getTestoComunicazioneFormattato(key1, null, oggettoMail, testoMail);
 
           //Come unico allegato c'è il corpo della comunicazione
           WSDMProtocolloAllegatoType[] allegati = new WSDMProtocolloAllegatoType[1];
           // Aggiunta del testo della comunicazione
 
           allegati[0] = new WSDMProtocolloAllegatoType();
-          allegati[0].setNome("Comunicazione.pdf");
-          allegati[0].setTipo("pdf");
-          allegati[0].setTitolo("Testo della comunicazione");
-          allegati[0].setContenuto(UtilityStringhe.string2Pdf(contenutoPdf));
+          allegati[0].setNome(nomeFile);
+          allegati[0].setTipo(estensioneFile);
+          allegati[0].setTitolo(titoloFile);
+          allegati[0].setContenuto(pdf);
           if("TITULUS".equals(tipoWSDM))
             allegati[0].setIdAllegato("W_INVCOM|" + idprg + "|" + newIdcom.toString());
+
+          if("NUMIX".equals(tipoWSDM)) {
+            allegati[0] = GestioneWSDMManager.popolaAllegatoInfo(nomeFile,allegati[0]);
+            allegati[0].setIsSealed(new Long(1));
+          }
 
           wsdmProtocolloDocumentoIn.setAllegati(allegati);
 
@@ -510,17 +575,28 @@ public class ElencoOperatoriManager {
                 ruolo, nome, cognome, codiceuo, idutente, idutenteunop,codiceaoo, codiceufficio, wsdmProtocolloDocumentoIn, datiWSDM.get("idconfi"));
 
           if (wsdmProtocolloDocumentoRes.isEsito()) {
-            String numeroDocumento = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroDocumento();
-            Long annoProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getAnnoProtocollo();
-            String numeroProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroProtocollo();
+            String numeroDocumento = null;
+            if(!"LAPISOPERA".equals(tipoWSDM))
+              numeroDocumento = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroDocumento();
+            Long annoProtocollo = null;
+            if(!"LAPISOPERA".equals(tipoWSDM))
+              annoProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getAnnoProtocollo();
+            String numeroProtocollo = null;
+            if("LAPISOPERA".equals(tipoWSDM))
+              numeroProtocollo = GestioneWSDMManager.PREFISSO_COD_FASCICOLO_LAPISOPERA + wsdmProtocolloDocumentoRes.getProtocolloDocumento().getGenericS11();
+            else
+              numeroProtocollo = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getNumeroProtocollo();
             String indirizzoMittente = datiWSDM.get("indirizzomittente");
 
             Timestamp dataProtocollo= this.gestioneWSDMManager.getDataProtocollo(wsdmProtocolloDocumentoRes);
-            if(annoProtocollo==null)
+            String annoProtocolloString=null;
+            if(annoProtocollo==null && !"LAPISOPERA".equals(tipoWSDM)) {
               annoProtocollo = this.gestioneWSDMManager.getAnnoFromDate(dataProtocollo);
+              annoProtocolloString = annoProtocollo.toString();
+            }
 
             datiWSDM.put("numeroDocumento", numeroDocumento);
-            datiWSDM.put("annoProtocollo", annoProtocollo.toString());
+            datiWSDM.put("annoProtocollo", annoProtocolloString);
             datiWSDM.put("numeroProtocollo", numeroProtocollo);
             datiWSDM.put("oggettodocumento", oggettodocumento);
             datiWSDM.put("testoMail", testoMail);
@@ -552,7 +628,7 @@ public class ElencoOperatoriManager {
               String codiceFascicoloNUOVO =null;
               Long annoFascicoloNUOVO = null;
               String numeroFascicoloNUOVO = null;
-              if(!inserimentoFascicoloArchiflowfa && !inserimentoFascicoloFolium && !inserimentoFascicoloPrisma){
+              if(!inserimentoFascicoloArchiflowfa && !inserimentoFascicoloFolium && !inserimentoFascicoloPrisma && !inserimentoFascicoloItalprot){
                 codiceFascicoloNUOVO = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getFascicolo().getCodiceFascicolo();
                 if (wsdmProtocolloDocumentoRes.getProtocolloDocumento().getFascicolo().getAnnoFascicolo() != null)
                   annoFascicoloNUOVO = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getFascicolo().getAnnoFascicolo();
@@ -566,11 +642,19 @@ public class ElencoOperatoriManager {
                 codiceFascicoloNUOVO= datiWSDM.get("codicefascicolo");
                 annoFascicoloNUOVO=new Long(datiWSDM.get("annofascicolo"));
                 numeroFascicoloNUOVO=datiWSDM.get("numerofascicolo");
+              }else if(inserimentoFascicoloItalprot){
+                codiceFascicoloNUOVO= datiWSDM.get("codicefascicolo");
+                annoFascicoloNUOVO=new Long(datiWSDM.get("annofascicolo"));
               }else
                 codiceFascicoloNUOVO= datiWSDM.get("codicefascicolo");
 
               if("TITULUS".equals(tipoWSDM))
                 classificafascicolo = classificadocumento;
+
+              if("ENGINEERINGDOC".equals(tipoWSDM)) {
+                codiceufficio = uocompetenza;
+                codiceufficiodes=uocompetenzadescrizione;
+              }
 
               //String descrizioneFascicoloNUOVO = wsdmProtocolloDocumentoRes.getProtocolloDocumento().getFascicolo().getDescrizioneFascicolo();
               this.gestioneWSDMManager.setWSFascicolo(entita, key1, null, null, null, codiceFascicoloNUOVO, annoFascicoloNUOVO,
@@ -582,10 +666,20 @@ public class ElencoOperatoriManager {
 
             //Salvataggio della mail in WSALLEGATI
             this.gestioneWSDMManager.setWSAllegati("W_INVCOM", idprg, newIdcom.toString(), null, null, idWSDocumento);
+
+            //Salvataggio della mail in WSALLEGATI dell'allegato di sintesi
+            this.gestioneWSDMManager.setWSAllegati("W_DOCDIG", idprg, idAllegatoSintesi.toString(), null, null, idWSDocumento);
           }else{
             String messaggio = wsdmProtocolloDocumentoRes.getMessaggio();
             throw new GestoreException("Errore nella protocollazione del fascicolo","wsdm.fascicoloprotocollo.protocollazione.error",new Object[]{messaggio}, new Exception());
           }
+        }else {
+          //gestione allegato sintesi
+          HashMap<String, Object> ret = gestioneWSDMManager.aggiungiAllegatoSintesi(codiceGara, null, oggettoMail, testoMail, idprg, newIdcom, entita,request);
+          if(ret==null) {
+            throw new GestoreException("Errore nella creazione della marca temporale dell'allegato di sintesi","marcaTemporale",null, new Exception());
+          }
+
         }
       }
     }
@@ -598,18 +692,22 @@ public class ElencoOperatoriManager {
 
 	/**
 	 * Gestione di un rinnovo iscrizione ad elenco contenuto nella comunicazione
-	 * FS3 individuata da idcom
+	 * FS3 individuata da idcom. Viene restituito il file xml con i dati del rinnovo
 	 *
 	 * @param idcom
 	 * @param user
 	 * @param ngara
 	 * @param dataIns
+	 * @param genere
+	 * @param datastato
+	 * @return String
 	 * @throws GestoreException
 	 *
 	 */
-	public void rinnovoIscrizione(Long idcom, String user, String ngara, String dataIns) throws GestoreException {
+	public String rinnovoIscrizione(Long idcom, String user, String ngara, String dataIns, Long genere, String datastato) throws GestoreException {
 
 		String select;
+		String xml=null;
 
 		//Vengono letti i documenti associati ad ogni occorrenza di di W_INVCOM
 		select = "SELECT idprg, iddocdig FROM w_docdig WHERE digent = ? AND digkey1 = ? AND idprg = ? AND dignomdoc = ? ";
@@ -618,7 +716,7 @@ public class ElencoOperatoriManager {
 
 		Vector<?> datiW_DOCDIG;
 		try {
-			datiW_DOCDIG = this.sqlManager.getVector(select, new Object[]{digent, idcom.toString(), idprgW_DOCDIG, NOME_FILE_RINNOVO_ISCRIZIONE});
+			datiW_DOCDIG = this.sqlManager.getVector(select, new Object[]{digent, idcom.toString(), idprgW_DOCDIG, CostantiAppalti.NOME_FILE_RINNOVO_ISCRIZIONE});
 		} catch (SQLException e) {
 			logger.error("Errore nella lettura della tabella W_DOCDIG della richiesta: IDCOM = " + idcom.toString(), e);
 			throw new GestoreException("Errore nella lettura della tabella W_DOCDIG della richiesta: IDCOM = " + idcom.toString(), null, e);
@@ -649,10 +747,10 @@ public class ElencoOperatoriManager {
 				logger.error("Errore nella lettura del file allegato presente nella tabella W_DOCDIG della richiesta: IDCOM = " + idcom.toString(), e);
 				throw new GestoreException("Errore nella lettura del file allegato presente nella tabella W_DOCDIG della richiesta: IDCOM = " + idcom.toString(), null, e);
 			}
-			String xml;
+
 			if (fileAllegato != null && fileAllegato.getStream() != null) {
 				xml = new String(fileAllegato.getStream());
-				this.rinnovoIscrizioneElencoOperatori(idcom, user, ngara, xml, dataIns);
+				this.rinnovoIscrizioneElencoOperatori(idcom, user, ngara, xml, dataIns,genere, datastato);
 				this.pgManager.aggiornaStatoW_INVOCM(idcom, "6", "");
 			} else {
 				this.pgManager.aggiornaStatoW_INVOCM(idcom, "7", "");
@@ -660,6 +758,8 @@ public class ElencoOperatoriManager {
 		} else {
 			this.pgManager.aggiornaStatoW_INVOCM(idcom, "7", "");
 		}
+
+		return xml;
 	}
 
 	/**
@@ -671,10 +771,12 @@ public class ElencoOperatoriManager {
 	 * @param user
 	 * @param ngara
 	 * @param dataIns
+	 * @param genere
+     * @param datastato
 	 * @throws GestoreException
 	 */
 	private void rinnovoIscrizioneElencoOperatori(Long idcom, String user,
-					String ngara, String xml, String dataIns) throws GestoreException {
+					String ngara, String xml, String dataIns, Long genere, String datastato) throws GestoreException {
 
 		RinnovoIscrizioneImpresaElencoOperatoriDocument document;
 		try {
@@ -695,7 +797,8 @@ public class ElencoOperatoriManager {
 			String codiceGara = "$" + ngara;
 
 			//Inserimento documenti
-			this.pgManager.insertDocumenti(document, codiceGara, user, ngara, campoData, oraConSecondi,idcom);
+			Object datiProtocollo[] = this.pgManager.insertDocumenti(document, codiceGara, user, ngara, campoData, oraConSecondi,idcom,false);
+			String msgDoc = (String)datiProtocollo[2];
 
 			//Aggiornamento dati relativi all'operatore
 			String select = "SELECT apprin FROM garealbo WHERE codgar = ? AND ngara = ?";
@@ -708,6 +811,8 @@ public class ElencoOperatoriManager {
 			Long RINNOVO_DA_VERIFICARE = (long) 2;
 			Long SOSPESO_PER_ISCRIZIONE_SCADUTA = (long) 8;
 
+			String msgAggDITG="Aggiornamento dati dell'operatore inerenti al rinnovo:\r\n";
+
 			List<Object> params = new ArrayList<Object>();
 			StringBuilder sbQuery = new StringBuilder();
 			sbQuery.append("UPDATE ditg SET dricrin = ?, strin = ?");
@@ -716,13 +821,19 @@ public class ElencoOperatoriManager {
 			params.add(dataInserimento);
 			params.add(RINNOVO_DA_VERIFICARE);
 
+
+			msgAggDITG+="Data richiesta rinnovo: " + dataIns + "\r\n";
+			msgAggDITG+="Stato verifica: Rinnovo da verificare\r\n";
+
 			if (aprin != null && aprin.equals(RINNOVO_AUTOMATICO)) {
 				params.add(dataInserimento);
 				sbQuery.append(", dscad = ?");
+				msgAggDITG+="Data rinnovo: " + dataIns + "\r\n";
 				if (abilitaz != null && abilitaz.equals(SOSPESO_PER_ISCRIZIONE_SCADUTA)) {
 					params.add(null);
 					params.add((long) 1);
 					sbQuery.append(", dsospe = ?, abilitaz = ?");
+					msgAggDITG+="Sospensione per iscrizione scaduta revocata\r\n";
 				}
 			}
 			params.add(codiceGara);
@@ -730,12 +841,29 @@ public class ElencoOperatoriManager {
 			params.add(user);
 			sbQuery.append(" WHERE codgar5 = ? AND ngara5 = ? AND dittao = ?");
 			this.sqlManager.update(sbQuery.toString(), params.toArray());
+
+			//Scrittura su G_NOTEAVVISI
+			ProfiloUtente profilo = null;
+
+			String testoNota="Notifica rinnovo iscrizione a elenco operatori  " + ngara;
+			if(new Long(20).equals(genere))
+			  testoNota="Notifica rinnovo iscrizione a catalogo elettronico " + ngara;
+			Date comDataStato =null;
+			if(datastato!=null) {
+			  java.util.Date dt = UtilityDate.convertiData(datastato, UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS);
+			  comDataStato = new Date(dt.getTime());
+			}
+			this.pgManager.InserisciVariazioni(msgDoc + "\r\n" + msgAggDITG, user,"INS",profilo,comDataStato,false,testoNota);
+
 		} catch (XmlException e) {
 			logger.error("Errore nella lettura del file XML", e);
 			throw new GestoreException("Errore nella lettura del file XML", null, e);
 		} catch (SQLException e) {
 			logger.error("Errore nella lettura dei dati di rinnovo iscrizione", e);
-			throw new GestoreException("Errore nella lettura dei dati di rinnovo iscrizione", null, e);
+			throw new GestoreException("Errore nella lettura dei dati di rinnovo iscrizione dell'elenco" + ngara, null, e);
+		} catch (Exception e) {
+		  logger.error("Errore nell'acquisizione del rinnovo iscrizione", e);
+          throw new GestoreException("Errore nell'acquisizione del rinnovo iscrizione dell'elenco " + ngara, null, e);
 		}
 	}
 
@@ -753,11 +881,13 @@ public class ElencoOperatoriManager {
 
 	  Long ctrlgg=null;
 	  String ctrlele=null;
+	  String ctrlprov = null;
 
-	  Vector datiGarealbo = this.sqlManager.getVector("select ctrlgg, ctrlele from garealbo where ngara=?", new Object[]{elenco});
+	  Vector datiGarealbo = this.sqlManager.getVector("select ctrlgg, ctrlele, ctrlprov from garealbo where ngara=?", new Object[]{elenco});
 	  if(datiGarealbo!=null && datiGarealbo.size()>0){
 	    ctrlgg = SqlManager.getValueFromVectorParam(datiGarealbo, 0).longValue();
 	    ctrlele = SqlManager.getValueFromVectorParam(datiGarealbo, 1).getStringValue();
+	    ctrlprov = SqlManager.getValueFromVectorParam(datiGarealbo, 2).getStringValue();
 	  }
 
       String ditta = null;
@@ -774,9 +904,9 @@ public class ElencoOperatoriManager {
 
 	  if("1".equals(ctrlele)){
 	      parametri = new Object[4];
-	      selectImportoDitte += " and ((elencoe=? and exists (select dittao from ditg d1 where d1.ngara5=ngara and (d1.dittao=ditta or d1.rtofferta=ditta) and d1.acquisizione=3))"+
+	      selectImportoDitte += " and ((elencoe=? and dittao in (select d1.dittao from ditg d1 where d1.ngara5=ngara and (d1.dittao=ditta or d1.rtofferta=ditta) and d1.acquisizione=3))"+
 	        " or exists(select ngara from gare gg where gg.genere=3 and gg.codgar1=codgar and gg.elencoe=?"+
-	        " and exists (select dittao from ditg d2 where d2.ngara5=gg.ngara and (d2.dittao=gare.ditta or d2.rtofferta=gare.ditta) and d2.acquisizione=3)))";
+	        " and dittao in (select d2.dittao from ditg d2 where d2.ngara5=gg.ngara and (d2.dittao=gare.ditta or d2.rtofferta=gare.ditta) and d2.acquisizione=3)))";
 	  }else{
 	      parametri = new Object[2];
 	  }
@@ -788,7 +918,6 @@ public class ElencoOperatoriManager {
           parametri[3]=elenco;
 	  }
 
-	  Object importoObj = null;
 	  oggi = UtilityDate.getDataOdiernaAsString(UtilityDate.FORMATO_GG_MM_AAAA);
 	  String dbFunctionStringToDate = sqlManager.getDBFunction("stringtodate",
 	            new String[] { oggi });
@@ -799,15 +928,235 @@ public class ElencoOperatoriManager {
             sqlManager.execute("alter session set nls_sort = 'BINARY'");
             sqlManager.execute("alter session set nls_comp = 'BINARY'");
       }
-      List listaImportoDitte = this.sqlManager.getListVector(selectImportoDitte, parametri);
-      for(int i=0; i<listaImportoDitte.size();i++){
-        ditta=SqlManager.getValueFromVectorParam(listaImportoDitte.get(i), 0).getStringValue();
-        importo =  SqlManager.getValueFromVectorParam(listaImportoDitte.get(i), 1).doubleValue();
-        this.sqlManager.update("update ditg set iaggiuele=? where ngara5=? and dittao=?", new Object[]{importo,elenco,ditta});
-    }
+      List<?> listaImportoDitte = this.sqlManager.getListVector(selectImportoDitte, parametri);
+
+      List<?> listaImportoProvDitte = null;
+      if("1".equals(ctrlprov)) {
+        //Si considera l'aggiudicazione provvisoria che va aggiunta all'aggiudicazione definitiva
+        selectImportoDitte = "select dittao,sum(iagpro) from ditg, gare, torn " +
+            "where ditg.ngara5=? and ditg.abilitaz=1 and ditg.dabilitaz is not null and ditg.numordpl is not null " +
+            "and codgar1=codgar and (accqua is null or accqua='2') " +
+            "and (dattoa is null or ditta is null or ditta = '') and dvprov is not null and dvprov <= # and dvprov > # - ? " +
+            "and (dittap = ditg.dittao or exists(select codime9 from ragimp where codime9=dittap and coddic=ditg.dittao and impman='1'))";
+        if("1".equals(ctrlele)){
+          selectImportoDitte += " and ((elencoe=? and dittao in (select d1.dittao from ditg d1 where d1.ngara5=ngara and (d1.dittao=dittap or d1.rtofferta=dittap) and d1.acquisizione=3))"+
+            " or exists(select ngara from gare gg where gg.genere=3 and gg.codgar1=codgar and gg.elencoe=?"+
+            " and dittao in (select d2.dittao from ditg d2 where d2.ngara5=gg.ngara and (d2.dittao=gare.dittap or d2.rtofferta=gare.dittap) and d2.acquisizione=3)))";
+        }
+        selectImportoDitte += " group by dittao";
+        selectImportoDitte = selectImportoDitte.replaceAll("#", dbFunctionStringToDate);
+        listaImportoProvDitte = this.sqlManager.getListVector(selectImportoDitte, parametri);
+
+        HashMap<String,BigDecimal> hMImporti= new HashMap<String,BigDecimal>();
+        BigDecimal bigImporto=null;
+        for(int i=0; i<listaImportoDitte.size();i++){
+          ditta=SqlManager.getValueFromVectorParam(listaImportoDitte.get(i), 0).getStringValue();
+          if(SqlManager.getValueFromVectorParam(listaImportoDitte.get(i), 1)!=null)
+            bigImporto = BigDecimal.valueOf(SqlManager.getValueFromVectorParam(listaImportoDitte.get(i), 1).doubleValue());
+          else
+            bigImporto = BigDecimal.valueOf(0);
+          hMImporti.put(ditta, bigImporto);
+        }
+        BigDecimal bigSommaImporto=null;
+        for(int i=0; i<listaImportoProvDitte.size();i++){
+          ditta=SqlManager.getValueFromVectorParam(listaImportoProvDitte.get(i), 0).getStringValue();
+          if(SqlManager.getValueFromVectorParam(listaImportoProvDitte.get(i), 1)!=null)
+            bigImporto = BigDecimal.valueOf(SqlManager.getValueFromVectorParam(listaImportoProvDitte.get(i), 1).doubleValue());
+          else
+            bigImporto = BigDecimal.valueOf(0);
+          if(hMImporti.containsKey(ditta)) {
+           bigSommaImporto = hMImporti.get(ditta);
+           bigSommaImporto = bigSommaImporto.add(bigImporto);
+           hMImporti.put(ditta, bigSommaImporto);
+         }else {
+           hMImporti.put(ditta, bigImporto);
+         }
+        }
+        for (String dit : hMImporti.keySet()) {
+          importo = new Double(hMImporti.get(dit).doubleValue());
+          this.sqlManager.update("update ditg set iaggiuele=? where ngara5=? and dittao=?", new Object[]{importo,elenco,dit});
+        }
+      }else {
+        for(int i=0; i<listaImportoDitte.size();i++){
+          ditta=SqlManager.getValueFromVectorParam(listaImportoDitte.get(i), 0).getStringValue();
+          importo =  SqlManager.getValueFromVectorParam(listaImportoDitte.get(i), 1).doubleValue();
+          this.sqlManager.update("update ditg set iaggiuele=? where ngara5=? and dittao=?", new Object[]{importo,elenco,ditta});
+        }
+      }
+
+
 
 	  //Aggiornamento della data di esecuzione della funzione
 	  Timestamp dataOraoggi = new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime());
       this.sqlManager.update("update garealbo set ctrldata=? where ngara=?", new Object[]{dataOraoggi,elenco});
 	}
+
+	/**
+	 *Il metodo restituisce un hashMap contentente le seguenti informazioni: "esito", "xml", "descrEvento" e "codiceDitta"
+	 *
+	 * @param idcom
+	 * @param user
+	 * @param ngara
+	 * @param tipo
+	 * @param aggiornamentoCategorie
+	 * @param messaggioCategorie
+	 * @param msgAnteprima
+	 * @param gacqport
+	 * @param status
+	 * @param saltareTracciatura
+	 * @return HashMap
+	 * @throws GestoreException
+	 */
+	public HashMap<String, Object> acquisizioneDaPortaleSingola(Long idcom, String user, String ngara, String tipo, boolean aggiornamentoCategorie, String messaggioCategorie,
+	    String msgAnteprima, GestorePopupAcquisisciDaPortale gacqport, TransactionStatus status, boolean saltareTracciatura) throws GestoreException {
+
+	  HashMap<String, Object> ret = new HashMap<String, Object>();
+	  String select=null;
+	  boolean errori=false;
+	  String xml=null;
+	  String codiceDittaUser=null;
+	  int esito = OK;
+
+	  select="select USERKEY1 from w_puser where USERNOME = ? ";
+	  String codiceDitta;
+	  try {
+	    codiceDitta = (String)sqlManager.getObject(select, new Object[]{user});
+	  } catch (SQLException e) {
+	    throw new GestoreException("Errore nella lettura della tabella W_PUSER ",null, e);
+	  }
+
+	  //Nel caso di FS4 se il richiedente fa parte di una RTI, allora l'aggiornamento deve avvenire
+	  //sulla RTI
+	  if("FS4".equals(tipo)){
+	    //Nella finestra popIscriviAggiornaDaPortale.jsp all'apertura si blocca se non si trova la ditta in gara
+	    //quindi in questa fase sono sicuro di trovare la ditta.
+	    codiceDittaUser = codiceDitta;
+	    String datiControllo[] = pgManager.controlloEsistenzaDittaElencoGara(codiceDitta, ngara, "$" + ngara, null);
+	    codiceDitta =datiControllo[1];
+	  }
+
+	  String descrEvento = "(cod. ditta " + codiceDitta + ", id.comunicazione " + idcom + ")";
+	  //Vengono letti i documenti associati ad ogni occorrenza di di W_INVCOM
+	  select="select idprg,iddocdig from w_docdig where DIGENT = ? and digkey1 = ? and idprg = ? and dignomdoc = ? ";
+	  String digent="W_INVCOM";
+	  String idprgW_DOCDIG="PA";
+
+	  String nomeFile=null;
+	  if("FS2".equals(tipo))
+	    nomeFile = CostantiAppalti.nomeFileXML_Iscrizione;
+	  else
+	    nomeFile= CostantiAppalti.nomeFileXML_Aggiornamento;
+
+	  Vector<?> datiW_DOCDIG = null;
+	  try {
+
+	    datiW_DOCDIG = sqlManager.getVector(select,
+	        new Object[]{digent, idcom.toString(), idprgW_DOCDIG, nomeFile});
+
+	  } catch (SQLException e) {
+	    throw new GestoreException("Errore nella lettura della tabella W_DOCDIG ",null, e);
+	  }
+	  String idprgW_INVCOM = null;
+	  Long iddocdig = null;
+
+	  if(datiW_DOCDIG != null ){
+	    if(((JdbcParametro)datiW_DOCDIG.get(0)).getValue() != null)
+	      idprgW_INVCOM = ((JdbcParametro) datiW_DOCDIG.get(0)).getStringValue();
+
+	    if(((JdbcParametro)datiW_DOCDIG.get(1)).getValue() != null)
+	      try {
+	        iddocdig = ((JdbcParametro) datiW_DOCDIG.get(1)).longValue();
+	      } catch (GestoreException e2) {
+	        throw new GestoreException("Errore nella lettura della tabella W_DOCDIG ",null, e2);
+	      }
+
+
+	    //Lettura del file xml immagazzinato nella tabella W_DOCDIG
+	    BlobFile fileAllegato = null;
+	    try {
+	      fileAllegato = fileAllegatoManager.getFileAllegato(idprgW_INVCOM,iddocdig);
+	    } catch (Exception e) {
+	      throw new GestoreException("Errore nella lettura del file allegato presente nella tabella W_DOCDIG",null, e);
+	    }
+
+	    if(fileAllegato!=null && fileAllegato.getStream()!=null){
+	      xml = new String(fileAllegato.getStream());
+
+	      if("FS2".equals(tipo))
+	        codiceDitta = gacqport.iscrizioneElencoOperatori(ngara, codiceDitta, status, xml, pgManager, idcom, user, fileAllegatoManager, false,true,saltareTracciatura);
+	      else {
+	        int sintesiAggCategorie = 0;
+	        if(aggiornamentoCategorie)
+	          sintesiAggCategorie = 1;
+	        else {
+	          if(messaggioCategorie!=null && !"".equals(messaggioCategorie))
+	            sintesiAggCategorie = 3;
+	          else
+	            sintesiAggCategorie = 2;
+	        }
+	        gacqport.aggiornamentoIscrizioneElencoOperatori(ngara, codiceDitta, codiceDittaUser, status, xml, pgManager, idcom, user, fileAllegatoManager, false, sintesiAggCategorie, msgAnteprima);
+	      }
+
+	    }else{
+	      //Aggiornamento dello stato a errore
+	      gacqport.aggiornaStatoW_INVOCM(idcom,"7");
+	      errori=true;
+	    }
+	  }else{
+	    //Aggiornamento dello stato a errore
+	    gacqport.aggiornaStatoW_INVOCM(idcom,"7");
+	    errori=true;
+	  }
+
+	  if("FS4".equals(tipo) && aggiornamentoCategorie== false && !errori && messaggioCategorie!=null && !"".equals(messaggioCategorie)){
+	    //Si deve popolare la tabella GARACQUISIZ
+	    String insert = "insert into GARACQUISIZ(id,ngara,codimp,idprg,idcom,stato,logmsg) values(?,?,?,?,?,?,?)";
+	    int id = genChiaviManager.getNextId("GARACQUISIZ");
+	    try {
+	      sqlManager.update(insert, new Object[]{new Long(id),ngara,codiceDitta,idprgW_DOCDIG,idcom,new Long(1),messaggioCategorie});
+	      descrEvento = descrEvento.replace("(cod. ditta", ", con elaborazione delle categorie posticipata (cod. ditta");
+	    } catch (SQLException e) {
+	      throw new GestoreException("Errore nella scrittura sulla tabella GARACQUISIZ",null, e);
+	    }
+	    //Se esiste l'occorrenza in DITGQFORM in stato = 1, si valorizza il riferimento a GARACQUISIZ
+	    try {
+	      Long conteggioQform = (Long)this.sqlManager.getObject("select count(*) from ditgqform where ngara=? and codgar=? and dittao=? and stato=?",
+	          new Object[] {ngara, "$" + ngara, codiceDitta, new Long(CostantiAppalti.statoDITGQFORMDaAttivare)});
+	      if(conteggioQform!=null && conteggioQform.intValue()>0) {
+	        this.sqlManager.update("update ditgqform set idacquisiz=? where ngara= ? and codgar =? and dittao = ? and stato = ?",
+	            new Object[] {new Long(id), ngara, "$" + ngara, codiceDitta, new Long(CostantiAppalti.statoDITGQFORMDaAttivare)});
+	      }
+	    } catch (SQLException e) {
+	      throw new GestoreException("Errore nella scrittura sulla tabella DITGQFORM",null, e);
+	    }
+	  }
+	  if(errori)
+	    esito=ERRORI;
+
+	  ret.put("esito", new Integer(esito));
+	  ret.put("xml", xml);
+	  ret.put("descrEvento", descrEvento);
+	  ret.put("codiceDitta", codiceDitta);
+	  return ret;
+	}
+
+	/**
+	 *
+	 * @param idcom
+	 * @param user
+	 * @param ngara
+	 * @param tipo
+	 * @param aggiornamentoCategorie
+	 * @param messaggioCategorie
+	 * @param msgAnteprima
+	 * @param gacqport
+	 * @param status
+	 * @return HashMap
+	 * @throws GestoreException
+	 */
+	public HashMap<String, Object> acquisizioneDaPortaleSingola(Long idcom, String user, String ngara, String tipo, boolean aggiornamentoCategorie, String messaggioCategorie,
+        String msgAnteprima, GestorePopupAcquisisciDaPortale gacqport, TransactionStatus status) throws GestoreException {
+	  return acquisizioneDaPortaleSingola(idcom,user,ngara,tipo,aggiornamentoCategorie,messaggioCategorie,msgAnteprima,gacqport,status,false);
+	}
+
 }

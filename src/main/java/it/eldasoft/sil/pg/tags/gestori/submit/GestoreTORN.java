@@ -10,6 +10,21 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Vector;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.GenChiaviManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.TabellatiManager;
@@ -32,9 +47,11 @@ import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.AutovieManager;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.sil.pg.bl.GestioneWSERPManager;
+import it.eldasoft.sil.pg.bl.GestioneProgrammazioneManager;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.sil.pg.bl.SmatManager;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityNumeri;
@@ -47,21 +64,6 @@ import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoType;
 import it.maggioli.eldasoft.ws.erp.WSERPAllegatoType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaResType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaType;
-
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Vector;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.log4j.Logger;
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore dell'entita' TORN: insert, update, delete.<br>
@@ -110,6 +112,8 @@ public class GestoreTORN extends AbstractGestoreEntita {
   /** Manager Integrazione WSDM */
   private WsdmConfigManager wsdmConfigManager;
 
+  /** Manager Integrazione Programmazione */
+  private GestioneProgrammazioneManager gestioneProgrammazioneManager = null;
 
   /**
    * @see it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita#setRequest(javax.servlet.http.HttpServletRequest)
@@ -138,6 +142,8 @@ public class GestoreTORN extends AbstractGestoreEntita {
         this.getServletContext(), GenChiaviManager.class);
     wsdmConfigManager = (WsdmConfigManager) UtilitySpring.getBean("wsdmConfigManager",
         this.getServletContext(), WsdmConfigManager.class);
+    gestioneProgrammazioneManager = (GestioneProgrammazioneManager) UtilitySpring.getBean("gestioneProgrammazioneManager",
+        this.getServletContext(), GestioneProgrammazioneManager.class);
   }
 
   @Override
@@ -176,7 +182,7 @@ public class GestoreTORN extends AbstractGestoreEntita {
             String linkrda = null;
             if("SMEUP".equals(tipoWSERP)){
               linkrda = "2";
-            }else if("AVM".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "FNM".equals(tipoWSERP)){
+            }else if("AVM".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "FNM".equals(tipoWSERP) || "AMIU".equals(tipoWSERP)){
               Long countGareRda = (Long)this.sqlManager.getObject("select count(numrda) from garerda where codgar = ? and numrda is not null", new Object[]{codgar});
               if(countGareRda >0 ){
                 linkrda = "1";
@@ -188,18 +194,34 @@ public class GestoreTORN extends AbstractGestoreEntita {
               String codiceTornata = datiForm.getString("TORN.CODGAR");
               // Determino i codici dei lotti della tornata in cancellazione
               List<?> listaLottiTornata = this.sqlManager.getListVector(
-                  "select ngara from gare where codgar1 = ?",
+                  "select ngara,esineg from gare where codgar1 = ?",
                   new Object[] { codiceTornata });
 
               if (listaLottiTornata != null && listaLottiTornata.size() > 0) {
                 for (int i = 0; i < listaLottiTornata.size(); i++) {
-                  Vector<?> codiceLotto = (Vector<?>) listaLottiTornata.get(i);
-                  String codiceGara= ((JdbcParametro) codiceLotto.get(0)).getStringValue();
-                  int res = this.gestioneWSERPManager.scollegaRda(codiceTornata, codiceGara, linkrda, null, null, this.getRequest());
-                  if(res < 0){
-                    throw new GestoreException(
-                        "Errore durante l'operazione di scollegamento delle RdA dalla gara",
-                        "scollegaRdaGara", null);
+                  Vector<?> lotto = (Vector<?>) listaLottiTornata.get(i);
+                  String codiceGara= ((JdbcParametro) lotto.get(0)).getStringValue();
+                  Long esineg= (Long) ((JdbcParametro) lotto.get(1)).getValue();
+                  if(esineg != null) {
+                	  ;
+                  }else{
+                      String[] res = this.gestioneWSERPManager.scollegaRda(codiceTornata, codiceGara, linkrda, null, null, this.getRequest());
+                      String ris = res[0];
+                      int intRis = 0;
+                      if(ris!=null) {
+                      	 intRis=Long.valueOf(ris).intValue();
+                      }
+                      if(intRis < 0){
+                      	if("AMIU".equals(tipoWSERP) && res[1]!=null) {
+                            throw new GestoreException(
+                                    "Errore durante l'operazione di scollegamento delle RdA dalla gara",
+                                    "scollegaRdaGaraMsg",new Object[] {res[1]}, null);
+                    	}else {
+                            throw new GestoreException(
+                                    "Errore durante l'operazione di scollegamento delle RdA dalla gara",
+                                    "scollegaRdaGara", null);
+                    	}
+                      }
                   }
                 }
               }
@@ -208,6 +230,16 @@ public class GestoreTORN extends AbstractGestoreEntita {
         }//integrazione WSERP
 
         pgManager.deleteTORN(datiForm.getString("TORN.CODGAR"));
+        
+		//verifico se si tratta di una richiesta CIG collegato
+	    String ngaraCollegata = (String) sqlManager.getObject(
+	            "select ngara from G1STIPULA where ngaravar = ? ",
+	            new Object[] { oggEvento });
+	      
+	    if(!"".equals(ngaraCollegata) && ngaraCollegata != null) {
+	    	String updateG1STIPULA = "update G1STIPULA set ngaravar='' where ngaravar=?";
+	    	this.sqlManager.update(updateG1STIPULA, new Object[] { oggEvento });
+	    }
 
       }catch(GestoreException e){
         livEvento = 3;
@@ -326,10 +358,7 @@ public class GestoreTORN extends AbstractGestoreEntita {
         "GARE.TORN.CRITLIC") && this.getGeneManager().getProfili().checkProtec(
             (String) this.getRequest().getSession().getAttribute(
                 CostantiGenerali.PROFILO_ATTIVO), "COLS", "VIS",
-            "GARE.TORN.DETLIC") && this.getGeneManager().getProfili().checkProtec(
-                (String) this.getRequest().getSession().getAttribute(
-                    CostantiGenerali.PROFILO_ATTIVO), "COLS", "VIS",
-                "GARE.TORN.CALCSOAN")){
+            "GARE.TORN.DETLIC")){
 
       if(datiForm.isColumn("TORN.MODLIC")){
         Long modlic = datiForm.getLong("TORN.MODLIC");
@@ -377,26 +406,9 @@ public class GestoreTORN extends AbstractGestoreEntita {
       }
     }
 
-
-    // Controllo tipo di procedura per le gare telematiche
-    if (datiForm.isColumn("TORN.ITERGA") && datiForm.isColumn("TORN.GARTEL")) {
-      Long iterga = datiForm.getLong("TORN.ITERGA");
-      String gartel = datiForm.getString("TORN.GARTEL");
-
-      if (gartel != null && "1".equals(gartel)) {
-        if (iterga != null) {
-          if (iterga.longValue() == 1 || iterga.longValue() == 2 || iterga.longValue() == 3 || iterga.longValue() == 4 || iterga.longValue() == 5 || iterga.longValue() == 6) {
-            // Procedure ammesse
-          } else {
-            // Procedure non ammesse
-            if(!"garaLottoUnico".equalsIgnoreCase(tipoGara)){
-              livEvento = 3;
-              errMsgEvento = this.resBundleGenerale.getString("errors.gestoreException.*.noTipoProceduraTelematica");
-            }
-            throw new GestoreException("Il tipo procedura non è disponibile nella modalità telematica", "noTipoProceduraTelematica");
-          }
-        }
-      }
+    //il campo offaum nel caso di offtel=3 non è visibile, quindi non è possibile impostare i valori via javascript nella pagina
+    if(!"garaLottoUnico".equalsIgnoreCase(tipoGara)) {
+      this.setOffaum(datiForm);
     }
 
     // se il profilo prevede un filtro nel suo codice, si imposta il campo
@@ -495,7 +507,7 @@ public class GestoreTORN extends AbstractGestoreEntita {
               " del lotto (" + nuovoNGARA +")", null);
             }
 
-            Double imptor = smatManager.updImportoTotaleTorn(codiceGara);
+            Double imptor = pgManagerEst1.updImportoTotaleTorn(codiceGara);
             if (datiForm.isColumn("TORN.IMPTOR")) {
               datiForm.setValue("TORN.IMPTOR",imptor);
             }
@@ -754,7 +766,7 @@ public class GestoreTORN extends AbstractGestoreEntita {
         if(descTabA1133!=null && descTabA1133.length()>0)
           descTabA1133 = descTabA1133.substring(0, 1);
         if("1".equals(descTabA1133)){
-          Long numeroPuntiIstruttore = (Long)this.sqlManager.getObject("select count(numper) from g_permessi where codgar=? and meruolo=?", new Object[]{codgar,new Long(2)});
+          Long numeroPuntiIstruttore = (Long)this.sqlManager.getObject("select count(numper) from g_permessi where codgar=? and (meruolo=? or meruolo=?)", new Object[]{codgar,new Long(2),new Long(3)});
           if(numeroPuntiIstruttore == null || new Long(0).equals(numeroPuntiIstruttore)){
             if(numeroPuntiOrdinante == null || new Long(0).equals(numeroPuntiOrdinante)){
               codiceMsg = "warnings.gare.controlloPuntoOrdinantePuntiIstruttore";
@@ -779,9 +791,10 @@ public class GestoreTORN extends AbstractGestoreEntita {
     String codiceGara = datiForm.getColumn("TORN.CODGAR").getValue().stringValue();
     String uffint = datiForm.getColumn("TORN.CENINT").getValue().stringValue();
     Long idconfi = null;
+    Long genere = null;
     try{
       idconfi = wsdmConfigManager.getWsdmConfigurazione(uffint, "PG");
-      Long genere = (Long)this.sqlManager.getObject("select genere from v_gare_torn where codgar=? ", new Object[]{codiceGara});
+      genere = (Long)this.sqlManager.getObject("select genere from v_gare_torn where codgar=? ", new Object[]{codiceGara});
       if(genere!=null && genere.longValue()==3){
         //Se iterga==6 si procede alla valorizzazione di elencoe se vi sono le condizioni
         Long iterga = datiForm.getLong("TORN.ITERGA");
@@ -826,12 +839,64 @@ public class GestoreTORN extends AbstractGestoreEntita {
         datiForm.addColumn("GARERDA.CODGAR_" + i, JdbcParametro.TIPO_TESTO, codiceGara);
       }
     }
-
+    //Gestione RDA: APP-1073
+    String arrRda = this.getRequest().getParameter("arrRda");
+    arrRda = UtilityStringhe.convertiNullInStringaVuota(arrRda);
+    String[] rda = null;
+    if(!"".equals(arrRda)) {
+      arrRda = arrRda.substring(0, arrRda.length()-1); 
+      rda = arrRda.split(";");
+    
+    ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
+        CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+    Long syscon = new Long(profilo.getId());
+    String uffintGara = (String)  this.getRequest().getSession().getAttribute(CostantiGenerali.UFFICIO_INTESTATARIO_ATTIVO);
+    
+    gestioneProgrammazioneManager.collegaRda(codiceGara,rda,uffintGara,syscon,this.getRequest());
+    }
+    
     AbstractGestoreChiaveIDAutoincrementante gestoreMultiploGARERDA = new DefaultGestoreEntitaChiaveIDAutoincrementante(
         "GARERDA", "ID", this.getRequest());
     this.gestisciAggiornamentiRecordSchedaMultiplaRda(status, datiForm,
         gestoreMultiploGARERDA, "GARERDA",
         new DataColumn[] {datiForm.getColumn("TORN.CODGAR")}, null, ""+idconfi);
+    
+    //Integrazione con WSERP
+    String urlWSERP = ConfigManager.getValore("wserp.erp.url");
+    if(urlWSERP != null && !"".equals(urlWSERP)){
+        gestioneWSERPManager = (GestioneWSERPManager) UtilitySpring.getBean("gestioneWSERPManager",
+                this.getServletContext(), GestioneWSERPManager.class);
+        WSERPConfigurazioneOutType configurazione = this.gestioneWSERPManager.wserpConfigurazioneLeggi("WSERP");
+        if(configurazione.isEsito()){
+            String tipoWSERP = configurazione.getRemotewserp();
+            tipoWSERP = UtilityStringhe.convertiNullInStringaVuota(tipoWSERP);
+            if("RAIWAY".equals(tipoWSERP)){
+             if(Long.valueOf(1).equals(genere) || Long.valueOf(3).equals(genere)) {
+             	//chiamo nuovamente il ws e inserisco i lotti di gara
+         		WSERPRdaType erpSearch = new WSERPRdaType();
+         		//suppongo per ora la presenza di una sola rda nel giro di Raiway
+         		if(datiForm.getColumn("GARERDA.NUMRDA_1").getValue().getValue()!=null) {
+             		String numrda = datiForm.getColumn("GARERDA.NUMRDA_1").getValue().getStringValue();
+             		erpSearch.setCodiceRda(numrda);
+             		WSERPRdaResType wserpRdaRes = null;
+             			wserpRdaRes = this.gestioneWSERPManager.wserpListaRda(null, null, "WSERP", erpSearch );
+
+             		WSERPRdaType[] rdaArray = wserpRdaRes.getRdaArray();
+             		if(rdaArray!= null){
+             			String[] resInsLotti = gestioneWSERPManager.insLottiDaRda(this.getRequest(), null, null, "WSERP", codiceGara, null, 
+                     			null, rdaArray, null, uffint,genere);
+             			if(!"0".equals(resInsLotti[0])){
+             			      throw new GestoreException("Si e' verificato un errore durante la creazione dei lotti da RdA" +
+             			              " della gara  (" + codiceGara +") "+resInsLotti[1], null);
+                         }
+             		}
+         		}
+             }
+            }
+        }
+    }//fine Integrazione WSERP
+        	
+    
   }
 
   /**
@@ -902,10 +967,7 @@ public class GestoreTORN extends AbstractGestoreEntita {
         "GARE.TORN.CRITLIC") && this.getGeneManager().getProfili().checkProtec(
             (String) this.getRequest().getSession().getAttribute(
                 CostantiGenerali.PROFILO_ATTIVO), "COLS", "VIS",
-            "GARE.TORN.DETLIC") && this.getGeneManager().getProfili().checkProtec(
-                (String) this.getRequest().getSession().getAttribute(
-                    CostantiGenerali.PROFILO_ATTIVO), "COLS", "VIS",
-                "GARE.TORN.CALCSOAN")){
+            "GARE.TORN.DETLIC")){
       //Calcolo di MODLICG
       if(datiForm.isColumn("TORN.MODLIC") && datiForm.isColumn("TORN.CRITLIC") && datiForm.isColumn("TORN.DETLIC") && datiForm.isColumn("TORN.CALCSOAN")
           && datiForm.isColumn("TORN.APPLEGREG")){
@@ -956,13 +1018,6 @@ public class GestoreTORN extends AbstractGestoreEntita {
 
       if (gartel != null && "1".equals(gartel)) {
         if (iterga != null) {
-          if (iterga.longValue() == 1 || iterga.longValue() == 2 || iterga.longValue() == 3 || iterga.longValue() == 4 || iterga.longValue() == 5 || iterga.longValue() == 6) {
-            // Procedure ammesse
-          } else {
-            // Procedure non ammesse
-            throw new GestoreException("Il tipo procedura non è disponibile nella modalità telematica", "noTipoProceduraTelematica");
-          }
-
           //Si deve impedire di cambiare il procedura da negoziata senza bando ad aperta o ristretta se sono presenti ditta in gara
           if ((datiForm.isColumn("TORN.TIPGAR") && datiForm.isModifiedColumn("TORN.TIPGAR")) || (datiForm.isColumn("GARE.TIPGARG") && datiForm.isModifiedColumn("GARE.TIPGARG"))) {
             Long itergaOrig = datiForm.getColumn("TORN.ITERGA").getOriginalValue().longValue();
@@ -981,6 +1036,11 @@ public class GestoreTORN extends AbstractGestoreEntita {
       }
     }
 
+    //il campo offaum nel caso di offtel=3 non è visibile, quindi non è possibile impostare i valori via javascript nella pagina
+    if(!"garaLottoUnico".equalsIgnoreCase(UtilityStruts.getParametroString(this.getRequest(), "garaLottoUnico"))) {
+        this.setOffaum(datiForm);
+    }
+
     //Controllo su presenza punto istruttore per la gara
     if (gartel != null && "1".equals(gartel)) {
       try {
@@ -993,7 +1053,7 @@ public class GestoreTORN extends AbstractGestoreEntita {
         if(descTabA1133!=null && descTabA1133.length()>0)
           descTabA1133 = descTabA1133.substring(0, 1);
         if("1".equals(descTabA1133)){
-          Long numeroPuntiIstruttore = (Long)this.sqlManager.getObject("select count(numper) from g_permessi where codgar=? and meruolo=?", new Object[]{codgar,new Long(2)});
+          Long numeroPuntiIstruttore = (Long)this.sqlManager.getObject("select count(numper) from g_permessi where codgar=? and (meruolo=? or meruolo=?)", new Object[]{codgar,new Long(2),new Long(3)});
           if(numeroPuntiIstruttore == null || new Long(0).equals(numeroPuntiIstruttore)){
             if(numeroPuntiOrdinante == null || new Long(0).equals(numeroPuntiOrdinante)){
               codiceMsg = "warnings.gare.controlloPuntoOrdinantePuntiIstruttore";
@@ -1008,6 +1068,16 @@ public class GestoreTORN extends AbstractGestoreEntita {
       } catch (SQLException e) {
         throw new GestoreException("Errore nella lettura della tabella G_PERMESSI per la gara " + codgar, null,e);
       }
+
+      String urlMDGUE = ConfigManager.getValore(CostantiAppalti.PROP_INTEGRAZIONE_MDGUE_URL);
+      if(urlMDGUE!=null && !"".equals(urlMDGUE) && datiForm.isColumn("TORN.TIPGAR") && datiForm.isModifiedColumn("TORN.TIPGAR")) {
+        boolean esistonoDoc = pgManagerEst1.esistonoDitteDGUE(codgar, new Long(3));
+        if(esistonoDoc) {
+          throw new GestoreException("Non è possibile modificare il tipo procedura poichè risultano già definiti dei documenti richiesti ai concorrenti integrati con M-DGUE",
+              "modificaTipgar.ditteDGUEInGara", null, new Exception());
+        }
+      }
+
     }
 
     try {
@@ -1124,7 +1194,7 @@ public class GestoreTORN extends AbstractGestoreEntita {
           }
         }
         res = smatManager.updLotto(codiceGara, codiceLotto);
-        Double imptor = smatManager.updImportoTotaleTorn(codiceGara);
+        Double imptor = pgManagerEst1.updImportoTotaleTorn(codiceGara);
         if (datiForm.isColumn("TORN.IMPTOR")) {
           datiForm.setValue("TORN.IMPTOR",imptor);
         }
@@ -1292,6 +1362,23 @@ public class GestoreTORN extends AbstractGestoreEntita {
       gestoreGARE1.update(status, datiForm);
     }
 
+    //Aggiornamento GARESOSP
+    if(datiForm.isModifiedTable("GARSOSPE")){
+      Object[] params = new Object[2];
+      params[0] = datiForm.getString("GARSOSPE.NOTE");
+      params[1] = datiForm.getLong("GARSOSPE.ID");
+    	
+	  try {
+		this.sqlManager.update(
+			  			"update GARSOSPE set NOTE = ? " +
+			  			 "where ID = ?",
+			  			params);
+	  } catch (SQLException e) {
+			throw new GestoreException(
+					"Errore nell'aggiornamento note di sospensione gara ", null,e);
+	  }
+    }
+    
     //Se si modifica il campo TORN.CENINT o il campo TORN.ALTRISOG nel caso di gara non a lotto unico
     //per ogni lotto si deve cancellare l'eventuale occorrenza di GARALTSOG
     //Se sono stati modificati i valori di ALTRISOG e ACCQUA ed i valori iniziali erano rispettivamente
@@ -1740,18 +1827,23 @@ public class GestoreTORN extends AbstractGestoreEntita {
         if (deleteOccorrenza) {
           // Se è stata richiesta l'eliminazione e il campo chiave ID incrementante e'
           // diverso da null eseguo l'effettiva eliminazione del record
-              if("AVM".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "CAV".equals(tipoWSERP)){
+              if("AVM".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "CAV".equals(tipoWSERP) || "AMIU".equals(tipoWSERP)){
                 if (newDataColumnContainer.getLong(gestore.getCampoNumericoChiave()) != null){
                   String codgar  = newDataColumnContainer.getString("GARERDA.CODGAR");
                   String codiceRda  = newDataColumnContainer.getString("GARERDA.NUMRDA");
                   String posizioneRda  = newDataColumnContainer.getString("GARERDA.POSRDA");
-                  int res = this.gestioneWSERPManager.scollegaRda(codgar, null, "1", codiceRda, posizioneRda, this.getRequest());
-                  if(res >= 0){
-                    gestore.elimina(status, newDataColumnContainer);
+                  String[] res = this.gestioneWSERPManager.scollegaRda(codgar, null, "1", codiceRda, posizioneRda, this.getRequest());
+                  String ris = res[0];
+                  int intRis = 0;
+                  if(ris!=null) {
+                  	 intRis=Long.valueOf(ris).intValue();
+                  }
+                  if(intRis < 0){
+                      throw new GestoreException(
+                              "Errore durante l'operazione di scollegamento delle RdA dalla gara",
+                              "scollegaRdaGara", null);
                   }else{
-                    throw new GestoreException(
-                        "Errore durante l'operazione di scollegamento delle RdA dalla gara",
-                        "scollegaRdaGara", null);
+                	  gestore.elimina(status, newDataColumnContainer);
                   }
                 }
               }else{//non c'e' integrazione WSERP
@@ -1831,13 +1923,20 @@ public class GestoreTORN extends AbstractGestoreEntita {
                   }
                 }
               }//integrazione ERP vs WSDM
-              if("FNM".equals(tipoWSERP) || "CAV".equals(tipoWSERP)){
+              if("FNM".equals(tipoWSERP) || "CAV".equals(tipoWSERP) || "AMIU".equals(tipoWSERP)){
 
                 Long iterga  =  dataColumnContainer.getLong("TORN.ITERGA");
                 String codgar  = newDataColumnContainer.getString("GARERDA.CODGAR");
                 String codiceRda  = newDataColumnContainer.getString("GARERDA.NUMRDA");
                 String codiceCarrello  = newDataColumnContainer.getString("GARERDA.CODCARR");
                 String esercizio  = newDataColumnContainer.getString("GARERDA.ESERCIZIO");
+                WSERPRdaType rdaDatiAggiuntivi = new WSERPRdaType();
+                //solo per AMIU
+                if("AMIU".equals(tipoWSERP)) {
+                	String codiceCig  = dataColumnContainer.getString("GARE.CODCIG");
+                    rdaDatiAggiuntivi.setCodiceCig(codiceCig);
+                    rdaDatiAggiuntivi.setCodiceGara(codgar);
+                }
                 //solo per FNM
                 codiceCarrello = esercizio;
                 String codiceLotto = codgar.substring(1);
@@ -1850,7 +1949,7 @@ public class GestoreTORN extends AbstractGestoreEntita {
                 String username = credenziali[0];
                 String password = credenziali[1];
 
-                WSERPRdaResType wserpRdaRes = this.gestioneWSERPManager.wserpAssociaRdaGara(username, password, servizio, codiceCarrello, codiceRda, null, codiceLotto, true);
+                WSERPRdaResType wserpRdaRes = this.gestioneWSERPManager.wserpAssociaRdaGara(username, password, servizio, codiceCarrello, codiceRda, null, codiceLotto, rdaDatiAggiuntivi, true);
 
                 if(wserpRdaRes.isEsito()){
                   if("FNM".equals(tipoWSERP)){
@@ -1884,9 +1983,15 @@ public class GestoreTORN extends AbstractGestoreEntita {
                     }
                   }
                 }else{
-                  throw new GestoreException(
-                      "Errore durante l'operazione di collegamento delle RdA alla gara",
-                      "collegaRdaGara", null);
+                	if("AMIU".equals(tipoWSERP)) {
+                        throw new GestoreException(
+                                "Errore durante l'operazione di collegamento delle RdA alla gara",
+                                "collegaRdaGaraMsg",new Object[] {wserpRdaRes.getMessaggio()}, null);
+                	}else {
+                        throw new GestoreException(
+                                "Errore durante l'operazione di collegamento delle RdA alla gara",
+                                "collegaRdaGara", null);
+                	}
                 }
               }//FNM
             }
@@ -1962,5 +2067,25 @@ public class GestoreTORN extends AbstractGestoreEntita {
     }
   }
 
-
+  private void setOffaum(DataColumnContainer datiForm) throws GestoreException {
+    Long offtel = null;
+    if (datiForm.isColumn("TORN.OFFTEL"))
+      offtel = datiForm.getLong("TORN.OFFTEL");
+    if(new Long(3).equals(offtel)) {
+      if(datiForm.isColumn("TORN.CRITLIC") && datiForm.isModifiedColumn("TORN.CRITLIC")) {
+        Long critlicg = datiForm.getLong("TORN.CRITLIC");
+        if(new Long(3).equals(critlicg)) {
+          if (datiForm.isColumn("TORN.OFFAUM"))
+            datiForm.setValue("TORN.OFFAUM", "1");
+          else
+            datiForm.addColumn("TORN.OFFAUM", JdbcParametro.TIPO_TESTO, "1");
+        }else {
+          if (datiForm.isColumn("TORN.OFFAUM"))
+            datiForm.setValue("TORN.OFFAUM", "2");
+          else
+            datiForm.addColumn("TORN.OFFAUM", JdbcParametro.TIPO_TESTO, "2");
+        }
+      }
+    }
+  }
 }

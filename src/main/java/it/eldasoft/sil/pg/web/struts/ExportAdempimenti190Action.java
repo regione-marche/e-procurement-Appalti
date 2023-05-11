@@ -75,7 +75,7 @@ public class ExportAdempimenti190Action extends ActionBaseNoOpzioni {
 		String idanticor = request.getParameter("chiave");
 		String anno = request.getParameter("anno");
 		String tipoExport = request.getParameter("tipoExport");
-		String percorsoFile = request.getSession().getServletContext().getRealPath("/") + "xls/";
+		String percorsoFile = request.getSession().getServletContext().getRealPath("/") + "xlsx/";
 		
 		try {
 			if (tipoExport == null || tipoExport.equals("") || tipoExport.equals("standard")) {

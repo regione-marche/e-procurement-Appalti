@@ -21,6 +21,11 @@
 <c:set var="codiceGara" value="$ ${param.opes_ngara}" />
 <c:set var="codiceGara" value='${fn:replace(codiceGara," ", "")}' />
 
+<c:set var="where" value="MEARTCAT.NGARA = ? AND MEARTCAT.NOPEGA = ?" />
+<c:set var="parametri" value="T:${param.opes_ngara};T:${param.opes_nopega}"/>
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunction", pageContext, "MEARTCAT", where, parametri)}
+
+
 <gene:template file="lista-template.jsp" gestisciProtezioni="true" idMaschera="MEARTCAT-lista" schema="GARE">
 	<gene:setString name="titoloMaschera" value="${param.cais_caisim} - ${param.cais_descat} - Lista articoli" />
 	<gene:setString name="entita" value="MEARTCAT" />

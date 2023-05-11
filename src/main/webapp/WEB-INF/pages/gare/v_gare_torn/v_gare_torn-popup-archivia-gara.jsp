@@ -62,7 +62,12 @@
 				<c:set var="msgOk" value="L'elenco selezionato è stato archiviato."/>
 			</c:otherwise>
 		</c:choose>
-		
+	</c:when>
+	<c:when test='${fn:containsIgnoreCase(key, "G1STIPULA")}'>
+		<c:set var="entita" value="G1STIPULA"/>
+		<c:set var="titolo" value="Archiviazione della stipula"/>
+		<c:set var="msgConferma" value="Confermi l'archiviazione della stipula selezionata?"/>
+		<c:set var="msgOk" value="La stipula selezionata è stata archiviata."/>
 	</c:when>
 </c:choose>
 
@@ -96,7 +101,7 @@
 				</c:otherwise>
 			</c:choose>
 				
-			<c:if test='${!fn:containsIgnoreCase(key, "MERIC")}'>
+			<c:if test='${!(fn:containsIgnoreCase(key, "MERIC") || fn:containsIgnoreCase(key, "G1STIPULA"))}'>
 				<gene:campoScheda campo="CODGAR" visibile="false" />
 			</c:if>
 			<gene:campoScheda campo="ISARCHI" visibile="false" />
@@ -120,6 +125,9 @@
 					<gene:campoScheda entita="V_GARE_ELEDITTE" campo="CODGAR" where="V_GARE_ELEDITTE.CODGAR=GAREALBO.CODGAR" visibile="false"/>
 					<gene:campoScheda entita="V_GARE_ELEDITTE" campo="CODICE" where="V_GARE_ELEDITTE.CODICE=GAREALBO.NGARA" visibile="false" modificabile="false"/>
 					<gene:campoScheda entita="V_GARE_ELEDITTE" campo="OGGETTO" visibile="false" modificabile="false"/>
+				</c:when>
+				<c:when test='${fn:containsIgnoreCase(key, "G1STIPULA")}'>
+					<gene:campoScheda campo="ID" visibile="false" />
 				</c:when>
 			</c:choose>
 					
@@ -179,6 +187,9 @@
 				</c:when>
 				<c:when test='${fn:containsIgnoreCase(key, "MERIC")}'>
 					document.forms[0].MERIC_ISARCHI.value=1;
+				</c:when>
+				<c:when test='${fn:containsIgnoreCase(key, "G1STIPULA")}'>
+					document.forms[0].G1STIPULA_ISARCHI.value=1;
 				</c:when>
 				<c:when test='${fn:containsIgnoreCase(key, "GAREALBO")}'>
 					document.forms[0].GAREALBO_ISARCHI.value=1;

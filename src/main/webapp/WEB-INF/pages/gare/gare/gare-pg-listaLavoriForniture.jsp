@@ -59,6 +59,7 @@
 
 <c:if test='${isProceduraTelematica}'>
 	<c:set var="itergaMacro" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetITERGAMacroFunction", pageContext, key)}'/>
+	<c:set var="iterga" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetITERGAFunction", pageContext, codiceGara)}' />
 	<c:set var="bloccoPubblicazionePortaleBando11" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteBloccoPubblicazionePortaleFunction", pageContext,codiceGara,"BANDO11","false")}' />
 	<c:set var="bloccoPubblicazionePortaleBando13" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteBloccoPubblicazionePortaleFunction", pageContext,codiceGara,"BANDO13","false")}' />
 	<c:choose>
@@ -95,7 +96,6 @@
  </c:if>
 
 
-
 <c:if test="${!isProceduraTelematica }">
 	<c:if test="${aqoper ne '1' }">
 		<c:set var="BloccoOfferteDitte" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.ControlloOfferteDitteFunction", pageContext, ngara,codiceGara)}' />
@@ -116,18 +116,42 @@
 <c:if test='${integrazioneWSERP eq "1"}'>
 	<c:choose>
 		<c:when test='${tipoWSERP eq "SMEUP" || tipoWSERP eq "UGOVPA"}'>
-			<c:set var="visLetturaRda" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetWSERPBloccoLetturaRdaFunction", pageContext, ngara,codiceGara)}' />
+			<c:set var="visLetturaRda" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetWSERPBloccoLetturaRdaFunction", pageContext, ngara, codiceGara, tipoWSERP)}' />
 			<c:set var="bloccoOperazioniSmeUp"  value = "${requestScope.bloccoOperazioniSmeUp}"/>
+			<c:set var="bloccoOperazioniAtac"  value = "${requestScope.bloccoOperazioniAtac}"/>
 			<c:set var="bloccoImportXLS"  value = "false"/>
+			<c:set var="titleCarica"  value = "Carica RdA"/>
 		</c:when>
 		<c:when test='${tipoWSERP eq "AVM"}'>
 			<c:set var="visLetturaRda" value='true' />
-			<c:if test='${isAccordoQuadro eq "2"}'>
+			<c:if test='${isAccordoQuadro eq "1"}'>
 				<c:set var="bloccoImportXLS"  value = "true"/>
 			</c:if>	
 			<c:if test='${BloccoOfferteDitte eq "VERO" or BloccoAggiudicazione eq "VERO" or fasgar > 1 or condizioniBloccoTelematica}'>
 				<c:set var="visLetturaRda" value='false' />
 			</c:if>
+			<c:set var="titleCarica"  value = "Carica RdA"/>
+		</c:when>
+		<c:when test='${tipoWSERP eq "RAIWAY"}'>
+			<c:set var="visLetturaRda" value='true' />
+			<c:set var="titleCarica"  value = "Importa posizioni Rda"/>
+		</c:when>
+		<c:when test='${tipoWSERP eq "ATAC"}'>
+			<c:set var="visLetturaRda" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetWSERPBloccoLetturaRdaFunction", pageContext, ngara, codiceGara, tipoWSERP)}' />
+			<c:set var="bloccoOperazioniSmeUp"  value = "${requestScope.bloccoOperazioniSmeUp}"/>
+			<c:set var="bloccoOperazioniAtac"  value = "${requestScope.bloccoOperazioniAtac}"/>
+			<c:set var="bloccoImportXLS"  value = "false"/>
+			<c:if test='${bloccoOperazioniAtac eq "true"}'>
+				<c:set var="bloccoImportXLS"  value = "true"/>
+			</c:if>	
+			<c:if test='${BloccoOfferteDitte eq "VERO" or BloccoAggiudicazione eq "VERO" or !gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.CaricaRda") or condizioniBloccoTelematica}'>
+				<c:set var="visLetturaRda" value='false' />
+			</c:if>
+			<c:set var="visCaricaRda" value='true' />
+			<c:if test='${bloccoPubblicazionePortaleBando11 eq "TRUE" or  bloccoPubblicazionePortaleBando13 eq "TRUE" or !gene:checkProtFunz(pageContext, "ALT","CaricaRda")}'>
+				<c:set var="visCaricaRda" value='false' />
+			</c:if>
+			<c:set var="titleCarica"  value = "Carica appalto"/>
 		</c:when>
 		<c:when test='${tipoWSERP eq "CAV"}'>
 			<c:set var="visLetturaRda" value='true' />
@@ -145,6 +169,7 @@
 	</c:choose>
 </c:if>
 
+<c:set var="integrazioneProgrammazione" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneProgrammazioneFunction", pageContext)}'/>					
 
 
 <table class="dettaglio-tab-lista">
@@ -252,7 +277,7 @@
 				</jsp:include>
 				
 				<c:if test='${bloccoModifica eq "VERO" || esisteGaraOLIAMM eq "true" || condizioniBloccoTelematica
-				 || (esitoControlloAdesione eq "true" && aqoper eq "1") || (bloccoOperazioniSmeUp eq "true")}'>
+				 || (esitoControlloAdesione eq "true" && aqoper eq "1") || (bloccoOperazioniSmeUp eq "true") || (bloccoOperazioniAtac eq "true")}'>
 					<gene:redefineInsert name="listaNuovo"></gene:redefineInsert>
 				</c:if>
 
@@ -281,6 +306,27 @@
 								</a>
 							</td>
 						</tr>	
+					</c:if>
+					<c:if test='${tipologiaGara ne "3" && autorizzatoModifiche ne "2" and esitoControlloAdesione ne "true" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.IntegrazioneProgrammazione") && integrazioneProgrammazione eq "1"
+					and bloccoModifica ne "VERO" and !condizioniBloccoTelematica }'>
+						<c:set var="codgarRda" value="${gene:getValCampo(keyParent, 'CODGAR')}" />
+						<c:choose>
+							<c:when test="${garaLottoUnico eq 'true'}">
+								<c:set var="conteggioRDARDI" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.GetRDARDIFunction", pageContext, "rdaCollegate",codiceGara,null,null)}' />
+							</c:when>
+							<c:otherwise>
+								<c:set var="conteggioRDARDI" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.GetRDARDIFunction", pageContext, "rdaCollegate",codiceGara,ngara,null)}' />
+							</c:otherwise>
+						</c:choose>
+						<c:if test="${conteggioRDARDI > 0}" >
+						<tr>
+							<td class="vocemenulaterale">
+								<a href="javascript:importaLavorazioniRda();" title='Importa lavorazioni da RdA/RdI' tabindex="1513">
+										Importa da RdA/RdI
+								</a>
+							</td>
+						</tr>
+						</c:if>
 					</c:if>
 					<c:if test='${autorizzatoModifiche ne "2" and integrazioneAUR eq "1" and bloccoModifica ne "VERO" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.LISTALAVFORN.importCarrelloFabbisogni")}'>
 						<tr>
@@ -331,12 +377,12 @@
 					</c:if>
 					
 					<c:if test='${autorizzatoModifiche ne "2" and visLetturaRda eq "true" }'>
-						<c:if test='${!(tipoWSERP eq "CAV") and !((tipoWSERP eq "AVM" || tipoWSERP eq "UGOVPA") and (isAccordoQuadro eq "1" || ! empty requestScope.ngaraaq))}'>
-							<c:set var="presenzaRda" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetWSERPPresenzaRdaFunction", pageContext, codiceGara, numeroGara, requestScope.tipoWSERP)}' />
+						<c:set var="presenzaRda" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetWSERPPresenzaRdaFunction", pageContext, codiceGara, numeroGara, requestScope.tipoWSERP)}' />
+						<c:if test='${(tipoWSERP eq "ATAC" and visCaricaRda eq "true") || (tipoWSERP eq "RAIWAY" and presenzaRda eq "1") || (!(tipoWSERP eq "ATAC") and !(tipoWSERP eq "RAIWAY") and !(tipoWSERP eq "CAV") and !((tipoWSERP eq "AVM" || tipoWSERP eq "UGOVPA") and (isAccordoQuadro eq "1" || ! empty requestScope.ngaraaq)))}'>
 							<tr>
 								<td class="vocemenulaterale">
-									<a href="javascript:leggiCarrelloRda('${codiceGara}','${ngara}');" title='Carica RdA' tabindex="1510">
-										Carica RdA
+									<a href="javascript:leggiCarrelloRda('${codiceGara}','${ngara}');" title="${titleCarica}" tabindex="1510">
+										${titleCarica}
 									</a>
 								</td>
 							</tr>
@@ -414,14 +460,33 @@
 				<gene:campoLista campo="PREZUN" headerClass="sortable" width="100"/>
 				<gene:campoLista campo="PERCIVA" title="Iva" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GCAP.PERCIVA") and (tipoForniture eq "3" or tipoForniture eq "")}' headerClass="sortable" />
 				<gene:campoLista campo="PESO" visibile="${ribcal eq 3 }"/>
+				<gene:campoLista campo="DATACONS" title="Data consegna prevista" visibile="${iterga eq 8 }"/>
 				<gene:campoLista campo="CODCARR" visibile="false"/>
 				<gene:campoLista campo="CODRDA" visibile="false"/>
+				<c:if test='${integrazioneProgrammazione eq "1"}'>
+					<gene:campoLista title="&nbsp;" width="20" >
+						<c:choose>
+							<c:when test="${!empty datiRiga.GCAP_CODRDA}">
+								<c:set var="ttRifRda" value="Cod. RdA/RdI: ${datiRiga.GCAP_CODRDA}"/>
+								<c:set var="imgRifRda" value="inforda.png"/>
+								<img width="16" height="16" title="${ttRifRda}" alt="${ttRifRda}" src="${pageContext.request.contextPath}/img/${imgRifRda}"/>
+							</c:when>
+							<c:otherwise>
+								<c:set var="ttRifRda" value=""/>
+								<c:set var="imgRifRda" value=""/>
+							</c:otherwise>
+						</c:choose>
+					</gene:campoLista>
+				</c:if>
 				<gene:campoLista campo="POSRDA" visibile="false"/>
 				<c:if test='${integrazioneWSERP eq "1"}'>
 					<gene:campoLista title="&nbsp;" width="20" >
 						<c:choose>
 							<c:when test="${!empty datiRiga.GCAP_CODRDA}">
 								<c:set var="ttRifRda" value="Rif.Rda ERP: ${datiRiga.GCAP_CODRDA}-${datiRiga.GCAP_POSRDA}"/>
+								<c:if test='${tipoWSERP eq "ATAC" && !empty datiRiga.GCAP_CODRDA}'>
+									<c:set var="ttRifRda" value="Rif.Rda ERP: ${datiRiga.GCAP_CODCARR}: ${datiRiga.GCAP_CODRDA} - ${datiRiga.GCAP_POSRDA}"/>
+								</c:if>
 								<c:set var="imgRifRda" value="inforda.png"/>
 								<img width="16" height="16" title="${ttRifRda}" alt="${ttRifRda}" src="${pageContext.request.contextPath}/img/${imgRifRda}"/>
 							</c:when>
@@ -443,6 +508,7 @@
 				<input type="hidden" name="aqoper" id="aqoper" value="${aqoper}"/>
 				<input type="hidden" name="fasgar" id="fasgar" value="${fasgar}"/>
 				<input type="hidden" name="ribcal" id="ribcal" value="${ribcal}"/>
+				<input type="hidden" name="codiceRda" id="codiceRda" value="${codiceRda}"/>
 			</gene:formLista>
 		</td>
 	</tr>
@@ -451,7 +517,7 @@
 			<gene:insert name="addPulsanti"/>
 			<gene:insert name="pulsanteListaInserisci">
 				<c:if test='${gene:checkProtFunz(pageContext,"INS","LISTANUOVO") && (bloccoModifica ne "VERO") && esisteGaraOLIAMM ne "true"
-				 && !condizioniBloccoTelematica and !(esitoControlloAdesione eq "true" and aqoper eq "1") && (bloccoOperazioniSmeUp ne "true")}'>
+				 && !condizioniBloccoTelematica and !(esitoControlloAdesione eq "true" and aqoper eq "1") && (bloccoOperazioniSmeUp ne "true") && (bloccoOperazioniAtac ne "true")}'>
 					<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.lista.listaPageNuovo")}' title='${gene:resource("label.tags.template.lista.listaPageNuovo")}' onclick="javascript:listaNuovo()">
 				</c:if>
 			</gene:insert>
@@ -652,10 +718,28 @@
 	
 	<c:if test='${integrazioneWSERP eq "1"}'>
 	 <c:choose>
-		<c:when test='${tipoWSERP eq "SMEUP" || tipoWSERP eq "UGOVPA" || tipoWSERP eq "AVM"}'>
+		<c:when test='${tipoWSERP eq "SMEUP" || tipoWSERP eq "UGOVPA" || tipoWSERP eq "AVM"  || tipoWSERP eq "ATAC" || tipoWSERP eq "RAIWAY"}'>
 			function leggiCarrelloRda(codgar,ngara){
 				<c:choose>
-				<c:when test='${!empty presenzaRda && presenzaRda eq "1"}'>
+				<c:when test='${tipoWSERP eq "ATAC"}'>
+					var href = "href=gare/commons/popup-ImportaLavorazioniRda.jsp?ngara=" + ngara;
+					openPopUpCustom(href, "importaRdaInGara", 500, 300, "no", "yes");
+				</c:when>
+					<c:when test='${tipoWSERP eq "RAIWAY"}'>
+						bloccaRichiesteServer();
+						formListaRda.href.value = "gare/commons/lista-posizioniRda-scheda.jsp";
+						formListaRda.codgar.value = codgar;
+						formListaRda.codiceRda.value = '${codiceRda}';
+						formListaRda.modo.value = "posRda";
+						formListaRda.codice.value = ngara;
+						formListaRda.genere.value = "2";
+						<c:if test='${lottoOffertaUnica eq "true" || lottoOfferteDistinte eq "true"}'>
+							formListaRda.filtroLotto.value = "true";
+						</c:if>
+
+						formListaRda.submit();
+					</c:when>
+					<c:when test='${!empty presenzaRda && presenzaRda eq "1"}'>
 					alert("Tale funzione non risulta disponibile in quanto esistono rda collegate direttamente alla gara!");
 				</c:when>
 				<c:otherwise>
@@ -703,6 +787,14 @@
 		openPopUpCustom(href, "copiaAttributi", 700, 450, "yes", "yes");
 	}
 	
+	function importaLavorazioniRda(){
+		var ngara = "${ngara}";
+		var codiceGara = "${codiceGara}";
+		var lottoUni = "${garaLottoUnico=='true'}";
+		var href = "href=gare/gare/gare-popup-importaLavorazioniRda.jsp?lottoSorgente=" + ngara + "&codiceGara=" + codiceGara+"&lottounico="+lottoUni;
+		openPopUpCustom(href, "importaLavorazioniRda", 700, 450, "yes", "yes");
+	}
+	
 </gene:javaScript>
 
 
@@ -710,6 +802,9 @@
 			<input type="hidden" name="href" value="" /> 
 			<input type="hidden" name="codgar" id="codgar" value="" />
 			<input type="hidden" name="codice" id="codice" value="" />
+			<input type="hidden" name="codiceRda" id="codiceRda" value="" />
+			<input type="hidden" name="filtroLotto" id="filtroLotto" value="" />
+			<input type="hidden" name="modo" id="modo" value="" />
 			<input type="hidden" name="genere" id="genere" value="" />
 			<input type="hidden" name="bustalotti" id="bustalotti" value="" />
 			<input type="hidden" name="uffint" id="uffint" value="${sessionScope.uffint}" />

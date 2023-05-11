@@ -63,7 +63,6 @@ $(window).ready(function (){
 		codiceGara = $("#codiceGara").val();
 		genereGara = $("#genereGara").val();
 		var riceviComunicazioni = $("#riceviComunicazioni").val();
-		var whereBusteAttiveWizard = $("#whereBusteAttiveWizard").val();
 		aut = $("#aut").val();
 		
 		$.ajax({
@@ -77,7 +76,7 @@ $(window).ready(function (){
 			},
 	        url: "pg/GetDatiComunicazioniDitte.do",
 	        data : "ngara=" +  ngara + "&ditta=" + ditta + "&genereGara=" + genereGara + "&riceviComunicazioni=" + riceviComunicazioni
-	        	+"&codgar=" + codiceGara + "&soccorsoIstruttorio=" + soccorsoIstruttorio + "&whereBusteAttiveWizard=" + whereBusteAttiveWizard,
+	        	+"&codgar=" + codiceGara + "&soccorsoIstruttorio=" + soccorsoIstruttorio,
 	        success: function(json) {
 	        	_popolaTabellaComunicazioni(json.data);
 				if(integrazioneWSDM != 1){
@@ -379,6 +378,13 @@ $(window).ready(function (){
 		        			tbody += '<tr>';
 		        			tbody += '<td class="descrizione">' + d.descrizione + '</td>';
 							tbody += '<td class="nomeAllegato"><span title="Scarica allegato" class="spanNomeAllegato"><a>'+ d.nome + '</a></span>';
+							if(d.firmacheck!==null){
+								if(d.firmacheck=='1'){
+									tbody +='  <span class="spanFirmacheck">&nbsp;<img src="' + percorsoImg + 'firmaRemota-valid.png" title="Verifica automatica firma digitale riuscita (data verifica '+d.firmacheckts+')" alt="Verifica automatica firma digitale riuscita" width="16" height="16"></span>' ;
+								} else {
+									tbody +='  <span class="spanFirmacheck">&nbsp;<img src="' + percorsoImg + 'firmaRemota-notvalid.png" title="Verifica automatica firma digitale NON riuscita (data verifica '+d.firmacheckts+')" alt="Verifica automatica firma digitale NON riuscita" width="16" height="16"></span>' ;
+								}
+							}
 		        			if(comtipo == 'FS12' && aut != '2'){
 		        				var strImg = '  <span class="spanCopiaAllegato"><a><img width="16" height="16" title="Copia allegato" alt="Copia allegato" src="' + percorsoImg + 'copiaAlle.png"/></a></span>' ;
 		        				tbody += strImg;
@@ -419,7 +425,7 @@ $(window).ready(function (){
 	        var tr = $(this).closest('tr');
 	        var iddocdig =tr.children('td.iddocdig').text();
 	        var idprg =tr.children('td.idprg').text();
-	        var nomeAllegato =tr.children('td.nomeAllegato').text();
+	        var nomeAllegato =tr.children('td.nomeAllegato').children('span.spanNomeAllegato').text();
 	        var datainserimento = tr.children('td.comdatins').text();
 	        var comtipo = tr.children('td.comtipo').text();
 	        visualizzaFileAllegato( idprg ,iddocdig , nomeAllegato ,comtipo, datainserimento);
@@ -443,46 +449,96 @@ $(window).ready(function (){
 		if(genereGara != 2)
 			chiaveTracciaturaFS12 = codiceGara;
 		
-		if(ext=='P7M' || ext=='TSD'){
-			var href = "href=gene/system/firmadigitale/verifica-firmadigitale-popUp.jsp";
-			href += "&idprg=" + idprg;
-			href += "&iddocdig=" + iddocdig;
-			if(idprg == 'PA' && comtipo == 'FS12'){
-				var d = new Date();
-				d.setTime(datainserimento);
-				var g= d.getDate();
-				if(g<10)
-					g = '0' + g;
-				var m = d.getMonth() + 1;
-				if(m<10)
-					m = '0' + m;
-				var a = d.getFullYear(); 
-				var data = String(a) + String(m) + String(g);
-				var hh= d.getHours();
-				if(hh < 10)
-					hh = '0' + hh;
-				var mm = d.getMinutes();
-				if(mm < 10)
-					mm = '0' + mm;
-				var ss = d.getSeconds();
-				if(ss < 10)
-					ss = '0' + ss;
-				data += " " + String(hh) + ":"+ String(mm) +":"+ String(ss);
-				href += "&ckdate=" + data;
-				tracciamentoDownloadFS12(idprg, iddocdig,chiaveTracciaturaFS12,comkey1);
-			}else{
-				tracciamentoDownloadDocimpresa(idprg, iddocdig,ngara,ditta,"2");
-			}
-				
-			openPopUpCustom(href, "DownloadP7M", 900, 550, "yes", "yes");
-		}else{
-			if(idprg == 'PA' && comtipo == 'FS12'){
-				tracciamentoDownloadFS12(idprg, iddocdig,chiaveTracciaturaFS12,comkey1);
-			}else{
-				tracciamentoDownloadDocimpresa(idprg, iddocdig,ngara,ditta,"2");
-			}
-			var href = contextPath + "/pg/VisualizzaFileAllegato.do";
-			document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+		digitalSignatureWsCheck: $("#digitalSignatureWsCheck").val();
+			
+		switch(digitalSignatureWsCheck.value)
+		{
+			case "0":
+				if(ext=='P7M' || ext=='TSD'){
+					var href = "href=gene/system/firmadigitale/verifica-firmadigitale-popUp.jsp";
+					href += "&idprg=" + idprg;
+					href += "&iddocdig=" + iddocdig;
+					if(idprg == 'PA' && comtipo == 'FS12'){
+						var d = new Date();
+						d.setTime(datainserimento);
+						var g= d.getDate();
+						if(g<10)
+							g = '0' + g;
+						var m = d.getMonth() + 1;
+						if(m<10)
+							m = '0' + m;
+						var a = d.getFullYear(); 
+						var data = String(a) + String(m) + String(g);
+						var hh= d.getHours();
+						if(hh < 10)
+							hh = '0' + hh;
+						var mm = d.getMinutes();
+						if(mm < 10)
+							mm = '0' + mm;
+						var ss = d.getSeconds();
+						if(ss < 10)
+							ss = '0' + ss;
+						data += " " + String(hh) + ":"+ String(mm) +":"+ String(ss);
+						href += "&ckdate=" + data;
+						tracciamentoDownloadFS12(idprg, iddocdig,chiaveTracciaturaFS12,comkey1);
+					}else{
+						tracciamentoDownloadDocimpresa(idprg, iddocdig,ngara,ditta,"2");
+					}
+						
+					openPopUpCustom(href, "DownloadP7M", 900, 550, "yes", "yes");
+				}else{
+					if(idprg == 'PA' && comtipo == 'FS12'){
+						tracciamentoDownloadFS12(idprg, iddocdig,chiaveTracciaturaFS12,comkey1);
+					}else{
+						tracciamentoDownloadDocimpresa(idprg, iddocdig,ngara,ditta,"2");
+					}
+					var href = contextPath + "/pg/VisualizzaFileAllegato.do";
+					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				}
+				break;
+			default:
+				if(ext=='P7M' || ext=='TSD' || ext=='XML' || ext=='PDF'){
+					var href = "href=gene/system/firmadigitale/verifica-firmadigitale-popUp.jsp";
+					href += "&idprg=" + idprg;
+					href += "&iddocdig=" + iddocdig;
+					if(idprg == 'PA' && comtipo == 'FS12'){
+						var d = new Date();
+						d.setTime(datainserimento);
+						var g= d.getDate();
+						if(g<10)
+							g = '0' + g;
+						var m = d.getMonth() + 1;
+						if(m<10)
+							m = '0' + m;
+						var a = d.getFullYear(); 
+						var data = String(a) + String(m) + String(g);
+						var hh= d.getHours();
+						if(hh < 10)
+							hh = '0' + hh;
+						var mm = d.getMinutes();
+						if(mm < 10)
+							mm = '0' + mm;
+						var ss = d.getSeconds();
+						if(ss < 10)
+							ss = '0' + ss;
+						data += " " + String(hh) + ":"+ String(mm) +":"+ String(ss);
+						href += "&ckdate=" + data;
+						tracciamentoDownloadFS12(idprg, iddocdig,chiaveTracciaturaFS12,comkey1);
+					}else{
+						tracciamentoDownloadDocimpresa(idprg, iddocdig,ngara,ditta,"2");
+					}
+						
+					openPopUpCustom(href, "DownloadP7M", 900, 550, "yes", "yes");
+				}else{
+					if(idprg == 'PA' && comtipo == 'FS12'){
+						tracciamentoDownloadFS12(idprg, iddocdig,chiaveTracciaturaFS12,comkey1);
+					}else{
+						tracciamentoDownloadDocimpresa(idprg, iddocdig,ngara,ditta,"2");
+					}
+					var href = contextPath + "/pg/VisualizzaFileAllegato.do";
+					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				}
+				break;
 		}
 	}
 	

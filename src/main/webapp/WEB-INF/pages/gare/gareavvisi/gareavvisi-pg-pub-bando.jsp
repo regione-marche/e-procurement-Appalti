@@ -38,6 +38,8 @@
 
 	<gene:redefineInsert name="pulsanteNuovo"></gene:redefineInsert>
 	<gene:redefineInsert name="schedaNuovo"></gene:redefineInsert>
+	<gene:redefineInsert name="documentiAssociati"></gene:redefineInsert>
+	<gene:redefineInsert name="noteAvvisi"></gene:redefineInsert>
 	
 	<gene:campoScheda campo="CODGAR" visibile="false" />
 	<gene:campoScheda campo="NGARA" visibile="false"/>
@@ -50,7 +52,7 @@
 		<jsp:param name="nomeAttributoLista" value='pubblicazioniBando' />
 		<jsp:param name="idProtezioni" value="PUBBANDO" />
 		<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/pubbli/pubblicazione-bando.jsp"/>
-		<jsp:param name="arrayCampi" value="'PUBBLI_CODGAR9_', 'PUBBLI_NUMPUB_', 'PUBBLI_TIPPUB_', 'PUBBLI_TESPUB_', 'PUBBLI_NPRPUB_', 'PUBBLI_DINPUB_', 'PUBBLI_DATPUB_', 'PUBBLI_IMPPUB_', 'PUBBLI_INTPUB_', 'PUBBLI_DATFIPUB_'"/>		
+		<jsp:param name="arrayCampi" value="'PUBBLI_CODGAR9_', 'PUBBLI_NUMPUB_', 'PUBBLI_TIPPUB_', 'PUBBLI_TESPUB_', 'PUBBLI_NPRPUB_', 'PUBBLI_DINPUB_', 'PUBBLI_DATPUB_', 'PUBBLI_IMPPUB_', 'PUBBLI_INTPUB_', 'PUBBLI_DATFIPUB_', 'PUBBLI_TITPUB_', 'PUBBLI_NAVPUB_', 'PUBBLI_NAVNUM_', 'PUBBLI_URLPUB_'"/>		
 		<jsp:param name="titoloSezione" value="Pubblicazione" />
 		<jsp:param name="titoloNuovaSezione" value="Nuova pubblicazione" />
 		<jsp:param name="descEntitaVociLink" value="pubblicazione" />

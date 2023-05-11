@@ -10,6 +10,7 @@ import it.eldasoft.utils.properties.ConfigManager;
 
 import java.io.PrintWriter;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -84,7 +85,7 @@ public class GetListaPermessiUtentiRicercaMercatoAction extends Action {
 	    }
 
 	    try {
-
+	      List<Object> parameters = new ArrayList<Object>();
 	      String selectUSR = "select usrsys.syslogin, "
               + " usrsys.sysute, "
               + " usrsys.email, "
@@ -115,19 +116,23 @@ public class GetListaPermessiUtentiRicercaMercatoAction extends Action {
 		              + " from usrsys, g_permessi, usr_ein "
 		              + " where g_permessi.syscon = usrsys.syscon "
 		              + " and usr_ein.syscon = usrsys.syscon "
-		              + " and usr_ein.codein = '" + codein1 + "'"
-		              + " and g_permessi.idmeric = " + id
+		              + " and usr_ein.codein = ? "
+		              + " and g_permessi.idmeric = ? "
     		          + " union "
                       + selectUSR
                       + " from usrsys, g_permessi "
                       + " where g_permessi.syscon = usrsys.syscon  "
-                      + " and g_permessi.idmeric = " + id
+                      + " and g_permessi.idmeric = ? "
                       + " and syspwbou LIKE '%ou89%'";
+		          parameters.add(codein1);
+		          parameters.add(id);
+		          parameters.add(id);
 	        } else {
 		          selectUSR = selectUSR
 		              + " from usrsys, g_permessi "
 		              + " where g_permessi.syscon = usrsys.syscon "
-		              + " and g_permessi.idmeric = " + id;
+		              + " and g_permessi.idmeric = ? ";
+		          parameters.add(id);
 	        }
 
 	      } else if ("MODIFICA".equals(operation)) {
@@ -136,13 +141,13 @@ public class GetListaPermessiUtentiRicercaMercatoAction extends Action {
 	        		+ " from usrsys, g_permessi, usr_ein "
 	        		+ " where usrsys.syscon = g_permessi.syscon "
 	        		+ " and usr_ein.syscon = usrsys.syscon "
-	        		+ " and g_permessi.idmeric = " + id
-	        		+ " and usr_ein.codein = '" + codein1 + "'"
+	        		+ " and g_permessi.idmeric = ? "
+	        		+ " and usr_ein.codein = ? "
 	        		+ " union "
                     + selectUSR
                     + " from usrsys, g_permessi "
                     + " where g_permessi.syscon = usrsys.syscon  "
-                    + " and g_permessi.idmeric = " + id
+                    + " and g_permessi.idmeric = ? "
                     + " and syspwbou LIKE '%ou89%'"
 	        		+ " union "
 	        		+ selectUSR_mod
@@ -152,46 +157,59 @@ public class GetListaPermessiUtentiRicercaMercatoAction extends Action {
 	        			+ " select usrsys.syscon from usrsys, g_permessi, usr_ein "
 	        		+ " where usrsys.syscon = g_permessi.syscon "
 	        		+ " and usr_ein.syscon = usrsys.syscon "
-	        		+ " and g_permessi.idmeric = " + id
-	        		+ " and usr_ein.codein = '" + codein1 + "'"
-	        		+ ") and usr_ein.codein = '" + codein1 + "'"
+	        		+ " and g_permessi.idmeric = ? "
+	        		+ " and usr_ein.codein = ? "
+	        		+ ") and usr_ein.codein = ? "
 	        		+ " and (usrsys.sysdisab is null or usrsys.sysdisab = '0') ";
+	        	parameters.add(id);
+	        	parameters.add(codein1);
+	        	parameters.add(id);
+	        	parameters.add(id);
+	        	parameters.add(codein1);
+	        	parameters.add(codein1);
 
 	        	if (ufficioAppartenza != null) {
 		        	selectUSR = selectUSR
-		        	  	+ " and (usrsys.sysuffapp = '" + ufficioAppartenza + "' or usrsys.sysuffapp is null)" ;
+		        	  	+ " and (usrsys.sysuffapp = ? or usrsys.sysuffapp is null)" ;
+		        	parameters.add(ufficioAppartenza);
 		        }
 	        	 selectUSR += " union "
 	                 + selectUSR_mod
 	                 + " from usrsys "
 	                 + " where  usrsys.syspwbou LIKE '%ou89%' and usrsys.syscon not in"
 	                 + " (select usrsys.syscon from usrsys, g_permessi"
-	                 + " where g_permessi.syscon = usrsys.syscon  and g_permessi.idmeric = " + id
+	                 + " where g_permessi.syscon = usrsys.syscon  and g_permessi.idmeric = ? "
 	                 + " and syspwbou LIKE '%ou89%') and (usrsys.sysdisab is null or usrsys.sysdisab = '0')";
-	               if (ufficioAppartenza != null)
-	                 selectUSR +=" and (usrsys.sysuffapp = '" + ufficioAppartenza + "' or usrsys.sysuffapp is null)";
+	        	 parameters.add(id);
+	               if (ufficioAppartenza != null) {
+	                 selectUSR +=" and (usrsys.sysuffapp = ? or usrsys.sysuffapp is null)";
+	                 parameters.add(ufficioAppartenza);
+	               }
 
 	        } else {
 	        	selectUSR = selectUSR
 	        		+ " from usrsys, g_permessi "
 	        		+ " where usrsys.syscon = g_permessi.syscon "
-	        		+ " and g_permessi.idmeric = " + id
+	        		+ " and g_permessi.idmeric = ? "
         			+ " union " + selectUSR_mod
         			+ " from usrsys"
 	        		+ " where usrsys.syscon not in ("
 	        			+ " select usrsys.syscon from usrsys, g_permessi "
 		        		+ " where usrsys.syscon = g_permessi.syscon "
-		        		+ " and g_permessi.idmeric = " + id
+		        		+ " and g_permessi.idmeric = ? "
 	        		+ " ) and (usrsys.sysdisab is null or usrsys.sysdisab = '0') ";
+	        	parameters.add(id);
+	        	parameters.add(id);
 
 	        	if (ufficioAppartenza != null) {
 		        	selectUSR = selectUSR
-		        	  	+ " and (usrsys.sysuffapp = '" + ufficioAppartenza + "' or usrsys.sysuffapp is null)" ;
+		        	  	+ " and (usrsys.sysuffapp = ? or usrsys.sysuffapp is null)" ;
+		        	parameters.add(ufficioAppartenza);
 		        }
 	        }
 	      }
 
-	      List<?> hmUSR = this.sqlManager.getListHashMap(selectUSR, null);
+	      List<?> hmUSR = this.sqlManager.getListHashMap(selectUSR, parameters.toArray());
 	      if (hmUSR != null && hmUSR.size() > 0) {
 	    	  for (int i=0; i < hmUSR.size(); i++) {
 	    		  HashMap<String,Object> h1 = (HashMap<String,Object>) hmUSR.get(i);

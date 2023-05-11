@@ -15,7 +15,6 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <%@ taglib uri="http://www.eldasoft.it/tags" prefix="elda" %>
 
-
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 
 <c:choose>
@@ -62,6 +61,11 @@
 
 ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetMetodoCalcoloSogliaFunction", pageContext, ngara, "true")}
 
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, ngara, "SC", "20")}
+<c:set var="parametri" value="T:${ngara}"/>
+<c:set var="where" value="GARE.CODGAR1 =? and GARE.NGARA!=GARE.CODGAR1 and (GARE.MODLICG=13 OR GARE.MODLICG=14)"/>
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunction", pageContext, "GARE", where, parametri)}
+
 <gene:template file="popup-template.jsp">
 <gene:setString name="titoloMaschera" value='Metodo di calcolo soglia anomalia della gara ${ngara }' />
 	
@@ -76,7 +80,7 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetMetodoCalcoloSogliaFun
 		</c:if>
 	
 		<br>
-		<c:set var="where" value="GARE.CODGAR1 ='${ngara}' and GARE.NGARA!=GARE.CODGAR1 and (GARE.MODLICG=13 OR GARE.MODLICG=14)" />
+		
 		
 		
 		<c:choose>
@@ -94,7 +98,7 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetMetodoCalcoloSogliaFun
 			<tr>
 				<td ${stileDati}>
 		
-					<gene:formLista pagesize="${paginazione }" tableclass="datilista" entita="GARE" sortColumn="1" where="${where}" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreImpostaMetodoCalcoloSoglia">
+					<gene:formLista pagesize="${paginazione }" tableclass="datilista" entita="GARE" sortColumn="1"  gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreImpostaMetodoCalcoloSoglia">
 						<gene:redefineInsert name="listaNuovo" />
 						<gene:redefineInsert name="listaEliminaSelezione" />
 						

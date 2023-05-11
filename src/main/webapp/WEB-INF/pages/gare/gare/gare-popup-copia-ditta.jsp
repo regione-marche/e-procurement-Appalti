@@ -19,6 +19,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.archWhereFunctions.ComponiWhereGAREFunction" />
+
 <c:choose>
 	<c:when test='${!empty chiave}'>
 		<c:set var="chiave" value='${chiave}' />

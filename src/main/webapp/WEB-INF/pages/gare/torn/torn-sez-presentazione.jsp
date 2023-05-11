@@ -58,6 +58,8 @@
 			scheda=''
 			schedaPopUp="gene/punticon/punticon-scheda-popup.jsp"
 			campi="PUNTICON.CODEIN;PUNTICON.NUMPUN;PUNTICON.NOMPUN" 
+			functionId="default"
+			parametriWhere="T:${datiRiga.TORN_CENINT}"
 			chiave="TORN_PCOPRE;CENINT_PCOPRE"
 			formName="formPuntiContPresentazionePartecipazione"
 			inseribile="false">
@@ -77,6 +79,8 @@
 			scheda=''
 			schedaPopUp="gene/punticon/punticon-scheda-popup.jsp"
 			campi="PUNTICON.CODEIN;PUNTICON.NUMPUN;PUNTICON.NOMPUN" 
+			functionId="default"
+			parametriWhere="T:${datiRiga.TORN_CENINT}"
 			chiave="TORN_PCODOC;CENINT_PCODOC"
 			formName="formPuntiContInformazioni"
 			inseribile="false">
@@ -144,6 +148,8 @@
 			scheda=''
 			schedaPopUp="gene/punticon/punticon-scheda-popup.jsp"
 			campi="PUNTICON.CODEIN;PUNTICON.NUMPUN;PUNTICON.NOMPUN" 
+			functionId="default"
+			parametriWhere="T:${datiRiga.TORN_CENINT}"
 			chiave="TORN_PCOOFF;CENINT_PCOOFF"
 			formName="formPuntiContPresentazioneOfferta"
 			inseribile="false">
@@ -200,6 +206,8 @@
 			scheda=''
 			schedaPopUp="gene/punticon/punticon-scheda-popup.jsp"
 			campi="PUNTICON.CODEIN;PUNTICON.NUMPUN;PUNTICON.NOMPUN" 
+			functionId="default"
+			parametriWhere="T:${datiRiga.TORN_CENINT}"
 			chiave="TORN_PCOGAR;CENINT_PCOGAR"
 			formName="formPuntiContAperturaPlichi"
 			inseribile="false">
@@ -300,12 +308,12 @@
 					//alert("2.2");
 					showSezioneTerminiPresDomandaPartecipa(true);
 				}
-				if (tipoProcAggiud == "1" || (profiloSemplificato && (tipoProcAggiud==2 || tipoProcAggiud==4 || tipoProcAggiud == null))){
+				if (tipoProcAggiud == "1" || tipoProcAggiud == "7" || (profiloSemplificato && (tipoProcAggiud==2 || tipoProcAggiud==4 || tipoProcAggiud == null))){
 					showSezioneEstremiInvito(false);
 				} else {
 					showSezioneEstremiInvito(true);
 				}
-				if(profiloSemplificato && (tipoProcAggiud==2 || tipoProcAggiud==4 || tipoProcAggiud == null)){
+				if((profiloSemplificato && (tipoProcAggiud==2 || tipoProcAggiud==4 || tipoProcAggiud == null)) || tipoProcAggiud == "7"){
 					showSezioneTerminiPresOfferta(false);
 					showSezioneAperturaOfferte(false);
 				}else{
@@ -819,20 +827,6 @@
 		openPopUpCustom(href, "calcolaTermineMinimo", 700, 600, 1, 1);
 	}
 	
-	
-	var cenint = getValue("TORN_CENINT");
-	if(cenint!=""){
-		if(document.formPuntiContPresentazionePartecipazione!=null)
-			document.formPuntiContPresentazionePartecipazione.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		if(document.formPuntiContInformazioni!=null)
-			document.formPuntiContInformazioni.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		if(document.formPuntiContPresentazioneOfferta!=null)
-			document.formPuntiContPresentazioneOfferta.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		if(document.formPuntiContAperturaPlichi!=null)
-			document.formPuntiContAperturaPlichi.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		
-	}
-	
 	/*
 	function valorizzaCampiPresso(){
 		var punti = getValue("TORN_PCOPRE");
@@ -910,14 +904,6 @@
 	}
 	
 	function aggiornaArchiviPuntiContatto(cenint){
-		if(document.formPuntiContPresentazionePartecipazione!=null)
-			document.formPuntiContPresentazionePartecipazione.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		if(document.formPuntiContInformazioni!=null)
-			document.formPuntiContInformazioni.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		if(document.formPuntiContPresentazioneOfferta!=null)
-			document.formPuntiContPresentazioneOfferta.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		if(document.formPuntiContAperturaPlichi!=null)
-			document.formPuntiContAperturaPlichi.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
 		setValue("CENINT_PCOPRE",cenint);
 		setValue("CENINT_PCODOC",cenint);	
 		setValue("CENINT_PCOOFF",cenint);

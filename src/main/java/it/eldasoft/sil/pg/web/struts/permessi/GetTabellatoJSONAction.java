@@ -2,7 +2,7 @@ package it.eldasoft.sil.pg.web.struts.permessi;
 
 import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
-import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
+import it.eldasoft.gene.commons.web.struts.ActionAjaxLogged;
 import it.eldasoft.gene.db.domain.Tabellato;
 
 import java.io.IOException;
@@ -20,7 +20,7 @@ import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 
-public class GetTabellatoJSONAction extends ActionBaseNoOpzioni {
+public class GetTabellatoJSONAction extends ActionAjaxLogged {
 
 	private TabellatiManager tabellatiManager; 
 	

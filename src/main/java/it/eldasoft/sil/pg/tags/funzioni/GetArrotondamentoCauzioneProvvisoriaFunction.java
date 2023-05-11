@@ -60,7 +60,7 @@ public class GetArrotondamentoCauzioneProvvisoriaFunction extends
 
     } catch (GestoreException e) {
       throw new JspException(
-          "Errore durante l'estrazione dell'arrotondamento cauzione provvisoria",
+          "Errore durante l'estrazione dell'arrotondamento garanzia provvisoria",
           e);
     }
 

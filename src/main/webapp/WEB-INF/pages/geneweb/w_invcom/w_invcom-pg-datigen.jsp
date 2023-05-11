@@ -81,6 +81,9 @@
 <c:set var="idcom" value='${gene:getValCampo(key,"IDCOM")}'/>
 <c:set var="codgar" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetCodgar1Function", pageContext, ngara)}'/>
 <c:set var="integrazioneWSDM" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNFunction", pageContext, codgar, idconfi)}'/>
+<c:set var="abilitatoInvioMailDocumentale" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.AbilitatoInvioMailDocumentaleFunction", pageContext, idconfi)}'/>
+<c:set var="invioDesCC" value='${!(abilitatoInvioMailDocumentale && integrazioneWSDM eq "1")}'/>
+
 <c:if test="${integrazioneWSDM eq 1 }" >
 	<c:set var="tipoWSDM" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetTipoWSDMFunction", pageContext, "FASCICOLOPROTOCOLLO", "NO",idconfi)}' />
 </c:if>
@@ -92,8 +95,10 @@
 			<c:set var="wsdmMailDocumentale" value='true'/>
 		</c:if>
 	</c:if>
-	
+	<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.EsistonoAllegatiComunicazioneFunction" parametro="${idprg};${idcom}"/>
 </c:if>
+
+<c:set var="htmlSupport" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "comunicazione.supportoHtml")}'/>
 
 <c:choose>
 	<c:when test='${not empty param.ditta}'>
@@ -135,8 +140,6 @@
 	</c:otherwise>
 </c:choose>
 
-
-
 <gene:formScheda entita="W_INVCOM" gestisciProtezioni="true"
 	gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreW_INVCOM" 
 	plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreInizializzazioniW_INVCOM">
@@ -155,7 +158,7 @@
 	<c:set var="listaOpzioniDisponibili" value="${fn:join(opzDisponibili,'#')}#"/>
 	<c:choose>
 		<c:when test='${fn:contains(listaOpzioniDisponibili, "OP114#")}' >
-			<gene:campoScheda campo="COMPUB" defaultValue="2" visibile="true" obbligatorio="true" modificabile="${empty requestScope.initCOMMODELLO and empty datiRiga.W_INVCOM_COMMODELLO }"/>
+			<gene:campoScheda campo="COMPUB" defaultValue="2" visibile="true" obbligatorio="true" modificabile="${(empty requestScope.initCOMMODELLO and empty datiRiga.W_INVCOM_COMMODELLO) and entitaParent ne 'G1STIPULA' }"/>
 		</c:when>
 		<c:otherwise>
 			<gene:campoScheda campo="COMPUB" defaultValue="" visibile="false"/>
@@ -172,7 +175,7 @@
 		<td class="etichetta-dato">Intestazione variabile</td>
 		<td class="valore-dato">Spett.le <i>Ragione Sociale</i></td>
 	</gene:campoScheda>
-	<gene:campoScheda campo="COMMSGTIP" defaultValue="2" modificabile='${modo eq "NUOVO" && tipoWSDM ne "TITULUS"}' />
+	<gene:campoScheda campo="COMMSGTIP" defaultValue="2" modificabile='${modo eq "NUOVO" && tipoWSDM ne "TITULUS"}' visibile='${htmlSupport eq "1"}' />
 	<gene:campoScheda campo="COMMSGTES" defaultValue="${requestScope.initCOMMSGTES}" gestore="it.eldasoft.gene.tags.gestori.decoratori.GestoreCampoTestoComunicazioneHTML" />
 	<gene:campoScheda campo="COMDATSCA"  obbligatorio='true' visibile="${requestScope.initCOMMODELLO eq '1' or datiRiga.W_INVCOM_COMMODELLO eq '1'}"/>
 	<gene:campoScheda campo="COMORASCA"  obbligatorio='true' visibile="${requestScope.initCOMMODELLO eq '1' or datiRiga.W_INVCOM_COMMODELLO eq '1'}"/>
@@ -184,12 +187,27 @@
   	<c:if test="${modo ne 'NUOVO' and modo ne 'MODIFICA' and (comstato eq '10' or comstato eq '11') and integrazioneWSDM =='1'}">
 	  	<gene:campoScheda campo="NUMRICEVUTE"  title="Numero ricevute" value="${requestScope.initNUMRICEVUTE}" definizione="T200" campoFittizio="true" visibile="true" />
   	</c:if>
+  	<c:if test="${modo ne 'NUOVO' and modo ne 'MODIFICA' and (comstato eq '3' or comstato eq '4')}">
+	  	<gene:campoScheda campoFittizio="true">
+	        <c:set var="pecDetails" value="${gene:callFunction2('it.eldasoft.sil.pg.tags.funzioni.GetPECDetailsFunction', pageContext, datiRiga.W_INVCOM_IDCOM)}" />
+	        <c:set var="sent" value="${fn:split(pecDetails, ';')[0]}" />
+	        <c:set var="error" value="${fn:split(pecDetails, ';')[1]}" />
+	        <c:set var="received" value="${fn:split(pecDetails, ';')[2]}" />
+	        <c:if test="${sent ne 0}">
+	        	<td class="etichetta-dato">Riepilogo riconciliazione PEC</td>
+	        	<td class="valore-dato">${sent} inviate, ${error} in errore, ${received} consegnate</td>
+	        </c:if>
+	    </gene:campoScheda>
+    </c:if>
   	<c:if test="${modo eq 'NUOVO' and (! empty param.rispondi)}">
   		<gene:campoScheda campo="DESCODSOG" entita="W_INVCOMDES" where="W_INVCOM.IDPRG = W_INVCOMDES.IDPRG AND W_INVCOM.IDCOM = W_INVCOMDES.IDCOM" defaultValue="${requestScope.initDESCODSOG}" visibile="false"/>
   	</c:if>
   	<c:choose>
   		<c:when test="${entitaParent eq 'NSO_ORDINI'}">  		
 			<gene:campoScheda campo="CODEIN" entita="NSO_ORDINI" where="ID = '${ngara}'" visibile="false" />
+  		</c:when>
+  		<c:when test="${entitaParent eq 'G1STIPULA'}">  		
+			<gene:campoScheda campo="CENINT" entita="TORN" from = "V_GARE_STIPULA" where="CODSTIPULA = '${ngara}' and TORN.CODGAR=V_GARE_STIPULA.CODGAR"  visibile="false"/>
   		</c:when>
   		<c:otherwise>
 			<gene:campoScheda campo="CENINT" entita="TORN" where="CODGAR = '${codgar}'" visibile="false" />
@@ -259,7 +277,6 @@
 	<input type="hidden" name="numModello" id="numModello" value="${param.numModello}"/>
 	<input type="hidden" name="ditta" id="ditta" value="${ditta}"/>
 	<input type="hidden" name="stepWizard" id="stepWizard" value="${stepWizard}"/>
-	<input type="hidden" name="whereBusteAttiveWizard" id="whereBusteAttiveWizard" value="${whereBusteAttiveWizard}"/>
 	<input type="hidden" name="tipo" id="tipo" value="${tipo}"/>
 	<input type="hidden" name="chiaveWSDM" id="chiaveWSDM" value="${chiaveWSDM}"/>
 	<input type="hidden" name="entitaWSDM" id="entitaWSDM" value="${entitaWSDM}"/>
@@ -413,12 +430,15 @@
 
 <gene:javaScript>
 	
-
-	
 	var cenint = "${datiRiga.TORN_CENINT}";
-	<c:if test='${entitaParent eq "NSO_ORDINI"}'>
-		cenint = "${datiRiga.NSO_ORDINI_CODEIN}";
-	</c:if>
+	<c:set var="cenint" value="${datiRiga.TORN_CENINT}"/>
+	<c:choose>
+		<c:when test='${entitaParent eq "NSO_ORDINI"}'>
+			cenint = "${datiRiga.NSO_ORDINI_CODEIN}";
+			<c:set var="cenint" value="${datiRiga.NSO_ORDINI_CODEIN}"/>
+		</c:when>
+		
+	</c:choose>
 	
 	$(document).ready(function() {
 		if ((getValue('W_INVCOM_COMMSGTIP')==1 && ${modo ne 'VISUALIZZA'})||${modo eq "NUOVO"}) {
@@ -497,8 +517,12 @@
 			</c:when>
 			<c:otherwise>
 				<c:choose>
-						<c:when test="${empty datiRiga.TORN_CENINT}">
+						<c:when test="${empty cenint}">
 							alert("Non e' possibile procedere.\nDeve essere specificata la stazione appaltante");
+							return;
+						</c:when>
+						<c:when test="${esistonoAllegatiDaFirmare eq 'TRUE'}">
+							alert("Non e' possibile procedere.\nVi sono degli allegati in attesa di firma");
 							return;
 						</c:when>
 					<c:otherwise>
@@ -524,14 +548,14 @@
 			</c:when>
 			<c:otherwise>
 				<c:choose>
-						<c:when test="${(empty datiRiga.TORN_CENINT) && (empty datiRiga.NSO_ORDINI_CODEIN)}">
+						<c:when test="${empty cenint}">
 							alert("Non e' possibile procedere.\nDeve essere specificata la stazione appaltante");
 							return;
 						</c:when>
 					<c:otherwise>
 						var commodello = "${commodello}";
 						var compub = getValue("W_INVCOM_COMPUB");
-						var href= "href=geneweb/w_invcom/w_invcom-invia-popup.jsp&idprg=" + idprg + "&idcom=" + idcom + "&compub=" + compub + "&cenint=" + cenint + "&commodello=" + commodello;
+						var href= "href=geneweb/w_invcom/w_invcom-invia-popup.jsp&idprg=" + idprg + "&idcom=" + idcom + "&compub=" + compub + "&cenint=" + cenint + "&commodello=" + commodello +"&descc="+${invioDesCC};
 						openPopUpCustom(href, "inviacomunicazione", 550, 350, "no", "no");
 					</c:otherwise>
 				</c:choose>
@@ -613,7 +637,7 @@
 				</c:when>
 				<c:otherwise>
 					<c:choose>
-						<c:when test="${empty datiRiga.TORN_CENINT}">
+						<c:when test="${empty cenint}">
 							alert("Non e' possibile procedere.\nDeve essere specificata la stazione appaltante");
 							return;
 						</c:when>
@@ -668,7 +692,7 @@ function showDettCom(){
 	<input type="hidden" name="idconfi" id="idconfi" value='${idconfi}' />
 	<input type="hidden" name="idprg" value="" />
 	<input type="hidden" name="idcom" value="" />
-	<input type="hidden" name="idcfg" value="${datiRiga.TORN_CENINT}" />
+	<input type="hidden" name="idcfg" value="${cenint}" />
 	<input type="hidden" name="metodo" value="apri" />
 	<input type="hidden" name="activePage" value="0" />
 	<input type="hidden" name="chiaveOriginale" value="" />

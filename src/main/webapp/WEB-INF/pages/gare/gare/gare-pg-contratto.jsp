@@ -41,6 +41,12 @@
 
 <c:set var="valoreInizializzazioneContspe" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1115","7","true")}'/>
 
+<c:set var="integrazioneWSERP" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSERPFunction", pageContext)}' />
+<c:if test='${integrazioneWSERP eq "1"}'>
+	<c:set var="presenzaRda" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetWSERPPresenzaRdaFunction", pageContext, codiceGara, ngara, requestScope.tipoWSERP)}' />
+	<c:set var="tipoWSERP" value='${requestScope.tipoWSERP}' />
+</c:if>
+
 <gene:formScheda entita="GARE" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreContratto">
 	
 	<gene:redefineInsert name="pulsanteNuovo"></gene:redefineInsert>
@@ -76,12 +82,40 @@
 			</c:choose>
 		</tr>
 	</gene:redefineInsert>
-	
+	<gene:redefineInsert name="documentiAssociati" >
+	<c:choose>
+		  <c:when test='${isNavigazioneDisabilitata ne "1"}'>
+		  <c:set var="addWhere" value="COAKEY1=${datiRiga.GARECONT_NGARA};COAKEY2=${ncont}"/>
+		  <c:set var="fictitiousVar" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetNumDocAssociatiCustomFunction", pageContext, "GARECONT", addWhere)}' />
+			<tr>
+				<td class="vocemenulaterale">
+					<a href='javascript:documentiAssociatiGarecont();' title="Documenti associati contratto" tabindex="1522">
+						Documenti associati contratto <c:if test="${not empty requestScope.numRecordDocAssociatiCustom}">(${requestScope.numRecordDocAssociatiCustom})</c:if>
+					</a>
+				</td>
+			</tr>
+		</c:when>
+		        <c:otherwise>
+		          	<td>
+						Documenti associati contratto
+					</td>
+		        </c:otherwise>
+			</c:choose>
+	</gene:redefineInsert>
 	<gene:redefineInsert name="addToAzioni" >
+		<c:if test='${modo eq "VISUALIZZA" && gene:checkProtFunz(pageContext, "MOD","SCHEDAMOD") && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GeneraNumeroOrdine")}'>
+			<tr>
+		        <td class="vocemenulaterale">
+					<a href="javascript:setNOrdine();" title="Genera numero ordine" tabindex="1503">
+						Genera numero ordine
+					</a>
+				</td>					
+			</tr>
+		</c:if>
 		<c:if test='${esisteIntegrazioneLavori eq "TRUE" && gene:checkProtFunz(pageContext, "MOD","SCHEDAMOD") && modo eq "VISUALIZZA" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.EsecuzioneContratto") && (datiRiga.TORN_ACCQUA ne 1 || (datiRiga.TORN_ACCQUA eq 1 && datiRiga.GARE1_AQOPER eq 1))}'>
 			<tr>
 		        <td class="vocemenulaterale">
-					<a href="javascript:gestioneContrattoDEC('${ngara}');" title="Esecuzione contratto" tabindex="1503">
+					<a href="javascript:gestioneContrattoDEC('${ngara}');" title="Esecuzione contratto" tabindex="1504">
 						Esecuzione contratto
 					</a>
 				</td>					
@@ -90,7 +124,7 @@
 		<c:if test='${autorizzatoModifiche ne "2" and isLavoroAssociato eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.DelegaLavoroRup") and modo ne "MODIFICA"}' >
 			<tr>
 				<td class="vocemenulaterale">
-					<c:if test='${isNavigazioneDisattiva ne "1"}'><a href="javascript:delegaLavoroRup();" title='Delega commessa al RUP' tabindex="1502"></c:if>
+					<c:if test='${isNavigazioneDisattiva ne "1"}'><a href="javascript:delegaLavoroRup();" title='Delega commessa al RUP' tabindex="1505"></c:if>
 						Delega commessa al RUP
 					<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
 				</td>
@@ -105,13 +139,24 @@
 				</td>
 			</tr>
 		</c:if>
+		<c:if test='${modo eq "VISUALIZZA" and autorizzatoModifiche ne "2" and (((tipoWSERP eq "CAV" || tipoWSERP eq "AMIU") && empty datiRiga.GARE1_NUMRDO && datiRiga.TORN_ACCQUA ne 1) and (presenzaRda eq "1" || presenzaRda eq "2")) }'>
+			<tr>
+				<td class="vocemenulaterale">
+					<a href="javascript:comunicaEsitoRdaInGara('${key}','${requestScope.tipoWSERP}');" title='Invia dati contratto ad ERP' tabindex="1512">
+						Invia dati contratto ad ERP
+					</a>
+				</td>
+			</tr>
+		</c:if>
+		
 	</gene:redefineInsert>
 		
 	<jsp:include page="gare-interno-contratto.jsp">
 		<jsp:param name="chiamante" value="contratto"/>
 		<jsp:param name="ngara" value="${ngara }"/> 
 		<jsp:param name="isGaraLottiConOffertaUnica" value="${isGaraLottiConOffertaUnica }"/> 
-		<jsp:param name="tipoAppalto" value="${tipoAppalto }"/> 
+		<jsp:param name="tipoAppalto" value="${tipoAppalto }"/>
+		<jsp:param name="codice" value="${ngara }"/> 
 		<jsp:param name="ncont" value="1"/> 
 	</jsp:include>
 	
@@ -225,7 +270,8 @@
 	<input type="hidden" name="isGaraLottiConOffertaUnica" id="isGaraLottiConOffertaUnica" value="${isGaraLottiConOffertaUnica}" />
 	<input type="hidden" name="WIZARD_PAGINA_ATTIVA" value="${paginaAttivaWizard}" />
 	<input type="hidden" name="DIREZIONE_WIZARD" id="DIREZIONE_WIZARD" value="" />
-
+	<input type="hidden" name="entitaPrincipaleModificabile" id="entitaPrincipaleModificabile" value="${sessionScope.entitaPrincipaleModificabile}" />
+	
 	<gene:campoScheda>
 		<td class="comandi-dettaglio" colSpan="2">
 			<c:choose>
@@ -418,7 +464,7 @@
 			$("#rowGARECONT_CONTSPE").hide();
 			$("#GARECONT_CONTSPE").val('');
 		}else{
-			if($("#GARECONT_CONTSPE").val()==null || $("#GARECONT_CONTSPE").val()==""){
+			if(($("#GARECONT_CONTSPE").val()==null || $("#GARECONT_CONTSPE").val()=="") && esecscig == 2){
 				var valoreInizializzazioneContspe="${valoreInizializzazioneContspe }";
 				$("#GARECONT_CONTSPE").val(valoreInizializzazioneContspe);
 			}
@@ -430,6 +476,18 @@
 		if(dconsd==null || dconsd == "")
 			setValue("GARECONT_DCONSD",datto);
 	}
+	
+	function comunicaEsitoRdaInGara(ngara,tipoWSERP){
+		var href="href=gare/gare/gare-popup-comunicaEsitoRda.jsp&ngara=" + ngara + "&isGaraLottiConOffertaUnica=false"+ "&tipoWSERP=" + tipoWSERP;
+		openPopUpCustom(href, "comunicaEsitoRda", 700, 600, "yes","yes");
+	}
+	
+	function documentiAssociatiGarecont(){
+		var keys = "GARECONT.NGARA=T:"+getValue("GARECONT_NGARA")+";GARECONT.NCONT=N:"+${ncont};
+		var href = contextPath+'/ListaDocumentiAssociati.do?'+csrfToken+'&metodo=visualizza&entita=GARECONT&valori='+keys;
+		document.location.href = href;
+	}
+	
 	
 	</gene:javaScript>
 </gene:formScheda>

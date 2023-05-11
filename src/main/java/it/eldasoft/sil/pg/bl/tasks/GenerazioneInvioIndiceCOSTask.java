@@ -4,7 +4,9 @@ import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.WebUtilities;
 import it.eldasoft.gene.db.domain.BlobFile;
+import it.eldasoft.gene.db.domain.LogEvento;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.SFTPManager;
 import it.eldasoft.utils.properties.ConfigManager;
@@ -19,8 +21,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Date;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Vector;
 
@@ -136,6 +140,12 @@ public class GenerazioneInvioIndiceCOSTask {
 
       List cos_listaRichiesteDaElaborare = null;
       List cos_listaDocumentiDaElaborare = null;
+      
+      Boolean hasDoneSomething = false;
+      HashMap<Long, List<String>> hmapSysconGare = new HashMap<Long, List<String>>();
+      List<Long> idDocNonInseriti = new ArrayList<Long>();
+      
+  
 
       try{
         sftp.connect();
@@ -144,15 +154,57 @@ public class GenerazioneInvioIndiceCOSTask {
 
           // tutti i documenti in stato 4=caricati su ftp cos
           cos_listaDocumentiDaElaborare = sqlManager.getListVector(cos_selDocumentiDaElaborare, new Object[] {new Long(4) });
-
+          
+          //tengo traccia degli id elaborati per un eventuale rollback
+          List<Long> idinseriti = new ArrayList<Long>();
+          
           ArrayList<HashMap<String,Object>> documenti = new ArrayList<HashMap<String,Object>>();
           String indice = "";
+          
+          String todaysIndexAlias = alias_sp
+              + "_"
+              + alias_da
+              + "_index_"
+              + UtilityDate.getDataOdiernaAsString(UtilityDate.FORMATO_AAAAMMGG);
+          
+          int numeroIndice = 1;
+          List<String> files = sftp.GetFiles(base);
+          for (int j = 0; j < files.size(); j++) {
+            String jfile = files.get(j);
+            if (jfile.contains(todaysIndexAlias)) {
+              numeroIndice++;
+            }
+          }
+          
+       // {Alias-SP}_{Alias-DA}_index_yyyyMMdd
+          index_filename_temp = "/"
+            + alias_sp
+            + "_"
+            + alias_da
+            + "_index_"
+            + UtilityDate.getDataOdiernaAsString(UtilityDate.FORMATO_AAAAMMGG)
+            + "-"
+            +numeroIndice
+            + ".part";
 
-          if ((cos_listaDocumentiDaElaborare != null && cos_listaDocumentiDaElaborare.size() > 0) && (!sftp.GetFiles(base).contains(index_filename))) {
+          index_filename = "/"
+            + alias_sp
+            + "_"
+            + alias_da
+            + "_index_"
+            + UtilityDate.getDataOdiernaAsString(UtilityDate.FORMATO_AAAAMMGG)
+            + "-"
+            +numeroIndice
+            + ".dat";
 
+          if (cos_listaDocumentiDaElaborare != null && cos_listaDocumentiDaElaborare.size() > 0) {
+            hasDoneSomething = true;
             sftp.CreateDirs(base);
-
-            for (int p = 0; p < cos_listaDocumentiDaElaborare.size() && p < maxRigheIndice; p++) {
+            //prelevo tutti i documenti: devo verificare che il documento sia ancora presente in area ftp. 
+            //Il record con stato_archiviazione = 2 è condizione necessaria ma non sufficiente (APPALTI-879)
+            List<String> filePresenti = sftp.GetFiles(base+ "Documenti/");
+            
+            for (int p = 0; p < cos_listaDocumentiDaElaborare.size() && p < maxRigheIndice; p++) { 
               HashMap<String, Object> datiWSDM = new HashMap<String, Object>();
               idDoc = SqlManager.getValueFromVectorParam(cos_listaDocumentiDaElaborare.get(p), 0).longValue();
 
@@ -167,6 +219,20 @@ public class GenerazioneInvioIndiceCOSTask {
               String codgar = codgara;
               sysconRichiesta = SqlManager.getValueFromVectorParam(cos_listaRichiesteDaElaborare.get(h), 2).longValue();
 
+            //verifica presenza
+              if(!filePresenti.contains(newNomeFile)) {
+                this.archiviazioneDocumentiManager.updateStatoEsito(new Long(8),"File non presente in area FTP al momento della creazione dell'indice", idDoc, _idArchiviazione);
+                List<String> listaGare = new ArrayList<String>();
+                if(hmapSysconGare.containsKey(sysconRichiesta)) {
+                  listaGare = hmapSysconGare.get(sysconRichiesta);
+                }
+                listaGare.add(codgar);
+                hmapSysconGare.put(sysconRichiesta, listaGare);
+                idDocNonInseriti.add(idDoc);
+                if (logger.isDebugEnabled())
+                  logger.debug("File non presente in area FTP: "+idDoc);
+                continue;
+              }
               String selectCodiceGara = "select codice,genere from v_gare_genere where codgar = ? and genere < 100";
               Vector<?> datiGareGenere = sqlManager.getVector(selectCodiceGara, new Object[] {codgara });
               if (datiGareGenere != null && datiGareGenere.size() > 0) {
@@ -384,7 +450,7 @@ public class GenerazioneInvioIndiceCOSTask {
                                   }
                                 }
                               }
-                              soggettiEsterni = limitaCaratteri(codFiscImpresa + ", "+ nomeImpresa);
+                              soggettiEsterni = escape(codFiscImpresa + ", "+ nomeImpresa);
                             }
                         }
 
@@ -467,7 +533,7 @@ public class GenerazioneInvioIndiceCOSTask {
                                   if(!"".equals(soggettiEsterni)){
                                     soggettiEsterni = soggettiEsterni + "|n.d.|";
                                   }
-                                soggettiEsterni = soggettiEsterni + limitaCaratteri(codFiscImpresa + ", "+ nomeImpresa);
+                                soggettiEsterni = soggettiEsterni + escape(codFiscImpresa + ", "+ nomeImpresa);
                               }
                             }
                           }
@@ -514,7 +580,7 @@ public class GenerazioneInvioIndiceCOSTask {
                                   }
                                 }
                               }
-                              soggettiEsterni = limitaCaratteri(codFiscImpresa + ", "+ nomeImpresa);
+                              soggettiEsterni = escape(codFiscImpresa + ", "+ nomeImpresa);
                             }
                         }
 
@@ -555,8 +621,8 @@ public class GenerazioneInvioIndiceCOSTask {
                         String annoRegistrazione = dataRegistrazione.substring(6, dataRegistrazione.length());
                         String idUnivocoPersistente = "AGC: " + numeroRegistrazione + "/" + annoRegistrazione;
                         String dataChiusura = dataRegistrazione;
-                        indice = "";
-                        indice += pathBasePrefisso + base + "Documenti/"
+                        String rigaIndice = "";
+                        rigaIndice += pathBasePrefisso + base + "Documenti/"
                             + newNomeFile
                             + "|"
                             + ufficioResponsabile
@@ -589,19 +655,13 @@ public class GenerazioneInvioIndiceCOSTask {
                             + "|"
                             + riferimenti;
 
-                        indice += System.getProperty("line.separator");
-
-                        if (!indice.equals("")) {
-                          byte[] bytesIndice = indice.getBytes();
-                          if (sftp.GetFiles(base).contains(index_filename_temp.substring(1))) {
-                            sftp.WriteAppend(bytesIndice, base + index_filename_temp.substring(1));
-                          } else {
-                            sftp.Put(bytesIndice, base + index_filename_temp);
-                          }
+                        rigaIndice += System.getProperty("line.separator");
+                        if (logger.isDebugEnabled())
+                          logger.debug("Inizio : "+idDoc);
+                        if (!rigaIndice.equals("")) {
+                          indice += rigaIndice;
                         }
-
-                        this.archiviazioneDocumentiManager.updateStatoArchiviazioneIndiceDocumento((Long)documento.get(ArchiviazioneDocumentiManager.IDDOC),(Long)documento.get(ArchiviazioneDocumentiManager.IDARCHIVIAZIONE),
-                            new Long(5), index_filename.replace("/", ""));
+                        idinseriti.add((Long)documento.get(ArchiviazioneDocumentiManager.IDDOC));
 
                     } catch (Exception ex) {
                       logger.error("Errore durante la scrittura del file di indice COS " + ex.getMessage());
@@ -612,26 +672,130 @@ public class GenerazioneInvioIndiceCOSTask {
                 logger.error("Errore durante la selezione dei documenti della gara da archiviare " + e.getMessage());
               }
             } // for documenti da elaborare
-            sftp.Rename(base + index_filename_temp.substring(1), base + index_filename);
-          } // if documenti da elaborare
+            boolean success = false;
+            byte[] bytesIndice = indice.getBytes();
+            String impronta = getImpronta(bytesIndice);
+            if (logger.isDebugEnabled()) logger.debug("Trasferisco il file di indice temporaneo.");
+            sftp.Put(bytesIndice, base + index_filename_temp);
+            
+            if (logger.isDebugEnabled()) logger.debug("Prelevo il file di indice per verificarne l'hash.");
+            File tempFile = File.createTempFile("tmp", null, null);
+            sftp.Get(base + index_filename_temp, new FileSystemFile(tempFile));
 
+            byte[] b2 = FileUtils.readFileToByteArray(tempFile);
+            String improntaCheck = getImpronta(b2);
+            if (impronta.equals(improntaCheck)) {
+              if (logger.isDebugEnabled()) logger.debug("Hash corretto, rinomino il file.");
+              sftp.Rename(base + index_filename_temp.substring(1), base + index_filename);
+              success = true;
+              if (logger.isDebugEnabled()) logger.debug("File di indice trasferito correttamente.");
+            }else {
+              if (logger.isDebugEnabled()) logger.debug("Hash NON corretto.");
+              sftp.Remove(base + index_filename_temp);
+              if (logger.isDebugEnabled()) logger.debug("File "+index_filename_temp.substring(1)+" rimosso");
+            }
+            
+            if(success) {
+              //aggiorno a stato archiviazione 5 tutti i record presenti nel file di indice
+              for(int idIndex=0; idIndex<idinseriti.size(); idIndex++) {
+                  try {
+                    this.archiviazioneDocumentiManager.updateStatoEsitoGlobale(new Long(5), null, index_filename.replace("/", ""), idinseriti.get(idIndex));
+                  }catch(SQLException e) {
+                    logger.error("Errore nell'update della gardoc_wsdm: "+e.getMessage());
+                  }     
+              }
+              if (logger.isDebugEnabled()) logger.debug("Update a stato archiviazione = 5 eseguito.");
+            }
+           }
+        
         } catch (SQLException e) {
           throw new GestoreException("Errore nella lettura della lista dei documenti da trasferire a COS", null, e);
         } catch (Exception ex) {
           logger.error("Generazione file di indice COS: " + ex.getMessage());
+        }finally {
+          List<String> distinctGare = new ArrayList<String>();
+          for(Long key : hmapSysconGare.keySet()) {
+            distinctGare.addAll(hmapSysconGare.get(key));
+          }
+        //inserisco il messaggio
+          if(hasDoneSomething) {
+          writeMsg(hmapSysconGare, new Long(5), index_filename.replace("/", ""),
+              "E' stato creato il file di indice per la conservazione digitale dei documenti delle seguenti gare: ");
+          }
+          String evento = "";
+          int livEvento = 1;
+          List gareCoinvolte = sqlManager.getListVector("select distinct(gj.codgara) from gardoc_wsdm gw join gardoc_jobs gj on gw.id_archiviazione=gj.id_archiviazione where "
+              + "gw.cos_indice = ? and gw.stato_archiviazione = ? order by gj.codgara asc",new Object[] {index_filename.replace("/", ""), new Long(5)});
+          if(gareCoinvolte != null && gareCoinvolte.size() >0) {
+          evento = "Il task di creazione del file di indice ("+index_filename.replace("/", "")+") ha elaborato le richieste di archiviazione per le seguenti gare: ";
+          for(int i=0; i< gareCoinvolte.size();i++) {
+            if(i>0) 
+              evento += ", ";
+            evento += SqlManager.getValueFromVectorParam(gareCoinvolte.get(i), 0).stringValue().replace("$", "");
+            }
+          }
+          if(idDocNonInseriti.size()>0) {
+            livEvento=3;
+            if(!"".equals(evento))
+                evento += ". ";
+            else
+              evento = "Il file di indice non è stato elaborato. ";
+            evento += "\nAlcuni documenti erano marcati come presenti in area ftp, ma al momento dell'elaborazione non sono stati trovati (GARDOC_WSDM.ID:  ";
+            for(int j=0; j<idDocNonInseriti.size();j++) {
+              if(j>0) 
+                evento += ", ";
+              evento += idDocNonInseriti.get(j);
+            }
+            evento += "). ";
+            if(hmapSysconGare!=null) {
+              
+              distinctGare = new ArrayList(new LinkedHashSet(distinctGare));
+              
+              evento += "Controllare le seguenti gare: "+distinctGare.toString().replaceAll("\\[|\\]|\\$", "");
+             
+            }
+          }
+          if(!hasDoneSomething) {
+            if(cos_listaDocumentiDaElaborare != null && cos_listaDocumentiDaElaborare.size()>0)
+              evento = "Non è stata fatta alcuna elaborazione poiché file di indice è già presente in area ftp.";
+            else
+              evento = "Nessun documento da elaborare.";
+          }
+          try {
+            LogEvento logEvento = new LogEvento();
+            logEvento.setCodApplicazione("PG");
+            logEvento.setOggEvento(null);
+            logEvento.setLivEvento(livEvento);
+            logEvento.setCodEvento("GA_COS_CREAZIONEINDICE");
+            logEvento.setDescr("Creazione file di indice");
+            logEvento.setErrmsg(evento);
+            LogEventiUtils.insertLogEventi(logEvento);
+          } catch (Exception le) {
+            logger.error("Errore inaspettato durante la tracciatura su w_logeventi", le);
+          }
         }
+        try {
+          sftp.disconnect();
+        }catch(Exception e) {}
+
 
         if (logger.isDebugEnabled())
           logger.debug("Fine generazione ed invio file di indice COS");
 
+        sftp = new SFTPManager();
+        sftp.connect();
         if (logger.isDebugEnabled())
           logger.debug("Avvio controllo esiti COS");
-
+        
+        List<String> indiciTrasferiti = new ArrayList<String>();
+        HashMap<String,List<String>> indiciNonTrasferiti = new HashMap<String,List<String>>();
+        Boolean elaborazioni = false;
+        
         try {
-
           List<String> files = sftp.GetFiles(base);
-
+          if (logger.isDebugEnabled()) logger.debug("Lettura della directory ftp avvenuta con successo.");
           List listaIndiciNonTrasferiti = sqlManager.getListVector("select distinct(cos_indice) from gardoc_wsdm where stato_archiviazione = ?",new Object[] {new Long(5)});
+         
           if (listaIndiciNonTrasferiti != null && listaIndiciNonTrasferiti.size() > 0) {
             for (int n = 0; n < listaIndiciNonTrasferiti.size(); n++) {
               String indice = SqlManager.getValueFromVectorParam(listaIndiciNonTrasferiti.get(n), 0).stringValue();
@@ -639,6 +803,7 @@ public class GenerazioneInvioIndiceCOSTask {
               for (int i = 0; i < files.size(); i++) {
                 String fileIndice = files.get(i);
                 if (fileIndice.contains(indice) && (fileIndice.contains("ko_") || fileIndice.contains("ok_"))) {
+                  elaborazioni = true;
                   //prendo i PID del file di indice che ancora non è stato trasferito a cos
                   String PID = fileIndice.substring(fileIndice.lastIndexOf("_") + 1);
 
@@ -660,6 +825,7 @@ public class GenerazioneInvioIndiceCOSTask {
                         root.getDocumentElement().normalize();
 
                         if(fileIndice.contains("ko_" + PID)){
+                          if (logger.isDebugEnabled()) logger.debug("File indice ko. Inizio gestione");
                           //trasferimento fallito
                           File tempdat = File.createTempFile("tmpdat", null, null);
                           sftp.Get(base + fileIndice, new FileSystemFile(tempdat));
@@ -670,6 +836,14 @@ public class GenerazioneInvioIndiceCOSTask {
                           // prendo il nome del file di indice originale
                           indice = fileIndice.substring(0, fileIndice.lastIndexOf("."));
                           this.archiviazioneDocumentiManager.updateStatoArchiviazionePacchettoCOS(new Long(7), PID, indice);
+                          
+                          if (logger.isDebugEnabled()) logger.debug("File indice ko. Record aggiornati allo stato 7");
+                          
+                          //inserisco il messaggio
+                          writeMsg(null, new Long(7), indice,
+                              "Il versamento dell'indice "+indice+" non è andato a buon fine. Controllare le seguenti gare: ");
+                          
+                          indiciNonTrasferiti.put(indice, new ArrayList<String>());
 
                           NodeList nl = root.getElementsByTagName("errore");
                           for (int k = 0; k < nl.getLength(); k++) {
@@ -677,21 +851,34 @@ public class GenerazioneInvioIndiceCOSTask {
 
                             String errore = d.getTextContent();
                             if (errore.length() > 4) {
+                              List<String> errori = indiciNonTrasferiti.get(indice);
+                              errori.add(errore);
+                              indiciNonTrasferiti.put(indice, errori);
                               if (errore.substring(0, 4).toLowerCase().equals("riga")) {
                                 int numriga = Integer.parseInt(errore.substring(errore.indexOf(" ") + 1, errore.indexOf(":")));
                                 String linea_in_indice = dat_lines[numriga - 1];
                                 String fname = linea_in_indice.substring(0, linea_in_indice.indexOf("|"));
                                 fname = fname.substring(fname.lastIndexOf("/") + 1);
                                 this.archiviazioneDocumentiManager.updateEsitoDocumentoCOS(errore, indice, fname);
+                                
                               }
                             }
                           }
                         }
                         if(fileIndice.contains("ok_" + PID)){
+                          if (logger.isDebugEnabled()) logger.debug("File indice ok. Inizio gestione");
                           // andato a buon fine
                           // prendo il nome del file di indice originale
                           indice = fileIndice.substring(0, fileIndice.lastIndexOf("."));
                           this.archiviazioneDocumentiManager.updateStatoArchiviazionePacchettoCOS(new Long(6), PID, indice);
+                          
+                          if (logger.isDebugEnabled()) logger.debug("File indice ok. Record aggiornati allo stato 6");
+                          
+                          //inserisco il messaggio
+                          writeMsg(null, new Long(6), indice,
+                              "Il versamento dell'indice "+indice+" si è concluso correttamente per le seguenti  gare: ");
+                          
+                          indiciTrasferiti.add(indice);
 
                           NodeList nl = root.getElementsByTagName("documento");
                           for (int k = 0; k < nl.getLength(); k++) {
@@ -713,6 +900,43 @@ public class GenerazioneInvioIndiceCOSTask {
         } catch (Exception ex) {
           logger.error("Controllo esiti (COS): " + ex.getMessage());
         }
+        finally {
+          String evento = "";
+          int livEvento = 1;
+          if(elaborazioni) {
+            evento = "";
+            if(indiciTrasferiti.size()>0) {
+              evento += "Versamento completato correttamente per i seguenti file di indice: ";
+              for(int j=0; j<indiciTrasferiti.size();j++) {
+                if(j>0) 
+                  evento += ", ";
+                evento += indiciTrasferiti.get(j);
+              }
+              evento += "\n";
+            }
+            if(indiciNonTrasferiti.keySet().size()>0) {
+              livEvento=3;
+              evento += "Versamento fallito per i seguenti file di indice: ";
+              for(String indice : indiciNonTrasferiti.keySet()) {
+                evento +="\n-"+indice+": "+indiciNonTrasferiti.get(indice).toString();
+              }
+            }
+          }else {
+            evento = "Nessun rapporto di versamento da elaborare.";
+          }
+          try {
+            LogEvento logEvento = new LogEvento();
+            logEvento.setCodApplicazione("PG");
+            logEvento.setOggEvento(null);
+            logEvento.setLivEvento(livEvento);
+            logEvento.setCodEvento("GA_COS_LETTURAVERSAMENTO");
+            logEvento.setDescr("Lettura dei rapporti di versamento");
+            logEvento.setErrmsg(evento);
+            LogEventiUtils.insertLogEventi(logEvento);
+          } catch (Exception le) {
+            logger.error("Errore inaspettato durante la tracciatura su w_logeventi", le);
+          }
+        }
         sftp.disconnect();
 
       }catch (Exception ex) {
@@ -725,6 +949,8 @@ public class GenerazioneInvioIndiceCOSTask {
   }
 
   public String escape(String s) {
+    if(s==null)
+      return "";
     s = s.replace('|', '-').replace(';', '-');
     s = s.replaceAll("\\r\\n|\\r|\\n", "-");
     s = limitaCaratteri(s);
@@ -751,6 +977,65 @@ public class GenerazioneInvioIndiceCOSTask {
 
     byte[] hash = digest.digest();
     return javax.xml.bind.DatatypeConverter.printHexBinary(hash);
+  }
+  
+  public void writeMsg(HashMap<Long, List<String>> hmapErrori, Long stato_archivazione, String cos_indice, String msg1) throws SQLException {
+    try {
+        List destinatari = sqlManager.getListVector("select distinct(gj.syscon) from gardoc_wsdm gw join gardoc_jobs gj on gw.id_archiviazione=gj.id_archiviazione where "
+        + "gw.cos_indice = ? and gw.stato_archiviazione = ? order by gj.syscon asc",new Object[] {cos_indice,stato_archivazione});
+        
+        if (destinatari != null && destinatari.size() > 0) {
+          for (int d = 0; d < destinatari.size(); d++) {
+            try {
+            Long destinatario = SqlManager.getValueFromVectorParam(destinatari.get(d), 0).longValue();
+            List gareCoinvolte = sqlManager.getListVector("select distinct(gj.codgara) from gardoc_wsdm gw join gardoc_jobs gj on gw.id_archiviazione=gj.id_archiviazione where "
+                + "gw.cos_indice = ? and gw.stato_archiviazione = ? and gj.syscon = ? order by gj.codgara asc",new Object[] {cos_indice,stato_archivazione,destinatario});
+            String messaggio = msg1;
+            if (gareCoinvolte != null && gareCoinvolte.size() > 0) {
+              for (int g = 0; g < gareCoinvolte.size(); g++) {
+                if(g>0) {
+                  messaggio += ", ";
+                }
+                messaggio += SqlManager.getValueFromVectorParam(gareCoinvolte.get(g), 0).stringValue().replace("$", "");
+              }
+            }
+            if(hmapErrori!=null) {
+              List gareConErrori = hmapErrori.get(destinatario);
+              if(gareConErrori != null && gareConErrori.size()>0) {
+                List<String> distinctGareConErrori = new ArrayList(new LinkedHashSet(gareConErrori));
+                String errori = distinctGareConErrori.toString().replaceAll("\\[|\\]|\\$", "");
+                messaggio  += "\nAlcuni documenti ("+gareConErrori.size()+") non sono stati riportati nel file di indice in seguito a errori. Controllare le seguenti gare: "+errori;
+              }
+              hmapErrori.remove(destinatario);
+            }
+            //inserisco messaggio per le richieste di archiviazione
+            this.archiviazioneDocumentiManager.insertMsg(messaggio, destinatario);
+            //rimuovo dalla mappa i destinatari raggiunti
+            
+            }catch(SQLException e) {
+              logger.error("Errore nell'inserimento dei messaggi: "+e.getMessage());
+            } catch (GestoreException e) {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+            }   
+          }
+        }
+        if(hmapErrori!=null && hmapErrori.size()>0) {
+          //se ho dei documenti scartati con destinatari non raggiunti prima
+          for(Long destinatario : hmapErrori.keySet()) {
+            String messaggio = "Nessun documento è stato inserito nel file di indice. Controllare le seguenti gare: ";
+              List gareConErrori = hmapErrori.get(destinatario);
+              if(gareConErrori != null && gareConErrori.size()>0) {
+                List<String> distinctGareConErrori = new ArrayList(new LinkedHashSet(gareConErrori));
+                String errori = distinctGareConErrori.toString().replaceAll("\\[|\\]|\\$", "");
+                messaggio  += errori;
+              }
+              this.archiviazioneDocumentiManager.insertMsg(messaggio, destinatario);
+            }
+          }
+        }catch(SQLException | GestoreException e) {
+          logger.error("Errore nell'inserimento dei messaggi: "+e.getMessage());
+        }
   }
 
 }

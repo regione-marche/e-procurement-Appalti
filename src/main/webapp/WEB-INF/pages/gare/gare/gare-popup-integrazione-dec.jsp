@@ -37,7 +37,8 @@
 <c:set var="isLavoroAssociato" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.ControlloAssociazioneGaraLavoroFunction", pageContext, ngara)}'/>
 <c:set var="integrazioneDec" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.sil.pg.integrazione.dec")}'/>
 
-<c:set var="filtroCENINT" value=""/>
+<c:set var="functionId" value="skip" />
+<c:set var="parametriWhere" value=""/>
 <c:if test="${!empty sessionScope.uffint}">
 	<c:set var="filtroAbilitato" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "integrazioneLFS.filtroUffint")}'/>
 	<c:if test="${filtroAbilitato eq '1' }">
@@ -46,7 +47,8 @@
 			<c:if test="${empty cenint }">
 				<c:set var="cenint" value="${sessionScope.uffint}"/>
 			</c:if>
-			<c:set var="filtroCENINT" value="PERI.CENINT = '${cenint}'"/>
+			<c:set var="functionId" value="default" />
+			<c:set var="parametriWhere" value="T:${cenint}"/>
 		</c:if>
 	</c:if>
 </c:if>
@@ -179,7 +181,12 @@
 				<gene:archivio titolo="commesse" 
 					inseribile="false"
 					lista="lavo/appa/appa-lista-dec-peri-popup.jsp" 
-					scheda="" schedaPopUp="" campi="PERI.CODLAV;PERI.TITSIL" chiave="" where="${filtroCENINT}">
+					scheda="" 
+					schedaPopUp="" 
+					campi="PERI.CODLAV;PERI.TITSIL" 
+					functionId="${functionId}"
+					parametriWhere="${parametriWhere}"
+					chiave="" >
 					<gene:campoScheda title="Codice commessa" campo="PERI_CODLAV" obbligatorio="true" campoFittizio="true" definizione="T20;0"/>
 					<gene:campoScheda title="Descrizione" campo="PERI_TITSIL" campoFittizio="true" definizione="T2000;0" gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote"/>
 				</gene:archivio>

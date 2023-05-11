@@ -93,8 +93,31 @@
 			</tr>
 		</c:if>
 		</gene:redefineInsert>
-			
-									
+		
+		
+		<c:if test='${!gene:checkProt(pageContext,"FUNZ.VIS.ALT.GENE.C0OGGASS") && gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.GARSED-scheda.docAssociatiSedute")}'>
+			<gene:redefineInsert name="addToDocumenti">
+			<tr>
+				<c:choose>
+		        <c:when test='${isNavigazioneDisabilitata ne "1"}'>
+		          <td class="vocemenulaterale">
+								<a href="javascript:documentiAssociati();" title="Documenti associati" tabindex="1511">
+									${gene:resource("label.tags.template.documenti.documentiAssociati")}
+								  <c:if test="${not empty requestScope.numRecordDocAssociati}">(${requestScope.numRecordDocAssociati})</c:if>
+								</a>
+		   				</td>
+		        </c:when>
+		        <c:otherwise>
+		          <td>
+							  ${gene:resource("label.tags.template.documenti.documentiAssociati")}
+								  <c:if test="${not empty requestScope.numRecordDocAssociati}">(${requestScope.numRecordDocAssociati})</c:if>
+						  </td>
+		        </c:otherwise>
+				</c:choose>
+			</tr>
+			</gene:redefineInsert>	
+		</c:if>	
+								
 			<gene:gruppoCampi idProtezioni="GARSED">
 				<gene:campoScheda>
 					<td colspan="2"><b>Seduta di gara</b></td>

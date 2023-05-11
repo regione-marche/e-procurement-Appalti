@@ -17,6 +17,14 @@
 <gene:redefineInsert name="head">
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.pg.titoli.js"></script>
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.pg.hrefProtocollo.js"></script>
+	<style type="text/css">
+	 TD.etichetta-atto {
+		width: 120px;
+		HEIGHT: 22px;
+		PADDING-RIGHT: 10px;
+		TEXT-ALIGN: right;
+	}
+	</style>
 </gene:redefineInsert>
 
 <c:set var="tmp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GestionePagineAggProvvDefOffertaUnicaFunction",  pageContext, key,"AggDef")}'/>
@@ -340,13 +348,14 @@
 					<gene:gruppoCampi idProtezioni="ATTO_AGG">
 						<gene:campoScheda addTr="false">
 							<tr id="rowTITOLO_ATTO_AGGIUDICAZIONE">
-								<td colspan="2"><b>Atto di aggiudicazione</b></td>
+								<td><b>Atto di aggiudicazione (comune a tutti i lotti)</b></td>
+								<td style="text-align: right; padding-right:10px; color:black;"><c:if test='${autorizzatoModifiche ne 2 and updateLista ne 1}'><a style="color: black;" href="javascript:apriModaleAtto();" title="Imposta atto aggiudicazione comune a tutti i lotti" >Imposta atto aggiudicazione comune a tutti i lotti</a></c:if></td>
 							</tr>
 						</gene:campoScheda>
-						<gene:campoScheda entita="GARE" where = "${where}" campo="TATTOA" />
-						<gene:campoScheda entita="GARE" where = "${where}" campo="DATTOA" />
-						<gene:campoScheda entita="GARE" where = "${where}" campo="NATTOA" />
-						<gene:campoScheda entita="GARE" where = "${where}" campo="NPROAA" />
+						<gene:campoScheda entita="GARE" where = "${where}" campo="TATTOA" modificabile="false"/>
+						<gene:campoScheda entita="GARE" where = "${where}" campo="DATTOA" modificabile="false"/>
+						<gene:campoScheda entita="GARE" where = "${where}" campo="NATTOA" modificabile="false"/>
+						<gene:campoScheda entita="GARE" where = "${where}" campo="NPROAA" modificabile="false"/>
 					</gene:gruppoCampi>
 					
 					<c:if test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.AGGDEF-scheda.AGGDEF.attiMultipli")}'>
@@ -371,7 +380,7 @@
 													
 					<gene:gruppoCampi idProtezioni="COMUNICAZ">
 						<c:if test='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.GAROFF")}'>
-							<c:set var="dicituraCauzione" value="e svincolo cauzione provvisoria"/>
+							<c:set var="dicituraCauzione" value="e svincolo garanzia provvisoria"/>
 						</c:if>
 						<gene:campoScheda>
 							<td colspan="2"><b>Comunicazione alle ditte dell'aggiudicazione definitiva ${dicituraCauzione}</b></td>
@@ -430,7 +439,63 @@
 		</td>
 	</tr>
 </table>
-
+<c:if test='${paginaAttivaWizard != 1 and autorizzatoModifiche ne 2 and updateLista ne 1}'>
+${gene:callFunction3("it.eldasoft.gene.tags.functions.GetListaValoriTabellatoFunction",  pageContext,"A2045", "valoriTabA2045")}
+<c:set var ="lottiAggiudicati" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsistonoLottiAggiudicatiFunction",  pageContext,codiceGara)}'/>
+ 
+<form id="formImpostaAtto">
+	<div id="mascheraDatiAtto" title="Imposta atto aggiudicazione" style="display:none;">
+	<table class="sceltaQform">
+		<tr style="font:11px Verdana, Arial, Helvetica, sans-serif"> 
+			<td colspan="2">
+				<br>
+				Mediante tale funzione è possibile specificare l'atto di aggiudicazione della gara, comune a tutti i lotti.
+				<br>Alla conferma, i valori indicati verranno replicati in tutti i lotti della gara.
+				<br><br>
+			</td>				
+		</tr>
+		<c:if test='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.TATTOA") }'>
+		<tr style="font:11px Verdana, Arial, Helvetica, sans-serif">
+			<td class="etichetta-atto">Tipo atto</td>	
+			<td class="valore-dato">
+			<select id="tattoa" name="tattoa" title="Tipo atto" >
+				<option value="" title="&nbsp;" selected="selected" >&nbsp;</option>
+				<c:forEach var="atto" items="${requestScope.valoriTabA2045}">
+					<option value="${atto.tipoTabellato }" title="${atto.descTabellato }" <c:if test="${atto.tipoTabellato eq  datiRiga.GARE_TATTOA}">selected="selected"</c:if>>${atto.descTabellato }</option>
+				</c:forEach>
+			</select>
+			</td>				
+		</tr>
+		</c:if>
+		<c:if test='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.DATTOA") }'>
+		<tr style="font:11px Verdana, Arial, Helvetica, sans-serif">
+			<td class="etichetta-atto">Data</td>	
+			<td >
+			<input type="text" name="dattoa" id="dattoa" value="${datiRiga.GARE_DATTOA }" />
+			</td>				
+		</tr>
+		</c:if>
+		<c:if test='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.NATTOA") }'>
+		<tr style="font:11px Verdana, Arial, Helvetica, sans-serif">
+			<td class="etichetta-atto">Numero</td>	
+			<td >
+			<input type="text" name="nattoa" id="nattoa" value="${datiRiga.GARE_NATTOA }" maxlength="16"/>
+			</td>				
+		</tr>
+		</c:if>
+		<c:if test='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.NPROAA") }'>
+		<tr style="font:11px Verdana, Arial, Helvetica, sans-serif">
+			<td class="etichetta-atto">Numero protocollo</td>	
+			<td >
+			<input type="text" name="nproaa" id="nproaa" value="${datiRiga.GARE_NPROAA }" maxlength="10" />
+			</td>				
+		</tr>
+		</c:if>
+	</table>
+	</div>
+		
+</form>
+</c:if>
 <gene:javaScript>
 
 	function aggiudicazioneLotto(){
@@ -516,5 +581,122 @@
 		addHrefs();
 	</c:if>
 
+	<c:if test='${paginaAttivaWizard != 1 and autorizzatoModifiche ne 2 and updateLista ne 1}'>
 	
+		<c:choose>
+			<c:when test='${gene:checkProt(pageContext, "COLS.MOD.GARE.GARE.TATTOA") }'>
+				$( "#tattoa" ).prop( "disabled", false );
+			</c:when>
+			<c:otherwise>
+				$( "#tattoa" ).prop( "disabled", true );
+				$( "#tattoa" ).css('background-color','#EFEFEF');
+			</c:otherwise>
+		</c:choose>
+				
+		<c:choose>
+			<c:when test='${gene:checkProt(pageContext, "COLS.MOD.GARE.GARE.DATTOA") }'>
+				$( "#dattoa" ).prop( "disabled", false );
+				$( function() {
+					$( "#dattoa" ).datepicker();
+				  } );
+			</c:when>
+			<c:otherwise>
+				$( "#dattoa" ).prop( "disabled", true );
+				$( "#dattoa" ).css('background-color','#EFEFEF');
+			</c:otherwise>
+		</c:choose>
+		
+		<c:choose>
+			<c:when test='${gene:checkProt(pageContext, "COLS.MOD.GARE.GARE.NATTOA") }'>
+				$( "#nattoa" ).prop( "disabled", false );
+			</c:when>
+			<c:otherwise>
+				$( "#nattoa" ).prop( "disabled", true );
+				$( "#nattoa" ).css('background-color','#EFEFEF');
+			</c:otherwise>
+		</c:choose>
+		
+		<c:choose>
+			<c:when test='${gene:checkProt(pageContext, "COLS.MOD.GARE.GARE.NPROAA") }'>
+				$( "#nproaa" ).prop( "disabled", false );
+			</c:when>
+			<c:otherwise>
+				$( "#nproaa" ).prop( "disabled", true );
+				$( "#nproaa" ).css('background-color','#EFEFEF');
+			</c:otherwise>
+		</c:choose>
+		
+		function apriModaleAtto(){
+			var opt = {
+				open: function(event, ui) { 
+					$(this).parent().children().children('.ui-dialog-titlebar-close').hide();
+					$(this).parent().css("border-color","#C0C0C0");
+					var _divtitlebar = $(this).parent().find("div.ui-dialog-titlebar");
+					_divtitlebar.css("border","0px");
+					_divtitlebar.css("background","#FFFFFF");
+					var _dialog_title = $(this).parent().find("span.ui-dialog-title");
+					_dialog_title.css("font-size","13px");
+					_dialog_title.css("font-weight","bold");
+					_dialog_title.css("color","#002856");
+					$(this).parent().find("div.ui-dialog-buttonpane").css("background","#FFFFFF");
+				},
+				autoOpen: false,
+				modal: true,
+				width: 550,
+				height:300,
+				title: "Imposta atto di aggiudicazione comune a tutti i lotti",
+				buttons: {
+				"Conferma": function() {
+					confermaModaleAtto();
+				},
+				"Annulla": function() {
+						$( this ).dialog( "close" );
+						
+					}
+				 }
+			};
+			
+			$("#mascheraDatiAtto").dialog(opt).dialog("open");
+		}
+		
+		function confermaModaleAtto(){
+			var tattoa=$("#tattoa").val();
+			var dattoa=$("#dattoa").val();
+			var nattoa=$("#nattoa").val();
+			var nproaa=$("#nproaa").val();
+			var codiceGara="${codiceGara}";
+			
+			var lottiAggiudicati="${lottiAggiudicati}";
+			if((dattoa==null || dattoa=="") && lottiAggiudicati=="true"){
+				alert("Non è possibile annullare la data poichè vi sono lotti aggiudicati.");
+				return;
+			}
+			
+			$.ajax({
+				type: "POST",
+				dataType: "json",
+				async: false,
+				beforeSend: function(x) {
+					if(x && x.overrideMimeType) {
+						x.overrideMimeType("application/json;charset=UTF-8");
+					}
+				},
+				url: "pg/ImpostaAttoLotti.do",
+				data: {
+					tattoa: tattoa ,
+		            dattoa: dattoa,
+		            nattoa: nattoa,
+		            nproaa: nproaa,
+		            codiceGara:codiceGara
+				},
+				success: function(data){
+					historyReload();
+					$( this ).dialog( "close" );
+				},
+				error: function(e){
+					alert("Errore nell'aggiornamento dei dati");
+				}
+			});
+		}
+	</c:if>
 </gene:javaScript>

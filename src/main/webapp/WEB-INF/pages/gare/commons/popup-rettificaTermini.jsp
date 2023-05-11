@@ -143,7 +143,7 @@
 		
 		
 		<c:choose>
-			<c:when test="${pagina eq 'Datigen' and (iterga eq '2' or iterga eq '4')}">
+			<c:when test="${pagina eq 'Datigen' and (iterga eq '2' or iterga eq '4' or iterga eq '7')}">
 				<c:if test='${requestScope.controlloSuperato eq "SI"}'>
 					<gene:campoScheda nome="PDP">
 						<td colspan="2"><b>Termini per la presentazione della domanda di partecipazione</b></td>
@@ -208,7 +208,7 @@
 			var controlliSuperati=false;
 			
 			<c:choose>
-				<c:when test="${pagina eq 'Datigen' and (iterga eq '2' or iterga eq '4')}">
+				<c:when test="${pagina eq 'Datigen' and (iterga eq '2' or iterga eq '4' or iterga eq '7')}">
 					var dtepar_orig = getValue("DTEPAR_ORIG");
 					var dtepr = getValue("DTEPAR");
 					var otepar_orig = getValue("OTEPAR_ORIG");

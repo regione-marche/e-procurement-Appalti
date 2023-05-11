@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 
@@ -48,10 +49,6 @@ public class CavWSERPManager {
     this.gestioneWSERPManager = gestioneWSERPManager;
   }
 
-
-   int inviaQualcosa (){
-     return 0;
-   }
 
    public WSERPFornitoreResType  inviaDatiFornitore (String username, String password, HashMap datiMask) throws GestoreException, SQLException{
      WSERPFornitoreResType wserpFornitoreRes = new WSERPFornitoreResType();
@@ -178,6 +175,7 @@ public class CavWSERPManager {
      String codgar = (String)datiMask.get("codgar");
      String ngara = (String)datiMask.get("ngara");
      String codcig = (String)datiMask.get("codcig");
+     String codcigaq = (String)datiMask.get("codcigaq");
      String ditta = (String)datiMask.get("ditta");
      String idFornitore = (String)datiMask.get("idFornitore");
      String tipoContratto = (String)datiMask.get("tipoContratto");
@@ -187,6 +185,9 @@ public class CavWSERPManager {
      Double ribagg = (Double)datiMask.get("ribagg");
      Double riboepv = (Double)datiMask.get("riboepv");
      Long modlicg = (Long)datiMask.get("modlicg");
+     String numeroRepertorioContratto = (String)datiMask.get("nrepat");
+     Date dataContratto = (Date)datiMask.get("daatto");
+     
      String[] listaDitte = null;
      String dittaRTI = "";
      String linkrda = "";
@@ -210,6 +211,7 @@ public class CavWSERPManager {
          }
        }
        datiGara.setCodiceCig(codcig);
+       datiGara.setCodiceCigMaster(codcigaq);
        oggettoGara = UtilityStringhe.convertiNullInStringaVuota(oggettoGara);
        if(oggettoGara.length()>120){
          oggettoGara = oggettoGara.substring(0, 119);
@@ -218,8 +220,10 @@ public class CavWSERPManager {
        //provvisorio definire oggettogara
        datiGara.setDefinizioneCig(oggettoGara);
 
+       //selezionare anche CUPPRG e poi va trasmesso 
+       
        Vector<?> datiGareAppa  = this.sqlManager.getVector(
-           "select gare.clavor,gare.numera,appa.dult,coalesce(appa.dinlav,appa.dconsd),appa.datult,appa.sivca_inv,appa.sivca_int" +
+           "select gare.clavor,gare.numera,appa.dult,coalesce(appa.dinlav,appa.dconsd),appa.datult,appa.sivca_inv,appa.sivca_int, gare.cupprg" +
            " from GARE,APPA where GARE.CLAVOR = APPA.CODLAV and GARE.NUMERA=APPA.NAPPAL and GARE.NGARA = ?", new Object[] { ngara });
        if(datiGareAppa!=null && datiGareAppa.size()>0){
          String codiceLavoro = (String) SqlManager.getValueFromVectorParam(datiGareAppa, 0).getValue();
@@ -252,6 +256,13 @@ public class CavWSERPManager {
          datiGara.setCodiceSivcaInvestimento(codiceSivcaInvestimento);
          String codiceSivcaIntervento = (String) SqlManager.getValueFromVectorParam(datiGareAppa, 6).getValue();
          datiGara.setCodiceSivcaIntervento(codiceSivcaIntervento);
+         
+         String codiceCup = (String) SqlManager.getValueFromVectorParam(datiGareAppa, 7).getValue();
+         if(!"".equals(StringUtils.stripToEmpty(codiceCup))) {
+           String[] cupArray = new String[1];
+           cupArray[0] = codiceCup;
+           datiGara.setCodiceCupArray(cupArray);
+         }
 
          datiGara.setImportoAggiudicazione(iaggiu);
          if (new Long(6).equals(modlicg)) {
@@ -265,7 +276,33 @@ public class CavWSERPManager {
          datiGara.setCodiceFornitore(idFornitore);
 
        }
-
+       
+       Vector<?> datiGarecont  = this.sqlManager.getVector(
+               "select gc.nprotcoorba,gc.dprotcoorba from GARECONT gc,GARE ga"
+               + " where gc.codimp = ga.ditta and ((gc.ngara=ga.ngara and gc.ncont=1) or (gc.ngara=ga.codgar1 and (gc.ngaral is null or gc.ngaral=ga.ngara)))"
+               + " and ga.ditta is not null and ga.ngara= ? and ga.ditta = ?", new Object[] { ngara, ditta });
+       
+       if(datiGarecont!=null && datiGarecont.size()>0){
+           String nprotcoorba = (String) SqlManager.getValueFromVectorParam(datiGarecont, 0).getValue();
+           nprotcoorba = UtilityStringhe.fillLeft(nprotcoorba, '0', 7);
+           datiGara.setNumeroProtocolloCcd(nprotcoorba);
+           Date dprotcoorba = (Date) SqlManager.getValueFromVectorParam(datiGarecont, 1).getValue();
+           if(dprotcoorba != null){
+             Calendar calDprotcoorba = Calendar.getInstance();
+             calDprotcoorba.setTime(dprotcoorba);
+             datiGara.setDataProtocolloCcd(calDprotcoorba);
+           }
+       }
+       
+       if(dataContratto != null){
+           Calendar calDataContratto = Calendar.getInstance();
+           calDataContratto.setTime(dataContratto);
+           datiGara.setDataContratto(calDataContratto);
+       }
+       numeroRepertorioContratto = UtilityStringhe.fillLeft(numeroRepertorioContratto, '0', 7);
+       datiGara.setNumeroRepertorioContratto(numeroRepertorioContratto);
+       
+       
        listaDitte = new String[1];
        listaDitte[0] = ditta;
        if(listaDitte != null){
@@ -283,6 +320,7 @@ public class CavWSERPManager {
              //CAV caso in cui si ha la lista delle lavorazioni
              List listaProdottiAggiudicataria = null;
              if(dittaRTI!=null && !"".equals(dittaRTI)){
+               datiGara.setRti(true);
                //nel caso in cui l'aggiudicataria sia una RTI ..devo mandare i dati della mandataria
                //ma poi devo recuperare la lista lavori e forniture dalla rti
                listaProdottiAggiudicataria = this.sqlManager.getListVector(
@@ -433,14 +471,26 @@ public class CavWSERPManager {
 
              }else{
                linkrda = "1";
+               List listaRdaGara = null;
+               Long genere = (Long) sqlManager.getObject("select genere from v_gare_genere where codgar = ? " +
+                       "and codice = ?  ", new Object[] { codgar,ngara });
 
                //Qui la selezione va fatta su GAREPOSRDA del primo contratto
-               List listaRdaGara  = this.sqlManager.getListVector(
-                   "select r.CODGAR,p.NUMRDA,p.POSRDA,r.DATACONS,r.LUOGOCONS," +
-                   "r.CODCARR,r.CODVOC,r.VOCE,r.UNIMIS,r.CODCAT,r.PERCIVA,r.ID,r.QUANTI,r.PREZUN," +
-                   "p.WBE,p.CDC,p.CONTOCOGE,p.DESCRIZIONE,p.CODARTICOLO,p.QUANTITA,p.PREZZO,p.UNIMIS " +
-                   " from GARERDA r,GAREPOSRDA p where r.ID=p.RDA_ID and r.CODGAR = ?" +
-                   " order by r.numrda,r.posrda", new Object[] { codgar });
+               if(Long.valueOf(300).equals(genere)) {
+                   listaRdaGara  = this.sqlManager.getListVector(
+                           "select r.CODGAR,p.NUMRDA,p.POSRDA,r.DATACONS,r.LUOGOCONS," +
+                           "r.CODCARR,r.CODVOC,r.VOCE,r.UNIMIS,r.CODCAT,r.PERCIVA,r.ID,r.QUANTI,r.PREZUN," +
+                           "p.WBE,p.CDC,p.CONTOCOGE,p.DESCRIZIONE,p.CODARTICOLO,p.QUANTITA,p.PREZZO,p.UNIMIS " +
+                           " from GARERDA r,GAREPOSRDA p where r.ID=p.RDA_ID and r.CODGAR = ? and r.NGARA = ?" +
+                           " order by r.numrda,r.posrda", new Object[] { codgar,ngara });
+               }else {
+                   listaRdaGara  = this.sqlManager.getListVector(
+                           "select r.CODGAR,p.NUMRDA,p.POSRDA,r.DATACONS,r.LUOGOCONS," +
+                           "r.CODCARR,r.CODVOC,r.VOCE,r.UNIMIS,r.CODCAT,r.PERCIVA,r.ID,r.QUANTI,r.PREZUN," +
+                           "p.WBE,p.CDC,p.CONTOCOGE,p.DESCRIZIONE,p.CODARTICOLO,p.QUANTITA,p.PREZZO,p.UNIMIS " +
+                           " from GARERDA r,GAREPOSRDA p where r.ID=p.RDA_ID and r.CODGAR = ?" +
+                           " order by r.numrda,r.posrda", new Object[] { codgar });
+               }
 
                if(listaRdaGara != null && listaRdaGara.size() > 0){
                  linkrda = "1";

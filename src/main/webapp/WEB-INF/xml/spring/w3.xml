@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN 2.0//EN" "http://www.springframework.org/dtd/spring-beans-2.0.dtd">
+
+<beans>
+	
+	
+	<!-- ========================= DAO DEFINITIONS: IBATIS IMPLEMENTATIONS ========================= -->
+
+	<bean id="attachmentDao"
+		class="it.eldasoft.sil.w3.db.dao.ibatis.SqlMapAttachmentDao">
+		<property name="dataSource" ref="dataSource" />
+		<property name="sqlMapClient" ref="sqlMapClient" />
+	</bean>
+		
+	<bean id="documentoAllegatoDao"
+		class="it.eldasoft.sil.w3.db.dao.ibatis.SqlMapDocumentoAllegatoDao">
+		<property name="dataSource" ref="dataSource" />
+		<property name="sqlMapClient" ref="sqlMapClient" />
+	</bean>
+
+	<!-- ========================= DAO DEFINITIONS: JDBC IMPLEMENTATIONS ========================= -->
+
+
+	<!-- ========================= BEAN DEFINITIONS (GENERALI) ========================= -->
+	
+	<bean id="w3ManagerTransactionProxy"
+		class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"
+		abstract="true">
+		<property name="transactionManager" ref="transactionManager" />
+		<property name="transactionAttributes">
+			<props>
+				<prop key="get*">PROPAGATION_NOT_SUPPORTED</prop>
+				<prop key="update*">PROPAGATION_REQUIRED</prop>
+			</props>
+		</property>
+	</bean>
+
+	<bean id="w3Manager" parent="w3ManagerTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.w3.bl.W3Manager" >
+				<property name="sqlManager" ref="sqlManager" />
+				<property name="genChiaviManager" ref="genChiaviManager" /> 
+				<property name="loginManager" ref="loginManager" />
+				<property name="ldapManager" ref="ldapManager" />
+			</bean>
+		</property>
+	</bean>
+
+	<!-- ========================= BEAN DEFINITIONS (SIMOG) ========================= -->
+
+	<bean id="eldasoftSIMOGWSTransactionProxy"
+		class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"
+		abstract="true">
+		<property name="transactionManager" ref="transactionManager" />
+		<property name="transactionAttributes">
+			<props>
+				<prop key="get*">PROPAGATION_NOT_SUPPORTED</prop>
+				<prop key="inserisci*">PROPAGATION_REQUIRED,-java.lang.Throwable</prop>
+			</props>
+		</property>
+	</bean>
+
+	<bean id="eldasoftSIMOGWSManager" parent="eldasoftSIMOGWSTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.w3.bl.EldasoftSIMOGWSManager" >
+				<property name="geneManager" ref="geneManager" />
+				<property name="sqlManager" ref="sqlManager" />
+				<property name="genChiaviManager" ref="genChiaviManager" /> 
+				<property name="w3Manager" ref="w3Manager" /> 
+			</bean>
+		</property>
+	</bean>
+
+	<bean id="validazioneIDGARACIGManagerTransactionProxy"
+		class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"
+		abstract="true">
+		<property name="transactionManager" ref="transactionManager" />
+		<property name="transactionAttributes">
+			<props>
+				<prop key="get*">PROPAGATION_NOT_SUPPORTED</prop>
+			</props>
+		</property>
+	</bean>
+
+	<bean id="validazioneIDGARACIGManager" parent="validazioneIDGARACIGManagerTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.w3.bl.ValidazioneIDGARACIGManager" >
+				<property name="sqlManager" ref="sqlManager" />
+			</bean>
+		</property>
+	</bean>
+	
+	<bean id="documentoAllegatoManager" class="it.eldasoft.sil.w3.bl.DocumentoAllegatoManager" >
+		<property name="documentoAllegatoDao" ref="documentoAllegatoDao" />
+	</bean>
+
+	<!--bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+  		<list>
+    		<ref local="xmlSftpManagerTrigger" />
+   		</list>
+ 		</property>
+	</bean-->
+	
+	<bean id="gestioneXMLIDGARACIGManagerTransactionProxy"
+		class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"
+		abstract="true">
+		<property name="transactionManager" ref="transactionManager" />
+		<property name="transactionAttributes">
+			<props>
+				<prop key="get*">PROPAGATION_SUPPORTS</prop>
+				<prop key="set*">PROPAGATION_REQUIRED</prop>
+				<prop key="inserisci*">PROPAGATION_REQUIRED</prop>
+				<prop key="riallinea*">PROPAGATION_REQUIRED,-it.eldasoft.gene.web.struts.tags.gestori.GestoreException</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<bean id="gestioneXMLIDGARACIGManager" parent="gestioneXMLIDGARACIGManagerTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.w3.bl.GestioneXMLIDGARACIGManager" >
+				<property name="sqlManager" ref="sqlManager" />
+				<property name="documentoAllegatoDao" ref="documentoAllegatoDao" />
+				<property name="w3Manager" ref="w3Manager" />
+			</bean>
+		</property>
+	</bean>
+	
+	<bean id="gestioneServiziIDGARACIGManagerTransactionProxy"
+		class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"
+		abstract="true">
+		<property name="transactionManager" ref="transactionManager" />
+		<property name="transactionAttributes">
+			<props>
+				<prop key="get*">PROPAGATION_NOT_SUPPORTED</prop>
+				<prop key="aggiorna*">PROPAGATION_REQUIRED</prop>
+				<prop key="cancella*">PROPAGATION_REQUIRED</prop>
+				<prop key="memorizza*">PROPAGATION_REQUIRED</prop>
+				<prop key="modifica*">PROPAGATION_REQUIRED</prop>
+				<prop key="richiesta*">PROPAGATION_REQUIRED</prop>
+				<prop key="pubblica*">PROPAGATION_REQUIRED</prop>
+				<prop key="check*">PROPAGATION_REQUIRED</prop>
+			</props>
+		</property>
+	</bean>
+
+	<bean id="gestioneServiziIDGARACIGManager" parent="gestioneServiziIDGARACIGManagerTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.w3.bl.GestioneServiziIDGARACIGManager" >
+				<property name="gestioneXMLIDGARACIGManager" ref="gestioneXMLIDGARACIGManager" />
+				<property name="sqlManager" ref="sqlManager" />
+				<property name="tabellatiManager" ref="tabellatiManager" />
+			</bean>
+		</property>
+	</bean>
+	
+	<!-- ========================= STRUTS ACTION DEFINITIONS (SIMOG) ========================= -->
+									 
+	<bean name="/w3/VisualizzaDocumentoAllegato"
+		class="it.eldasoft.sil.w3.web.struts.VisualizzaDocumentoAllegatoAction">
+		<property name="documentoAllegatoManager" ref="documentoAllegatoManager" />
+	</bean>
+	
+	<bean name="/w3/AvviaRichiestaIDGARACIG" class="it.eldasoft.sil.w3.web.struts.AvviaRichiestaIDGARACIGAction">
+		<property name="validazioneIDGARACIGManager" ref="validazioneIDGARACIGManager" />
+	</bean>
+	
+	<bean name="/w3/RichiestaIDGARACIG" class="it.eldasoft.sil.w3.web.struts.RichiestaIDGARACIGAction">
+		<property name="gestioneServiziIDGARACIGManager" ref="gestioneServiziIDGARACIGManager" />
+		<property name="anagraficaSimogManager" ref="anagraficaSimogManager" />
+	</bean>
+
+	<bean name="/w3/RichiestaIDGARACIGMassivo" class="it.eldasoft.sil.w3.web.struts.RichiestaIDGARACIGMassivoAction">
+		<property name="gestioneServiziIDGARACIGManager" ref="gestioneServiziIDGARACIGManager" />
+	</bean>
+	
+	<bean name="/w3/AvviaRichiestaRequisiti" class="it.eldasoft.sil.w3.web.struts.AvviaRichiestaRequisitiAction">
+		<property name="validazioneIDGARACIGManager" ref="validazioneIDGARACIGManager" />
+	</bean>
+	
+	<bean name="/w3/RichiestaRequisiti" class="it.eldasoft.sil.w3.web.struts.RichiestaRequisitiAction">
+		<property name="gestioneServiziIDGARACIGManager" ref="gestioneServiziIDGARACIGManager" />
+	</bean>
+
+	<bean name="/w3/AvviaModificaIDGARACIG" class="it.eldasoft.sil.w3.web.struts.AvviaModificaIDGARACIGAction">
+		<property name="validazioneIDGARACIGManager" ref="validazioneIDGARACIGManager" />
+	</bean>
+	
+	<bean name="/w3/ModificaIDGARACIG" class="it.eldasoft.sil.w3.web.struts.ModificaIDGARACIGAction">
+		<property name="gestioneServiziIDGARACIGManager" ref="gestioneServiziIDGARACIGManager" />
+	</bean>	
+	
+	<bean name="/w3/CancellaIDGARACIG" class="it.eldasoft.sil.w3.web.struts.CancellaIDGARACIGAction">
+		<property name="gestioneServiziIDGARACIGManager" ref="gestioneServiziIDGARACIGManager" />
+	</bean>	
+
+	<bean name="/w3/ConsultaGaraLotto" class="it.eldasoft.sil.w3.web.struts.ConsultaGaraLottoAction">
+		<property name="gestioneServiziIDGARACIGManager" ref="gestioneServiziIDGARACIGManager" />
+	</bean>	
+
+	<bean name="/w3/AvviaPubblicaGaraLotto" class="it.eldasoft.sil.w3.web.struts.AvviaPubblicaGaraLottoAction">
+		<property name="validazioneIDGARACIGManager" ref="validazioneIDGARACIGManager" />
+	</bean>
+
+	<bean name="/w3/PubblicaGaraLotto" class="it.eldasoft.sil.w3.web.struts.PubblicaGaraLottoAction">
+		<property name="gestioneServiziIDGARACIGManager" ref="gestioneServiziIDGARACIGManager" />
+	</bean>	
+
+	<bean name="/w3/ElaboraRichiesteLotti" class="it.eldasoft.sil.w3.web.struts.ElaboraRichiesteLottiAction">
+		<property name="validazioneIDGARACIGManager" ref="validazioneIDGARACIGManager" />
+		<property name="gestioneServiziIDGARACIGManager" ref="gestioneServiziIDGARACIGManager" />
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="anagraficaSimogManager" ref="anagraficaSimogManager" />
+	</bean>
+
+	<bean name="/w3/ConfrontaCIG" class="it.eldasoft.sil.w3.web.struts.ConfrontaCIGAction">
+		<property name="gestioneServiziIDGARACIGManager" ref="gestioneServiziIDGARACIGManager" />
+		<property name="gestioneXMLIDGARACIGManager"     ref="gestioneXMLIDGARACIGManager" />
+		<property name="validazioneIDGARACIGManager"     ref="validazioneIDGARACIGManager" />
+	</bean>	
+	
+	<bean name="/w3/LoginSimog" class="it.eldasoft.sil.w3.web.struts.CheckCollaborazioniAction">
+		<property name="gestioneServiziIDGARACIGManager" ref="gestioneServiziIDGARACIGManager" />
+		<property name="geneManager" ref="geneManager" />
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>	
+	
+	<bean name="/w3/LoginRupSimog" class="it.eldasoft.sil.w3.web.struts.CheckCollaborazioniAction">
+		<property name="gestioneServiziIDGARACIGManager" ref="gestioneServiziIDGARACIGManager" />
+		<property name="geneManager" ref="geneManager" />
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>	
+	
+	<bean name="/w3/CancellaCredenzialiSimog" class="it.eldasoft.sil.w3.web.struts.CancellaCredenzialiSimogAction">
+		<property name="gestioneServiziIDGARACIGManager" ref="gestioneServiziIDGARACIGManager" />
+	</bean>	
+	
+	<bean name="/w3/ValorizzaCentroCosto" class="it.eldasoft.sil.w3.web.struts.CheckCollaborazioniAction">
+		<property name="gestioneServiziIDGARACIGManager" ref="gestioneServiziIDGARACIGManager" />
+		<property name="geneManager" ref="geneManager" />
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>	
+
+</beans>
+

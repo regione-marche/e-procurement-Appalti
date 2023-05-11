@@ -122,9 +122,16 @@
 				<gene:campoScheda campo="IDALBO" value="${idalbo}" visibile="false"/>
 				<gene:campoScheda campo="NUMORD" visibile="false"/>
 				<gene:campoScheda campo="ID" visibile="false"/>
-				<gene:archivio titolo="Tecnici"	lista="gene/tecni/tecni-lista-popup.jsp" scheda="gene/tecni/tecni-scheda.jsp" 
-				schedaPopUp="gene/tecni/tecni-scheda-popup.jsp" campi="TECNI.CODTEC;TECNI.NOMTEC" chiave="COMMNOMIN_CODTEC" 
-				inseribile="true" where="NOT EXISTS (SELECT * FROM COMMNOMIN WHERE COMMNOMIN.CODTEC = TECNI.CODTEC AND IDALBO = '${idalbo}')">
+				<gene:archivio 
+					titolo="Tecnici"
+					lista="gene/tecni/tecni-lista-popup.jsp" 
+					scheda="gene/tecni/tecni-scheda.jsp" 
+					schedaPopUp="gene/tecni/tecni-scheda-popup.jsp" 
+					campi="TECNI.CODTEC;TECNI.NOMTEC" 
+					functionId="commnomin"
+					parametriWhere="N:${idalbo}"
+					chiave="COMMNOMIN_CODTEC" 
+					inseribile="true" >
 					<gene:campoScheda campo="CODTEC" title="Codice tecnico" obbligatorio="true" />
 					<gene:campoScheda campo="NOMTEC" campoFittizio="true" definizione="T161;;;;NOMTEC1" title="Nome" value="${requestScope.nomeTecnico}" />
 				</gene:archivio>
@@ -134,6 +141,7 @@
 					scheda="gene/uffint/uffint-scheda.jsp"
 					schedaPopUp="gene/uffint/uffint-scheda-popup.jsp"
 					campi="UFFINT.CODEIN;UFFINT.NOMEIN" chiave="COMMNOMIN_CODEIN"
+					functionId="skip|abilitazione:1"
 					inseribile="true">
 					<gene:campoScheda campo="CODEIN" obbligatorio="true"/>
 					<gene:campoScheda campo="NOMEIN" entita="UFFINT" where="UFFINT.CODEIN = COMMNOMIN.CODEIN"  value="${nomeStruttura}" />

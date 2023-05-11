@@ -56,9 +56,28 @@ si passa a un'altra pagina, si utilizza il parametro keyParent perchè il paramet
 
 <c:set var="keyParentComunicazioni" value="${chiave}" scope="session"/>
 <c:if test='${not empty chiave}'>
+	<c:if test='${fn:contains(chiave,"G1STIPULA")}'>
+		<%--
+		Nel caso delle stipule originariamente veniva passato come chiave CODSTIPULA, che però non è la chiave di G1STIPULA.
+		Con l'introduzione della validazione automatica delle chiavi per risolvere i problemi di sql injection, la validazione delle chiavi su G1STIPULA non veniva superata
+		poichè la chiave dell'entità è ID. Quindi si è dovuto passare in chiave G1STIPULA.ID, però poi in COMKEY1 si deve continuare a memorizzare CODSTIPULA, per mantenere
+		la compatibilità con i dati pregressi e col Portale
+		 --%>
+		<c:set var="whereStipula" value='ID=${gene:getValCampo(chiave,"ID")}' />
+		<c:set var="codstipula" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "CODSTIPULA","G1STIPULA",whereStipula)}' />
+	</c:if>
+
 	<c:set var="campiKey" value='${fn:split(chiave,";")}' />
 	<c:set var="addKeyRiga" value="" />
 	<c:set var="whereKey" value="W_INVCOM.IDPRG='PA' AND W_INVCOM.COMENT IS NULL AND W_INVCOM.COMTIPO='FS12' AND W_INVCOM.COMSTATO='3' AND " />
+	<c:choose>
+		<c:when test='${not empty codstipula}'>
+			<c:set var="whereKey" value="W_INVCOM.IDPRG='PA' AND W_INVCOM.COMENT='G1STIPULA' AND W_INVCOM.COMTIPO='FS12' AND W_INVCOM.COMSTATO='3' AND " />
+		</c:when>
+		<c:otherwise>
+			<c:set var="whereKey" value="W_INVCOM.IDPRG='PA' AND W_INVCOM.COMENT IS NULL AND W_INVCOM.COMTIPO='FS12' AND W_INVCOM.COMSTATO='3' AND " />
+		</c:otherwise>
+	</c:choose>
 	
 	
 	<%-- 
@@ -68,19 +87,29 @@ si passa a un'altra pagina, si utilizza il parametro keyParent perchè il paramet
 
 	<c:forEach begin="1" end="${fn:length(campiKey)}" step="1" varStatus="indicekey">
 	 --%>
-	<c:forEach begin="1" end="1" step="1" varStatus="indicekey">
-		<c:set var="strTmp" value='${fn:substringAfter(campiKey[indicekey.index-1], ":")}' />
-		<c:choose>
-			<c:when test="${indicekey.last}">
-				<c:set var="addKeyRiga" value='${addKeyRiga}W_INVCOM.COMKEY${indicekey.index}=T:${strTmp}' />
-				<c:set var="whereKey" value='${whereKey} W_INVCOM.COMKEY${indicekey.index+1}=${gene:concat(gene:concat("\'", strTmp), "\'")}' />
-			</c:when>
-			<c:otherwise>
-				<c:set var="addKeyRiga" value='${addKeyRiga}W_INVCOM.COMKEY${indicekey.index}=T:${strTmp};' />
-				<c:set var="whereKey" value='${whereKey} W_INVCOM.COMKEY${indicekey.index+1}=${gene:concat(gene:concat("\'", strTmp), "\'")} AND ' />
-			</c:otherwise>
-		</c:choose>
-	</c:forEach>
+	<c:choose>
+		<c:when test='${fn:contains(chiave,"G1STIPULA")}'>
+			
+			<c:set var="addKeyRiga" value='W_INVCOM.COMKEY1=T:${codstipula}' />
+			<c:set var="whereKey" value='${whereKey} W_INVCOM.COMKEY2=${gene:concat(gene:concat("\'", codstipula), "\'")}' />
+		</c:when>
+		<c:otherwise>
+			<c:forEach begin="1" end="1" step="1" varStatus="indicekey">
+				<c:set var="strTmp" value='${fn:substringAfter(campiKey[indicekey.index-1], ":")}' />
+				<c:choose>
+					<c:when test="${indicekey.last}">
+						<c:set var="addKeyRiga" value='${addKeyRiga}W_INVCOM.COMKEY${indicekey.index}=T:${strTmp}' />
+						<c:set var="whereKey" value='${whereKey} W_INVCOM.COMKEY${indicekey.index+1}=${gene:concat(gene:concat("\'", strTmp), "\'")}' />
+					</c:when>
+					<c:otherwise>
+						<c:set var="addKeyRiga" value='${addKeyRiga}W_INVCOM.COMKEY${indicekey.index}=T:${strTmp};' />
+						<c:set var="whereKey" value='${whereKey} W_INVCOM.COMKEY${indicekey.index+1}=${gene:concat(gene:concat("\'", strTmp), "\'")} AND ' />
+					</c:otherwise>
+				</c:choose>
+			</c:forEach>
+		</c:otherwise>
+	</c:choose>
+	
 	<%-- Nel caso di ODA si deve inserire in addKeyRiga il valore COMKEY2=1 --%>
 	<c:if test="${fn:contains(chiave,'GARECONT') }">
 		<c:set var="addKeyRiga" value='${addKeyRiga};W_INVCOM.COMKEY2=T:1' />

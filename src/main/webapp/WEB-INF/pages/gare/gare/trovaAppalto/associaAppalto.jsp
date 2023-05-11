@@ -84,8 +84,9 @@
 				scheda=""
 				schedaPopUp=""
 				campi="APPA.CODLAV;APPA.NAPPAL;APPA.CODCUA;APPA.NOTAPP;APPA.CODCIG;PERI.CUPPRG"
+                functionId="associaAppalto_${!empty datRiga.PERI_CUPPRG}"
+				parametriWhere="T:${param.tipoAppalto}"
 				chiave=""
-				where=" (APPA.DAGG is null and APPA.DVOAGG is null) and (APPA.TIPLAVG = ${param.tipoAppalto}) and not exists (select NGARA from GARE where APPA.CODLAV = GARE.CLAVOR and APPA.NAPPAL = GARE.NUMERA and GARE.ESINEG is null) ${filtroLivelloUtente} ${filtroUffint }"
 				inseribile="false"
 				formName="formArchivioAppalti" >
 				<gene:campoScheda campo="CODLAV" />
@@ -93,7 +94,7 @@
 				<gene:campoScheda campo="CODCUA" />
 				<gene:campoScheda campo="NOTAPP" gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote" />
 				<gene:campoScheda campo="CODCIG" />
-				<gene:campoScheda campo="CUPPRG" entita="PERI" where="APPA.CODLAV = PERI.CODLAV" visibile="false" />
+				<gene:campoScheda campo="CUPPRG" entita="PERI" where="APPA.CODLAV = PERI.CODLAV" visibile="false"  />
 			</gene:archivio>
 			<c:if test='${gene:checkProt(pageContext, "COLS.VIS.LAVO.PERI.CUPPRG")}'>
 				<gene:campoScheda campo="CUPPRG" campoFittizio="true" definizione="T15;0;;G2CUPPRG" title="Codice CUP di progetto" />
@@ -124,19 +125,12 @@
 <gene:javaScript>
 
 	var livelloProgettazioneSettato = false;
-	var whereArchivioAppalti = document.formArchivioAppalti.archWhereLista.value;
+	var functionId = document.formArchivioAppalti.archFunctionId.value;
+	var parametriWhere = document.formArchivioAppalti.archWhereParametriLista.value;
 
 	function setCodiceCUP(){
 		var cup = "" + getValue("CUPPRG");
-		if(cup != ""){
-			document.formArchivioAppalti.archWhereLista.value = whereArchivioAppalti + " and APPA.CODLAV in (select CODLAV from PERI where PERI.CUPPRG like '%" + cup + "%') ";
-			livelloProgettazioneSettato = true;
-		} else {
-			if(livelloProgettazioneSettato){
-				document.formArchivioAppalti.archWhereLista.value = whereArchivioAppalti;
-				livelloProgettazioneSettato = false;
-			}
-		}
+		
 		setValue("PERI_CUPPRG", cup);
 		setValue("APPA_CODLAV", "");
 		setValue("APPA_NAPPAL", "");

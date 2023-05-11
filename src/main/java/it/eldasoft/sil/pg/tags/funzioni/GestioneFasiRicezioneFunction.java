@@ -10,18 +10,6 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import it.eldasoft.gene.bl.GeneManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.gene.tags.utils.UtilityTags;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.PgManager;
-import it.eldasoft.sil.pg.tags.gestori.plugin.GestorePopupFasiGara;
-import it.eldasoft.utils.spring.UtilitySpring;
-import it.eldasoft.utils.utility.UtilityDate;
-import it.eldasoft.utils.utility.UtilityNumeri;
-
 import java.sql.Date;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -32,6 +20,20 @@ import java.util.Vector;
 import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import it.eldasoft.gene.bl.GeneManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.gene.tags.utils.UtilityTags;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.PgManager;
+import it.eldasoft.sil.pg.tags.gestori.plugin.GestorePopupFasiGara;
+import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityDate;
+import it.eldasoft.utils.utility.UtilityNumeri;
 
 /**
  * Funzione per l'inizializzazione della pagina 'Ricezione domande offerte di gara'
@@ -100,8 +102,6 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
   public String function(PageContext pageContext, Object[] params)
       throws JspException {
 
-    GestioneFasiGaraFunction.setPaginazione(pageContext);
-
     GeneManager geneManager = (GeneManager) UtilitySpring.getBean("geneManager",
         pageContext, GeneManager.class);
 
@@ -130,10 +130,11 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
 
     //isProceduraAggiudicazioneAperta è true quando iterga=1
     boolean isProceduraAggiudicazioneAperta = false;
-    //isProceduraNegoziata è true quando iterga=3,5,6
+    //isProceduraNegoziata è true quando iterga=3,5,6,8
     boolean isProceduraNegoziata = false;
     //isProceduraRistretta è true quando iterga =2,4
     boolean isProceduraRistretta = false;
+    boolean isIndagineMercato = false;
 
     boolean isGaraUsoAlbo = false;
     boolean isGareElenco = false;
@@ -177,7 +178,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
     try {
       Vector<?> obj = sqlManager.getVector(
           "select TORN.TIPTOR, TORN.TIPGEN, GARE.TIPGARG, GARE.GENERE, GARE.ELENCOE, GARE.IMPAPP, TORN.IMPTOR, GARE.CARRELLO, " +
-           "TORN.DTEPAR, TORN.OTEPAR, TORN.ITERGA, GARE.BUSTALOTTI, GARE.PRECED from TORN, GARE " +
+           "TORN.DTEPAR, TORN.OTEPAR, TORN.ITERGA, GARE.BUSTALOTTI, GARE.PRECED, TORN.CALCSOME from TORN, GARE " +
            "where TORN.CODGAR = GARE.CODGAR1 " +
              "and GARE.NGARA = ?", new Object[]{codiceGara});
       if(obj.get(0) != null){
@@ -222,8 +223,12 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
           case 3:
           case 5:
           case 6:
+          case 8:
               isProceduraNegoziata = true;
               break;
+          case 7:
+            isIndagineMercato=true;
+            break;
           default:
             isProceduraRistretta = true;
             break;
@@ -240,6 +245,9 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
               new Boolean(isProceduraRistretta),
               PageContext.REQUEST_SCOPE);
 
+          pageContext.setAttribute("isIndagineMercato",
+              new Boolean(isIndagineMercato),
+              PageContext.REQUEST_SCOPE);
           pageContext.setAttribute("iterga",tmp10,PageContext.REQUEST_SCOPE);
 
         }
@@ -360,11 +368,21 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
 
       }
 
+      if(obj.get(13) != null){
+          String calcsome = (String) ((JdbcParametro) obj.get(13)).getValue();
+
+          if(calcsome!=null && !"".equals(calcsome))
+            pageContext.setAttribute("calcoloSogliaAnomaliaExDLgs2017",calcsome);
+
+        }
+
     } catch(SQLException s){
       throw new JspException("Errore durante la lettura del tipo di tornata della gara ", s);
     } catch (GestoreException e) {
       throw new JspException("Errore durante la lettura del numero di classifica della categoria prevalente ", e);
     }
+
+    GestioneFasiGaraFunction.setPaginazione(pageContext,isGareElenco || isCatalogoEle);
 
     // Determino se la gara e' a lotto unico, la fase di gara e modalita' aggiudicazione
     // della gara e Aggiud.con esclus.autom.(1) o manuale(2) delle offerte
@@ -507,7 +525,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
     // Gestione dell'avanzamento del wizard
     this.gestioneAvanzamentoWizard(wizardPaginaAttiva,
         isProceduraAggiudicazioneAperta, isProceduraNegoziata,
-        pageContext,isGareElenco,isCatalogoEle);
+        pageContext,isGareElenco,isCatalogoEle,isIndagineMercato );
 
     // Gestione del filtro sulle ditte in base all'avanzamento del wizard
     if (isGareElenco || isCatalogoEle) {
@@ -570,7 +588,9 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
             "degli operatori da selezionare", e);
       }
 
-      String modalitaSelezione = pgManager.getModalitaSelezioneDitteElenco();
+      ProfiloUtente profiloUtente = (ProfiloUtente) this.getRequest().getSession().getAttribute(
+          CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+      String modalitaSelezione = pgManager.getModalitaSelezioneDitteElenco(profiloUtente);
       pageContext.setAttribute("modalitaSelezioneDitteElenco", modalitaSelezione, PageContext.REQUEST_SCOPE);
     }
 
@@ -843,6 +863,8 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
     sessione.setAttribute("filtroSpecifico", null);
     sessione.setAttribute("filtroZoneAtt", null);
     sessione.setAttribute("filtroAffidatariEsclusi", null);
+    sessione.setAttribute("modalitaFiltroCategorie", null);
+    sessione.setAttribute("applicatoFiltroInOr", null);
     sessione.setAttribute("elencoUlterioriCategorie", null);
     sessione.setAttribute("elencoNumcla", null);
     sessione.setAttribute("elencoTiplavgUltCategorie", null);
@@ -864,7 +886,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
    */
   private void gestioneAvanzamentoWizard(int paginaAttivaWizard,
       boolean isProceduraAggiudicazioneAperta, boolean isProceduraNegoziata,
-      PageContext pageContext, boolean isGaraElenco, boolean isCatalogoEle){
+      PageContext pageContext, boolean isGaraElenco, boolean isCatalogoEle, boolean isIndagineMercato){
     List<String> listaPagineVisitate = new ArrayList<String>();
     List<String> listaPagineDaVisitare = new ArrayList<String>();
     int indicePartenza = 0;
@@ -898,6 +920,8 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
       else if(isProceduraNegoziata)
           indicePartenza = 2;
       int indiceFine = TITOLO_FASI_RICEZIONE.length;
+      if(isIndagineMercato)
+        indiceFine = 2; //Si visualizzano solo le pagine ricezione domande e apertura domande di partecipazione
 
       for(int i = indicePartenza; i < indiceLimite; i++)
         listaPagineVisitate.add(TITOLO_FASI_RICEZIONE[i]);
@@ -935,13 +959,13 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
 
     switch (faseGaraAttiva){
     case GestioneFasiRicezioneFunction.FASE_RICEZIONE_DOMANDE_DI_PARTECIPAZIONE:
-      result.append("and (DITG.ACQUISIZIONE is null or (DITG.ACQUISIZIONE <> 5  and DITG.ACQUISIZIONE <> 8))");
+      result.append("and (DITG.ACQUISIZIONE is null or (DITG.ACQUISIZIONE <> 5  and DITG.ACQUISIZIONE <> 8 and DITG.ACQUISIZIONE <> 9))");
       break;
     case GestioneFasiRicezioneFunction.FASE_CHIUSURA_RICEZIONE_OFFERTE:
       result.append("and (DITG.ACQUISIZIONE is null or DITG.ACQUISIZIONE <> 5)");
       break;
     case GestioneFasiRicezioneFunction.FASE_APERTURA_DOMANDE_DI_PARTECIPAZIONE:
-      result.append("and (DITG.FASGAR > -5 or DITG.FASGAR = 0 or DITG.FASGAR is null) and (DITG.ACQUISIZIONE is null or (DITG.ACQUISIZIONE <> 5  and DITG.ACQUISIZIONE <> 8))");
+      result.append("and (DITG.FASGAR > -5 or DITG.FASGAR = 0 or DITG.FASGAR is null) and (DITG.ACQUISIZIONE is null or (DITG.ACQUISIZIONE <> 5  and DITG.ACQUISIZIONE <> 8 and DITG.ACQUISIZIONE <> 9))");
       break;
     case GestioneFasiRicezioneFunction.FASE_ELENCO_DITTE_INVITATE:
       result.append("and (DITG.FASGAR > -4 or DITG.FASGAR = 0 or DITG.FASGAR is null) and (DITG.ACQUISIZIONE is null or DITG.ACQUISIZIONE <> 5 )");
@@ -960,7 +984,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
       Long numeroDittePartecipanti = (Long) sqlManager.getObject(
           "select count(*) from DITG " +
            "where NGARA5 = ? " +
-           "and (ACQUISIZIONE IS NULL OR ACQUISIZIONE <> 5)", new Object[]{codiceGara});
+           "and (ACQUISIZIONE IS NULL OR (ACQUISIZIONE <> 5 AND ACQUISIZIONE <> 8 AND ACQUISIZIONE <> 9))", new Object[]{codiceGara});
 
       Long numeroDitteInvitate = (Long) sqlManager.getObject(
           "select count(*) from DITG " +
@@ -1027,7 +1051,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
     try {
     	// Numero ditte che hanno presentato domanda di partecipazione
       Long numeroDittePartecipanti = (Long) sqlManager.getObject(
-      		"select count(*) from DITG where NGARA5 = ? and (acquisizione is null or (acquisizione <>5 and acquisizione<>8))", new Object[]{codiceGara});
+      		"select count(*) from DITG where NGARA5 = ? and (acquisizione is null or (acquisizione <>5 and acquisizione<>8 and acquisizione<>9))", new Object[]{codiceGara});
 
       // Numero ditte escluse
       Long numeroDitteEscluse = (Long) sqlManager.getObject(
@@ -1058,9 +1082,10 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
       Long numeroDitteInvito = null;
       if("true".equals(isProceduraTelematica) && isProceduraRistretta){
         numeroDitteInvito = (Long) sqlManager.getObject(
-            "select count(*) from DITG where NGARA5 = ? and acquisizione = ? ",
-              new Object[]{codiceGara, new Long(8)});
+            "select count(*) from DITG where NGARA5 = ? and (acquisizione = ? or acquisizione = ?)",
+              new Object[]{codiceGara, new Long(8), new Long(9)});
       }
+
       pageContext.setAttribute("numeroDittePartecipanti", numeroDittePartecipanti,
       		PageContext.REQUEST_SCOPE);
       pageContext.setAttribute("numeroDitteEscluse", numeroDitteEscluse,

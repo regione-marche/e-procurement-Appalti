@@ -74,7 +74,7 @@
 		setta il valore anche via js nel trovaAddWhere in quanto le successive iterazioni cambia l'entita,non piu'
 		l'entita' di partenza ma W_INVCOM(l'entità di partenza viene ricavata dall'entita presente nella chiave).
 		 --%>
-		<c:if test='${not empty chiave}'>
+		<c:if test='${not empty chiave && !fn:contains(chiave,"G1STIPULA")}'>
 			<c:set var="campiKey" value='${fn:split(chiave,";")}' />
 			<c:set var="addKeyRiga" value="" />
 			<c:forEach begin="1" end="${fn:length(campiKey)}" step="1" varStatus="indicekey">
@@ -105,6 +105,9 @@
 						<c:when test="${fn:contains(chiave,'NSO_ORDINI')}">
 							<c:set var="whereKey" value="${whereKey} AND W_INVCOM.COMENT='NSO_ORDINI' " />
 						</c:when>
+						<c:when test="${fn:contains(chiave,'G1STIPULA')}">
+							<c:set var="whereKey" value="${whereKey} AND W_INVCOM.COMENT='G1STIPULA' " />
+						</c:when>
 						<c:otherwise>
 							<c:set var="whereKey" value="${whereKey} AND W_INVCOM.COMENT='GARE' " />
 						</c:otherwise>
@@ -112,7 +115,26 @@
 				</c:otherwise>
 			</c:choose>
 		</c:if>
-		
+		<c:if test='${not empty chiave && fn:contains(chiave,"G1STIPULA")}'>
+		<%--
+		Nel caso delle stipule originariamente veniva passato come chiave CODSTIPULA, che però non è la chiave di G1STIPULA.
+		Con l'introduzione della validazione automatica delle chiavi per risolvere i problemi di sql injection, la validazione delle chiavi su G1STIPULA non veniva superata
+		poichè la chiave dell'entità è ID. Quindi si è dovuto passare in chiave G1STIPULA.ID, però poi in COMKEY1 si deve continuare a memorizzare CODSTIPULA, per mantenere
+		la compatibilità con i dati pregressi e col Portale
+		 --%>
+			<c:set var="whereStipula" value='ID=${gene:getValCampo(chiave,"ID")}' />
+			<c:set var="codstipula" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "CODSTIPULA","G1STIPULA",whereStipula)}' />
+			<c:set var="addKeyRiga" value='W_INVCOM.COMKEY1=T:${codstipula}' />
+			<c:set var="whereKey" value='${whereKey} W_INVCOM.COMKEY1=${gene:concat(gene:concat("\'", codstipula), "\'")}' />
+			<c:choose>
+				<c:when test='${not empty param.chiave}'>
+					<c:set var="whereKey" value="${whereKey} AND W_INVCOM.COMENT='${param.entita}' " />
+				</c:when>
+				<c:otherwise>
+					<c:set var="whereKey" value="${whereKey} AND W_INVCOM.COMENT='G1STIPULA' " />
+				</c:otherwise>
+			</c:choose>
+		</c:if>
 		
 		<c:if test="${! empty sessionScope.filtroComunicazioniOut}">
 			<c:set var="filtroComunicazioniOut" value=" and ${sessionScope.filtroComunicazioniOut}" scope="page" />
@@ -131,6 +153,9 @@
 		
 		<c:if test="${coment eq 'GARECONT' }">
 			<c:set var="chiaveControlloAutorizzazioni" value='${idMeric}' />
+		</c:if>
+		<c:if test="${coment eq 'G1STIPULA' }">
+			<c:set var="chiaveControlloAutorizzazioni" value='${codstipula}' />
 		</c:if>
 		<c:set var="autorizzatoGestioneComunicazioneGaraLotto" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.AutorizzatoGestioneComunicazioneGaraLottoFunction",pageContext,coment,chiaveControlloAutorizzazioni)}' />
 
@@ -156,12 +181,21 @@
 				<c:set var="titoloMaschera" value="Comunicazioni inviate o da inviare per l'ordine ${param.COD_ORD}" />
 			</c:when>
 			<c:otherwise>
-				<c:set var="titoloMaschera" value="Comunicazioni inviate o da inviare per la gara ${comkey1}" />
+				<c:choose>
+					<c:when test="${coment eq 'G1STIPULA' }">
+						<c:set var="titoloMaschera" value="Comunicazioni inviate o da inviare per la stipula ${comkey1}" />
+					</c:when>
+					<c:otherwise>
+						<c:set var="titoloMaschera" value="Comunicazioni inviate o da inviare per la gara ${comkey1}" />
+					</c:otherwise>
+				</c:choose>
 			</c:otherwise>
 		</c:choose>
 
 <c:set var="codgar" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetCodgar1Function", pageContext, comkey1)}'/>
 <c:set var="integrazioneWSDM" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNFunction", pageContext, codgar, idconfi)}'/>
+<c:set var="abilitatoInvioMailDocumentale" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.AbilitatoInvioMailDocumentaleFunction", pageContext, idconfi)}'/>
+<c:set var="copiaDesCC" value='${!(abilitatoInvioMailDocumentale && integrazioneWSDM eq "1")}'/>
 
 <gene:template file="lista-template.jsp" gestisciProtezioni="true" idMaschera="W_INVCOM-lista" schema="GENEWEB">
 	<gene:setString name="titoloMaschera" value="${titoloMaschera}" />
@@ -244,6 +278,9 @@
 								<c:if test='${datiRiga.W_INVCOM_COMSTATO eq "4" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GENEWEB.W_INVCOM-lista.copiaComunicazioneReinvio") && autorizzatoGestioneComunicazioneGaraLotto eq "true"}' >
 									<gene:PopUpItem title="Copia per reinvio a destinatari con errore" href="copiaComunicazione('${chiaveRigaJava}','${datiRiga.W_INVCOM_COMDATINS }','${datiRiga.W_INVCOM_COMPUB }','1','${datiRiga.W_INVCOM_COMMODELLO }')" />
 								</c:if>
+								<c:if test='${(datiRiga.W_INVCOM_COMSTATO eq "3" || datiRiga.W_INVCOM_COMSTATO eq "4" || datiRiga.W_INVCOM_COMSTATO eq "10"  || datiRiga.W_INVCOM_COMSTATO eq "11"  ) && datiRiga.W_INVCOM_COMPUB eq 2 && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GENEWEB.W_INVCOM-lista.riepilogoComunicazione") && autorizzatoGestioneComunicazioneGaraLotto eq "true"}' >
+									<gene:PopUpItem title="Genera report comunicazione" href="riepilogaComunicazione('${chiaveRigaJava}','${datiRiga.W_INVCOM_COMDATINS }')" />
+								</c:if>
 								<c:if test='${datiRiga.W_INVCOM_COMSTATO eq "3" && datiRiga.W_INVCOM_COMPUB eq 1 && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GENEWEB.W_INVCOM-lista.archiviaComunicazione") && autorizzatoGestioneComunicazioneGaraLotto eq "true"}' >
 									<gene:PopUpItem title="Archivia comunicazione" href="archiviaComunicazione('${chiaveRigaJava}','${datiRiga.W_INVCOM_COMDATINS }')" />
 								</c:if>
@@ -274,6 +311,7 @@
 					<gene:campoLista campo="COMPUB" width="100" visibile='${fn:contains(listaOpzioniDisponibili, "OP114#")}' gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoCOMPUB"/>
 					<gene:campoLista campo="COMDATINS" width="150" definizione="D;0;;TIMESTAMP;COMDATINS" />
 					<gene:campoLista campo="COMSTATO" width="80" />
+					<gene:campoLista campo="DESMAIL" width="80" entita="V_W_INVCOM_DEST" where="V_W_INVCOM_DEST.IDPRG=W_INVCOM.IDPRG and V_W_INVCOM_DEST.IDCOM=W_INVCOM.IDCOM" ordinabile="false" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoDesmailListaComunicazioni"/>
 					<gene:campoLista campo="COMNUMPROT" width="80" visibile="${integrazioneWSDM =='1'}" title="Num.prot."/>
 					<gene:campoLista campo="COMMODELLO" visibile="false" />
 				</gene:formLista></td>
@@ -319,7 +357,6 @@
 	<gene:javaScript>
 		<c:if test='${not empty param.chiave}'>
 			document.forms[0].keyParent.value="${param.chiave}";
-			document.forms[0].trovaAddWhere.value="${whereKey}";
 		</c:if>
 		
 		/*
@@ -338,6 +375,7 @@
 			href += "&compub=" + compub;
 			href += "&tipo=" + tipo;
 			href += "&commodello=" + commodello;
+			href += "&descc=" +${copiaDesCC};
 			openPopUpCustom(href, "copiaComunicazione", 600, 300, "yes", "yes");
 		}
 		
@@ -386,6 +424,28 @@
 			href += "&comdatins=" + comdatins;
 			openPopUpCustom(href, "archiviaComunicazione", 600, 300, "yes", "yes");
 		}
+		
+		function riepilogaComunicazione(key,dataIns){
+		
+			var chiave=key.split(";");
+			var idprg = chiave[0].substr(chiave[0].lastIndexOf(":") + 1);
+			var idcom = chiave[1].substr(chiave[1].lastIndexOf(":") + 1);
+			href = "href=geneweb/w_invcom/w_invcom-popup-reportComunicazione.jsp";
+			href += "&idprg=" + idprg;
+			href += "&idcom=" + idcom;
+			openPopUpCustom(href, "reportComunicazione", 600, 300, "yes", "yes");
+		}
+
+		//Abilitazione alla gestione del codice html nei tooltip solo per il campo desmail e solo quando vi è
+		//un elenco di destinatari comunicazione
+		$(function() {
+		$('.tooltipDesmail').tooltip({
+			content: function(){
+			var element = $( this );
+			return element.attr('title')
+			}
+		});
+		});
 
 	</gene:javaScript>
 	

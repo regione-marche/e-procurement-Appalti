@@ -20,7 +20,8 @@
 <c:set var="codiceGara" value='${fn:substringBefore(param.chiave, ";")}' />
 <c:set var="tipologia" value='${param.tipologia}' />
 
-<c:set var="whereArchivio" value="DITG.NGARA5='${codiceGara}' AND DITG.CODGAR5='${codiceGara}' and DITG.DITTAO in (select distinct(ditta) from gare where codgar1 = '${codiceGara}' and ditta is not null)"/>
+<c:set var="parametriWhere" value="T:${codiceGara};T:${codiceGara};T:${codiceGara}" />
+<c:set var="functionId" value="documentiTrasparenza" />
 
 <c:choose>
 	<c:when test='${item[7] eq "5" and param.tipoDettaglio eq 1}'>
@@ -54,12 +55,17 @@
 				<gene:campoScheda campo="DESCRIZIONE_${param.contatore}" entita="DOCUMGARA" campoFittizio="true"  obbligatorio="true" definizione="T200;0;;;DESCLIBDG" value="${item[13]}" modificabile='${campiEsistentiModificabiliDaProfilo and modificabile}'/>
 				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" modificabile="false" campoFittizio="true" definizione="T100;0;;;DIGNOMDOC"  value="${documentiTrasparenzaDescFile[(3 * param.contatore) - 2 ]}" href="javascript:visualizzaFileAllegato('${item[5]}','${item[6]}',${gene:string4Js(documentiTrasparenzaDescFile[(3 * param.contatore) - 2 ])});">
 					<c:if test='${modo eq "VISUALIZZA" || !campiEsistentiModificabiliDaProfilo}'>
-						<c:if test="${param.richiestaFirma eq '1' and documentiTrasparenzaDescFile[(3 * param.contatore) - 1 ] eq '1'}">
+						<c:if test="${documentiTrasparenzaDescFile[(3 * param.contatore) - 1 ] eq '1'}">
 							<span style="float:right;"><img width="16" height="16" src="${pageContext.request.contextPath}/img/isquantimod.png"/>&nbsp;In attesa di firma</span>
 						</c:if>
 					</c:if>
 					<c:if test='${not empty documentiTrasparenzaDescFile[(3 * param.contatore) - 2 ] and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and item[7] ne "5" and param.autorizzatoModifiche ne "2" and not empty param.firmaRemota and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.FirmaRemotaDocumenti")}'>
 						<a style="float:right;" href="javascript:openModal('${item[5]}','${item[6]}','${documentiTrasparenzaDescFile[(3 * param.contatore) - 2 ]}','${pageContext.request.contextPath}');">
+						<img src="${pageContext.request.contextPath}/img/firmaRemota.png" title="Firma digitale del documento" alt="Firma documento" width="16" height="16">
+						<span title="Firma digitale del documento">Firma documento</span></a>
+					</c:if>
+					<c:if test='${not empty documentiTrasparenzaDescFile[(3 * param.contatore) - 2 ] and (empty documentiTrasparenzaDescFile[(3 * param.contatore) - 1 ] or documentiTrasparenzaDescFile[(3 * param.contatore) - 1 ] eq "2") and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and param.autorizzatoModifiche ne "2" and param.firmaDocumento eq "1" and item[7] ne "5"}'>
+						<a style="float:right;" href="javascript:apriModaleRichiestaFirma('${item[5]}','${item[6]}','${param.contatore}');">
 						<img src="${pageContext.request.contextPath}/img/firmaRemota.png" title="Firma digitale del documento" alt="Firma documento" width="16" height="16">
 						<span title="Firma digitale del documento">Firma documento</span></a>
 					</c:if>
@@ -78,14 +84,15 @@
 					scheda=""
 					schedaPopUp=""
 					campi="DITG.DITTAO;DITG.NOMIMO"
+					functionId="${functionId}"
+					parametriWhere="${parametriWhere}"
 					chiave=""
-					where="${whereArchivio }"
 					inseribile="false"
 					formName="formArchivioDitteAggiudicatarie${param.contatore}" >
 					<gene:campoScheda campo="DITTAAGG_${param.contatore}" entita="DOCUMGARA" campoFittizio="true" visibile="${genereGara eq 3}" obbligatorio="true" definizione="T10;0;;;DITTAAGGDG" value="${item[14]}" modificabile='${campiEsistentiModificabiliDaProfilo and modificabile}'/>
 					<gene:campoScheda campo="NOMIMP_${param.contatore}" entita="IMPR" campoFittizio="true" definizione="T61" title="Ragione sociale" value="${documentiTrasparenzaRagSoc[param.contatore - 1 ]}" visibile="${genereGara eq 3}" modificabile='${campiEsistentiModificabiliDaProfilo and modificabile}'/> 
 				</gene:archivio>
-				<c:if test="${param.richiestaFirma eq '1'}">
+				<c:if test="${param.richiestaFirma eq '1' or param.firmaDocumento eq '1'}">
 					<gene:campoScheda campo="DIGFIRMA_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2;0;" value="${documentiTrasparenzaDescFile[(3 * param.contatore) - 1 ]}" />
 				</c:if>
 				<c:choose>
@@ -98,8 +105,9 @@
 							scheda=''
 							schedaPopUp=''
 							campi="GARE.NGARA"
+							functionId="dittaNotNull"
+							parametriWhere="T:${codiceGara}"
 							chiave=""
-							where="GARE.CODGAR1 = '${codiceGara}' and GARE.CODGAR1 != GARE.NGARA and GARE.DITTA is not null"
 							formName="formLotti_${param.contatore}">
 							<gene:campoScheda campo="NGARA_${param.contatore}" entita="DOCUMGARA" title="Codice lotto" campoFittizio="true" visibile="${genereGara eq '1'}" definizione="T10;0;;;NGARADG" value="${item[1]}" obbligatorio="true" modificabile='${campiEsistentiModificabiliDaProfilo }'/>
 						</gene:archivio>
@@ -134,8 +142,9 @@
 					scheda=""
 					schedaPopUp=""
 					campi="DITG.DITTAO;DITG.NOMIMO"
+					functionId="${functionId}"
+					parametriWhere="${parametriWhere}"
 					chiave=""
-					where="${whereArchivio }"
 					inseribile="false"
 					formName="formArchivioDitteAggiudicatarie${param.contatore}" >
 					<gene:campoScheda campo="DITTAAGG_${param.contatore}" entita="DOCUMGARA" campoFittizio="true" visibile="${genereGara eq 3}" obbligatorio="true" definizione="T10;0;;;DITTAAGGDG"  />
@@ -149,8 +158,9 @@
 					scheda=''
 					schedaPopUp=''
 					campi="GARE.NGARA"
+					functionId="dittaNotNull"
+					parametriWhere="T:${codiceGara}"
 					chiave=""
-					where="GARE.CODGAR1 = '${codiceGara}' and GARE.CODGAR1 != GARE.NGARA and GARE.DITTA is not null"
 					formName="formLotti_${param.contatore}">
 					<gene:campoScheda campo="NGARA_${param.contatore}" entita="DOCUMGARA" title="Codice lotto" campoFittizio="true" obbligatorio="true" visibile="${genereGara eq '1'}" definizione="T10;0;;;NGARADG"  value="${numeroGara}"/>
 				</gene:archivio>

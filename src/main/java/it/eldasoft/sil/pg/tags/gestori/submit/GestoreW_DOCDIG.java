@@ -124,19 +124,29 @@ public class GestoreW_DOCDIG extends AbstractGestoreChiaveNumerica {
       double dimMaxTotaleFileByte=0;
       boolean eseguireControlloDimTotale=false;
       String dimMaxTotaleFileStringa= null;
+      Long compub=null;
+      
       try {
         String idcfg = (String)sqlManager.getObject("select idcfg from w_invcom where idprg=? and idcom=?", new Object[]{chiave1,chiave2});
         if(idcfg==null || "".equals(idcfg))
           idcfg = CostantiGenerali.PROP_CONFIGURAZIONE_MAIL_STANDARD;
         dimMaxTotaleFileStringa = validatorManager.getDimensioneMassimaFile(idcfg);
       }  catch (SQLException e) {
-        throw new GestoreException("Errore nella lettura del campo W_INVOCM.IDCFG", null, e);
+        throw new GestoreException("Errore nella lettura del campo W_INVCOM.IDCFG", null, e);
+      }
+      
+      try {
+        compub = (Long)sqlManager.getObject("select compub from w_invcom where idprg=? and idcom=?", new Object[]{chiave1,chiave2});
+      }  catch (SQLException e) {
+        throw new GestoreException("Errore nella lettura del campo W_INVCOM.COMPUB", null, e);
       }
 
       //Si deve determinare la dimensione massima dei file già allegati e di quello che si sta allegando
       if(dimMaxTotaleFileStringa!= null && !"".equals(dimMaxTotaleFileStringa)){
         dimMaxTotaleFileStringa = dimMaxTotaleFileStringa.trim();
-        eseguireControlloDimTotale=true;
+        if (new Long (2).equals(compub)) { 
+        	eseguireControlloDimTotale=true;
+        }
         dimMaxTotaleFileByte = Math.pow(2, 20) * Double.parseDouble(dimMaxTotaleFileStringa);
 
 

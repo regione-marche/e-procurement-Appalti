@@ -1,6 +1,6 @@
 package it.eldasoft.sil.pg.web.struts;
 
-import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
+import it.eldasoft.gene.commons.web.struts.ActionAjaxLogged;
 import it.eldasoft.gene.commons.web.struts.CostantiGeneraliStruts;
 import it.eldasoft.gene.commons.web.struts.UploadFileForm;
 import it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoMoney;
@@ -25,7 +25,7 @@ import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 import org.apache.struts.upload.FormFile;
 
-public class ImportDitteInGaraAction extends ActionBaseNoOpzioni {
+public class ImportDitteInGaraAction extends ActionAjaxLogged {
 
 
   static Logger                 logger          = Logger.getLogger(ExportDitteInGaraAction.class);

@@ -16,6 +16,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.archWhereFunctions.ComponiWhereNSO_ORDINIFunction" />
+
 <gene:template file="popup-template.jsp">
 	<gene:setString name="titoloMaschera" value="Selezione ordini da collegare"/>
 	<gene:redefineInsert name="corpo">

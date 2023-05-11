@@ -235,7 +235,7 @@ function _popolaTabellaAllegati(numeroTotale, allegati) {
 					var _numerodocumento = $("#numerodocumento").text();
 					var _annoprotocollo = $("#annoprotocollo").text();
 					var _numeroprotocollo = $("#numeroprotocollo").text();
-					var href;
+					var _href;
 					if ($("#tiposistemaremoto").val() == "JIRIDE") {
 							_href = "javascript:selectFile('" + _annoprotocollo + "','" + _numeroprotocollo + "','" + full.nomeallegato + "','" + full.tipoallegato + "','" + _numerodocumento + "');";	
 					}

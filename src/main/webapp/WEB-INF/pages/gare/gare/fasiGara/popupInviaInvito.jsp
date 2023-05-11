@@ -40,7 +40,8 @@
 		
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmsupporto.js?v=${sessionScope.versioneModuloAttivo}"></script>
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmfascicoloprotocollo.js?v=${sessionScope.versioneModuloAttivo}"></script>
-	<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>		
+	<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js?v=${sessionScope.versioneModuloAttivo}"></script>	
+	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmuffici.js?v=${sessionScope.versioneModuloAttivo}"></script>	
 </gene:redefineInsert>
 
 
@@ -118,6 +119,7 @@
 	</c:if>	
 	
 	<c:set var="modelloMailPec" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetMailPecModelloFunction", pageContext, "55","false",valoreChiave)}' />
+	<c:set var="htmlSupport" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "comunicazione.supportoHtml")}'/>
 	
 	<gene:setString name="titoloMaschera" value="Invia invito all'asta elettronica" />
 		
@@ -158,7 +160,7 @@
 				<td class="valore-dato">Spett.le <i>Ragione Sociale</i>
 				</td>
 			</gene:campoScheda>
-			<gene:campoScheda campo="COMMSGTIP" campoFittizio="true" definizione="T2;0;;SN;COMMSGTIP" defaultValue="2" />
+			<gene:campoScheda campo="COMMSGTIP" campoFittizio="true" definizione="T2;0;;SN;COMMSGTIP" defaultValue="2" visibile='${htmlSupport eq "1"}' />
 			<gene:campoScheda campo="COMMSGTES" campoFittizio="true" definizione="T2000;0;;CLOB;COMMSGTES" obbligatorio="true" value="${requestScope.testoMail}" gestore="it.eldasoft.gene.tags.gestori.decoratori.GestoreCampoTestoComunicazioneHTML"/>
 			<gene:campoScheda campo="COMMITT" campoFittizio="true" definizione="T60;0;;;COMMITT" value="${requestScope.mittenteMail}" visibile="${ abilitatoInvioMailDocumentale ne 'true'}"/>
 			
@@ -375,6 +377,16 @@
 						//Controlli sulla valorizzazione dei campi obbligatori
 						var errori = controlloCampiObbligatori();
 						
+						if(!errori && "LAPISOPERA" == $("#tiposistemaremoto").val() ){
+							var nomePrimoAllegato = getValue("NOME_0");
+							var esito=controlloFormatoAllegato(nomePrimoAllegato);
+							if(!esito){
+								var msg="ATTENZIONE:  il sistema di protocollo accetta solo comunicazioni che abbiano un allegato principale (il primo allegato) firmato digitalmente  nel formato '.pdf.p7m'. Per procedere all'invio degli inviti, occore adeguare la documentazione allegata all'invito stesso dalla sezione 'Documenti dell'invito'.";
+								alert(msg);
+								errori=true;
+							}
+						}
+						
 						if(!errori){
 							_setWSLogin();
 							document.forms[0].jspPathTo.value="gare/gare/fasiGara/popupInviaInvito.jsp";
@@ -542,6 +554,9 @@
 						$("#oggettodocumento").val(getValue("COMMSGOGG"));
 						if (_tipoWSDM == "TITULUS" ){
 							oggettoDocumentoTitulus();
+						}else if (_tipoWSDM == "ENGINEERINGDOC" ){
+							var testoOggettoDocumento= "${ngara} - " + $('#oggettodocumento').val();
+							$("#oggettodocumento").val(testoOggettoDocumento);
 						}
 						$("#rowPASSWORDA").hide();
 						$("#rowPASSWORDB").hide();
@@ -552,7 +567,9 @@
 						$("#rowPWD_B1").hide();
 						$("#rowPWD_C").hide();
 						$("#rowPWD_C1").hide();
-						
+						if(_fascicoliPresenti==0 && "LAPISOPERA" == _tipoWSDM){
+							$("#pulsanteConferma").hide();
+						}
 					}
 				}
 				
@@ -684,12 +701,12 @@
                             $("#obblmezzoinvio").hide();
                         }
 						
-						if(_tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "JDOC"){
+						if(_tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "JDOC" && _tipoWSDM != "NUMIX"){
 	                        	$("#mezzo").hide();
 								$("#mezzo").closest('tr').hide();
 	                        }
 						
-						if(_tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "PRISMA" && _tipoWSDM != "JIRIDE"){
+						if(_tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "PRISMA" && _tipoWSDM != "JIRIDE" && _tipoWSDM != "INFOR"){
 							$( "#supporto" ).hide();
 							$( "#supporto" ).closest('tr').hide();
 							$( "#strutturaonuovo" ).hide();
@@ -743,6 +760,13 @@
 				mostraParametriUtente(!visibile);
 			}
 			
+			function apriListaUffici() {
+				_ctx = "${pageContext.request.contextPath}";
+				$("#finestraListaUffici").dialog('option','width',700);
+				$("#finestraListaUffici").dialog("open");
+				_creaContainerListaUffici();
+			}
+			
 			function mostraParametriUtente(vis){
 				var tipoWSDM = "${tipoWSDM }";
 				showObj("rigaUtente",vis);
@@ -750,12 +774,17 @@
 					showObj("rigaPassword",vis);
 					showObj("rigaIdUtente",vis);
 					showObj("rigaIdUtenteUnitaOperativa",vis);
-				}else if(tipoWSDM == "TITULUS" || tipoWSDM == "ARCHIFLOW" || tipoWSDM == "SMAT" || tipoWSDM == "FOLIUM" || tipoWSDM == "ARCHIFLOWFA" || tipoWSDM == "EASYDOC" || tipoWSDM == "ITALPROT" || tipoWSDM == "JDOC"){
+				}else if(tipoWSDM == "TITULUS" || tipoWSDM == "ARCHIFLOW" || tipoWSDM == "SMAT" || tipoWSDM == "FOLIUM" || tipoWSDM == "ARCHIFLOWFA" || tipoWSDM == "EASYDOC" 
+					|| tipoWSDM == "ITALPROT" || tipoWSDM == "JDOC" || tipoWSDM == "ENGINEERINGDOC" || tipoWSDM == "NUMIX" ){
 					showObj("rigaPassword",vis);
 					showObj("rigaRuolo",false);
 				}else if (tipoWSDM == "PRISMA") {
 					showObj("rigaPassword",vis);
-				}else if (tipoWSDM == "URBI" || tipoWSDM == "PROTSERVICE" || tipoWSDM == "JPROTOCOL") {
+				}else if (tipoWSDM == "URBI" || tipoWSDM == "PROTSERVICE" || tipoWSDM == "JPROTOCOL" || tipoWSDM == "INFOR") {
+					showObj("rigaRuolo",false);
+				}else if (tipoWSDM == "LAPISOPERA") {
+					showObj("rigaPassword",vis);
+					showObj("rigaCognome",vis);
 					showObj("rigaRuolo",false);
 				}else {
 					showObj("rigaRuolo",vis);
@@ -776,8 +805,7 @@
 				if (_tipoWSDM == "TITULUS"){
 					caricamentoCodiceAooTITULUS();
 					_popolaTabellatoClassificaTitulus();
-				}
-				if (_tipoWSDM == "JIRIDE"){
+				}else if (_tipoWSDM == "JIRIDE"){
 					if(_letturaMittenteDaServzio){
 						$('#mittenteinterno').empty();
 						_popolaTabellatoJirideMittente("mittenteinterno");
@@ -787,6 +815,8 @@
 						}
 					}
 					caricamentoStrutturaJIRIDE();
+				}else if (_tipoWSDM == "NUMIX"){
+					caricamentoClassificaNumix();
 				}
 			});
 			
@@ -794,6 +824,8 @@
 				if (_tipoWSDM == "TITULUS"){
 					caricamentoCodiceAooTITULUS();
 					_popolaTabellatoClassificaTitulus();
+				}else if (_tipoWSDM == "NUMIX"){
+					caricamentoClassificaNumix();
 				}
 		    });
 		    
@@ -813,6 +845,10 @@
 				if (_tipoWSDM == "PRISMA"){
 					gestionemodificacampoannofascicolo();
 				}
+				if (_tipoWSDM == "ITALPROT"){
+					$('#listafascicoli').empty();
+					$('#codicefascicolo').val(); 
+				}
 			});
 			
 			$('#numerofascicolo').change(function() {
@@ -830,6 +866,18 @@
 					caricamentoStrutturaJIRIDE();
 				}
 		    });
+		    
+		    $('#classificafascicolonuovoItalprot').change(function() {
+				$('#listafascicoli').empty();
+				$('#codicefascicolo').val(); 
+				
+			});
+    
+		    $('#listafascicoli').on('change',  function () {
+				var str = this.value;
+				gestioneSelezioneFascicolo(str);
+				
+			});
 		</c:if>
 		
 		function controlloOggettoTestoLettera(){

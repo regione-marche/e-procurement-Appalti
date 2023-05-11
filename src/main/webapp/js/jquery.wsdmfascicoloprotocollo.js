@@ -65,11 +65,12 @@ function _getWSFascicolo(sistemaRemoto) {
 				$('#strutturaonuovo').find('option').not('[value=123]').remove();
 				$("#strutturaonuovo").append($("<option/>", {value: item[5], text: "" }));
 				$("#strutturaonuovo option").eq(0).prop('selected', true);
-				if(sistemaRemoto=="ARCHIFLOWFA" || sistemaRemoto=="PRISMA" || sistemaRemoto=="FOLIUM" || sistemaRemoto=="JPROTOCOL" || sistemaRemoto=="INFOR" || sistemaRemoto=="TITULUS"){
+				if(sistemaRemoto=="ARCHIFLOWFA" || sistemaRemoto=="PRISMA" || sistemaRemoto=="FOLIUM" || sistemaRemoto=="JPROTOCOL" || sistemaRemoto=="INFOR" || sistemaRemoto=="TITULUS" || sistemaRemoto=="DOCER"
+					|| sistemaRemoto=="ITALPROT" || sistemaRemoto=="LAPISOPERA"){
 					$('#classificafascicolonuovo').find('option').not('[value=123]').remove();
 					$("#classificafascicolonuovo").append($("<option/>", {value: item[6], text: "" }));
 					$("#classificafascicolonuovo option").eq(0).prop('selected', true);
-					if(sistemaRemoto=="FOLIUM" || sistemaRemoto=="JPROTOCOL" || sistemaRemoto=="TITULUS"){
+					if(sistemaRemoto=="FOLIUM" || sistemaRemoto=="JPROTOCOL" || sistemaRemoto=="TITULUS" || sistemaRemoto=="DOCER" || sistemaRemoto=="ITALPROT" ){
 						if(sistemaRemoto=="TITULUS"){
 							var codice = item[6];
 							var descrizione = item[7];
@@ -89,13 +90,27 @@ function _getWSFascicolo(sistemaRemoto) {
 								voce =" (" + voce + ")";
 							}
 							$("#classificafascicolodescrizione").text(codice + descrizione + voce);
-						}else {
+						}else if(sistemaRemoto!="ITALPROT"){
 							$("#classificafascicolodescrizione").text(item[6]);
 						}
 						$('#classificadocumento').find('option').not('[value=123]').remove();
 						$("#classificadocumento").append($("<option/>", {value: item[6], text: "" }));
 						$("#classificadocumento option").eq(0).prop('selected', true);
+					}else if(sistemaRemoto=="LAPISOPERA"){
+						$("#classificadocumento").val(item[6]);
+						$("#classificafascicolodescrizione").text(item[6]);
 					}
+				}else if(sistemaRemoto=="ENGINEERINGDOC"){
+					$("#uocompetenza").val(item[4]);
+					$("#uocompetenzadescrizione").val(item[10]);
+					var testoUoCompetenza="";
+					if(item[4]!=null)
+						testoUoCompetenza=item[4];
+					if(testoUoCompetenza!="" && item[10]!=null)
+						testoUoCompetenza+= " - "; 
+					if(item[10]!=null)
+						testoUoCompetenza+=item[10];
+					$("#uocompetenzaTxt").val(testoUoCompetenza);
 				}
 				
 				
@@ -278,7 +293,8 @@ function _getWSDMFascicolo(popolaDocumentiFascicolo, ritardo, chiamataCompleta) 
 	}
 		
 	$("#oggettofascicolo").text("");
-	$("#classificafascicolodescrizione").text("");
+	if ($("#tiposistemaremoto").val() != "DOCER" && $("#tiposistemaremoto").val() != "LAPISOPERA")
+		$("#classificafascicolodescrizione").text("");
 	$("#descrizionefascicolo").text("");
 	$('#documentifascicolomessaggio').text("");
 	$('#documentifascicolomessaggio').hide(tempo);
@@ -314,58 +330,70 @@ function _getWSDMFascicolo(popolaDocumentiFascicolo, ritardo, chiamataCompleta) 
 		},
 		success: function(json){
 			if (json.esito == true) {
-				if ($("#tiposistemaremoto").val() == "IRIDE" || $("#tiposistemaremoto").val() == "JIRIDE" || $("#tiposistemaremoto").val() == "ENGINEERING" 
-					|| $("#tiposistemaremoto").val() == "ENGINEERINGDOC" || $("#tiposistemaremoto").val() == "ARCHIFLOW" || $("#tiposistemaremoto").val() == "PRISMA") {
-					$("#codicefascicolo").val(json.codicefascicolo);
-				}
-				if($("#tiposistemaremoto").val() == "ARCHIFLOW" || $("#tiposistemaremoto").val() == "PRISMA" || $("#tiposistemaremoto").val() == "JIRIDE" ){
-					if(json.annofascicolo!=null){
-						$("#annofascicolo").val(json.annofascicolo);
-						$("#spanannofascicolo").text(json.annofascicolo);
+				if(!($("#tiposistemaremoto").val() == "LAPISOPERA" && popolaDocumentiFascicolo && chiamataCompleta)){
+					if ($("#tiposistemaremoto").val() == "IRIDE" || $("#tiposistemaremoto").val() == "JIRIDE" || $("#tiposistemaremoto").val() == "ENGINEERING" 
+						|| $("#tiposistemaremoto").val() == "ENGINEERINGDOC" || $("#tiposistemaremoto").val() == "ARCHIFLOW" || $("#tiposistemaremoto").val() == "PRISMA"
+						|| $("#tiposistemaremoto").val() == "LAPISOPERA") {
+						$("#codicefascicolo").val(json.codicefascicolo);
 					}
-					if(json.numerofascicolo!=null){
-						$("#numerofascicolo").val(json.numerofascicolo);
-						$("#spannumerofascicolo").text(json.numerofascicolo);
+					if($("#tiposistemaremoto").val() == "ARCHIFLOW" || $("#tiposistemaremoto").val() == "PRISMA" || $("#tiposistemaremoto").val() == "JIRIDE" || $("#tiposistemaremoto").val() == "LAPISOPERA"){
+						if(json.annofascicolo!=null){
+							$("#annofascicolo").val(json.annofascicolo);
+							$("#spanannofascicolo").text(json.annofascicolo);
+						}
+						if(json.numerofascicolo!=null){
+							$("#numerofascicolo").val(json.numerofascicolo);
+							$("#spannumerofascicolo").text(json.numerofascicolo);
+						}
 					}
-				}
-				
-				$("#oggettofascicolo").text(json.oggettofascicolo);
-				if($("#tiposistemaremoto").val() == "ARCHIFLOWFA" || $("#tiposistemaremoto").val() == "PRISMA")
-					$("#oggettofascicolonuovo").val(json.oggettofascicolo);
-				
-				if($("#tiposistemaremoto").val() != "ARCHIFLOWFA" && $("#tiposistemaremoto").val() != "JPROTOCOL"){
-					$("#classificafascicolodescrizione").text(json.classificafascicolodescrizione);
-					//Nel caso il valore della classifica del fascicolo restituita dal servizio non sia presente fra i valori di classificadocumento, allora va inserito
-					//altrimenti non si riesce a procedere con la protocollazione per JIRIDE
-					if(json.classificafascicolo !=null && json.classificafascicolo!="" && $("#classificadocumento option[value='" + json.classificafascicolo + "']").length == 0)
-					{
-						$("#classificadocumento").append($("<option/>", {value: json.classificafascicolo, text: json.classificafascicolo }));
+					
+					$("#oggettofascicolo").text(json.oggettofascicolo);
+					if($("#tiposistemaremoto").val() == "ARCHIFLOWFA" || $("#tiposistemaremoto").val() == "PRISMA" || $("#tiposistemaremoto").val() == "LAPISOPERA")
+						$("#oggettofascicolonuovo").val(json.oggettofascicolo);
+					
+					if($("#tiposistemaremoto").val() != "ARCHIFLOWFA" && $("#tiposistemaremoto").val() != "JPROTOCOL" && $("#tiposistemaremoto").val() != "LAPISOPERA"){
+						$("#classificafascicolodescrizione").text(json.classificafascicolodescrizione);
+						//Nel caso il valore della classifica del fascicolo restituita dal servizio non sia presente fra i valori di classificadocumento, allora va inserito
+						//altrimenti non si riesce a procedere con la protocollazione per JIRIDE
+						if(json.classificafascicolo !=null && json.classificafascicolo!="" && $("#classificadocumento option[value='" + json.classificafascicolo + "']").length == 0)
+						{
+							$("#classificadocumento").append($("<option/>", {value: json.classificafascicolo, text: json.classificafascicolo }));
+						}
+						$("#classificadocumento option[value='" + json.classificafascicolo + "']").attr("selected", true);
+						$('#idtitolazione').val(json.classificafascicolo);
+						$("#descrizionefascicolo").text(json.descrizionefascicolo);
+						if($("#tiposistemaremoto").val() == "ENGINEERINGDOC" && servizio == "DOCUMENTALE"){
+							//Se l'oggetto del fascicolo è valorizzato, si visualizza il campo 
+							if(json.oggettofascicolo!=null && json.oggettofascicolo!="")
+								$("#oggettofascicolo").parent().parent().show();
+							//Se la descrizione del fascicolo è valorizzata, si visualizza il campo 
+							if(json.descrizionefascicolo!=null && json.descrizionefascicolo!="")
+								$("#descrizionefascicolo").parent().parent().show();
+						}
 					}
-					$("#classificadocumento option[value='" + json.classificafascicolo + "']").attr("selected", true);
-					$('#idtitolazione').val(json.classificafascicolo);
-					$("#descrizionefascicolo").text(json.descrizionefascicolo);
-					if($("#tiposistemaremoto").val() == "ENGINEERINGDOC" && servizio == "DOCUMENTALE"){
-						//Se l'oggetto del fascicolo è valorizzato, si visualizza il campo 
-						if(json.oggettofascicolo!=null && json.oggettofascicolo!="")
-							$("#oggettofascicolo").parent().parent().show();
-						//Se la descrizione del fascicolo è valorizzata, si visualizza il campo 
-						if(json.descrizionefascicolo!=null && json.descrizionefascicolo!="")
-							$("#descrizionefascicolo").parent().parent().show();
+					if($("#tiposistemaremoto").val() == "PRISMA"){
+						$('#classificafascicolonuovoPrisma').val(json.classificafascicolo);
+						$("#classificafascicolodescrizione").text(json.classificafascicolo);
+						$('#classificafascicolonuovo').find('option').remove().end().append($("<option/>", {value: json.classificafascicolo, text: json.classificafascicolo })).val(json.classificafascicolo);
 					}
-				}
-				if($("#tiposistemaremoto").val() == "PRISMA"){
-					$('#classificafascicolonuovoPrisma').val(json.classificafascicolo);
-					$("#classificafascicolodescrizione").text(json.classificafascicolo);
-					$('#classificafascicolonuovo').find('option').remove().end().append($("<option/>", {value: json.classificafascicolo, text: json.classificafascicolo })).val(json.classificafascicolo);
-				}
-				$('#classificafascicolonuovo').val(json.classificafascicolo);
-				if($("#tiposistemaremoto").val() == "JIRIDE"){
-					if(json.tipofascicolo!=null && json.tipofascicolo!=""){
-						$("#tipofascicolo").text(json.tipofascicolo);
+					$('#classificafascicolonuovo').val(json.classificafascicolo);
+					if($("#tiposistemaremoto").val() == "JIRIDE"){
+						if(json.tipofascicolo!=null && json.tipofascicolo!=""){
+							$("#tipofascicolo").text(json.tipofascicolo);
+						}
+						//Per la funzione di fascicolo documentale si ha la necessità di leggere la struttura dal servizio
+						if(json.struttura!=null && json.struttura!=""){
+							$("#strutturaonuovo").val(json.struttura);
+						}
 					}
-					//Per la funzione di fascicolo documentale si ha la necessità di leggere la struttura dal servizio
-					if(json.struttura!=null && json.struttura!=""){
-						$("#strutturaonuovo").val(json.struttura);
+					if($("#tiposistemaremoto").val() == "LAPISOPERA"){
+						$('#classificafascicolonuovo').find('option').remove().end().append($("<option/>", {value: json.classificafascicolo, text: json.classificafascicolo })).val(json.classificafascicolo);
+						if(json.struttura!=null && json.struttura!=""){
+							$('#strutturaonuovo').find('option').remove().end().append($("<option/>", {value: json.struttura, text: json.struttura })).val(json.struttura);
+						}
+						$("#struttura").text(json.struttura);
+						$("#classificadescrizione").val(json.classificafascicolodescrizione);
+						$("#classificafascicolodescrizione").text(json.classificafascicolo);
 					}
 				}
 			} else {
@@ -592,7 +620,7 @@ function _popolaDocumentiFascicolo(numeroTotale, documentifascicolo) {
 		        }
 	        }
 	        
-	        if ($("#tiposistemaremoto").val() == "PALEO" || $("#tiposistemaremoto").val() == "ARCHIFLOW" || $("#tiposistemaremoto").val() == "PRISMA") {
+	        if ($("#tiposistemaremoto").val() == "PALEO" || $("#tiposistemaremoto").val() == "ARCHIFLOW" || $("#tiposistemaremoto").val() == "PRISMA" || $("#tiposistemaremoto").val() == "ENGINEERINGDOC" || $("#tiposistemaremoto").val() == "LAPISOPERA") {
 	        	_getWSDMDocumento(r.numerodocumento);
 	        }
 	        

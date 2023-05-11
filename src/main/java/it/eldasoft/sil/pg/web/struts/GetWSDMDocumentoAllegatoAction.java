@@ -10,13 +10,6 @@
  */
 package it.eldasoft.sil.pg.web.struts;
 
-import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
-import it.eldasoft.gene.commons.web.struts.CostantiGeneraliStruts;
-import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
-import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
-import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoResType;
-import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoType;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
@@ -29,6 +22,13 @@ import org.apache.log4j.Logger;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
+
+import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
+import it.eldasoft.gene.commons.web.struts.CostantiGeneraliStruts;
+import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
+import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoResType;
+import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoType;
 
 public class GetWSDMDocumentoAllegatoAction extends ActionBaseNoOpzioni {
 
@@ -73,11 +73,21 @@ public class GetWSDMDocumentoAllegatoAction extends ActionBaseNoOpzioni {
         if (wsdmProtocolloDocumento != null) {
           if (wsdmProtocolloDocumento.getAllegati() != null) {
             WSDMProtocolloAllegatoType[] allegati = wsdmProtocolloDocumento.getAllegati();
+            boolean allegatoTrovato=false;
             for (int a = 0; a < allegati.length; a++) {
+              allegatoTrovato=false;
               if(allegati[a]!=null){
-                String nometipoallegato = allegati[a].getNome() + "." + allegati[a].getTipo();
-                if ((nomeallegato.equals(allegati[a].getNome()) || nomeallegato.equals(nometipoallegato))
-                    && tipoallegato.equals(allegati[a].getTipo())) {
+                if (tipoallegato == null || "".equals(tipoallegato.trim()) || "null".equals(tipoallegato.trim())) {
+                  if ((nomeallegato.equals(allegati[a].getNome())))
+                    allegatoTrovato=true;
+                }else {
+                  String nometipoallegato = allegati[a].getNome() + "." + allegati[a].getTipo();
+                  if ((nomeallegato.equals(allegati[a].getNome()) || nomeallegato.equals(nometipoallegato))
+                      && tipoallegato.equals(allegati[a].getTipo()))
+                    allegatoTrovato=true;
+                }
+
+                if (allegatoTrovato) {
                   String nomeAllegato = allegati[a].getNome();
                   byte[] contenutoAllegato = allegati[a].getContenuto();
                   response.setContentType("application/octet-stream");

@@ -33,14 +33,18 @@
 <c:set var="gestioneUrl" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsGestioneUrlDocumentazioneFunction", pageContext)}' scope="request"/>
 
 <c:set var="richiestaFirma" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "documentiDb.richiestaFirma")}'/>
-<c:set var="firmaRemota" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "firmaremota.auto.url")}'/>
-
+<c:set var="firmaProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:if test='${firmaProvider eq 2}'>
+	<c:set var="firmaRemota" value="true"/>
+</c:if>
 <c:set var="numeroDocumentoWSDM" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.CheckAssociataRdaJIRIDEFunction", pageContext, codiceGara)}' scope="request"/>
 
 <gene:formScheda entita="TORN" gestisciProtezioni="true" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreDocumentazioneGara" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreDocumentazioneGara">
 
 	<gene:redefineInsert name="pulsanteNuovo"></gene:redefineInsert>
 	<gene:redefineInsert name="schedaNuovo"></gene:redefineInsert>
+	<gene:redefineInsert name="documentiAssociati"></gene:redefineInsert>
+	<gene:redefineInsert name="noteAvvisi"></gene:redefineInsert>
 	
 	<gene:campoScheda campo="CODGAR"  visibile="false" />
 	<gene:campoScheda campo="CODGAR1"  entita="GARE" campoFittizio="true" definizione="T21" visibile="false" value="${datiRiga.TORN_CODGAR}"/>
@@ -131,6 +135,10 @@
 
 <jsp:include page="/WEB-INF/pages/gene/system/firmadigitale/modalPopupFirmaDigitaleRemota.jsp" />
 
+<c:if test="${tipoDoc eq 3 and fn:contains(listaOpzioniDisponibili, 'OP135#')}">
+	<jsp:include page="/WEB-INF/pages/gare/commons/modalePopupInserimentodocumenti.jsp" />
+</c:if>
+
 <gene:javaScript>
 
 function cambiaTipoDocumentazione(tipoDoc){
@@ -151,12 +159,58 @@ function visualizzaDocumenti(codiceGara,tipoPubblicazione,gruppo){
 }	
 
 function visualizzaDocumentiConcorrenti(codiceGara,busta,titoloBusta){
-	var href = contextPath + "/ApriPagina.do?href=gare/documgara/documenti-tipologia.jsp";
-	formVisualizzaDocumenti.key.value = "TORN.CODGAR=T:" + codiceGara;
-	formVisualizzaDocumenti.busta.value = busta;
-	formVisualizzaDocumenti.titoloBusta.value = titoloBusta;
-	formVisualizzaDocumenti.gruppo.value = 3;
-	formVisualizzaDocumenti.submit();
+	var gestioneQuestionariPreq = $('#gestioneQuestionariPreq').val();
+	var gestioneQuestionariAmm = $('#gestioneQuestionariAmm').val();
+	var gestioneQuestionariTec = $('#gestioneQuestionariTec').val();
+	var gestioneQuestionariEco = $('#gestioneQuestionariEco').val();
+	var noModaleDocumentiQform = $('#noModaleDocumentiQform').val();
+	if(noModaleDocumentiQform=="true"){
+		if(gestioneQuestionariPreq=="INSQFORM")
+			gestioneQuestionariPreq = "MODALE-INSQFORM";
+		if(gestioneQuestionariAmm=="INSQFORM")
+			gestioneQuestionariAmm = "MODALE-INSQFORM";
+		if(gestioneQuestionariTec=="INSQFORM")
+			gestioneQuestionariTec = "MODALE-INSQFORM";
+		if(gestioneQuestionariEco=="INSQFORM")
+			gestioneQuestionariEco = "MODALE-INSQFORM";
+	}
+	var autorizzatoModifiche = "${autorizzatoModifiche}";
+	if((busta == 2 && gestioneQuestionariTec=="listaTEC") || (busta == 3 && gestioneQuestionariEco=="listaECO")){
+		var href = contextPath + "/ApriPagina.do?href=gare/documgara/lista-lotti.jsp";
+		formVisualizzaDocumenti.href.value="gare/documgara/lista-lotti.jsp";
+		formVisualizzaDocumenti.key.value = "GARE.NGARA=T:" + codiceGara;
+		formVisualizzaDocumenti.busta.value = busta;
+		formVisualizzaDocumenti.titoloBusta.value = titoloBusta;
+		formVisualizzaDocumenti.gruppo.value = 3;
+		formVisualizzaDocumenti.submit();
+	}else if(((busta == 4 && gestioneQuestionariPreq=="INSQFORM") || (busta == 1 && gestioneQuestionariAmm=="INSQFORM")) && autorizzatoModifiche != "2" ){
+		apriModaleQform(codiceGara,busta, titoloBusta);
+	}else if(((busta == 4 && gestioneQuestionariPreq=="MODALE-INSQFORM") || (busta == 1 && gestioneQuestionariAmm=="MODALE-INSQFORM") || (busta == 2 && gestioneQuestionariTec=="MODALE-INSQFORM") || (busta == 3 && gestioneQuestionariEco=="MODALE-INSQFORM")) && autorizzatoModifiche != "2" ){
+		var href = contextPath + "/ApriPagina.do?href=gare/documgara/qform.jsp";
+		formVisualizzaDocumenti.href.value="gare/documgara/qform.jsp";
+		formVisualizzaDocumenti.key.value = "GARE.NGARA=T:" + codiceGara;
+		formVisualizzaDocumenti.busta.value = busta;
+		formVisualizzaDocumenti.titoloBusta.value = titoloBusta;
+		formVisualizzaDocumenti.gruppo.value = 3;
+		formVisualizzaDocumenti.modoQform.value="INSQFORM";
+		formVisualizzaDocumenti.submit();
+	}else if((busta == 4 && gestioneQuestionariPreq=="VISQFORM") || (busta == 1 && gestioneQuestionariAmm=="VISQFORM") || (busta == 2 && gestioneQuestionariTec=="VISQFORM") || (busta == 3 && gestioneQuestionariEco=="VISQFORM")){
+		var href = contextPath + "/ApriPagina.do?href=gare/documgara/qform.jsp";
+		formVisualizzaDocumenti.href.value="gare/documgara/qform.jsp";
+		formVisualizzaDocumenti.key.value = "GARE.NGARA=T:" + codiceGara;
+		formVisualizzaDocumenti.busta.value = busta;
+		formVisualizzaDocumenti.titoloBusta.value = titoloBusta;
+		formVisualizzaDocumenti.gruppo.value = 3;
+		formVisualizzaDocumenti.modoQform.value="VISQFORM";
+		formVisualizzaDocumenti.submit();
+	}else {
+		var href = contextPath + "/ApriPagina.do?href=gare/documgara/documenti-tipologia.jsp";
+		formVisualizzaDocumenti.key.value = "TORN.CODGAR=T:" + codiceGara;
+		formVisualizzaDocumenti.busta.value = busta;
+		formVisualizzaDocumenti.titoloBusta.value = titoloBusta;
+		formVisualizzaDocumenti.gruppo.value = 3;
+		formVisualizzaDocumenti.submit();
+	}
 }
 
 function pubblicaSuPortaleAppalti(){
@@ -206,6 +260,7 @@ function visAllegatiRda(codice){
 	<input type="hidden" name="isProceduraTelematica" value="${isProceduraTelematica}" />	
 	<input type="hidden" name="idconfi" value="${idconfi}" />	
 	<input type="hidden" name="bustalotti" value="${bustalotti}" />
+	<input type="hidden" name="modoQform" id="modoQform" value="" />
 </form> 
 
 <form name="formInviaAttiSCP" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">

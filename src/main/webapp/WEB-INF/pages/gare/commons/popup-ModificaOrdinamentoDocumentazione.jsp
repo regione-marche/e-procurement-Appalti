@@ -16,7 +16,7 @@
 
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 
-
+<jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
 
 <c:choose>
 	<c:when test='${not empty requestScope.esitoAggiornaNumOrdineDocAction}'>
@@ -89,6 +89,15 @@
 	</c:when>
 	<c:otherwise>
 		<c:set var="isFaseInvito" value="${isFaseInvito}"/>
+	</c:otherwise>
+</c:choose>
+
+<c:choose>
+	<c:when test="${not empty param.fasEle}">
+		<c:set var="fasEle" value="${param.fasEle}"/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="fasEle" value="${fasEle}"/>
 	</c:otherwise>
 </c:choose>
 
@@ -187,6 +196,18 @@
 	<c:set var="where" value="${where} and BUSTA = ${busta}"/>
 </c:if>
 
+<c:if test="${not empty fasEle}">
+	<c:choose>
+		<c:when test="${fasEle eq iscrizione}">
+			<c:set var="where" value="${where} and (FASELE = 1 or FASELE = 2)"/>
+		</c:when>
+		<c:otherwise>
+			<c:set var="where" value="${where} and (FASELE = 2 or FASELE = 3)"/>
+		</c:otherwise>
+	</c:choose>
+	
+</c:if>
+
 <c:if test="${not empty param.titolo}">
 	<c:set var="descTipoDoc" value="${param.titolo}"/>
 </c:if>
@@ -217,7 +238,7 @@
 				<input type="hidden" name="genereGara" id="genereGara" value="${genereGara }" />
 				<input type="hidden" name="isarchi" id="isarchi" value="${isarchi }" />
 				<input type="hidden" name="isFaseInvito" id="isFaseInvito" value="${isFaseInvito }" />
-				
+				<input type="hidden" name="fasEle" id="fasEle" value="${fasEle}" />
 				<input type="hidden" name="esitoRicalcNumordDocGara" id="esitoRicalcNumordDocGara" value="${esitoRicalcNumordDocGara }" />
 			</gene:formLista>
 		</gene:redefineInsert>
@@ -358,7 +379,7 @@
 					<input type="hidden" name="esitoAggiornaNumOrdineDocAction" id="esitoAggiornaNumOrdineDocAction" value="${esitoAggiornaNumOrdineDocAction}" />
 					
 					<input type="hidden" name="esitoRicalcNumordDocGara" id="esitoRicalcNumordDocGara" value="${esitoRicalcNumordDocGara }" />
-					
+					<input type="hidden" name="fasEle" id="fasEle" value="${fasEle}" />
 					
 				</gene:formLista>
 				</td>
@@ -428,6 +449,7 @@
 				var busta="${busta}";
 				var titoloTipologia="${descTipoDoc}";
 				var esitoRicalcNumordDocGara="${esitoRicalcNumordDocGara}";
+				var fasEle="${fasEle}";
 				
 	            var bloccoModifica ="${bloccoModifica }";
 	            var indicePartenza=1;
@@ -459,6 +481,7 @@
 				var href = "${contextPath }/pg/AggiornaNumOrdineDocumentazione.do" ;
 				href+= "?"+csrfToken+"&listaNorddocg=" + listaNorddocg + "&listaNumord=" + listaNumord + "&ngara=" + ngara +  "&codgar1=" + codgar1 + "&direzione="  + direzione + "&tipoDoc=" + tipoDoc ;
 				href+=  "&genereGara=" + genereGara + "&isFaseInvito=" + isFaseInvito + "&esitoRicalcNumordDocGara=" + esitoRicalcNumordDocGara + "&tipologia=" + tipologia + "&busta=" + busta + "&titolo=" + titoloTipologia;
+				href+= "&fasEle=" + fasEle;
 				//alert(href);
 				document.location.href = href;
 			}

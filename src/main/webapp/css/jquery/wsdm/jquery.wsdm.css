@@ -180,7 +180,7 @@
     	height: 30px;
     }
     
-    .tab a:hover {
+    .tab a:hover{
     	text-decoration: none;
     }
     
@@ -226,5 +226,85 @@
     margin: 0;
     padding: 5px 10px;
   }
+  
+  .panel-container {
+    	margin-bottom: 10px;
+    }
+  
+  TABLE.uffici {
+		margin-top: 5px;
+		margin-bottom: 5px;
+		padding: 0px;
+		font-size: 11px;
+		border-collapse: collapse;
+		border-left: 1px solid #A0AABA;
+		border-top: 1px solid #A0AABA;
+		border-right: 1px solid #A0AABA;
+	}
+
+	TABLE.uffici TR.intestazione {
+		background-color: #EFEFEF;
+		border-bottom: 1px solid #A0AABA;
+	}
+	
+	TABLE.uffici TR.intestazione TH {
+		padding: 2 15 2 5;
+		text-align: center;
+		font-weight: bold;
+		border-left: 1px solid #A0AABA;
+		border-right: 1px solid #A0AABA;
+		border-top: 1px solid #A0AABA;
+		border-bottom: 1px solid #A0AABA;
+		height: 25px;
+	}
+
+	TABLE.uffici TR.intestazione TH.associa {
+		padding: 2 5 2 5;
+		width: 50px;
+	}
+	
+	TABLE.uffici TR TD.center {
+		text-align: center;
+	}
+
+
+	TABLE.uffici TR {
+		background-color: #FFFFFF;
+	}
+
+	TABLE.uffici TR TD {
+		padding-left: 3px;
+		padding-top: 1px;
+		padding-bottom: 1px;
+		padding-right: 3px;
+		text-align: left;
+		border-left: 1px solid #A0AABA;
+		border-right: 1px solid #A0AABA;
+		border-top: 1px solid #A0AABA;
+		border-bottom: 1px solid #A0AABA;
+		height: 25px;
+		font: 11px Verdana, Arial, Helvetica, sans-serif;
+	}
+	
+	TABLE.uffici TR TD.error {
+		color: #D30000;
+		font-weight: bold;
+		padding: 10 10 10 10;
+	}
+
+	TABLE.uffici TR TD.associa {
+		padding: 2 5 2 5;
+		width: 50px;
+		text-align: center;
+	}
+	
+	TABLE.uffici TR TD.codice {
+		width: 80px;
+	}
+	
+	.linkLettura{
+		color:black;
+	}
+	
 
 	

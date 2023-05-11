@@ -9,6 +9,9 @@ import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.sicurezza.FactoryCriptazioneByte;
 import it.eldasoft.utils.sicurezza.ICriptazioneByte;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -39,6 +42,8 @@ public class SetWSLoginAction extends Action {
     DataSourceTransactionManagerBase.setRequest(request);
 
     String syscon = null;
+    
+    List<Object> parameters;
 
     String servizio = request.getParameter("servizio");
     String idconfi = request.getParameter("idconfi");
@@ -46,7 +51,7 @@ public class SetWSLoginAction extends Action {
     String filtroConfi = "";
     if ("FASCICOLOPROTOCOLLO".equals(servizio) || "DOCUMENTALE".equals(servizio)){
       idconfi = request.getParameter("idconfi");
-      filtroConfi = " and idconfiwsdm = " + idconfi;
+      filtroConfi = " and idconfiwsdm = ? ";
     }
     
     if("WSERP".equals(servizio) || "WSERP_L190".equals(servizio)){
@@ -84,13 +89,32 @@ public class SetWSLoginAction extends Action {
       boolean commitTransaction = false;
       try {
         status = this.sqlManager.startTransaction();
-        Long cnt = (Long) this.sqlManager.getObject("select count(*) from wslogin where syscon = ? and servizio = ?" + filtroConfi, new Object[] {
-            new Long(syscon), servizio });
+        parameters = new ArrayList<Object>();
+        parameters.add(syscon);
+        parameters.add(servizio);
+        if(!"".equals(filtroConfi)) 
+          parameters.add(idconfi);
+        
+        Long cnt = (Long) this.sqlManager.getObject("select count(*) from wslogin where syscon = ? and servizio = ?" + filtroConfi,
+            parameters.toArray());
         if (cnt != null && cnt.longValue() > 0) {
+          parameters = new ArrayList<Object>();
+          parameters.add(username);
+          parameters.add(passwordEncoded);
+          parameters.add(ruolo);
+          parameters.add(nome);
+          parameters.add(cognome);
+          parameters.add(codiceuo);
+          parameters.add(idutente);
+          parameters.add(idutenteunop);
+          parameters.add(new Long(syscon));
+          parameters.add(servizio);
+          if(!"".equals(filtroConfi)) 
+            parameters.add(idconfi);
           this.sqlManager.update(
               "update wslogin set username = ?, password = ?, ruolo = ?, nome = ?, cognome = ?, codiceuo = ? , idutente = ?, idutenteunop = ? " +
               "where syscon = ? and servizio = ?" + filtroConfi,
-              new Object[] { username, passwordEncoded, ruolo, nome, cognome, codiceuo, idutente, idutenteunop, new Long(syscon), servizio });
+              parameters.toArray());
         } else {
           Long id = new Long(this.genChiaviManager.getNextId("WSLOGIN"));
           if ("FASCICOLOPROTOCOLLO".equals(servizio) || "DOCUMENTALE".equals(servizio)){

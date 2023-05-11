@@ -10,6 +10,7 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -636,16 +637,22 @@ public class GestoreGOEV extends AbstractGestoreChiaveNumerica {
           new Object[] { ngara });
 
       double maxPunteggio = 0;
+      BigDecimal sommaPunteggi = new BigDecimal(0);
+      Double tmp = null;
+
       if (listaMaxPunteggio != null && listaMaxPunteggio.size() > 0) {
         for (int i = 0; i < listaMaxPunteggio.size(); i++) {
-          Double tmp = (Double) ((JdbcParametro) ((HashMap<?,?>)
+          tmp = (Double) ((JdbcParametro) ((HashMap<?,?>)
               listaMaxPunteggio.get(i)).get("MAXPUN")).getValue();
-          if(tmp != null)
-            maxPunteggio += tmp.doubleValue();
+          if(tmp != null) {
+            BigDecimal bigMaxpun= BigDecimal.valueOf(tmp);
+            sommaPunteggi = sommaPunteggi.add(bigMaxpun);
+          }
         }
       }
 
-      if (maxPunteggio > 100){
+      if(new BigDecimal(100).compareTo(sommaPunteggi)==-1){
+      //if (maxPunteggio > 100){
         UtilityStruts.addMessage(this.getRequest(), "warning",
             "warnings.goev.verificaPunteggiMax.soglia100", null);
         }else{

@@ -185,6 +185,13 @@
 					<b>Riparametrazione ?</b> ${msgRiptec }
 				</td>
 			</tr>
+			<c:if test='${STATOCG eq 1}'>
+				<tr>
+					<td ${stileDati} >
+						<b>Valutazione in corso su app</b>
+					</td>
+				</tr>
+			</c:if>
 		</c:when>
 
 		<c:when test='${paginaAttivaWizard eq step7Wizard and isOffertaPerLotto eq "true" and modalitaAggiudicazioneGara eq 6}'>
@@ -377,7 +384,17 @@
 												</td>
 											</tr>
 										</c:if>
+										
 									</c:if>
+									<c:if test='${paginaAttivaWizard eq step6Wizard && STATOCG eq 2 && faseGara eq 5 && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE-scheda.FASIGARA.RipristinaValutazioneEval")}'>
+										<tr>
+											<td class="vocemenulaterale">
+												<a href="javascript:apriPopupRipristinaValutazioneMEVAL('${codiceGara}','${numeroGara}');" title='Ripristina valutazione su M-Eval' tabindex="1508">
+													Ripristina valutazione su M-Eval
+												</a>
+											</td>
+										</tr>
+									</c:if>	
 								</c:if>
 								<c:if test='${(paginaAttivaWizard eq step6Wizard or paginaAttivaWizard eq step7Wizard) and modalitaAggiudicazioneGara eq 6 and isOffertaPerLotto eq "true" and updateLista ne 1 }'>
 									<tr>
@@ -606,7 +623,7 @@
 										<c:set var="tipoPunteggio" value="2"/>
 									</c:otherwise>
 								</c:choose>
-								<INPUT type="button" class="bottone-azione" value="Calcolo punteggi (1)" title="Calcolo punteggi (1)" onclick="javascript:apriPopupCalcoloPunteggi('${key}',${tipoPunteggio},'true',${paginaAttivaWizard });"/>&nbsp;
+								<INPUT type="button" class="bottone-azione" value="Calcolo punteggi (1)" title="Calcolo punteggi (1)" onclick="javascript:apriPopupCalcoloPunteggi('${key}',${tipoPunteggio},'true',${paginaAttivaWizard },'${STATOCG}');"/>&nbsp;
 							</c:if>
 							<c:if test='${ gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE-scheda.FASIGARA.EsclusioneSoglia")}'>
 								<c:set var="msgEsclusione" value="Esclusione soglia minima e riparametrazione (2)"/>

@@ -5,6 +5,7 @@ import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
 
 import java.io.PrintWriter;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -84,43 +85,41 @@ public class GestioneAlberoNUTSAction extends Action {
       String codsearch, JSONArray jsonArray) throws SQLException {
 
     String selectTABNUTS = "";
+    List<Object> parameters = new ArrayList<Object>();
 
     switch (livello.intValue()) {
 
     case 1:
       // Paese
       selectTABNUTS = "select paese, area, regione, provincia, codice, descrizione from tabnuts where area is null and regione is null and provincia is null order by codice";
-      this.popolaNUTS(modopagina, livello, textsearch, codsearch, jsonArray, selectTABNUTS);
+      this.popolaNUTS(modopagina, livello, textsearch, codsearch, jsonArray, selectTABNUTS, parameters.toArray());
       break;
 
     case 2:
       // Area
-      selectTABNUTS = "select paese, area, regione, provincia, codice, descrizione from tabnuts where paese = '"
-          + paese
-          + "' and area is not null and regione is null and provincia is null order by codice";
-      this.popolaNUTS(modopagina, livello, textsearch, codsearch, jsonArray, selectTABNUTS);
+      selectTABNUTS = "select paese, area, regione, provincia, codice, descrizione from tabnuts where paese = ?"
+          + " and area is not null and regione is null and provincia is null order by codice";
+      parameters.add(paese);
+      this.popolaNUTS(modopagina, livello, textsearch, codsearch, jsonArray, selectTABNUTS, parameters.toArray());
       break;
 
     case 3:
       // Regione
-      selectTABNUTS = "select paese, area, regione, provincia, codice, descrizione from tabnuts where paese = '"
-          + paese
-          + "' and area = '"
-          + area
-          + "' and regione is not null and provincia is null order by codice";
-      this.popolaNUTS(modopagina, livello, textsearch, codsearch, jsonArray, selectTABNUTS);
+      selectTABNUTS = "select paese, area, regione, provincia, codice, descrizione from tabnuts where paese = ?"
+          + " and area = ? and regione is not null and provincia is null order by codice";
+      parameters.add(paese);
+      parameters.add(area);
+      this.popolaNUTS(modopagina, livello, textsearch, codsearch, jsonArray, selectTABNUTS, parameters.toArray());
       break;
 
     case 4:
       // Provincia
-      selectTABNUTS = "select paese, area, regione, provincia, codice, descrizione from tabnuts where paese = '"
-          + paese
-          + "' and area = '"
-          + area
-          + "' and regione = '"
-          + regione
-          + "' and provincia is not null order by codice";
-      this.popolaNUTS(modopagina, livello, textsearch, codsearch, jsonArray, selectTABNUTS);
+      selectTABNUTS = "select paese, area, regione, provincia, codice, descrizione from tabnuts where paese = ? "
+          + " and area = ? and regione = ? and provincia is not null order by codice";
+      parameters.add(paese);
+      parameters.add(area);
+      parameters.add(regione);
+      this.popolaNUTS(modopagina, livello, textsearch, codsearch, jsonArray, selectTABNUTS, parameters.toArray());
       break;
 
     default:
@@ -138,11 +137,15 @@ public class GestioneAlberoNUTSAction extends Action {
    * @param selectTABCPVSUPP
    * @throws SQLException
    */
-  private void popolaNUTS(String modopagina, Long livello, String textsearch, String codsearch, JSONArray jsonArray, String selectTABCPVSUPP)
+  private void popolaNUTS(String modopagina, Long livello, String textsearch, String codsearch, JSONArray jsonArray, String selectTABCPVSUPP, Object[] params)
       throws SQLException {
-    List<?> datiNUTS = this.sqlManager.getListVector(selectTABCPVSUPP, new Object[] {});
+    List<?> datiNUTS = this.sqlManager.getListVector(selectTABCPVSUPP, params);
+    List<Object> parameters;
+    List<Object> dynaParameters;
     if (datiNUTS != null && datiNUTS.size() > 0) {
       for (int i = 0; i < datiNUTS.size(); i++) {
+        
+        dynaParameters = new ArrayList<Object>();
 
         String codice = (String) SqlManager.getValueFromVectorParam(datiNUTS.get(i), 4).getValue();
         String codicesearch = codice + "%";
@@ -151,11 +154,13 @@ public class GestioneAlberoNUTSAction extends Action {
         String addsearch = "";
         if ("VISUALIZZA".equals(modopagina)) {
           if (codsearch != null && !"".equals(codsearch.trim())) {
-            addsearch = " and codice = '" + codsearch.trim() + "' ";
+            addsearch = " and codice = ? ";
+            dynaParameters.add(codsearch.trim());
           }
         } else {
           if (codsearch != null && !"".equals(codsearch.trim())) {
-            addsearch = " and codice = '" + codsearch.trim() + "' ";
+            addsearch = " and codice = ? ";
+            dynaParameters.add(codsearch.trim());
           } else if (textsearch != null && !"".equals(textsearch.trim())) {
             addsearch = " and (";
             String[] words = textsearch.split(" ");
@@ -164,19 +169,28 @@ public class GestioneAlberoNUTSAction extends Action {
               descsearch = StringUtils.replace(descsearch, "%", "#%");
               descsearch = "%" + descsearch.toUpperCase() + "%";
               if (w > 0) addsearch += " and ";
-              addsearch += " (upper(descrizione) like '" + descsearch + "' escape '#' or codice like '" + descsearch + "' escape '#')";
+              addsearch += " (upper(descrizione) like ? escape '#' or codice like ? escape '#')";
+              dynaParameters.add(descsearch.trim());
+              dynaParameters.add(descsearch.trim());
             }
             addsearch += " )";
           }
         }
 
         String selectNUTSFigli = "select count(*) from tabnuts where codice like ? and codice <> ?";
+        parameters = new ArrayList<Object>();
+        parameters.add(codicesearch);
+        parameters.add(codice);
+        parameters.addAll(dynaParameters);
         if (addsearch != null && !"".equals(addsearch.trim())) selectNUTSFigli += addsearch;
-        Long cntNUTSFigli = (Long) this.sqlManager.getObject(selectNUTSFigli, new Object[] { codicesearch, codice });
+        Long cntNUTSFigli = (Long) this.sqlManager.getObject(selectNUTSFigli, parameters.toArray());
 
         if (addsearch != null && !"".equals(addsearch.trim())) {
           String selectNUTSRicerca = "select count(*) from tabnuts where codice like ? " + addsearch;
-          Long cntNUTSRicerca = (Long) this.sqlManager.getObject(selectNUTSRicerca, new Object[] { codicesearch });
+          parameters = new ArrayList<Object>();
+          parameters.add(codicesearch);
+          parameters.addAll(dynaParameters);
+          Long cntNUTSRicerca = (Long) this.sqlManager.getObject(selectNUTSRicerca, parameters.toArray());
           if (cntNUTSRicerca != null && cntNUTSRicerca.longValue() > 0) {
             Object[] rowNUTS = new Object[10];
             rowNUTS[0] = new Long(livello.longValue() + 1);

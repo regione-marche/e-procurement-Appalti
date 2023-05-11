@@ -109,13 +109,13 @@
 
 				<gene:campoLista title="Opzioni<center>${titoloMenu}</center>" width="50">
 					<c:if test="${currentRow >= 0}">
-						<c:set var="chiaveRigaPrenotazione" value="G1AQSPESA.NGARA=T:${datiRiga.V_SPESE_ADESIONI_NGARA};"/>
-						<c:set var="chiaveRigaPrenotazione" value="${chiaveRigaPrenotazione }G1AQSPESA.NCONT=N:${datiRiga.V_SPESE_ADESIONI_NCONT}"/>
+						<c:set var="ngaraRigaPrenotazione" value="${datiRiga.V_SPESE_ADESIONI_NGARA}"/>
+						<c:set var="ncontRigaPrenotazione" value="${datiRiga.V_SPESE_ADESIONI_NCONT}"/>
 						<c:if test="${param.modcont eq '2'}">
-							<c:set var="chiaveRigaPrenotazione" value="${chiaveRigaPrenotazione };G1AQSPESA.CODIMP=T:${param.codimp}"/>
+							<c:set var="codimp" value="${param.codimp}"/>
 						</c:if>
 						<c:if test="${param.modcont eq '2' or param.modcont eq '1'}">
-							<c:set var="chiaveRigaPrenotazione" value="${chiaveRigaPrenotazione };G1AQSPESA.NGARAL=T:${ngaral}"/>
+							<c:set var="ngaral" value="${ngaral}"/>
 						</c:if>
 						<c:set var="cenintRigaPrenotazione" value="${datiRiga.V_SPESE_ADESIONI_CENINT}"/>
 						<c:choose>
@@ -134,7 +134,7 @@
 						
 						<gene:PopUp variableJs="rigaPopUpMenu${currentRow}">
 							<c:if test='${gene:checkProt(pageContext, "MASC.VIS.GARE.G1AQSPESA-lista")}' >
-								<gene:PopUpItem title="Visualizza prenotazioni spesa" href="javascript:listaVisualizzaPrenotazione('${chiaveRigaPrenotazione}','${cenintRigaPrenotazione}')" />
+								<gene:PopUpItem title="Visualizza prenotazioni spesa" href="javascript:listaVisualizzaPrenotazione('${ngaraRigaPrenotazione}','${ncontRigaPrenotazione}','${codimp}','${ngaral}','${cenintRigaPrenotazione}')" />
 							</c:if>
 							<c:if test='${gene:checkProt(pageContext, "MASC.VIS.GARE.V_GARE_ADESIONI-lista")}' >
 								<gene:PopUpItem title="Visualizza dettaglio impegnato" href="javascript:listaVisualizzaImpegnato('${chiaveRigaImpegnato }')" />
@@ -146,7 +146,7 @@
 				</gene:campoLista>
 				
 				<c:set var="visualizzaLinkPrenotato" value='${gene:checkProt(pageContext, "MASC.VIS.GARE.G1AQSPESA-lista")}'/>
-				<c:set var="linkPrenotato" value="javascript:listaVisualizzaPrenotazione('${chiaveRigaPrenotazione}','${cenintRigaPrenotazione}');" />
+				<c:set var="linkPrenotato" value="javascript:listaVisualizzaPrenotazione('${ngaraRigaPrenotazione}','${ncontRigaPrenotazione}','${codimp}','${ngaral}','${cenintRigaPrenotazione}');" />
 				<c:set var="visualizzaLinkImpegnato" value='${gene:checkProt(pageContext, "MASC.VIS.GARE.V_GARE_ADESIONI-lista")}'/>
 				<c:set var="linkImpegnato" value="javascript:listaVisualizzaImpegnato('${chiaveRigaImpegnato}');" />
 				
@@ -158,6 +158,13 @@
 				<gene:campoLista title="Residuo da impegnare" computed = "true" ordinabile = "false" campo="${gene:getDBFunction(pageContext,'isnull','IMPAUT;0')} - ${gene:getDBFunction(pageContext,'isnull','IMPIMP;0')}" definizione="F24.5;0;;MONEY" visibile="true" />
 				<gene:campoLista campo="NGARA" visibile="false"/>
 				<gene:campoLista campo="NCONT" visibile="false"/>
+				
+				<input id="modcont" type="hidden" name="modcont" value="${param.modcont}" /> 
+				<input id="isAccordoQuadro" type="hidden" name="isAccordoQuadro" value="${param.isAccordoQuadro}" /> 
+				<input id="codcont" type="hidden" name="codcont" value="${param.codcont}" /> 
+				<input id="ncont" type="hidden" name="ncont" value="${param.ncont}" /> 
+				<input id="ngaral" type="hidden" name="ngaral" value="${param.ngaral}" /> 
+				<input id="codimp" type="hidden" name="codimp" value="${param.codimp}" /> 
 				
 			</gene:formLista>
 		</td>
@@ -177,15 +184,24 @@
 
 <gene:javaScript>
 	
-	function listaVisualizzaPrenotazione(chiaveRigaPrenotazione,cenintRigaPrenotazione){
+	function listaVisualizzaPrenotazione(ngara,ncont, codimp,ngaral, cenintRigaPrenotazione){
 		var href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1aqspesa/g1aqspesa-lista.jsp";
-		href += "&key=" + chiaveRigaPrenotazione + "&cenint="+cenintRigaPrenotazione;
+		href += "&cenint="+cenintRigaPrenotazione;
+		href += "&ngara=" + ngara + "&ncont=" + ncont;
+		href += "&codimp=" + codimp + "&ngaral=" + ngaral;
 		document.location.href = href;
 	}
 	
 	function listaVisualizzaImpegnato(chiaveRigaImpegnato){
 		var href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/v_gare_adesioni/v_gare_adesioni-lista.jsp";
-		href += "&key=" + chiaveRigaImpegnato;
+		//href += "&key=" + chiaveRigaImpegnato;
+		var ngaraaq=getValCampoChiave(chiaveRigaImpegnato,"V_GARE_ADESIONI.NGARAAQ");
+		var cenint=getValCampoChiave(chiaveRigaImpegnato,"V_GARE_ADESIONI.CENINT");
+		var ditta=getValCampoChiave(chiaveRigaImpegnato,"V_GARE_ADESIONI.DITTA");
+		href += "&ngaraaq=" + ngaraaq;
+		href += "&cenint=" + cenint;
+		if(ditta!=null && ditta!="")
+			href += "&ditta=" + ditta;
 		document.location.href = href;
 	}	
 	

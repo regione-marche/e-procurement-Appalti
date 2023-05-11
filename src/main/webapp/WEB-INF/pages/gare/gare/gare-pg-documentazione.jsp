@@ -14,6 +14,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 
+<jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
 
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 <script type="text/javascript" src="${contextPath}/js/jquery.documenti.gara.js"></script>
@@ -29,8 +30,10 @@
 <c:set var="gestioneUrl" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsGestioneUrlDocumentazioneFunction", pageContext)}' scope="request"/>
 
 <c:set var="richiestaFirma" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "documentiDb.richiestaFirma")}'/>
-<c:set var="firmaRemota" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "firmaremota.auto.url")}'/>
-
+<c:set var="firmaProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:if test='${firmaProvider eq 2}'>
+	<c:set var="firmaRemota" value="true"/>
+</c:if>
 <c:set var="numeroDocumentoWSDM" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.CheckAssociataRdaJIRIDEFunction", pageContext, codiceGara)}' scope="request"/>
 
 <c:if test="${genereGara eq '10' or genereGara eq '20' }">
@@ -41,6 +44,8 @@
 
 	<gene:redefineInsert name="pulsanteNuovo"></gene:redefineInsert>
 	<gene:redefineInsert name="schedaNuovo"></gene:redefineInsert>
+	<gene:redefineInsert name="documentiAssociati"></gene:redefineInsert>
+	<gene:redefineInsert name="noteAvvisi"></gene:redefineInsert>
 	
 	<gene:campoScheda campo="NGARA"  visibile="false" />
 	<gene:campoScheda campo="CODGAR1"  visibile="false" />
@@ -105,18 +110,6 @@
 	<gene:redefineInsert name="schedaModifica"></gene:redefineInsert>
 
 	<c:choose>
-		<c:when test="${tipoDoc eq 3 and garaElencoCatalogo eq 'true'}">
-			<jsp:include page="/WEB-INF/pages/gare/documgara/sezione-documenti.jsp">
-				<jsp:param name="codiceGara" value="${codiceGara}"/>
-				<jsp:param name="ngara" value="${numeroGara}"/>
-				<jsp:param name="gruppo" value="${tipoDoc}"/>
-				<jsp:param name="tipoDoc" value="${tipoDoc}"/>
-				<jsp:param name="bustaLotti" value="${bustaLotti}"/>
-				<jsp:param name="richiestaFirma" value="${richiestaFirma}"/>
-				<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}" />
-				<jsp:param name="isProceduraTelematica" value="${isProceduraTelematica}"/>
-			</jsp:include>
-		</c:when>
 		<c:when test="${tipoDoc ne 2}">
 			<jsp:include page="/WEB-INF/pages/gare/documgara/elenco-documenti-albero.jsp">
 				<jsp:param name="numeroGara" value="${numeroGara}"/>
@@ -125,6 +118,12 @@
 				<jsp:param name="tipoDoc" value="${tipoDoc}"/>
 				<jsp:param name="genere" value="${genereGara}"/>
 				<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}" />
+				<jsp:param name="gestioneQuestionariPreq" value="${gestioneQuestionariPreq}" />
+				<jsp:param name="gestioneQuestionariAmm" value="${gestioneQuestionariAmm}" />
+				<jsp:param name="gestioneQuestionariTec" value="${gestioneQuestionariTec}" />
+				<jsp:param name="gestioneQuestionariEco" value="${gestioneQuestionariEco}" />
+				<jsp:param name="noModaleDocumentiQform" value="${noModaleDocumentiQform}" />
+				<jsp:param name="gestioneQuestionariIscriz" value="${gestioneQuestionariIscriz}" />
 			</jsp:include>
 		</c:when>
 		<c:otherwise>
@@ -145,6 +144,10 @@
 </gene:formScheda>
 
 <jsp:include page="/WEB-INF/pages/gene/system/firmadigitale/modalPopupFirmaDigitaleRemota.jsp" />
+
+<c:if test="${tipoDoc eq 3 and ((garaElencoCatalogo ne 'true' and fn:contains(listaOpzioniDisponibili, 'OP135#')) or (garaElencoCatalogo eq 'true' and fn:contains(listaOpzioniDisponibili, 'OP136#')))}">
+	<jsp:include page="/WEB-INF/pages/gare/commons/modalePopupInserimentodocumenti.jsp" />
+</c:if>
 
 <gene:javaScript>
 
@@ -170,12 +173,52 @@ function visualizzaDocumenti(ngara,tipoPubblicazione,gruppo){
 }
 
 function visualizzaDocumentiConcorrenti(ngara,busta,titoloBusta){
-	var href = contextPath + "/ApriPagina.do?href=gare/documgara/documenti-tipologia.jsp";
-	formVisualizzaDocumenti.key.value = "GARE.NGARA=T:" + ngara;
-	formVisualizzaDocumenti.busta.value = busta;
-	formVisualizzaDocumenti.titoloBusta.value = titoloBusta;
-	formVisualizzaDocumenti.gruppo.value = 3;
-	formVisualizzaDocumenti.submit();
+	var gestioneQuestionariPreq = $('#gestioneQuestionariPreq').val();
+	var gestioneQuestionariAmm = $('#gestioneQuestionariAmm').val();
+	var gestioneQuestionariTec = $('#gestioneQuestionariTec').val();
+	var gestioneQuestionariEco = $('#gestioneQuestionariEco').val();
+	var noModaleDocumentiQform = $('#noModaleDocumentiQform').val();
+	if(noModaleDocumentiQform=="true"){
+		if(gestioneQuestionariPreq=="INSQFORM")
+			gestioneQuestionariPreq = "MODALE-INSQFORM";
+		if(gestioneQuestionariAmm=="INSQFORM")
+			gestioneQuestionariAmm = "MODALE-INSQFORM";
+		if(gestioneQuestionariTec=="INSQFORM")
+			gestioneQuestionariTec = "MODALE-INSQFORM";
+		if(gestioneQuestionariEco=="INSQFORM")
+			gestioneQuestionariEco = "MODALE-INSQFORM";
+	}
+	
+	var autorizzatoModifiche = "${autorizzatoModifiche}";
+	if(((busta == 4 && gestioneQuestionariPreq=="INSQFORM") || (busta == 1 && gestioneQuestionariAmm=="INSQFORM")) && autorizzatoModifiche != "2" ){
+		apriModaleQform(ngara,busta, titoloBusta);
+	}else if(((busta == 4 && gestioneQuestionariPreq=="MODALE-INSQFORM") || (busta == 1 && gestioneQuestionariAmm=="MODALE-INSQFORM") || (busta == 2 && gestioneQuestionariTec=="MODALE-INSQFORM") || (busta == 3 && gestioneQuestionariEco=="MODALE-INSQFORM")) && autorizzatoModifiche != "2" ){
+		var href = contextPath + "/ApriPagina.do?href=gare/documgara/qform.jsp";
+		formVisualizzaDocumenti.href.value="gare/documgara/qform.jsp";
+		formVisualizzaDocumenti.key.value = "GARE.NGARA=T:" + ngara;
+		formVisualizzaDocumenti.busta.value = busta;
+		formVisualizzaDocumenti.titoloBusta.value = titoloBusta;
+		formVisualizzaDocumenti.gruppo.value = 3;
+		formVisualizzaDocumenti.modoQform.value="INSQFORM";
+		formVisualizzaDocumenti.submit();
+	}else if((busta == 4 && gestioneQuestionariPreq=="VISQFORM") || (busta == 1 && gestioneQuestionariAmm=="VISQFORM") || (busta == 2 && gestioneQuestionariTec=="VISQFORM") || (busta == 3 && gestioneQuestionariEco=="VISQFORM")){
+		var href = contextPath + "/ApriPagina.do?href=gare/documgara/qform.jsp";
+		formVisualizzaDocumenti.href.value="gare/documgara/qform.jsp";
+		formVisualizzaDocumenti.key.value = "GARE.NGARA=T:" + ngara;
+		formVisualizzaDocumenti.busta.value = busta;
+		formVisualizzaDocumenti.titoloBusta.value = titoloBusta;
+		formVisualizzaDocumenti.gruppo.value = 3;
+		formVisualizzaDocumenti.modoQform.value="VISQFORM";
+		formVisualizzaDocumenti.submit();
+	}else {
+		var href = contextPath + "/ApriPagina.do?href=gare/documgara/documenti-tipologia.jsp";
+		formVisualizzaDocumenti.href.value="gare/documgara/documenti-tipologia.jsp";
+		formVisualizzaDocumenti.key.value = "GARE.NGARA=T:" + ngara;
+		formVisualizzaDocumenti.busta.value = busta;
+		formVisualizzaDocumenti.titoloBusta.value = titoloBusta;
+		formVisualizzaDocumenti.gruppo.value = 3;
+		formVisualizzaDocumenti.submit();
+	}
 }
 function pubblicaSuPortaleAppalti(){
 	var href = "href=gare/commons/popup-pubblica-portale.jsp?codiceGara=${codiceGara}&ngara=${numeroGara}&gruppo=${gruppo}&tipologiaDoc=${tipoDoc}&valtec=${datiRiga.GARE1_VALTEC}&isProceduraTelematica=${isProceduraTelematica}&entita=GARE&genereGara=${genereGara}";
@@ -190,6 +233,45 @@ function visAllegatiRda(codice){
 	formAllegatiRda.codice.value = codice;
 	formAllegatiRda.genere.value = "2";
 	formAllegatiRda.submit();
+}
+
+
+function visualizzaDocumentiOperatori(ngara,val1Fasele,val2Fasele,titolo){
+	var gestioneQuestionariIscriz = $('#gestioneQuestionariIscriz').val();
+	var busta=0;
+	var fasEle="${iscrizione}";
+	if(val1Fasele==2 && val2Fasele==3)
+		 fasEle="${rinnovo}";
+	var autorizzatoModifiche = "${autorizzatoModifiche}";
+	if((val1Fasele == 1 && gestioneQuestionariIscriz=="INSQFORM") && autorizzatoModifiche != "2" ){
+		apriModaleQform(ngara,busta, titolo);
+	}else if(val1Fasele == 1 && gestioneQuestionariIscriz=="MODALE-INSQFORM" && autorizzatoModifiche != "2" ){
+		var href = contextPath + "/ApriPagina.do?href=gare/documgara/qform.jsp";
+		formVisualizzaDocumenti.href.value="gare/documgara/qform.jsp";
+		formVisualizzaDocumenti.key.value = "GARE.NGARA=T:" + ngara;
+		formVisualizzaDocumenti.fasEle.value = fasEle;
+		formVisualizzaDocumenti.titoloBusta.value = titolo;
+		formVisualizzaDocumenti.gruppo.value = 3;
+		formVisualizzaDocumenti.modoQform.value="INSQFORM";
+		formVisualizzaDocumenti.submit();
+	}else if(val1Fasele == 1 && gestioneQuestionariIscriz=="VISQFORM"){
+		var href = contextPath + "/ApriPagina.do?href=gare/documgara/qform.jsp";
+		formVisualizzaDocumenti.href.value="gare/documgara/qform.jsp";
+		formVisualizzaDocumenti.key.value = "GARE.NGARA=T:" + ngara;
+		formVisualizzaDocumenti.fasEle.value = fasEle;
+		formVisualizzaDocumenti.titoloBusta.value = titolo;
+		formVisualizzaDocumenti.gruppo.value = 3;
+		formVisualizzaDocumenti.modoQform.value="VISQFORM";
+		formVisualizzaDocumenti.submit();
+	}else {
+		var href = contextPath + "/ApriPagina.do?href=gare/documgara/documenti-tipologia.jsp";
+		formVisualizzaDocumenti.href.value="gare/documgara/documenti-tipologia.jsp";
+		formVisualizzaDocumenti.key.value = "GARE.NGARA=T:" + ngara;
+		formVisualizzaDocumenti.fasEle.value = fasEle;
+		formVisualizzaDocumenti.titoloBusta.value = titolo;
+		formVisualizzaDocumenti.gruppo.value = 3;
+		formVisualizzaDocumenti.submit();
+	}
 }
 
 </gene:javaScript>
@@ -218,6 +300,8 @@ function visAllegatiRda(codice){
 	<input type="hidden" name="autorizzatoModifiche" value="${autorizzatoModifiche}" />	
 	<input type="hidden" name="isProceduraTelematica" value="${isProceduraTelematica}" />	
 	<input type="hidden" name="idconfi" value="${idconfi}" />	
+	<input type="hidden" name="modoQform" id="modoQform" value="" />
+	<input type="hidden" name="fasEle" id="fasEle" value="" />
 </form> 
 
 <form name="formInviaAttiSCP" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">

@@ -314,6 +314,18 @@
 							<c:otherwise>
 								<br>
 								${msgConferma }
+								<c:if test="${visOffertaEco eq true}">
+									<c:set var ="parGaraOffUnica" value="${isGaraLottiConOffertaUnica}"/>
+									<c:set var ="parCodiceGara" value="${ngara}"/>
+									<c:if test="${ bustalotti eq '1'}">
+										<c:set var ="parGaraOffUnica" value="bustalotti=1"/>
+										<c:set var ="parCodiceGara" value="${codgar}"/>
+									</c:if>
+									<c:set var="esitoControlloCommissione" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.ControlliComponentiCommissioneFunction", pageContext, parCodiceGara,"false", ngara,parGaraOffUnica)}' />
+									<c:if test="${ esitoControlloCommissione eq 'NOK'}">
+										${msgCommissione}
+									</c:if>
+								</c:if>
 								<br><br>
 								Confermi l'operazione ?
 								<br>

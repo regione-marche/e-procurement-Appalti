@@ -16,8 +16,10 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 
+<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.archWhereFunctions.ComponiWhereDITGFunction" />
 
-<c:set var="tmp" value='${trovaAddWhere}' /> 
+<c:set var="nomeContainerFiltri" value="deftrovaDITG-${empty param.numeroPopUp ? 0 : param.numeroPopUp}"/> 
+<c:set var="tmp" value="${sessionScope[nomeContainerFiltri].trovaAddWhere}" />
 
 <c:choose>
 	<c:when test='${(!empty tmp) and fn:contains(tmp, "daatto") }' >
@@ -27,7 +29,6 @@
 		<c:set var="titolo" value="Selezione ditta per aggiudicazione definitiva" />
 	</c:otherwise>
 </c:choose>
-
 
 <gene:template file="popup-template.jsp" >
 	<gene:setString name="titoloMaschera" value="${titolo }"/>

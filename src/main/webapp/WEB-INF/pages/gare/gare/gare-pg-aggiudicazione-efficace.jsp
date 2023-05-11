@@ -22,6 +22,7 @@
 </gene:redefineInsert>
 	
 <c:set var="codiceGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetCodiceGaraFunction", pageContext)}' />
+<c:set var="ncont" value="1"/>
 
 <c:set var="ngara" value='${gene:getValCampo(key, "GARE.NGARA")}' />
 
@@ -58,6 +59,27 @@
 			</c:choose>
 		</tr>
 	</gene:redefineInsert>
+	
+	<gene:redefineInsert name="documentiAssociati" >
+	<c:choose>
+		  <c:when test='${isNavigazioneDisabilitata ne "1"}'>
+		  <c:set var="addWhere" value="COAKEY1=${datiRiga.GARECONT_NGARA};COAKEY2=${ncont}"/>
+		  <c:set var="fictitiousVar" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetNumDocAssociatiCustomFunction", pageContext, "GARECONT", addWhere)}' />
+			<tr>
+				<td class="vocemenulaterale">
+					<a href='javascript:documentiAssociatiGarecont();' title="Documenti associati contratto" tabindex="1522">
+						Documenti associati agg.efficace <c:if test="${not empty requestScope.numRecordDocAssociatiCustom}">(${requestScope.numRecordDocAssociatiCustom})</c:if>
+					</a>
+				</td>
+			</tr>
+		</c:when>
+		        <c:otherwise>
+		          	<td>
+						Documenti associati agg.efficace
+					</td>
+		        </c:otherwise>
+			</c:choose>
+		</gene:redefineInsert>
 				
 	<jsp:include page="gare-interno-contratto.jsp">
 		<jsp:param name="chiamante" value="aggiudicazione-efficace"/>
@@ -69,7 +91,7 @@
 	<input type="hidden" name="isGaraLottiConOffertaUnica" id="isGaraLottiConOffertaUnica" value="${isGaraLottiConOffertaUnica}" />
 	<input type="hidden" name="WIZARD_PAGINA_ATTIVA" value="${paginaAttivaWizard}" />
 	<input type="hidden" name="DIREZIONE_WIZARD" id="DIREZIONE_WIZARD" value="" />
-
+	<input type="hidden" name="entitaPrincipaleModificabile" id="entitaPrincipaleModificabile" value="${sessionScope.entitaPrincipaleModificabile}" />
 	<gene:campoScheda>
 		<td class="comandi-dettaglio" colSpan="2">
 			<c:choose>
@@ -131,6 +153,12 @@
 	$('#rowLinkAddGARCOMPREQ td:eq(1)').attr("colspan","4");
 	$('#rowMsgLastGARCOMPREQ td').parent().prepend($("<td>"));
 	$('#rowMsgLastGARCOMPREQ td:eq(1)').attr("colspan","4");
+	
+	function documentiAssociatiGarecont(){
+			var keys = "GARECONT.NGARA=T:"+getValue("GARECONT_NGARA")+";GARECONT.NCONT=N:"+${ncont};
+			var href = contextPath+'/ListaDocumentiAssociati.do?'+csrfToken+'&metodo=visualizza&entita=GARECONT&valori='+keys;
+		document.location.href = href;
+	}
 		
 	
 	</gene:javaScript>

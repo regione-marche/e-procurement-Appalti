@@ -70,7 +70,7 @@ public class GestorePopupCopiaCommissione extends AbstractGestoreEntita {
 			sqlManager.update(deleteGFOF,new Object[] {lottodestinazione});
 
 			String selectGFOF = "select ngara2, codfof, incfof, nomfof, intfof, impfof, impliq, impspe, dliqspe, numcomm,"
-			    + "numord, indisponibilita,motivindisp, datarichiesta, dataaccettazione, espgiu, id from gfof where ngara2 = ?";
+			    + "numord, indisponibilita,motivindisp, datarichiesta, dataaccettazione, espgiu, id, sezalbo from gfof where ngara2 = ?";
 
 			List datiGFOF = sqlManager.getListHashMap(selectGFOF, new Object[] {lottosorgente});
 

@@ -10,10 +10,18 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Vector;
+
+import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.domain.LogEvento;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
@@ -21,12 +29,6 @@ import it.eldasoft.sil.pg.bl.AggiudicazioneManager;
 import it.eldasoft.sil.pg.bl.MEPAManager;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.sql.SQLException;
-import java.util.List;
-
-import org.apache.log4j.Logger;
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore non standard per l'aggiornamento della fase gara
@@ -101,14 +103,33 @@ public class GestoreSetFase extends AbstractGestoreEntita {
     MEPAManager mepaManager = (MEPAManager) UtilitySpring.getBean("mepaManager",
         this.getServletContext(), MEPAManager.class);
 
-
+    String codEvento="GA_ATTIVA_FASE_DOCAMM";
+    String descrEvento = "Attivazione fase apertura doc. amministrativa";
     try{
 
       try {
-        pgManager.updateChiusuraAperturaFasiRicezione(codiceGara, chiusuraAperturaFasiRicezione);
-        if("ATTIVA".equals(chiusuraAperturaFasiRicezione)){
-          mepaManager.impostaComunicazioniAScartate(codiceGara, "DOC_AMM");
+        String nobustamm= (String)this.sqlManager.getObject("select nobustamm from torn where codgar=?", new Object[] {"$"+codiceGara});
+        if("1".equals(nobustamm)) {
+          String select="select g.modlicg,g1.valtec from gare g,gare1 g1  where g.ngara=? and g1.ngara=g.ngara";
+          Vector<JdbcParametro> datiGara = sqlManager.getVector(select, new Object[] { codiceGara });
+          Long modlicg = null;
+          String valtec = null;
+          if (datiGara != null && datiGara.size() > 0){
+            modlicg = (Long) (datiGara.get(0)).getValue();
+            valtec = (String) (datiGara.get(1)).getValue();
+          }
+          pgManager.updateChiusuraAperturaFasiRicezione(codiceGara, chiusuraAperturaFasiRicezione,false,modlicg,valtec);
+          if("ATTIVA".equals(chiusuraAperturaFasiRicezione)) {
+            codEvento="GA_ATTIVA_FASE_OFFERTE";
+            descrEvento = "Attivazione fase apertura offerte";
+          }
+        }else {
+          pgManager.updateChiusuraAperturaFasiRicezione(codiceGara, chiusuraAperturaFasiRicezione,true,null,null);
+          if("ATTIVA".equals(chiusuraAperturaFasiRicezione)){
+            mepaManager.impostaComunicazioniAScartate(codiceGara, "DOC_AMM");
+          }
         }
+
         livEvento = 1;
         errMsgEvento = "";
       } catch (SQLException s) {
@@ -129,8 +150,8 @@ public class GestoreSetFase extends AbstractGestoreEntita {
           LogEvento logEvento = LogEventiUtils.createLogEvento(this.getRequest());
           logEvento.setLivEvento(livEvento);
           logEvento.setOggEvento(codiceGara);
-          logEvento.setCodEvento("GA_ATTIVA_FASE_DOCAMM");
-          logEvento.setDescr("Attivazione fase apertura doc. amministrativa");
+          logEvento.setCodEvento(codEvento);
+          logEvento.setDescr(descrEvento);
           logEvento.setErrmsg(errMsgEvento);
           LogEventiUtils.insertLogEventi(logEvento);
         } catch (Exception le) {
@@ -197,7 +218,7 @@ public class GestoreSetFase extends AbstractGestoreEntita {
           try{
             lotto=SqlManager.getValueFromVectorParam(lotti.get(i), 0).stringValue();
             if("AUTO".equals(gestioneSoglia) && (i==0 || "2".equals(applicaTuttiLotti))){
-              valori = aggiudicazioneManager.getMetodoCalcoloSoglia(isGaraDLGS2017);
+              valori = aggiudicazioneManager.getMetodoCalcoloSoglia(isGaraDLGS2017,"",new Long("0"));
               metsoglia = (Long)valori[0];
               if(valori[1]!=null)
                 metcoeff = (Double)valori[1];

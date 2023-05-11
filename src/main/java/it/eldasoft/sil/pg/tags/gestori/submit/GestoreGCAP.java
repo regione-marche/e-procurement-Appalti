@@ -81,8 +81,13 @@ public class GestoreGCAP extends AbstractGestoreChiaveNumerica {
                   if(configurazione.isEsito()){
                     String tipoWSERP = configurazione.getRemotewserp();
                     if("AVM".equals(tipoWSERP)){
-                      int res = this.gestioneWSERPManager.scollegaRda(null, ngara, "2", codiceRda, posizioneRda, this.getRequest());
-                      if(res < 0){
+                      String[] res = this.gestioneWSERPManager.scollegaRda(null, ngara, "2", codiceRda, posizioneRda, this.getRequest());
+                      String ris = res[0];
+                      int intRis = 0;
+                      if(ris!=null) {
+                      	 intRis=Long.valueOf(ris).intValue();
+                      }
+                      if(intRis < 0){
                         throw new GestoreException(
                             "Errore durante l'operazione di scollegamento delle RdA dalla gara",
                             "scollegaRdaGara", null);

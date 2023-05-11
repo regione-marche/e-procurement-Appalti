@@ -5,9 +5,13 @@
 
 var _integrazioneCOS;
 var _integrazioneWSDM;
+var _isStipula=false;
 
 $(window).on("load", function (){
 	
+	if($("#entita").val() == "G1STIPULA")
+		_isStipula=true;
+		
 	if($("#genere").val()=='1' || $("#genere").val()=='3'){
 		var _lottoVisibile = true;
 	}else{
@@ -50,6 +54,7 @@ $(window).on("load", function (){
 		_popolaTabellato("supporto","supporto");
 		_popolaTabellato("idunitaoperativamittente","idunitaoperativamittente");
 		_popolaTabellato("sottotipo","sottotipo");
+		_popolaTabellato("tipofirma","tipofirma");
 		$('#idunitaoperativadestinataria').val($('#idunitaoperativamittente').val());
 		_controlloPresenzaFascicolazione();
 		_controlloFascicoliAssociati();
@@ -65,6 +70,7 @@ $(window).on("load", function (){
 			$("#richiestainserimentoprotocollo").validate({
 				rules: {
 					classificadocumento: "required",
+					classdoc_filtro: "required",
 					codiceregistrodocumento: "required",
 					tipodocumento: "required",
 					mittenteinterno: "required",
@@ -101,10 +107,14 @@ $(window).on("load", function (){
 					idunitaoperativamittente: "required",
 					strutturaonuovo: "required",
 					codiceufficio_filtro: "required",
-					sottotipo: "required"
+					sottotipo: "required",
+					tipofirma: "required",
+					listafascicoli: "required",
+					uocompetenzaTxt: "required"
 				},
 				messages: {
 					classificadocumento: "Specificare la classifica",
+					classdoc_filtro: "Specificare la classifica",
 					codiceregistrodocumento: "Specificare il codice registro",
 					tipodocumento: "Specificare il tipo documento",
 					mittenteinterno: "Specificare il mittente interno",
@@ -141,7 +151,10 @@ $(window).on("load", function (){
 					idunitaoperativamittente: "Specificare l'unit&agrave; operativa mittente",
 					strutturaonuovo:"Specificare la struttura",
 					codiceufficio_filtro:"Specificare il codice ufficio",
-					sottotipo:"Specificare il sottotipo"
+					sottotipo:"Specificare il sottotipo",
+					tipofirma: "Specificare il tipo firma",
+					listafascicoli: "Specificare il fascicolo",
+					uocompetenzaTxt: "Specificare l'unit&agrave; operativa di competenza"
 				},
 				errorPlacement: function (error, element) {
 					error.insertAfter($(element));
@@ -155,7 +168,7 @@ $(window).on("load", function (){
 					$( "#mittenteinterno" ).rules( "remove" );
 					
 				}
-				if (_tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "JDOC") {
+				if (_tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "JDOC" && _tipoWSDM != "NUMIX") {
 					$( "#mezzo" ).rules( "remove" );
 					
 				}
@@ -210,6 +223,25 @@ $(window).on("load", function (){
 						  }
 						});
 
+				}
+				
+				if(_tipoWSDM == "ITALPROT"){
+					$( "#classificafascicolonuovoItalprot" ).rules( "add", {
+						required: true,
+						  messages: {
+							  required: "Specificare la classifica del fascicolo"
+						  }
+					});
+				}
+				
+				if(_tipoWSDM == "ENGINEERINGDOC" && _fascicoliPresenti >0){
+					$( "#uocompetenzaTxt" ).rules( "remove" );
+					$( "#uocompetenzaTxt" ).rules( "add", {
+						  required: true,
+						  messages: {
+							  required: "Specificare l'unit&agrave; operativa di competenza.<br>Utilizzare la funzione 'Modifica U.O. di competenza' disponibile nella scheda della procedura",
+						  }
+						});
 				}
 
 		}
@@ -319,6 +351,10 @@ $(window).on("load", function (){
 
 		_creaTabellaDocumenti();
 		
+		var stipula=false;
+		if($("#entita").val() == "G1STIPULA")
+			stipula=true;
+		
 		_tableDocumenti = $('#documenti').removeAttr('width').DataTable( {
 			"ajax": {
 				"url": "pg/GetListaDocumenti.do",
@@ -326,7 +362,10 @@ $(window).on("load", function (){
 					return {
 						operation: $("#operation").val(),
 						codgar: $("#codgar").val(),
-						genere: $("#genere").val()
+						genere: $("#genere").val(),
+						stipula: stipula,
+						key1: $("#key1").val(),
+						chiaveOriginale: $("#chiaveOriginale").val()
 					};	
 				},
 				"complete": function() {
@@ -381,7 +420,9 @@ $(window).on("load", function (){
 					}
 					
 					if ( full.ARCHIVIATO.value == "1" ){
-						TipoDocDesc = TipoDocDesc + "\r\n(ARCHIVIATO)"
+						TipoDocDesc = TipoDocDesc + "\r\n(ARCHIVIATO)";
+					}else if ( full.ARCHIVIATO.value == "3" ){
+						TipoDocDesc = TipoDocDesc + "\r\n(ANNULLATO DA OPERATORE)";
 					}
 
 					return TipoDocDesc;
@@ -567,6 +608,13 @@ $(window).on("load", function (){
 								_span.append(statoDesc);
 							}
                             break;
+                        case 8://errore in fase di creazione dell'indice (doc. mancante)'
+                            statoDesc = "Errore in creazione file di indice";
+							var _a = $("<a/>",{id: "detterrore_" + full.PROVENIENZA.value + "_" + full.IDPRG.value + "_" + full.IDDOCDIG.value ,href: "#", "text": "...", "class": "link-generico"});
+							var _div = $("<div/>", {"text":full.ESITO.value});
+							_div.css("display","none");
+							_span.append(_div).append(statoDesc + "&nbsp;").append(_a);
+                            break;
 						default:
 							statoDesc = "Da archiviare";
 							_span.append(statoDesc);
@@ -647,6 +695,7 @@ $(window).on("load", function (){
 							break;
 						case 2:
 						case 7:
+						case 8:
 							_div.append(_check);
 							_div.append(_check1);
 							break;
@@ -903,11 +952,15 @@ $(window).on("load", function (){
 			},
 			autoOpen: false,
 			modal: true,
-			width: 550,
-			height:600,
+			width: 700,
+			height:650,
 			title: 'Trasferisci al documentale',
 			buttons: {
-			"Conferma": _archInProt,
+			"Conferma": {
+				text: "Conferma",
+				id: "archiviaWsdmButton",
+				click: _archInProt 
+			},
 			"Annulla": function() {
 					$( this ).dialog( "close" );
 				}
@@ -925,22 +978,24 @@ $(window).on("load", function (){
 				_validazioneRichiestaInserimentoProtocollo();
 				_getRichiesta();
 				_controlloPresenzaFascicolazione();
-				if (_tipoWSDM != "ENGINEERINGDOC" ){
-					if(_tipoWSDM != "SMAT" )
-						_controlloFascicoliAssociati();
-					_inizializzazioni();
-					 if(_fascicolazioneAbilitata==1 && _tipoWSDM == "JPROTOCOL"){
-						 $("#sezionedatidocumentale").hide();
-					 }
-					
-				}else{
-					//Nel caso di ENGINEERINGDOC non si deve andare a controllare la presenza del fascicolo in WSFASCICOLO
-					//ma si deve leggere dal file dei tabellati la proprietà idfolder in cui è specificato il fascicolo da usare
-					_inizializzazioniFascicoloENGINEERINGDOC();
-				}
+				
+				if(_tipoWSDM != "SMAT" )
+					_controlloFascicoliAssociati();
+				_inizializzazioni();
+				 if(_fascicolazioneAbilitata==1 && _tipoWSDM == "JPROTOCOL"){
+					 $("#sezionedatidocumentale").hide();
+				 }
+				
+				if(_tipoWSDM == "ENGINEERINGDOC")
+					$("#sezionedatidocumentale").hide();	
+				
 				if (_tipoWSDM == "JIRIDE"){
 					_popolaTabellato("tipocollegamento","tipocollegamento");
 					_controlloAssociaDocumentiProtocollo();
+				}
+				if (_tipoWSDM == "LAPISOPERA"){
+					$("#classificadocumento").show();
+					$("#classificadocumento").closest('tr').show();
 				}
 			}, 800);
 		
@@ -1095,6 +1150,9 @@ $(window).on("load", function (){
 		
 	$('#menuexpdoc, #pulsanteexpdoc').on("click", function() {
 		var comando = "href=gare/commons/popup-richiesta-export-documenti.jsp?codgar=" + $("#codgar").val() + "&genere=" + $("#genere").val() + "&codice=" + $("#codice").val();
+		comando += "&entita=" + $('#entita').val();
+		if(_isStipula) 
+			comando+="&idstipula=" + $('#key1').val();
 		openPopUpCustom(comando, "exportDocumenti", 700, 350, "yes", "yes");
 	});
 	
@@ -1102,7 +1160,7 @@ $(window).on("load", function (){
 		
 		var _idRichiesta="";
 		_setWSLogin();
-		if(_tipoWSDM=="ARCHIFLOW" && (_ufficioIntestatario==null || _ufficioIntestatario=="") ){
+		if((_tipoWSDM=="ARCHIFLOW" || _tipoWSDM=="NUMIX") && (_ufficioIntestatario==null || _ufficioIntestatario=="") ){
 			alert("Non e' possibile procedere poiche' non e' valorizzato il codice della stazione appaltante");
 			return;
 		}
@@ -1179,7 +1237,14 @@ $(window).on("load", function (){
 					RUP:$("#RUP").val(),
 					nomeRup: $("#nomeRup").text(),
 					acronimoRup: $("#acronimoRup").text(),
-					sottotipo: $("#sottotipo option:selected").val()
+					sottotipo: $("#sottotipo option:selected").val(),
+					idunitaoperativamittente : $("#idunitaoperativamittente option:selected").val(),
+					idunitaoperativamittenteDesc: $( "#idunitaoperativamittente option:selected" ).text(),
+					tipofirma:$("#tipofirma option:selected").val(),
+					key1:$("#key1").val(),
+					entita: $("#entita").val(),
+					uocompetenza:$("#uocompetenza").val(),
+					uocompetenzadescrizione:$("#uocompetenzadescrizione").val()
 	    		},
 	    		
 				complete: function() {
@@ -1264,9 +1329,10 @@ $(window).on("load", function (){
 		if (_tipoWSDM == "TITULUS"){
 			caricamentoCodiceAooTITULUS();
 			_popolaTabellatoClassificaTitulus();
-		}
-		if (_tipoWSDM == "JIRIDE"){
+		}else  if (_tipoWSDM == "JIRIDE"){
 			caricamentoStrutturaJIRIDE();
+		}else if (_tipoWSDM == "NUMIX"){
+			caricamentoClassificaNumix();
 		}
     });
 	
@@ -1274,6 +1340,8 @@ $(window).on("load", function (){
 		if (_tipoWSDM == "TITULUS"){
 			caricamentoCodiceAooTITULUS();
 			_popolaTabellatoClassificaTitulus();
+		}else if (_tipoWSDM == "NUMIX"){
+			caricamentoClassificaNumix();
 		}
     });
 	
@@ -1300,6 +1368,25 @@ $(window).on("load", function (){
 			gestionemodificacampofascicolo();
 		}
 	});
+	
+	$('#annofascicolo').change(function() {
+				if (_tipoWSDM == "ITALPROT"){
+					$('#listafascicoli').empty();
+					$('#codicefascicolo').val(); 
+				}
+			});
+			
+			$('#classificafascicolonuovoItalprot').change(function() {
+				$('#listafascicoli').empty();
+				$('#codicefascicolo').val(); 
+				
+			});
+	
+	$('#listafascicoli').on('change',  function () {
+				var str = this.value;
+				gestioneSelezioneFascicolo(str);
+				
+			});
 });
 
 
@@ -1361,7 +1448,7 @@ $(window).on("load", function (){
 		if (_tipoWSDM == "TITULUS" || _tipoWSDM == "SMAT")
 			$("#sezionedatidocumentale").hide();
 		
-		if(_tipoWSDM == "PRISMA" || _tipoWSDM == "INFOR"){
+		if(_tipoWSDM == "PRISMA" || _tipoWSDM == "INFOR" || _tipoWSDM == "DOCER"){
 			//$("#idunitaoperativamittente").hide();
 			$("#idunitaoperativamittente").closest('tr').show();
 		}
@@ -1472,54 +1559,50 @@ $(window).on("load", function (){
 				var href = contextPath + "/DocumentoAssociato.do?"+csrfToken+"&metodo=download";
 				document.location.href=href+"&id=" + iddocdig;
 		}else{
-			var vet = dignomdoc.split(".");
-			var ext = vet[vet.length-1];
-			ext = ext.toUpperCase();
-			if(ext=='P7M' || ext=='TSD'){
-				var href = "href=gene/system/firmadigitale/verifica-firmadigitale-popUp.jsp";
-				href += "&idprg=" + idprg;
-				href += "&iddocdig=" + iddocdig;
-					
-				openPopUpCustom(href, "DownloadP7M", 900, 550, "yes", "yes");
-				
-			}else{
-				var href = contextPath + "/pg/VisualizzaFileAllegato.do";
-				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+			digitalSignatureWsCheck: $("#digitalSignatureWsCheck").val();
+			
+			switch(digitalSignatureWsCheck.value)
+			{
+				case "0":
+					var vet = dignomdoc.split(".");
+					var ext = vet[vet.length-1];
+					ext = ext.toUpperCase();
+					if(ext=='P7M' || ext=='TSD'){
+						var href = "href=gene/system/firmadigitale/verifica-firmadigitale-popUp.jsp";
+						href += "&idprg=" + idprg;
+						href += "&iddocdig=" + iddocdig;
+							
+						openPopUpCustom(href, "DownloadP7M", 900, 550, "yes", "yes");
+						
+					}else{
+						var href = contextPath + "/pg/VisualizzaFileAllegato.do";
+						document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+					}
+					break;
+				default:
+					var vet = dignomdoc.split(".");
+					var ext = vet[vet.length-1];
+					ext = ext.toUpperCase();
+					if(ext=='P7M' || ext=='TSD' || ext=='XML' || ext=='PDF'){
+						var href = "href=gene/system/firmadigitale/verifica-firmadigitale-popUp.jsp";
+						href += "&idprg=" + idprg;
+						href += "&iddocdig=" + iddocdig;
+							
+						openPopUpCustom(href, "DownloadP7M", 900, 550, "yes", "yes");
+					}else{
+						if (confirm("Si sta per scaricare (download) una copia del file in locale. Ogni modifica verrà apportata alla copia locale ma non all\'originale. Continuare?"))
+						{
+							var href = contextPath+"/VisualizzaFileDIGOGG.do";
+							document.location.href = href+"?"+csrfToken+"&c0acod=" + c0acod + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+						}
+					}
+					break;
 			}
-
-
+				
 			
 		}
 		
  }
   
-  function _inizializzazioniFascicoloENGINEERINGDOC(){
-	  
-	  $("#annofascicolo").parent().parent().hide();
-	  $("#numerofascicolo").parent().parent().hide();
-	  $("#oggettofascicolo").parent().parent().hide();
-	  $("#oggettofascicolonuovo").parent().parent().hide();
-	  $("#classificafascicolodescrizione").parent().parent().hide();
-	  $("#classificafascicolonuovo").parent().parent().hide();
-	  $("#descrizionefascicolo").parent().parent().hide();
-	  $("#descrizionefascicolonuovo").parent().parent().hide();
-	  $("#sezionedatidocumentale").hide();
-	  $("#codiceaoonuovo").parent().parent().hide();
-	  $("#sezioneamministrazioneorganizzativa").hide();
-	  
-	  if(_fascicolazioneAbilitata==0){
-			$("#inserimentoinfascicolo").val("NO");
-			$("#sezionedatifascicolo").hide();
-			$("#codicefascicolo").parent().parent().hide();
-	  }else{
-			$("#codicefascicolo").parent().parent().show();
-			$("#inserimentoinfascicolo").val("SI_FASCICOLO_ESISTENTE");
-			$("#codicefascicolo").prop("readonly", true);
-			$("#codicefascicolo").addClass("readonly");
-			_inizializzazioneCodiceFascicoloENGINEERINGDOC("idfolder");
-			if($("#codicefascicolo").val() !=null && $("#codicefascicolo").val()!=""){
-				_getWSDMFascicolo(false,600);
-			}
- 	}
-}
+  
 

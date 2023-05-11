@@ -74,6 +74,9 @@
 					<c:when test="${esistonoBusteTecParziali eq 'true'}">
 					<td colSpan="2"><br>Non è possibile procedere perchè ci sono ditte in gara con la busta tecnica acquisita parzialmente (solo sezione tecnico-qualitativa)<br><br></td>
 					</c:when>
+					<c:when test="${esistonoProdottiValutati eq 'true'}">
+					<td colSpan="2"><br>Non è possibile procedere perchè sono presenti prodotti valutati<br><br></td>
+					</c:when>
 					<c:otherwise>
 						<td colSpan="2"><br>Viene annullata l'apertura delle offerte e ripristinata la fase di gara 'Apertura documentazione amministrativa', riabilitando in tale fase la modifica dei dati.<br><br>
 						Confermi l'operazione?<br><br>
@@ -90,7 +93,7 @@
 										
 			<gene:campoScheda>
 				<td class="comandi-dettaglio" colSpan="2">
-					<c:if test="${esistonoLottiInFase7 ne 'true' and esistonoBusteTecParziali ne 'true'}">
+					<c:if test="${esistonoLottiInFase7 ne 'true' and esistonoBusteTecParziali ne 'true' and esistonoProdottiValutati ne 'true'}">
 						<INPUT type="button" class="bottone-azione" value="Conferma" title="Conferma" onclick="javascript:conferma();">
 					</c:if>
 					<INPUT type="button" class="bottone-azione" value="Annulla" title="Annulla" onclick="javascript:annulla();">&nbsp;&nbsp;

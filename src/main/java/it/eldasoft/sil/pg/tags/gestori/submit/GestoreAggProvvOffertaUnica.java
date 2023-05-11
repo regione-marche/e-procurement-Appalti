@@ -10,6 +10,14 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.Vector;
+
+import org.apache.commons.lang.StringUtils;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.db.datautils.DataColumn;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
@@ -22,14 +30,6 @@ import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiGaraFunction;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.Vector;
-
-import org.apache.commons.lang.StringUtils;
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore per update dei dati della seconda fase della pagina Aggiudicazione provvisoria.
@@ -129,12 +129,10 @@ public class GestoreAggProvvOffertaUnica extends AbstractGestoreEntita {
           if(modo!=null)
             pgManager.aggiornaNumAggiudicazioniLotti(codiceElenco, elencoe, codgar, null, catiga, tipgen, numcla, stazioneAppaltante, tipoalgo, modo);
         }
-        this.getSqlManager().update(
-            "update gare set dattoa=?, tattoa = ?, nattoa =? where codgar1 = ? and ngara!=codgar1",
-            new Object[] { dattoa,tattoa,nattoa,codgar});
+
       } catch (SQLException e) {
         throw new GestoreException(
-            "Errore durante l'aggiornamento del campo GARE.DATTOA dei lotti della gara:" + codgar,null,  e);
+            "Errore durante l'aggiornamento del numero aggiudicazioni nei lotti della gara:" + codgar,null,  e);
       }
     }
 

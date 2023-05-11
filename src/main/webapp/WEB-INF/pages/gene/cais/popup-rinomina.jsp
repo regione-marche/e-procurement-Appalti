@@ -35,17 +35,24 @@ Finestra per gestire la rinominazione di una categoria
 
 <c:set var="modo" value="NUOVO" scope="request" />
 
-
+<c:set var="esistonoComunicazioni" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsistonoComunicazioniIscrAggFunction", pageContext, id)}' />
 
 <gene:template file="popup-message-template.jsp">
 	<gene:setString name="titoloMaschera" value='Rinomina categoria ${id}' />
-	<c:set var="isCategoriaAdoperata" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.CheckIsCategoriaAdoperataInPGPLFunction",  pageContext,id,"Si")}' />
+	<c:if test="${esistonoComunicazioni  ne 'true' }">
+		<c:set var="isCategoriaAdoperata" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.CheckIsCategoriaAdoperataInPGPLFunction",  pageContext,id,"Si")}' />
+	</c:if>
 	
 	<gene:redefineInsert name="corpo" >
 		<gene:formScheda entita="CAIS" gestisciProtezioni="false" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreRinominaCategoria">
 			<gene:campoScheda>
 				<td colSpan="2">
 					<br>
+					<c:if test="${esistonoComunicazioni eq 'true' }">
+						<b>Non è possibile procedere alla rinominazione.</b>
+						<br>E' necessario prima elaborare le richieste di iscrizione e aggiornamento a elenco o catalogo da portale
+						<br><br>
+					</c:if>
 					<c:if test="${isCategoriaAdoperata=='true' }">
 						${messaggio }
 						<br>
@@ -54,11 +61,13 @@ Finestra per gestire la rinominazione di una categoria
 			</gene:campoScheda>
 			
 			
-			<gene:campoScheda campo="NEWCODICE" title="Nuovo codice" campoFittizio="true" definizione="T30;0;;;CAISIM" modificabile="${RISULTATO ne 'NOK' }"/>
+			<gene:campoScheda campo="NEWCODICE" title="Nuovo codice" campoFittizio="true" definizione="T30;0;;;CAISIM" modificabile="${RISULTATO ne 'NOK' }">
+				<gene:checkCampoScheda funzione='"##".indexOf("/") < 0 && "##".indexOf(". ") < 0 && "##".indexOf(" .") < 0' obbligatorio="true" messaggio="Il carattere / e le sequenze ' .' e '. ' non sono accettate nel valore del campo codice categoria" />
+			</gene:campoScheda>
 			
 			<gene:campoScheda>
 				<td colSpan="2">
-					<c:if test="${RISULTATO ne 'NOK' }">
+					<c:if test="${RISULTATO ne 'NOK' && esistonoComunicazioni ne 'true'}">
 					<br>
 					Confermi la rinomina?
 					<br>
@@ -71,7 +80,7 @@ Finestra per gestire la rinominazione di una categoria
 			
 		</gene:formScheda>
 	</gene:redefineInsert>
-	<c:if test="${RISULTATO == 'NOK' }" >
+	<c:if test="${RISULTATO == 'NOK' || esistonoComunicazioni eq 'true'}" >
 		<gene:redefineInsert name="buttons">
 				<INPUT type="button" class="bottone-azione" value="Chiudi" title="Chiudi" onclick="javascript:annulla();">&nbsp;
 		</gene:redefineInsert>

@@ -47,8 +47,8 @@
 			<gene:campoScheda campo="DATAPUB" modificabile="false" />
 			<gene:campoScheda campo="NOTEDOCI"/>
 			<gene:campoScheda campo="BUSTA" visibile="false"/>
-			
-						
+			<gene:campoScheda campo="DATADIS" modificabile="false" visibile="${datiRiga.V_GARE_DOCDITTA_DOCANNUL eq 1}"/>
+			<gene:campoScheda campo="DOCANNUL" visibile="false" />	
 			<input type="hidden" name="indiceRigaOpener" id="indiceRiga" value="${param.indiceRiga}" />
 			<input type="hidden" name="sezionitec" id="sezionitec" value="${sezionitec}" />
 		

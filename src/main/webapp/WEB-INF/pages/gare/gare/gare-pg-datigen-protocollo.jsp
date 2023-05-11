@@ -58,6 +58,7 @@
 			scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda.jsp","")}'
 			schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda-popup.jsp","")}'
 			campi="TECNI.CODTEC;TECNI.NOMTEC"
+			functionId="skip"
 			chiave="TORN_CODRUP">
 			<gene:campoScheda campo="CODRUP" title="Codice Responsabile Unico Procedimento" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" />
 			<gene:campoScheda campo="NOMTEC" title="Nome" entita="TECNI" from="TORN" where="GARE.CODGAR1=TORN.CODGAR and TORN.CODRUP=TECNI.CODTEC"

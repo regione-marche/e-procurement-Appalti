@@ -24,7 +24,8 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 <fmt:setBundle basename="AliceResources" />
 <c:set var="abilitazioneGare" value="${sessionScope.profiloUtente.abilitazioneGare}" />
 <c:set var="isPersonalizzazioneGenovaAttiva" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsPersonalizzazioneGenovaAttivaFunction",pageContext)}' scope="request" />
-
+<c:set var="integrazioneProgrammazione" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneProgrammazioneFunction", pageContext)}'/>
+									
 <jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
 
 <gene:redefineInsert name="head">
@@ -56,7 +57,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 <c:set var="garaLottoUnico" value='${garaLottoUnico}'/>
 
 <% //si devono visualizzare gli atti autorizzativi solo se si è nella gara a lotto unico %>
-<c:if test='${garaLottoUnico}'>
+
 	<c:set var="ngaraPerGaratt" value=""/>
 	<c:choose>
 		<c:when test='${! empty gene:getValCampo(param.key, "CODGAR")}' >
@@ -71,7 +72,6 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	</c:choose>
 
 	<c:set var="codgarPerGartecni" value="${ngaraPerGaratt}"/>
-</c:if>
 
 <c:set var="correttiviDefault" value="${gene:callFunction('it.eldasoft.sil.pg.tags.funzioni.GetCorrettiviDefaultFunction', pageContext)}" />
 <c:set var="correttivoLavori" value="${fn:split(correttiviDefault, '#')[0]}"/>
@@ -124,7 +124,12 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 <c:set var="propertyCig" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction",  urlWsCig)}' scope="request"/>
 <c:if test="${! empty propertyCig}">
 	<c:set var="isCigAbilitato" value='1' scope="request"/>
+</c:if>
+<c:set var="propertySimog" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction",  urlWsSimog)}' scope="request"/>
+<c:if test="${! empty propertySimog}">
+	<c:set var="isSimogAbilitato" value='1' scope="request"/>
 </c:if>	
+
 <c:set var="genere" value='1' scope="request"/>
 <c:if test="${garaLottoUnico}">
 	<c:set var="genere" value='2' scope="request"/>
@@ -162,16 +167,34 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsistonoComunicazioniFS10_FS11_Stato9Function", pageContext, gene:getValCampo(key, 'NGARA'))}
 </c:if>
 
+<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.RichiestaCIG") and not (isCigAbilitato eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InviaDatiCIG"))}'>
+	<c:choose>
+		<c:when test="${garaLottoUnico }">
+			<c:set var="codiceGaraSimog" value="${codGar}"/>
+		</c:when>
+		<c:otherwise>
+			<c:set var="codiceGaraSimog" value="${gene:getValCampo(param.keyParent, 'CODGAR')}"/>
+		</c:otherwise>
+	</c:choose>
+	<c:set var="esisteAnagraficaSimog" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsisteAnagraficaSimogFunction", pageContext, codiceGaraSimog)}'/>
+</c:if>
+
+<c:if test='${modo ne "MODIFICA" && modo ne "NUOVO" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.IntegrazioneProgrammazione") && integrazioneProgrammazione eq "1"}'>
+		 <c:set var="valueNgara" value="${garaLottoUnico? null : gene:getValCampo(key, 'NGARA')}" />
+		 <c:set var="valueScollega" value="${garaLottoUnico? 'scollega' : 'scollegalotto'}" />
+		 <c:set var="conteggioRDARDI" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.GetRDARDIFunction", pageContext, "rdaCollegate",codGar,valueNgara,null)}' />
+</c:if>	
+
 <%/* Dati generali della gara */%>
 <gene:formScheda entita="GARE" gestisciProtezioni="true" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreDatiGenerali" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreGARE">
 
-
-
+<c:set var="garaQformOfferte" value="${param.modalitaPresentazione eq '3' or datiRiga.TORN_OFFTEL eq '3'}"/>
 
 <%/* Viene riportato tipoGara, in modo tale che, in caso di errorie riapertura della pagina, 
      venga riaperta considerando il valore definito inizialmente per la prima apertura della pagina */%>
 <input type="hidden" name="tipoGara" value="${param.tipoGara}" />
 <input type="hidden" name="garaLottoUnico" value="${garaLottoUnico}" />
+<input type="hidden" name="arrRda" value="${param.arrRda}" />
 	<c:set var="numeroGara" value="${gene:getValCampo(key, 'NGARA') }" />
 	<c:set var="bloccoPubblicazionePortaleBando" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteBloccoPubblicazionePortaleFunction", pageContext,codGar,"BANDO","false")}' />
 	<c:choose>
@@ -270,7 +293,9 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		  </td>
 	  </tr>
    </c:if>	
-	<c:if test='${modo eq "VISUALIZZA" and garaLottoUnico and datiRiga.TORN_GARTEL eq 1 && gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.V_GARE_TORN-lista.Condividi-gara")}'>
+   <c:if test='${modo eq "VISUALIZZA" and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.V_GARE_TORN-lista.Condividi-gara") and garaLottoUnico}'>
+	<c:choose>
+	<c:when test='${datiRiga.TORN_GARTEL eq 1}'>
 	  <tr>    
 	      <td class="vocemenulaterale">
 	     		<c:choose>
@@ -285,9 +310,37 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>			  
 			</td>
 		</tr>
+	</c:when>
+	<c:otherwise>
+	  <tr>    
+	      <td class="vocemenulaterale">
+	     		<c:choose>
+	     			<c:when test='${isPersonalizzazioneGenovaAttiva eq "1"}'>
+	     				<a href="javascript:apriGestionePermessi('${datiRiga.GARE_CODGAR1}', 2,${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})" tabindex="1503">
+	     			</c:when>
+	     			<c:otherwise>
+	     				<a href="javascript:apriGestionePermessiStandard('${datiRiga.GARE_CODGAR1}', 2,${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})" tabindex="1503">
+	     			</c:otherwise>
+	     		</c:choose>
+				  Condividi e proteggi gara
+				<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>			  
+			</td>
+		</tr>
+	</c:otherwise>
+	</c:choose>	
 	</c:if>
+	<c:if test='${modo eq "VISUALIZZA" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.IntegrazioneProgrammazione") && integrazioneProgrammazione eq "1"}'>
+		 <input type="hidden" name="handleRda" id="handleRda" value="scollega" />
+		 <tr>
+				<td class="vocemenulaterale">
+					<a href="javascript:getListaRdaRdi();" title='Gestisci RdA' tabindex="1514">
+						Gestisci RdA/RdI ${conteggioRDARDI > 0 ? ('('.concat(conteggioRDARDI).concat(')')) : ''}
+					</a>
+				</td>
+			</tr>
+	</c:if>	
 	<c:if test='${modo eq "VISUALIZZA" and autorizzatoModifiche ne "2" and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.RettificaTermini" ) and 
-		(datiRiga.TORN_ITERGA eq 1 or datiRiga.TORN_ITERGA eq 2 or datiRiga.TORN_ITERGA eq 4
+		(datiRiga.TORN_ITERGA eq 1 or datiRiga.TORN_ITERGA eq 2 or datiRiga.TORN_ITERGA eq 4 or datiRiga.TORN_ITERGA eq 7
 		or ((datiRiga.TORN_ITERGA eq 3 or datiRiga.TORN_ITERGA eq 5 or datiRiga.TORN_ITERGA eq 6) and gene:checkProt(pageContext,"PAGE.VIS.GARE.GARE-scheda.DITTECONCORRENTI")))
 		and garaLottoUnico and (datiRiga.TORN_GARTEL ne 1 or (datiRiga.TORN_GARTEL eq 1 and bloccoPubblicazionePortaleBando eq "TRUE"))}'>
 	  	<c:set var="esisteFunzioneRettificaTermini" value="true" scope="request"/>
@@ -301,7 +354,17 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			</td>
 		</tr>
 	</c:if>
-	<c:if test='${modo eq "VISUALIZZA" and bloccoModificatiDati and (empty datiRiga.GARE_CODCIG or empty datiRiga.TORN_NUMAVCP) and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.IntegraCodiceCig")}'>
+	<c:if test="${empty datiRiga.GARE_CODCIG or empty datiRiga.TORN_NUMAVCP }">
+		<c:choose>
+			<c:when test="${empty datiRiga.TORN_NUMAVCP and not empty datiRiga.GARE_CODCIG and (fn:startsWith(datiRiga.GARE_CODCIG, '#') or fn:startsWith(datiRiga.GARE_CODCIG, '$') or fn:startsWith(datiRiga.GARE_CODCIG, 'NOCIG')) }">
+				<c:set var="condizioneCig" value="false"/>
+			</c:when>
+			<c:otherwise>
+				<c:set var="condizioneCig" value="true"/>
+			</c:otherwise>
+		</c:choose>
+	</c:if>
+	<c:if test='${modo eq "VISUALIZZA" and bloccoModificatiDati and condizioneCig eq "true" and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.IntegraCodiceCig") and esisteAnagraficaSimog ne "true"}'>
 		<tr>
 			<td class="vocemenulaterale">
 				<a href="javascript:integraCodiceCig('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','No','${datiRiga.GARE_CODCIG}','${datiRiga.TORN_NUMAVCP}');" title='Integra codice CIG' tabindex="1505">
@@ -310,10 +373,36 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			</td>
 		</tr>
 	</c:if>
+	
+	<c:if test='${modo eq "VISUALIZZA" and bloccoPubblicazionePortaleBando eq "TRUE" and isProceduraTelematica and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.SospendiGara")}'>
+		<c:if test="${empty datiRiga.GARSOSPE_ID}" >
+			<tr>
+				<td class="vocemenulaterale" >
+					<c:if test='${isNavigazioneDisattiva ne "1"}'>
+						<a href="javascript:sospendiGara('${codGar}','${datiRiga.TORN_ITERGA}','1');" title="Sospendi gara" tabindex="1506">
+					</c:if>
+						Sospendi gara
+					<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
+				</td>
+			</tr>
+		</c:if>
+	  	<c:if test="${!empty datiRiga.GARSOSPE_ID}" >
+		  	<tr>
+				<td class="vocemenulaterale" >
+					<c:if test='${isNavigazioneDisattiva ne "1"}'>
+						<a href="javascript:sospendiGara('${codGar}','${datiRiga.TORN_ITERGA}','2');" title="Riprendi gara sospesa" tabindex="1506">
+					</c:if>
+						Riprendi gara sospesa
+					<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
+				</td>
+			</tr>
+	  	</c:if>
+	</c:if>	
+	
 	<c:if test='${modo eq "VISUALIZZA" and gene:checkProtFunz(pageContext, "MOD","MOD") and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ImpostaGaraNonAggiud")}'>
 	      <td class="vocemenulaterale">
 		      	<c:if test='${isNavigazioneDisattiva ne "1" }'>
-						<a href="javascript:impostaGaraNonAggiudicata('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','${datiRiga.GARE_ESINEG}','${datiRiga.GARE_DATNEG}','${datiRiga.GARE1_NPANNREVAGG}');" title="Imposta gara non aggiudicata" tabindex="1506">
+						<a href="javascript:impostaGaraNonAggiudicata('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','${datiRiga.GARE_ESINEG}','${datiRiga.GARE_DATNEG}','${datiRiga.GARE1_NPANNREVAGG}');" title="Imposta gara non aggiudicata" tabindex="1507">
 				</c:if>
 				  Imposta gara non aggiudicata
 				<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>			  
@@ -323,7 +412,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		<tr>
 			<td class="vocemenulaterale" >
 				<c:if test='${isNavigazioneDisattiva ne "1"}'>
-					<a href="javascript:esportaAntimafiaVerifica();" title="Esporta ditte partecipanti alla gara per verifica interdizione" tabindex="1507">
+					<a href="javascript:esportaAntimafiaVerifica();" title="Esporta ditte partecipanti alla gara per verifica interdizione" tabindex="1508">
 				</c:if>
 					Esporta ditte per verifica interdizione
 				<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
@@ -334,23 +423,42 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	  	<tr>    
 	    	  <td class="vocemenulaterale">
 		      	<c:if test='${isNavigazioneDisattiva ne "1"}'>
-						<a href="javascript:listaIds();" title="Collega Ids" tabindex="1508">
+						<a href="javascript:listaIds();" title="Collega Ids" tabindex="1509">
 				</c:if>
 				  Collega Ids
 				<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>			  
 			</td>
 		</tr>
 	</c:if>
-	<c:if test='${modo eq "VISUALIZZA" and isCigAbilitato eq "1" and garaLottoUnico and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InviaDatiCIG")}'>
-		<tr>
-			<td class="vocemenulaterale" >
-				<c:if test='${isNavigazioneDisattiva ne "1"}'>
-					<a href="javascript:popupInviaDatiCig('${datiRiga.GARE_CODGAR1}','${datiRiga.GARE_NGARA}','${genere}');" title="Invia dati per richiesta CIG" tabindex="1510">
-				</c:if>
-					Invia dati richiesta CIG
-				<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
-			</td>
-		</tr>
+	<c:if test='${modo eq "VISUALIZZA" and garaLottoUnico}'>
+		<c:choose>
+		<c:when test='${isCigAbilitato eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InviaDatiCIG")}'>
+			<tr>
+				<td class="vocemenulaterale" >
+					<c:if test='${isNavigazioneDisattiva ne "1"}'>
+						<a href="javascript:popupInviaDatiCig('${datiRiga.GARE_CODGAR1}','${datiRiga.GARE_NGARA}','${genere}');" title="Invia dati per richiesta CIG" tabindex="1510">
+					</c:if>
+						Invia dati richiesta CIG
+					<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
+				</td>
+			</tr>
+		</c:when>
+		<c:otherwise>
+			<c:choose>
+				<c:when test='${isSimogAbilitato eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.RichiestaCIG")}'>
+					<tr>
+						<td class="vocemenulaterale" >
+							<c:if test='${isNavigazioneDisattiva ne "1"}'>
+								<a href="javascript:apriFormRichiestaCig();" title='Richiesta CIG' tabindex="1511">
+							</c:if>
+								Richiesta CIG
+							<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
+						</td>
+					</tr>
+				</c:when>
+			</c:choose>
+		</c:otherwise>
+		</c:choose>
 	</c:if>
 	<c:if test='${modo eq "VISUALIZZA" and garaLottoUnico and isSimapAbilitato eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.InviaBandoAvviso")}'>
 	   <tr>   
@@ -406,6 +514,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	</c:if>
 	
 	
+	
 	<c:if test='${modo eq "VISUALIZZA" and ((fn:contains(listaOpzioniDisponibili, "OP114#") && garaLottoUnico and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.RiceviComunicazioni")) || (gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.InviaComunicazioni")))}'>
 		<tr>
 			<td>&nbsp;</td>
@@ -454,23 +563,25 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	</c:if>
 	
 	<c:if test='${modo eq "VISUALIZZA" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.Discussioni")}'>
-		<tr>
-			<td>&nbsp;</td>
-		</tr>
-		<tr>
-			<td class="titolomenulaterale" title='Messaggi interni'>Messaggi interni</td>
-		</tr>
-		<tr>
-			<td class="vocemenulaterale" >
-				<c:if test='${isNavigazioneDisattiva ne "1"}'>
-					<a href="javascript:listaDiscussioni();" title="Discussioni" tabindex="1516">
-				</c:if>
-				Conversazioni
-				<c:set var="resultConteggioDiscussioni" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetDiscussioniNumeroFunction", pageContext, "GARE", gene:getValCampo(key, "NGARA"))}' />
-				<c:if test="${numeroDiscussioni > 0}">(${numeroDiscussioni})</c:if>
-				<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
-			</td>
-		</tr>
+		<c:if test="${garaLottoUnico}">
+			<tr>
+				<td>&nbsp;</td>
+			</tr>
+			<tr>
+				<td class="titolomenulaterale" title='Messaggi interni'>Messaggi interni</td>
+			</tr>
+			<tr>
+				<td class="vocemenulaterale" >
+					<c:if test='${isNavigazioneDisattiva ne "1"}'>
+						<a href="javascript:listaDiscussioni();" title="Discussioni" tabindex="1516">
+					</c:if>
+					Conversazioni
+					<c:set var="resultConteggioDiscussioni" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetDiscussioniNumeroFunction", pageContext, "GARE", gene:getValCampo(key, "NGARA"))}' />
+					<c:if test="${numeroDiscussioni > 0}">(${numeroDiscussioni})</c:if>
+					<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
+				</td>
+			</tr>
+		</c:if>
 	</c:if>
 </gene:redefineInsert>
 
@@ -478,6 +589,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 <c:set var="documentiAssociatiDB" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.documentiAssociatiDB")}'/>
 <c:set var="exportDocumenti" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.sil.pg.pathArchivioDocumentiGara")}'/>
 <c:set var="exportCOS" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "cos.sftp.url")}'/>
+<c:set var="documentiAssociatiAQ" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "documentiAssociati.AqContratto")}'/>
 
 <c:choose>
 	<c:when test="${documentiAssociatiDB eq '1' }">
@@ -498,7 +610,27 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				</td>
 			</tr>
 		</c:if>
-		
+		<c:if test='${modo eq "VISUALIZZA" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.DocumentiAssociatiAQ") and (!empty datiRiga.TORN_NGARAAQ) and (!empty documentiAssociatiAQ)}'>
+			<tr>
+				<c:choose>
+					<c:when test='${isNavigazioneDisattiva ne "1"}'>
+					<c:set var="obj" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetAssociazioneGaraAQFunction", pageContext, datiRiga.TORN_NGARAAQ)}' />
+					<c:set var="addWhere" value="COAKEY1=${c0akey1};COAKEY2=${c0akey2}"/>
+					<c:set var="fictitiousVar" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetNumDocAssociatiCustomFunction", pageContext, "GARECONT", addWhere)}' />
+						<td class="vocemenulaterale">
+							<a href='javascript:visualizzaDocumentiAssociatiAQ()' title="Scadenzario attività" tabindex="1512">	
+								Documenti associati contratto AQ <c:if test="${not empty requestScope.numRecordDocAssociatiCustom}">(${requestScope.numRecordDocAssociatiCustom})</c:if>
+							</a>
+						</td>
+					</c:when>
+					<c:otherwise>
+						<td>
+							Documenti associati contratto AQ
+						</td>
+					</c:otherwise>
+				</c:choose>
+			</tr>
+		</c:if>		
 		<c:if test='${modo eq "VISUALIZZA" and fn:contains(listaOpzioniDisponibili, "OP128#") and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GENE.G_SCADENZ")}'>
 			<tr>
 				<c:choose>
@@ -521,22 +653,38 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		<c:set var="creaFascicolo" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.GetPropertyWsdmFunction", accessoCreaFascicolo,idconfi)}'/>
 		<c:if test='${modo eq "VISUALIZZA"  and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.CreaFascicolo") and garaLottoUnico and integrazioneWSDM eq "1" and creaFascicolo eq "1"}'>
 			<c:set var="esisteFascicoloAssociato" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteFascicoloAssociatoFunction", pageContext, "GARE", datiRiga.GARE_NGARA,idconfi)}' scope="request"/>
+			<c:if test="${ esisteFascicoloAssociato eq 'true' and tipoWSDM eq 'LAPISOPERA'}">
+				<c:set var="esisteDocumentoAssociato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteDocumentoAssociatoFunction", pageContext, "GARE", datiRiga.GARE_NGARA)}' scope="request"/>
+			</c:if>
 			
-			<c:if test='${esisteFascicoloAssociato ne "true" and  (tipoWSDM eq "IRIDE" or tipoWSDM eq "JIRIDE" or tipoWSDM eq "ENGINEERING" 
-				or tipoWSDM eq "ARCHIFLOW" or tipoWSDM eq "INFOR" or tipoWSDM eq "JPROTOCOL" or tipoWSDM eq "JDOC")}' >
-			
+			<c:if test='${(esisteFascicoloAssociato ne "true" and  (tipoWSDM eq "IRIDE" or tipoWSDM eq "JIRIDE" or tipoWSDM eq "ENGINEERING" 
+				or tipoWSDM eq "ARCHIFLOW" or tipoWSDM eq "INFOR" or tipoWSDM eq "JPROTOCOL" or tipoWSDM eq "JDOC" or tipoWSDM eq "ENGINEERINGDOC" or tipoWSDM eq "ITALPROT" or tipoWSDM eq "LAPISOPERA")) || 
+				(tipoWSDM eq "LAPISOPERA" and esisteDocumentoAssociato ne "true")}' >
+				
+				<c:choose>
+					<c:when test='${tipoWSDM eq "ITALPROT" or tipoWSDM eq "LAPISOPERA" }'>
+						<c:set var="titoloMessaggio" value="Associa fascicolo"/>
+						<c:if test="${tipoWSDM eq 'LAPISOPERA' and esisteFascicoloAssociato eq 'true' and esisteDocumentoAssociato ne 'true' }">
+							<c:set var="fascicoloEsistente" value="1"/>
+						</c:if>
+					</c:when>
+					<c:otherwise>
+						<c:set var="titoloMessaggio" value="Crea fascicolo"/>
+					</c:otherwise>
+				</c:choose>
+				
 				<tr>
 					<c:choose>
 						<c:when test='${isNavigazioneDisattiva ne "1"}'>
 							<td class="vocemenulaterale">
-								<a href="javascript:apriCreaFascicolo('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','${idconfi}',2);" title="Crea fascicolo" tabindex="1515">
-									Crea fascicolo
+								<a href="javascript:apriCreaFascicolo('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','${idconfi}',2,'${fascicoloEsistente}');" title="${titoloMessaggio }" tabindex="1515">
+									${titoloMessaggio }
 								</a>
 							</td>
 						</c:when>
 						<c:otherwise>
 							<td>
-								Crea fascicolo
+								${titoloMessaggio }
 							</td>
 						</c:otherwise>
 					</c:choose>
@@ -673,8 +821,8 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 
 		<gene:campoScheda campo="CODCOM"/>
 		<gene:campoScheda campo="CODIGA" visibile="${not garaLottoUnico}" obbligatorio='${not gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.PersonalizzazioneAutovie") && not garaLottoUnico}' modificabile ='${not gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.PersonalizzazioneAutovie")}' />
-		<gene:campoScheda campo="NUMAVCP" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}" defaultValue="${gene:if(garaLottoUnico, requestScope.initNUMAVCP,'')}" />
-		<gene:campoScheda campo="CODCIG" defaultValue="${requestScope.initCODCIG}" />
+		<gene:campoScheda campo="NUMAVCP" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico and tipoSimog ne 'S'}" defaultValue="${gene:if(garaLottoUnico, requestScope.initNUMAVCP,'')}" modificabile="${ esisteAnagraficaSimog ne 'true'}"/>
+		<gene:campoScheda campo="CODCIG" defaultValue="${requestScope.initCODCIG}"  modificabile="${ esisteAnagraficaSimog ne 'true'}"/>
 	<c:choose>
 		<c:when test='${fn:startsWith(datiRiga.GARE_CODCIG,"#") or fn:startsWith(datiRiga.GARE_CODCIG,"$") or fn:startsWith(datiRiga.GARE_CODCIG,"NOCIG")}'>
 			<gene:campoScheda campo="CODCIG_FIT" title="Codice CIG fittizio" campoFittizio="true" value="${datiRiga.GARE_CODCIG}" definizione="T10;;;;G1CODCIG" modificabile="false" />
@@ -683,11 +831,14 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			<gene:campoScheda campo="CODCIG_FIT" title="Codice CIG fittizio" campoFittizio="true" value="" definizione="T10;;;;G1CODCIG" modificabile="false"  />
 		</c:otherwise>
 	</c:choose>
+		<gene:campoScheda campo="DACQCIG" defaultValue="${requestScope.initDACQCIG}"  modificabile="${ esisteAnagraficaSimog ne 'true'}"/>
+		<gene:campoScheda campo="ESENTE_CIG" campoFittizio="true" computed="true" title="Esente CIG?" definizione="T10;;;SN" defaultValue="${gene:if(!empty initIsStrumentale, initIsStrumentale,'2')}" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoSiNoSenzaNull" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.CODCIG") }' modificabile="${esisteAnagraficaSimog ne 'true' }"/>
+		<gene:campoScheda campo="MOTESENTECIG" entita="GARE1" where="GARE.NGARA = GARE1.NGARA"/>	
 		
-		<gene:campoScheda campo="ESENTE_CIG" campoFittizio="true" computed="true" title="Esente CIG?" definizione="T10;;;SN" defaultValue="${gene:if(!empty initIsStrumentale, initIsStrumentale,'2')}" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoSiNoSenzaNull" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.CODCIG") }'/>
 		<gene:fnJavaScriptScheda funzione="gestioneEsenteCIG()" elencocampi="ESENTE_CIG" esegui="false" />
 		
-		<gene:campoScheda campo="DACQCIG" defaultValue="${requestScope.initDACQCIG}"/>
+		<gene:campoScheda visibile="${ esisteAnagraficaSimog eq 'true' && garaLottoUnico}" campo="STATO_SIMOG" campoFittizio="true" title="Effettuata richiesta CIG?" definizione="T30;" value="${tipoSimogDesc} - ${statoSimog }" modificabile="false"/>
+				
 		<gene:campoScheda campo="UREGA" entita="TORN" visibile='${garaLottoUnico and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.CodiceUrega")}' modificabile='false'/>
 		<gene:campoScheda campo="CODGARCLI" entita="TORN" visibile='${garaLottoUnico and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.PersonalizzazioneAutovie")}' modificabile='false' />
 		<gene:campoScheda campo="CODGAR1" visibile="false" defaultValue="${gene:getValCampo(param.keyParent, 'CODGAR')}"/>
@@ -721,6 +872,10 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		</gene:campoScheda>
 		<gene:campoScheda campo="TIPNEG" defaultValue="${gene:if(garaLottoUnico, '', requestScope.initTIPNEG)}" visibile="${garaLottoUnico}"/>
 		<gene:campoScheda campo="ALTNEG" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}"/>
+		<gene:campoScheda campo="SEGUEN" visibile="${!empty datiRiga.GARE_SEGUEN}" modificabile="false" />
+		
+		<gene:campoScheda campo="ISCONCPROG" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${param.modalitaPresentazione eq '2' or datiRiga.TORN_OFFTEL eq '2'}" defaultValue="2"/>
+		<gene:fnJavaScriptScheda funzione='changeIsconprog("#TORN_ISCONCPROG#")' elencocampi='TORN_ISCONCPROG' esegui="true" />
 		
 		<c:choose>
 			<c:when test="${garaLottoUnico}">
@@ -733,7 +888,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		</c:choose>
 		
 		
-		<gene:campoScheda campo="AQOPER" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" defaultValue="${gene:if(garaLottoUnico, '', requestScope.initAQOPER)}" obbligatorio="true" modificabile="${gene:if(garaLottoUnico=='true' or (garaLottoUnico=='false' and requestScope.initAQOPER ne '1') , 'true', 'false') }"/>
+		<gene:campoScheda campo="AQOPER" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" defaultValue="${requestScope.initAQOPER}" obbligatorio="true" modificabile="${gene:if(garaLottoUnico=='true' or (garaLottoUnico=='false' and requestScope.initAQOPER ne '1') , 'true', 'false') }"/>
 		<gene:campoScheda campo="AQNUMOPE" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" defaultValue="${gene:if(garaLottoUnico, '', requestScope.initAQNUMOPE)}">
 			<gene:checkCampoScheda funzione='controlloCampoAqnumope("##")' obbligatorio="true" messaggio='Il valore specificato deve essere maggiore di 1.' onsubmit="false"/>
 		</gene:campoScheda>
@@ -745,8 +900,8 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			scheda="" 
 			schedaPopUp="" 
 			campi="V_GARE_ACCORDIQUADRO.CODCIG;V_GARE_ACCORDIQUADRO.NGARA" 
+			functionId="default"
 			chiave="TORN.NGARAAQ"
-			where=""
 			formName="formArchivioAccordiQuadro">
 			<gene:campoScheda campo="CODCIGAQ" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}">
 			</gene:campoScheda>
@@ -756,12 +911,24 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 
 		<gene:campoScheda campo="CRITLICG" obbligatorio="true" defaultValue="${gene:if(garaLottoUnico, requestScope.initCRITLICG, requestScope.initCRITLIC)}"/>
 		
-		<gene:campoScheda campo="DETLICG" obbligatorio="true" defaultValue="${gene:if(garaLottoUnico, requestScope.initDETLICG, requestScope.initDETLIC)}" />
+		<c:choose>
+			<c:when test="${garaQformOfferte }">
+				<c:set var="inizializzazioneDETLICG" value="4"/>
+			</c:when>
+			<c:when test="${garaLottoUnico}">
+				<c:set var="inizializzazioneDETLICG" value="${requestScope.initDETLICG}"/>
+			</c:when>
+			<c:otherwise>
+				<c:set var="inizializzazioneDETLICG" value="${requestScope.initDETLIC}"/>
+			</c:otherwise>
+		</c:choose>
+		
+		<gene:campoScheda campo="DETLICG" obbligatorio="true" defaultValue="${inizializzazioneDETLICG}" visibile="${not garaQformOfferte}"/>
 		<c:choose>
 			<c:when test="${!empty initRIBCAL }">
 				<c:set var="inizializzazioneRibcal" value="${requestScope.initRIBCAL }"/>
 			</c:when>
-			<c:when test="${!garaLottoUnico && ((requestScope.initCRITLIC==1 && requestScope.initDETLIC==3 && param.tipoAppalto!=1) ||  requestScope.initDETLIC eq '4')}">
+			<c:when test="${(!garaLottoUnico && ((requestScope.initCRITLIC==1 && requestScope.initDETLIC==3 && param.tipoAppalto!=1) ||  requestScope.initDETLIC eq '4')) or garaQformOfferte}">
 				<c:set var="inizializzazioneRibcal" value="2"/>
 			</c:when>
 			<c:otherwise>
@@ -780,6 +947,8 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		</c:choose>
 		
 		<gene:campoScheda campo="CALCSOANG" obbligatorio="true" defaultValue="${valoreInizializzazioneCalcsoang }"/>
+		
+		<gene:campoScheda campo="CALCSOME" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}" />
 				
 		<c:choose>
 			<c:when test="${not empty initMODASTG}" >
@@ -800,21 +969,21 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GarePrivateAcquisto")}'>
 			<c:set var="garpriv" value="2"/> 
 		</c:if>
-		<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GarePrivateVendita")}'>
+		<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GarePrivateVendita") && not garaQformOfferte}'>
 			<c:set var="garpriv" value="1"/> 
 			<c:set var="offaumDefault" value="1"/> 
 		</c:if>
 		
 		<c:choose>
 			<c:when test='${garaLottoUnico}'>
-				<gene:campoScheda campo="OFFAUM" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" defaultValue="${offaumDefault}" visibile="true" modificabile="true"/>
+				<gene:campoScheda campo="OFFAUM" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" defaultValue="${offaumDefault}" visibile="${not garaQformOfferte}" modificabile="true"/>
 			</c:when>
 			<c:otherwise>
 				<gene:campoScheda campo="OFFAUM" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" value="2" visibile="false" modificabile="false"/>
 			</c:otherwise>
 		</c:choose>		
 		
-		<gene:campoScheda campo="SICINC" obbligatorio="true" defaultValue="1"/>
+		<gene:campoScheda campo="SICINC" obbligatorio="true" defaultValue="1" visibile="${not garaQformOfferte}"/>
 		
 		<gene:campoScheda campo="MODLICG" visibile="false" defaultValue="${gene:if(garaLottoUnico, requestScope.initMODLICG, requestScope.initMODLIC)}" >
 			<gene:calcoloCampoScheda 
@@ -825,7 +994,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		<gene:fnJavaScriptScheda funzione='gestioneCriterioAggiudicazione("#GARE_CRITLICG#","#GARE_DETLICG#")' elencocampi='GARE_CRITLICG;GARE_DETLICG' esegui="true" />
 		<gene:fnJavaScriptScheda funzione='gestioneCRITLICG("#GARE_CRITLICG#")' elencocampi='GARE_CRITLICG' esegui="false" />
 		<gene:fnJavaScriptScheda funzione='gestioneCOSTOFISSO_SEZIONITEC("#GARE_CRITLICG#")' elencocampi='GARE_CRITLICG' esegui="true" />
-		<c:if test="${not isVecchiaOepv}">	
+		<c:if test="${not isVecchiaOepv }">	
 			<gene:fnJavaScriptScheda funzione='gestioneOFFAUM("#GARE_CRITLICG#")' elencocampi='GARE_CRITLICG' esegui="true" />
 			<gene:fnJavaScriptScheda funzione='gestionePRERIB()' elencocampi='GARE_MODLICG' esegui="true" />
 		</c:if>
@@ -860,6 +1029,11 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		<gene:campoScheda campo="DATNEG" visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false"/>
 		<gene:campoScheda campo="NPANNREVAGG" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false"/>
 		<gene:campoScheda campo="NOTNEG" entita="GARE1" where="GARE1.NGARA=GARE.NGARA"  visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false"/>
+		
+		<gene:campoScheda campo="ID" entita="GARSOSPE" where="GARSOSPE.CODGAR=GARE.CODGAR1 and GARSOSPE.DATFINE IS NULL"  visibile="false" />
+		<gene:campoScheda campo="DATINI" entita="GARSOSPE" where="GARSOSPE.CODGAR=GARE.CODGAR1 and GARSOSPE.DATFINE IS NULL"  visibile="${!empty datiRiga.GARSOSPE_ID}" modificabile="false"/>
+		<gene:campoScheda campo="NOTE" entita="GARSOSPE" where="GARSOSPE.CODGAR=GARE.CODGAR1 and GARSOSPE.DATFINE IS NULL" visibile="${!empty datiRiga.GARSOSPE_ID}" modificabile="true"/>
+
 		<gene:campoScheda campo="CATIGA" />
 		<gene:campoScheda campo="DRICCAPTEC"/>
 		
@@ -955,33 +1129,6 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		</jsp:include>
 	
 		<c:if test='${modoAperturaScheda ne "NUOVO"}' >
-			<c:set var="tmp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GestioneRichiesteAcquistoFunction", pageContext, ngaraPerGaratt, "")}'/>
-		</c:if>
-		
-		<% // la sezione seguente viene utilizzata anche per AVM e dev'essere presente solo quando non si vede la lista delle lav/forn %>
-		<c:set var="visGareRda" value="true" />
-		<c:if test='${integrazioneWSERP eq "1" && (tipoWSERP eq "AVM" || tipoWSERP eq "UGOVPA") && (visListaLavForn eq "true" && isAccordoQuadro ne "1")}'>
-			<c:set var="visGareRda" value="false" />
-		</c:if>
-		<c:set var="arrayCampiGarerda" value="'GARERDA_ID_', 'GARERDA_CODGAR_', 'GARERDA_CODCARR_', 'GARERDA_NUMRDA_', 'GARERDA_POSRDA_', 'GARERDA_DATCRE_', 'GARERDA_DATRIL_', 'GARERDA_DATACONS_', 'GARERDA_LUOGOCONS_', 'GARERDA_CODVOC_', 'GARERDA_VOCE_', 'GARERDA_CODCAT_', 'GARERDA_UNIMIS_', 'GARERDA_QUANTI_', 'GARERDA_PREZUN_', 'GARERDA_PERCIVA_', 'GARERDA_ESERCIZIO_', 'GARERDA_NGARA_'"/>
-		<c:if test='${visGareRda ne "false"}' >
-			<jsp:include page="/WEB-INF/pages/commons/interno-scheda-multipla.jsp" >
-				<jsp:param name="entita" value='GARERDA'/>
-				<jsp:param name="chiave" value='${ngaraPerGaratt}'/>
-				<jsp:param name="nomeAttributoLista" value='listaRichiesteAcquisto' />
-				<jsp:param name="idProtezioni" value="GARERDA" />
-				<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/garerda/richieste-acquisto.jsp"/>
-				<jsp:param name="arrayCampi" value="'GARERDA_ID_', 'GARERDA_CODGAR_', 'GARERDA_CODCARR_', 'GARERDA_NUMRDA_', 'GARERDA_POSRDA_', 'GARERDA_DATCRE_', 'GARERDA_DATRIL_', 'GARERDA_DATACONS_', 'GARERDA_LUOGOCONS_', 'GARERDA_CODVOC_', 'GARERDA_VOCE_', 'GARERDA_CODCAT_', 'GARERDA_UNIMIS_', 'GARERDA_QUANTI_', 'GARERDA_PREZUN_', 'GARERDA_PERCIVA_', 'GARERDA_ESERCIZIO_', 'GARERDA_NGARA_'"/>
-				<jsp:param name="sezioneListaVuota" value="true" />
-				<jsp:param name="titoloSezione" value="Richiesta di acquisto" />
-				<jsp:param name="titoloNuovaSezione" value="Nuova richiesta di acquisto" />
-				<jsp:param name="descEntitaVociLink" value="richiesta di acquisto" />
-				<jsp:param name="msgRaggiuntoMax" value="e richieste di acquisto"/>
-				<jsp:param name="usaContatoreLista" value="true" />
-			</jsp:include>
-		</c:if>
-	
-		<c:if test='${modoAperturaScheda ne "NUOVO"}' >
 			<c:set var="tmp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GestioneImpegniDiSpesaFunction", pageContext, "GAREIDS", ngaraPerGaratt)}'/>
 		</c:if>
 		<jsp:include page="/WEB-INF/pages/commons/interno-scheda-multipla.jsp" >
@@ -1006,6 +1153,40 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			<gene:campoScheda campo="DTPUBAVVISO" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" />
 		</gene:gruppoCampi>
 	</c:if>
+	
+	<c:if test='${modoAperturaScheda ne "NUOVO"}' >
+		<c:choose>
+			<c:when test='${garaLottoUnico}'>
+				<c:set var="tmp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GestioneRichiesteAcquistoFunction", pageContext, codGar, "")}'/>
+			</c:when>
+			<c:otherwise>
+				<c:set var="tmp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GestioneRichiesteAcquistoFunction", pageContext, codGar, gene:getValCampo(key, "NGARA"))}'/>
+			</c:otherwise>
+		</c:choose>
+	</c:if>
+		
+	<% // la sezione seguente viene utilizzata anche per AVM e dev'essere presente solo quando non si vede la lista delle lav/forn %>
+	<c:set var="visGareRda" value="true" />
+	<c:if test='${integrazioneWSERP eq "1" && (tipoWSERP eq "AVM" || tipoWSERP eq "UGOVPA") && (visListaLavForn eq "true" && isAccordoQuadro ne "1")}'>
+		<c:set var="visGareRda" value="false" />
+	</c:if>
+	<c:set var="arrayCampiGarerda" value="'GARERDA_ID_', 'GARERDA_CODGAR_', 'GARERDA_CODCARR_', 'GARERDA_NUMRDA_', 'GARERDA_POSRDA_', 'GARERDA_DATCRE_', 'GARERDA_DATRIL_', 'GARERDA_DATACONS_', 'GARERDA_LUOGOCONS_', 'GARERDA_CODVOC_', 'GARERDA_VOCE_', 'GARERDA_CODCAT_', 'GARERDA_UNIMIS_', 'GARERDA_QUANTI_', 'GARERDA_PREZUN_', 'GARERDA_PERCIVA_', 'GARERDA_ESERCIZIO_', 'GARERDA_NGARA_'"/>
+	<c:if test='${visGareRda ne "false"}' >
+		<jsp:include page="/WEB-INF/pages/commons/interno-scheda-multipla.jsp" >
+			<jsp:param name="entita" value='GARERDA'/>
+			<jsp:param name="chiave" value='${ngaraPerGaratt}'/>
+			<jsp:param name="nomeAttributoLista" value='listaRichiesteAcquisto' />
+			<jsp:param name="idProtezioni" value="GARERDA" />
+			<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/garerda/richieste-acquisto.jsp"/>
+			<jsp:param name="arrayCampi" value="'GARERDA_ID_', 'GARERDA_CODGAR_', 'GARERDA_CODCARR_', 'GARERDA_NUMRDA_', 'GARERDA_POSRDA_', 'GARERDA_DATCRE_', 'GARERDA_DATRIL_', 'GARERDA_DATACONS_', 'GARERDA_LUOGOCONS_', 'GARERDA_CODVOC_', 'GARERDA_VOCE_', 'GARERDA_CODCAT_', 'GARERDA_UNIMIS_', 'GARERDA_QUANTI_', 'GARERDA_PREZUN_', 'GARERDA_PERCIVA_', 'GARERDA_ESERCIZIO_', 'GARERDA_NGARA_'"/>
+			<jsp:param name="sezioneListaVuota" value="true" />
+			<jsp:param name="titoloSezione" value="Richiesta di acquisto" />
+			<jsp:param name="titoloNuovaSezione" value="Nuova richiesta di acquisto" />
+			<jsp:param name="descEntitaVociLink" value="richiesta di acquisto" />
+			<jsp:param name="msgRaggiuntoMax" value="e richieste di acquisto"/>
+			<jsp:param name="usaContatoreLista" value="true" />
+		</jsp:include>
+	</c:if>
 
 	<c:if test='${esisteIntegrazioneLavori eq "TRUE"}'>
 
@@ -1019,10 +1200,12 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 
 				<c:choose>
 					<c:when test='${modo eq "MODIFICA"}' >
-						<c:set var="archivioWhereScheda" value=" (APPA.DAGG is null and APPA.DVOAGG is null) and (APPA.TIPLAVG = ${datiRiga.TORN_TIPGEN}) and not exists (select NGARA from GARE where APPA.CODLAV = GARE.CLAVOR and APPA.NAPPAL = GARE.NUMERA and GARE.NGARA != '${datiRiga.GARE_NGARA}') ${filtroLivelloUtente} " />
+						<c:set var="functionId" value="modificaGareDatigen" />
+						<c:set var="parametriWhere" value="T:${datiRiga.TORN_TIPGEN};T:${datiRiga.GARE_NGARA}" />
 					</c:when>
 					<c:otherwise>
-						<c:set var="archivioWhereScheda" value=" (APPA.DAGG is null and APPA.DVOAGG is null) and (APPA.TIPLAVG = ${datiRiga.TORN_TIPGEN}) and not exists (select NGARA from GARE where APPA.CODLAV = GARE.CLAVOR and APPA.NAPPAL = GARE.NUMERA) ${filtroLivelloUtente} " />
+						<c:set var="functionId" value="gareDatigen" />
+						<c:set var="parametriWhere" value="T:${datiRiga.TORN_TIPGEN}" />
 					</c:otherwise>
 				</c:choose>
 	
@@ -1032,7 +1215,8 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 					schedaPopUp=""
 					campi="APPA.CODLAV;APPA.NAPPAL;APPA.CODCUA"
 					chiave=""
-					where="${archivioWhereScheda}"
+					functionId="${functionId}"
+					parametriWhere="${parametriWhere}"
 					inseribile="false"
 					formName="formArchivioAppalti" >
 					<gene:campoScheda campo="CLAVOR" defaultValue="${requestScope.initCLAVOR}" modificabile="false"/>
@@ -1076,7 +1260,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			 schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda-popup.jsp","")}'
 			 campi="UFFINT.CODEIN;UFFINT.NOMEIN;UFFINT.ISCUC"
 			 chiave="TORN_CENINT"
-			 where="UFFINT.DATFIN IS NULL"
+			 functionId="skip|abilitazione:1_parentFormName:formUFFINTGare"
 			 formName="formUFFINTGare">
 				<gene:campoScheda campo="CENINT" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" obbligatorio="true" defaultValue="${requestScope.initCENINT}" modificabile="${empty sessionScope.uffint }" visibile="${garaLottoUnico}">
 					<gene:checkCampoScheda funzione='checkPuntiContatto()' obbligatorio="true" messaggio="Non è possibile modificare il valore perchè ci sono riferimenti ai relativi punti di contatto nella gara" onsubmit="false"/>
@@ -1109,6 +1293,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			 scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda.jsp","")}'
 			 schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda-popup.jsp","")}'
 			 campi="TECNI.CODTEC;TECNI.NOMTEC"
+			 functionId="skip"
 			 chiave="TORN_CODRUP"
 			 inseribile="true">
 				<gene:campoScheda campo="CODRUP" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" defaultValue="${requestScope.initCODRUP}" visibile="${garaLottoUnico }"/>
@@ -1138,7 +1323,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda-popup.jsp","")}'
 			campi="UFFINT.CODEIN;UFFINT.NOMEIN"
 			 chiave="CENINT_GARALTSOG"
-			 where="UFFINT.DATFIN IS NULL and (UFFINT.ISCUC is null or UFFINT.ISCUC <>'1')"
+			 functionId="nullIscuc|abilitazione:1_parentFormName:formUFFINTGareAltriSogg"
 			 formName="formUFFINTGareAltriSogg">
 			 <gene:campoScheda campo="CENINT_GARALTSOG" title="Codice stazione appaltante aderente" campoFittizio="true" definizione="T16;0;;;G1CENINTSOG" value="${initCenintGaraltsog }"
 			 	modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.GARALTSOG.CENINT") }' 
@@ -1154,6 +1339,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			 scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda.jsp","")}'
 			 schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda-popup.jsp","")}'
 			 campi="TECNI.CODTEC;TECNI.NOMTEC"
+			 functionId="skip"
 			 chiave="CODRUP_GARALTSOG"
 			 inseribile="true">
 				<gene:campoScheda campo="CODRUP_GARALTSOG" title="Codice resp.unico procedimento stazione appaltante aderente" campoFittizio="true" definizione="T10;0;;;G1CODRUPSOG" value="${requestScope.initCodrupGaraltsog}"
@@ -1218,8 +1404,8 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			<gene:campoScheda nome="DAQ">
 				<td colspan="2"><b>Durata dell'accordo quadro</b></td>
 			</gene:campoScheda>
-			<gene:campoScheda campo="AQDURATA"  entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR"/>
-			<gene:campoScheda campo="AQTEMPO"  entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR"/>
+			<gene:campoScheda campo="AQDURATA"  entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" defaultValue="${gene:if(garaLottoUnico=='true',initAQDURATA,'')}"/>
+			<gene:campoScheda campo="AQTEMPO"  entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" defaultValue="${gene:if(garaLottoUnico=='true',initAQTEMPO,'')}"/>
 		</gene:gruppoCampi>
 	</c:if>
 		
@@ -1265,6 +1451,9 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			<td colspan="2"><b>Altri dati relativi alla modalità di presentazione offerta e svolgimento della procedura</b></td>
 		</gene:campoScheda>
    		<c:choose>
+			<c:when test="${garaQformOfferte }">
+				<c:set var="inizializzazionePrerib" value=""/>
+			</c:when>
 			<c:when test="${!empty initPrerib }">
 				<c:set var="inizializzazionePrerib" value="${requestScope.initPrerib }"/>
 			</c:when>
@@ -1272,12 +1461,15 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				<c:set var="inizializzazionePrerib" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1028","1","false")}'/>
 			</c:otherwise>
 		</c:choose>
-   		<gene:campoScheda campo="PRERIB" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" defaultValue='${inizializzazionePrerib }' visibile="true">
-   			<gene:checkCampoScheda funzione='"##" < 9' obbligatorio="true" messaggio="Il valore specificato deve essere compreso tra 0 e 9" onsubmit="false"/>
+   		<gene:campoScheda campo="PRERIB" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" defaultValue='${inizializzazionePrerib }' visibile="${not garaQformOfferte }">
+   			<gene:checkCampoScheda funzione='"##" <= 9' obbligatorio="true" messaggio="Il valore specificato deve essere compreso tra 0 e 9" onsubmit="false"/>
    		</gene:campoScheda>
    		<c:choose>
    			<c:when test='${param.proceduraTelematica eq 1}'>
 				<c:choose>
+					<c:when test="${garaQformOfferte }">
+						<c:set var="inizializzazioneRicmano" value=""/>
+					</c:when>
 					<c:when test="${!empty initRICMANO }">
 						<c:set var="inizializzazioneRicmano" value="${requestScope.initRICMANO }"/>
 					</c:when>
@@ -1285,17 +1477,18 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 						<c:set var="inizializzazioneRicmano" value="${valoreTabellatoA1115Ricmano }"/>
 					</c:otherwise>
 				</c:choose>
-				<gene:campoScheda campo="RICMANO" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}" defaultValue="${inizializzazioneRicmano}"/>
+				<gene:campoScheda campo="RICMANO" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico && not garaQformOfferte}" defaultValue="${inizializzazioneRicmano}"/>
 			</c:when>
    			<c:otherwise>
-				<gene:campoScheda campo="RICMANO" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}" defaultValue=""/>
+				<gene:campoScheda campo="RICMANO" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico && not garaQformOfferte}" defaultValue=""/>
    			</c:otherwise>
    		</c:choose>
    		<gene:fnJavaScriptScheda funzione="visualizzaMODMANO('#TORN_RICMANO#')" elencocampi="TORN_RICMANO" esegui="true"/>
    		<gene:campoScheda campo="MODMANO" entita="TORN" obbligatorio="true" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${modo ne 'VISUALIZZA' or datiRiga.TORN_RICMANO eq 1}" defaultValue="1"/>
-		<gene:campoScheda campo="ULTDETLIC" entita="GARE1" where="GARE1.NGARA = GARE.NGARA" defaultValue="${gene:if(garaLottoUnico, '', requestScope.initULTDETLIC)}"/>
+		<gene:campoScheda campo="ULTDETLIC" entita="GARE1" where="GARE1.NGARA = GARE.NGARA" defaultValue="${gene:if(garaLottoUnico, '', requestScope.initULTDETLIC)}" visibile="${not garaQformOfferte}"/>
 		<gene:campoScheda campo="SORTINV" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico && (param.proceduraTelematica eq 1  or datiRiga.TORN_GARTEL eq 1)}"/>
 		<gene:campoScheda campo="NUMOPE" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" obbligatorio="true" visibile="${garaLottoUnico && (param.proceduraTelematica eq 1  or datiRiga.TORN_GARTEL eq 1)}"/>
+		<gene:campoScheda campo="NOBUSTAMM" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico && (param.proceduraTelematica eq 1  or datiRiga.TORN_GARTEL eq 1)}"/>
 		<gene:campoScheda campo="INVERSA" entita="TORN" where="TORN.CODGAR = GARE.CODGAR1" visibile="${garaLottoUnico && (param.proceduraTelematica eq 1  or datiRiga.TORN_GARTEL eq 1)}" defaultValue="2"/>
 		<c:choose>
 			<c:when test="${!empty initCOMPREQ }">
@@ -1316,12 +1509,16 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		<gene:campoScheda campo="COMPREQ" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}" defaultValue="${inizializzazioneCompreq }"/>
 		<gene:campoScheda campo="VALTEC" entita="GARE1" where="GARE1.NGARA = GARE.NGARA" defaultValue="${inizializzazioneValtec}" />
 		<gene:campoScheda campo="COSTOFISSO" entita="GARE1" where="GARE1.NGARA = GARE.NGARA" visibile="${isProceduraTelematica or param.proceduraTelematica eq '1'}"/>
-		<gene:campoScheda campo="SEZIONITEC" entita="GARE1" where="GARE1.NGARA = GARE.NGARA" visibile="${isProceduraTelematica or param.proceduraTelematica eq '1'}"/>
+		<gene:campoScheda campo="ANONIMATEC" entita="GARE1" where="GARE1.NGARA = GARE.NGARA" visibile="${param.modalitaPresentazione eq '2' or datiRiga.TORN_OFFTEL eq '2'}"/>
+		<gene:campoScheda campo="SEZIONITEC" entita="GARE1" where="GARE1.NGARA = GARE.NGARA" visibile="${(isProceduraTelematica or param.proceduraTelematica eq '1') && not garaQformOfferte}"/>
 	</gene:gruppoCampi>
 	
+	<gene:fnJavaScriptScheda funzione='gestioneRicercaMercatoNegoziata("#TORN_ITERGA#")' elencocampi='TORN_ITERGA' esegui="false" />
 	<gene:fnJavaScriptScheda funzione='gestioneSortinv("#TORN_ITERGA#")' elencocampi='TORN_ITERGA' esegui="true" />
 	<gene:fnJavaScriptScheda funzione='gestioneNumope("#TORN_SORTINV#")' elencocampi='TORN_SORTINV' esegui="true" />
 	<gene:fnJavaScriptScheda funzione="aggiornaCompreq('#TORN_INVERSA#')" elencocampi="TORN_INVERSA" esegui="false" />
+	<gene:fnJavaScriptScheda funzione='gestioneNOBUSTAMM()' elencocampi='TORN_NOBUSTAMM' esegui="true" />
+	<gene:fnJavaScriptScheda funzione='changeAnonimatec("#GARE1_ANONIMATEC#")' elencocampi='GARE1_ANONIMATEC' esegui="true" />
 	
 	<gene:gruppoCampi idProtezioni="ALT">
 		<gene:campoScheda>
@@ -1342,10 +1539,15 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		<gene:campoScheda campo="TERRID" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}"/>
 		<gene:campoScheda campo="SEGRETA"/>
 		<gene:campoScheda campo="SUBGAR"/>
+		<gene:campoScheda campo="ISGREEN" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}" defaultValue="${requestScope.initISGREEN}"/>
+		<gene:campoScheda campo="DESGREEN" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}" defaultValue="${requestScope.initMOTGREEN}"/>
+		<gene:campoScheda campo="ISRECYCLE" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}" />
+		<gene:campoScheda campo="ISPNRR" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}" />
 		<gene:campoScheda campo="NORMA1" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}"/>
 		<gene:campoScheda campo="NORMA" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}"/>
 		<gene:campoScheda campo="TUS" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}" defaultValue="${requestScope.initTUS}" />
 		<gene:campoScheda campo="CONTOECO" entita="GARE1" where="GARE1.NGARA = GARE.NGARA" defaultValue="${requestScope.initCONTECO}" />
+		<gene:campoScheda campo="CLIV2" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="${garaLottoUnico}" defaultValue="${sessionScope.profiloUtente.id}" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoCliv2" obbligatorio="true"/>
 		<gene:campoScheda campo="NOTEGA"/>
 		<gene:campoScheda campo="IDCOMMALBO" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" defaultValue="${requestScope.initIDCOMMALBO}" visibile="false" />
 	</gene:gruppoCampi>
@@ -1354,9 +1556,13 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	<gene:fnJavaScriptScheda funzione='aggiornaOGGCONT("#V_GARE_TORN_OGGCONT_FORNITURE#")' elencocampi='V_GARE_TORN_OGGCONT_FORNITURE' esegui="false"/>
 	<gene:fnJavaScriptScheda funzione='visualizzaMotacc("#TORN_PROURG#")' elencocampi='TORN_PROURG' esegui="true"/>
 	<gene:fnJavaScriptScheda funzione='gestioneULTDETLIC("#GARE_CRITLICG#","#GARE_DETLICG#")' elencocampi='GARE_CRITLICG;GARE_DETLICG' esegui="true" />	
+	<c:if test="${garaLottoUnico}">
+		<gene:fnJavaScriptScheda funzione='visualizzaDesgreen("#TORN_ISGREEN#")' elencocampi="TORN_ISGREEN" esegui="true"/>
+		<gene:fnJavaScriptScheda funzione='visualizzaCalcsome("#GARE_CALCSOANG#","#GARE_CRITLICG#")' elencocampi="GARE_CALCSOANG;GARE_CRITLICG" esegui="true" />
+	</c:if>
 	
 	<c:if test="${isProceduraTelematica or param.proceduraTelematica eq 1}">
-		<gene:gruppoCampi idProtezioni="ASTA">
+		<gene:gruppoCampi idProtezioni="ASTA" visibile="${not garaQformOfferte}">
 			<gene:campoScheda nome="ASTA">
 				<td colspan="2"><b>Asta elettronica </b></td>
 			</gene:campoScheda>
@@ -1368,6 +1574,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			<gene:campoScheda campo="AEMODVIS" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" />
 			<gene:campoScheda campo="AENOTE" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" />
 		</gene:gruppoCampi>
+		<gene:campoScheda campo="ESPLPORT" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" defaultValue="${requestScope.initESPLPORT}" visibile="false"/>
 		<gene:fnJavaScriptScheda funzione='gestioneCampiAstaEl_Critlicg("#GARE_CRITLICG#")' elencocampi='GARE_CRITLICG' esegui="true" />
 		<gene:fnJavaScriptScheda funzione='gestioneCampiAstaEl_Ricastae("#TORN_RICASTAE#")' elencocampi='TORN_RICASTAE' esegui="false" />
 		<gene:fnJavaScriptScheda funzione='gestioneCampiAstaEl_Ribcal("#GARE_RIBCAL#")' elencocampi='GARE_RIBCAL' esegui="false" />		
@@ -1421,8 +1628,9 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	</c:if>
 	
 	<gene:campoScheda campo="INTEGRAZIONE_ERPvsWSDM" title="INTEGRAZIONE_ERPvsWSDM" campoFittizio="true" definizione="T1" defaultValue="${requestScope.initERPvsWSDM}" visibile="false" />
-		
-        <gene:campoScheda>
+	<gene:campoScheda campo="ISRICONCLUSA" visibile="false"/>
+	
+    <gene:campoScheda>
 		<td class="comandi-dettaglio" colSpan="2">
 			<gene:insert name="addPulsanti"/>
 			<c:choose>
@@ -1494,6 +1702,25 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		</form>
 
 <gene:javaScript>
+	
+		
+	function visualizzaDesgreen(visibilità){
+	if (visibilità == '1') {
+		showObj("rowTORN_DESGREEN",true);
+	} else {	
+		showObj("rowTORN_DESGREEN",false);
+		document.forms[0].TORN_DESGREEN.value = '';
+		}
+	};
+	
+	function visualizzaCalcsome(visibilità,critlicg){
+	if (visibilità == '1' && critlicg != '2') {
+		showObj("rowTORN_CALCSOME",true);
+	} else {	
+		showObj("rowTORN_CALCSOME",false);
+		document.forms[0].TORN_CALCSOME.value = '';
+		}
+	};
 
 	var idconfi = "${idconfi}";
 	
@@ -1554,13 +1781,17 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			initGartecni();
 		</c:if>
 		
-		<c:if test="${initGarerda && garaLottoUnico}">
+		<c:if test="${initGarerda}">
 			function initGarerda(){
 				//Se lottoUnico, 
 				//showNextElementoSchedaMultipla('GARERDA', new Array(${arrayCampiGarerda}), new Array());
 				setValue("GARERDA_NUMRDA_1","${initNUMRDA}");
 				setValue("GARERDA_CODCARR_1","${initCODCARR}");
 				setValue("GARERDA_ESERCIZIO_1","${initESERCIZIO}");
+				setValue("GARERDA_DATCRE_1", "${initDATCRE}");
+				setValue("GARERDA_DATRIL_1", "${initDATRIL}");
+				setValue("GARERDA_STRUTTURA_1", "${initSTRUTTURA}");
+
 			}
 			initGarerda();
 		</c:if>
@@ -1696,24 +1927,36 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	// dell'archivio delle categorie dell'appalto per la categoria prevalente
 	function setTipoCategoriaPrevalentePerArchivio(tipoCategoria){
 		if(document.forms[0].modo.value != "VISUALIZZA"){
+			var functionId = "default";
+			var parametriWhere = "";
+		
 			if(getValue("CATG_CATIGA") == "" || getValue("CAIS_TIPLAVG") == ""){
-				document.formCategoriaPrevalenteGare.archWhereLista.value = "V_CAIS_TIT.TIPLAVG=" + tipoCategoria;
+				parametriWhere = "N:" + tipoCategoria;
 				setValue("CAIS_TIPLAVG", "" + tipoCategoria);
 			} else {
-				document.formCategoriaPrevalenteGare.archWhereLista.value = "V_CAIS_TIT.TIPLAVG=" + getValue("CAIS_TIPLAVG");
+				parametriWhere = "N:" + getValue("CAIS_TIPLAVG");
 			}
+			
+			document.formCategoriaPrevalenteGare.archFunctionId.value = functionId;
+			document.formCategoriaPrevalenteGare.archWhereParametriLista.value = parametriWhere;
 		}
 	}
 	
 	function setTipoCategoriaUlteriorePerArchivio(tipoCategoria){
 		if(document.forms[0].modo.value != "VISUALIZZA"){
+			var functionId = "default";
+			var parametriWhere = "";
+		
 			for(var i=1; i <= maxIdUlterioreCategoriaVisualizzabile; i++){
+				eval("document.formUlterioreCategoriaGare" + i + ".archFunctionId").value = functionId;
+
 				if(getValue("OPES_CATOFF_" + i) == ""){
-					eval("document.formUlterioreCategoriaGare" + i + ".archWhereLista").value = "V_CAIS_TIT.TIPLAVG=" + tipoCategoria;
-					//setValue("CAIS_TIPLAVG_" + i, "" + tipoCategoria);
+					parametriWhere = "N:" + tipoCategoria;
 				} else {
-					eval("document.formUlterioreCategoriaGare" + i + ".archWhereLista").value = "V_CAIS_TIT.TIPLAVG=" + getValue("CAIS_TIPLAVG_" + i);
+					parametriWhere = "N:" + getValue("CAIS_TIPLAVG_" + i);
 				}
+				
+				eval("document.formUlterioreCategoriaGare" + i + ".archWhereParametriLista").value = parametriWhere;
 			}
 		}
 	}
@@ -1749,7 +1992,6 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	<c:if test='${esisteIntegrazioneLavori eq "TRUE"}'>
 		<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.AssociaGaraAppalto")}' >
 			var livelloProgettazioneSettato = false;
-			var whereArchivioAppalti = document.formArchivioAppalti.archWhereLista.value;
 		</c:if>
 	</c:if>
 	
@@ -1830,9 +2072,19 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	
 	$(function() {
 	    $('#GARE_CODCIG').change(function() {
+			var codcig = getValue("GARE_CODCIG");
 				if (!controllaCIG("GARE_CODCIG")) {
 					alert("Codice CIG non valido")
+					showObj("rowTORN_NUMAVCP", true);
 					this.focus();
+				}
+				else{
+					if(codcig.indexOf("X") == 0 || codcig.indexOf("Y") == 0 || codcig.indexOf("Z") == 0){
+						showObj("rowTORN_NUMAVCP", false);
+						setValue("TORN_NUMAVCP", "" );
+					}else{
+						showObj("rowTORN_NUMAVCP", true);
+						}
 				}
 	    });
 	});
@@ -1845,7 +2097,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		//alert("esente CIG = " + esenteCig);
 		//alert("Codice CIG = " + codcig);
 <c:choose>
-	<c:when test='${modo ne "VISUALIZZA"}'>
+	<c:when test='${modo ne "VISUALIZZA" and esisteAnagraficaSimog ne "true"}'>
 		if ("" != codcig) {
 			if (codcig.indexOf("#") == 0 || codcig.indexOf("$") == 0 || codcig.indexOf("NOCIG") == 0) {
 				setValue("ESENTE_CIG", "1", false);
@@ -1854,17 +2106,29 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				showObj("rowGARE_CODCIG", false);
 				setValue("GARE_CODCIG", "", false);
 				//setOriginalValue("GARE_CODCIG", "", false);
+				showObj("rowGARE_DACQCIG", false);
+				showObj("rowTORN_NUMAVCP", false);
+				showObj("rowGARE1_MOTESENTECIG", true);
+				
 			} else {
 				setValue("ESENTE_CIG", "2", false);
 				setOriginalValue("ESENTE_CIG", "2", false);
 				showObj("rowCODCIG_FIT", false);
 				showObj("rowGARE_CODCIG", true);
+				showObj("rowGARE_DACQCIG", true);
+				showObj("rowTORN_NUMAVCP", true);
+				showObj("rowGARE1_MOTESENTECIG", false);
+				setValue("GARE1_MOTESENTECIG", "", false);
 			}
 		} else {
 			setValue("ESENTE_CIG", "2", false);
 			setOriginalValue("ESENTE_CIG", "2", false);
 			showObj("rowCODCIG_FIT", false);
 			showObj("rowGARE_CODCIG", true);
+			showObj("rowGARE_DACQCIG", true);
+			showObj("rowTORN_NUMAVCP", true);
+			showObj("rowGARE1_MOTESENTECIG", false);
+			setValue("GARE1_MOTESENTECIG", "", false);
 		}
 	</c:when>
 	<c:otherwise>
@@ -1873,18 +2137,38 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				setValue("ESENTE_CIG", "Si", false);
 				showObj("rowCODCIG_FIT", true);
 				showObj("rowGARE_CODCIG", false);
+				showObj("rowGARE_DACQCIG", false);
+				showObj("rowTORN_NUMAVCP", false);
+				showObj("rowGARE1_MOTESENTECIG", true);
 			} else {
 				setValue("ESENTE_CIG", "No", false);
 				showObj("rowCODCIG_FIT", false);
 				showObj("rowGARE_CODCIG", true);
+				showObj("rowGARE_DACQCIG", true);
+				showObj("rowTORN_NUMAVCP", true);
+				showObj("rowGARE1_MOTESENTECIG", false);
+				setValue("GARE1_MOTESENTECIG", "", false);
 			}
 		} else {
 			setValue("ESENTE_CIG", "No", false);
 			showObj("rowCODCIG_FIT", false);
 			showObj("rowGARE_CODCIG", true);
+			showObj("rowGARE_DACQCIG", true);
+			showObj("rowTORN_NUMAVCP", true);
+			showObj("rowGARE1_MOTESENTECIG", false);
+			setValue("GARE1_MOTESENTECIG", "", false);
 		}
 	</c:otherwise>
 </c:choose>
+	}
+	
+	function initSMARTCIG() {
+		var codcig = getValue("GARE_CODCIG");
+		if ("" != codcig) {
+			if (codcig.indexOf("X") == 0 || codcig.indexOf("Y") == 0 || codcig.indexOf("Z") == 0) {
+				showObj("rowTORN_NUMAVCP", false);
+			}
+		}
 	}
 
 	function gestioneEsenteCIG() {
@@ -1904,10 +2188,19 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				setValue("CODCIG_FIT", " ", false);
 			</c:if>
 			showObj("rowCODCIG_FIT", true);
+			showObj("rowGARE_DACQCIG", false);
+			showObj("rowTORN_NUMAVCP", false);
+			showObj("rowGARE1_MOTESENTECIG", true);
 		} else {
 			showObj("rowGARE_CODCIG", true);
 			showObj("rowCODCIG_FIT", false);
 			setValue("CODCIG_FIT", "", false);
+			showObj("rowGARE_DACQCIG", true);
+			showObj("rowGARE1_MOTESENTECIG", false);
+			setValue("GARE1_MOTESENTECIG", "", false);
+			if (!(codcig.indexOf("X") == 0 || codcig.indexOf("Y") == 0 || codcig.indexOf("Z") == 0)) {
+				showObj("rowTORN_NUMAVCP", true);
+			}
 		}
 	</c:if>
 	}
@@ -1931,12 +2224,17 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		}else{
 			showObj("rowGARE_CALCSOANG", true);
 			showObj("rowTORN_OFFAUM", true);
+			
 		}
 	}
 	
 	function gestioneCRITLICG(critlicg) {
 		var calcsoan = getValue("GARE_CALCSOANG");
-		document.forms[0].GARE_DETLICG.value='';
+		var garaQformOfferte = "${garaQformOfferte}";
+		if(garaQformOfferte != "true" || critlicg == 2)
+			document.forms[0].GARE_DETLICG.value='';
+		else if(garaQformOfferte == "true" && critlicg != 2)
+			document.forms[0].GARE_DETLICG.value=4;
 		document.forms[0].GARE_APPLEGREGG.value='';
 		
 		if (critlicg == 2  || critlicg == 3 || calcsoan == '2') {
@@ -1946,6 +2244,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			document.forms[0].GARE_MODASTG.value='';
 			showObj("rowGARE_MODASTG", true);
 		}
+		
 	}
 	
 	function gestioneCOSTOFISSO_SEZIONITEC(critlicg) {
@@ -1957,6 +2256,13 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			document.forms[0].GARE1_SEZIONITEC.value='';
 			showObj("rowGARE1_COSTOFISSO", false);
 			showObj("rowGARE1_SEZIONITEC", false);
+		}
+		var offtel = getValue("TORN_OFFTEL");
+		if(offtel && offtel == 2 && critlicg == 2){
+			showObj("rowGARE1_ANONIMATEC", true);
+		}else{
+			document.forms[0].GARE1_ANONIMATEC.value='';
+			showObj("rowGARE1_ANONIMATEC", false);
 		}
 	}
 	
@@ -2143,7 +2449,15 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		var dataOdierna = new Date();
 		var dataPartecipazione;
 		var oraPartecipazione;
-		if (iterga==2 || iterga==4) {
+		var garaSospesa = getValue("GARSOSPE_ID");
+		if(iterga==8){
+			var conclusa=getValue("GARE_ISRICONCLUSA");
+			if(conclusa=="1"){
+				setValue("STATOGARA","Conclusa");
+				return;
+			}
+		}
+		if (iterga==2 || iterga==4 || iterga==7) {
 			dataPartecipazione = getValue("TORN_DTEPAR");
 			oraPartecipazione = getValue("TORN_OTEPAR");
 		} else { 
@@ -2153,24 +2467,29 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		
 		if(oraPartecipazione=="")
 			oraPartecipazione ="23:59:59";
-			
-		if (ditta!="" || esineg!="") {
-			setValue("STATOGARA","Conclusa");
-		} else if(dataPartecipazione!="") {
-			var dataTmp = dataPartecipazione.split("/");
-			dataPartecipazione = dataTmp[1]+"/"+dataTmp[0]+"/"+dataTmp[2];
-			dataPartecipazione = new Date(dataPartecipazione + " " + oraPartecipazione);
-			
-			var dattaOggi = dataOdierna.getTime();
-			var dataPArt = dataPartecipazione.getTime();
-			if (dataPArt>=dattaOggi && ditta=="" && esineg=="") {
-				setValue("STATOGARA","In corso");
-			} else if(dataPArt < dattaOggi && ditta=="" && esineg=="") {
-				setValue("STATOGARA","In aggiudicazione");
-			}
+		
+		if(garaSospesa != ''){
+			setValue("STATOGARA","Sospesa");
+		}
+		else{
+			if (ditta!="" || esineg!="") {
+				setValue("STATOGARA","Conclusa");
+			} else if(dataPartecipazione!="") {
+				var dataTmp = dataPartecipazione.split("/");
+				dataPartecipazione = dataTmp[1]+"/"+dataTmp[0]+"/"+dataTmp[2];
+				dataPartecipazione = new Date(dataPartecipazione + " " + oraPartecipazione);
 				
-		} else if(dataPartecipazione=="" && ditta=="" && esineg=="" ) {
-			setValue("STATOGARA","");
+				var dattaOggi = dataOdierna.getTime();
+				var dataPArt = dataPartecipazione.getTime();
+				if (dataPArt>=dattaOggi && ditta=="" && esineg=="") {
+					setValue("STATOGARA","In corso");
+				} else if(dataPArt < dattaOggi && ditta=="" && esineg=="") {
+					setValue("STATOGARA","In aggiudicazione");
+				}
+					
+			} else if(dataPartecipazione=="" && ditta=="" && esineg=="" ) {
+				setValue("STATOGARA","");
+			}
 		}
 	}
 	
@@ -2181,6 +2500,11 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			href+="&isLottoOffDistinte=Si";
 		</c:if>
 		openPopUpCustom(href, "impostaGaraNonAggiudicata", 700, 400, "yes", "yes");
+	}
+	
+	function sospendiGara(codgar,iterga,opz) {
+		var href="href=gare/commons/popup-SospendiGara.jsp&codgar=" + codgar + "&iterga=" + iterga + "&opz=" + opz;
+		openPopUpCustom(href, "sospendiGara", 800, 400, "yes", "yes");
 	}
 	
 	<c:if test='${modo ne "VISUALIZZA"}'>
@@ -2297,15 +2621,26 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			setValue("TORN_ISADESIONE",ret);
 			if (ret=="1") {
 				setValue("TORN_ACCQUA","2");
+				setValue("TORN_ISCONCPROG","2");
+				setValue("GARE1_ANONIMATEC","2");
 				showObj("rowTORN_ACCQUA",false);
+				showObj("rowTORN_ISCONCPROG",false);
 			} else {
-				showObj("rowTORN_ACCQUA",true);
+				var visualizzaACCQUA=true;
+				var visualizzaISCONCPROG=true;
+				var accqua = getValue("TORN_ACCQUA");
+				var isconcprog = getValue("TORN_ISCONCPROG");
+				if(accqua=='1')
+					visualizzaISCONCPROG= false;
+				if(isconcprog=='1')
+					visualizzaACCQUA= false;
+				showObj("rowTORN_ACCQUA",visualizzaACCQUA);
+				showObj("rowTORN_ISCONCPROG",visualizzaISCONCPROG);
 			}
 		}
 		
 		
 	</c:if>
-	
 	function visualizzaDaISADESIONE(valore) {
 		var visualizza = true;
 		if (valore != 1)
@@ -2313,7 +2648,19 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		
 		showObj("rowTORN_CODCIGAQ",visualizza);
 		showObj("rowTORN_NGARAAQ",visualizza);
-		showObj("rowTORN_ACCQUA",!visualizza);
+		var visualizzaACCQUA=!visualizza;
+		var visualizzaISCONCPROG=!visualizza;
+		//I campi ACCQUA e ISCONCPROG sono mutuamente esclusivi, quindi nel caso in cui non c'è adesione, si deve valutare quale visualizzare
+		if(!visualizza){
+			var accqua = getValue("TORN_ACCQUA");
+			var isconcprog = getValue("TORN_ISCONCPROG");
+			if(accqua=='1')
+				visualizzaISCONCPROG= false;
+			if(isconcprog=='1')
+				visualizzaACCQUA= false;
+		}
+		showObj("rowTORN_ACCQUA",visualizzaACCQUA);
+		showObj("rowTORN_ISCONCPROG",visualizzaISCONCPROG);
 		if (!visualizza) {
 			setValue("TORN_CODCIGAQ","");
 			setValue("TORN_NGARAAQ","");
@@ -2367,7 +2714,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		</c:if>
 		
 		var esenteCig = getValue("ESENTE_CIG");
-		if (esenteCig == "2" && getValue("GARE_CODCIG") != "") {
+		if ((esenteCig == "2" || esenteCig == "No") && getValue("GARE_CODCIG") != "") {
 			if (!controllaCIG("GARE_CODCIG")) {
 				outMsg("Codice CIG non valido", "ERR");
 				onOffMsg();
@@ -2479,6 +2826,12 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 					return;
 				}
 			}
+			$("#GARE_CRITLICG").prop('disabled', false);
+			$("#GARE_CALCSOANG").prop('disabled', false);
+			$("#GARE1_ANONIMATEC").prop('disabled', false);
+			$("#GARE1_SEZIONITEC").prop('disabled', false);
+			$("#GARE1_COSTOFISSO").prop('disabled', false);
+			$("#TORN_NOBUSTAMM").prop('disabled', false);
 		</c:if>
 		schedaConfermaDefault();
 	}
@@ -2536,11 +2889,9 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			&& gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.NUMERA") && controlloPahDocAssociatiPl}'>
 		function visualizzaDocumentiAssociatiAppalto() {
 			var tipgen = getValue("TORN_TIPGEN");
-			var clavor = getValue("GARE_CLAVOR");
-			var numera = getValue("GARE_NUMERA");
-			
+			var ngara = getValue("GARE_NGARA");
 			var comando = "href=gare/gare/gare-popup-visualizzaDocAppalto.jsp";
-		 	comando = comando + "&tipgen=" + tipgen+ "&clavor=" + clavor+ "&numera=" + numera;
+		 	comando = comando + "&tipgen=" + tipgen+ "&ngara=" + ngara;
 		 	openPopUpCustom(comando, "visualizzaDocAppalto", 700, 450, "yes", "yes");
 		}
 		
@@ -2566,6 +2917,22 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		}
 		return true;
 	} 
+	
+	function apriGestionePermessi(codgar, genereGara, permessoModifica) {
+		bloccaRichiesteServer();
+		formVisualizzaPermessiUtenti.codgar.value = codgar;
+		formVisualizzaPermessiUtenti.genereGara.value = genereGara;
+		formVisualizzaPermessiUtenti.permessimodificabili.value = permessoModifica;
+		formVisualizzaPermessiUtenti.submit();
+	}
+
+	function apriGestionePermessiStandard(codgar, genereGara, permessoModifica) {
+		bloccaRichiesteServer();
+		formVisualizzaPermessiUtentiStandard.codgar.value = codgar;
+		formVisualizzaPermessiUtentiStandard.genereGara.value = genereGara;
+		formVisualizzaPermessiUtentiStandard.permessimodificabili.value = permessoModifica;
+		formVisualizzaPermessiUtentiStandard.submit();
+	}
 	
 	function apriGestionePermessiGaraTelematica(codgar, genereGara) {
 		bloccaRichiesteServer();
@@ -2711,7 +3078,9 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			showObj("rowCONSEGNA",false);
 			showObj("rowGARE1_DTERMCON",false);
 			showObj("rowGARE1_NGIOCON",false);
-						
+			
+			showObj("rowTORN_ISCONCPROG",false);
+									
 			<c:if test='${modo ne "VISUALIZZA"}'>
 				if(getValue("GARE1_AQOPER")==null || getValue("GARE1_AQOPER")=="")
 					setValue("GARE1_AQOPER","1");
@@ -2719,6 +3088,8 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				var aqtempo = getValue("TORN_AQTEMPO");
 				if (aqtempo == "" || aqtempo == null)
 					setValue("TORN_AQTEMPO","2");
+				setValue("TORN_ISCONCPROG","2");
+				setValue("GARE1_ANONIMATEC","2");
 			</c:if>
 		} else {
 			showObj("rowGARE1_AQOPER",false);
@@ -2738,6 +3109,8 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				showObj("rowGARE1_DTERMCON",true);
 				showObj("rowGARE1_NGIOCON",true);
 			}
+			
+			showObj("rowTORN_ISCONCPROG",true);
 			
 			<c:if test='${modo ne "VISUALIZZA"}'>
 				setValue("GARE1_AQOPER","");
@@ -2837,15 +3210,18 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	<c:if test="${garaLottoUnico && modo ne 'VISUALIZZA'}">
 	function aggiornaFiltroArchivioAccordiQuadro(tipgarg, eseguireRicercaTipgarg,valoreCorrispondenzaTrovato) {
 		var tipgen = getValue("TORN_TIPGEN");
+		//var functionId = document.formArchivioAccordiQuadro.archFunctionId.value;
+		var functionId = "default";
+		var parametriWhere = "";
 		<c:set var="dbms" value="${gene:callFunction('it.eldasoft.gene.tags.utils.functions.GetTipoDBFunction', pageContext)}" />
 		
 		if(document.formArchivioAccordiQuadro !=null) {
-			document.formArchivioAccordiQuadro.archWhereLista.value = "V_GARE_ACCORDIQUADRO.TIPGEN = " + tipgen + " and (V_GARE_ACCORDIQUADRO.ISARCHI <> '1' or V_GARE_ACCORDIQUADRO.ISARCHI is null)";
+			parametriWhere += "T:" + tipgen;
 			
 			var cenint = getValue("TORN_CENINT");
+			functionId += "_" + (cenint!=null && cenint!="");
 			if (cenint!=null && cenint!="") {
-				document.formArchivioAccordiQuadro.archWhereLista.value += " and (not exists(select id from garaltsog g where g.ngara=V_GARE_ACCORDIQUADRO.NGARA) or " + 
-				" exists (select id from garaltsog g where g.ngara=V_GARE_ACCORDIQUADRO.NGARA and g.cenint='" + cenint + "'))";
+				parametriWhere += ";T:" + cenint;
 			}
 		}
 		
@@ -2867,13 +3243,24 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		if (valoreCorrispondenzaTrovato != null && valoreCorrispondenzaTrovato != "") {
 			if (document.formArchivioAccordiQuadro !=null ) {
 				if (valoreCorrispondenzaTrovato == 77) {
-					document.formArchivioAccordiQuadro.archWhereLista.value += " and V_GARE_ACCORDIQUADRO.AQOPER = 2";
+					functionId += "_true";
+					parametriWhere += ";N:2"
 				} else {
 					var tabellatoA1138 = "${tabellatoA1138}";
-					if (tabellatoA1138=="1")
-						document.formArchivioAccordiQuadro.archWhereLista.value += " and V_GARE_ACCORDIQUADRO.AQOPER = 1";
+					if (tabellatoA1138=="1") {
+						functionId += "_true";
+						parametriWhere += ";N:1"
+					} else {
+						functionId += "_false";
+					}					
 				}
 			}
+		}
+		
+		if (document.formArchivioAccordiQuadro != null) {
+			functionId+="_" + tipgen;
+			document.formArchivioAccordiQuadro.archFunctionId.value = functionId;
+			document.formArchivioAccordiQuadro.archWhereParametriLista.value = parametriWhere;
 		}
 	}
 	
@@ -3063,6 +3450,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	</c:if>
 
 	initEsenteCIG_CODCIG();
+	initSMARTCIG();
 	
 	<c:if test='${integrazioneWSERP eq "1"}'>
 	 <c:choose>
@@ -3115,7 +3503,19 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		}
 		sortinv = getValue("TORN_SORTINV");
 		gestioneNumope(sortinv);
+	}
+	
+	function gestioneRicercaMercatoNegoziata(iterga){
+		if(iterga==8){
+			setValue("GARE_CRITLICG",1);
+			setValue("GARE_DETLICG",3);
+			setValue("GARE_CALCSOANG",2);
+			setValue("GARE_RIBCAL",2);
+			setValue("TORN_OFFAUM",2);
+			setValue("TORN_RICMANO",2);
+		}
 	}	
+		
 	
 	function gestioneNumope(sortinv){
 		if(sortinv==1){
@@ -3176,11 +3576,106 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		$("#rowGARE_DETLICG select").val(detlicg);
 	}
 	
+	function gestioneNOBUSTAMM(){
+		var nobustamm =  getValue("TORN_NOBUSTAMM");
+		if(nobustamm == "1"){
+			showObj("rowTORN_INVERSA",false);
+			setValue("TORN_INVERSA","");
+			showObj("rowTORN_COMPREQ",false);
+			setValue("TORN_COMPREQ","");
+		}else{
+			showObj("rowTORN_INVERSA",true);
+			showObj("rowTORN_COMPREQ",true);
+		}
+	}
+	
+	function apriFormRichiestaCig(){
+		bloccaRichiesteServer();
+		document.formRichiestaCig.submit();
+	}		
+	
 	<c:if test='${modo eq "MODIFICA"}'>
 		var bloccoModificatiDati = $("#bloccoModificatiDati").val();
-		bloccaDopoPubblicazione(bloccoModificatiDati);
-	</c:if>		
+		bloccaDopoPubblicazione(bloccoModificatiDati,getValue("TORN_OFFTEL"));
+	</c:if>	
+	
+	function changeAnonimatec(anonimatec) {
+		if(anonimatec=='1'){
+			<c:if test='${modo ne "VISUALIZZA"}'>
+				setValue("GARE1_SEZIONITEC","2");
+			</c:if>
+			$("#GARE1_SEZIONITEC").prop('disabled', true);
+			$("#GARE1_SEZIONITEC").css('color', '#888');
+		}else{
+			$("#GARE1_SEZIONITEC").prop('disabled', false);
+			$("#GARE1_SEZIONITEC").css('color', '#000');
+		}
+	}	
+	
+	function changeIsconprog(isconcprog){
+		<c:if test='${modo ne "VISUALIZZA"}'>
+		if(isconcprog=='1'){
+			setValue("GARE_CRITLICG","2");
+			setValue("GARE_CALCSOANG","2");
+			setValue("GARE1_COSTOFISSO","1");
+			setValue("GARE1_ANONIMATEC","1");
+			setValue("GARE1_SEZIONITEC","2");
+			setValue("TORN_ACCQUA","2");
+			setValue("TORN_NOBUSTAMM","");
+			$("#GARE1_ANONIMATEC").prop('disabled', true);
+			$("#GARE1_ANONIMATEC").css('color', '#888');
+			$("#GARE1_SEZIONITEC").prop('disabled', true);
+			$("#GARE1_SEZIONITEC").css('color', '#888');
+			$("#GARE_CALCSOANG").prop('disabled', true);
+			$("#GARE_CALCSOANG").css('color', '#888');
+			$("#GARE_CRITLICG").prop('disabled', true);
+			$("#GARE_CRITLICG").css('color', '#888');
+			$("#GARE1_COSTOFISSO").prop('disabled', true);
+			$("#GARE1_COSTOFISSO").css('color', '#888');
+			showObj("rowTORN_ACCQUA",false);
+			$("#TORN_NOBUSTAMM").prop('disabled', true);
+			$("#TORN_NOBUSTAMM").css('color', '#888');
+		}else{
+			setValue("GARE1_ANONIMATEC","");
+			$("#GARE1_ANONIMATEC").prop('disabled', false);
+			$("#GARE1_ANONIMATEC").css('color', '#000');
+			$("#GARE_CALCSOANG").prop('disabled', false);
+			$("#GARE_CALCSOANG").css('color', '#000');
+			$("#GARE_CRITLICG").prop('disabled', false);
+			$("#GARE_CRITLICG").css('color', '#000');
+			$("#GARE1_COSTOFISSO").prop('disabled', false);
+			$("#GARE1_COSTOFISSO").css('color', '#000');
+			showObj("rowTORN_ACCQUA",true);
+			$("#TORN_NOBUSTAMM").prop('disabled', false);
+			$("#TORN_NOBUSTAMM").css('color', '#000');
+		}
+		</c:if>
+	}
+	
+	function visualizzaDocumentiAssociatiAQ() {
+			var tipgen = getValue("TORN_TIPGEN");
+			var ngara = getValue("TORN_NGARAAQ");
+			
+			var comando = "href=gare/gare/gare-popup-visualizzaDocAQ.jsp";
+		 	comando = comando + "&tipgen=" + tipgen+ "&ngara=" + ngara;
+		 	openPopUpCustom(comando, "visualizzaDocAQ", 700, 450, "yes", "yes");
+	}
+	
+	
+	function getListaRdaRdi(){
+				formListaRdaRdi.submit();
+			}
+	
 </gene:javaScript>
+
+<form name="formListaRdaRdi" action="${pageContext.request.contextPath}/pg/CollegaScollegaRda.do" method="post">
+	<input type="hidden" name="handleRda" id="handleRda" value="${valueScollega}" />
+	<input type="hidden" name="codgar" id="codgar" value="${codGar}" />
+	<input type="hidden" name="ngara" id="ngara" value="${valueNgara}" />
+	<input type="hidden" name="autorizzatoModifiche" value="${autorizzatoModifiche}" />
+	<input type="hidden" name="bloccoModificatiDati" id="bloccoModificatiDati" value="${bloccoModificatiDati}"/>
+</form> 
+
 
 <form name="formVisualizzaDocumenti" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
 	<input type="hidden" name="href" value="gare/commons/archivia-documenti-scheda.jsp" /> 
@@ -3218,3 +3713,10 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	<input type="hidden" name="linkrda" id="linkrda" value="" />
 	<input type="hidden" name="uffint" id="uffint" value="${sessionScope.uffint}" />
 </form> 
+
+<form name="formRichiestaCig" id="formRichiestaCig" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+	<input type="hidden" name="href" value="gare/commons/richiestaCig.jsp" />
+	<input type="hidden" name="genereGara" value="2" />
+	<input type="hidden" name="codiceGara" value="${codiceGara}" />
+</form>
+

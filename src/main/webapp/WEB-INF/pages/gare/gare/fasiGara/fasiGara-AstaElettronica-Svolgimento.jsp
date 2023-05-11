@@ -167,6 +167,7 @@
 					<input type="hidden" name="WIZARD_PAGINA_ATTIVA" value="${paginaAttivaWizard}" />						
 					<input type="hidden" id="updateLista" name="updateLista" value="${updateLista}" />
 					<input type="hidden" id="percorsoCartellaImg" name="percorsoCartellaImg" value="${contextPath}/img/" />
+					<input type="hidden" name="entitaPrincipaleModificabile" id="entitaPrincipaleModificabile" value="${sessionScope.entitaPrincipaleModificabile}" />
 				</gene:formScheda>
 			</td>
 		</tr>

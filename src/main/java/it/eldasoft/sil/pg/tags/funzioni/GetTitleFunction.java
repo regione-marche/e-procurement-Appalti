@@ -106,8 +106,9 @@ public class GetTitleFunction extends AbstractGetTitleFunction {
 		// Nominativo commissione
 		"COMMNOMIN|Nuovo nominativo|Nominativo {0}" + "|| select codtec from COMMNOMIN where ID = #COMMNOMIN.ID#",
         //Gestione Ordini
-        "NSO_ORDINI|Nuovo ordine|Ordine {0}" + "|| select codord from nso_ordini where id = #NSO_ORDINI.ID#"};
-
+        "NSO_ORDINI|Nuovo ordine|Ordine {0}" + "|| select codord from nso_ordini where id = #NSO_ORDINI.ID#",
+	    //Gestione stipula contratto
+        "G1STIPULA|Nuova stipula|Stipula {0}" + "|| select codstipula from g1stipula where id = #G1STIPULA.ID#"};
     }
 
     @Override

@@ -27,8 +27,8 @@
 			scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda.jsp","")}'
 			schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp","")}'
 			campi="IMPR.CODIMP;IMPR.NOMIMP"
+			functionId="skip"
 			chiave="DITGAQ_DITTAO_${param.contatore}"
-			where=""
 			inseribile="false"
 			formName="formArchivioDitte${param.contatore}" >
 			<gene:campoScheda campo="DITTAO_${param.contatore}" entita="DITGAQ" campoFittizio="true"  modificabile="false" definizione="T10;0;;;G1DITTAODQ" value="${item[2]}" />

@@ -26,8 +26,8 @@
 			scheda="" 
 			schedaPopUp="" 
 			campi="IMPR.NOMEST;IMPR.CFIMP;IMPR.PIVIMP;IMPR.NAZIMP" 
+			functionId="anticor"
 			chiave=""
-			where="IMPR.TIPIMP is not null and IMPR.TIPIMP <> 3 AND IMPR.TIPIMP <> 10"
 			inseribile="false"
 			formName="formArchivioImprese_${param.contatore}">
 			<gene:campoScheda campo="RAGSOC_${param.contatore}" entita="ANTICORDITTE" campoFittizio="true" definizione="T250;0;;;RAGSOCANTICORD" value="${item[2]}" />
@@ -49,8 +49,8 @@
 			scheda="" 
 			schedaPopUp="" 
 			campi="IMPR.NOMEST;IMPR.CFIMP;IMPR.PIVIMP;IMPR.NAZIMP" 
+			functionId="anticor"
 			chiave=""
-			where="IMPR.TIPIMP is not null and IMPR.TIPIMP <> 3 AND IMPR.TIPIMP <> 10"
 			inseribile="false"
 			formName="formArchivioImprese_${param.contatore}">
 			<gene:campoScheda campo="RAGSOC_${param.contatore}" entita="ANTICORDITTE" campoFittizio="true" definizione="T250;0;;;RAGSOCANTICORD"  />

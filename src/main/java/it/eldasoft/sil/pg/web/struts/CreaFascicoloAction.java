@@ -1,23 +1,22 @@
 package it.eldasoft.sil.pg.web.struts;
 
-import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
-import it.eldasoft.gene.db.domain.LogEvento;
-import it.eldasoft.gene.utils.LogEventiUtils;
-import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
-import it.eldasoft.utils.properties.ConfigManager;
-
 import java.io.PrintWriter;
 import java.util.HashMap;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import net.sf.json.JSONObject;
-
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
+
+import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
+import it.eldasoft.gene.db.domain.LogEvento;
+import it.eldasoft.gene.utils.LogEventiUtils;
+import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.utils.properties.ConfigManager;
+import net.sf.json.JSONObject;
 
 public class CreaFascicoloAction extends Action {
 
@@ -57,13 +56,17 @@ public class CreaFascicoloAction extends Action {
       String idutente = request.getParameter("idutente");
       String idutenteunop = request.getParameter("idutenteunop");
 
+      String codicefascicolo = request.getParameter("codicefascicolo");
       String oggettofascicolo = request.getParameter("oggettofascicolo");
       String classificafascicolo = request.getParameter("classificafascicolo");
+      String classificadescrizione = request.getParameter("classificadescrizione");
       String descrizionefascicolo = request.getParameter("descrizionefascicolo");
       String tipofascicolo = request.getParameter("tipofascicolo");
+      String annofascicolo = request.getParameter("annofascicolo");
       String struttura = request.getParameter("struttura");
       String nomeRup = request.getParameter("nomeRup");
       String acronimoRup = request.getParameter("acronimoRup");
+      String numeroFascicolo = request.getParameter("numerofascicolo");
 
       String tipoWSDM = request.getParameter("tipowsdm");
       String entita = request.getParameter("entita");
@@ -71,33 +74,46 @@ public class CreaFascicoloAction extends Action {
       String idconfi = request.getParameter("idconfi");
       String genereGara = request.getParameter("genereGara");
       String servizio = request.getParameter("servizio");
+      String uocompetenza = request.getParameter("uocompetenza");
+      String uocompetenzadescrizione = request.getParameter("uocompetenzadescrizione");
 
       String riservatezzaAttiva = ConfigManager.getValore("wsdm.applicaRiservatezza."+idconfi);
       oggEvento = key1;
 
       Long isRiservatezza = null;
-      if("JIRIDE".equals(tipoWSDM) && "1".equals(riservatezzaAttiva) && !"10".equals(genereGara) && !"11".equals(genereGara) && !"20".equals(genereGara)){
+      if("JIRIDE".equals(tipoWSDM) && "1".equals(riservatezzaAttiva) && !"10".equals(genereGara) && !"11".equals(genereGara) && !"20".equals(genereGara) && !"G1STIPULA".equals(entita)){
         isRiservatezza = new Long(1);
       }
 
-      HashMap<String, Object> parWSDM = new HashMap<String, Object>();
-      parWSDM.put(GestioneWSDMManager.LABEL_CLASSIFICA_FASCICOLO, classificafascicolo);
-      parWSDM.put(GestioneWSDMManager.LABEL_DESCRIZIONE_FASCICOLO, descrizionefascicolo);
-      parWSDM.put(GestioneWSDMManager.LABEL_OGGETTO_FASCICOLO, oggettofascicolo);
-      parWSDM.put(GestioneWSDMManager.LABEL_STRUTTURA, struttura);
-      parWSDM.put(GestioneWSDMManager.LABEL_TIPO_FASCICOLO, tipofascicolo);
-      parWSDM.put(GestioneWSDMManager.LABEL_ACRONIMO_RUP, acronimoRup);
-      parWSDM.put(GestioneWSDMManager.LABEL_NOME_RUP, nomeRup);
-      parWSDM.put(GestioneWSDMManager.LABEL_USERNAME, username);
-      parWSDM.put(GestioneWSDMManager.LABEL_PASSWORD, password);
-      parWSDM.put(GestioneWSDMManager.LABEL_RUOLO, ruolo);
-      parWSDM.put(GestioneWSDMManager.LABEL_NOME, nome);
-      parWSDM.put(GestioneWSDMManager.LABEL_COGNOME, cognome);
-      parWSDM.put(GestioneWSDMManager.LABEL_CODICEUO, codiceuo);
-      parWSDM.put(GestioneWSDMManager.LABEL_ID_UTENTE, idutente);
-      parWSDM.put(GestioneWSDMManager.LABEL_ID_UTENTE_UNITA_OPERATIVA, idutenteunop);
+      String messaggio = null;
+      if("ITALPROT".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM)) {
+        codEvento = "GA_WSDM_ASSOCIA_FASCICOLO";
+        descrEvento = "Associazione fascicolo documentale";
+        Long annoFascicoloLong=new Long(annofascicolo);
+        this.gestioneWSDMManager.setWSFascicolo(entita, key1, null, null, null, codicefascicolo, annoFascicoloLong,
+            numeroFascicolo, classificafascicolo, null, null,struttura,null,classificadescrizione,null,null,null);
+      }else {
+        HashMap<String, Object> parWSDM = new HashMap<String, Object>();
+        parWSDM.put(GestioneWSDMManager.LABEL_CLASSIFICA_FASCICOLO, classificafascicolo);
+        parWSDM.put(GestioneWSDMManager.LABEL_DESCRIZIONE_FASCICOLO, descrizionefascicolo);
+        parWSDM.put(GestioneWSDMManager.LABEL_OGGETTO_FASCICOLO, oggettofascicolo);
+        parWSDM.put(GestioneWSDMManager.LABEL_STRUTTURA, struttura);
+        parWSDM.put(GestioneWSDMManager.LABEL_TIPO_FASCICOLO, tipofascicolo);
+        parWSDM.put(GestioneWSDMManager.LABEL_ACRONIMO_RUP, acronimoRup);
+        parWSDM.put(GestioneWSDMManager.LABEL_NOME_RUP, nomeRup);
+        parWSDM.put(GestioneWSDMManager.LABEL_USERNAME, username);
+        parWSDM.put(GestioneWSDMManager.LABEL_PASSWORD, password);
+        parWSDM.put(GestioneWSDMManager.LABEL_RUOLO, ruolo);
+        parWSDM.put(GestioneWSDMManager.LABEL_NOME, nome);
+        parWSDM.put(GestioneWSDMManager.LABEL_COGNOME, cognome);
+        parWSDM.put(GestioneWSDMManager.LABEL_CODICEUO, codiceuo);
+        parWSDM.put(GestioneWSDMManager.LABEL_ID_UTENTE, idutente);
+        parWSDM.put(GestioneWSDMManager.LABEL_ID_UTENTE_UNITA_OPERATIVA, idutenteunop);
+        parWSDM.put(GestioneWSDMManager.LABEL_UOCOMPETENZA, uocompetenza);
+        parWSDM.put(GestioneWSDMManager.LABEL_DESCRIZIONE_UOCOMPETENZA, uocompetenzadescrizione);
 
-      String messaggio = this.gestioneWSDMManager.setFascicolo(tipoWSDM, servizio, idconfi, entita, key1, isRiservatezza, parWSDM);
+        messaggio = this.gestioneWSDMManager.setFascicolo(tipoWSDM, servizio, idconfi, entita, key1, isRiservatezza, parWSDM);
+      }
       if(messaggio==null || "".equals(messaggio)){
         result.put("esito", "OK");
       }else{

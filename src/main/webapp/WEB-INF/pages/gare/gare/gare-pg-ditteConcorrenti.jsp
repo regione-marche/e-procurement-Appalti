@@ -46,8 +46,11 @@
 
 <c:set var="visualizzareExportDitte" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext,"A1164","1","true")}' />
 <c:set var="visualizzareImportDitte" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext,"A1164","2","true")}' />		
+<c:set var="visualizzareExportDitteExcel" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext,"A1193","1","true")}' />
 
 <c:set var="isPopolatatW_PUSER" value='${gene:callFunction("it.eldasoft.gene.tags.functions.isPopolatatW_PUSERFunction", pageContext)}' /> 
+
+<c:set var="integrazioneWSERP" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSERPFunction", pageContext)}' /> 
 
 <%/*La pagina può essere richiamata anche da TORN per le gare divise a lotti con offerta unica*/ %>
 <c:choose>
@@ -185,7 +188,25 @@
 								</tr>
 							</c:if>
 							
-							
+							<c:if test='${autorizzatoModifiche ne 2 and tipoWSERP eq "CAV" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ImportaAnagraficaRda")}'>
+								<tr>
+									<td class="vocemenulaterale">
+										<a href="javascript:importaAnagraficaRda();" title='Importa anagrafica da RdA' tabindex="1505">
+											Importa anagrafica da RdA
+										</a>
+									</td>
+								</tr>
+							</c:if>		
+
+							<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.ImportaDitteInGaraExcel") and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA") and empty ngaraaq and visualizzareExportDitteExcel eq "1"}'>
+								<tr>
+									<td class="vocemenulaterale">
+										<a href="javascript:importaDitteDaExcel('');" title='Importa ditte da excel' tabindex="1513">
+											Importa ditte da excel
+										</a>
+									</td>
+								</tr>
+							</c:if>
 						
 							<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext,"DEL","LISTADELSEL") and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA") }'>
 								<tr>
@@ -223,7 +244,7 @@
 										</a>
 									</td>
 								</tr>
-							</c:if>		
+							</c:if>
 							<tr>
 								<td class="vocemenulaterale">
 									<a href="javascript:impostaFiltro();" title='Imposta filtro' tabindex="1509">
@@ -430,7 +451,14 @@
 						<c:set var="impresaRegistrata" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.ImpresaRegistrataSuPortaleFunction",  pageContext, dittaoIcona )}'/>
 						<gene:campoLista title="&nbsp;" width="20" >
 							<c:if test="${impresaRegistrata == 'SI'}">
-								<img width="16" height="16" title="Ditta registrata su portale" alt="Ditta registrata su portale" src="${pageContext.request.contextPath}/img/ditta_acquisita.png"/>
+								<c:choose>
+								<c:when test="${requestScope.registrazioneImpPortaleNonCompleta == 'SI'}">
+									<img width="16" height="16" title="Impresa con registrazione non completa su portale" alt="Impresa con registrazione non completa su portale" src="${pageContext.request.contextPath}/img/ditta_acquisita_noncompleta.png"/>
+								</c:when>
+								<c:otherwise>
+									<img width="16" height="16" title="Impresa registrata su portale" alt="Impresa registrata su portale" src="${pageContext.request.contextPath}/img/ditta_acquisita.png"/>				
+								</c:otherwise>
+								</c:choose>
 							</c:if>
 						</gene:campoLista>
 					</c:if>
@@ -468,6 +496,9 @@
 					&nbsp;<br><br>
 					<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "INS", "INS") and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA") and empty ngaraaq}'>
 						<INPUT type="button"  class="bottone-azione" value='Aggiungi ditta da anagrafica' title='Aggiungi ditta da anagrafica' onclick="javascript:aggiungiDitta();">&nbsp;&nbsp;&nbsp;
+					</c:if>
+					<c:if test='${autorizzatoModifiche ne 2 and tipoWSERP eq "CAV" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ImportaAnagraficaRda")}'>
+						<INPUT type="button"  class="bottone-azione" value='Importa anagrafica da Rda' title='Importa anagrafica da Rda' onclick="javascript:importaAnagraficaRda();">&nbsp;&nbsp;&nbsp;
 					</c:if>
 					<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "DEL", "LISTADELSEL") and empty modalitaSelezioneDitteElenco or (modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA")}'>
 						<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.lista.listaEliminaSelezione")}' title='${gene:resource("label.tags.template.lista.listaEliminaSelezione")}' onclick="javascript:listaEliminaSelezione();">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1031,6 +1062,29 @@
 				href+="&isGaraLottiConOffertaUnica=true"; 
 			}
 			openPopUpCustom(href, "importaditteingara", 700, 500, "yes", "yes");
+		}
+		
+		function importaDitteDaExcel(){
+			var genereGara = "${genereGara}";
+			var chiave="${key}";
+			var ngara = chiave.substr(chiave.lastIndexOf(":") + 1);
+			var act = "${pageContext.request.contextPath}/pg/InitImportDitteGaraExcel.do";
+			var par = "genereGara=" + genereGara;
+			par += "&ngara=" + ngara;
+			openPopUpActionCustom(act, par, 'importDitteGaraExcel', 700, 500, "yes", "yes");
+		}
+		
+		function importaAnagraficaRda(){
+			var codgar="${codiceGara}";
+			var chiave="${key}";
+			var ngara = chiave.substr(chiave.lastIndexOf(":") + 1);
+			var href = "href=gare/ditg/ditg-schedaPopup-insertDaRda.jsp&codgar=" + codgar + "&ngara="+ngara;
+			href += "&modo=NUOVO&faseRicezione=${paginaAttivaWizard}";
+		<c:if test='${isGaraLottiConOffertaUnica eq "true"}'>
+			href += "&isGaraLottiConOffertaUnica=true";
+		</c:if>
+			href += "&inserimentoDitteIterSemplificato=SI";
+			openPopUpCustom(href, "aggiungiDitta", 800, 400, "yes", "yes");
 		}
 		
 </gene:javaScript>

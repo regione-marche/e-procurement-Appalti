@@ -141,6 +141,9 @@
 		<c:when test='${tipoWSERP eq "TPER"}'>
 			<c:set var="masktitle" value="Creazione anagrafica fondo" />
 		</c:when>
+		<c:when test='${tipoWSERP eq "RAIWAY"}'>
+			<c:set var="masktitle" value="Aggiorna procedura su ERP" />
+		</c:when>
 		<c:otherwise>
 			<c:set var="masktitle" value="Aggiorna RdA con i dati di aggiudicazione" />
 		</c:otherwise>
@@ -153,6 +156,15 @@
 	</c:if>
 	
 	<c:set var="controlloSuperato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetWSERPDatiObbligatoriFunction", pageContext, ngara, tipoWSERP)}'/>
+	<c:if test='${tipoWSERP eq "CAV"}'>
+		<c:set var="isRda" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetDatiRdaGaraFunction", pageContext, ngara)}'/>
+	</c:if>
+	
+	<c:if test='${tipoWSERP eq "ATAC"}'>
+		<c:set var="str_esito" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetWSERPVerificaFornitoreFunction", pageContext, ditta)}'/>
+		<c:set var="isFornitoreERP" value="false" />
+	</c:if>
+	
 	
 	<gene:setString name="titoloMaschera" value="${masktitle}" />
 	
@@ -356,14 +368,47 @@
 					<c:set var="str_preinvio" value="Vengono aggiornati i dati in gara
 						 a seguito del calcolo dell'aggiudicazione." />
 				</c:when>
+				<c:when test='${tipoWSERP eq "RAIWAY"}'>
+					<c:set var="str_preinvio" value="Vengono aggiornati i dati della procedura su ERP." />
+					<c:set var="str_calcoloinfo" value="Aggiornamento della procedura ad ERP effettuato." />						 
+				</c:when>
+				<c:when test='${tipoWSERP eq "ATAC"}'>
+					<c:choose>
+						<c:when test='${str_esito eq "PIVA_OK"}'>
+							<c:set var="str_esito_message" value="Procedere alla creazione dell'ordine?" />
+							<c:set var="isFornitoreERP" value="true" />
+						</c:when>
+						<c:when test='${str_esito eq "CF_OK"}'>
+							<c:set var="str_esito_message" value="CF_OK procedo?" />
+							<c:set var="isFornitoreERP" value="true" />
+						</c:when>
+						<c:when test='${str_esito eq "PIVA_DUPLICATA"}'>
+							<c:set var="str_esito_message" value="Attenzione: il fornitore non identificabile per PIVA duplicata. Verificare le anagrafiche SAP e sanare la situazione per poter procedere alla creazione." />
+							<c:set var="isFornitoreERP" value="false" />
+						</c:when>
+						<c:when test='${str_esito eq "CF_DUPLICATO"}'>
+							<c:set var="str_esito_message" value="Attenzione: il fornitore non identificabile per CF duplicato. Verificare le anagrafiche SAP e sanare la situazione per poter procedere alla creazione." />
+							<c:set var="isFornitoreERP" value="false" />
+						</c:when>
+						<c:when test='${(str_esito eq "PIVA_KO") || (str_esito eq "CF_KO") || (str_esito eq "PIVA_KO_E_CF_KO")}'>
+							<c:set var="str_esito_message" value="Attenzione: il fornitore non esiste. Creare l'anagrafica in SAP per poter procedere alla creazione dell'ODA." />
+							<c:set var="isFornitoreERP" value="false" />
+						</c:when>
+						<c:otherwise>
+							<c:set var="str_esito_message" value="Errore durante la lettura dei dati del fornitore" />
+							<c:set var="isFornitoreERP" value="false" />
+						</c:otherwise>
+					</c:choose>
+				</c:when>	
 				<c:otherwise>
 					<c:set var="str_calcolowarning" value="L'aggiornamento delle RdA con i dati di aggiudicazione ha presentato degli errori/warning." />
 					<c:set var="str_preinvio" value="Vengono aggiornate le RdA in gara
 						 a seguito del calcolo dell'aggiudicazione." />
+					
 				</c:otherwise>
 			</c:choose>
 			<c:choose>
-				<c:when test='${empty ditta or ditta eq ""}'>
+				<c:when test='${!(tipoWSERP eq "RAIWAY") && (empty ditta or ditta eq "")}'>
 					<gene:campoScheda>
 						<td colSpan="2"><br>La gara non risulta aggiudicata in via definitiva 
 							<br>&nbsp;<br>
@@ -373,6 +418,20 @@
 				<c:when test='${RISULTATO eq "CALCOLOWARNING"}'>
 					<gene:campoScheda>
 						<td colSpan="2"><br>${str_calcolowarning} 
+							<br>&nbsp;<br>
+						</td>
+					</gene:campoScheda>
+				</c:when>
+				<c:when test='${RISULTATO eq "CALCOLOINFO"}'>
+					<gene:campoScheda>
+						<td colSpan="2"><br>${str_calcoloinfo} 
+							<br>&nbsp;<br>
+						</td>
+					</gene:campoScheda>
+				</c:when>
+				<c:when test='${tipoWSERP eq "ATAC"}'>
+					<gene:campoScheda>
+						<td colSpan="2"><br>${str_esito_message} 
 							<br>&nbsp;<br>
 						</td>
 					</gene:campoScheda>
@@ -397,6 +456,7 @@
 			<gene:campoScheda campo="CODGAR1" visibile="false" />
 			<gene:campoScheda campo="NGARA" visibile="false" />
 			<gene:campoScheda campo="CODCIG" visibile="false" />
+			<gene:campoScheda campo="CODCIGAQ" entita="TORN" where="TORN.CODGAR=GARE.CODGAR1" visibile="false" />
 			<gene:campoScheda campo="DITTA" visibile="false" />
 			<gene:campoScheda campo="IMPAPP" visibile="false" />
 			<gene:campoScheda campo="IAGGIU" visibile="false" />
@@ -405,6 +465,9 @@
 			<gene:campoScheda campo="MODLICG" visibile="false" />
 			<gene:campoScheda campo="NOT_GAR" visibile="false" />
 			<gene:campoScheda campo="CUPPRG" visibile="false" />
+			<gene:campoScheda campo="DAATTO" visibile="false" />
+			<gene:campoScheda campo="NREPAT" visibile="false" />
+			
 			<gene:campoScheda campo="IDFORNITORE" campoFittizio="true" visibile="false" definizione="T20" value="${idFornitore}"/>
 			<gene:campoScheda campo="GRUPPO_CONTI" campoFittizio="true" visibile="false" definizione="T20" value=""/>
 			<gene:campoScheda campo="COND_PAG" campoFittizio="true" visibile="false" definizione="T20" value=""/>
@@ -429,12 +492,26 @@
 					</td>
 				</gene:campoScheda>
 				</c:when>
+				<c:when test='${RISULTATO eq "CALCOLOINFO"}'>
+					<gene:campoScheda>
+						<td class="comandi-dettaglio" colSpan="2">
+							<INPUT type="button" class="bottone-azione" value="Chiudi" title="Chiudi" onclick="javascript:annulla();">&nbsp;&nbsp;
+						</td>
+					</gene:campoScheda>
+				</c:when>				
 				<c:otherwise>
 				<gene:campoScheda>
 					<td class="comandi-dettaglio" colSpan="2">
-					
-
-						<c:if test='${!empty ditta and ditta ne "" and controlloSuperato eq "true"}'>
+						<c:set var="visPulsanteConferma" value="false" />
+						<c:choose>
+							<c:when test='${controlloSuperato eq "true" and tipoWSERP ne "ATAC"}'>
+								<c:set var="visPulsanteConferma" value="true" />
+							</c:when>
+							<c:when test='${isFornitoreERP eq "true"}'>
+								<c:set var="visPulsanteConferma" value="true" />
+							</c:when>					 
+						</c:choose>
+						<c:if test='${ (!empty ditta and ditta ne "") and (visPulsanteConferma eq "true") }'>
 							<INPUT type="button" class="bottone-azione" value="Conferma" title="Conferma" onclick="javascript:conferma();">
 						</c:if>
 						<INPUT type="button" class="bottone-azione" value="Annulla" title="Annulla" onclick="javascript:annulla();">&nbsp;&nbsp;
@@ -490,7 +567,7 @@
 						}
 					}
 					
-					if(textDefCig== null || textDefCig==''){
+					if(oggGara== null || oggGara==''){
 						isConferma ="false";
 					 	alert('Valorizzare la definizione del cig!');
 					}
@@ -542,6 +619,9 @@
 	_popolaWSERPTabellato("CAV02","condpag");
 	_popolaWSERPTabellato("CAV03","p3");
 	_popolaWSERPTabellato("CAV04","p4");
+		<c:if test='${!empty tipoContrattoRda}'>
+			$('#p4 option[value="${tipoContrattoRda}"').attr('selected','selected');
+		</c:if>
 	</c:if>
 	
 

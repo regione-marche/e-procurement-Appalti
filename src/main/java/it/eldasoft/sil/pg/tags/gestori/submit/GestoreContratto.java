@@ -20,6 +20,7 @@ import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveIDAutoincrementante;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.GestioneProgrammazioneManager;
 import it.eldasoft.sil.pg.bl.SmatManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 
@@ -37,6 +38,8 @@ public class GestoreContratto extends AbstractGestoreEntita {
 
     /** Manager di SMAT */
   private SmatManager  smatManager ;
+  
+  private GestioneProgrammazioneManager gestioneProgrammazioneManager;
 
 
 	@Override
@@ -49,6 +52,9 @@ public class GestoreContratto extends AbstractGestoreEntita {
     super.setRequest(request);
     // Estraggo il manager per SMAT
     this.smatManager = (SmatManager) UtilitySpring.getBean("smatManager", this.getServletContext(), SmatManager.class);
+
+    this.gestioneProgrammazioneManager = (GestioneProgrammazioneManager) UtilitySpring.getBean("gestioneProgrammazioneManager",
+        this.getServletContext(), GestioneProgrammazioneManager.class);
    }
 
 
@@ -64,7 +70,15 @@ public class GestoreContratto extends AbstractGestoreEntita {
 
 	@Override
   public void postUpdate(DataColumnContainer datiForm)
-			throws GestoreException {
+      throws GestoreException {
+	}
+	
+	@Override
+  public void afterUpdateEntita(TransactionStatus status, DataColumnContainer datiForm)
+      throws GestoreException {
+	 //Integrazione programmazione
+	 if(gestioneProgrammazioneManager.isAttivaIntegrazioneProgrammazione())
+	   this.gestioneProgrammazioneManager.aggiornaRdaGara(datiForm.getString("GARE.CODGAR1"),null,null);
 	}
 
 	@Override

@@ -64,13 +64,17 @@ public class GetDiscussioneAltriDatiFunction extends AbstractFunzioneTag {
           pageContext.setAttribute("numeroMessaggioNonLettiUtente", numeroMessaggioNonLettiUtente, PageContext.REQUEST_SCOPE);
 
           // Data ultimo aggiornamento
-          Date dataAggiornamento = (Date) sqlManager.getObject(
-              "select max(discmessins) from w_discuss where discid_p = ? and discmesspubbl = ?", new Object[] { discid_p, "1" });
-          if (dataAggiornamento != null) {
+          String dataAggString = sqlManager.getDBFunction("DATETIMETOSTRING",
+        	        new String[] { "discmessins" });
+          
+          String dataAggiornamento = (String) sqlManager.getObject(
+              "select max(" + dataAggString + ") from w_discuss where discid_p = ? and discmesspubbl = ?", new Object[] { discid_p, "1" });
+          Date dataaggDate = UtilityDate.convertiData(dataAggiornamento, UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS);
+          if (dataaggDate != null) {
             pageContext.setAttribute("dataAggiornamento",
-                UtilityDate.convertiData(dataAggiornamento, UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS), PageContext.REQUEST_SCOPE);
+                UtilityDate.convertiData(dataaggDate, UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS), PageContext.REQUEST_SCOPE);
           } else {
-            pageContext.setAttribute("dataAggiornamento", "", PageContext.REQUEST_SCOPE);
+            pageContext.setAttribute("dataaggDate", "", PageContext.REQUEST_SCOPE);
           }
 
         } catch (SQLException e) {

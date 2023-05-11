@@ -28,6 +28,8 @@
 	</c:otherwise>
 </c:choose>
 
+<c:set var="calcoloSogliaAnomaliaExDLgs2017" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetCalcsomeFunction",pageContext,gene:getValCampo(inputFiltro,"CODGAR")) }'/>
+
 		<c:if test="${!empty filtroLotti }">
 			<tr>
 				<td style="font: 11px Verdana, Arial, Helvetica, sans-serif;">
@@ -66,7 +68,7 @@
 								</td>
 							</tr>
 						</c:if>
-						<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "ALT", "CalcoloAggiudicazioneTuttiLotti")}'>
+						<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "ALT", "CalcoloAggiudicazioneTuttiLotti") and calcoloSogliaAnomaliaExDLgs2017 ne 1}'>
 							<tr>
 								<td class="vocemenulaterale">
 									<a href="javascript:apriPopupCalcoloAggiudicazioneLotti();" title='Calcolo aggiudicazione su tutti i lotti' tabindex="1505">

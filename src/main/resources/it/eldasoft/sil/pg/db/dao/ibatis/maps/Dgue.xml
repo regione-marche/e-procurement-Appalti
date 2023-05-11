@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+<sqlMap namespace="Gare">
+
+	<sql id="tornFullSelect">
+		SELECT T.*
+		FROM TORN T
+	</sql>
+	
+	<sql id="tornWhereByPK">
+		WHERE T.CODGAR = #CODGAR#
+	</sql>
+	<sql id="gareFullSelect">
+		SELECT G.*
+		FROM GARE G
+	</sql>
+	
+	<sql id="gareWhereByPK">
+		WHERE G.NGARA = #NGARA#
+	</sql>
+	<sql id="gareWhereByFKDirect">
+		WHERE G.CODGAR1 = #CODGAR#
+	</sql>
+	<sql id="gareOrderByCodiga">
+		ORDER BY G.CODIGA
+	</sql>
+	<sql id="gareByFKJoin">
+		JOIN TORN T
+			ON G.CODGAR1 = T.CODGAR1
+	</sql>
+	
+	<sql id="garcpvFullSelect">
+		SELECT GCPV.*
+		FROM GARCPV GCPV
+	</sql>
+	
+	<sql id="garcpvByPK">
+		WHERE GCPV.NGARA=#ngara#
+			AND GCPV.NUMCPV=#numcpv#
+ 	</sql>
+	<sql id="garcpvByNgara">
+		WHERE GCPV.NGARA=#ngara#
+ 	</sql>
+	<sql id="garcpvByNgaraLike">
+		WHERE GCPV.NGARA LIKE #ngara#
+ 	</sql>
+	<sql id="garcpvOrderByTipcpv">
+		ORDER BY GCPV.TIPCPV ASC,GCPV.NGARA
+ 	</sql>
+ 	
+ 	<sql id="dgueBatchFullSelect">
+ 		SELECT * 
+ 		FROM DGUE_BATCH
+ 	</sql>
+ 	
+ 	<sql id="dgueBatchByStatus">
+ 		WHERE STATO = #stato#
+ 	</sql>
+ 	
+ 	<sql id="dgueBatchDocFullSelect">
+ 		SELECT dbd.id,dbd.dignomdoc,dbd.idprg,dbd.iddocdig,dbd.stato, 
+ 		db.id,db.codgar,db.ngara,db.codimp,db.busta,db.datainserimento,db.stato
+ 		FROM DGUE_BATCH_DOC dbd
+ 		JOIN DGUE_BATCH db ON dbd.IDBATCH = db.ID
+ 	</sql>
+ 	
+ 	<sql id="dgueBatchDocByDgueBatchAndStatus">
+ 		WHERE dbd.IDBATCH = #idBatch.id#
+ 		AND dbd.STATO = #stato#
+ 	</sql>
+ 	
+ 	<sql id="pubbliFullSelect">
+ 		SELECT p.*
+ 		FROM PUBBLI p
+ 	</sql>
+ 	<sql id="pubbliByCodgar">
+ 		WHERE p.CODGAR9 = #codice#
+ 	</sql>
+ 	
+ 	
+ 	<select id="getTornFullByPK" remapResults="true" resultClass="it.eldasoft.sil.pg.db.domain.Torn" parameterClass="java.lang.String">
+		<include refid="tornFullSelect"/>
+		<include refid="tornWhereByPK"/>
+	</select>
+	<select id="getGareFullByPK" remapResults="true" resultClass="it.eldasoft.sil.pg.db.domain.Gare" parameterClass="java.lang.String">
+		<include refid="gareFullSelect"/>
+		<include refid="gareWhereByPK"/>
+	</select>
+	<select id="getGareFullByFKDirect" remapResults="true" resultClass="it.eldasoft.sil.pg.db.domain.Gare" parameterClass="java.lang.String">
+		<include refid="gareFullSelect"/>
+		<include refid="gareWhereByFKDirect"/>
+		<include refid="gareOrderByCodiga"/>
+	</select>
+	<select id="getGarcpvFullByPK" resultClass="it.eldasoft.sil.pg.db.domain.Garcpv" parameterClass="it.eldasoft.sil.pg.db.domain.Garcpv" >
+		<include refid="garcpvFullSelect"/>
+		<include refid="garcpvByPK"/>
+	</select>
+	<select id="getGarcpvFullByNgaraLike" resultClass="it.eldasoft.sil.pg.db.domain.Garcpv" parameterClass="it.eldasoft.sil.pg.db.domain.Garcpv" >
+		<include refid="garcpvFullSelect"/>
+		<include refid="garcpvByNgaraLike"/>
+		<include refid="garcpvOrderByTipcpv"/>
+	</select>
+	<select id="getListDgueBatchByStatus" resultClass="it.eldasoft.sil.pg.db.domain.DgueBatch" parameterClass="it.eldasoft.sil.pg.db.domain.DgueBatchStatus" >
+		<include refid="dgueBatchFullSelect"/>
+		<include refid="dgueBatchByStatus"/>
+	</select>
+	<select id="getListDgueBatchDocByDgueBatchAndStatus" resultClass="it.eldasoft.sil.pg.db.domain.DgueBatchDoc" parameterClass="it.eldasoft.sil.pg.db.domain.DgueBatchDoc" >
+		<include refid="dgueBatchDocFullSelect"/>
+		<include refid="dgueBatchDocByDgueBatchAndStatus"/>
+	</select>
+	<update id="updateDgueBatchStatus" parameterClass="it.eldasoft.sil.pg.db.domain.DgueBatch" >
+		UPDATE DGUE_BATCH SET STATO = #stato# WHERE ID = #id#
+	</update>
+	<update id="updateDgueBatchDocStatus" parameterClass="it.eldasoft.sil.pg.db.domain.DgueBatchDoc" >
+		UPDATE DGUE_BATCH_DOC SET STATO = #stato# WHERE ID = #id#
+	</update>
+	<insert id="insertSingleDgueElaborazione" parameterClass="it.eldasoft.sil.pg.db.domain.DgueElaborazione">
+		INSERT INTO DGUE_ELABORAZIONI (ID,IDBATCH, IDBATCHDOC, CODGAR, NGARA, CODIMP, DIGNOMDOC, NOMEOE, PIVA, CF,RUOLO,ESCLUSIONE, INTERNO, STATO, ISGRUPPO, COMPONENTI, NOMEGRUPPO, ISCONSORZIO, CONSORZIATE,ERRMSG) 
+		VALUES(#id#,#dgueBatch.id#, #dgueBatchDoc.id#, #codgar#, #ngara#, #codimp#, #dignomdoc#, #nomeoe#, #piva#, #cf#, #ruolo#,#esclusione#, #interno#, #stato#, #isgruppo#, #componenti#, #nomegruppo#, #isconsorzio#, #consorziate#, #errorMsg#)
+	</insert>
+	<insert id="insertSingleDgueElabSub" parameterClass="it.eldasoft.sil.pg.db.domain.DgueElabSub">
+		INSERT INTO DGUE_ELABSUB (ID,IDELABORAZIONE, DENOMINAZIONE, CF, RUOLO, ATTIVITA, PRESTAZIONE, QUOTA) 
+		VALUES(#id#,#dgueElaborazione.id#, #denominazione#, #cf#, #ruolo#, #attivita#, #prestazione#, #quota#)
+	</insert>
+	<update id="updateDitgStatodguepreq" parameterClass="java.util.Map" >
+		UPDATE DITG SET STATODGUEPREQ = #stato# WHERE CODGAR5 = #dgueBatch.codgar# AND DITTAO = #dgueBatch.codimp# AND NGARA5 = #dgueBatch.ngara#
+	</update>
+	<update id="updateDitgStatodgueamm" parameterClass="java.util.Map" >
+		UPDATE DITG SET STATODGUEAMM = #stato# WHERE CODGAR5 = #dgueBatch.codgar# AND DITTAO = #dgueBatch.codimp# AND NGARA5 = #dgueBatch.ngara#
+	</update>
+	
+	<select id="getListPubbliFullSelectByCodgar" resultClass="it.eldasoft.sil.pg.db.domain.Pubbli" parameterClass="java.lang.String">
+		<include refid="pubbliFullSelect"/>
+		<include refid="pubbliByCodgar"/>
+	</select>
+	<select id="getListPubbliFullSelectByCodgarAndTIPPUB3" resultClass="it.eldasoft.sil.pg.db.domain.Pubbli" parameterClass="java.lang.String">
+		<include refid="pubbliFullSelect"/>
+		<include refid="pubbliByCodgar"/>
+		AND (p.TIPPUB=3 OR p.TIPPUB=4 OR p.TIPPUB=2)
+	</select>
+</sqlMap>

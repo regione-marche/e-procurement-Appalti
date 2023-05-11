@@ -18,6 +18,8 @@
 
 <c:set var="listaOpzioniDisponibili" value="${fn:join(opzDisponibili,'#')}#"/>
 
+<jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
+
 <c:set var="idprg" value='${gene:getValCampo(key,"IDPRG")}'/>
 <c:set var="idcom" value='${gene:getValCampo(key,"IDCOM")}'/>
 <c:set var="comkey1" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetCOMKEYGaraLottoFunction",pageContext,idprg,idcom)}' />
@@ -26,6 +28,7 @@
 <c:set var="autorizzatoModificaComunicazione" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.AutorizzatoModificaComunicazioneFunction",pageContext,idprg,idcom, "true")}' />	
 <c:set var="comintest" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetCOMINTESTFunction",pageContext,idprg,idcom)}' />
 <c:set var="codgar" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetCodgar1Function", pageContext, comkey1)}'/>
+<c:set var="statopec" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.MostraStatoPECFunction", pageContext, idprg, idcom)}' />
  
 <c:set var="integrazioneWSDM" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNFunction", pageContext, codgar, idconfi)}'/>
 <c:set var="tipoGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTipologiaGaraFunction",  pageContext,codgar)}' />
@@ -94,12 +97,17 @@
 	</c:otherwise>
 </c:choose>
 
+
+<c:if test="${integrazioneWSDM eq '1'}">
+	<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.EsistonoAllegatiComunicazioneFunction" parametro="${idprg};${idcom}"/>
+</c:if>
+
 <gene:set name="titoloMenu">
 	<jsp:include page="/WEB-INF/pages/commons/iconeCheckUncheck.jsp" />
 </gene:set>
 <table class="dettaglio-tab-lista">
 	<tr>
-		<td><gene:formLista entita="W_INVCOMDES" pagesize="20" sortColumn="${gene:if(comstato eq '1' and autorizzatoModificaComunicazione eq 'true',6,5)}"
+		<td><gene:formLista entita="W_INVCOMDES" pagesize="20" sortColumn="3"
 			where="W_INVCOMDES.IDPRG = #W_INVCOM.IDPRG# AND W_INVCOMDES.IDCOM = #W_INVCOM.IDCOM#" tableclass="datilista"
 			gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreW_INVCOMDES">
 
@@ -124,6 +132,7 @@
 			<gene:campoLista campo="IDCOM" visibile="false"/>
 			<gene:campoLista campo="IDCOMDES" width="40" title="N°" visibile="false"/>
 			<gene:campoLista campo="DESCODSOG" visibile="false" />
+			<gene:campoLista campo="DESCC" visibile="false" where="DESCC is null"/>
 			
 <%/*
 // 			<c:if test="${datiRiga.IMPR_NOMEST ne ''}">
@@ -135,8 +144,14 @@
 			<gene:campoLista campo="DESMAIL" />
 			<gene:campoLista campo="COMTIPMA" width="100"/>
 			<c:if test="${!empty comstato and comstato ne '1'}">
-				<gene:campoLista campo="DESSTATO" /> 
+				<gene:campoLista campo="DESSTATO" />
+				<c:if test='${statopec eq "true"}'>
+					<gene:campoLista campo="DESESITOPEC" width="150" />
+				</c:if>
 				<gene:campoLista campo="DESDATINV" width="150" />
+				<c:if test='${statopec eq "true"}'>
+					<gene:campoLista campo="DESDATCONS" width="150" />
+				</c:if>
 				<c:if test="${fn:contains(listaOpzioniDisponibili, 'OP114#')}">
 					<gene:campoLista campo="DESDATLET" width="150" title="Data e ora lettura su portale"/>
 				</c:if>
@@ -155,7 +170,7 @@
 		<c:when test="${comstato eq '1' and autorizzatoModificaComunicazione eq 'true'}">
 			<gene:redefineInsert name="listaNuovo">
 				<c:if test='${gene:checkProtFunz(pageContext,"INS","LISTANUOVO")}'>
-					<c:if test='${tipoGara ne "4" and tipoGara ne "11" and entitaParent ne "NSO_ORDINI"}' >
+					<c:if test='${tipoGara ne "4" and tipoGara ne "11" and entitaParent ne "NSO_ORDINI" and entitaParent ne "G1STIPULA"}' >
 						<c:if test='${commodello ne "1"}' >
 						<tr>
 							<td class="vocemenulaterale">
@@ -208,7 +223,7 @@
 				<td class="comandi-dettaglio" colSpan="2">
 					<c:if test='${gene:checkProtFunz(pageContext,"INS","LISTANUOVO")}'>
 						<c:if test='${tipoGara ne "4" and tipoGara ne "11" and entitaParent ne "NSO_ORDINI"}' >
-							<c:if test='${commodello ne "1"}' >
+							<c:if test='${commodello ne "1" and entitaParent ne "G1STIPULA"}' >
 								<INPUT type="button"  class="bottone-azione" value='Aggiungi destinatari da ditte in ${testoTipoGara}' title='Aggiungi destinatari da ditte in ${testoTipoGara}' onclick="javascript:ricercaDitteConcorrenti('${idprg}','${idcom}');">&nbsp;
 							</c:if>
 							<INPUT type="button"  class="bottone-azione" value='Aggiungi destinatari da mandanti RT' title='Aggiungi destinatari da mandanti RT' onclick="javascript:aggiungiDestManRT('${idprg}','${idcom}');">&nbsp;
@@ -282,12 +297,16 @@
 	}
 	
 	function protocollacomunicazione(idprg,idcom) {
+		var esistonoAllegatiDaFirmare = "${esistonoAllegatiDaFirmare}";
 		if(autorizzatoTelematiche == "false"){
 			alert("Non e' possibile procedere.\nLa funzione e' disponibile solo al Punto ordinante");
 			return;
 		}else{
 			if(cenint == ""){
 				alert("Non e' possibile procedere.\nDeve essere specificata la stazione appaltante");
+				return;
+			}else if(esistonoAllegatiDaFirmare == 'TRUE'){
+				alert("Non e' possibile procedere.\nVi sono degli allegati in attesa di firma");
 				return;
 			}else{
 				document.formprotocollacomunicazione.idprg.value = idprg;

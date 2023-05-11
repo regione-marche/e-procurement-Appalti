@@ -43,6 +43,7 @@
 	</c:otherwise>
 </c:choose>
 <c:set var="tmp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetDatiNegazioneFunction",  pageContext,param.ngara,tipo)}' />	
+<c:set var="codStatoGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetStatoGaraFunction", pageContext, param.codgar1)}' />	
 
 
 <c:choose>
@@ -60,7 +61,7 @@
 
 <c:set var="msgBlocco" value="Non é possibile procedere perchè "/>
 
-<c:if test="${aggiudicazione eq 'Si'}">
+<c:if test="${aggiudicazione eq 'Si' or codStatoGara eq '4'}">
 	<gene:redefineInsert name="buttons">
 		<INPUT type="button" class="bottone-azione" value="Annulla" title="Annulla" onclick="javascript:annulla()">&nbsp;
 	</gene:redefineInsert>
@@ -74,42 +75,51 @@
 	
 		<gene:campoScheda>
 			<td colSpan="2">
-				<c:if test="${aggiudicazione ne 'Si'}">
-					<br>
-					${msgConferma}<br>
-					<br>
-				</c:if>
 				<c:choose>
-					<c:when test="${param.isOfferteDistinte eq 'Si' || param.isOffertaUnica eq 'Si'}">
-						<c:choose>
-							<c:when test="${aggiudicazione ne 'Si' }">
-								<b>ATTENZIONE:</b> l'esito impostato per la gara viene riportato in tutti i lotti.<br>
-								<br>
-								<c:if test="${esitoPresente eq 'Si'}">
-									<b>ATTENZIONE:</b>&nbsp;
-										ci sono dei lotti della gara conclusi con esito negativo.<br>
-									<br>
-								</c:if>
-							</c:when>	
-							<c:otherwise>
-								<br>
-								${msgBlocco} ci sono dei lotti della gara che risultano aggiudicati.<br>
-								<br>
-							</c:otherwise>
-						</c:choose>
+					<c:when test="${codStatoGara eq '4'}">
+						<br>
+						${msgBlocco} la gara risulta sospesa.<br>
+						<br>
 					</c:when>					
 					<c:otherwise>
-						<c:if test="${aggiudicazione eq 'Si' }">
+						<c:if test="${aggiudicazione ne 'Si'}">
 							<br>
-							${msgBlocco} ${msgAvviso}<br>
+							${msgConferma}<br>
 							<br>
 						</c:if>
+						<c:choose>
+							<c:when test="${param.isOfferteDistinte eq 'Si' || param.isOffertaUnica eq 'Si'}">
+								<c:choose>
+									<c:when test="${aggiudicazione ne 'Si' }">
+										<b>ATTENZIONE:</b> l'esito impostato per la gara viene riportato in tutti i lotti.<br>
+										<br>
+										<c:if test="${esitoPresente eq 'Si'}">
+											<b>ATTENZIONE:</b>&nbsp;
+												ci sono dei lotti della gara conclusi con esito negativo.<br>
+											<br>
+										</c:if>
+									</c:when>	
+									<c:otherwise>
+										<br>
+										${msgBlocco} ci sono dei lotti della gara che risultano aggiudicati.<br>
+										<br>
+									</c:otherwise>
+								</c:choose>
+							</c:when>					
+							<c:otherwise>
+								<c:if test="${aggiudicazione eq 'Si' }">
+									<br>
+									${msgBlocco} ${msgAvviso}<br>
+									<br>
+								</c:if>
+							</c:otherwise>
+						</c:choose>
 					</c:otherwise>
 				</c:choose>
 			</td>
 		</gene:campoScheda>
 
-		<c:if test="${aggiudicazione ne 'Si'}">
+		<c:if test="${aggiudicazione ne 'Si' and codStatoGara ne '4'}">
 			<gene:campoScheda campo="NGARA" campoFittizio="true" defaultValue="${param.ngara}"  visibile="false" definizione="T20;0"/>
 			<gene:campoScheda campo="CODGARA" campoFittizio="true" defaultValue="${param.codgar1}"  visibile="false" definizione="T21;0"/>
 			<gene:campoScheda campo="ESINEG" campoFittizio="true" defaultValue="${param.esineg}" title="Tipo di esito" definizione="T100;0;A1088;;G1ESINEGG"/>

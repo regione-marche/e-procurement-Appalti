@@ -87,6 +87,15 @@
 	</c:otherwise>
 </c:choose>
 
+<c:choose>
+	<c:when test='${not empty param.descc}'>
+		<c:set var="descc" value="${param.descc}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="descc" value="${descc}" />
+	</c:otherwise>
+</c:choose>
+
 <gene:setString name="titoloMaschera" value="Copia comunicazione del ${comdatins}" />
 <c:choose>
 	<c:when test="${tipo eq '0' }">
@@ -132,6 +141,8 @@
 		<input type="hidden" name="comdatins" id="comdatins" value="${comdatins}">
 		<input type="hidden" name="compub" id="compub" value="${compub}">
 		<input type="hidden" name="commodello" id="commodello" value="${commodello}">
+		<input type="hidden" name="descc" id="descc" value="${descc}">
+		
 	</table>
 	
 		

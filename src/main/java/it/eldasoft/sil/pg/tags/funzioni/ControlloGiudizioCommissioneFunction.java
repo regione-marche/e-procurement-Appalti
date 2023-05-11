@@ -46,20 +46,20 @@ public class ControlloGiudizioCommissioneFunction extends AbstractFunzioneTag {
       }
 
       String selectDitte = "select d.nomimo from ditg d, g1cridef c, goev g where d.ngara5=? and c.ngara=d.ngara5 and g.ngara = c.ngara and g.tippar = ? "
-          + "and g.necvan = c.necvan and c.maxpun >0 and modpunti = 1 and (d.fasgar is null or d.fasgar > ?)";
+          + "and g.necvan = c.necvan and c.maxpun >0 and (modpunti = 1 or modpunti = 3) and (d.fasgar is null or d.fasgar > ?)";
       if (!"".equals(sezTec))
         selectDitte += " and g.seztec = 1 ";
       selectDitte += " and not exists (select v.id from g1crival v where v.idcridef=c.id and v.ngara=d.ngara5 and v.dittao=d.dittao)";
 
       String select = "select l.dittao from gfof f, g1crival l,g1cridef c, goev g, ditg  where f.espgiu = '1' and l.ngara = ? and f.ngara2 = ? "
-          + " and l.coeffi is null and c.id=l.idcridef and g.ngara = c.ngara and g.necvan = c.necvan and g.tippar = ? and modpunti=1 and c.maxpun>0 "
+          + " and l.coeffi is null and c.id=l.idcridef and g.ngara = c.ngara and g.necvan = c.necvan and g.tippar = ? and (modpunti = 1 or modpunti = 3) and c.maxpun>0 "
           + " and ditg.dittao=l.dittao and l.ngara=ditg.ngara5 and (ditg.fasgar is null or ditg.fasgar > ?) ";
       if (!"".equals(sezTec))
         select += " and g.seztec = 1 ";
       select += "and not exists (select * from g1crivalcom g1 where g1.idgfof  = f.id and g1.idcrival = l.id and g1.idcridef = c.id and coeffi is not null )";
 
       String selectValidita = "select l.dittao from gfof f, g1crival l,g1cridef c, goev g, ditg  where f.espgiu = '1' and l.ngara = ? and f.ngara2 = ? "
-          + " and l.coeffi is null and c.id=l.idcridef and g.ngara = c.ngara and g.necvan = c.necvan and g.tippar = ? and modpunti=1 and c.maxpun>0 "
+          + " and l.coeffi is null and c.id=l.idcridef and g.ngara = c.ngara and g.necvan = c.necvan and g.tippar = ? and (modpunti = 1 or modpunti = 3) and c.maxpun>0 "
           + " and ditg.dittao=l.dittao and l.ngara=ditg.ngara5 and (ditg.fasgar is null or ditg.fasgar > ?) ";
       if (!"".equals(sezTec))
         selectValidita += " and g.seztec = 1 ";

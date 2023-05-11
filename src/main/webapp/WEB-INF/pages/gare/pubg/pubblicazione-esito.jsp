@@ -23,6 +23,12 @@
 				<gene:campoScheda campo="DINVPUBG_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="D;0;;;DINVPUBG" value="${item[7]}" />
 				<gene:campoScheda campo="DINPUBG_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="D;0;;;DINPUBG" value="${item[3]}" modificabile="${item[2] ne '12' and item[2] ne '14'}" />
 				<gene:campoScheda campo="DFIPUBG_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="D;0;;;DFIPUBG" value="${item[4]}" />
+				<gene:campoScheda campo="TITPUB_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="T254;0;;;G1TITPUBG" value="${item[9]}" />
+				<gene:campoScheda campo="NAVPUB_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="T60;0;;;G1NAVPUBG" value="${item[10]}" />
+				<gene:campoScheda campo="NAVNUM_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="T60;0;;;G1NAVNUMG" value="${item[11]}" />
+				<gene:campoScheda campo="URLPUB_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="T254;0;;;G1URLPUBG" value="${item[12]}" href="javascript:apriUrl('${item[12]}')">
+					<gene:checkCampoScheda funzione='validURL("##")' obbligatorio="true" messaggio="Il valore dell'indirizzo URL specificato non è valido: è possibile inserire solo un indirizzo URL che inizi con 'ftp://', 'ftps://', 'sftp://', 'http://', 'https://' o 'www.'e non contenga spazi o virgole" onsubmit="false"/>
+				</gene:campoScheda>
 				<gene:campoScheda campo="IMPPUB_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="F7.2;0;;MONEY;G1IMPPUBG" value="${item[6]}" />
 				<gene:campoScheda campo="NGARA_${param.contatore}" entita="PUBG" campoFittizio="true" modificabile="false" visibile="${tipologiaGara eq 1}" title="Codice lotto " definizione="T20;1;;;NGARA_PUB" value="${item[0]}" />
 				<gene:campoScheda campo="TESPUBG_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="T254;0;;;TESPUBG" value="${item[5]}" />				
@@ -34,6 +40,12 @@
 				<gene:campoScheda campo="DINVPUBG_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="D;0;;;DINVPUBG"/>
 				<gene:campoScheda campo="DINPUBG_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="D;0;;;DINPUBG"/>
 				<gene:campoScheda campo="DFIPUBG_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="D;0;;;DFIPUBG"/>
+				<gene:campoScheda campo="TITPUB_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="T254;0;;;G1TITPUBG" />
+				<gene:campoScheda campo="NAVPUB_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="T60;0;;;G1NAVPUBG" />
+				<gene:campoScheda campo="NAVNUM_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="T60;0;;;G1NAVNUMG" />
+				<gene:campoScheda campo="URLPUB_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="T254;0;;;G1URLPUBG" >
+					<gene:checkCampoScheda funzione='validURL("##")' obbligatorio="true" messaggio="Il valore dell'indirizzo URL specificato non è valido: è possibile inserire solo un indirizzo URL che inizi con 'ftp://', 'ftps://', 'sftp://', 'http://', 'https://' o 'www.'e non contenga spazi o virgole" onsubmit="false"/>
+				</gene:campoScheda>
 				<gene:campoScheda campo="IMPPUB_${param.contatore}" entita="PUBG" campoFittizio="true" definizione="F7.2;0;;MONEY;G1IMPPUBG"/>
 				<c:choose>
 					<c:when test="${param.tipoDettaglio eq 2}">
@@ -44,8 +56,9 @@
 									scheda=''
 									schedaPopUp=''
 									campi="GARE.NGARA"
+									functionId="default_0"
+									parametriWhere="T:${param.chiave}"
 									chiave=""
-									where="GARE.CODGAR1 = '${param.chiave}' and GARE.CODGAR1 != GARE.NGARA"
 									formName="formLotti_${param.contatore}">
 									<gene:campoScheda campo="NGARA_${param.contatore}" entita="PUBG" title="Codice lotto " campoFittizio="true" visibile="true" definizione="T20;1;;;NGARA_PUB" obbligatorio="true"/>
 								</gene:archivio>
@@ -63,8 +76,9 @@
 									scheda=''
 									schedaPopUp=''
 									campi="GARE.NGARA"
+									functionId="default_0"
+									parametriWhere="T:${param.chiave}"
 									chiave=""
-									where="GARE.CODGAR1 = '${param.chiave}' and GARE.CODGAR1 != GARE.NGARA"
 									formName="formLotti_${param.contatore}">
 									<gene:campoScheda campo="NGARA_${param.contatore}" entita="PUBG" title="Codice lotto " campoFittizio="true" visibile="true" definizione="T20;1;;;NGARA_PUB" obbligatorio="true"/>
 								</gene:archivio>
@@ -120,6 +134,22 @@ function gestioneTIPPUBG_${param.contatore}(tippubg){
 		}
 	}
 	
+	if (tippubg == '2' || tippubg == '3' || tippubg == '4') {
+			document.getElementById("rowPUBG_TITPUB_${param.contatore}").style.display = '';
+			document.getElementById("rowPUBG_NAVPUB_${param.contatore}").style.display = '';
+			document.getElementById("rowPUBG_NAVNUM_${param.contatore}").style.display = '';
+			document.getElementById("rowPUBG_URLPUB_${param.contatore}").style.display = '';
+	} else {
+			document.getElementById("rowPUBG_TITPUB_${param.contatore}").style.display = 'none';
+			document.getElementById("rowPUBG_NAVPUB_${param.contatore}").style.display = 'none';
+			document.getElementById("rowPUBG_NAVNUM_${param.contatore}").style.display = 'none';
+			document.getElementById("rowPUBG_URLPUB_${param.contatore}").style.display = 'none';
+			document.forms[0].PUBG_TITPUB_${param.contatore}.value = '';
+			document.forms[0].PUBG_NAVPUB_${param.contatore}.value = '';
+			document.forms[0].PUBG_NAVNUM_${param.contatore}.value = '';
+			document.forms[0].PUBG_URLPUB_${param.contatore}.value = '';
+	}
+	
 }
 
 	//Customizzazione della funzione delElementoSchedaMultipla per evitare che possa
@@ -130,6 +160,23 @@ function gestioneTIPPUBG_${param.contatore}(tippubg){
 			alert("Non è possibile eliminare tale tipologia di pubblicazione")
 		else
 			delElementoSchedaMultipla(id,label,tipo,campi);
+	}
+	
+	
+	function validURL(str) {
+		if(str==""){
+			return true;
+		}else{
+			var res = /^(((http|HTTP|https|HTTPS|ftp|FPT|ftps|FTPS|sftp|SFTP):\/\/)|((w|W){3}(\d)?\.))[\w\?!\./:;\-_=#+*%@&quot;\(\)&amp;]+/.test(str);
+			return res;
+		}
+	}
+	
+	
+	function apriUrl(urlDocumento){
+		if(urlDocumento.indexOf("http://")<0 && urlDocumento.indexOf("https://")<0)
+			urlDocumento = "http://" + urlDocumento;
+		window.open(urlDocumento,"url_documento");
 	}
 </gene:javaScript>
 

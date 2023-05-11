@@ -62,8 +62,8 @@
 				scheda="" 
 				schedaPopUp="" 
 				campi="GARE.NGARA" 
+				functionId="skip"
 				chiave=""
-				where=""
 				formName="formArchivioGareOggettoRilancio">	
 				<gene:campoScheda campo="PRECED" title="Codice gara o lotto di gara"/>
 			</gene:archivio>	

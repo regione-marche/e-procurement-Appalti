@@ -16,6 +16,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 
+<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.archWhereFunctions.ComponiWhereV_IMPR_SMATFunction" />
+
 <gene:template file="popup-template.jsp" gestisciProtezioni="false">
 	<gene:setString name="titoloMaschera" value="Selezione dell'impresa"/>
 	<gene:redefineInsert name="corpo">

@@ -17,6 +17,7 @@
 <%@ taglib uri="http://www.eldasoft.it/tags" prefix="elda"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.archWhereFunctions.ComponiWhereGAREFunction" />
 
 <c:choose>
 	<c:when test='${not empty param.tipgen}'>

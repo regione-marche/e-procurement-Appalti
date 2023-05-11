@@ -54,7 +54,7 @@
 	<% // Ridefinisco il corpo della ricerca %>
 	<gene:redefineInsert name="corpo">
   	<% // Creo la form di trova con i campi dell'entità peri %>
-  	<gene:formTrova entita="V_GARE_PROFILO" filtro="${filtro}" gestisciProtezioni="true" >
+  	<gene:formTrova entita="V_GARE_PROFILO" filtro="${filtro}" gestisciProtezioni="true"  >
 		
 		<%-- Variabile che serve da indice per definire l'id dei campi fittizi, visto che nella pagina di trova tutti i campi in automatico hanno un nome del tipo Campo + progressivo 
 			IMPORTANTE: aggiungendo campi nella maschera, incrementare la variabile 
@@ -77,28 +77,7 @@
 			</c:if>
 			<gene:campoTrova campo="STATO" entita="V_GARE_STATOESITO" where="V_GARE_STATOESITO.CODICE=v_gare_profilo.CODICE" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoStato"/> 
 			<gene:campoTrova campo="ESITO" entita="V_GARE_STATOESITO" where="V_GARE_STATOESITO.CODICE=v_gare_profilo.CODICE" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoEsito"/> 
-			<c:set var="idCampoFittizioAvv" value="${numCampi + 1}" />
-				
-			<tr id="rowCampo${idCampoFittizioAvv}">
-				<td class="etichetta-dato">Avviso?</td>
-				<td class="operatore-trova">
-					<input type="hidden" name="Campo${idCampoFittizioAvv}_where" value="" />
-					<input type="hidden" name="Campo${idCampoFittizioAvv}_computed" value="false" />
-					<input type="hidden" name="Campo${idCampoFittizioAvv}_from" value="" />
-					<input type="hidden" name="Campo${idCampoFittizioAvv}_conf" value="=" />
-					<input type="hidden" name="defCampo${idCampoFittizioAvv}" value="" />
-					&nbsp;
-				</td>
-				<td class="valore-dato-trova">
-					<select id="Campo${idCampoFittizioAvv}" name="Campo${idCampoFittizioAvv}" title="Avviso?" onchange="javascript:valorizzaFiltro(this.value);"> 
-						<option value=""></option>
-						<option value="1" >Si</option>
-						<option value="2" >No</option>
-						
-					</select>
-					
-				</td>
-			</tr>
+			<gene:campoTrova campo="ISAVVISO" />
 			<gene:campoTrova campo="ISARCHI" title="Gara o avviso archiviato?" defaultValue="2"/>
 		</gene:gruppoCampi>
 		<gene:gruppoCampi idProtezioni="GARERDA" >
@@ -113,8 +92,8 @@
 			<gene:campoTrova campo="IMPAPP" entita="GARE" where="gare.codgar1 = v_gare_profilo.codgar" />
 			<gene:campoTrova campo="CUPPRG" entita="GARE" where="gare.codgar1 = v_gare_profilo.codgar" />
 			<gene:campoTrova entita="GARE" campo="CRITLICG" where="gare.codgar1 = v_gare_profilo.codgar" />
-			<gene:campoTrova campo="NREPAT" entita="GARE" where="gare.codgar1 = v_gare_profilo.codgar" title="Num.repertorio atto contrattuale"/>
-			<gene:campoTrova campo="DATTOA" entita="GARE" where="gare.codgar1 = v_gare_profilo.codgar" title="Data atto contrattuale"/>
+			<gene:campoTrova campo="NREPAT" entita="GARE" where="gare.codgar1 = v_gare_profilo.codgar" title="Num.repertorio contratto"/>
+			<gene:campoTrova campo="DATTOA" entita="GARE" where="gare.codgar1 = v_gare_profilo.codgar" title="Data contratto"/>
 		</gene:gruppoCampi>
 
     </gene:formTrova>    
@@ -123,7 +102,7 @@
   <gene:javaScript>
   
   	//Importante, incrementare la variabile che contiene il numero di campi fittizzi inseriti nella pagina, per portere avere i valori in sessione
-  	var numCampiFittizi = 1;
+  	var numCampiFittizi = 0;
   	var numCampiReali = parseInt(document.forms[0].campiCount.value);
   	document.forms[0].campiCount.value = numCampiReali +  numCampiFittizi + 2;
   	function trovaCreaNuovaGara(){
@@ -139,133 +118,8 @@
 	
 	trovaEsegui = trovaEsegui_Custom;
 	
-	function valorizzaFiltro(valore) {
-		var msgSi = "v_gare_profilo.genere = 11";
-		var msgNo = "v_gare_profilo.genere != 11";
-		costruzioneFiltro(msgSi,msgNo, valore);
-						
-	}
-			
-	function costruzioneFiltro(msgExists, msgNotExists,valore){
-		var filtroOld = document.forms[0].filtro.value;
-					
-		if(filtroOld!=null && filtroOld!="" && (filtroOld.indexOf(msgNotExists)>-1 || filtroOld.indexOf(msgExists)>-1)){
-			if (valore == 1) {
-				filtroOld = filtroOld.replace(msgNotExists,msgExists);
-			}else if(valore == 2){
-				filtroOld = filtroOld.replace(msgExists,msgNotExists);
-			}else{
-				filtroOld = filtroOld.replace(" and " + msgNotExists,"");
-				filtroOld = filtroOld.replace(msgNotExists,"");
-				filtroOld = filtroOld.replace(" and " + msgExists,"");
-				filtroOld = filtroOld.replace(msgExists,"");
-			}
-			document.forms[0].filtro.value = filtroOld;
-		}else{
-			if(filtroOld!=null && filtroOld!="")
-				filtroOld += " and ";
-			else
-				filtroOld += "";
 				
-			if (valore == 1) {
-				document.forms[0].filtro.value = filtroOld + msgExists;	
-			} else if(valore == 2) {
-				document.forms[0].filtro.value = filtroOld + msgNotExists;	
-			}		
-		}
-		document.forms[0].filtro.value = document.forms[0].filtro.value.trim();
-              if(document.forms[0].filtro.value.startsWith("and")){
-              	document.forms[0].filtro.value = document.forms[0].filtro.value.substring(4);
-              }
-	}
 	
-	/* Funzione che ricava il valore in sessione per i campi fittizi a partire dall'indice del campo.
-			*  In sessione i campi sono del tipo Campo + progressivo.
-			*  Se l'indice del campo fittizio dovessere essere maggiore di 27 aggiornare la funzione!!! 
-			*/
-			function getValoreDaIndiceCampo(indice){
-				var valore;
-				switch (parseInt(indice)) {
-					case 10:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo10}";
-					    break;
-					case 11:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo11}";
-					    break;
-					case 12:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo12}";
-					    break;
-					case 13:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo13}";
-					    break;
-					case 14:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo14}";
-					    break;
-					case 15:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo15}";
-					    break;
-					case 16:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo16}";
-					    break;
-					case 17:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo17}";
-					    break;
-					case 18:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo18}";
-					    break;
-					case 19:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo19}";
-					    break;
-					case 20:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo20}";
-					    break;
-					case 21:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo21}";
-					    break;
-					case 22:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo22}";
-					    break;
-					case 23:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo23}";
-					    break;
-					case 24:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo24}";
-					    break;
-					case 25:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo25}";
-					    break;
-					case 26:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo26}";
-					    break;
-					case 27:
-					    valore ="${sessionScope.trovaV_GARE_PROFILO.Campo27}";
-					    break;
-				}
-				return valore;
-			}
-			
-			
-	initVisualizzaCampoFittizioAvviso();
-		
-	function initVisualizzaCampoFittizioAvviso(){
-		var valore = getValoreDaIndiceCampo(${idCampoFittizioAvv});
-						
-		
-		var filtroOld = document.forms[0].filtro.value;
-		if(filtroOld!=null && filtroOld!="")
-			filtroOld += " and ";
-		else
-			filtroOld += "";
-		
-		if (valore == 1) {
-			document.getElementById('Campo${idCampoFittizioAvv}').selectedIndex = 1;
-			document.forms[0].filtro.value = filtroOld + "v_gare_profilo.genere = 11";	
-		} else if(valore == 2) {
-			document.getElementById('Campo${idCampoFittizioAvv}').selectedIndex = 2;
-			document.forms[0].filtro.value = filtroOld + "v_gare_profilo.genere != 11";
-		}
-		
-	}
 
   </gene:javaScript>
 </gene:template>

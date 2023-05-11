@@ -10,13 +10,6 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.bl.TabellatiManager;
-import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.AggiudicazioneManager;
-import it.eldasoft.utils.spring.UtilitySpring;
-
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Date;
@@ -24,6 +17,13 @@ import java.util.Vector;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.bl.TabellatiManager;
+import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.AggiudicazioneManager;
+import it.eldasoft.utils.spring.UtilitySpring;
 
 /**
  * Funzione che determina se la gara è stata pubblicata dopo il 19/04/2016 e se
@@ -69,7 +69,7 @@ public class IsGaraDopoDLGS2016ManualeFunction extends AbstractFunzioneTag {
     try {
 
         Vector datiGara = sqlManager.getVector("select t.iterga, t.dpubav, t.dinvit, g.calcsoang, g.modlicg, t.imptor, g.impapp, g.codgar1, t.tipgen," +
-        		" g.modastg from gare g, torn t" +
+        		" g.modastg, t.calcsome from gare g, torn t" +
         		" where g.ngara=? and g.codgar1=t.codgar", new Object[] {ngara});
 
         if (datiGara != null && datiGara.size() > 0) {
@@ -83,6 +83,7 @@ public class IsGaraDopoDLGS2016ManualeFunction extends AbstractFunzioneTag {
           String codgar1 = SqlManager.getValueFromVectorParam(datiGara, 7).stringValue();
           Long tipgen = SqlManager.getValueFromVectorParam(datiGara, 8).longValue();
           Long modastg = SqlManager.getValueFromVectorParam(datiGara, 9).longValue();
+          String calcsome = SqlManager.getValueFromVectorParam(datiGara, 10).stringValue();
           if (("$" + ngara).equals(codgar1)){
             importoGara = impapp;
           }
@@ -91,7 +92,8 @@ public class IsGaraDopoDLGS2016ManualeFunction extends AbstractFunzioneTag {
           }
 
           Date datpub = (Date)sqlManager.getObject("select datpub from pubbli where codgar9=? and tippub=?", new Object[]{codgar1, new Long(11)});
-          esitoControllo = aggiudicazioneManager.getLeggeCalcoloSoglia(iterga, dinvit, dpubavg, datpub);
+          esitoControllo = aggiudicazioneManager.getLeggeCalcoloSoglia(iterga, dinvit, dpubavg, datpub, calcsome);
+
           if(esitoControllo > 0){
             if(esitoControllo != 3)
               result=aggiudicazioneManager.isModalitaManuale();
@@ -106,14 +108,19 @@ public class IsGaraDopoDLGS2016ManualeFunction extends AbstractFunzioneTag {
               //Object[] risultato = aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(ngara,"A1135",numeroVoceParametro);
               Object[] risultato = null;
               if("true".equals(controlloSoloDitteInvOff))
-                risultato = aggiudicazioneManager.controlloNumDitteInvoffSopraSoglia(ngara,"A1135",numeroVoceParametro);
+                risultato = aggiudicazioneManager.controlloNumDitteInvoffSopraSoglia(ngara,"A1135",numeroVoceParametro,calcsome);
               else
-                risultato = aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(ngara,"A1135",numeroVoceParametro);
+                risultato = aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(ngara,"A1135",numeroVoceParametro,calcsome);
               esitoControlloNumDitte = (Boolean)risultato[0];
               String descTabellatoValoreConfronto = (String)risultato[1];
               pageContext.setAttribute("sogliaNumDitte",descTabellatoValoreConfronto, PageContext.REQUEST_SCOPE);
 
-              if("1".equals(calcsoang) && new Long(1).equals(modastg) && esitoControlloNumDitte){
+              String ditteInGara = (String)risultato[2];
+              pageContext.setAttribute("ditteInGara",ditteInGara, PageContext.REQUEST_SCOPE);
+
+              if("1".equals(calcsome) && new Long(1).equals(modastg)) {
+                pageContext.setAttribute("initEscauto","5", PageContext.REQUEST_SCOPE);
+              }else if("1".equals(calcsoang) && new Long(1).equals(modastg) && esitoControlloNumDitte){
                 String initEscauto = null;
                 //Gestione per campo ESCAUTO
                 Long ditteAmmesse = aggiudicazioneManager.conteggioDitte(ngara,"(AMMGAR <> '2' or AMMGAR is null) and (MOTIES < 99 or MOTIES is null)");
@@ -135,7 +142,7 @@ public class IsGaraDopoDLGS2016ManualeFunction extends AbstractFunzioneTag {
           pageContext.setAttribute("esitoControlloDitteDLGS2016",esitoControlloNumDitte, PageContext.REQUEST_SCOPE);
         }
         if("true".equals(eseguireControlloDitteNormativaPrecedente)){
-          Boolean risultato = (Boolean)aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(ngara,"A2063",1)[0];
+          Boolean risultato = (Boolean)aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(ngara,"A2063",1,"0")[0];
           pageContext.setAttribute("controlloDitteNormativaPrecedente",risultato, PageContext.REQUEST_SCOPE);
         }
       } catch (SQLException e) {

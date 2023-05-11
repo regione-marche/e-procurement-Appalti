@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.18.1.final utlizzo versione della libreria JasperReports6.18.1-9d75d1969e774d4f179fb3be8401e98a0e6d1611  -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="DatiDellaGara" pageWidth="482" pageHeight="802" columnWidth="482" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="1b210829-2125-42de-9284-e527d3463c2f">
 	<property name="ireport.zoom" value="1.4641000000000008"/>
 	<property name="ireport.x" value="0"/>
@@ -9,7 +10,7 @@
 			<![CDATA[SELECT
 USRSYS.SYSUTE AS punto_istruttore
 FROM GARE
-JOIN G_PERMESSI ON GARE.CODGAR1 = G_PERMESSI.CODGAR AND G_PERMESSI.MERUOLO = 2 AND G_PERMESSI.AUTORI = 1 AND G_PERMESSI.PROPRI = '1'
+JOIN G_PERMESSI ON GARE.CODGAR1 = G_PERMESSI.CODGAR AND (G_PERMESSI.MERUOLO = 2 OR G_PERMESSI.MERUOLO = 3) AND G_PERMESSI.AUTORI = 1 AND G_PERMESSI.PROPRI = '1'
 JOIN USRSYS ON USRSYS.SYSCON = G_PERMESSI.SYSCON
 WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 		</queryString>
@@ -128,7 +129,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Codice richiesta di offerta]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="db141715-4220-4885-9d95-f1eda4569b58"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -160,7 +161,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Codice CIG]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="6341f380-2268-4f26-bf38-56e61d112ff8"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -192,7 +193,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Tipo di appalto]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="19cbf945-c7d2-4e39-ac66-60fb5fc04cc9"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -224,7 +225,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Oggetto]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="fa8c1102-e71a-441b-9ead-9a7be0617c7e"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -256,7 +257,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Tipo di procedura]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="be9adc7b-02ff-43a4-87ac-94a02dfee4ff"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -288,7 +289,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Criterio di aggiudicazione]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="fd9c8f7d-bc65-4cba-beaa-223c1f9cff84"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -320,7 +321,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Importo a base di gara]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" pattern="#,##0.00 €" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" pattern="#,##0.00 €" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="42ec51a4-4439-463b-8d64-93c27d9cd872"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -352,7 +353,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Procedura telematica?]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="075fb711-2081-4290-a71f-011c6cdb069e"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -386,7 +387,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Di cui soggetto a ribasso]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" pattern="#,##0.00 €" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" pattern="#,##0.00 €" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="fa34b8d8-2130-456d-bc13-bdef8ad37949"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -429,7 +430,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Di cui non soggetto a ribasso]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" pattern="#,##0.00 €" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" pattern="#,##0.00 €" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="8642b716-1854-4aa0-b1f4-75f0e4c6d9e7"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -465,7 +466,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Di cui sicurezza]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" pattern="#,##0.00 €" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" pattern="#,##0.00 €" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="4f534109-b779-4d25-b4c0-4c86619821e0"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -501,7 +502,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Modalità di formulazione dell'offerta economica]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="b70edde0-c75f-44be-bb2b-c22d1ba0a80e"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -537,7 +538,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Offerta complessiva espressa mediante]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="ff19770a-ed85-4cbd-a9d0-c84934e10728"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -604,7 +605,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Ammesse offerte in aumento?]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="511b1e87-a4ea-4be8-b7bd-1e8f6575b2ce"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -638,7 +639,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Stazione Appaltante]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="0416f436-a5dc-4bcb-8cd9-b3ebb79a3da4"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -670,7 +671,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[E-mail stazione appaltante]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="d96807ec-7419-40bd-9f39-8d8eff0565a7"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -689,7 +690,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					<bottomPen lineWidth="0.5"/>
 					<rightPen lineWidth="0.5"/>
 				</box>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="28c52c05-09cd-4a1e-b8ea-8c59b3ade4c1"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -753,7 +754,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 								<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
 							</datasetRun>
 							<jr:listContents height="13" width="234">
-								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+								<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 									<reportElement positionType="Float" stretchType="RelativeToTallestObject" x="0" y="0" width="234" height="13" uuid="dd179bbe-680d-4b53-bf16-5f7c6fcef49f"/>
 									<textElement>
 										<font fontName="Times New Roman" size="10"/>
@@ -788,7 +789,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Data e ora scadenza presentazione offerte]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" pattern="" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="94e598f9-b32c-47d5-8296-749b34f94f0f"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -834,7 +835,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Numero giorni validità offerta]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="0ca9817a-569a-43bc-84b1-76abd9706bc0"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -870,7 +871,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Data termine richiesta chiarimenti]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" pattern="dd/MM/yyyy" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="1e385ac9-b06e-465b-9883-4b202c843894"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -906,7 +907,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<text><![CDATA[Data termine risposta chiarimenti]]></text>
 				</staticText>
-				<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<textField textAdjust="StretchHeight" pattern="dd/MM/yyyy" isBlankWhenNull="true">
 					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="1b3dd0ec-fb53-4196-8660-411c1617722d"/>
 					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
 						<leftPen lineWidth="0.5"/>
@@ -957,7 +958,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 								<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
 							</datasetRun>
 							<jr:listContents height="13" width="234">
-								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+								<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 									<reportElement positionType="Float" stretchType="RelativeToTallestObject" x="0" y="0" width="234" height="13" uuid="07d20936-32b6-4a70-9430-51e95448aee0"/>
 									<textElement>
 										<font fontName="Times New Roman" size="10"/>
@@ -1009,7 +1010,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 								<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
 							</datasetRun>
 							<jr:listContents height="13" width="234">
-								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+								<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 									<reportElement positionType="Float" stretchType="RelativeToTallestObject" x="0" y="0" width="234" height="13" uuid="75a14b0f-4958-4ee4-8524-a3c96a3c6b2d"/>
 									<textElement>
 										<font fontName="Times New Roman" size="10"/>

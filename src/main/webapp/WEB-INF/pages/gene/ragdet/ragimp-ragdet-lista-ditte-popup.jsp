@@ -74,7 +74,8 @@
 		</c:choose>
 		
 		
-		<gene:formLista entita="RAGIMP" where="${where}" pagesize="20" sortColumn="3" tableclass="datilista" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAssociaDitteRAGDET">
+		<gene:formLista entita="RAGIMP" where="${where}" pagesize="20" sortColumn="3" tableclass="datilista" gestisciProtezioni="true" 
+				gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAssociaDitteRAGDET" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreRaggruppamentoImprese">
 			<gene:campoLista title="Seleziona<br><center>${titoloMenu}</center>" width="50">
 				<c:if test="${currentRow >= 0}">
 					<input type="checkbox" name="keys" value="${datiRiga.RAGIMP_CODIME9};${datiRiga.RAGIMP_CODDIC};${ngara}" />
@@ -85,6 +86,7 @@
 			<gene:campoLista campo="NOMDIC" title="Ragione sociale" />
 			<gene:campoLista campo="CFIMP" entita="IMPR" where="IMPR.CODIMP=RAGIMP.CODDIC"/>
 			<gene:campoLista campo="PIVIMP" entita="IMPR" where="IMPR.CODIMP=RAGIMP.CODDIC"/>
+			<input type="hidden" name="codimp" id="codimp" value="${codimp}" />		
 			<input type="hidden" name="ngara" id="ngara" value="${ngara}" />			
 						
 			<gene:redefineInsert name="buttons">
@@ -99,10 +101,6 @@
   	</gene:redefineInsert>
 
 	<gene:javaScript>
-		
-		<c:if test='${not empty param.codimp && not empty param.ngara}'>
-			document.forms[0].trovaAddWhere.value="${where}";
-		</c:if>
 		
 		function aggiungi(){
 			var numeroOggetti = contaCheckSelezionati(document.forms[0].keys);

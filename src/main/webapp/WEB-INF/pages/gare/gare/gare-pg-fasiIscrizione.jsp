@@ -79,6 +79,7 @@
 <c:set var="listaOpzioniDisponibili" value="${fn:join(opzDisponibili,'#')}#"/>
 <c:set var="abilitaRegistrazioneSuPortale" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "archivioImprese.registraSuPortale")}'/>
 
+<c:set var="isPopolatatW_PUSER" value='${gene:callFunction("it.eldasoft.gene.tags.functions.isPopolatatW_PUSERFunction", pageContext)}' /> 
 
 <c:if test='${paginaAttivaWizard eq step3Wizard }'>
 	${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetDatiGarealboFunction", pageContext, numeroGara)}
@@ -419,20 +420,54 @@
 				<gene:campoLista title="N.gare aggiud." campo="NUM_SVOLTE" entita="DITG" width="32" visibile="${paginaAttivaWizard eq step3Wizard}" campoFittizio="true" definizione="N7" value="" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoNumeroGareAgg" />
 				<gene:campoLista campo="ACQUISIZIONE" visibile="false" edit="${updateLista eq 1}" />
 				<gene:campoLista campo="DSCAD" visibile="${paginaAttivaWizard eq step2Wizard && tipologiaElenco != 3 && giorniValidita >0}" edit="${updateLista eq 1}" title="Data ultimo rinnovo"/>
-			
-				<c:if test="${paginaAttivaWizard == step1Wizard and updateLista ne 1}" >
-					<gene:campoLista title="&nbsp;" width="20" >
-						
-						<c:if test="${datiRiga.DITG_ACQUISIZIONE == 2}" >
-							<img width="16" height="16" title="Ditta acquisita da portale" alt="Ditta acquisita da portale" src="${pageContext.request.contextPath}/img/ditta_acquisita.png"/>
-						</c:if>
-						<c:if test="${datiRiga.DITG_ACQUISIZIONE ne 2}" >
-							&nbsp;
-						</c:if>
-					</gene:campoLista>
+				
+				<c:if test="${(paginaAttivaWizard eq step1Wizard) and updateLista ne 1}">
+					<c:if test="${isPopolatatW_PUSER == 'SI'}">
+						<c:choose>
+							<c:when test="${tipoImpresa eq '3' or tipoImpresa eq '10'}">
+								<c:set var="dittaoIcona" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetMandatariaRTFunction",  pageContext, gene:getValCampo(chiaveRigaJava, "DITTAO") )}'/>
+							</c:when>
+							<c:otherwise>
+								<c:set var="dittaoIcona" value='${gene:getValCampo(chiaveRigaJava, "DITTAO")}'/>
+							</c:otherwise>
+						</c:choose>
+						<c:set var="impresaRegistrata" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.ImpresaRegistrataSuPortaleFunction",  pageContext, dittaoIcona )}'/>
+						<gene:campoLista title="&nbsp;" width="20" >
+							<c:if test="${impresaRegistrata == 'SI'}">
+								<c:choose>
+								<c:when test="${requestScope.registrazioneImpPortaleNonCompleta == 'SI'}">
+									<img width="16" height="16" title="Impresa con registrazione non completa su portale" alt="Impresa con registrazione non completa su portale" src="${pageContext.request.contextPath}/img/ditta_acquisita_noncompleta.png"/>
+								</c:when>
+								<c:otherwise>
+									<img width="16" height="16" title="Impresa registrata su portale" alt="Impresa registrata su portale" src="${pageContext.request.contextPath}/img/ditta_acquisita.png"/>				
+								</c:otherwise>
+								</c:choose>
+							</c:if>
+						</gene:campoLista>
+					</c:if>
 				</c:if>
 				
 				<c:if test='${(paginaAttivaWizard >= step2Wizard  || (paginaAttivaWizard == step1Wizard and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.GARE-scheda.FASIISCRIZIONE.ElencoCategorie"))) and updateLista ne 1 }' >
+				
+					<c:set var="isAppVrUrlWS" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "appVr.ws.url")}'/>
+					<c:if test='${!empty isAppVrUrlWS}' >
+						<c:set var="temp" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetIVRFunction", pageContext, datiRiga.DITG_DITTAO)}' />
+						<c:set var="dittao" value='${datiRiga.DITG_DITTAO}' />
+						<c:set var="label" value='ATTIVA' />
+						<c:set var="immagine" value="vendor_rating_attiva.png"/>
+						<c:if test='${dataSospensione ne ""}'>
+							<c:set var="label" value='SOSPESA ${dataSospensione}' />
+							<c:set var="immagine" value="vendor_rating_sospesa.png"/>
+						</c:if>
+						
+						<gene:campoLista title="Ivr" campo="IVR" value="${ivr}" campoFittizio="true" href="javascript:chiaveRiga='${chiaveRigaJava}';apriElencoIvrDaCodDitta('${dittao}');" visibile = "true" definizione="F24.5;0;;"/>
+						
+						<gene:campoLista title="&nbsp;" width="20" >
+							<img width="16" height="16" title="${label}" alt="${label}" src="${pageContext.request.contextPath}/img/${immagine}"/>
+						</gene:campoLista>
+					</c:if>
+					
+					
 					<c:set var="label" value="Elenco categorie iscrizione"/>
 					<c:set var="immagine" value="categorie.png"/>
 					<c:set var="aggCategorie" value="0"/>
@@ -604,7 +639,8 @@
 				<input type="hidden" name="WIZARD_PAGINA_ATTIVA" id="WIZARD_PAGINA_ATTIVA" value="${paginaAttivaWizard}" />
 				<input type="hidden" name="DIREZIONE_WIZARD" id="DIREZIONE_WIZARD" value="" />
 				<input type="hidden" name="DTEOFF" id="DTEOFF" value="${dataTerminePresentazioneOfferta}" />
-
+				<input type="hidden" name="entitaPrincipaleModificabile" id="entitaPrincipaleModificabile" value="${sessionScope.entitaPrincipaleModificabile}" />
+				
 				<input type="hidden" name="garaLottiOmogenea" id="garaLottiOmogenea" value="${garaLottiOmogenea}" />
 				<input type="hidden" name="numeroDitte" id="numeroDitte" value="" />
 				<input type="hidden" name="isGaraLottiConOffertaUnica" id="isGaraLottiConOffertaUnica" value="${isGaraLottiConOffertaUnica}" />
@@ -683,6 +719,10 @@
 					<input type="hidden" name="nomeRup" id="nomeRup" value="" />
 					<input type="hidden" name="acronimoRup" id="acronimoRup" value="" />
 					<input type="hidden" name="sottotipo" id="sottotipo" value="" />
+					<input type="hidden" name="tipofirma" id="tipofirma" value="" />
+					<input type="hidden" name="idunitaoperativamittenteDesc" id="idunitaoperativamittenteDesc" value="" />
+					<input type="hidden" name="uocompetenza" id="uocompetenza" value="" />
+					<input type="hidden" name="uocompetenzadescrizione" id="uocompetenzadescrizione" value="" />
 				</c:if>
 				
 				
@@ -1086,6 +1126,11 @@
 			document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href;
 		}
 		
+		function apriElencoIvrDaCodDitta(chiaveRiga){
+			var par = "dittao=" + chiaveRiga;
+			openPopUpActionCustom(contextPath + "/pg/GetListaIvr.do", par, "listaIVR", 900, 500, 1, 1);
+		}
+		
 		function assegnaNumOrdine(){
 			var chiave="${key }";
 			chiave= chiave.substr(chiave.lastIndexOf(":") + 1);
@@ -1297,12 +1342,6 @@
 				return;
 			}else if(inviaComunicazioneAbilitato=="NoMailRTI"){
 				alert("Non è possibile procedere.\nLa mandataria del raggruppamento selezionato non ha un indirizzo PEC o E-mail specificato in anagrafica");
-				return;
-			}else if(inviaComunicazioneAbilitato=="NoMailFax"){
-				alert("Non è possibile procedere.\nLa ditta selezionata non ha un indirizzo PEC o E-mail o un numero fax specificato in anagrafica");
-				return;
-			}else if(inviaComunicazioneAbilitato=="NoMailFaxRTI"){
-				alert("Non è possibile procedere.\nLa mandataria del raggruppamento selezionato non ha un indirizzo PEC o E-mail o un numero fax specificato in anagrafica");
 				return;
 			}else if(inviaComunicazioneAbilitato=="NoMandatariaRTI"){
 				alert("Non è possibile procedere.\nNell'anagrafica del raggruppamento selezionato non è specificata la mandataria");

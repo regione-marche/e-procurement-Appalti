@@ -71,22 +71,33 @@ public class GetDatoCODLIVAction extends Action {
     String livello = request.getParameter("livello");
     Long tipo = new Long(request.getParameter("tipo"));
     String isarchi = StringUtils.stripToNull(request.getParameter("isarchi"));
+    
+    List<Object> parameters = new ArrayList<Object>();
     //String select="select caisim, descat from cais where tiplavg=?";
     String select="select caisim, descat";
     if("1".equals(livello))
         select += ",titcat";
     select +=" from cais where tiplavg=?";
-    if(codice!=null)
-      select+= " and caisim<>'" + codice +  "'";
+    parameters.add(tipo);
+    if(codice!=null) {
+      select+= " and caisim<> ? ";
+      parameters.add(codice);
+    }
 
     if("1".equals(livello)){
       select+="  and codliv1 is null ";
     }else if("2".equals(livello)){
-      select+=" and codliv1='" + codliv1 + "' and codliv2 is null ";
+      select+=" and codliv1= ? and codliv2 is null ";
+      parameters.add(codliv1);
     }else if("3".equals(livello)){
-      select+=" and codliv1='" + codliv1 + "' and codliv2='" + codliv2 + "' and codliv3 is null ";
+      select+=" and codliv1= ? and codliv2= ? and codliv3 is null ";
+      parameters.add(codliv1);
+      parameters.add(codliv2);
     }else {
-      select+=" and codliv1='" + codliv1 + "' and codliv2='" + codliv2 + "' and codliv3='" + codliv3 + "' and codliv4 is null ";
+      select+=" and codliv1= ? and codliv2= ? and codliv3= ? and codliv4 is null ";
+      parameters.add(codliv1);
+      parameters.add(codliv2);
+      parameters.add(codliv3);
     }
     if(isarchi==null || !"1".equals(isarchi))
       select+= " and (isarchi is null or isarchi<>'1') ";
@@ -94,7 +105,7 @@ public class GetDatoCODLIVAction extends Action {
     select+= " order by caisim";
     try{
       @SuppressWarnings("unchecked")
-      List<Vector<JdbcParametro>> listadatiCAIS = sqlManager.getListVector(select.toString(), new Object[] {tipo});
+      List<Vector<JdbcParametro>> listadatiCAIS = sqlManager.getListVector(select.toString(), parameters.toArray());
       List<Map<String, Object>> risultato = new ArrayList<Map<String, Object>>();
 
       if (listadatiCAIS != null && listadatiCAIS.size() > 0) {

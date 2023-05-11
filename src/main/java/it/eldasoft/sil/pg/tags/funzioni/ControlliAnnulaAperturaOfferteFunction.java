@@ -43,6 +43,7 @@ public class ControlliAnnulaAperturaOfferteFunction extends AbstractFunzioneTag 
     String bustalotti = (String) GeneralTagsFunction.cast("string", params[3]);
     String controlloLottiFase="false";
     String controlloBusteTecniche = "false";
+    String esistonoProdottiValutati = "false";
 
     if (ngara != null && ngara.length()>0 && "1".equals(bustalotti) && fase !=null && !"".equals(fase)){
       try {
@@ -83,9 +84,24 @@ public class ControlliAnnulaAperturaOfferteFunction extends AbstractFunzioneTag 
             "Errore durante il controllo sulle buste tecniche della gara " + ngara, e);
       }
 
+      //controlli per ricerca di mercato negoziata
+      try {
+		Long iterga = (Long) sqlManager.getObject("select t.iterga from gare g,torn t where g.codgar1=t.codgar and g.ngara=?", new Object[]{ngara});
+		if(Long.valueOf(8).equals(iterga)) {
+			Long numProdottiValutati=(Long) sqlManager.getObject("select count(qtaordinata) from dpre where ngara=? and qtaordinata is not null", new Object[]{ngara});
+			if(numProdottiValutati>0) {
+				esistonoProdottiValutati = "true";
+			}
+	    }
+      } catch (SQLException e) {
+          throw new JspException(
+                  "Errore durante la verifica dell' iter di gara " + ngara, e);
+      }
+
     }
     pageContext.setAttribute("esistonoLottiInFase7", controlloLottiFase, PageContext.REQUEST_SCOPE);
     pageContext.setAttribute("esistonoBusteTecParziali", controlloBusteTecniche, PageContext.REQUEST_SCOPE);
+    pageContext.setAttribute("esistonoProdottiValutati", esistonoProdottiValutati, PageContext.REQUEST_SCOPE);
     return null;
   }
 }

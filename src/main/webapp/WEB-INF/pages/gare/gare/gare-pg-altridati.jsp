@@ -87,6 +87,10 @@
 	<input type="hidden" name="bloccoModificaPubblicazione" value="${bloccoModificaPubblicazione}" />
 	<input type="hidden" name="paginaAltriDatiTorn" value="no" />
 	
+	<c:if test="${isFascicoloDocumentaleAbilitato eq '1' && garaLottoUnico}">
+		<c:set var="tipoWSDM" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetTipoWSDMFunction", pageContext, "FASCICOLOPROTOCOLLO", "NO",idconfi)}' />
+	</c:if>
+		
 	<gene:campoScheda visibile="${bloccoModificatiDati eq 'true' and modo eq 'MODIFICA'}">
 		<td colspan="2" style="color:#0000FF">
 		<br><b>ATTENZIONE:</b>&nbsp;
@@ -100,6 +104,7 @@
 	<gene:campoScheda campo="IMPAPP" visibile="false" />
 	<gene:campoScheda campo="GARTEL" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="false" />
 	<gene:campoScheda campo="NGARAAQ" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="false" />
+	<gene:campoScheda campo="OFFTEL" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="false" />
 	
 	<gene:campoScheda campo="CATIGA_FIT" campoFittizio="true" definizione="T30" value="${catiga}" visibile="false" />
 			
@@ -107,15 +112,21 @@
 		<gene:campoScheda>
 			<td colspan="2"><b>Luogo principale di esecuzione o consegna</b></td>
 		</gene:campoScheda>
-		<gene:campoScheda campo="PROSLA"  modificabile="${campiModificabili}"/>
+		<gene:campoScheda campo="PROSLA"  modificabile="${campiModificabili}">
+			<c:set var="functionId" value="default_${!empty datiRiga.GARE_PROSLA}" />
+			<c:if test="${!empty datiRiga.GARE_PROSLA}">
+				<c:set var="parametriWhere" value="T:${datiRiga.GARE_PROSLA}" />
+			</c:if>
+		</gene:campoScheda>
 		<gene:archivio titolo="Comuni" 
 				lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GARE.GARE.PROSLA") and gene:checkProt(pageContext, "COLS.MOD.GARE.GARE.LOCLAV") and gene:checkProt(pageContext, "COLS.MOD.GARE.GARE.LOCINT"),"gene/commons/istat-comuni-lista-popup.jsp","")}' 
 				scheda="" 
 				schedaPopUp="" 
-				campi="TB1.TABCOD3;TABSCHE.TABDESC;TABSCHE.TABCOD3" 
+				campi="G_COMUNI.PROVINCIA;G_COMUNI.DESCRI;G_COMUNI.CODISTAT"
+				functionId="${functionId}" 
+				parametriWhere="${parametriWhere}"
 				chiave="" 
-				where='${gene:if(!empty datiRiga.GARE_PROSLA, gene:concat(gene:concat("TB1.TABCOD3 = \'", datiRiga.GARE_PROSLA), "\'"), "")}'
-				formName="" 
+				formName=""
 				inseribile="false" >
 			<gene:campoScheda campoFittizio="true" campo="COM_PROLAV" definizione="T9" visibile="false"/>
 			<gene:campoScheda campo="LOCLAV" modificabile="${campiModificabili}"/>
@@ -143,7 +154,9 @@
 			lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GARE.GARECONT.PCOESE"),"gene/punticon/punticon-lista-popup.jsp","")}' 
 			scheda=''
 			schedaPopUp="gene/punticon/punticon-scheda-popup.jsp"
-			campi="PUNTICON.CODEIN;PUNTICON.NUMPUN;PUNTICON.NOMPUN" 
+			campi="PUNTICON.CODEIN;PUNTICON.NUMPUN;PUNTICON.NOMPUN"
+			functionId="default"
+			parametriWhere="T:${datiRiga.TORN_CENINT}"
 			chiave="GARECONT_PCOESE;CENINT_PCOESE"
 			formName="formPuntiConsegnaOrdine"
 			inseribile="false">
@@ -166,6 +179,8 @@
 			scheda=''
 			schedaPopUp="gene/punticon/punticon-scheda-popup.jsp"
 			campi="PUNTICON.CODEIN;PUNTICON.NUMPUN;PUNTICON.NOMPUN" 
+			functionId="default"
+			parametriWhere="T:${datiRiga.TORN_CENINT}"
 			chiave="GARECONT_PCOFAT;CENINT_PCOFAT"
 			formName="formPuntiFatturazione"
 			inseribile="false">
@@ -211,7 +226,7 @@
 	
 	<gene:gruppoCampi idProtezioni="CAU">
 		<gene:campoScheda>
-			<td colspan="2"><b>Cauzione provvisoria</b></td>
+			<td colspan="2"><b>Garanzia provvisoria</b></td>
 		</gene:campoScheda>
 		<gene:campoScheda campo="PGAROF" modificabile="${campiModificabili}"/>
 		<gene:campoScheda campo="GAROFF" modificabile="${campiModificabili}"/>
@@ -309,8 +324,8 @@
 			scheda="" 
 			schedaPopUp="" 
 			campi="GAREALBO.NGARA;GAREALBO.OGGETTO" 
+			functionId="skip"
 			chiave="GARE.ELENCOE"
-			where=""
 			formName="formArchivioElencoOperatori">
 			<gene:campoScheda campo="ELENCOE" title="${gene:if(datiRiga.TORN_ITERGA == 6, 'Codice catalogo', 'Codice elenco')}" entita="GARE" modificabile="${campiModificabili}"/>
 			<gene:campoScheda campo="OGGETTO" entita="GAREALBO" title="Descrizione" where="GAREALBO.NGARA = GARE.ELENCOE" modificabile="${campiModificabili}"/>
@@ -338,8 +353,9 @@
 						scheda="" 
 						schedaPopUp="" 
 						campi="V_GARE_OUT.ID_LISTA;V_GARE_OUT.RIFERIMENTO" 
+						functionId="default"
+						parametriWhere="T:N"
 						chiave="GARE.CLIV1"
-						where="V_GARE_OUT.LOTTI = 'N' and not exists (select NGARA from GARE where V_GARE_OUT.ID_LISTA = GARE.CLIV1)"
 						formName="formArchivioOLIAMM">
 						<gene:campoScheda campo="CLIV1" modificabile="${campiModificabili}"/>
 						<gene:campoScheda campo="RIFERIMENTO" entita="V_GARE_OUT" where="V_GARE_OUT.ID_LISTA=GARE.CLIV1" modificabile="${campiModificabili}"/>
@@ -377,6 +393,15 @@
 		<jsp:param name="campoGaraTelematica" value="TORN_GARTEL"/>
 		<jsp:param name="datiModificabili" value="true"/>
 	</jsp:include>
+	
+	<gene:gruppoCampi idProtezioni="ESPLGARA" visibile="${datiRiga.TORN_GARTEL eq 1}">
+		<gene:campoScheda>
+			<td colspan="2"><b>Sedute telematiche/espletamento gara</b></td>
+		</gene:campoScheda>
+		<gene:campoScheda entita="GARE1" campo="ESPLPORT" where="GARE1.NGARA = GARE.NGARA" />
+		<gene:campoScheda entita="GARE1" campo="ESPLECO" where="GARE1.NGARA = GARE.NGARA" />
+		<gene:campoScheda entita="GARE1" campo="ESPLBASE" where="GARE1.NGARA = GARE.NGARA" visibile="${datiRiga.TORN_OFFTEL eq 3}"/>
+	</gene:gruppoCampi>
 	
 	<gene:gruppoCampi idProtezioni="SOPRALLUOGO" >
 		<gene:campoScheda>
@@ -416,30 +441,39 @@
 				</c:if>
 				<c:set var="rifFascicolo" value="${rifFascicolo } Classifica: ${datiRiga.WSFASCICOLO_CLASSIFICA}"/>
 			</c:if>
-			<c:if test="${tipoWSDM eq 'TITULUS'}">
-				<c:if test="${!empty datiRiga.WSFASCICOLO_CODAOO and datiRiga.WSFASCICOLO_CODAOO !=''}" >
+			<c:if test="${tipoWSDM eq 'TITULUS' || tipoWSDM eq 'ENGINEERINGDOC'}">
+				<c:choose>
+					<c:when test="${tipoWSDM eq 'ENGINEERINGDOC'}">
+						<c:set var="labelCoduff" value="U.O. di competenza"/>
+					</c:when>
+					<c:otherwise>
+						<c:set var="labelCoduff" value="Ufficio"/>
+					</c:otherwise>
+				</c:choose>
+				<c:if test="${!empty datiRiga.WSFASCICOLO_CODAOO and datiRiga.WSFASCICOLO_CODAOO !='' && tipoWSDM eq 'TITULUS'}" >
 					<c:set var="rifFascicolo" value="${rifFascicolo } - AOO: ${datiRiga.WSFASCICOLO_CODAOO}"/>
 					<c:if test="${!empty datiRiga.WSFASCICOLO_DESAOO and datiRiga.WSFASCICOLO_DESAOO !=''}" >
 						<c:set var="rifFascicolo" value="${rifFascicolo } ${datiRiga.WSFASCICOLO_DESAOO}"/>
 					</c:if>
 				</c:if>
 				<c:if test="${!empty datiRiga.WSFASCICOLO_CODUFF and datiRiga.WSFASCICOLO_CODUFF !=''}" >
-					<c:set var="rifFascicolo" value="${rifFascicolo } - Ufficio: ${datiRiga.WSFASCICOLO_CODUFF}"/>
+					<c:set var="rifFascicolo" value="${rifFascicolo } - ${labelCoduff}: ${datiRiga.WSFASCICOLO_CODUFF}"/>
 					<c:if test="${!empty datiRiga.WSFASCICOLO_DESUFF and datiRiga.WSFASCICOLO_DESUFF !=''}" >
 						<c:set var="rifFascicolo" value="${rifFascicolo } ${datiRiga.WSFASCICOLO_DESUFF}"/>
 					</c:if>
 				</c:if>
 			</c:if>
 			<gene:campoScheda campo="ISPGD_FIT" campoFittizio="true" title="Riferimento al fascicolo" definizione="T40;"  value="${rifFascicolo}" modificabile="false"/>
-			<gene:campoScheda campo="CODICE" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
-			<gene:campoScheda campo="ANNO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
-			<gene:campoScheda campo="NUMERO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
-			<gene:campoScheda campo="CLASSIFICA" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
+			<gene:campoScheda campo="CODICE" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
+			<gene:campoScheda campo="ANNO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
+			<gene:campoScheda campo="NUMERO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
+			<gene:campoScheda campo="CLASSIFICA" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
 			
-			<gene:campoScheda campo="CODAOO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
-			<gene:campoScheda campo="DESAOO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
-			<gene:campoScheda campo="CODUFF" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
-			<gene:campoScheda campo="DESUFF" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA" visibile="false"/>
+			<gene:campoScheda campo="CODAOO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
+			<gene:campoScheda campo="DESAOO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
+			<gene:campoScheda campo="CODUFF" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
+			<gene:campoScheda campo="DESUFF" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
+			
 		</gene:gruppoCampi>
 	</c:if>
 	
@@ -473,16 +507,31 @@
 						<INPUT type="button"  class="bottone-azione" value='${modificaLabel}' title='${modificaLabel}' onclick="javascript:schedaModifica()">
 					</c:if>
 				</gene:insert>
-				<c:if test='${bloccoModificatiDati and gene:checkProtFunz(pageContext,"MOD","SCHEDAMOD") and autorizzatoModifiche ne "2"}' >
-					<gene:redefineInsert name="addToAzioni">
+				<gene:redefineInsert name="addToAzioni">
+					<c:if test='${bloccoModificatiDati and gene:checkProtFunz(pageContext,"MOD","SCHEDAMOD") and autorizzatoModifiche ne "2"}' >
 					<tr>
 						<td class="vocemenulaterale" >
 								<a href="javascript:schedaModifica();" title="${modificaLabel}">
 							${modificaLabel}</a>
 						</td>
 					</tr>
-					</gene:redefineInsert>
-				</c:if>
+					</c:if>
+					
+					<c:if test='${tipoWSDM eq "ENGINEERINGDOC" and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ModificaUOCompetenza")}'>
+						<c:set var="esisteFascicoloAssociato" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteFascicoloAssociatoFunction", pageContext, "GARE", datiRiga.GARE_NGARA,idconfi)}' scope="request"/>
+						<c:if test="${esisteFascicoloAssociato eq 'true' }">
+							<tr>
+								<td class="vocemenulaterale" >
+									<c:if test='${isNavigazioneDisattiva ne "1"}'>
+										<a href="javascript:apriPopupModificaUOCompetenza('${datiRiga.GARE_NGARA}','GARE',${idconfi});" title="Modifica U.O. di competenza" >
+									</c:if>
+										Modifica U.O. di competenza
+									<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
+								</td>
+							</tr>
+						</c:if>
+					</c:if>
+				</gene:redefineInsert>
 				<gene:insert name="pulsanteNuovo">
 					<c:if test='${gene:checkProtFunz(pageContext,"INS","SCHEDANUOVO")}'>
 						<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.lista.listaNuovo")}' title='${gene:resource("label.tags.template.lista.listaNuovo")}' onclick="javascript:schedaNuovo()" id="btnNuovo">
@@ -533,48 +582,60 @@
 		var catiga = getValue("CATIGA_FIT");
 		var tipgen = getValue("TORN_TIPGEN");
 		var iterga = getValue("TORN_ITERGA");
-		if(tipgen==1){
-		 var tipoelecases="'100','110','101','111'";
-		}
-		if(tipgen==2){
-		 var tipoelecases="'10','110','11','111'";
-		}
-		if(tipgen==3){
-		 var tipoelecases="'1','11','101','111'";
-		}
+		
+		var archFunctionId = "";
+		var archWhereParametriLista = "";
+		
 		<c:set var="dbms" value="${gene:callFunction('it.eldasoft.gene.tags.utils.functions.GetTipoDBFunction', pageContext)}" />
 		
 		<c:choose>
 			<c:when test='${dbms eq "ORA"}'>
 				if(document.formArchivioElencoOperatori !=null ){
 					if(catiga != null && catiga != ""){
-						document.formArchivioElencoOperatori.archWhereLista.value = "(GAREALBO.DTERMVAL is null or GAREALBO.DTERMVAL >= TRUNC(sysdate) ) and GAREALBO.NGARA in (select OPES.NGARA3 from OPES where OPES.CATOFF = '" + catiga + "')";
+						archFunctionId += "notBlankCatigaOra";
 					}else{
-						document.formArchivioElencoOperatori.archWhereLista.value = "(GAREALBO.DTERMVAL is null or GAREALBO.DTERMVAL >= TRUNC(sysdate) ) and GAREALBO.NGARA in (select ngara from garealbo where tipoele in (" + tipoelecases + "))";
+						archFunctionId += "blankCatigaOra";
 					}
 				}
 			</c:when>
 			<c:when test='${dbms eq "MSQ"}'>
 				if(document.formArchivioElencoOperatori !=null ){
 					if(catiga != null && catiga != ""){
-						document.formArchivioElencoOperatori.archWhereLista.value = "(GAREALBO.DTERMVAL is null or GAREALBO.DTERMVAL >= CONVERT(DATETIME, CONVERT(VARCHAR(10),getdate(),111),120) ) and GAREALBO.NGARA in (select OPES.NGARA3 from OPES where OPES.CATOFF = '" + catiga + "')";
+						archFunctionId += "notBlankCatigaMsq";
 					}else{
-						document.formArchivioElencoOperatori.archWhereLista.value = "(GAREALBO.DTERMVAL is null or GAREALBO.DTERMVAL >= CONVERT(DATETIME, CONVERT(VARCHAR(10),getdate(),111),120) ) and GAREALBO.NGARA in (select ngara from garealbo where tipoele in (" + tipoelecases + "))";
+						archFunctionId += "blankCatigaMsq";
 					}
 				}
 			</c:when>
 			<c:when test='${dbms eq "POS"}'>
 				if(document.formArchivioElencoOperatori !=null ){
 					if(catiga != null && catiga != ""){
-						document.formArchivioElencoOperatori.archWhereLista.value = "(GAREALBO.DTERMVAL is null or GAREALBO.DTERMVAL >= current_date ) and GAREALBO.NGARA in (select OPES.NGARA3 from OPES where OPES.CATOFF = '" + catiga + "')";
+						archFunctionId += "notBlankCatigaPos";
 					}else{
-						document.formArchivioElencoOperatori.archWhereLista.value = "(GAREALBO.DTERMVAL is null or GAREALBO.DTERMVAL >= current_date ) and GAREALBO.NGARA in (select ngara from garealbo where tipoele in (" + tipoelecases + "))";
+						archFunctionId += "blankCatigaPos";
 					}
 				}
 			</c:when>
 		</c:choose>
-		if(iterga==6 && document.formArchivioElencoOperatori !=null)
-			document.formArchivioElencoOperatori.archWhereLista.value += " and GAREALBO.NGARA in (select MECATALOGO.NGARA from MECATALOGO)";
+		
+		archFunctionId += "_gare";
+		
+		if (archFunctionId.startsWith("not")) {
+			archWhereParametriLista = "T:" + catiga;
+		}
+
+		if (tipgen == null) {
+			archFunctionId += "_0";
+		} else {
+			archFunctionId += "_" + tipgen;
+		}
+		
+		archFunctionId += "_" + (iterga == 6 && document.formArchivioElencoOperatori !=null);
+		
+		document.formArchivioElencoOperatori.archFunctionId.value = archFunctionId;
+		if (archWhereParametriLista != "") {
+			document.formArchivioElencoOperatori.archWhereParametriLista.value = archWhereParametriLista;
+		}
 	}
 
 	function collegaFascicolo(ngara) {
@@ -590,15 +651,6 @@
 				return false;
 		}
 		return true;
-	}
-	
-	var cenint = getValue("TORN_CENINT");
-	if(cenint!=""){
-		if(document.formPuntiConsegnaOrdine!=null)
-			document.formPuntiConsegnaOrdine.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		if(document.formPuntiFatturazione!=null)
-			document.formPuntiFatturazione.archWhereLista.value="PUNTICON.CODEIN='" + cenint + "'";
-		
 	}
 	
 	function showCampiContatto(valore,nomeCampo,nomeCampoFit){
@@ -732,7 +784,7 @@
 	 	
 	<c:if test='${modo eq "MODIFICA"}'>
 		var bloccoModificatiDati = $("#bloccoModificatiDati").val();
-		bloccaDopoPubblicazione(bloccoModificatiDati);
+		bloccaDopoPubblicazione(bloccoModificatiDati,"");
 	</c:if>
 	
 </gene:javaScript>

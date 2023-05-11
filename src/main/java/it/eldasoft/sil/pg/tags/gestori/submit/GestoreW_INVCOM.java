@@ -1,5 +1,6 @@
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
@@ -8,12 +9,14 @@ import java.util.Vector;
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
 
+import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.db.datautils.DataColumn;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
+import it.eldasoft.gene.db.domain.BlobFile;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreChiaveIDAutoincrementante;
@@ -23,6 +26,7 @@ import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
+import it.eldasoft.sil.pg.bl.ValidatorManager;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
@@ -179,6 +183,21 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
       } catch (SQLException e) {
         throw new GestoreException("Errore nella lettura di GARE.CODGAR1",null, e);
       }
+    }else if("G1STIPULA".equals(coment)){
+      //si tratta di una comunicazione da inviare per le stipule
+      try {
+        Vector<JdbcParametro> vectorList = sqlManager.getVector("SELECT codgar,ngara,codimp" +
+                " FROM v_gare_stipula where codstipula=?",new Object[] {comkey1});
+
+        codgar = vectorList.get(0).getStringValue();
+        ngara = vectorList.get(1).getStringValue();
+        ditta = vectorList.get(2).getStringValue();
+
+        if(logger.isDebugEnabled())
+          logger.debug("RE-SET ngara:"+ngara+" , codgar:"+codgar+" , ditta:"+ditta);
+      } catch (SQLException e) {
+        throw new GestoreException("Errore nella lettura di G1STIPULA.ID",null, e);
+      }
     }else{
       try {
         codgar = (String)sqlManager.getObject("select codgar1 from gare where ngara=?", new Object[]{ngara});
@@ -211,7 +230,8 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
     }
 
     boolean condizioneDelegaInvioMailDocumentale = false;
-    if("1".equals(integrazioneWSDM) && delegaInvioMailDocumentaleAbilitata && ("PALEO".equals(tipoWSDM) || "JIRIDE".equals(tipoWSDM) || "ENGINEERING".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM))){
+    if("1".equals(integrazioneWSDM) && delegaInvioMailDocumentaleAbilitata && ("PALEO".equals(tipoWSDM) || "JIRIDE".equals(tipoWSDM)
+        || "ENGINEERING".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM))){
       condizioneDelegaInvioMailDocumentale = true;
     }
 
@@ -224,7 +244,7 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
         String nomimp = (String)sqlManager.getObject("select nomimp from impr where codimp=?", new Object[]{codimp});
         StringBuffer buf = new StringBuffer();
         // inserisco il mittente della mail ricevuta come destinatario della risposta
-        boolean msgAvviso = inserisciSoggDest(idprg ,idcom ,codimp ,"" ,nomimp ,pgManager ,buf ,"0", condizioneDelegaInvioMailDocumentale);
+        boolean msgAvviso = inserisciSoggDest(idprg ,idcom ,codimp ,"" ,nomimp ,pgManager ,buf , condizioneDelegaInvioMailDocumentale);
         if (msgAvviso) {
           throw new GestoreException("Soggetto destinatario con codice " + codimp + " non contenente tutti i dati necessari per predisporre la comunicazione",null);
         }
@@ -258,7 +278,6 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
             StringBuffer buf = new StringBuffer("<br><ul>");
             boolean msgAvviso = false;
             boolean mandatariaPresente =true;
-            String invioFax = ConfigManager.getValore(CostantiGenerali.PROP_FAX_ABILITATO);
             for(int i=0;i<listaDittao.size();i++){
               String dittao = SqlManager.getValueFromVectorParam(listaDittao.get(i), 0).stringValue();
               String nomimp = SqlManager.getValueFromVectorParam(listaDittao.get(i), 1).stringValue();
@@ -272,7 +291,7 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
                     String codComponente = SqlManager.getValueFromVectorParam( listaComponenti.get(k), 0).getStringValue();
                     String nomeComponente = SqlManager.getValueFromVectorParam( listaComponenti.get(k), 1).getStringValue();
                     nomeComponente = nomimp+" - "+nomeComponente+" - Mandataria";
-                    if(inserisciSoggDest(idprg ,idcom ,dittao ,codComponente, nomeComponente ,pgManager ,buf ,invioFax, condizioneDelegaInvioMailDocumentale ))
+                    if(inserisciSoggDest(idprg ,idcom ,dittao ,codComponente, nomeComponente ,pgManager ,buf,  condizioneDelegaInvioMailDocumentale ))
                       msgAvviso = true;
                   }
                 }else{
@@ -286,7 +305,7 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
                 }
               }else{
                 //per le ditte singole
-                if(inserisciSoggDest(idprg ,idcom ,dittao ,"" ,nomimp ,pgManager ,buf ,invioFax, condizioneDelegaInvioMailDocumentale ))
+                if(inserisciSoggDest(idprg ,idcom ,dittao ,"" ,nomimp ,pgManager ,buf, condizioneDelegaInvioMailDocumentale ))
                   msgAvviso = true;
               }
             }
@@ -296,8 +315,6 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
               String msg ="warnings.comunicazioni.indirizzoMailVuotoSenzaFax";
               if(condizioneDelegaInvioMailDocumentale)
                 msg ="warnings.comunicazioni.indirizzoPECVuoto";
-              else if("1".equals(invioFax))
-                  msg="warnings.comunicazioni.indirizzoMailVuoto";
               if(!mandatariaPresente)
                 msg+="ConRT";
               UtilityStruts.addMessage(this.getRequest(), "warning",
@@ -319,7 +336,6 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
           String[] mailFax = new String[0];
           tipologiaImpresa = UtilityStringhe.convertiNullInStringaVuota(tipologiaImpresa);
           StringBuffer buf = new StringBuffer("<br><ul>");
-          String invioFax = ConfigManager.getValore(CostantiGenerali.PROP_FAX_ABILITATO);
           boolean msgAvviso=false;
           boolean mandatariaPresente=true;
           if ("3".equals(tipologiaImpresa) || "10".equals(tipologiaImpresa)) {
@@ -334,7 +350,7 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
                 nomeComponente = nomimp+" - "+nomeComponente+" - Mandataria";
                 //per ogni ditta componente
                 //StringBuffer buf = new StringBuffer("");
-                if(inserisciSoggDest(idprg ,idcom ,ditta ,codComponente ,nomeComponente ,pgManager ,buf ,invioFax, condizioneDelegaInvioMailDocumentale ))
+                if(inserisciSoggDest(idprg ,idcom ,ditta ,codComponente ,nomeComponente ,pgManager ,buf , condizioneDelegaInvioMailDocumentale ))
                 msgAvviso = true;
               }
             }else{
@@ -349,7 +365,7 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
           }else{
             //per ogni ditta singola
             //StringBuffer buf = new StringBuffer("");
-           if(inserisciSoggDest(idprg ,idcom ,ditta ,"" ,nomimp ,pgManager ,buf ,invioFax, condizioneDelegaInvioMailDocumentale ))
+           if(inserisciSoggDest(idprg ,idcom ,ditta ,"" ,nomimp ,pgManager ,buf , condizioneDelegaInvioMailDocumentale ))
              msgAvviso = true;
           }
 
@@ -359,8 +375,6 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
             String msg ="warnings.comunicazioni.indirizzoMailVuotoSenzaFax";
             if(condizioneDelegaInvioMailDocumentale)
               msg ="warnings.comunicazioni.indirizzoPECVuoto";
-            if("1".equals(invioFax))
-                msg="warnings.comunicazioni.indirizzoMailVuoto";
             if(!mandatariaPresente)
               msg+="ConRT";
             UtilityStruts.addMessage(this.getRequest(), "warning",
@@ -381,7 +395,7 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
   }
 
   private boolean inserisciSoggDest(String idprg, Long idcom,String dittao ,String codComponente, String nomimo ,PgManager pgManager ,
-      StringBuffer buf ,String invioFax, boolean condizioneDelegaInvioMailDocumentale) throws GestoreException, SQLException {
+      StringBuffer buf , boolean condizioneDelegaInvioMailDocumentale) throws GestoreException, SQLException {
 
 
     boolean msgAvviso = false;
@@ -399,7 +413,7 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
     Pec = UtilityStringhe.convertiNullInStringaVuota(Pec);
     fax = UtilityStringhe.convertiNullInStringaVuota(fax);
 
-    if (("".equals(email) && "".equals(Pec)) && ((invioFax==null || "".equals(invioFax) || "0".equals(invioFax)) || ("1".equals(invioFax) && "".equals(fax))) || (condizioneDelegaInvioMailDocumentale && "".equals(Pec))) {
+    if (("".equals(email) && "".equals(Pec)) || (condizioneDelegaInvioMailDocumentale && "".equals(Pec))) {
       // La ditta non va inserita fra i soggetti destinatari
       // creare il messaggio da visualizzare a video
       buf.append("<li style=\"list-style-type: disc;margin-left: 30px;\" >");
@@ -433,6 +447,9 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
   public void preUpdate(TransactionStatus status, DataColumnContainer datiForm)
       throws GestoreException {
 
+    ValidatorManager validatorManager = (ValidatorManager) UtilitySpring.getBean("validatorManager",
+              this.getServletContext(), ValidatorManager.class);
+
     if(datiForm.isColumn("W_INVCOM.COMMSGTES") && datiForm.isColumn("W_INVCOM.COMMSGTIP")){
       String COMMSGTES = datiForm.getString("W_INVCOM.COMMSGTES");
       String COMMSGTIP = datiForm.getString("W_INVCOM.COMMSGTIP");
@@ -450,6 +467,61 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
       this.gestisciAggiornamentiG1DOCSOC(status, datiForm,
           gestoreG1DOCSOC, "DOCSOCISTR",null, null,maxNumord);
     }
+
+    Long COMPUB = (Long)datiForm.getObject("W_INVCOM.COMPUB");
+    if(datiForm.isModifiedColumn("W_INVCOM.COMPUB") && new Long (2).equals(COMPUB)) {
+
+    	String entita = "W_INVCOM";
+    	String chiave1 = datiForm.getString("W_INVCOM.IDPRG");
+    	Long chiave2 = datiForm.getLong("W_INVCOM.IDCOM");
+
+    	double dimMaxTotaleFileByte=0;
+    	String dimMaxTotaleFileStringa= null;
+    	long dimTotaleAllegati = 0;
+    	String idcfg = datiForm.getString("W_INVCOM.IDCFG");
+    	if(idcfg==null || "".equals(idcfg))
+    		idcfg = CostantiGenerali.PROP_CONFIGURAZIONE_MAIL_STANDARD;
+    	dimMaxTotaleFileStringa = validatorManager.getDimensioneMassimaFile(idcfg);
+
+    	//Si deve determinare la dimensione massima dei file già allegati e di quello che si sta allegando
+    	if(dimMaxTotaleFileStringa!= null && !"".equals(dimMaxTotaleFileStringa)){
+    		dimMaxTotaleFileStringa = dimMaxTotaleFileStringa.trim();
+    		dimMaxTotaleFileByte = Math.pow(2, 20) * Double.parseDouble(dimMaxTotaleFileStringa);
+
+
+    		try {
+
+    			List listaW_DOCDIG = sqlManager.getListVector("select IDDOCDIG,IDPRG  from W_DOCDIG where W_DOCDIG.DIGENT = ? AND W_DOCDIG.DIGKEY1 = ? AND W_DOCDIG.DIGKEY2 = ? "
+    					, new Object[]{entita, chiave1, chiave2});
+    			if(listaW_DOCDIG!=null && listaW_DOCDIG.size()>0){
+
+    				FileAllegatoManager fileAllegatoManager = (FileAllegatoManager) UtilitySpring.getBean(
+    						"fileAllegatoManager", this.getServletContext(), FileAllegatoManager.class);
+
+    				for(int i=0;i<listaW_DOCDIG.size();i++){
+    					Long iddocdig = (Long)SqlManager.getValueFromVectorParam(listaW_DOCDIG.get(i), 0).getValue();
+    					String idprg = (String)SqlManager.getValueFromVectorParam(listaW_DOCDIG.get(i), 1).getValue();
+    					BlobFile fileAllegatoBlob = fileAllegatoManager.getFileAllegato(idprg, iddocdig);
+
+    					if(fileAllegatoBlob!=null)
+    						dimTotaleAllegati += fileAllegatoBlob.getStream().length;
+
+    				}
+    			}
+    		} catch (SQLException e) {
+    			throw new GestoreException("Errore nella lettura degli allegati della comunicazione(W_DOCDIG.DIGOGG)", null);
+    		} catch (IOException e) {
+    			throw new GestoreException("Errore nella lettura degli allegati della comunicazione(W_DOCDIG.DIGOGG)", null);
+    		}
+    	}
+
+
+    	if(dimTotaleAllegati> dimMaxTotaleFileByte){  //Controllo sulla dimensione totale massima di tutti gli allegati
+            throw new GestoreException("La dimensione totale dei file da allegare supera il limite consentito dal server di posta "
+                + "di " + dimMaxTotaleFileStringa + " MB" , "upload.overflowMultiplo", new String[] { dimMaxTotaleFileStringa },null);
+          }
+    }
+
   }
 
   /**

@@ -10,30 +10,6 @@
  */
 package it.eldasoft.sil.pg.bl;
 
-import it.eldasoft.gene.bl.GenChiaviManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
-import it.eldasoft.gene.db.domain.BlobFile;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.scp.AggiudicatarioEntry;
-import it.eldasoft.sil.pg.bl.scp.AllegatoEntry;
-import it.eldasoft.sil.pg.bl.scp.AppaFornEntry;
-import it.eldasoft.sil.pg.bl.scp.CategoriaLottoEntry;
-import it.eldasoft.sil.pg.bl.scp.CpvLottoEntry;
-import it.eldasoft.sil.pg.bl.scp.DatiGeneraliStazioneAppaltanteEntry;
-import it.eldasoft.sil.pg.bl.scp.DatiGeneraliTecnicoEntry;
-import it.eldasoft.sil.pg.bl.scp.ImpresaEntry;
-import it.eldasoft.sil.pg.bl.scp.PubblicaAttoEntry;
-import it.eldasoft.sil.pg.bl.scp.PubblicaAvvisoEntry;
-import it.eldasoft.sil.pg.bl.scp.PubblicaGaraEntry;
-import it.eldasoft.sil.pg.bl.scp.PubblicaLottoEntry;
-import it.eldasoft.utils.properties.ConfigManager;
-import it.eldasoft.utils.sicurezza.CriptazioneException;
-import it.eldasoft.utils.sicurezza.FactoryCriptazioneByte;
-import it.eldasoft.utils.sicurezza.ICriptazioneByte;
-import it.eldasoft.utils.utility.UtilityNumeri;
-
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -58,16 +34,40 @@ import org.apache.commons.lang.time.DateUtils;
 import org.apache.log4j.Logger;
 import org.springframework.dao.DataAccessException;
 
+import it.eldasoft.gene.bl.GenChiaviManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.db.domain.BlobFile;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.scp.AggiudicatarioEntry;
+import it.eldasoft.sil.pg.bl.scp.AllegatoEntry;
+import it.eldasoft.sil.pg.bl.scp.AppaFornEntry;
+import it.eldasoft.sil.pg.bl.scp.CategoriaLottoEntry;
+import it.eldasoft.sil.pg.bl.scp.CpvLottoEntry;
+import it.eldasoft.sil.pg.bl.scp.DatiGeneraliStazioneAppaltanteEntry;
+import it.eldasoft.sil.pg.bl.scp.DatiGeneraliTecnicoEntry;
+import it.eldasoft.sil.pg.bl.scp.ImpresaEntry;
+import it.eldasoft.sil.pg.bl.scp.PubblicaAttoEntry;
+import it.eldasoft.sil.pg.bl.scp.PubblicaAvvisoEntry;
+import it.eldasoft.sil.pg.bl.scp.PubblicaGaraEntry;
+import it.eldasoft.sil.pg.bl.scp.PubblicaLottoEntry;
+import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.sicurezza.CriptazioneException;
+import it.eldasoft.utils.sicurezza.FactoryCriptazioneByte;
+import it.eldasoft.utils.sicurezza.ICriptazioneByte;
+import it.eldasoft.utils.utility.UtilityNumeri;
+
 /**
  * Classe di utilita' per l'interfacciamento con SCP
- * 
+ *
  * @author Mirco.Franzoni
- * 
+ *
  */
 public class ScpManager {
 	/** Logger. */
 	static Logger logger = Logger.getLogger(ScpManager.class);
-	
+
 	public static final String PROP_WS_PUBBLICAZIONI_USERNAME = "invioScp.ws.username";
 	public static final String PROP_WS_PUBBLICAZIONI_PASSWORD = "invioScp.ws.password";
 	public static final String PROP_WS_PUBBLICAZIONI_URL = "invioScp.ws.url";
@@ -75,8 +75,8 @@ public class ScpManager {
 	public static final String PROP_WS_PUBBLICAZIONI_URL_LOGIN = "invioScp.ws.urlLogin";
 	public static final String PROP_WS_PUBBLICAZIONI_IDCLIENT = "invioScp.ws.idClient";
 	public static final String PROP_WS_PUBBLICAZIONI_KEYCLIENT = "invioScp.ws.keyClient";
-	
-    
+
+
 	/** Manager SQL per le operazioni su database. */
 	private SqlManager sqlManager;
 	private GenChiaviManager genChiaviManager;
@@ -86,7 +86,7 @@ public class ScpManager {
 	private PgManagerEst1 pgManagerEst1;
 
 	/** DAO per la gestione dei file allegati. */
-	
+
 	public void setSqlManager(SqlManager sqlManager) {
 	  this.sqlManager = sqlManager;
 	}
@@ -94,15 +94,15 @@ public class ScpManager {
 	public void setGenChiaviManager(GenChiaviManager genChiaviManager) {
 	  this.genChiaviManager = genChiaviManager;
 	}
-	  
+
 	public void setInviaVigilanzaManager(InviaVigilanzaManager inviaVigilanzaManager) {
   	  this.inviaVigilanzaManager = inviaVigilanzaManager;
   	}
-	
+
 	public void setAggiudicazioneManager(AggiudicazioneManager aggiudicazioneManager) {
       this.aggiudicazioneManager = aggiudicazioneManager;
     }
-	
+
 	public void setControlliOepvManager(ControlliOepvManager controlliOepvManager) {
       this.controlliOepvManager = controlliOepvManager;
     }
@@ -112,12 +112,12 @@ public class ScpManager {
     }
 
 	public ArrayList<HashMap<String,Object>> getAttiDaInviare(String codgar, String genere) throws SQLException{
-      
+
 	  ArrayList<HashMap<String,Object>> res = new ArrayList<HashMap<String,Object>>();
       String pubblicazioni = "SELECT distinct(dc.tipologia) FROM DOCUMGARA dc JOIN G1CF_PUBB G1 ON G1.ID = DC.TIPOLOGIA AND G1.INVIOSCP = '1'"+
       " LEFT OUTER JOIN GARATTISCP GA ON DC.TIPOLOGIA = GA.TIPOLOGIA AND GA.CODGAR = DC.CODGAR "+
       " where ga.tipologia is null and dc.codgar = ? and dc.statodoc = 5 and (dc.isarchi is null or dc.isarchi != '1') and dc.tipologia is not null and dc.tipologia not in (17,19,20)";
-      
+
       List atti = sqlManager.getListVector(pubblicazioni, new Object[] {codgar});
       for(int i=0;i<atti.size();i++){
         Long tipologia = (Long) SqlManager.getValueFromVectorParam(atti.get(i), 0).getValue();
@@ -125,7 +125,7 @@ public class ScpManager {
         temp.put("tipologia", tipologia);
         res.add(temp);
       }
-      
+
       String selectLottiAggiudicati = "select ngara,codiga from gare where codgar1 = ? and codgar1 != ngara and ditta is not null";
       String selectLottiAnnullati = "select ngara,codiga from gare where codgar1 = ? and codgar1 != ngara and esineg is not null";
       String selectAtti;
@@ -192,12 +192,12 @@ public class ScpManager {
       }
       return res;
     }
-	
+
 	public String getNomeFromTipologia(Long tipologia) throws SQLException{
 	  String nome = (String) sqlManager.getObject("select nome from g1cf_pubb where id = ?", new Object[] {tipologia});
 	  return nome;
 	}
-	
+
 	public Response getLogin(String entita) throws GestoreException, CriptazioneException{
 	  String login = ConfigManager.getValore(ScpManager.PROP_WS_PUBBLICAZIONI_USERNAME);
       String password = ConfigManager.getValore(ScpManager.PROP_WS_PUBBLICAZIONI_PASSWORD);
@@ -222,17 +222,17 @@ public class ScpManager {
                     "Verificare i parametri per la connessione al servizio di pubblicazione",
                     "errors.errorResponse");
       }
-      
+
       ICriptazioneByte decriptatore = FactoryCriptazioneByte.getInstance(
               ConfigManager.getValore(CostantiGenerali.PROP_TIPOLOGIA_CIFRATURA_DATI),
               password.getBytes(), ICriptazioneByte.FORMATO_DATO_CIFRATO);
       password = new String(decriptatore.getDatoNonCifrato());
-      
+
       decriptatore = FactoryCriptazioneByte.getInstance(
           ConfigManager.getValore(CostantiGenerali.PROP_TIPOLOGIA_CIFRATURA_DATI),
           keyClient.getBytes(), ICriptazioneByte.FORMATO_DATO_CIFRATO);
       keyClient = new String(decriptatore.getDatoNonCifrato());
-      
+
       Client client = ClientBuilder.newClient();
       WebTarget webTarget = client.target(urlLogin).path("Account/LoginPubblica");
       MultivaluedMap<String, String> formData = new MultivaluedHashMap<String, String>();
@@ -240,15 +240,15 @@ public class ScpManager {
       formData.add("password", password);
       formData.add("clientKey", keyClient);
       formData.add("clientId", idClient);
-      
+
       return webTarget.request(MediaType.APPLICATION_JSON).post(Entity.entity(formData,MediaType.APPLICATION_FORM_URLENCODED));
 	}
-	
+
 	/*
 	public void inserimentoFlussoAvviso(final PubblicaAvvisoEntry avviso, final ProfiloUtente profilo, final Long idAvviso, final String codein) throws GestoreException {
-	  
+
 	    String insertW9Flussi = "INSERT INTO W9FLUSSI(IDFLUSSO, AREA, KEY01, KEY02, KEY03, TINVIO2, DATINV, CODCOMP, AUTORE, CFSA , XML ) VALUES(?,?,?,?,?,?,?,?,?,?,?)";
-	    
+
 	    TransactionStatus status = null;
 	    boolean commitTransaction = false;
 	    try {
@@ -282,7 +282,7 @@ public class ScpManager {
 	          }
 	        }
 	      }
-	   
+
 	    }
 
 	public void inserimentoFlussoExArt29(final PubblicaAttoEntry pubblicazione, final ProfiloUtente profilo, final String codGara, final Long numeroPubblicazione) throws GestoreException {
@@ -300,7 +300,7 @@ public class ScpManager {
 	    	}
 	    	status = this.sqlManager.startTransaction();
 	    	ObjectMapper mapper = new ObjectMapper();
-	    	
+
 	      	this.sqlManager.update(insertW9Flussi, new Object[] { idFlusso, new Long(2), codGara,
 	      			new Long(901), numeroPubblicazione, tipoInvio, new Timestamp(System.currentTimeMillis()), profilo.getId(), profilo.getNome(), pubblicazione.getGara().getCodiceFiscaleSA(),
 	      			mapper.writeValueAsString(pubblicazione)});
@@ -326,21 +326,21 @@ public class ScpManager {
 	      }
 	    }
 	*/
-	
+
 	  public void setUUID(PubblicaAttoEntry pubblicazione, String codgar, String ngara, Long tipologia, String genere) throws SQLException{
-	    
+
 	    Long countOcc = (Long)sqlManager.getObject("select count(*) from garattiscp where codgar = ?", new Object[] {codgar});
-	    
+
         Date sqlData = new Date(System.currentTimeMillis());
         Timestamp dataTimestamp = new Timestamp(System.currentTimeMillis());
         java.util.Date today = DateUtils.truncate(sqlData, Calendar.DATE);
-        
+
 	    if(countOcc.intValue()==0){
-	      
+
 	        Integer newId= this.genChiaviManager.getNextId("GARUUID");
 	        String insertGaruuid = "insert into garuuid(id,codgar,tipric,uuid) values(?,?,?,?)";
 	        this.sqlManager.update(insertGaruuid, new Object[] { newId,codgar,"SCP",pubblicazione.getGara().getIdRicevuto()});
-	        
+
 	        Long numpub = (Long) sqlManager.getObject(
 	            "select max(numpub) from pubbli where codgar9 = ?",
 	            new Object[] { codgar });
@@ -348,10 +348,10 @@ public class ScpManager {
 	          numpub = new Long(0);}
 	        String insertPubbli = "insert into pubbli(numpub,tippub,datpub,codgar9) values(?,?,?,?)";
 	        this.sqlManager.update(insertPubbli, new Object[] { numpub +1,16,today,codgar});
-	      
+
 	    }
-	    
-	    Integer newId= this.genChiaviManager.getNextId("GARATTISCP");  
+
+	    Integer newId= this.genChiaviManager.getNextId("GARATTISCP");
 	    if(!"2".equals(genere) && (tipologia.intValue() == 17 || tipologia.intValue() == 19 || tipologia.intValue() == 20)){
 	      String insertGarattiSCP = "insert into garattiscp(ID,CODGAR,NGARA,TIPOLOGIA,DATPUB,UUID) values (?,?,?,?,?,?)";
 	      this.sqlManager.update(insertGarattiSCP, new Object[] {newId,codgar,ngara,tipologia,dataTimestamp,pubblicazione.getIdRicevuto()});
@@ -359,21 +359,21 @@ public class ScpManager {
 	      String insertGarattiSCP = "insert into garattiscp(ID,CODGAR,TIPOLOGIA,DATPUB,UUID) values (?,?,?,?,?)";
 	      this.sqlManager.update(insertGarattiSCP, new Object[] {newId,codgar,tipologia,dataTimestamp,pubblicazione.getIdRicevuto()});
 	    }
-	    
-	  } 
-	  
+
+	  }
+
 	  public void setUUIDavviso(PubblicaAvvisoEntry avviso, String codgar, String ngara) throws SQLException{
-	    
+
 	    Long countOcc = (Long)sqlManager.getObject("select count(*) from pubbli where tippub = 16 and codgar9 = ?", new Object[] {codgar});
-        
+
         if(countOcc.intValue()==0){
       	    Date sqlData = new Date(System.currentTimeMillis());
       	    java.util.Date today = DateUtils.truncate(sqlData, Calendar.DATE);
-      	        
+
       	    Integer newId= this.genChiaviManager.getNextId("GARUUID");
       	    String insertGaruuid = "insert into garuuid(id,codgar,tipric,uuid) values(?,?,?,?)";
       	    this.sqlManager.update(insertGaruuid, new Object[] { newId,codgar,"SCP",avviso.getIdRicevuto()});
-      	            
+
       	    Long numpub = (Long) sqlManager.getObject(
       	       "select max(numpub) from pubbli where codgar9 = ?",
       	       new Object[] { codgar });
@@ -382,11 +382,11 @@ public class ScpManager {
       	    String insertPubbli = "insert into pubbli(numpub,tippub,datpub,codgar9) values(?,?,?,?)";
       	    this.sqlManager.update(insertPubbli, new Object[] { numpub +1,16,today,codgar});
         }
-	}  
-	  
+	}
+
 	/**
 	 * Metodo valorizzazione Dati Avviso
-	 * 
+	 *
 	 * @param avviso
 	 * 			oggetto da valorizzare
 	 * @param codein
@@ -399,7 +399,7 @@ public class ScpManager {
 	 *             SQLException
 	 * @throws ParseException
 	 *             ParseException
-	 * @throws GestoreException 
+	 * @throws GestoreException
 	 */
 	public void valorizzaAvviso(final PubblicaAvvisoEntry avviso,
 			final String codgar, String genere)
@@ -407,14 +407,14 @@ public class ScpManager {
 
 		String sqlUffint = "select cfein, iscuc, altrisog, cfanac, codrup, uffdet from torn, uffint where torn.cenint = uffint.codein and torn.codgar = ?";
         List datiUffint = sqlManager.getListVector(sqlUffint, new Object[] {codgar});
-        
+
         String cfein = SqlManager.getValueFromVectorParam(datiUffint.get(0), 0).stringValue();
         String iscuc = SqlManager.getValueFromVectorParam(datiUffint.get(0), 1).stringValue();
         Long altrisog = (Long) SqlManager.getValueFromVectorParam(datiUffint.get(0), 2).getValue();
         String cfanac = SqlManager.getValueFromVectorParam(datiUffint.get(0), 3).stringValue();
         String codrup = SqlManager.getValueFromVectorParam(datiUffint.get(0), 4).stringValue();
         Long uffdet = (Long) SqlManager.getValueFromVectorParam(datiUffint.get(0), 5).getValue();
-        
+
         if("1".equals(iscuc) && (altrisog!= null && (altrisog.intValue()==2 || altrisog.intValue()==3)) && verificaEsistenzaValore(cfanac)){
           avviso.setCodiceFiscaleSA(cfanac);//obbligatorio
         }else{
@@ -425,7 +425,7 @@ public class ScpManager {
         if (verificaEsistenzaValore(uffdet)) {
           avviso.setUfficio(this.getTab1("A1092",uffdet.toString()));
         }
-        
+
         String oggetto;
         Long tipologia;
         Date scadenza;
@@ -433,7 +433,7 @@ public class ScpManager {
           String sqlGareavvisi = "select tipoavv, oggetto, datsca from gareavvisi where gareavvisi.codgar = ?";
           List datiGareavvisi = sqlManager.getListVector(sqlGareavvisi, new Object[] {codgar});
           Long tipoavviso = (Long) SqlManager.getValueFromVectorParam(datiGareavvisi.get(0), 0).getValue();
-          oggetto = (String) SqlManager.getValueFromVectorParam(datiGareavvisi.get(0), 1).stringValue();
+          oggetto = SqlManager.getValueFromVectorParam(datiGareavvisi.get(0), 1).stringValue();
           scadenza = (Date) SqlManager.getValueFromVectorParam(datiGareavvisi.get(0), 2).getValue();
           if(tipoavviso != null && tipoavviso.intValue() == 1){
             tipologia = new Long(2);
@@ -447,43 +447,43 @@ public class ScpManager {
           oggetto = (String) sqlManager.getObject(sqlGarealbo, new Object[] {codgar});
           scadenza = (Date)sqlManager.getObject("select DTERMPRES from PUBBTERM where codgar = ? order by numpt desc", new Object[]{codgar});
         }
-        
+
         if (verificaEsistenzaValore(scadenza)) {
-          SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");  
-          String tempDate = formatter.format(scadenza);  
+          SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+          String tempDate = formatter.format(scadenza);
           avviso.setScadenza(tempDate.toString());//obbligatorio
         }
         if (verificaEsistenzaValore(oggetto)) {
           avviso.setDescrizione(this.truncateString(oggetto,500));//obbligatorio
         }
-        
-        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");  
-        Date dataPrimaPubb = new Date(System.currentTimeMillis());  
-        String currentDate = formatter.format(dataPrimaPubb);  
+
+        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+        Date dataPrimaPubb = new Date(System.currentTimeMillis());
+        String currentDate = formatter.format(dataPrimaPubb);
         avviso.setPrimaPubblicazioneSCP(currentDate);
-        
+
         String sqlDataRilascio = "select datarilascio from documgara where codgar = ? and statodoc = 5 and (isarchi is null or isarchi != '1') order by datarilascio asc";
         Date dataRilascio = (Date) sqlManager.getObject(sqlDataRilascio, new Object[] {codgar});
-        String dataRilascioStringa = formatter.format(dataRilascio);  
+        String dataRilascioStringa = formatter.format(dataRilascio);
         avviso.setData(dataRilascioStringa);
-        
+
         if (verificaEsistenzaValore(codrup)) {
           DatiGeneraliTecnicoEntry tecnico = new DatiGeneraliTecnicoEntry();
           this.valorizzaTecnico(tecnico, codrup);//OK
           avviso.setRup(tecnico);
         }
-        
+
         String uuid = (String)this.sqlManager.getObject("SELECT UUID FROM GARUUID WHERE CODGAR = ? AND TIPRIC = 'SCP'", new Object[] {codgar});
         if (verificaEsistenzaValore(uuid)) {
           avviso.setIdRicevuto(new Long(uuid));
         }
-        
+
         this.valorizzaDocumenti(avviso.getDocumenti(), codgar, null, genere);
 	}
 
 	/**
 	 * Metodo valorizzazione Dati Pubblicazione
-	 * 
+	 *
 	 * @param pubblicazione
 	 * 			oggetto da valorizzare
 	 * @param codGara
@@ -494,7 +494,7 @@ public class ScpManager {
 	 *             SQLException
 	 * @throws ParseException
 	 *             ParseException
-	 * @throws GestoreException 
+	 * @throws GestoreException
 	 */
 	public void valorizzaAtto(final PubblicaAttoEntry pubblicazione,
 			final String codGara,final String ngara, Long tipologia, String genere)
@@ -506,23 +506,23 @@ public class ScpManager {
 		List< ? > itemGare = new ArrayList<Object>();
 
 		datiTorn = sqlManager.getListVector(sqlTorn, new Object[] {codGara});
-		
+
 		if (datiTorn.size() > 0) {
 			itemTorn = (List< ? >) datiTorn.get(0);
 
 			if (verificaEsistenzaValore(tipologia)) {
 				pubblicazione.setTipoDocumento(tipologia);//obbligatorio
 			}
-			
+
 			Date datapubblicazione = (Date)sqlManager.getObject("select min(datarilascio) from DOCUMGARA where codgar = ? and tipologia = ? and statodoc = 5 and (isarchi is null or isarchi != '1')", new Object[]{codGara,tipologia});
 			if (verificaEsistenzaValore(datapubblicazione)) {
-			    SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");  
-	            String tempDate = formatter.format(datapubblicazione);  
+			    SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+	            String tempDate = formatter.format(datapubblicazione);
 				pubblicazione.setDataPubblicazione(tempDate.toString());
 			}
-			
+
 			if(tipologia.intValue()==2 || tipologia.intValue()==3 || tipologia.intValue() == 6){
-    			String iterga = (String) (itemTorn.get(0)).toString();
+    			String iterga = (itemTorn.get(0)).toString();
     			Date dataScadenza;
     			if(iterga != null && ("2".equals(iterga) || "4".equals(iterga)) && tipologia.intValue() != 6){
     			  dataScadenza = (Date) SqlManager.getValueFromVectorParam(itemTorn, 1).getValue();
@@ -530,35 +530,35 @@ public class ScpManager {
     			  dataScadenza = (Date) SqlManager.getValueFromVectorParam(itemTorn, 2).getValue();
     			}
     			if (verificaEsistenzaValore(dataScadenza)){
-    			    SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");  
-                    String tempDate = formatter.format(dataScadenza);  
+    			    SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+                    String tempDate = formatter.format(dataScadenza);
     				pubblicazione.setDataScadenza(tempDate);
     			}
 			}
-			
+
 			List provvedimento = sqlManager.getVector("select dataprov, numprov from DOCUMGARA where STATODOC = 5 and DATAPROV is not null and tipologia = ? and codgar = ? and statodoc = 5 and (isarchi is null or isarchi != '1') order by dataprov asc", new Object[]{tipologia,codGara});
 			if(provvedimento != null && provvedimento.size()>0){
     			Date dataProvvedimento = (Date) SqlManager.getValueFromVectorParam(provvedimento, 0).getValue();
     			String numeroProvvedimento = SqlManager.getValueFromVectorParam(provvedimento, 1).stringValue();
     			if (verificaEsistenzaValore(dataProvvedimento)) {
     			    SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
-    			    String tempDate = formatter.format(dataProvvedimento);  
+    			    String tempDate = formatter.format(dataProvvedimento);
                     pubblicazione.setDataProvvedimento(tempDate);
                 }
     			if (verificaEsistenzaValore(numeroProvvedimento)) {
     				pubblicazione.setNumeroProvvedimento(numeroProvvedimento);
     			}
 			}
-			
+
 			if(tipologia.intValue() == 19 || tipologia.intValue() == 20){
 			    datiGare = sqlManager.getListVector(sqlGare, new Object[] {ngara});
 			    if(tipologia != null && (tipologia.intValue() == 19 || tipologia.intValue() == 20)){
 	              itemGare = (List< ? >) datiGare.get(0);
 	            }
-			    
+
 			    Double iaggiu = (Double) SqlManager.getValueFromVectorParam(itemGare, 1).getValue();
                 pubblicazione.setImportoAggiudicazione(iaggiu);
-			    
+
     			Long modlicg = (Long) SqlManager.getValueFromVectorParam(itemGare, 3).getValue();
     			String ditta = (String) SqlManager.getValueFromVectorParam(itemGare, 4).getValue();
     			Double ribauo = null;
@@ -605,11 +605,11 @@ public class ScpManager {
     			    pubblicazione.setOffertaAumento(ribauo);
     			  }
     			}
-    			
+
     			Date dattoa = (Date) SqlManager.getValueFromVectorParam(itemGare, 2).getValue();
                 if (verificaEsistenzaValore(dattoa)) {
-                    SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");  
-                    String tempDate = formatter.format(dattoa);  
+                    SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+                    String tempDate = formatter.format(dattoa);
                     pubblicazione.setDataAggiudicazione(tempDate);
                 }
 			}
@@ -618,52 +618,52 @@ public class ScpManager {
 			if (verificaEsistenzaValore(profco)) {
 				pubblicazione.setUrlCommittente(profco);
 			}
-			
+
 			String urlEprocurement = ConfigManager.getValore("portaleAppalti.urlPubblica");
 			if (verificaEsistenzaValore(urlEprocurement)) {
 				pubblicazione.setUrlEProcurement(urlEprocurement);
 			}
-			
+
 			String idRicevuto = null;
 			Date dataPrimaPubb = null;
             if((tipologia.intValue() == 17 || tipologia.intValue() == 19 || tipologia.intValue() == 20) && !"2".equals(genere)){
               List vector = sqlManager.getVector("select uuid, datpub from garattiscp where ngara = ? and tipologia = ?", new Object[] {ngara,tipologia});
               if(vector!= null && vector.size() > 0){
-                idRicevuto = (String)SqlManager.getValueFromVectorParam(vector, 0).getValue(); 
-                dataPrimaPubb = (Date) SqlManager.getValueFromVectorParam(vector, 1).getValue(); 
+                idRicevuto = (String)SqlManager.getValueFromVectorParam(vector, 0).getValue();
+                dataPrimaPubb = (Date) SqlManager.getValueFromVectorParam(vector, 1).getValue();
               }
             }else{
               List vector = sqlManager.getVector("select uuid, datpub from garattiscp where codgar = ? and tipologia = ?", new Object[] {codGara,tipologia});
               if(vector!= null && vector.size() > 0){
-                idRicevuto = (String) SqlManager.getValueFromVectorParam(vector, 0).getValue(); 
-                dataPrimaPubb = (Date) SqlManager.getValueFromVectorParam(vector, 1).getValue(); 
+                idRicevuto = (String) SqlManager.getValueFromVectorParam(vector, 0).getValue();
+                dataPrimaPubb = (Date) SqlManager.getValueFromVectorParam(vector, 1).getValue();
               }
             }
             if (verificaEsistenzaValore(idRicevuto)) {
               pubblicazione.setIdRicevuto(new Long(idRicevuto));
             }
-			
-            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");  
+
+            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
             if (!verificaEsistenzaValore(dataPrimaPubb)) {
-              dataPrimaPubb = new Date(System.currentTimeMillis());  
+              dataPrimaPubb = new Date(System.currentTimeMillis());
             }
-		    String currentDate = formatter.format(dataPrimaPubb);  
+		    String currentDate = formatter.format(dataPrimaPubb);
 		    if (verificaEsistenzaValore(currentDate)) {
               pubblicazione.setPrimaPubblicazioneSCP(currentDate);
 		    }
-			
+
 			PubblicaGaraEntry gara = new PubblicaGaraEntry();
 			this.valorizzaGara(gara, codGara, ngara, genere);
 			pubblicazione.setGara(gara);
 			if(tipologia.intValue() == 19 || tipologia.intValue() == 20){
 			  this.valorizzaAggiudicatari(pubblicazione.getAggiudicatari(), ngara);
 			}
-			
+
 			this.valorizzaDocumenti(pubblicazione.getDocumenti(), codGara, tipologia, genere);
 		}
-	}	
-	
-	  
+	}
+
+
 	public BlobFile getDocumentoAvviso(Long idavviso, String codein, Long codsistema, Long numdoc) throws DataAccessException, SQLException {
 		HashMap<String, Object> hashMapFileAllegato = new HashMap<String, Object>();
 	    hashMapFileAllegato.put("idavviso", idavviso);
@@ -674,7 +674,7 @@ public class ScpManager {
 		//return documento;
 	    return null;
 	}
-	
+
 	public BlobFile getDocumentoAtto(String codiceGara, Long numeroPubblicazione, Long numdoc) throws DataAccessException, SQLException {
 		HashMap<String, Object> hashMapFileAllegato = new HashMap<String, Object>();
 		hashMapFileAllegato.put("codGara", codiceGara);
@@ -684,10 +684,10 @@ public class ScpManager {
         //return documento;
         return null;
 	}
-	
+
 	/**
 	 * Metodo valorizzazione Dati Tecnico
-	 * 
+	 *
 	 * @param tecnico
 	 * 			oggetto da valorizzare
 	 * @param codtec
@@ -727,7 +727,7 @@ public class ScpManager {
 			if (verificaEsistenzaValore(itemTecnico.get(4))) {
 				tecnico.setCivico(itemTecnico.get(4).toString());
 			}
-			
+
 			if (verificaEsistenzaValore(itemTecnico.get(5))) {
 				//tecnico.setLocalita(itemTecnico.get(5).toString());
 			}
@@ -756,7 +756,7 @@ public class ScpManager {
 
 	/**
 	 * Metodo valorizzazione Dati Stazione Appaltante
-	 * 
+	 *
 	 * @param stazioneAppaltante
 	 * 			oggetto da valorizzare
 	 * @param codein
@@ -777,7 +777,7 @@ public class ScpManager {
 
 		listaUffint = sqlManager.getListVector(sqlRecuperaUFFINT, new Object[] {
 				codein });
-		if (listaUffint.size() > 0) { 
+		if (listaUffint.size() > 0) {
 			itemUffint = (List< ? >) listaUffint.get(0);
 
 			if (verificaEsistenzaValore(itemUffint.get(0))) {
@@ -830,10 +830,10 @@ public class ScpManager {
 			}
 		}
 	}
-	
+
 	/**
 	 * Metodo valorizzazione Dati Impresa
-	 * 
+	 *
 	 * @param impresa
 	 * 			oggetto da valorizzare
 	 * @param codimp
@@ -856,7 +856,7 @@ public class ScpManager {
 		listaImpresa = sqlManager.getListVector(sqlRecuperaIMPRESA, new Object[] {codimp });
 		if (listaImpresa.size() > 0) {
 			itemImpresa = (List< ? >) listaImpresa.get(0);
-			String ragioneSociale = (String) itemImpresa.get(0).toString();
+			String ragioneSociale = itemImpresa.get(0).toString();
 			if (verificaEsistenzaValore(ragioneSociale)) {
 				impresa.setRagioneSociale(this.truncateString(ragioneSociale,61));
 			}
@@ -874,7 +874,7 @@ public class ScpManager {
 			}else{
 			  if (verificaEsistenzaValore(itemImpresa.get(4))) {
                 impresa.setCodiceFiscale(itemImpresa.get(4).toString());
-              } 
+              }
 			}
 			if (verificaEsistenzaValore(itemImpresa.get(4))) {
 				impresa.setPartitaIva(itemImpresa.get(4).toString());
@@ -887,10 +887,10 @@ public class ScpManager {
 			}
 		}
 	}
-	
+
 	/**
 	 * Metodo valorizzazione Documenti Pubblicazione
-	 * 
+	 *
 	 * @param documenti
 	 * 			oggetto da valorizzare
 	 * @param codGara
@@ -943,7 +943,7 @@ public class ScpManager {
               }
     		}
 		}
-		
+
 		AllegatoEntry documento = new AllegatoEntry();
 		if (verificaEsistenzaValore(titolo)) {
 			documento.setTitolo(titolo);//obbligatorio
@@ -952,12 +952,12 @@ public class ScpManager {
 			documento.setUrl(url);
 		}
 		documenti.add(documento);
-		
+
 	}
-	
+
 	/**
 	 * Metodo valorizzazione Dati Aggiudicatari
-	 * 
+	 *
 	 * @param aggiudicatari
 	 * 			oggetto da valorizzare
 	 * @param codgara
@@ -968,12 +968,12 @@ public class ScpManager {
 	 *             SQLException
 	 * @throws ParseException
 	 *             ParseException
-	 * @throws GestoreException 
+	 * @throws GestoreException
 	 */
 	private void valorizzaAggiudicatari(final List<AggiudicatarioEntry> aggiudicatari,
 			final String ngara)
 	throws SQLException, ParseException, GestoreException {
-	  
+
 		String sqlGare = "SELECT DITTA FROM GARE WHERE NGARA = ?";
 		String sqlGare1 = "SELECT AQOPER FROM GARE1 WHERE NGARA = ?";
 
@@ -983,7 +983,7 @@ public class ScpManager {
 		ArrayList<Long> numordAccQuadro = new ArrayList<Long>();
 		List< ? > aggiudicatarie = new ArrayList<Object>();
 		ArrayList<String> ditteAgg = new ArrayList<String>();
-		
+
 		ditta = (String) sqlManager.getObject(sqlGare, new Object[] {ngara});
 		aqoper = (Long) sqlManager.getObject(sqlGare1, new Object[] {ngara});
 		if(aqoper != null && aqoper.intValue() == 2){
@@ -1049,10 +1049,10 @@ public class ScpManager {
           }
 		}
 	}
-	
+
 	/**
 	 * Metodo valorizzazione Dati Gara
-	 * 
+	 *
 	 * @param gara
 	 * 			oggetto da valorizzare
 	 * @param codgara
@@ -1063,7 +1063,7 @@ public class ScpManager {
 	 *             SQLException
 	 * @throws ParseException
 	 *             ParseException
-	 * @throws GestoreException 
+	 * @throws GestoreException
 	 */
 	public void valorizzaGara(final PubblicaGaraEntry gara,
 			final String codgar, String ngara, final String genere)
@@ -1071,25 +1071,25 @@ public class ScpManager {
 
 	  String sqlGare = "select not_gar, nomssl, loclav, prosla from GARE where ngara = ?";
       String sqlTorn = "select destor, numavcp, cenint, altrisog, codcigaq, isadesione, settore, modrea, accqua, codrup, uffdet from TORN where codgar = ?";
-      
+
       String lottoAggiudicazione = ngara;
-      
+
       List< ? > datiGare, datiTorn, datiUffint;
       List< ? > itemTorn = new ArrayList<Object>();
-      
+
       if(ngara == null || "".equals(ngara)){
         ngara = (String)this.sqlManager.getObject("SELECT NGARA FROM GARE WHERE CODGAR1 = ? AND CODGAR1 != NGARA", new Object[] {codgar});
       }
-      
+
       datiGare = sqlManager.getListVector(sqlGare, new Object[] {ngara});
       datiTorn = sqlManager.getListVector(sqlTorn, new Object[] {codgar});
-      
+
 		List< ? > itemGara = new ArrayList<Object>();
 
 		if (datiTorn.size() > 0) {
 			itemGara = (List< ? >) datiGare.get(0);
 			itemTorn = (List< ? >) datiTorn.get(0);
-			
+
 			if("2".equals(genere)){
     			if (verificaEsistenzaValore(itemGara.get(0))) {
     				gara.setOggetto(this.truncateString(itemGara.get(0).toString(),1024));//obbligatorio
@@ -1105,20 +1105,20 @@ public class ScpManager {
 			}else{
 			  gara.setIdAnac("0");
 			}
-			
+
 			String sqlUffint = "select nomein, cfein, iscuc, cfanac from uffint where uffint.codein = ?";
 			List< ? > itemUffint = new ArrayList<Object>();
 			String cenint = itemTorn.get(2).toString();
-			
+
   			datiUffint = sqlManager.getListVector(sqlUffint, new Object[] {cenint});
   			itemUffint = (List< ? >) datiUffint.get(0);
-  			String iscuc = (String) itemUffint.get(2).toString();
-  			String cfanac = (String) itemUffint.get(3).toString();
+  			String iscuc = itemUffint.get(2).toString();
+  			String cfanac = itemUffint.get(3).toString();
   			String altrisog = "";
   			if (verificaEsistenzaValore(itemTorn.get(3))) {
   			  altrisog = itemTorn.get(3).toString();
             }
-  			
+
   			if("1".equals(iscuc) && ("2".equals(altrisog) || "3".equals(altrisog)) && verificaEsistenzaValore(cfanac)){
   			  gara.setCodiceFiscaleSA(cfanac);//obbligatorio
   			}else{
@@ -1126,25 +1126,25 @@ public class ScpManager {
                 gara.setCodiceFiscaleSA(itemUffint.get(1).toString());//obbligatorio
     			}
   			}
-  			
+
   			if(!"1".equals(genere)){
     			if (verificaEsistenzaValore(itemGara.get(1))) {
     				gara.setIndirizzo(this.truncateString(itemGara.get(1).toString(), 100));
     			}
     			if (verificaEsistenzaValore(itemGara.get(2))) {
-    				gara.setComune(itemGara.get(2).toString());
+    				gara.setComune(this.truncateString(itemGara.get(2).toString(),32));
     			}
     			if (verificaEsistenzaValore(itemGara.get(3))) {
     				gara.setProvincia(itemGara.get(3).toString());
     			}
   			}
-  			
+
   			String uffdet = itemTorn.get(10).toString();
   			if (verificaEsistenzaValore(uffdet)) {
   			  gara.setUfficio(this.getTab1("A1092",uffdet));
   			}
-			
-  			String isAdesione = (String) itemTorn.get(5).toString();
+
+  			String isAdesione = itemTorn.get(5).toString();
   			if("1".equals(isAdesione) && (!"2".equals(altrisog) && !"3".equals(altrisog))){
     			if (verificaEsistenzaValore(itemTorn.get(4))) {
                 gara.setCigAccQuadro(itemTorn.get(4).toString());
@@ -1160,7 +1160,7 @@ public class ScpManager {
                 gara.setTipoProcedura(new Long(3));
               }
               gara.setCentraleCommittenza("2");
-              
+
               List< ? > datiUffintAltrisog = new ArrayList();
               if("2".equals(genere)){
                 datiUffintAltrisog = this.sqlManager.getVector("select nomein, cfein from uffint, garaltsog, gare where codein=cenint and garaltsog.ngara=gare.ngara and gare.codgar1=?", new Object[]{codgar});
@@ -1172,8 +1172,8 @@ public class ScpManager {
                 }
               }
               if(datiUffintAltrisog != null && datiUffintAltrisog.size()>0){
-                String nomein =  (String) SqlManager.getValueFromVectorParam(datiUffintAltrisog, 0).getValue(); 
-                String cfein = (String) SqlManager.getValueFromVectorParam(datiUffintAltrisog, 1).getValue(); 
+                String nomein =  (String) SqlManager.getValueFromVectorParam(datiUffintAltrisog, 0).getValue();
+                String cfein = (String) SqlManager.getValueFromVectorParam(datiUffintAltrisog, 1).getValue();
                 if (verificaEsistenzaValore(nomein)) {
                   gara.setNomeSA(nomein);
                 }
@@ -1184,12 +1184,12 @@ public class ScpManager {
   			}else{//fine altrisog = 2
 			  gara.setSaAgente("2");
   			}
-  			
+
 			if (verificaEsistenzaValore("")) {
 			  //gara.setAltreSA("");
 			}
-			
-			Number valmax = (Number)this.sqlManager.getObject("SELECT VALMAX FROM v_gare_importi WHERE codgar = ?", new Object[] {codgar});
+
+			Number valmax = (Number)this.sqlManager.getObject("SELECT VALMAX FROM v_gare_importi WHERE codgar = ? order by VALMAX desc", new Object[] {codgar});
 			if (verificaEsistenzaValore(valmax)) {
 				gara.setImportoGara(valmax.doubleValue());//obbligatorio
 			}
@@ -1202,40 +1202,40 @@ public class ScpManager {
 			if (verificaEsistenzaValore(itemTorn.get(7))) {
 				gara.setRealizzazione(new Long(itemTorn.get(7).toString()));
 			}
-			
+
 			Date primaPubb = (Date)this.sqlManager.getObject("SELECT MIN(DATPUB) FROM GARATTISCP WHERE CODGAR = ?", new Object[] {codgar});
 			if (!verificaEsistenzaValore(primaPubb)) {
-			  primaPubb = new Date(System.currentTimeMillis());  
+			  primaPubb = new Date(System.currentTimeMillis());
 			}
-			SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");  
-            String currentDate = formatter.format(primaPubb);  
+			SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+            String currentDate = formatter.format(primaPubb);
             if (verificaEsistenzaValore(currentDate)) {
               gara.setPrimaPubblicazioneSCP(currentDate);
             }
-			
+
 			/*
 			if (verificaEsistenzaValore(itemGara.get(30))) {
 				gara.setDurataAccordoQuadro(new Long(itemGara.get(30).toString()));
 			}*/
-            
+
             if (verificaEsistenzaValore(itemTorn.get(9))) {
                 DatiGeneraliTecnicoEntry rup = new DatiGeneraliTecnicoEntry();
                 this.valorizzaTecnico(rup, itemTorn.get(9).toString());//OK
                 gara.setTecnicoRup(rup);//obbligatorio
             }
-            
+
             String uuid = (String)this.sqlManager.getObject("SELECT UUID FROM GARUUID WHERE CODGAR = ? AND TIPRIC = 'SCP'", new Object[] {codgar});
             if (verificaEsistenzaValore(uuid)) {
               gara.setIdRicevuto(new Long(uuid));
             }
-           
+
 			this.valorizzaLotti(gara.getLotti(), codgar,lottoAggiudicazione, genere);//obbligatorio
 		}
 	}
-	
+
 	/**
 	 * Metodo valorizzazione Pubbligazione bando gara
-	 * 
+	 *
 	 * @param pubblicazioneBando
 	 * 			oggetto da valorizzare
 	 * @param codgara
@@ -1290,12 +1290,12 @@ public class ScpManager {
 			if (verificaEsistenzaValore(itemBando.get(9))) {
 				pubblicazioneBando.setPeriodici(new Long(itemBando.get(9).toString()));
 			}
-		} 
+		}
 	}
 	*/
 	/**
 	 * Metodo valorizzazione Dati Lotto
-	 * 
+	 *
 	 * @param lotti
 	 * 			oggetto da valorizzare
 	 * @param codgara
@@ -1306,41 +1306,41 @@ public class ScpManager {
 	 *             SQLException
 	 * @throws ParseException
 	 *             ParseException
-	 * @throws GestoreException 
+	 * @throws GestoreException
 	 */
 	private void valorizzaLotti(final List<PubblicaLottoEntry> lotti,
 			final String codgar,String ngara, String genere)
 	throws SQLException, ParseException, GestoreException {
-	  
+
 		String sqlGARE = "SELECT NGARA, NOT_GAR, CODIGA, IMPSIC, TIPGARG, CRITLICG, LOCINT, CODCIG, CUPPRG FROM GARE WHERE CODGAR1 = ? AND GARE.CODGAR1 != GARE.NGARA";
-		
+
 		List< ? > listaLotti;
 		List< ? > itemLotto = new ArrayList<Object>();
-		
+
 		if(ngara!= null && !"".equals(ngara)){
           sqlGARE+= " and GARE.NGARA = ?";
           listaLotti = sqlManager.getListVector(sqlGARE, new Object[] { codgar,ngara });
         }else{
           listaLotti = sqlManager.getListVector(sqlGARE, new Object[] { codgar });
         }
-		
+
 		if (listaLotti.size() > 0) {
 			for (int i = 0; i < listaLotti.size(); i++) {
 				itemLotto = (List< ? >) listaLotti.get(i);
 				PubblicaLottoEntry lotto = new PubblicaLottoEntry();
 				ngara = itemLotto.get(0).toString();
-				
-				String not_gar = (String) itemLotto.get(1).toString();;
+
+				String not_gar = itemLotto.get(1).toString();;
 				if (verificaEsistenzaValore(not_gar)) {
 				  lotto.setOggetto(this.truncateString(not_gar,1024));//obbligatorio
 				}
-				
+
 				List importi = sqlManager.getVector("select valmax from V_GARE_IMPORTI where ngara = ?", new Object[]{ngara});
 	            Number valmax = (Number) SqlManager.getValueFromVectorParam(importi, 0).getValue();
 				if (verificaEsistenzaValore(valmax)) {
 				    lotto.setImportoLotto(valmax.doubleValue());//obbligatorio
 				}
-				
+
 				if(!"2".equals(genere)){
     				boolean codigaTuttiNumeri = true;
     				for(int indexCodiga = 0; indexCodiga < listaLotti.size(); indexCodiga ++){
@@ -1351,7 +1351,7 @@ public class ScpManager {
     		          }
     				}
     				if(codigaTuttiNumeri){
-    				  String codiga = (String) itemLotto.get(2).toString();;
+    				  String codiga = itemLotto.get(2).toString();;
     				  lotto.setNumeroLotto(new Long(codiga));//obbligatorio
     				}else{
     				  lotto.setNumeroLotto(new Long(i+1));//obbligatorio
@@ -1359,25 +1359,25 @@ public class ScpManager {
 				}else{
 				  lotto.setNumeroLotto(new Long(1));//obbligatorio
 				}
-				
+
 				String cpv = (String)this.sqlManager.getObject("SELECT CODCPV FROM GARCPV WHERE NGARA = ? AND TIPCPV = 1", new Object[] {ngara});
 				if (verificaEsistenzaValore(cpv)) {
 					lotto.setCpv(cpv);
 				}
-				
+
 				Long idTipoProcedura = SqlManager.getValueFromVectorParam(itemLotto, 4).longValue();
 				if(verificaEsistenzaValore(idTipoProcedura)){
-				  
+
     				String procedura= inviaVigilanzaManager.getFromTab2("A1z11", idTipoProcedura,false);
     				if (verificaEsistenzaValore(procedura)) {
     					lotto.setIdSceltaContraente50(new Long(procedura));
     				}
-    				
+
 				}
-				
+
 				List datiTORN = sqlManager.getVector("select tipgen, codnuts from TORN where codgar = ?", new Object[]{codgar});
                 Long tipgen = SqlManager.getValueFromVectorParam(datiTORN, 0).longValue();
-                
+
 				//categoria prevalente
                 String param = ngara;
                 if("3".equals(genere)){
@@ -1389,7 +1389,7 @@ public class ScpManager {
                 String codiceCategoriaPrevalente = null;
                 Long numcla = null;
                 Long tiplavg = null;
-                
+
                 //valorizzo il codice categoria se la gara non è per lavori
                 if(tipgen.intValue()==2){
                   codiceCategoriaPrevalente="FB";
@@ -1410,7 +1410,7 @@ public class ScpManager {
                     lotto.setClasse(classe);
                   }else{
                     //se tiplavg = 1 e la categoria è OG o OS di massimo 5 caratteri tengo il valore preso dalla query, altrimenti setto il codice = AA
-                    if (codiceCategoriaPrevalente == null || codiceCategoriaPrevalente.length()>5 || 
+                    if (codiceCategoriaPrevalente == null || codiceCategoriaPrevalente.length()>5 ||
                         !(codiceCategoriaPrevalente.startsWith("OG") || codiceCategoriaPrevalente.startsWith("OS"))){
                         codiceCategoriaPrevalente="AA";
                         String classe = this.getClasseFromNumcla(new Long(0));
@@ -1433,9 +1433,9 @@ public class ScpManager {
                   }
                 }
                 lotto.setCategoria(codiceCategoriaPrevalente);
-				
+
                 if (verificaEsistenzaValore(tipgen)) {
-                  
+
                   if(tipgen.intValue() == 1){
                     lotto.setTipoAppalto("L");//obbligatorio
                   }
@@ -1446,7 +1446,7 @@ public class ScpManager {
                     lotto.setTipoAppalto("S");//obbligatorio
                   }
 				}
-                
+
                 List gare1Item = this.sqlManager.getVector("SELECT COSTOFISSO,CODCUI FROM GARE1 WHERE NGARA = ?", new Object[] {ngara});
                 String costofisso = (String) SqlManager.getValueFromVectorParam(gare1Item, 0).getValue();
                 Long critlicg = SqlManager.getValueFromVectorParam(itemLotto, 5).longValue();
@@ -1457,49 +1457,49 @@ public class ScpManager {
 				}else if(verificaEsistenzaValore(critlicg) && critlicg.intValue() == 2 && ("".equals(costofisso) || !"1".equals(costofisso))){
 				    lotto.setCriterioAggiudicazione(new Long(3));
 				}
-				
-				String locint = (String) itemLotto.get(6).toString();
+
+				String locint = itemLotto.get(6).toString();
 				if("3".equals(genere)){
 				  locint = (String)this.sqlManager.getObject("SELECT locint FROM GARE WHERE CODGAR1 = ? AND NGARA = CODGAR1", new Object[] {codgar});
 				}
 				if (verificaEsistenzaValore(locint)) {
                   lotto.setLuogoIstat(locint);
                 }
-				
+
 				String codnuts = SqlManager.getValueFromVectorParam(datiTORN, 1).getStringValue();
 				if (verificaEsistenzaValore(codnuts)) {
 					lotto.setLuogoNuts(codnuts);
 				}
-				String codcig = (String) itemLotto.get(7).toString();
+				String codcig = itemLotto.get(7).toString();
 				if (verificaEsistenzaValore(codcig)) {
 					lotto.setCig(codcig);//obbligatorio
 				}
-				String cupprg = (String) itemLotto.get(8).toString();
+				String cupprg = itemLotto.get(8).toString();
 				if (verificaEsistenzaValore(cupprg)){
 					lotto.setCupEsente("2");
 					lotto.setCup(cupprg);
 				}else{
 				  lotto.setCupEsente("1");
 				}
-				
+
 				String codcui = (String) SqlManager.getValueFromVectorParam(gare1Item, 1).getValue();
 				if (verificaEsistenzaValore(codcig)) {
 				  lotto.setCui(codcui);
 				}
-				
+
 				if(tipgen!= null && tipgen.intValue()==1){
 				  this.valorizzaCategorie(lotto.getCategorie(), codgar, ngara, genere);
 				}
 				this.valorizzaCpvSecondari(lotto.getCpvSecondari(), ngara);
 				lotti.add(lotto);
-				
+
 			}
 		}
 	}
 
 	/**
 	 * Metodo valorizzazione Categorie lotto
-	 * 
+	 *
 	 * @param categorie
 	 * 			oggetto da valorizzare
 	 * @param codgara
@@ -1546,10 +1546,10 @@ public class ScpManager {
         categorie.add(categoria);
       }
 	}
-	
+
 	/**
 	 * Metodo valorizzazione Cpv Secondari lotto
-	 * 
+	 *
 	 * @param cpvSecondari
 	 * 			oggetto da valorizzare
 	 * @param codgara
@@ -1582,10 +1582,10 @@ public class ScpManager {
 			}
 		}
 	}
-	
+
 	/**
 	 * Metodo valorizzazione Modalità acquisizione forniture.
-	 * 
+	 *
 	 * @param modalitaAcquisizioneForniture
 	 * 			oggetto da valorizzare
 	 * @param codgara
@@ -1620,10 +1620,10 @@ public class ScpManager {
 			}
 		}
 	}
-	
+
 	/**
 	 * Utility per il controllo dei valori in arrivo.
-	 * 
+	 *
 	 * @param obj Object
 	 * @return Ritorna true se obj e' diversa da null, false altrimenti
 	 */
@@ -1636,7 +1636,7 @@ public class ScpManager {
 		}
 		return esistenza;
 	}
-	
+
 	public String getSiglaTabG_z23 (final String tab2tip) throws SQLException {
 	  String sigla = (String) sqlManager.getObject("select tab2d1 from tab2 where  tab2cod = 'G_z23' AND TAB2TIP = ?", new Object[] {tab2tip});
 	  if(sigla != null){
@@ -1652,7 +1652,7 @@ public class ScpManager {
 	   }
 	   return "";
 	}
-	
+
     public String getClasseFromNumcla (final Long numcla){
       String classe = null;
       if (verificaEsistenzaValore(numcla)) {
@@ -1694,7 +1694,7 @@ public class ScpManager {
       }
       return classe;
     }
-    
+
     private String truncateString(String word, int n){
       if(word.length() > n){
         return word.substring(0,n);
@@ -1702,6 +1702,6 @@ public class ScpManager {
         return word;
       }
     }
-	
+
 }
 

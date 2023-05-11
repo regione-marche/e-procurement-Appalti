@@ -19,13 +19,23 @@
 <c:set var="id" value='${gene:getValCampo(key, "ID")}'/>
 <gene:redefineInsert name="head">
 		<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>
-		<script type="text/javascript" src="${pageContext.request.contextPath}/js/nso-ordini.js"></script>
+		<script type="text/javascript" src="${pageContext.request.contextPath}/js/nso-ordini.js?t=<%=System.currentTimeMillis()%>"></script>
 </gene:redefineInsert>
 
 <%/* Dati generali della gara */%>
 <gene:formScheda entita="NSO_ORDINI" gestisciProtezioni="true"  gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreOrdiniNso">
-
+		<c:if test='${(requestScope.statoOrdine ne 1 && requestScope.statoOrdine ne 2)}'>
+				<gene:redefineInsert name="schedaModifica" />
+				<gene:redefineInsert name="pulsanteModifica" />
+		 </c:if>
 		<gene:redefineInsert name="addToAzioni" >
+			<c:if test='${(requestScope.statoOrdine eq 4 || requestScope.statoOrdine eq 5 || requestScope.statoOrdine eq 6) && requestScope.isPeriodoVariazione eq 1}' >
+				<tr>
+					<td class="vocemenulaterale">
+							<a href="javascript:revocaOrdineNso();" id="menuValidaOrdine" title="Revoca Ordine" tabindex="1510">Revoca Ordine</a>
+					</td>
+				</tr>
+			</c:if>
 			<c:if test="${(requestScope.statoOrdine eq 1) || (requestScope.statoOrdine eq 2)}">
 				<tr>
 					<td class="vocemenulaterale">
@@ -41,6 +51,13 @@
 			<gene:redefineInsert name="schedaModifica" />
 			<gene:redefineInsert name="pulsanteModifica" />
 		</c:if>
+		<c:if test="${requestScope.statoOrdine eq 8}">
+			<%/*
+				se l'ordine è revocato non devo permettere alcuna modifica
+			*/ %>
+			<gene:redefineInsert name="schedaModifica"></gene:redefineInsert>
+			<gene:redefineInsert name="pulsanteModifica"></gene:redefineInsert>
+		</c:if>
 
 		<gene:campoScheda campo="ID" visibile="false"   />
 		<gene:campoScheda campo="CODORD" visibile="false" />
@@ -54,7 +71,8 @@
 			 scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda.jsp","")}'
 			 schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda-popup.jsp","")}'
 			 campi="UFFINT.CODEIN;UFFINT.NOMEIN;UFFINT.VIAEIN;UFFINT.NCIEIN;UFFINT.CITEIN;UFFINT.PROEIN;UFFINT.CAPEIN;UFFINT.CODNAZ"
-			 chiave="NSO_ORDINI_CODEIN_FATTURA" >
+			 chiave="NSO_ORDINI_CODEIN_FATTURA" 
+			 functionId="skip|abilitazione:1" >
 				<gene:campoScheda campo="CODEIN_FATTURA" title="Intestatario della fattura" defaultValue="${requestScope.initCENINT}" />
 				<gene:campoScheda campo="NOMEIN" title="Denominazione" entita="UFFINT" where="NSO_ORDINI.CODEIN_FATTURA=UFFINT.CODEIN" defaultValue="${requestScope.initNOMEIN}" />
 				<gene:campoScheda campo="VIAEIN" title="Via" entita="UFFINT" where="NSO_ORDINI.CODEIN_FATTURA=UFFINT.CODEIN"  />
@@ -115,6 +133,11 @@
   	
   </p>
 </div>
+<div id="nso-dialog-revocation" title="Revoca Ordine NSO" style="display:none">
+			  <p id="nso-dialog-revocation-content">
+			  	Vuoi revocare l&#39;ordine?<br>Questa operazione non si pu&ograve; annullare.
+			  </p>
+			</div>
 
 <gene:javaScript>
 
