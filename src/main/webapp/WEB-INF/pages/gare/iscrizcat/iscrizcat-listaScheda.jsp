@@ -653,7 +653,7 @@
 			var key = "V_ISCRIZCAT_CLASSI.CODGAR=T:" + codiceGara + ";V_ISCRIZCAT_CLASSI.CODIMP=T:" + codiceDitta + ";V_ISCRIZCAT_CLASSI.NGARA=T:" + numeroGara;
 			key+=";V_ISCRIZCAT_CLASSI.CAISIM=T:A;V_ISCRIZCAT_CLASSI.TIPLAVG=N:0" 
 						
-			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/v_iscrizcat_classi/v_iscrizcat_classi-lista.jsp";
+			var href = contextPath + "/ApriPagina.do?href=gare/v_iscrizcat_classi/v_iscrizcat_classi-lista.jsp";
 			href += "&key=" + key;
 			
 			var paginaAttivaWizard = "${paginaAttivaWizard}";

@@ -23,6 +23,9 @@
 	</c:when>
 </c:choose>
 
+<c:set var="iterga" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetITERGAFunction", pageContext, param.codgar)}' />
+<c:set var="isfineconc" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select isfineconc from torn where codgar=?", param.codgar)}'/>
+
 <gene:template file="popup-template.jsp" >
 	<gene:redefineInsert name="gestioneHistory" />
 	<gene:redefineInsert name="addHistory" />
@@ -32,18 +35,25 @@
 	<gene:redefineInsert name="corpo">
 		<%-- la condizione di filtro serva da discriminante per l'aggiornamento del form di ricerca in sessione --%>
   		<gene:formTrova entita="W_INVCOM" filtro="W_INVCOM.IDCOM=W_INVCOM.IDCOM AND 2=2">
-			<gene:campoTrova campo="COMMSGOGG" />		
-			<gene:campoTrova campo="COMPUB" />		
+			<gene:campoTrova campo="COMMSGOGG" />	
+			<c:if test="${param.homepg ne 'true'}">			
+				<gene:campoTrova campo="COMPUB" />
+			</c:if>				
 			<gene:campoTrova campo="${gene:getDBFunction(pageContext,'datetimetodate','COMDATINS')}" computed="true" title="Data inserimento" definizione="D;0;;DATA_ELDA;COMDATINS" />	
-			<gene:campoTrova campo="COMSTATO" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoCOMSTATO"/>		
-			<gene:campoTrova campo="DESINTEST" entita="W_INVCOMDES" where="W_INVCOMDES.IDPRG=W_INVCOM.IDPRG AND W_INVCOMDES.IDCOM=W_INVCOM.IDCOM" title="Destinatario"/>		
-			<gene:campoTrova campo="DESMAIL" entita="W_INVCOMDES" where="W_INVCOMDES.IDPRG=W_INVCOM.IDPRG AND W_INVCOMDES.IDCOM=W_INVCOM.IDCOM" title="Mail destinatario" />
+			<gene:campoTrova campo="COMSTATO" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoCOMSTATO"/>
+			<c:if test="${iterga ne '9' || isfineconc eq '1'}">
+				<gene:campoTrova campo="DESINTEST" entita="W_INVCOMDES" where="W_INVCOMDES.IDPRG=W_INVCOM.IDPRG AND W_INVCOMDES.IDCOM=W_INVCOM.IDCOM" title="Destinatario"/>
+				<gene:campoTrova campo="DESMAIL" entita="W_INVCOMDES" where="W_INVCOMDES.IDPRG=W_INVCOM.IDPRG AND W_INVCOMDES.IDCOM=W_INVCOM.IDCOM" title="Mail destinatario" />
+			</c:if>
 			<c:if test="${integrazioneWSDM =='1'}">
 				<gene:campoTrova campo="COMNUMPROT" />
 				<gene:campoTrova campo="${gene:getDBFunction(pageContext,'datetimetodate','COMDATPROT')}" computed="true" title="Data protocollo" definizione="D;0;;DATA_ELDA;COMDATPROT" />	
 			</c:if>	
-			<gene:campoTrova campo="COMMODELLO" />
-			<input type="hidden" name="integrazioneWSDM" id="integrazioneWSDM" value="${integrazioneWSDM}" />	
+			<c:if test="${param.homepg ne 'true'}">	
+				<gene:campoTrova campo="COMMODELLO" />
+			</c:if>
+			<gene:campoTrova campo="COMETICH" title="Etichetta" />
+			<input type="hidden" name="integrazioneWSDM" id="integrazioneWSDM" value="${integrazioneWSDM}" />
 		</gene:formTrova>
 	</gene:redefineInsert>
 	

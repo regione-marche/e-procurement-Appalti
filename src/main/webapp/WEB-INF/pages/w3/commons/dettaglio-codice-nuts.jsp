@@ -104,7 +104,7 @@
 		
 		function reloadCPVNUTS() {
 			bloccaRichiesteServer();
-			document.location.href="${pageContext.request.contextPath}/ApriPagina.do?" + csrfToken + "&href=w3/commons/dettaglio-codice-nuts.jsp&modo=MODIFICA&campo=${param.campo}&valore="+getValue("CODICE");
+			document.location.href="${pageContext.request.contextPath}/ApriPagina.do?href=w3/commons/dettaglio-codice-nuts.jsp&modo=MODIFICA&campo=${param.campo}&valore="+getValue("CODICE");
 		}
 		
 		function conferma() {

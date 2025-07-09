@@ -47,7 +47,7 @@
 	</c:if>
 </c:if>
 
-<c:if test="${genere ne '2' || bloccoTipgarg eq 'true'}">
+<c:if test="${genere ne '2' || bloccoTipgarg eq 'true' || statoStipula eq 6}">
 	<gene:redefineInsert name="schedaModifica" />
 	<gene:redefineInsert name="pulsanteModifica" />		
 </c:if>
@@ -67,7 +67,8 @@
 	<c:set var="nomeApplicativo" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.sil.pg.vigilanza.nomeApplicativo")}'/>
 </c:if>
 
-
+<c:set var="sql" value="select vernpa from torn where codgar=?"/>
+<c:set var="verNPA" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, sql, codgar)}'/>
 
 <gene:formScheda entita="G1STIPULA" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreStipulaLotti">
 	
@@ -80,12 +81,12 @@
 	</jsp:include>
 	
 	<gene:redefineInsert name="addToAzioni" >
-	<c:if test='${modo eq "VISUALIZZA"}'>
+	<c:if test='${empty verNPA and modo eq "VISUALIZZA"}'>
 		<c:choose>
 		<c:when test='${isCigAbilitato eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InviaDatiCIG")}'>
 		</c:when>
 		<c:otherwise>
-			<c:if test='${isSimogAbilitato eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.RichiestaCIG")}'>
+			<c:if test='${richiestaApprovazioneFirma ne "1" and isSimogAbilitato eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.RichiestaCIG") and statoStipula ne 6}'>
 					<tr>
 						<td class="vocemenulaterale" >
 							<c:if test='${isNavigazioneDisattiva ne "1"}'>
@@ -99,32 +100,29 @@
 		</c:otherwise>
 		</c:choose>
 		
-		<c:if test='${modo eq "VISUALIZZA" and !empty integrazioneVigilanza and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.InviaDatiVigilanza")}'>
-	  <tr>    
-	    <td class="vocemenulaterale">
-		      	<c:set var="voceMenu" value="Invia dati a Vigilanza"/>
-		      	<c:if test="${!empty nomeApplicativo and nomeApplicativo!=''}">
-		      		<c:set var="voceMenu" value="Invia dati a ${nomeApplicativo }"/>
-		      	</c:if>
-		      	<c:if test='${isNavigazioneDisattiva ne "1"}'>
-						<a href="javascript:popupInviaVigilanza('${codgar}');" title="${voceMenu }" tabindex="1512">
-				</c:if>
-				  ${voceMenu }
-				<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>			  
-		</td>
-	</tr>
+		<c:if test='${richiestaApprovazioneFirma ne "1" and modo eq "VISUALIZZA" and !empty integrazioneVigilanza and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.InviaDatiVigilanza") and statoStipula ne 6}'>
+		  <tr>    
+		    <td class="vocemenulaterale">
+			      	<c:set var="voceMenu" value="Invia dati a Vigilanza"/>
+			      	<c:if test="${!empty nomeApplicativo and nomeApplicativo!=''}">
+			      		<c:set var="voceMenu" value="Invia dati a ${nomeApplicativo }"/>
+			      	</c:if>
+			      	<c:if test='${isNavigazioneDisattiva ne "1"}'>
+							<a href="javascript:popupInviaVigilanza('${codgar}');" title="${voceMenu }" tabindex="1512">
+					</c:if>
+					  ${voceMenu }
+					<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>			  
+			</td>
+		  </tr>
 		</c:if>
-		
 		
 	</c:if>
 	</gene:redefineInsert>
 
 	<gene:campoScheda campo="ID" visibile="false" />
 	<c:choose>
-		<c:when test="${genere ne '2' || bloccoTipgarg eq 'true'}">
-			<gene:callFunction
-				obj="it.eldasoft.sil.pg.tags.funzioni.GestioneLottiStipulaFunction"
-				parametro='${whereLottiAggiudicati}' />
+		<c:when test="${genere ne '2' || bloccoTipgarg eq 'true' || statoStipula eq 6}">
+			${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GestioneLottiStipulaFunction", pageContext, whereLottiAggiudicati, idStipula,statoStipula)}
 			<jsp:include page="/WEB-INF/pages/commons/interno-scheda-multipla.jsp">
 				<jsp:param name="entita" value='GARE' />
 				<jsp:param name="nomeAttributoLista" value='gare' />
@@ -132,10 +130,11 @@
 				<jsp:param name="jspDettaglioSingolo"
 					value="/WEB-INF/pages/gare/g1stipula/g1stipula-pg-stipula-dettaglio.jsp" />
 				<jsp:param name="arrayCampi"
-					value="'GARE_NUMGARA_','GARE_CODIGA_','TORN_NUMAVCP_','GARE_CODCIG_','GARE_NOTGAR_','GARE_IAGGIU_','GARE1_IMPRIN_','GARE1_IMPALTRO_'" />
+					value="'GARE_NUMGARA_','GARE_CODIGA_','TORN_NUMAVCP_','GARE_CODCIG_','GARE_NOTGAR_','GARE_IAGGIU_','GARE1_IMPRIN_','GARE1_IMPALTRO_','TORN_IDAPPALTONPA_'" />
 				<jsp:param name="titoloSezione" value="Lotto" />
 				<jsp:param name="usaContatoreLista" value="true" />
 				<jsp:param name="descEntitaVociLink" value="Gara di stipula" />
+				<jsp:param name="verNPA" value="${verNPA}" />
 			</jsp:include>
 		</c:when>
 		<c:otherwise>
@@ -147,7 +146,8 @@
 				<td colspan="2"><b>Lotto 1</b></td>
 			</gene:campoScheda>
 			<gene:campoScheda entita="GARE" campo="NGARA" where="GARE.NGARA='${ngara}'" title="Codice lotto" modificabile="false"/>
-			<gene:campoScheda entita="TORN" campo="NUMAVCP" where="TORN.CODGAR='${codgar}'" modificabile="false"/>
+			<gene:campoScheda entita="TORN" campo="NUMAVCP" where="TORN.CODGAR='${codgar}'" visibile="${empty verNPA}" modificabile="false"/>
+			<gene:campoScheda entita="TORN" campo="IDAPPALTONPA" where="TORN.CODGAR='${codgar}'" visibile="${not empty verNPA}" modificabile="false"/>
 			<gene:campoScheda entita="GARE" campo="CODCIG" where="GARE.NGARA='${ngara}'" modificabile="false"/>
 			<gene:campoScheda campo="ESENTE_CIG" title="Esente CIG?" computed="true" campoFittizio="true" definizione="T10;;;SN;" value="2" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.CODCIG") }' modificabile="false"/>
 			<gene:campoScheda campo="STATO_SIMOG" title="Effettuata richiesta CIG?"
@@ -211,13 +211,16 @@
 					if (codcig.indexOf("#") == 0 || codcig.indexOf("$") == 0 || codcig.indexOf("NOCIG") == 0) {
 						setValue("ESENTE_CIG", "Si", false);
 						showObj("rowTORN_NUMAVCP", false);
+						showObj("rowTORN_IDAPPALTONPA", false);
 					} else {
 						setValue("ESENTE_CIG", "No", false);
 						showObj("rowTORN_NUMAVCP", true);
+						showObj("rowESENTE_CIG", false);
 					}
 				} else {
 					setValue("ESENTE_CIG", "No", false);
 					showObj("rowTORN_NUMAVCP", true);
+					showObj("rowESENTE_CIG", false);
 				}
 			}
 			
@@ -250,7 +253,7 @@
 	   	</c:choose>
 	   	comando += "&nomeApplicativo=" +  nomeApplicativo ;
 	comando +="&genereGara=${genere}";
-		document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&"+comando;
+		document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?" + comando;
 	}
 </gene:javaScript>
 

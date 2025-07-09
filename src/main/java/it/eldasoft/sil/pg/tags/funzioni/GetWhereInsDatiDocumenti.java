@@ -68,7 +68,7 @@ public class GetWhereInsDatiDocumenti extends AbstractFunzioneTag {
       }
 
       where="(tipogara = " + tiplavLong + " or tipogara is null) and " +
-        "(tipoproc = " + tipgargLong + " or tipoproc is null) and (gartel = " + gartel + " or gartel is null)  and " +
+        "(tipoproc = " + tipgargLong + " or tipoproc is null) and (gartel = '" + gartel + "' or gartel is null)  and " +
         "(critlic = " + critlicLong + " or critlic is null or critlic=0) and gruppo = " + gruppoLong;
       if(busta != null && !"".equals(busta)){
     	  where = where + " and busta = " + bustaLong;

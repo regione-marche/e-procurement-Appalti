@@ -175,6 +175,8 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 			<gene:campoScheda campo="ANNOFF"  visibile='${modo eq "MODIFICA" || (modo ne "MODIFICA" && datiRiga.DITG_INVOFF ne 2 && datiRiga.DITG_AMMGAR eq 2)}'/>
 			
 			<gene:campoScheda campo="ALTNOT" />
+
+			<gene:campoScheda campo="CODCNEL"/>
 			
 			<c:if test='${modo eq "MODIFICA"}'>
 				<gene:fnJavaScriptScheda funzione='checkDataRicezioneOfferta("#DITG_DATOFF#")' elencocampi='DITG_DATOFF' esegui="false"/>
@@ -236,7 +238,7 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 	</c:forEach>
 		
 		var arrayCampi = new Array("DITG_NPROGG", "DITG_DINVIG", "DITG_INVOFF", "DITG_NPROTG",
-						"DITG_DATOFF","DITG_NPROFF","DITG_ORAOFF","DITG_MEZOFF","DITG_AMMGAR","DITG_MOTIES","DITG_ANNOFF");
+						"DITG_DATOFF","DITG_NPROFF","DITG_ORAOFF","DITG_MEZOFF","DITG_AMMGAR","DITG_MOTIES","DITG_ANNOFF","DITG_CODCNEL");
 		
 		<c:choose>
 		<c:when test='${modoAperturaScheda eq "MODIFICA"}' >
@@ -390,7 +392,7 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 						
 			var arrayCampiModificabili = new Array("DITG_NPROTG", "DITG_DINVIG", "DITG_NPROFF",
 							 "DITG_DATOFF", "DITG_ORAOFF", "DITG_MEZOFF", "DITG_AMMGAR", "DITG_MOTIES", "DITG_ANNOFF",
-							 "DITG_TIPRIN");
+							 "DITG_TIPRIN","DITG_CODCNEL");
 
 			for(var i=0; i < arrayCampiModificabili.length; i++){
 				winOpener.setValue(arrayCampiModificabili[i] + "_${param.indiceRiga}", getValue(arrayCampiModificabili[i]));

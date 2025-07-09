@@ -21,6 +21,7 @@ import it.eldasoft.gene.tags.functions.GeneralTagsFunction;
 import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityStringhe;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * Funzione che in base allo step di gara in cui mi trovo
@@ -69,9 +70,13 @@ public class GetBusteDocumentazioneFunction extends AbstractFunzioneTag {
         }
       }
     }
-    String whereBusteAttive = entita + "." + campo + " is null";
-    if(!"".equals(inclause)){
-      whereBusteAttive = entita + "." + campo + " is null OR " + entita + "." + campo + " in (" + inclause + ")";
+
+    String whereBusteAttive = "";
+    if(StringUtils.isNotEmpty(entita)) {
+      whereBusteAttive = entita + "." + campo + " is null";
+      if (!"".equals(inclause)) {
+        whereBusteAttive = entita + "." + campo + " is null OR " + entita + "." + campo + " in (" + inclause + ")";
+      }
     }
     pageContext.getSession().setAttribute("whereBusteAttiveWizard", whereBusteAttive);
     return whereBusteAttive;

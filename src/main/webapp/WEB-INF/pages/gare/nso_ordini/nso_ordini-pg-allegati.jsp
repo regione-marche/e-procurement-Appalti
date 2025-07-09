@@ -143,12 +143,12 @@
 		
 		
 			function schedaConfermaUploadMultiplo(){
-				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 					schedaConferma();
 			}
 			
 			function schedaAnnullaUploadMultiplo(){
-				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 				schedaAnnulla();
 			}
 
@@ -169,7 +169,7 @@
 
 			function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 			}
             
 		</gene:javaScript>

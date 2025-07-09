@@ -19,10 +19,10 @@
 
 <gene:template file="lista-template.jsp" gestisciProtezioni="true" idMaschera="W_INVCOM-lista-Da-Portale" schema="GENEWEB">
 	<c:if test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.V_GARE_ELEDITTE-lista.ApriGare") && param.tipo eq 1}' >
-		<c:set var="where" value="W_INVCOM.IDPRG='PA' and W_INVCOM.COMSTATO=5 and (COMTIPO in ('FS5','FS6') or (COMTIPO in ('FS2','FS4') and exists (select codice from v_gare_eleditte where codice=comkey2)))"/>
+		<c:set var="where" value="W_INVCOM.IDPRG='PA' and W_INVCOM.COMSTATO='5' and (COMTIPO in ('FS5','FS6') or (COMTIPO in ('FS2','FS4') and exists (select codice from v_gare_eleditte where codice=comkey2)))"/>
 		<c:if test="${profiloUtente.abilitazioneGare ne 'A' }" >
 			<c:set var="filtroSubstr" value='${gene:getDBFunction(pageContext,"SUBSTR", "codgar;2;21")}' />
-			<c:set var="where" value="W_INVCOM.IDPRG='PA' and W_INVCOM.COMSTATO=5 and (COMTIPO in ('FS5','FS6') or (COMTIPO='FS2' and exists (select codice from v_gare_eleditte where codice=comkey2) and exists (select codgar from g_permessi where syscon=${profiloUtente.id } and autori=1 and comkey2 = ${filtroSubstr }))"/>
+			<c:set var="where" value="W_INVCOM.IDPRG='PA' and W_INVCOM.COMSTATO='5' and (COMTIPO in ('FS5','FS6') or (COMTIPO='FS2' and exists (select codice from v_gare_eleditte where codice=comkey2) and exists (select codgar from g_permessi where syscon=${profiloUtente.id } and autori=1 and comkey2 = ${filtroSubstr }))"/>
 			<c:set var="where" value="${where } or (COMTIPO='FS4' and exists (select codice from v_gare_eleditte where codice=comkey2) and exists (select codgar from g_permessi where syscon=${profiloUtente.id } and autori=1 and comkey2 = ${filtroSubstr })))"/>
 		</c:if>
 		<c:if test="${not empty sessionScope.uffint}" >
@@ -32,10 +32,10 @@
 		<c:set var="titoloCampo" value='Elenco' />
 	</c:if>
 	<c:if test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.V_GARE_CATALDITTE-lista.ApriGare") && param.tipo eq 1}' >
-		<c:set var="where" value="W_INVCOM.IDPRG='PA' and W_INVCOM.COMSTATO=5 and (COMTIPO in ('FS5','FS6') or (COMTIPO in ('FS2','FS4') and exists (select codice from v_gare_catalditte where codice=comkey2)))"/>
+		<c:set var="where" value="W_INVCOM.IDPRG='PA' and W_INVCOM.COMSTATO='5' and (COMTIPO in ('FS5','FS6') or (COMTIPO in ('FS2','FS4') and exists (select codice from v_gare_catalditte where codice=comkey2)))"/>
 		<c:if test="${profiloUtente.abilitazioneGare ne 'A' }" >
 			<c:set var="filtroSubstr" value='${gene:getDBFunction(pageContext,"SUBSTR", "codgar;2;21")}' />
-			<c:set var="where" value="W_INVCOM.IDPRG='PA' and W_INVCOM.COMSTATO=5 and (COMTIPO in ('FS5','FS6') or (COMTIPO='FS2' and exists (select codice from v_gare_catalditte where codice=comkey2) and exists (select codgar from g_permessi where syscon=${profiloUtente.id } and autori=1 and comkey2 = ${filtroSubstr }))"/>
+			<c:set var="where" value="W_INVCOM.IDPRG='PA' and W_INVCOM.COMSTATO='5' and (COMTIPO in ('FS5','FS6') or (COMTIPO='FS2' and exists (select codice from v_gare_catalditte where codice=comkey2) and exists (select codgar from g_permessi where syscon=${profiloUtente.id } and autori=1 and comkey2 = ${filtroSubstr }))"/>
 			<c:set var="where" value="${where } or (COMTIPO='FS4' and exists (select codice from v_gare_catalditte where codice=comkey2) and exists (select codgar from g_permessi where syscon=${profiloUtente.id } and autori=1 and comkey2 = ${filtroSubstr })))"/>
 		</c:if>
 		<c:if test="${not empty sessionScope.uffint}" >
@@ -45,11 +45,11 @@
 		<c:set var="titoloCampo" value='Catalogo' />
 	</c:if>
 	<c:if test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.AcquisiciRegistrazioniPortale") && param.tipo eq 2}' >
-		<c:set var="where" value="W_INVCOM.IDPRG='PA' and W_INVCOM.COMSTATO=5 and COMTIPO in ('FS1')"/>
+		<c:set var="where" value="W_INVCOM.IDPRG='PA' and W_INVCOM.COMSTATO='5' and COMTIPO in ('FS1')"/>
 		<gene:setString name="titoloMaschera" value="Lista richieste registrazione" />
 	</c:if>
 	<c:if test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.AcquisisciAggiornamentiPortale") && param.tipo eq 3}' >
-		<c:set var="where" value="W_INVCOM.IDPRG='PA' and W_INVCOM.COMSTATO=5 and COMTIPO in ('FS5','FS6')"/>
+		<c:set var="where" value="W_INVCOM.IDPRG='PA' and W_INVCOM.COMSTATO='5' and COMTIPO in ('FS5','FS6')"/>
 		<gene:setString name="titoloMaschera" value="Lista richieste aggiornamento anagrafico" />
 	</c:if>
 	
@@ -84,7 +84,7 @@
 	<gene:javaScript>
 		function visualizzaElenco(elenco){
 			var chiave = "V_GARE_ELEDITTE.CODGAR=T:$" + elenco;
-			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/gare/gare-scheda.jsp";
+			var href = contextPath + "/ApriPagina.do?href=gare/gare/gare-scheda.jsp";
 			href += "&key=" + chiave;
 			//Viene aperta direttamente la pagina "Iscrizione operatori economici"
 			<c:choose>

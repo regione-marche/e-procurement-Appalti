@@ -399,7 +399,7 @@ $(window).on("load", function () {
 						if (_r == 0 && _w == 0 && _x == 0) {
 							$.ajax({
 								  "async": false,
-								  "url": "SetPermessiStipula.do?operation=DELETE&syscon=" + _syscon + "&id=" + $("#id").val()
+								  "url": "SetPermessiStipula.do?operation=DELETE&syscon=" + _syscon + "&id=" + $("#id").val() + "&codstipula=" + $("#codstipula").val()
 							});
 						}
 						
@@ -417,7 +417,7 @@ $(window).on("load", function () {
 							}
 							$.ajax({
 								"async": false,
-								"url": "SetPermessiStipula.do?operation=INSERTUPDATE&syscon=" + _syscon + "&id=" + $("#id").val() + "&autori=" + _autori + "&propri=" + _propri
+								"url": "SetPermessiStipula.do?operation=INSERTUPDATE&syscon=" + _syscon + "&id=" + $("#id").val() + "&autori=" + _autori + "&propri=" + _propri + "&codstipula=" + $("#codstipula").val()
 							});
 						}
 					}

@@ -143,7 +143,7 @@
 	}
 	
 	function scaricaModello(){
-		var href="${contextPath}/pg/ExportDitteGara.do?"+csrfToken;
+		var href="${contextPath}/pg/ExportDitteGara.do";
 		document.location.href=href;
 	}
 -->
@@ -314,7 +314,7 @@
 	}
 
 	function scaricaModello(){
-		var href="${contextPath}/pg/ExportDitteGara.do?"+csrfToken;
+		var href="${contextPath}/pg/ExportDitteGara.do";
 		document.location.href=href;
 	}
 

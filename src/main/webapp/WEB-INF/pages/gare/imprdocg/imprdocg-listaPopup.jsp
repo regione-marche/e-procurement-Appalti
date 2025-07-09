@@ -220,7 +220,7 @@
 					tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
 					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
 					var nomeCodificato = encodeURIComponent(dignomdoc);
-					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + nomeCodificato;
+					document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + nomeCodificato;
 				}
 			</c:when>
 			<c:otherwise>
@@ -256,7 +256,7 @@
 					tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
 					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
 					var nomeCodificato = encodeURIComponent(dignomdoc);
-					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + nomeCodificato;
+					document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + nomeCodificato;
 				}
 			</c:otherwise>
 		</c:choose>

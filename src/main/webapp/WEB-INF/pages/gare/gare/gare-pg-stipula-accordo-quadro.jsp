@@ -164,7 +164,7 @@
 	function archivioImpresaAggDef(){
 		var codiceImpresa = getValue("GARE_DITTA");
 		var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href;
+		document.location.href = contextPath + "/ApriPagina.do?" + href;
 	}
 	
 	$('#rowLinkAddGARCOMPREQ td').parent().prepend($("<td>"));
@@ -205,9 +205,9 @@
 			
 			if (newRidiso != oldRidiso) {
 				if (newRidiso==1) {
-					importoCauzione = importoCauzione / 2;
+					importoCauzione = importoCauzione * (1-0.3);//riduzione del 30%  (prima 50%) - DLgs 36-2023 
 				}else{ 
-					importoCauzione = importoCauzione * 2;
+					importoCauzione = importoCauzione / (1-0.3);
 				}
 			}
 			ridisoPrec[indice] = newRidiso;
@@ -218,7 +218,7 @@
 		
 		function documentiAssociatiGarecont(){
 			var keys = "GARECONT.NGARA=T:"+getValue("GARECONT_NGARA")+";GARECONT.NCONT=N:"+${ncont};
-			var href = contextPath+'/ListaDocumentiAssociati.do?'+csrfToken+'&metodo=visualizza&entita=GARECONT&valori='+keys;
+			var href = contextPath+'/ListaDocumentiAssociati.do?metodo=visualizza&entita=GARECONT&valori='+keys;
 		document.location.href = href;
 	}
 		

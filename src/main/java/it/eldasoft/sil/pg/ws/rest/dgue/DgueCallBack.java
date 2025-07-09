@@ -182,7 +182,8 @@ public class DgueCallBack {
       if(iddocdig != null && !"".equals(iddocdig)) {
         SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager", session.getServletContext(), SqlManager.class);
         Long countDocument = (Long) sqlManager.getObject("select count(*) from documgara where codgar = ? and idprg = ? and iddocdg = ? and idstampa = ? ",new Object [] {codice, idprg, iddocdig,"DGUE"});
-        if(countDocument>0) {
+        Long countDocumentNPA = (Long) sqlManager.getObject("select count(*) from g1npascheda, g1npaform where codgar = ? and g1npaform.id = g1npascheda.idform and idprg_espd = ? and iddoc_espd = ?",new Object [] {codice, idprg, iddocdig});
+        if(countDocument>0 || countDocumentNPA > 0) {
           FileAllegatoManager fam = (FileAllegatoManager) UtilitySpring.getBean("fileAllegatoManager", sc, FileAllegatoManager.class);
           BlobFile lf = fam.getFileAllegato(idprg, Long.valueOf(iddocdig));
           if(lf!=null) { 
@@ -233,9 +234,7 @@ public class DgueCallBack {
       if(t.getOfflot()!=null) {
         pg.setCodiceOffertePresentate(t.getOfflot().toString());
       }
-      Integer maxLottiOfferta = t.getNgadit();
-      Integer maxLottiAggiudicabili = t.getNofdit();
-      
+
       pg.setCodiceGara(StringUtils.removeStart(codice, "$"));// - con $ o senza $ ? -> senza dollaro
       pg.setCodiceANAC(t.getNumavcp());
       
@@ -295,16 +294,39 @@ public class DgueCallBack {
         }
       }
       pg.setLotti(lotti);
-      
 
-      if(maxLottiOfferta==null)
+
+      Integer maxLottiOfferta = null;
+      Integer maxLottiAggiudicabili = null;
+      Integer offlot = t.getOfflot();
+      if (offlot != null) {
+        switch (offlot) {
+          case 1:
+            maxLottiOfferta = 1;
+            maxLottiAggiudicabili = 1;
+            break;
+          case 2:
+            maxLottiOfferta = t.getNofdit();
+            maxLottiAggiudicabili = t.getNgadit();
+            break;
+          case 3:
+            maxLottiOfferta = lotti.size();
+            maxLottiAggiudicabili = t.getNgadit();
+            break;
+        }
+      }
+      if(lotti.size()==1)
         maxLottiOfferta=lotti.size();
-      if(maxLottiAggiudicabili==null)
+      if(lotti.size()==1)
         maxLottiAggiudicabili=lotti.size();
-      
-      pg.setMaxLottiOfferta(maxLottiOfferta);
-      pg.setMaxLottiAggiudicabili(maxLottiAggiudicabili);
-      
+
+      if (maxLottiOfferta != null) {
+        pg.setMaxLottiOfferta(maxLottiOfferta);
+      }
+      if (maxLottiAggiudicabili != null) {
+        pg.setMaxLottiAggiudicabili(maxLottiAggiudicabili);
+      }
+
       logger.debug("proceduraScelta: "+proceduraScelta);
       InviaVigilanzaManager inviaVigilanzaManager = (InviaVigilanzaManager) UtilitySpring.getBean("inviaVigilanzaManager", sc, InviaVigilanzaManager.class);
       proceduraScelta = inviaVigilanzaManager.getFromTab2("A1z11", Long.valueOf(proceduraScelta),false);

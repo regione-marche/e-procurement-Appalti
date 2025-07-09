@@ -61,7 +61,7 @@
 						      <tr>
 						      <td class="vocemenulaterale">
 							      	<c:if test='${isNavigazioneDisattiva ne "1" }'>
-											<a href="javascript:impostaGaraNonAggiudicata('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','${datiRiga.GARE_ESINEG}','${datiRiga.GARE_DATNEG}','${datiRiga.GARE1_NPANNREVAGG}');" title="Imposta lotto non aggiudicato" tabindex="1507">
+											<a href="javascript:impostaGaraNonAggiudicata('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','${datiRiga.GARE_ESINEG}','${datiRiga.GARE_DATNEG}','${datiRiga.GARE1_NPANNREVAGG}','${datiRiga.GARE1_GIUSTNEG}');" title="Imposta lotto non aggiudicato" tabindex="1507">
 									</c:if>
 									  Imposta lotto non aggiudicato
 									<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>			  
@@ -93,6 +93,7 @@
 					<gene:campoScheda campo="NGARA" visibile="false" />
 					<gene:campoScheda campo="CODGAR1" visibile="false" />
 					<gene:campoScheda campo="ESINEG" visibile="false" />
+					<gene:campoScheda campo="GIUSTNEG" entita="GARE1" where="GARE1.NGARA = GARE.NGARA" visibile="false" />
 					<gene:campoScheda campo="DATNEG" visibile="false" />
 					<gene:campoScheda campo="NPANNREVAGG" entita="GARE1" where="GARE1.NGARA = GARE.NGARA" visibile="false" />
 					

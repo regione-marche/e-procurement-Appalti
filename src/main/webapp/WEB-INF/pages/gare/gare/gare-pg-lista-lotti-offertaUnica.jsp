@@ -82,7 +82,9 @@
 						</td>
 					</tr>
 				</gene:redefineInsert>
-				
+
+				<c:set var="gestioneNonAggFacilitata" value="${activePage eq 9}"/>
+
 				<gene:campoLista title="Opzioni" width="50">
 						
 				<c:if test='${currentRow >= 0}'>
@@ -92,6 +94,9 @@
 							<gene:PopUpItem title="Apertura offerte e calcolo aggiudicazione del lotto" href="javascript:aperturaOfferte()" />
 							<c:set var="link" value="javascript:chiaveRiga='${chiaveRigaJava}';aperturaOfferte();" />
 						</c:if>
+						<c:if test='${gestioneNonAggFacilitata and gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.GetNumeroDitteAmmesseFunction", pageContext, datiRiga.GARE_NGARA, "false") eq 0 and gene:checkProtFunz(pageContext, "MOD","MOD") and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ImpostaGaraNonAggiud")}'>
+							<gene:PopUpItem title="Imposta lotto non aggiudicato" href="javascript:apriPopupImpostaLottoNonAggiudicato('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','${datiRiga.GARE_ESINEG}','${datiRiga.GARE_DATNEG}','${datiRiga.GARE1_NPANNREVAGG}','${datiRiga.GARE1_GIUSTNEG}')" />
+						</c:if>
 					</gene:PopUp>
 				</c:if>
 				</gene:campoLista>
@@ -100,12 +105,20 @@
 				<gene:campoLista campo="CODCIG" headerClass="sortable" />
 				<gene:campoLista campo="NOT_GAR" headerClass="sortable"/>
 				<gene:campoLista campo="IMPAPP" width="120" headerClass="sortable"  />
+				<c:if test="${gestioneNonAggFacilitata}">
+					<gene:campoLista campo="NDITTEAMM" width="60" title="N.ditte" campoFittizio="true" headerClass="sortable" definizione="N10;;;;" >
+						${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.GetNumeroDitteAmmesseFunction", pageContext, datiRiga.GARE_NGARA, "false")}
+					</gene:campoLista>
+				</c:if>
 				<gene:campoLista campo="FASGAR"  width="150" headerClass="sortable" />
 				<gene:campoLista campo="MODLICG"  visibile="false" />
 				<gene:campoLista campo="CODGAR1"  visibile="false" />
 				<gene:campoLista campo="VALTEC"  entita = "GARE1" where= "GARE1.NGARA = GARE.NGARA" visibile="false" />
+				<gene:campoLista campo="NPANNREVAGG" entita = "GARE1" visibile="false" />
+				<gene:campoLista campo="GIUSTNEG" entita = "GARE1" visibile="false" />
 				<gene:campoLista campo="ESINEG" visibile="false" />
-				<gene:campoLista title="Lotto annullato?" width="50" ordinabile="false" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.ESINEG")}'>
+				<gene:campoLista campo="DATNEG" visibile="false" />
+				<gene:campoLista campo="LOTTOANN" campoFittizio="true" definizione="T2;;;;" title="Lotto non aggiud.?" width="70" ordinabile="false" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.ESINEG")}'>
 				
 					<c:choose>
 						<c:when test="${not empty datiRiga.GARE_ESINEG}">
@@ -124,6 +137,28 @@
 
 <gene:javaScript>
 	function aperturaOfferte(){
-		document.location.href=contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/gare/gare-pg-aperturaOffAggiudProvLotti.jsp&key=" + chiaveRiga + "&paginaFasiGara=aperturaOffAggProvLottoOffUnica&LottoplicoUnico=true&logAccessoFasiGara=1&idconfi=${idconfi}";
+		document.location.href=contextPath + "/ApriPagina.do?href=gare/gare/gare-pg-aperturaOffAggiudProvLotti.jsp&key=" + chiaveRiga + "&paginaFasiGara=aperturaOffAggProvLottoOffUnica&LottoplicoUnico=true&logAccessoFasiGara=1&idconfi=${idconfi}";
 	}
+
+	<c:if test="${gestioneNonAggFacilitata}">
+	$(document).ready(function() {
+		$('[id^="colLOTTOANN_"]').each(function(){
+			objId = this.id;
+			numeroRiga = objId.substr(objId.lastIndexOf("_") + 1);
+			if ($('#' + objId).text() == 'Si') {
+				$('#colGARE_FASGAR_' + numeroRiga).text('');
+			}
+		});
+	});
+
+	function apriPopupImpostaLottoNonAggiudicato(ngara,codgar1,esineg,datneg,npannrevagg,giustneg) {
+		if (giustneg == '') {giustneg = "4";}
+		if (esineg == '') {esineg = 5;}
+		if (datneg == '') {datneg = new Date().toLocaleDateString("it-IT");}
+		var href="href=gare/commons/popup-ImpostaGaraNonAggiudicata.jsp&ngara=" + ngara + "&codgar1=" + codgar1 + "&esineg=" + esineg + "&datneg=" + datneg + "&npannrevagg=" + npannrevagg + "&giustneg=" + giustneg;
+		href+="&isLottoOffUnica=Si";
+		openPopUpCustom(href, "impostaGaraNonAggiudicata", 850, 400, "yes", "yes");
+	}
+	</c:if>
+
 </gene:javaScript>

@@ -3,6 +3,7 @@ package it.eldasoft.sil.w3.web.struts;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import javax.servlet.ServletException;
@@ -16,6 +17,7 @@ import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 
 import it.avlp.simog.massload.xmlbeans.SchedaType;
+import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.commons.web.struts.DispatchActionBaseNoOpzioni;
@@ -140,12 +142,17 @@ public class ConfrontaCIGAction extends DispatchActionBaseNoOpzioni {
 		String messageKey = null;
 
 	    boolean rpntFailed = false;
+	    String evento = "CONFRONTA_DATI";
+        String messaggioBaseResponse="Risposta SIMOG confronto dati";
+        String riferimento = "";
+        String oggEvento = null;
+        String errore = null;
 
 		try {
 			String cig = request.getParameter("cig");
 			Long numgara = Long.parseLong(request.getParameter("numgara"));
 			Long numlott = Long.parseLong(request.getParameter("numlott"));
-			
+			oggEvento =numgara+"/"+numlott;
 			
 			String recuperaUser = request.getParameter("recuperauser");
 			String recuperaPassword = request.getParameter("recuperapassword");
@@ -177,8 +184,15 @@ public class ConfrontaCIGAction extends DispatchActionBaseNoOpzioni {
 				simogwspass = request.getParameter("simogwspass");
 			}
 
-			// Invio al web service
+			// Invio al web service 
+		    String ngara = (String) this.gestioneServiziIDGARACIGManager.getSqlManager().getObject("select ngara from w3lott where cig = ?", new Object[] {cig});
+		    riferimento = " (CIG "+cig;
+		    if(StringUtils.stripToNull(ngara)!=null)
+		      riferimento += ", rif.gara "+ngara;
+		    riferimento+=")";
+		        
 			HashMap<String, Object> hMapConfrontaGaraLotto = new HashMap<String, Object>();
+			 GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 0, 1, oggEvento, evento, "Invio richiesta a SIMOG confronto dati"+riferimento, null); 
 			hMapConfrontaGaraLotto = this.gestioneServiziIDGARACIGManager.confrontaGaraLotto(simogwsuser, simogwspass, cig, codUffInt,rpntFailed);
 
 			if (!hMapConfrontaGaraLotto.isEmpty()) {
@@ -199,9 +213,11 @@ public class ConfrontaCIGAction extends DispatchActionBaseNoOpzioni {
 				}
 			}
 			
+			 GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 1, 1, oggEvento, evento, messaggioBaseResponse+riferimento, null); 
 			target = FORWARD_SUCCESS;
 
 		} catch (GestoreException e) {
+		    errore = e.getMessage();
 			target = FORWARD_ERROR;
 			messageKey = "errors.gestioneIDGARACIG.error";
 			logger.error(this.resBundleGenerale.getString(messageKey), e);
@@ -221,11 +237,15 @@ public class ConfrontaCIGAction extends DispatchActionBaseNoOpzioni {
               }
             }
 	    } catch (Throwable e) {
+	        errore = e.getMessage();
 	    	target = FORWARD_ERROR;
 	    	messageKey = "errors.applicazione.inaspettataException";
 	    	logger.error(this.resBundleGenerale.getString(messageKey), e);
 	    	this.aggiungiMessaggio(request, messageKey);
 	    }
+		
+		if(errore!=null)
+		  GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 1, 3, oggEvento, evento, messaggioBaseResponse+riferimento, errore); 
 
 		if (messageKey != null) response.reset();
 
@@ -267,7 +287,17 @@ public class ConfrontaCIGAction extends DispatchActionBaseNoOpzioni {
 			SchedaType schedaDatiSIMOG = (SchedaType) request.getSession().getAttribute("schedaDatiSIMOG");
 
 			if (schedaDatiSIMOG != null) {
+			    List<?> datiWLOTT = this.gestioneServiziIDGARACIGManager.getSqlManager().getVector("select ngara, numlott, numgara from w3lott where cig = ?", new Object[] {cig});
+		        String ngara = (String) SqlManager.getValueFromVectorParam(datiWLOTT, 0).getValue();
+		        Long numlott = (Long) SqlManager.getValueFromVectorParam(datiWLOTT, 1).getValue();
+		        Long numgara = (Long) SqlManager.getValueFromVectorParam(datiWLOTT, 2).getValue();
+	            String riferimento = " (CIG "+cig;
+	            if(StringUtils.stripToNull(ngara)!=null)
+	              riferimento += ", rif.gara "+ngara;
+	            riferimento+=")";
+	            
 				esito = this.gestioneXMLIDGARACIGManager.riallineaGaraLottodaSIMOG(schedaDatiSIMOG, cig, syscon, codUffInt, codrup);
+				GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, -1, 1, numgara+"/"+numlott, "RIALLINEA_DATI", "Riallineamento dei dati da SIMOG"+riferimento, null);  
 			} else {
 				esito = false;
 			}

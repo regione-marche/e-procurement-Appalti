@@ -47,6 +47,8 @@
 		</c:otherwise>
 	</c:choose>
 	
+	<c:if test='${not tippar and gene:matches(tippar, "^1|2$", true)}' />
+	
 	<c:choose>
 		<c:when test='${not empty param.dittePerPagina}'>
 			<c:set var="dittePerPagina" value="${param.dittePerPagina}" />
@@ -108,7 +110,6 @@
 			<input type="hidden" name="dittePerPagina" value="${dittePerPagina}">
 			<input type="hidden" name="isValutazioneCommissione" value="${isValutazioneCommissione}" />
 			<input type="hidden" name="tippar" value="${tippar}">
-			<input type="hidden" name="codiceGaraDitg" value="${codiceGaraDitg}" />
 			<input type="hidden" name="codgar" value="${codgar}">
 			<input type="hidden" name="reimposta" value="true">
 			

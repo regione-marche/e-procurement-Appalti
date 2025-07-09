@@ -153,12 +153,12 @@
 					In base ad alcuni dati della gara viene calcolato il numero minimo di giorni che devono intercorrere tra la data di decorrenza,
 					<c:choose>
 						<c:when test='${campo eq "DTEPAR"}'>
-							ovvero la data di trasmissione del bando di gara a GUUE o di pubblicazione su GURI o albo pretorio del Comune,
+							ovvero la data di pubblicazione del bando di gara,
 							e il termine per la presentazione della domanda di partecipazione. In funzione di quest'ultimo viene calcolato il termine per la risposta alle richieste di chiarimenti.
 							<br>Specificare la data di decorrenza per ottenere il termine minimo.
 						</c:when>
 						<c:when test='${campo eq "DTEOFF" and faseInviti ne "Si"}'>
-							ovvero la data di trasmissione del bando di gara a GUUE o di pubblicazione su GURI o albo pretorio del Comune,
+							ovvero la data di pubblicazione del bando di gara,
 							e il termine per la presentazione dell'offerta. In funzione di quest'ultimo viene calcolato il termine per la risposta alle richieste di chiarimenti.
 							<br>Specificare la data di decorrenza per ottenere il termine minimo.
 						</c:when>

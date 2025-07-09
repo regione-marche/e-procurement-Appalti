@@ -103,6 +103,7 @@ public class GestorePopupAggiudicazioneProvvisoria extends
       String isGaraDLGS2016=UtilityStruts.getParametroString(this.getRequest(),"isGaraDLGS2016");
       String isGaraDLGS2017=UtilityStruts.getParametroString(this.getRequest(),"isGaraDLGS2017");
       String isGaraDL2019=UtilityStruts.getParametroString(this.getRequest(),"isGaraDL2019");
+      String isGaraDLGS2023=UtilityStruts.getParametroString(this.getRequest(),"isGaraDLGS2023");
       String[] esito=null;
       Long escauto = null;
       if(impl.isColumn("ESCAUTOFIT")){
@@ -158,7 +159,7 @@ public class GestorePopupAggiudicazioneProvvisoria extends
               messageKey = "warnings.gare.aggiudicazioneFaseA.ControlloNumeroDitteAmmesse";
               errMsgEvento = this.resBundleGenerale.getString(messageKey);
               errMsgEvento = errMsgEvento.replace("{0}", esito[1]);
-              if("false".equals(isGaraDLGS2016) && "false".equals(isGaraDLGS2017) && "false".equals(isGaraDL2019))
+              if("false".equals(isGaraDLGS2016) && "false".equals(isGaraDLGS2017) && "false".equals(isGaraDL2019) && "false".equals(isGaraDLGS2023))
                 UtilityStruts.addMessage(this.getRequest(), "warning",
                     "warnings.gare.aggiudicazioneFaseA.ControlloNumeroDitteAmmesse",
                     new Object[] { new Long(esito[1]) });
@@ -283,15 +284,22 @@ public class GestorePopupAggiudicazioneProvvisoria extends
             descrizioneMetsoglia = tabellatiManager.getDescrTabellato("A1126", metsoglia.toString());
           String descr ="Calcolo soglia anomalia o della graduatoria";
           descr+="(" + descrizioneCritlicg;
-          if(descrizioneMetsoglia!=null && "false".equals(isGaraDL2019)){
+          if(descrizioneMetsoglia!=null && "false".equals(isGaraDL2019) && "false".equals(isGaraDLGS2023)){
             descr+=" - " + descrizioneMetsoglia;
             if("true".equals(isGaraDLGS2017))
               descr+=" - adeguato DLgs.56/2017";
           }
-          if("true".equals(isGaraDL2019) || gestioneRegSic){
+          if("true".equals(isGaraDL2019) || gestioneRegSic || "true".equals(isGaraDLGS2023)){
             String soglianorma = impl.getString("SOGLIANORMA");
             if(soglianorma!=null)
               descr+=" - " + soglianorma;
+          }
+          if(new Long(2).equals(critlicg) && impl.isColumn("GARE1.METOEPV")) {
+            String metoepv = impl.getString("GARE1.METOEPV");
+            if (metoepv != null) {
+              String descrizioneMetodoOepv = tabellatiManager.getDescrTabellato("A1z35", metoepv);
+              descr += " - Criterio offerte anomale: " + descrizioneMetodoOepv;
+            }
           }
           descr+=")";
           if(escauto!=null)

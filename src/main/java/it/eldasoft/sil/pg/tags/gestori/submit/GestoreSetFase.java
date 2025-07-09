@@ -126,7 +126,7 @@ public class GestoreSetFase extends AbstractGestoreEntita {
         }else {
           pgManager.updateChiusuraAperturaFasiRicezione(codiceGara, chiusuraAperturaFasiRicezione,true,null,null);
           if("ATTIVA".equals(chiusuraAperturaFasiRicezione)){
-            mepaManager.impostaComunicazioniAScartate(codiceGara, "DOC_AMM");
+            mepaManager.impostaComunicazioniAScartate(codiceGara, "DOC_AMM", null);
           }
         }
 

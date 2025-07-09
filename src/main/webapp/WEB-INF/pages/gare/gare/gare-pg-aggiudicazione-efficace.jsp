@@ -146,7 +146,7 @@
 	function archivioImpresaAggDef(){
 		var codiceImpresa = getValue("GARE_DITTA");
 		var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href;
+		document.location.href = contextPath + "/ApriPagina.do?" + href;
 	}
 	
 	$('#rowLinkAddGARCOMPREQ td').parent().prepend($("<td>"));
@@ -156,7 +156,7 @@
 	
 	function documentiAssociatiGarecont(){
 			var keys = "GARECONT.NGARA=T:"+getValue("GARECONT_NGARA")+";GARECONT.NCONT=N:"+${ncont};
-			var href = contextPath+'/ListaDocumentiAssociati.do?'+csrfToken+'&metodo=visualizza&entita=GARECONT&valori='+keys;
+			var href = contextPath+'/ListaDocumentiAssociati.do?metodo=visualizza&entita=GARECONT&valori='+keys;
 		document.location.href = href;
 	}
 		

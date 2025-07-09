@@ -30,7 +30,7 @@
 		</tr>
 		<tr>
 			<td class="vocemenulaterale">
-				<a href="javascript:creaNuovaGara();" tabindex="1501" title="Avanti">Avanti</a>
+				<a href="javascript:creaNuovaGara();" tabindex="1501" title="Avanti">Avanti &gt;</a>
 			</td>
 		</tr>
 		<tr>

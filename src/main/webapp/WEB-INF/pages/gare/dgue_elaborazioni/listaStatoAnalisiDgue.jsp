@@ -59,7 +59,9 @@
 	</c:otherwise>
 </c:choose>
 
-<c:set var="where" value="codgar='${codgar}' and codimp='${dittao}' and busta=${fase}"/>
+<c:set var="where" value="codgar=? and codimp=? and busta=?"/>
+<c:set var="parametri" value="T:${codgar};T:${dittao};N:${fase}"/>
+${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "V_DGUEELABSUB", where, parametri)}
 
 <c:set var="nomimo" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetNOMIMOFunction", pageContext, ngara, codgar, dittao)}' />
 
@@ -76,8 +78,7 @@
 		<table class="lista">
 			<tr>
 				<td><gene:formLista entita="V_DGUEELABSUB" sortColumn="1;5"
-						pagesize="20" tableclass="datilista" gestisciProtezioni="true"
-						where='${where}'>
+						pagesize="20" tableclass="datilista" gestisciProtezioni="true">
 
 						<gene:redefineInsert name="listaNuovo"></gene:redefineInsert>
 						<gene:redefineInsert name="listaEliminaSelezione"></gene:redefineInsert>

@@ -42,11 +42,11 @@
 			<gene:campoLista title="Opzioni" width="50">
 				<c:if test="${currentRow >= 0}" >
 				<gene:PopUp variableJs="jvarRow${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'">
-					<gene:PopUpItem title="Seleziona" href="javascript:archivioSeleziona(${datiArchivioArrayJs},${currentRow  });"/>
+					<gene:PopUpItem title="Seleziona" href="javascript:inizializzazioneAccordoQuadro('${datiRiga.TORN_SETTORE}','${datiRiga.TORN_ISCONCES}','${datiRiga.TORN_ISALLEG}');archivioSeleziona(${datiArchivioArrayJs},${currentRow  });"/>
 				</gene:PopUp>
 				</c:if>
 			</gene:campoLista>
-			<gene:campoLista campo="NGARA"  title="Codice" headerClass="sortable" href="javascript:archivioSeleziona(${datiArchivioArrayJs},${currentRow  });" />
+			<gene:campoLista campo="NGARA"  title="Codice" headerClass="sortable" href="javascript:inizializzazioneAccordoQuadro('${datiRiga.TORN_SETTORE}','${datiRiga.TORN_ISCONCES}','${datiRiga.TORN_ISALLEG}');archivioSeleziona(${datiArchivioArrayJs},${currentRow  });" />
 			<gene:campoLista campo="CODCIG"  headerClass="sortable"/>
 			<gene:campoLista campo="NOT_GAR"  headerClass="sortable"/>
 			<gene:campoLista campo="DATAINIZIO" headerClass="sortable"/>
@@ -55,10 +55,43 @@
 			<gene:campoLista campo="IMPIMP" entita="V_SPESE_ADESIONI" where="V_GARE_ACCORDIQUADRO.GARA=V_SPESE_ADESIONI.NGARA AND V_GARE_ACCORDIQUADRO.NCONT=V_SPESE_ADESIONI.NCONT AND V_SPESE_ADESIONI.CENINT='${sessionScope.uffint}'" edit="true" visibile = "false"/>
 			<gene:campoLista campo="IMPAUT" entita="V_SPESE_ADESIONI" where="V_GARE_ACCORDIQUADRO.GARA=V_SPESE_ADESIONI.NGARA AND V_GARE_ACCORDIQUADRO.NCONT=V_SPESE_ADESIONI.NCONT AND V_SPESE_ADESIONI.CENINT='${sessionScope.uffint}'" edit="true" visibile = "false"/>
 			<gene:campoLista campo="RESIDUO" title="Residuo da impegnare" campoFittizio="true" ordinabile = "false" edit="false" value="${datiRiga.V_SPESE_ADESIONI_IMPAUT - datiRiga.V_SPESE_ADESIONI_IMPIMP}" definizione="F24.5;0;;MONEY"  />
-			
 			</c:if>
+			<gene:campoLista campo="CODGAR1" entita="GARE" where="V_GARE_ACCORDIQUADRO.NGARA=GARE.NGARA" visibile="false"/>
+			<gene:campoLista campo="CODGAR" entita="TORN" from="GARE" where="V_GARE_ACCORDIQUADRO.NGARA=GARE.NGARA and GARE.CODGAR1=TORN.CODGAR" visibile="false"/>
+			<gene:campoLista campo="SETTORE" entita="TORN" from="GARE" where="V_GARE_ACCORDIQUADRO.NGARA=GARE.NGARA and GARE.CODGAR1=TORN.CODGAR" visibile="false"/>
+			<gene:campoLista campo="ISCONCES" entita="TORN" from="GARE" where="V_GARE_ACCORDIQUADRO.NGARA=GARE.NGARA and GARE.CODGAR1=TORN.CODGAR" visibile="false"/>
+			<gene:campoLista campo="ISALLEG" entita="TORN" from="GARE" where="V_GARE_ACCORDIQUADRO.NGARA=GARE.NGARA and GARE.CODGAR1=TORN.CODGAR" visibile="false"/>
 		</gene:formLista>
-		
+
+		<gene:javaScript>
+			function inizializzazioneAccordoQuadro(settore,isconces,isalleg) {
+				var element;
+				try{
+					parentForm=eval('window.opener.activeForm');
+				}catch(e){
+					outMsg(e.message);
+				}
+				element=parentForm.getCampo("TORN_SETTORE");
+				if(element!=null){
+					parentForm.setValue("TORN_SETTORE",settore);
+				}else{
+					outMsg("Non esiste la colonna "+"TORN_SETTORE"+" nella pagina chiamante !");
+				}
+				element=parentForm.getCampo("TORN_ISCONCES");
+				if(element!=null){
+					parentForm.setValue("TORN_ISCONCES",isconces);
+				}else{
+					outMsg("Non esiste la colonna "+"TORN_ISCONCES"+" nella pagina chiamante !");
+				}
+				element=parentForm.getCampo("TORN_ISALLEG");
+				if(element!=null){
+					parentForm.setValue("TORN_ISALLEG",isalleg);
+				}else{
+					outMsg("Non esiste la colonna "+"TORN_ISALLEG"+" nella pagina chiamante !");
+				}
+			}
+		</gene:javaScript>
+
   </gene:redefineInsert>
  
 </gene:template>

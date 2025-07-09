@@ -62,6 +62,6 @@
 	<script type="text/javascript">
 	//funzione richiamata dal jquery w_message per il download della documentazione gare. Lo script deve essere presente in tutte le pagine
 	function downloadExportDocumenti(id){
-		document.location.href='pg/DownloadExportDocumenti.do?'+csrfToken+'&id=' + id;
+		document.location.href='${contextPath}/pg/DownloadExportDocumenti.do?id=' + id;
 	}
 	</script>

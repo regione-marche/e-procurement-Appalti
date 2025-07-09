@@ -43,12 +43,12 @@ public class GestoreInvioDatiSCP extends AbstractGestorePreload {
   private static final String ERROR_CFEIN_NULL = "<li>Il codice fiscale della stazione appaltante non è valorizzato.";
   private static final String ERROR_CFEIN = "<li>Il codice fiscale della stazione appaltante non ha un formato valido.";
   private static final String ERROR_OGGETTO_GARA = "<li>L'oggetto della gara non è valorizzato.";
-  private static final String ERROR_RUP = "<li>Il riferimento al responsabile unico procedimento non è valorizzato.";
-  private static final String ERROR_COGTEC = "<li>Il cognome del responsabile unico procedimento non è valorizzato.";
-  private static final String ERROR_NOMTEC = "<li>Il nome del responsabile unico procedimento non è valorizzato.";
-  private static final String ERROR_CFIVATEC_NULL = "<li>Il codice fiscale e la partita Iva del responsabile unico procedimento sono entrambi non valorizzati.";
-  private static final String ERROR_CFTEC = "<li>Il codice fiscale del responsabile unico procedimento non ha un formato valido.";
-  private static final String ERROR_IVATEC = "<li>La partita Iva del responsabile unico procedimento non ha un formato valido.";
+  private static final String ERROR_RUP = "<li>Il riferimento al RUP non è valorizzato.";
+  private static final String ERROR_COGTEC = "<li>Il cognome del RUP non è valorizzato.";
+  private static final String ERROR_NOMTEC = "<li>Il nome del RUP non è valorizzato.";
+  private static final String ERROR_CFIVATEC_NULL = "<li>Il codice fiscale e la partita Iva del RUP sono entrambi non valorizzati.";
+  private static final String ERROR_CFTEC = "<li>Il codice fiscale del RUP non ha un formato valido.";
+  private static final String ERROR_IVATEC = "<li>La partita Iva del RUP non ha un formato valido.";
   private static final String ERROR_DATNEG = "<li>La data di esito gara non aggiudicata non è valorizzata.";
   private static final String ERROR_MODREA = "<li>La modalità di realizzazione non è valorizzata.";
   private static final String ERROR_NUTS = "<li>Il codice NUTS non è valorizzato.";
@@ -141,7 +141,7 @@ public class GestoreInvioDatiSCP extends AbstractGestorePreload {
       if("pubblicazioni".equals(entita)){
 
       List<?> pubblicazioni = sqlManager.getListVector("select documgara.tipologia from documgara, g1cf_pubb where documgara.tipologia = g1cf_pubb.id " +
-          "and documgara.codgar = ? and documgara.statodoc = 5 and (documgara.isarchi is null or documgara.isarchi != 1) and g1cf_pubb.invioscp = '1'", new Object[] {codiceGara});
+          "and documgara.codgar = ? and documgara.statodoc = 5 and (documgara.isarchi is null or documgara.isarchi != '1') and g1cf_pubb.invioscp = '1'", new Object[] {codiceGara});
       ArrayList<Integer> tipologieDaPubb = new ArrayList<Integer>();
       for (int i = 0; i < pubblicazioni.size(); i++) {
         Long tipologia = SqlManager.getValueFromVectorParam(pubblicazioni.get(i), 0).longValue();
@@ -487,7 +487,7 @@ public class GestoreInvioDatiSCP extends AbstractGestorePreload {
                   messaggioErrori += ERROR_CIG;
                 }
               }else{
-                if(Character.isDigit(codcig.charAt(0)) && numavcpNullo){
+                if(codcig.substring(0,1).toUpperCase().matches("[0-9A-U]") && numavcpNullo){
                   cigNonEsenteNonSmart = true;
                 }
               }
@@ -644,9 +644,9 @@ public class GestoreInvioDatiSCP extends AbstractGestorePreload {
         //Controlli non bloccanti
         String messaggio="";
 
-        ArrayList<String> errori= null;
         //CUPPRG
-        if(!"11".equals(genere) && !"10".equals(genere) && !"20".equals(genere)) {
+        ArrayList<String> errori = null;
+        if(!"10".equals(genere) && !"20".equals(genere)) {
           errori= this.inviaDatiRichiestaCigManager.getControlloCUPCUI(codiceGara, ngara, genere, profilo, "CUPPRG");
           if(errori!=null && errori.size()>0){
             controlloSuperato = "WARNING";
@@ -655,7 +655,9 @@ public class GestoreInvioDatiSCP extends AbstractGestorePreload {
               messaggio+="<li>" + iter.next();
 
           }
+        }
 
+        if(!"11".equals(genere) && !"10".equals(genere) && !"20".equals(genere)) {
           //CODCUI
           errori= this.inviaDatiRichiestaCigManager.getControlloCUPCUI(codiceGara, ngara, genere, profilo, "CODCUI");
           if(errori!=null && errori.size()>0){

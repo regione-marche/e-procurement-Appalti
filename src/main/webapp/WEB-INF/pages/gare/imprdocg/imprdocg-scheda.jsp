@@ -15,7 +15,7 @@
 <% // Validazione parametri tramite regex %>
 <c:if test='${not empty param.aut and gene:matches(param.aut, "^0|1|2$", true)}' />
 <c:if test='${not empty param.comunicazioniVis and gene:matches(param.comunicazioniVis, "^0|1$", true)}' />
-<c:if test='${not empty param.stepWizard and gene:matches(param.stepWizard, "^-?[0-9]+$", true)}' />
+<c:if test='${not empty param.stepWizard and gene:matches(param.stepWizard, "^-?[\\\\.0-9]+$", true)}' />
 <c:if test='${not empty param.tipo and gene:matches(param.tipo, "^VERIFICA|CONSULTAZIONE$", true)}' />
 
 <c:set var="codiceGara" value='${gene:getValCampo(key, "DITG.CODGAR5")}' />
@@ -62,7 +62,8 @@
 <c:set var="uffintGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetUffintGaraFunction",  pageContext,codiceGara)}' scope="request"/>
 <c:set var="idconfi" value='${gene:callFunction3("it.eldasoft.gene.tags.functions.GetWSDMConfiAttivaFunction",  pageContext,uffintGara,sessionScope.moduloAttivo)}' scope="request"/>
 <c:set var="integrazioneWSDM" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNFunction", pageContext, codiceGara,idconfi)}' scope="request"/>
-	
+<c:set var="esistonoFS12" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.CheckPresenzaComunicazioniFS12Function", pageContext, codiceGara,numeroGara,codiceDitta,param.stepWizard)}' scope="request"/>
+
 <c:set var="modalita" value="scheda" scope="request"/>
 
 <c:set var="nomimo" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetNOMIMOFunction", pageContext, numeroGara, codiceGara, codiceDitta)}' />
@@ -81,8 +82,11 @@
 					<jsp:param value="${nomimo}" name="nomimo"/>
 				</jsp:include>
 			</gene:pagina>
-			<gene:pagina title="Comunicazioni soccorso istruttorio" visibile="${comunicazioniVis ne '0' && inviaComunicazioni}" idProtezioni="COMUNICAZIONISOCCISTRUTT">
+			<gene:pagina title="Comunicazioni soccorso istruttorio" visibile="${comunicazioniVis ne '0'}" idProtezioni="COMUNICAZIONISOCCISTRUTT">
 				<jsp:include page="imprdocg-pg-comunicazioni-soccorsoIstruttorio.jsp" />
+			</gene:pagina>
+			<gene:pagina title="Comunicazioni rettifica offerta" visibile="${comunicazioniVis ne '0' && param.stepWizard >= 5 && esistonoFS12 eq 'true'}" idProtezioni="COMUNICAZIONIRETTIFICA">
+				<jsp:include page="imprdocg-pg-comunicazioni-comunicazioniRettifica.jsp" />
 			</gene:pagina>
 			<gene:pagina title="Comunicazioni inviate e ricevute" visibile="${comunicazioniVis ne '0' && inviaComunicazioni}" idProtezioni="COMUNICAZIONIRICEVUTE">
 				<jsp:include page="imprdocg-pg-comunicazioni.jsp" />

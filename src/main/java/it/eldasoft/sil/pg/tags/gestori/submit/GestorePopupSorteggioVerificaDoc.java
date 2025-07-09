@@ -95,6 +95,8 @@ public class GestorePopupSorteggioVerificaDoc extends
       "ngara"));
     Long percentuale = datiForm.getLong("PERCENTUALE");
     Timestamp dataLimite = datiForm.getData("DATA");
+    Timestamp dataFiltroInizio = datiForm.getData("DATAFILTROINIZIO");
+    Timestamp dataFiltroFine = datiForm.getData("DATAFILTROFINE");
     int numDitte =0;
     int numDitteSorteggiate = 0;
     String esito ="1";
@@ -104,8 +106,27 @@ public class GestorePopupSorteggioVerificaDoc extends
     try{
       //Si deve creare una stringa in cui si ha l'elenco dei codici delle ditte separati da ,
       String elenco="";
-      String select="select dittao from ditg where ngara5=? and abilitaz = ? and (DSORTEV is null or DSORTEV < ?)";
       Object par [] = new Object[]{ngara, new Long(1),dataLimite};
+      String joinVDITGVERIFICA = "";
+      String whereVDITGVERIFICA = "";
+      if (dataFiltroInizio != null || dataFiltroFine != null) {
+        joinVDITGVERIFICA = " join v_ditg_verifica on v_ditg_verifica.dittao = ditg.dittao and v_ditg_verifica.ngara5 = ditg.ngara5";
+        if (dataFiltroInizio != null) {
+          whereVDITGVERIFICA += " and v_ditg_verifica.dultaggport >= ?";
+          Object[] newPar = new Object[par.length + 1];
+          System.arraycopy(par, 0, newPar, 0, par.length);
+          newPar[par.length] = dataFiltroInizio;
+          par = newPar;
+        }
+        if (dataFiltroFine != null) {
+            whereVDITGVERIFICA += " and v_ditg_verifica.dultaggport <= ?";
+            Object[] newPar = new Object[par.length + 1];
+            System.arraycopy(par, 0, newPar, 0, par.length);
+            newPar[par.length] = dataFiltroFine;
+            par = newPar;
+        }
+      }
+      String select="select ditg.dittao from ditg" + joinVDITGVERIFICA + " where ditg.ngara5=? and ditg.abilitaz = ? and (ditg.DSORTEV is null or ditg.DSORTEV < ?)" + whereVDITGVERIFICA;
 
       List listaDitte = this.sqlManager.getListVector(select, par);
       if(listaDitte!=null && listaDitte.size()>0){
@@ -134,7 +155,9 @@ public class GestorePopupSorteggioVerificaDoc extends
           String vetCodDitte[] = elenco.split(",");
           String update="update ditg set estimp='1', dsortev =? where ngara5=? and dittao=?";
           if(vetCodDitte!=null && vetCodDitte.length>0){
-            Date oggi = UtilityDate.getDataOdiernaAsDate();
+            Date oggi = UtilityDate.convertiData(
+                UtilityDate.getDataOdiernaAsString(UtilityDate.FORMATO_GG_MM_AAAA),
+                UtilityDate.FORMATO_GG_MM_AAAA);
             numDitteSorteggiate = vetCodDitte.length;
             for(int j=0; j < vetCodDitte.length; j++){
               ditta= vetCodDitte[j];
@@ -158,7 +181,10 @@ public class GestorePopupSorteggioVerificaDoc extends
     } finally{
       //Tracciatura eventi
       String descr="Sorteggio operatori in elenco per verifica documenti (percentuale sorteggio: " + percentuale.toString() + "%,";
-      descr += "data limite " + UtilityDate.convertiData(dataLimite, UtilityDate.FORMATO_GG_MM_AAAA) + ", n.operatori coinvolti " + numDitte +", n. operatori sorteggiati " + numDitteSorteggiate + ").";
+      descr += "data limite " + UtilityDate.convertiData(dataLimite, UtilityDate.FORMATO_GG_MM_AAAA)
+              + (dataFiltroInizio != null ? (", data inizio filtro ultimo aggiornamento " + UtilityDate.convertiData(dataFiltroInizio, UtilityDate.FORMATO_GG_MM_AAAA)) : "")
+              + (dataFiltroFine != null ? (", data fine filtro ultimo aggiornamento " + UtilityDate.convertiData(dataFiltroFine, UtilityDate.FORMATO_GG_MM_AAAA)) : "")
+              + ", n.operatori coinvolti " + numDitte +", n. operatori sorteggiati " + numDitteSorteggiate + ").";
       LogEvento logEvento = LogEventiUtils.createLogEvento(this.getRequest());
       logEvento.setLivEvento(livEvento);
       logEvento.setOggEvento(ngara);

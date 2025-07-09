@@ -37,20 +37,22 @@ public class SetRichiestaArchiviazioneCOSAction extends Action {
     JSONObject result = new JSONObject();
 
     Long syscon = null;
-    Long tipo_archiviazione = null;
+    Long tipo_archiviazione = 3L;
     Long _idRichiesta = null;
 
     String codgar = request.getParameter("codgar");
 
-    syscon = null;
-    tipo_archiviazione = new Long(3);
+    String integrazioneConservazione = archiviazioneDocumentiManager.getSistemaConservazione(codgar);
+
+    if("2".equals(integrazioneConservazione))
+      tipo_archiviazione = 6L;
 
     ProfiloUtente profiloUtente = (ProfiloUtente) request.getSession().getAttribute(
         CostantiGenerali.PROFILO_UTENTE_SESSIONE);
     syscon = new Long(profiloUtente.getId());;
 
     //INSERIMENTO in GARDOC_JOBS
-    _idRichiesta = archiviazioneDocumentiManager.insertJobArchiviazioneDocumenti(syscon, codgar, "", "", "", "", "", "", "", "", "","","","", tipo_archiviazione,null);
+    _idRichiesta = archiviazioneDocumentiManager.insertJobArchiviazioneDocumenti(syscon, codgar, "", "", "", "", "", "", "", "", "","","","", tipo_archiviazione,null,null);
     result.put("idRichiesta", _idRichiesta);
 
     out.println(result);

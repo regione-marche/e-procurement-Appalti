@@ -15,6 +15,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 
+<%-- test per consentire utilizzo della pagina solo agli amministratori di sistema --%>
+<c:set var="nonusato" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.CheckOpzioniUtenteFunction", pageContext, "ou89")}' />
 
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 

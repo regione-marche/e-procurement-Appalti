@@ -193,7 +193,7 @@
 	      		alert("Selezionare almeno un destinatario dalla lista");
 	      	} else {
 	      			      					    
-	      		document.forms[0].action="${pageContext.request.contextPath}/pg/AggiungiDestinatariAnagrafica.do?"+csrfToken;
+	      		document.forms[0].action="${pageContext.request.contextPath}/pg/AggiungiDestinatariAnagrafica.do";
  				bloccaRichiesteServer();
 				document.forms[0].submit();
  			}

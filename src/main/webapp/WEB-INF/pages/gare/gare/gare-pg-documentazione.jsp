@@ -40,6 +40,8 @@
 	<c:set var="garaElencoCatalogo" value='true'/>
 </c:if>
 
+<c:set var="isPaginaDocumentazione" value='true'/>
+
 <gene:formScheda entita="GARE" gestisciProtezioni="true" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreDocumentazioneGara" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreDocumentazioneGara">
 
 	<gene:redefineInsert name="pulsanteNuovo"></gene:redefineInsert>
@@ -59,13 +61,34 @@
 	
 	<c:set var="condizioniBando" value='${gene:checkProt(pageContext,"SEZ.VIS.GARE.GARE-scheda.DOCUMGARA.DOCUMGARA")}'/>
 		
+	<c:set var="condizioniAnacForm" value="${gene:callFunctionN('it.eldasoft.sil.pg.tags.funzioni.GetSeAttivoModuloANACFormFunction', pageContext, codiceGara) eq 'true'}"/>
+
 	<c:set var="condizioniRequisiti" value='${gene:checkProt(pageContext,"SEZ.VIS.GARE.GARE-scheda.DOCUMGARA.DOCUMREQ") and itergaMacro !=3 }'/>
 	<c:set var="condizioniDocumentazioneRichiesta" value='${gene:checkProt(pageContext,"SEZ.VIS.GARE.GARE-scheda.DOCUMGARA.DOCUMCONC")}'/>
 		
-	<gene:campoScheda>
+	<c:set var="contatoreBottoni" value="0"/>
+	<c:if test="${condizioniBando}">
+		<c:set var="contatoreBottoni" value="${contatoreBottoni + 1}"/>
+	</c:if>
+	<c:if test="${not empty vernpa and condizioniAnacForm}">
+		<c:set var="contatoreBottoni" value="${contatoreBottoni + 1}"/>
+	</c:if>
+	<c:if test="${condizioniRequisiti}">
+		<c:set var="contatoreBottoni" value="${contatoreBottoni + 1}"/>
+	</c:if>
+	<c:if test="${condizioniDocumentazioneRichiesta}">
+		<c:set var="contatoreBottoni" value="${contatoreBottoni + 1}"/>
+	</c:if>
+
+	<gene:campoScheda visibile="${contatoreBottoni > 1}">
 			<td colspan="2">
+				<c:if test='${not empty vernpa and condizioniAnacForm}'>
+				<input type="radio" value="0" name="filtroDocumentazione" id="anacFormPCP" <c:if test='${tipoDoc eq 0}'>checked="checked"</c:if> onclick="javascript:cambiaTipoDocumentazione(0);" />
+					 Schede ANAC
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				</c:if>
 				<c:if test='${condizioniBando}'>
-					<input type="radio" value="1" name="filtroDocumentazione" id="atti" <c:if test='${tipoDoc ne 2 and tipoDoc ne 3}'>checked="checked"</c:if> onclick="javascript:cambiaTipoDocumentazione('1');" />
+					<input type="radio" value="1" name="filtroDocumentazione" id="atti" <c:if test='${tipoDoc ne 2 and tipoDoc ne 3 and tipoDoc ne 0}'>checked="checked"</c:if> onclick="javascript:cambiaTipoDocumentazione('1');" />
 					 Documenti e atti
 				</c:if>
 				<c:if test='${condizioniBando }'>
@@ -147,6 +170,7 @@
 
 <c:if test="${tipoDoc eq 3 and ((garaElencoCatalogo ne 'true' and fn:contains(listaOpzioniDisponibili, 'OP135#')) or (garaElencoCatalogo eq 'true' and fn:contains(listaOpzioniDisponibili, 'OP136#')))}">
 	<jsp:include page="/WEB-INF/pages/gare/commons/modalePopupInserimentodocumenti.jsp" />
+	<c:set var="iselprem" value="${garaElencoCatalogo eq 'true' and fn:contains(listaOpzioniDisponibili, 'OP136#') and gene:callFunction2('it.eldasoft.sil.pg.tags.funzioni.CheckIsElPremFunction',pageContext,numeroGara) eq 'true'}"/>
 </c:if>
 
 <gene:javaScript>
@@ -159,9 +183,18 @@ function cambiaTipoDocumentazione(tipoDoc){
 	document.forms[0].metodo.value="apri";
 	document.forms[0].jspPathTo.value=document.forms[0].jspPath.value;
 	bloccaRichiesteServer();
-	document.forms[0].action += "&tipoDoc=" + tipoDoc;
+	document.forms[0].action += "?tipoDoc=" + tipoDoc;
+	document.forms[0].encoding="";
 	document.forms[0].submit();
 	
+}
+
+function visualizzaFormNPA(idForm,islotti,modpres) {
+	formVisualizzaFormNPA.key.value = "G1NPAFORM.ID=N:" + idForm;
+	formVisualizzaFormNPA.idForm.value = idForm;
+	formVisualizzaFormNPA.islotti.value = islotti;
+	formVisualizzaFormNPA.modpres.value = modpres;
+	formVisualizzaFormNPA.submit();
 }
 
 function visualizzaDocumenti(ngara,tipoPubblicazione,gruppo){
@@ -244,7 +277,13 @@ function visualizzaDocumentiOperatori(ngara,val1Fasele,val2Fasele,titolo){
 		 fasEle="${rinnovo}";
 	var autorizzatoModifiche = "${autorizzatoModifiche}";
 	if((val1Fasele == 1 && gestioneQuestionariIscriz=="INSQFORM") && autorizzatoModifiche != "2" ){
-		apriModaleQform(ngara,busta, titolo);
+		var iselprem="${iselprem}";
+		if(iselprem==='true'){
+			$('#gestioneQuestionariIscriz').val("MODALE-INSQFORM");
+			visualizzaDocumentiOperatori(ngara,1,2,titolo);
+		}else{
+			apriModaleQform(ngara,busta, titolo);
+		}
 	}else if(val1Fasele == 1 && gestioneQuestionariIscriz=="MODALE-INSQFORM" && autorizzatoModifiche != "2" ){
 		var href = contextPath + "/ApriPagina.do?href=gare/documgara/qform.jsp";
 		formVisualizzaDocumenti.href.value="gare/documgara/qform.jsp";
@@ -303,6 +342,21 @@ function visualizzaDocumentiOperatori(ngara,val1Fasele,val2Fasele,titolo){
 	<input type="hidden" name="modoQform" id="modoQform" value="" />
 	<input type="hidden" name="fasEle" id="fasEle" value="" />
 </form> 
+
+<form name="formVisualizzaFormNPA" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+	<input type="hidden" name="href" value="gare/g1npaform/g1npaform-scheda.jsp" /> 
+	<input type="hidden" name="key" value="" />
+	<input type="hidden" name="codiceGara" value="${codiceGara}" />
+	<input type="hidden" name="idForm" value="" />
+	<input type="hidden" name="islotti" value="" />
+	<input type="hidden" name="modpres" value="" />
+</form>
+
+<form name="formAggiungiAnacForm" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+	<input type="hidden" name="href" value="gare/g1npaform/aggiungiAnacForm.jsp" /> 
+	<input type="hidden" name="codiceGara" value="${codiceGara}" />
+	<input type="hidden" name="ngara" value="${ngara}" />
+</form>
 
 <form name="formInviaAttiSCP" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
 	<input type="hidden" name="href" value="gare/documgara/lista-atti-scp.jsp" />

@@ -50,7 +50,7 @@
 		<td colspan="2"><b><br>SEZIONE I: RUP e COLLABORAZIONE (AMMINISTRAZIONE/STAZIONE APPALTANTE)<br><br></b></td>
 	</gene:campoScheda>
 	<gene:campoScheda>
-		<td colspan="2"><b>I.1) Responsabile unico del procedimento</b></td>
+		<td colspan="2"><b>I.1) RUP</b></td>
 	</gene:campoScheda>
 	<c:choose>
 	<c:when test='${fromGare ne "1"}' >
@@ -58,7 +58,7 @@
 			lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.W3.W3GARA.RUP_CODTEC"),"gene/tecni/tecni-lista-popup.jsp","")}'
 			scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda.jsp","")}'
 			functionId="w3"
-			parametriWhere="${filtroUffintTecniParam}T:${sessionScope.profiloUtente.id};${filtroUffintDeleghe}${filtroUffintTecniParam2}"
+			parametriWhere="${filtroUffintTecniParam}N:${sessionScope.profiloUtente.id};${filtroUffintDeleghe}${filtroUffintTecniParam2}"
 			schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda-popup.jsp","")}'
 			campi="TECNI.CODTEC;TECNI.NOMTEC;TECNI.CFTEC" chiave="W3GARA_RUP_CODTEC" >
 			<gene:campoScheda campo="RUP_CODTEC" visibile="false" defaultValue="${rup_codtec}"/>
@@ -80,7 +80,7 @@
 		<td colspan="2"><b><br>I.2) Centri di Costo / Amministrazione</b></td>
 	</gene:campoScheda>
 	<gene:campoScheda entita="UFFINT" campo="NOMEIN" where="UFFINT.CODEIN=W3GARA.CODEIN" title="Denominazione amministrazione" modificabile="false" defaultValue="${azienda_denom}" />
-	<gene:campoScheda entita="UFFINT" campo="CFEIN" where="UFFINT.CODEIN=W3GARA.CODEIN" title="Codice fiscale amministrazione" modificabile="false" defaultValue="${azienda_cf}"/>
+	<gene:campoScheda campo="CFEIN" campoFittizio="true" title="Codice fiscale amministrazione" modificabile="false" value="${cfein}" definizione="T20;0;;;;"/>
 	<gene:campoScheda entita="W3GARA" campo="IDCC" where="CENTRICOSTO.IDCENTRO=W3GARA.IDCC" visibile="false" modificabile="false"/>
 	<gene:campoScheda entita="CENTRICOSTO" campo="CODCENTRO" where="CENTRICOSTO.IDCENTRO=W3GARA.IDCC"  modificabile="false"/>
 	<c:choose>
@@ -237,7 +237,7 @@
 			document.forms[0].W3GARA_IDCC.value='';
 			document.forms[0].CENTRICOSTO_DENOMCENTRO.value='';
 			if(${empty sessionScope.uffint}){
-				document.getElementById("UFFINT_CFEINview").innerText = "";
+				document.getElementById("CFEINview").innerText = "";
 				document.getElementById("UFFINT_NOMEINview").innerText = "";
 			}
 			document.getElementById("CENTRICOSTO_CODCENTROview").innerText = "";

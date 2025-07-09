@@ -80,7 +80,7 @@ public class GestorePopupReinviaComunicazioni extends
 	        try {
 	          String ngara = impl.getString("NGARA");
 
-              String update = "update w_invcom set comstato = 14 where comkey1 = ? and comstato = 15";
+              String update = "update w_invcom set comstato = '14' where comkey1 = ? and comstato = '15'";
               sqlManager.update(update, new Object[]{ngara});
 
 	          this.getRequest().setAttribute("RISULTATO", "ESEGUITO");

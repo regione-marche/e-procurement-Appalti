@@ -228,7 +228,7 @@
 	
 	function dettaglioOfferteRicevuteVoce(chiaveRiga){
 		//alert(chiaveRiga);
-		var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/v_gcap_dpre/v_gcap_dpre-lista-offerta.jsp";
+		var href = contextPath + "/ApriPagina.do?href=gare/v_gcap_dpre/v_gcap_dpre-lista-offerta.jsp";
 		href += "&key="+chiaveRiga;
 		href += "&offtel=${offtel }";
 		href += "&stepWizard=${paginaAttivaWizard }";

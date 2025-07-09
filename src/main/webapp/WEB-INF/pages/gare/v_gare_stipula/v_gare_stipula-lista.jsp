@@ -148,7 +148,7 @@
 	}
 	
 	function listaNuovo(){
-		document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1stipula/g1stipula_nuovaStipula.jsp";
+		document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1stipula/g1stipula_nuovaStipula.jsp";
 	}
 	
 

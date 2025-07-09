@@ -435,7 +435,7 @@ public class ScpManager {
           Long tipoavviso = (Long) SqlManager.getValueFromVectorParam(datiGareavvisi.get(0), 0).getValue();
           oggetto = SqlManager.getValueFromVectorParam(datiGareavvisi.get(0), 1).stringValue();
           scadenza = (Date) SqlManager.getValueFromVectorParam(datiGareavvisi.get(0), 2).getValue();
-          if(tipoavviso != null && tipoavviso.intValue() == 1){
+          if(tipoavviso != null && (tipoavviso.intValue() == 1 || tipoavviso.intValue() == 2)){
             tipologia = new Long(2);
           }else{
             tipologia = new Long(6);
@@ -476,6 +476,12 @@ public class ScpManager {
         String uuid = (String)this.sqlManager.getObject("SELECT UUID FROM GARUUID WHERE CODGAR = ? AND TIPRIC = 'SCP'", new Object[] {codgar});
         if (verificaEsistenzaValore(uuid)) {
           avviso.setIdRicevuto(new Long(uuid));
+        }
+
+        //Codice CUP
+        String cupprg = (String)this.sqlManager.getObject("select cupprg from gare where codgar1 = ? ", new Object[] {codgar});
+        if (verificaEsistenzaValore(cupprg)){
+          avviso.setCup(cupprg);
         }
 
         this.valorizzaDocumenti(avviso.getDocumenti(), codgar, null, genere);
@@ -880,7 +886,7 @@ public class ScpManager {
 				impresa.setPartitaIva(itemImpresa.get(4).toString());
 			}
 			if (verificaEsistenzaValore(itemImpresa.get(5))) {
-			  String sigla = getSiglaTabG_z23(itemImpresa.get(5).toString());
+			  String sigla = getCodiceIsoNazione(itemImpresa.get(5).toString());
 			  if (verificaEsistenzaValore(sigla)) {
 				impresa.setNazione(sigla);
 			  }
@@ -935,13 +941,11 @@ public class ScpManager {
                   }
                 }
     		}
-    		if(!(tipologia.intValue() == 1)){
               if("1".equals(genere) || "3".equals(genere)){
                 url += codgar;
               }else{
                 url += ngara;
               }
-    		}
 		}
 
 		AllegatoEntry documento = new AllegatoEntry();
@@ -1360,7 +1364,7 @@ public class ScpManager {
 				  lotto.setNumeroLotto(new Long(1));//obbligatorio
 				}
 
-				String cpv = (String)this.sqlManager.getObject("SELECT CODCPV FROM GARCPV WHERE NGARA = ? AND TIPCPV = 1", new Object[] {ngara});
+				String cpv = (String)this.sqlManager.getObject("SELECT CODCPV FROM GARCPV WHERE NGARA = ? AND TIPCPV = '1'", new Object[] {ngara});
 				if (verificaEsistenzaValore(cpv)) {
 					lotto.setCpv(cpv);
 				}
@@ -1564,7 +1568,7 @@ public class ScpManager {
 	private void valorizzaCpvSecondari(final List<CpvLottoEntry> cpvSecondari,
 			final String ngara)
 	throws SQLException, ParseException {
-		String sqlRecuperaW9CPV = "SELECT CODCPV FROM GARCPV WHERE TIPCPV = 2 AND NGARA = ?";
+		String sqlRecuperaW9CPV = "SELECT CODCPV FROM GARCPV WHERE TIPCPV = '2' AND NGARA = ?";
 
 		List< ? > listaCpv;
 		List< ? > itemCpv = new ArrayList<Object>();
@@ -1637,8 +1641,8 @@ public class ScpManager {
 		return esistenza;
 	}
 
-	public String getSiglaTabG_z23 (final String tab2tip) throws SQLException {
-	  String sigla = (String) sqlManager.getObject("select tab2d1 from tab2 where  tab2cod = 'G_z23' AND TAB2TIP = ?", new Object[] {tab2tip});
+	public String getCodiceIsoNazione (final String tab2tip) throws SQLException {
+	  String sigla = (String) sqlManager.getObject("select CODISO from G_NAZIONI where codice=?", new Object[] {tab2tip});
 	  if(sigla != null){
 	    return sigla;
 	  }

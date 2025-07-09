@@ -39,7 +39,9 @@ public class GestioneDocumentazioneTipologiaFunction extends AbstractFunzioneTag
   public static final String    ELENCO_CAMPI_DOCUMGARA  = "CODGAR, NGARA, NORDDOCG, GRUPPO, FASGAR, IDPRG, IDDOCDG, STATODOC, REQCAP, TIPODOC, CONTESTOVAL, VALENZA, "
       + "OBBLIGATORIO, DESCRIZIONE, DITTAAGG, BUSTA, FASELE, MODFIRMA, URLDOC, TIPOLOGIA, IDSTAMPA, GENTEL, ALLMAIL, DATARILASCIO";
 
-  public static final String    SELECT_W_DOCDIC = "select DIGDESDOC,DIGNOMDOC,DIGFIRMA from W_DOCDIG where IDPRG = ? and IDDOCDIG = ?";
+  private static final String ALTRI_CAMPI_DOCUMGARA_IN_CODA = ", LARGEFILEDATA";
+
+  public static final String    SELECT_W_DOCDIC = "select DIGDESDOC,DIGNOMDOC,DIGFIRMA,DIGTIPDOC from W_DOCDIG where IDPRG = ? and IDDOCDIG = ?";
 
   public static final String    FILTRO_FASELE = "and (FASELE = ?  or FASELE = ?)";
 
@@ -100,11 +102,13 @@ public class GestioneDocumentazioneTipologiaFunction extends AbstractFunzioneTag
       }
 
 
-      String select="select " +  ELENCO_CAMPI_DOCUMGARA + " from DOCUMGARA where CODGAR=? and TIPOLOGIA = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";
+      String select="select " +  ELENCO_CAMPI_DOCUMGARA + ALTRI_CAMPI_DOCUMGARA_IN_CODA + " from DOCUMGARA where CODGAR=? and TIPOLOGIA = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";
       if (gruppo.longValue()==3)
-        select="select " +  ELENCO_CAMPI_DOCUMGARA + " from DOCUMGARA where CODGAR=? and GRUPPO = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";
+        select="select " +  ELENCO_CAMPI_DOCUMGARA + ALTRI_CAMPI_DOCUMGARA_IN_CODA + " from DOCUMGARA where CODGAR=? and GRUPPO = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";
       if (gruppo.longValue()==2)
-        select="select " +  ELENCO_CAMPI_DOCUMGARA + " from DOCUMGARA where CODGAR=? and GRUPPO = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";
+        select="select " +  ELENCO_CAMPI_DOCUMGARA + ALTRI_CAMPI_DOCUMGARA_IN_CODA + " from DOCUMGARA where CODGAR=? and GRUPPO = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";
+      if (gruppo.longValue()==1 || gruppo.longValue()==6 )
+        select="select " +  ELENCO_CAMPI_DOCUMGARA + ", ULTBIC "+ ALTRI_CAMPI_DOCUMGARA_IN_CODA +" from DOCUMGARA where CODGAR=? and TIPOLOGIA = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";
 
       if(gruppo.longValue()==1){
         List listaDocumentiGara = null;
@@ -141,7 +145,7 @@ public class GestioneDocumentazioneTipologiaFunction extends AbstractFunzioneTag
         //l'ulteriore filtro che busta<>4
         List documentazioneConcorrenti = null;
 
-          select="select " +  ELENCO_CAMPI_DOCUMGARA + ", TAB1NORD, SEZTEC from DOCUMGARA left join TAB1 on TAB1COD=? and TAB1TIP=BUSTA where CODGAR=? and GRUPPO = ? ";
+          select="select " +  ELENCO_CAMPI_DOCUMGARA + ", TAB1NORD, SEZTEC "+ ALTRI_CAMPI_DOCUMGARA_IN_CODA +" from DOCUMGARA left join TAB1 on TAB1COD=? and TAB1TIP=BUSTA where CODGAR=? and GRUPPO = ? ";
           if(gruppo.longValue()==7){
             select+=" and (BUSTA is null or BUSTA<>4) ";
             }
@@ -177,7 +181,7 @@ public class GestioneDocumentazioneTipologiaFunction extends AbstractFunzioneTag
       }else if(gruppo.longValue()==4){
         List documentiEsito=null;
 
-        select="select " +  ELENCO_CAMPI_DOCUMGARA + ", DATAPROV, NUMPROV from DOCUMGARA where CODGAR=? and TIPOLOGIA = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";
+        select="select " +  ELENCO_CAMPI_DOCUMGARA + ", DATAPROV, NUMPROV "+ ALTRI_CAMPI_DOCUMGARA_IN_CODA +" from DOCUMGARA where CODGAR=? and TIPOLOGIA = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";
         documentiEsito = sqlManager.getListVector(
             select, new Object[] { codGara, parametroFiltro});
 
@@ -213,9 +217,11 @@ public class GestioneDocumentazioneTipologiaFunction extends AbstractFunzioneTag
               listaDatiFileTrasparenza.add(SqlManager.getValueFromVectorParam(listaTmp.get(0),0).getStringValue());
               listaDatiFileTrasparenza.add(SqlManager.getValueFromVectorParam(listaTmp.get(0),1).getStringValue());
               listaDatiFileTrasparenza.add(SqlManager.getValueFromVectorParam(listaTmp.get(0),2).getStringValue());
+              listaDatiFileTrasparenza.add(SqlManager.getValueFromVectorParam(listaTmp.get(0),3).getStringValue());
               if("1".equals(SqlManager.getValueFromVectorParam(listaTmp.get(0),2).getStringValue()) && "1".equals(abilitataRichiestaFirma))
                 numDocAttesaFirma++;
             }else{
+              listaDatiFileTrasparenza.add(null);
               listaDatiFileTrasparenza.add(null);
               listaDatiFileTrasparenza.add(null);
               listaDatiFileTrasparenza.add(null);
@@ -252,13 +258,13 @@ public class GestioneDocumentazioneTipologiaFunction extends AbstractFunzioneTag
 
           pageContext.setAttribute("documentiInvitoDescFile", listaDatiFileConcorrenti,
               PageContext.REQUEST_SCOPE);
-          pageContext.setAttribute("formatoAllegati", formatoAllegati,
-              PageContext.REQUEST_SCOPE);
         }
+        pageContext.setAttribute("formatoAllegati", formatoAllegati,
+            PageContext.REQUEST_SCOPE);
       }else if(gruppo.longValue()==10 || gruppo.longValue()==15){
         List attiDocumenti=null;
 
-        select="select " +  ELENCO_CAMPI_DOCUMGARA + ", DATAPROV, NUMPROV from DOCUMGARA where CODGAR=? and TIPOLOGIA = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";
+        select="select " +  ELENCO_CAMPI_DOCUMGARA + ", DATAPROV, NUMPROV, TIPOATTO "+ ALTRI_CAMPI_DOCUMGARA_IN_CODA +" from DOCUMGARA where CODGAR=? and TIPOLOGIA = ? and (ISARCHI is null or ISARCHI<>'1') order by numord, norddocg";
         attiDocumenti = sqlManager.getListVector(
             select, new Object[] { codGara, parametroFiltro });
 
@@ -306,7 +312,7 @@ public class GestioneDocumentazioneTipologiaFunction extends AbstractFunzioneTag
 
   private List popolaListaAllegati(List allegati, PageContext pageContext, String abilitataRichiestaFirma) throws SQLException, GestoreException{
     List listaDatiFileAllegati = new ArrayList(
-        allegati.size() * 3);
+        allegati.size() * 4);
     int numDocAttesaFirma=0;
 
     for (int i = 0; i < allegati.size(); i++) {
@@ -317,9 +323,11 @@ public class GestioneDocumentazioneTipologiaFunction extends AbstractFunzioneTag
         listaDatiFileAllegati.add(SqlManager.getValueFromVectorParam(listaTmp.get(0),0).getStringValue());
         listaDatiFileAllegati.add(SqlManager.getValueFromVectorParam(listaTmp.get(0),1).getStringValue());
         listaDatiFileAllegati.add(SqlManager.getValueFromVectorParam(listaTmp.get(0),2).getStringValue());
+        listaDatiFileAllegati.add(SqlManager.getValueFromVectorParam(listaTmp.get(0),3).getStringValue());
         if("1".equals(SqlManager.getValueFromVectorParam(listaTmp.get(0),2).getStringValue()) && "1".equals(abilitataRichiestaFirma))
           numDocAttesaFirma++;
       }else{
+        listaDatiFileAllegati.add(null);
         listaDatiFileAllegati.add(null);
         listaDatiFileAllegati.add(null);
         listaDatiFileAllegati.add(null);

@@ -28,12 +28,14 @@
 	</c:otherwise>
 </c:choose>
 
+<c:if test='${gene:matches(tipgen, "^1|2|3$", true)}' />
+
 <c:choose>
 	<c:when test="${uffintAbilitati eq '1' }">
-		<c:set var="condizioneTorn" value="(select codgar from torn where gare.codgar1=codgar and tipgen=${tipgen } and offtel=1 and (ricastae is null or ricastae='2') and cenint='${uffint }')"/>
+		<c:set var="condizioneTorn" value="(select codgar from torn where gare.codgar1=codgar and tipgen= ${tipgen} and offtel=1 and (ricastae is null or ricastae='2') and (iterga is null or iterga<>8) and cenint='${uffint }')"/>
 	</c:when>
 	<c:otherwise>
-		<c:set var="condizioneTorn" value="(select codgar from torn where gare.codgar1=codgar and tipgen=${tipgen } and offtel=1 and (ricastae is null or ricastae='2'))"/>
+		<c:set var="condizioneTorn" value="(select codgar from torn where gare.codgar1=codgar and tipgen= ${tipgen} and offtel=1 and (ricastae is null or ricastae='2') and (iterga is null or iterga<>8))"/>
 	</c:otherwise>
 </c:choose>
 
@@ -76,8 +78,9 @@
 			<br/>
 		
 		<table class="lista">
+			
 			<tr>
-				<td><gene:formLista entita="GARE" pagesize="25" tableclass="datilista" gestisciProtezioni="false" sortColumn="-2" where="${where}" >
+				<td><gene:formLista entita="GARE" where="${where}" pagesize="25" tableclass="datilista" gestisciProtezioni="false" sortColumn="-2" >
 					<gene:campoLista title="Opzioni"	width="50">
 						<gene:PopUp variableJs="jvarRow${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'">
 							<gene:PopUpItem title="Seleziona" href="javascript:archivioSeleziona(${datiArchivioArrayJs});"/>

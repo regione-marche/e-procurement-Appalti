@@ -38,7 +38,7 @@ public class GestioneDocumentazioneFunction extends AbstractFunzioneTag {
   public static final String    ELENCO_CAMPI_DOCUMGARA  = "CODGAR, NGARA, NORDDOCG, GRUPPO, FASGAR, IDPRG, IDDOCDG, STATODOC, REQCAP, TIPODOC, CONTESTOVAL, VALENZA, "
       + "OBBLIGATORIO, DESCRIZIONE, DITTAAGG, BUSTA, FASELE, MODFIRMA, URLDOC, IDSTAMPA, GENTEL, ALLMAIL, DATARILASCIO";
 
-  public static final String    SELECT_W_DOCDIC = "select DIGDESDOC,DIGNOMDOC,DIGFIRMA from W_DOCDIG where IDPRG = ? and IDDOCDIG = ?";
+  public static final String    SELECT_W_DOCDIC = "select DIGDESDOC,DIGNOMDOC,DIGFIRMA,DIGTIPDOC from W_DOCDIG where IDPRG = ? and IDDOCDIG = ?";
 
 
   public GestioneDocumentazioneFunction() {
@@ -248,9 +248,9 @@ public class GestioneDocumentazioneFunction extends AbstractFunzioneTag {
 
           pageContext.setAttribute("documentiInvitoDescFile", listaDatiFileConcorrenti,
               PageContext.REQUEST_SCOPE);
-          pageContext.setAttribute("formatoAllegati", formatoAllegati,
-              PageContext.REQUEST_SCOPE);
         }
+        pageContext.setAttribute("formatoAllegati", formatoAllegati,
+            PageContext.REQUEST_SCOPE);
       }else if(tipoDocumentazione.longValue()==10){
         List attiDocumenti=null;
 
@@ -305,7 +305,7 @@ public class GestioneDocumentazioneFunction extends AbstractFunzioneTag {
 
   private List popolaListaAllegati(List allegati, PageContext pageContext, String abilitataRichiestaFirma) throws SQLException, GestoreException{
     List listaDatiFileAllegati = new ArrayList(
-        allegati.size() * 3);
+        allegati.size() * 4);
     int numDocAttesaFirma=0;
 
     for (int i = 0; i < allegati.size(); i++) {
@@ -316,9 +316,11 @@ public class GestioneDocumentazioneFunction extends AbstractFunzioneTag {
         listaDatiFileAllegati.add(SqlManager.getValueFromVectorParam(listaTmp.get(0),0).getStringValue());
         listaDatiFileAllegati.add(SqlManager.getValueFromVectorParam(listaTmp.get(0),1).getStringValue());
         listaDatiFileAllegati.add(SqlManager.getValueFromVectorParam(listaTmp.get(0),2).getStringValue());
+        listaDatiFileAllegati.add(SqlManager.getValueFromVectorParam(listaTmp.get(0),3).getStringValue());
         if("1".equals(SqlManager.getValueFromVectorParam(listaTmp.get(0),2).getStringValue()) && "1".equals(abilitataRichiestaFirma))
           numDocAttesaFirma++;
       }else{
+        listaDatiFileAllegati.add(null);
         listaDatiFileAllegati.add(null);
         listaDatiFileAllegati.add(null);
         listaDatiFileAllegati.add(null);

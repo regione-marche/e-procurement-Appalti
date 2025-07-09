@@ -23,6 +23,7 @@ import javax.servlet.jsp.PageContext;
 
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.gene.tags.utils.UtilityTags;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
@@ -63,6 +64,7 @@ public class GetComunicazioniDaLeggereFunction extends AbstractFunzioneTag {
 
     String result=null;
     String filtro = "";
+    String filtroComGeneriche = "";
     String tipoOperazione = (String) params[1];
     String profilo = (String) params[2];
     String filtroUtente = null;
@@ -117,26 +119,33 @@ public class GetComunicazioniDaLeggereFunction extends AbstractFunzioneTag {
 
     SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",
         pageContext, SqlManager.class);
+    
+    int campiSelect = 0;
 
     if("count".equals(tipoOperazione))
-      filtro = "select count(w_invcom.idprg) ";
+      filtro = filtroComGeneriche = "select count(w_invcom.idprg) ";
     else{
       //Poichè il campo comdatins contiene anche l'orario per poterlo visualizzare correttamente nella jsp lo devo trasformare in stringa
       String dbFunctionDateToString = sqlManager.getDBFunction("DATETIMETOSTRING",
           new String[] { "w_invcom.comdatins" });
-      filtro = "select w_invcom.idprg, w_invcom.idcom, w_invcom.comkey1, w_puser.userdesc, w_invcom.commsgogg, " + dbFunctionDateToString + ", w_invcom.comkey2 ";
+      filtro = filtroComGeneriche = "select w_invcom.idprg, w_invcom.idcom, w_invcom.comkey1, w_invcom.committ, w_invcom.commsgogg, " + dbFunctionDateToString + ", w_invcom.comdatins as orderbyparam"; 
+      filtro   += ", w_invcom.comkey2 ";
+      campiSelect=8;
       if("9".equals(profilo)) {
         filtro += ", nso.codord ";
+        campiSelect++;
       }
       if("10".equals(profilo)) {
         filtro += ", codstipula ";
+        campiSelect++;
       }
     }
 
     if("8".equals(profilo) && "count".equals(tipoOperazione)){
-      filtro = "select count(distinct idcom) ";
+      filtro = filtroComGeneriche = "select count(distinct idcom) ";
     }else if("8".equals(profilo) && "sel".equals(tipoOperazione)){
       filtro += ",v_gare_profilo.codprofilo, v_gare_profilo.cenint, v_gare_profilo.genere ";
+      campiSelect+=3;
     }
 
     filtro += pgManager.getFiltroComunicazioneDaLeggere(profilo, filtroUtente, filtroTipoGara, visualizzazioneGareALotti, visualizzazioneGareLottiOffUnica,
@@ -147,19 +156,48 @@ public class GetComunicazioniDaLeggereFunction extends AbstractFunzioneTag {
 
     filtro += pgManagerEst1.getFiltroComunicazioniSoccorsoIstruttorio(profilo);
 
+    if ("5".equals(profilo)) { // APPALTI-1772
+      if (UtilityTags.checkProtection(pageContext, "FUNZ.VIS.ALT.GARE.GAREAVVISI.filtroAvvisiGenerali", false)) {
+        filtro += " and gareavvisi.tipogen is not null";
+      } else {
+        filtro +=" and gareavvisi.tipogen is null";
+      }
+    }
+    
+    //APP-1316: aggiungo le comunicazioni generiche, filtrate eventualmente sull'uffint (non sul profilo)
+    for(int i=7; i<campiSelect;i++) {
+      filtroComGeneriche+=  ",null"; //eventualmente aggiungo tanti campi quanti sono quelli della query principale
+    }
+    filtroComGeneriche +=" from  w_invcom left join w_puser on w_invcom.comkey1=w_puser.usernome where comtipo='FS12' and comdatlet is null and coment = 'HOMEPG' and comstato='3' ";
+    if (filtroUffint != null && !"".equals(filtroUffint)) {
+      if("8".equals(profilo))
+        filtroComGeneriche += filtroUffint.replace("CENINT", "IDCFG");
+      else
+        filtroComGeneriche += "and idcfg = '"+filtroUffint+"'";
+    }
+
     if("count".equals(tipoOperazione)){
      try {
         Long conteggio = (Long)sqlManager.getObject(filtro, null);
         if (conteggio==null)
           conteggio = new Long(0);
-        result = conteggio.toString();
+        Long conteggioComunicazioniGeneriche = null;
+        if(UtilityTags.checkProtection(pageContext, "FUNZ.VIS.ALT.GARE.ModuloComunicazioniGeneriche",false)) {
+          conteggioComunicazioniGeneriche = (Long)sqlManager.getObject(filtroComGeneriche, null);
+        }
+        if (conteggioComunicazioniGeneriche==null)
+          conteggioComunicazioniGeneriche = new Long(0);
+        result = (conteggio+conteggioComunicazioniGeneriche)+"";
       } catch (SQLException e) {
         throw new JspException(
             "Errore durante il conteggio delle comunicazioni da leggere ", e);
       }
     }else{
       try {
-        filtro += " order by w_invcom.comdatins";
+        if(UtilityTags.checkProtection(pageContext, "FUNZ.VIS.ALT.GARE.ModuloComunicazioniGeneriche",false)) {
+          filtro += " union "+filtroComGeneriche;
+        }
+        filtro += " order by orderbyparam";
         List listaComunicazioni = sqlManager.getListVector(filtro, null);
         List newListaComunicazione = new ArrayList();
         if(listaComunicazioni!=null && listaComunicazioni.size()>0){
@@ -172,11 +210,19 @@ public class GetComunicazioniDaLeggereFunction extends AbstractFunzioneTag {
             datiRiga.add(0, SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 0).stringValue()); ;
             datiRiga .add(1,SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 1).longValue());
             datiRiga .add(2,SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 2).stringValue());
-            datiRiga .add(3, SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 3).stringValue());
-            datiRiga .add(4, SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 4).stringValue());
-            dataInserimento = SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 5).stringValue();
+            String ditta = SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 3).stringValue();
+            String comkey2=SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 7).stringValue();
+            if(("1".equals(profilo) || "8".equals(profilo)) && !ditta.matches("^operatore \\d{5}$")) {
+              Long countHideDitta = (Long) sqlManager.getObject("select count(1) from torn t,v_gare_torn v where v.codgar=t.codgar and iterga=9 and isfineconc is null and codice=?",
+                      new Object[]{comkey2});
+              if (countHideDitta != null && countHideDitta > 0)
+                ditta = "Dato anonimizzato";
+            }
+            datiRiga .add(3, ditta);
+            datiRiga .add(4, SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 4).stringValue()); //commsgogg
+            dataInserimento = SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 5).stringValue(); //datins
             datiRiga .add(5, dataInserimento);
-            datiRiga .add(6, SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 6).stringValue());
+            datiRiga .add(6, comkey2); //comkey2
 
             if(dataInserimento!=null && !"".equals(dataInserimento)){
               comdatinsDate = UtilityDate.convertiData(dataInserimento, UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS);
@@ -186,12 +232,12 @@ public class GetComunicazioniDaLeggereFunction extends AbstractFunzioneTag {
 
             datiRiga .add(7,comdatinsTimestamp);
             if("8".equals(profilo)){
-              datiRiga .add(8, SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 7).stringValue());
-              datiRiga .add(9, SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 8).stringValue());
-              datiRiga .add(10, SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 9).longValue());
+              datiRiga .add(8, SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 8).stringValue());
+              datiRiga .add(9, SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 9).stringValue());
+              datiRiga .add(10, SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 10).longValue());
             }
             if("9".equals(profilo)) {
-              datiRiga .add(8, SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 7).stringValue());
+              datiRiga .add(8, SqlManager.getValueFromVectorParam(listaComunicazioni.get(i), 8).stringValue());
             }
             newListaComunicazione.add(datiRiga);
           }

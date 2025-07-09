@@ -19,7 +19,6 @@
 <%@ taglib uri="http://displaytag.sf.net" prefix="display" %>
 <%@ taglib uri="http://struts.apache.org/tags-html" prefix="html" %>
 
-
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 
 <form action="" name="formRadioBut">

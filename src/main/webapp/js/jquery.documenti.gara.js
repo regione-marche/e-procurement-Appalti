@@ -183,13 +183,19 @@ function insDocumentoMDGUE(ngara,codgar,gruppo,isProceduraTelematica,tipologia){
 	openPopUpCustom(href, "creaDocumentoMDGUE", 600, 300, "no", "no");
 }
 
+function setupLargeFile(ngara,codgar,gruppo,isProceduraTelematica,tipologia){
+	var href = "href=gare/documgara/popupSetupLargeFile.jsp";
+	href += "?ngara=" + ngara + "&codgar=" + codgar+  "&gruppo=" + gruppo + "&isProceduraTelematica=" + isProceduraTelematica + "&tipologia=" + tipologia;
+	openPopUpCustom(href, "setupLargeFile", 800, 300, "no", "no");
+}
+
 function generaConMDGUE(codiceGara,idprg,iddocdig){
 	var getUrl = window.location;
 	var baseUrl = getUrl .protocol + "//" + getUrl.host + "/" + getUrl.pathname.split('/')[1]+'/';
 	console.log('baseUrl: '+baseUrl);
 	var a = document.createElement("a");
 	a.target = 'blank';
-	var href = baseUrl+'pg/DgueGenToken.do?'+csrfToken+'&codiceGara='+codiceGara+'&idprg='+idprg
+	var href = baseUrl+'pg/DgueGenToken.do?codiceGara='+codiceGara+'&idprg='+idprg
 	if(iddocdig)
 		href += '&iddocdig='+iddocdig;
 	a.href = href;
@@ -204,7 +210,7 @@ function apriConMDGUE(codiceGara,idprg,iddocdig){
 	console.log('baseUrl: '+baseUrl);
 	var a = document.createElement("a");
 	a.target = 'blank';
-	var href = baseUrl+'pg/DgueGenToken.do?'+csrfToken+'&codiceGara='+codiceGara+'&idprg='+idprg+'&apri=true';
+	var href = baseUrl+'pg/DgueGenToken.do?codiceGara='+codiceGara+'&idprg='+idprg+'&apri=true';
 	if(iddocdig)
 		href += '&iddocdig='+iddocdig;
 	a.href = href;
@@ -421,4 +427,17 @@ function preAperturaModaleRichiestaFirmaC0OGGASS(idprg,iddocdig,indiceRiga){
 	var desc = colonnaDesc.find("span").text();
 	$('#oggettoDocumento').val(desc);
 	apriModaleRichiestaFirma(idprg, iddocdig,'');
+}
+
+function caricaLargeFile(codiceGara, norddocg){
+	var getUrl = window.location;
+	var baseUrl = getUrl .protocol + "//" + getUrl.host + "/" + getUrl.pathname.split('/')[1]+'/';
+	console.log('baseUrl: '+baseUrl);
+	var a = document.createElement("a");
+	a.target = 'blank';
+	var href = baseUrl+'pg/LargeFileGenToken.do?codiceGara='+codiceGara+'&norddocg='+norddocg;
+	a.href = href;
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
 }

@@ -29,8 +29,11 @@ _letturaMittenteDaServzio = false;
 var _isStipula = false;
 var msgNoFascicoloLapisopera = "Non risulta ancora associato il fascicolo alla procedura. Procedere all'associazione mediante la funzione 'Associa fascicolo' disponibile nella pagina 'Dati generali' della procedura.";
 var _associaCreaFunz = false;
-var messaggioLapisoperaAllegati = "ATTENZIONE: il sistema di protocollo accetta solo comunicazioni che abbiano un allegato principale (il primo in lista) firmato digitalmente nel formato '.pdf.p7m'.\r\nPer inviare la comunicazione senza protocollarla e' possibile utilizzare la funzione 'Invia Comunicazione' disponibile nel menu' laterale della pagina 'Dati generali' della comunicazione.\r\nIl fornitore ricevera' la notifica di ricezione di una nuova comunicazione tramite mail non pec.";
+var messaggioLapisoperaAllegati = "ATTENZIONE: il sistema di protocollo accetta solo comunicazioni che abbiano un allegato principale (il primo in lista) firmato digitalmente.\r\nPer inviare la comunicazione senza protocollarla e' possibile utilizzare la funzione 'Invia Comunicazione' disponibile nel menu' laterale della pagina 'Dati generali' della comunicazione.";
 var formatoFileFirmatoLapis = 'PDF.P7M';
+var _isObbligoAssociazioneFascicolo = false;
+var msgObbligoAssociazioneFascicolo = "Non risulta ancora associato il fascicolo alla procedura. Procedere all'associazione mediante la funzione 'Fascicolo documentale' disponibile nella pagina 'Dati generali' della procedura.";
+
 /*
  * Funzione di attesa
  */
@@ -328,7 +331,7 @@ function _gestioneWSLogin() {
 
 	if (tiposistemaremoto == "FOLIUM" || tiposistemaremoto == "ARCHIFLOWFA" || tiposistemaremoto == "EASYDOC" || tiposistemaremoto == "SMAT" || tiposistemaremoto == "TITULUS" || tiposistemaremoto == "ARCHIFLOW" || tiposistemaremoto == "PRISMA"
 		|| tiposistemaremoto == "INFOR" || tiposistemaremoto == "URBI" || tiposistemaremoto == "PROTSERVICE" || tiposistemaremoto == "JPROTOCOL" || tiposistemaremoto == "ITALPROT" || tiposistemaremoto == "JDOC" || tiposistemaremoto == "DOCER"
-		|| tiposistemaremoto == "NUMIX") {
+		|| tiposistemaremoto == "NUMIX" || tiposistemaremoto == "HALLEY") {
 		$("#ruolo").hide();
 		$("#ruolo").closest('tr').hide();
 		$("#nome").hide();
@@ -342,7 +345,7 @@ function _gestioneWSLogin() {
 		$("#idutenteunop").hide();
 		$("#idutenteunop").closest('tr').hide();
 
-		if (tiposistemaremoto == "INFOR" || tiposistemaremoto == "PROTSERVICE" || tiposistemaremoto == "JPROTOCOL") {
+		if (tiposistemaremoto == "INFOR" || tiposistemaremoto == "PROTSERVICE" || tiposistemaremoto == "JPROTOCOL" || tiposistemaremoto == "HALLEY") {
 			$("#password").hide();
 			$("#password").closest('tr').hide();
 		}
@@ -407,6 +410,15 @@ function _gestioneWSLogin() {
 
 	if (_logincomune == "1") {
 		bloccaCampiLoginComune();
+		$("#rigaTitoloLogin").addClass("hidden");
+		$("#rigaPassword").remove();
+		$("#rigaUtente").remove();
+		$("#rigaRuolo").addClass("hidden");
+		$("#rigaNome").addClass("hidden");
+		$("#rigaCognome").addClass("hidden");
+		$("#rigaUnitaOrganizzativa").addClass("hidden");
+		$("#rigaIdUtente").addClass("hidden");
+		$("#rigaIdUtenteUnitaOperativa").addClass("hidden");
 	}
 }
 
@@ -475,7 +487,7 @@ function _setWSLogin() {
  * Salva l'utente e gli attributi attributi per la connessione ai servizi remoti,
  * i dati vengono passati come parametri
  */
-function setWSLogin(syscon, servizio, username, password, ruolo, nome, cognome, codiceuo, idutente, idutenteunop, idconfi) {
+function setWSLogin(syscon, servizio, username, password, ruolo, nome, cognome, codiceuo, idutente, idutenteunop, idconfi, pagina) {
 
 	$.ajax({
 		type: "GET",
@@ -492,7 +504,8 @@ function setWSLogin(syscon, servizio, username, password, ruolo, nome, cognome, 
 			codiceuo: codiceuo,
 			idutente: idutente,
 			idutenteunop: idutenteunop,
-			idconfi: idconfi
+			idconfi: idconfi,
+			pagina: pagina
 		}
 	});
 }
@@ -717,10 +730,8 @@ function _inizializzazioni() {
 
 	$('#inserimentoinfascicolo').trigger('change');
 	if (_fascicolazioneAbilitata == 1 || _tipoWSDM == "PALEO" || _tipoWSDM == "TITULUS" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "SMAT" || _tipoWSDM == "URBI") {
-		if (_tipoWSDM != "LAPISOPERA") {
-			$("#classificadocumento").hide();
-			$("#classificadocumento").closest('tr').hide();
-		}
+		$("#classificadocumento").hide();
+		$("#classificadocumento").closest('tr').hide();
 		$("#idtitolazione").hide();
 		$("#idtitolazione").closest('tr').hide();
 	}
@@ -741,7 +752,7 @@ function _inizializzazioni() {
 		$("#idunitaoperativamittente").closest('tr').hide();
 		var password = $("#password").val();
 		var username = $("#username").val();
-		if (username != null && password != null && username != "" && password != "" && $("#inserimentoinfascicolo").val() == "SI_FASCICOLO_NUOVO") {
+		if (((username != null && password != null && username != "" && password != "") || _logincomune == '1')  && $("#inserimentoinfascicolo").val() == "SI_FASCICOLO_NUOVO") {
 			_popolaTabellatoCodiceAoo();
 		}
 		if ($("#inserimentoinfascicolo").val() == "SI_FASCICOLO_NUOVO") {
@@ -842,7 +853,7 @@ function _inizializzazioni() {
 
 	}
 
-	if (_tipoWSDM == "ARCHIFLOWFA" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "JIRIDE") {
+	if (_tipoWSDM == "ARCHIFLOWFA" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "JIRIDE" || _tipoWSDM == "HALLEY") {
 		if (_delegaInvioMailDocumentaleAbilitata == 1) {
 			_caricamentoIndirizzoMittenteGara();
 			if (_indirizzoMittente != null && _indirizzoMittente != "") {
@@ -999,6 +1010,33 @@ function _inizializzazioni() {
 		$("#idindice").closest('tr').hide();
 		$("#idunitaoperativamittente").hide();
 		$("#idunitaoperativamittente").closest('tr').hide();
+		var classifica = $('#classificafascicolodescrizione').text();
+		$("#classificadocumento").append($("<option/>", { value: classifica, text: classifica }));
+		$("#classificadocumento option").eq(1).prop('selected', true);
+	}
+
+	if (_tipoWSDM == "HALLEY") {
+		$("#idtitolazione").hide();
+		$("#idtitolazione").closest('tr').hide();
+		$("#codiceregistrodocumento").hide();
+		$("#codiceregistrodocumento").closest('tr').hide();
+		$("#tipodocumento").hide();
+		$("#tipodocumento").closest('tr').hide();
+		$("#mittenteinterno").hide();
+		$("#mittenteinterno").closest('tr').hide();
+		$("#idindice").hide();
+		$("#idindice").closest('tr').hide();
+		_controlloGestioneStrutturaCompetente();
+		if (_gestioneStrutturaCompetente == 1 && ($('#strutturaonuovo').val()!=null && $('#strutturaonuovo').val()!="")) {
+			$("#idunitaoperativamittente").empty();
+			$("#idunitaoperativamittente").append($("<option/>", {value: $('#strutturaonuovo').val(), text: $('#strutturaonuovo').val() }));
+			$("#idunitaoperativamittente option").eq(0).prop('selected', true);
+			$("#idunitaoperativamittente").hide();
+			$("#idunitaoperativamittente").closest('tr').hide();
+			$("#idunitaoperativamittente").trigger('change');
+		}
+
+
 	}
 
 	if ($("#classificafascicolonuovo option").length == 2 || (_tipoWSDM == "PRISMA" && $("#classificafascicolonuovo option").length == 1)) {
@@ -1183,7 +1221,7 @@ function _gestioneInserimentoInFascicolo() {
 
 		if ($('#tiposistemaremoto').val() == 'IRIDE' || $('#tiposistemaremoto').val() == 'JIRIDE' || $('#tiposistemaremoto').val() == 'ENGINEERING' || $('#tiposistemaremoto').val() == 'ARCHIFLOW'
 			|| $('#tiposistemaremoto').val() == 'PRISMA' || $('#tiposistemaremoto').val() == 'INFOR' || $('#tiposistemaremoto').val() == 'JPROTOCOL' || $('#tiposistemaremoto').val() == 'JDOC'
-			|| $('#tiposistemaremoto').val() == 'DOCER' || $('#tiposistemaremoto').val() == 'ENGINEERINGDOC' || $('#tiposistemaremoto').val() == 'LAPISOPERA') {
+			|| $('#tiposistemaremoto').val() == 'DOCER' || $('#tiposistemaremoto').val() == 'ENGINEERINGDOC' || $('#tiposistemaremoto').val() == 'LAPISOPERA' || $('#tiposistemaremoto').val() == 'HALLEY') {
 			$("#annofascicolo").parent().parent().show();
 			$("#numerofascicolo").parent().parent().show();
 			if ($('#tiposistemaremoto').val() == 'JIRIDE' || $('#tiposistemaremoto').val() == 'JPROTOCOL' || $('#tiposistemaremoto').val() == 'JDOC' || $('#tiposistemaremoto').val() == 'DOCER'
@@ -1199,7 +1237,7 @@ function _gestioneInserimentoInFascicolo() {
 				$("#classificafascicolodescrizione").parent().parent().show();
 			$("#classificafascicolonuovo").parent().parent().hide();
 			if ($('#tiposistemaremoto').val() != 'PRISMA' && $('#tiposistemaremoto').val() != 'INFOR' && $('#tiposistemaremoto').val() != 'JIRIDE' && $('#tiposistemaremoto').val() != 'JPROTOCOL'
-				&& $('#tiposistemaremoto').val() != 'JDOC' && $('#tiposistemaremoto').val() != 'DOCER' && $('#tiposistemaremoto').val() != 'LAPISOPERA')
+				&& $('#tiposistemaremoto').val() != 'JDOC' && $('#tiposistemaremoto').val() != 'DOCER' && $('#tiposistemaremoto').val() != 'LAPISOPERA' && $('#tiposistemaremoto').val() != 'HALLEY' )
 				$("#descrizionefascicolo").parent().parent().show();
 			else
 				$("#descrizionefascicolo").parent().parent().hide();
@@ -1222,7 +1260,7 @@ function _gestioneInserimentoInFascicolo() {
 		$("#codicefascicolo").addClass("readonly");
 		if ($('#tiposistemaremoto').val() == 'IRIDE' || $('#tiposistemaremoto').val() == 'JIRIDE' || $('#tiposistemaremoto').val() == 'ENGINEERING' || $('#tiposistemaremoto').val() == 'ARCHIFLOW' || $('#tiposistemaremoto').val() == 'PRISMA'
 			|| $('#tiposistemaremoto').val() == 'INFOR' || $('#tiposistemaremoto').val() == 'JPROTOCOL' || $('#tiposistemaremoto').val() == 'JDOC' || $('#tiposistemaremoto').val() == 'DOCER'
-			|| $('#tiposistemaremoto').val() == 'ITALPROT' || $('#tiposistemaremoto').val() == 'ENGINEERINGDOC' || $('#tiposistemaremoto').val() == 'LAPISOPERA') {
+			|| $('#tiposistemaremoto').val() == 'ITALPROT' || $('#tiposistemaremoto').val() == 'ENGINEERINGDOC' || $('#tiposistemaremoto').val() == 'LAPISOPERA' || $('#tiposistemaremoto').val() == 'HALLEY') {
 			$("#annofascicolo").prop("readonly", true);
 			$("#annofascicolo").addClass("readonly");
 			$("#numerofascicolo").prop("readonly", true);
@@ -1337,9 +1375,31 @@ function _gestioneInserimentoInFascicolo() {
 			if (_associaCreaFunz == false)
 				$('#linkleggiDatiFascicolo').show();
 		}
+
+		if ($('#tiposistemaremoto').val() == 'HALLEY'){
+			_controlloGestioneStrutturaCompetente();
+		 	if(_gestioneStrutturaCompetente == 1) {
+				$("#sezionestruttura").show();
+				$("#sezionestrutturacompetente").show();
+				_setDescrizioneCodiceTabellato("struttura", $("#strutturaonuovo").val(), "struttura", 2);
+				$('#strutturaonuovo').hide();
+				$('#struttura').show();
+			}
+		}
+
+		if ($('#tiposistemaremoto').val() == 'ARCHIFLOW') {
+			_caricamentoDatiRUP();
+		}
 	}
 
 	if (inserimentoinfascicolo == "SI_FASCICOLO_NUOVO") {
+
+		if($('#tiposistemaremoto').val() == 'HALLEY')
+			_isObbligoAssociazioneFascicolo=true;
+		
+		if(_isObbligoAssociazioneFascicolo)
+			$('#documentifascicolomessaggio').text(msgObbligoAssociazioneFascicolo);
+		
 		if ($('#tiposistemaremoto').val() != 'SMAT' && $('#tiposistemaremoto').val() != 'ARCHIFLOWFA' && $('#tiposistemaremoto').val() != 'LAPISOPERA')
 			$("#codicefascicolo").parent().parent().hide();
 		if ($('#tiposistemaremoto').val() == 'TITULUS' || $('#tiposistemaremoto').val() == 'SMAT')
@@ -1438,6 +1498,16 @@ function _gestioneInserimentoInFascicolo() {
 			}
 		}
 
+		if ($('#tiposistemaremoto').val() == 'HALLEY') {
+			$("#descrizionefascicolo").parent().parent().hide();
+			_controlloGestioneStrutturaCompetente();
+			if (_gestioneStrutturaCompetente == 1) {
+				_popolaTabellato("struttura", "strutturaonuovo");
+				$("#sezionestruttura").show();
+				$("#sezionestrutturacompetente").show();
+			}
+		}
+
 		if ($('#tiposistemaremoto').val() == 'JDOC') {
 			_caricamentoDatiRUP();
 			$("#rigaAcronimoRup").show();
@@ -1483,6 +1553,35 @@ function _gestioneInserimentoInFascicolo() {
 				$('#wsdmprotocollapulsante').hide();
 				$('#archiviaWsdmButton').hide();
 			}
+		}
+		if(_isObbligoAssociazioneFascicolo){
+				$('#documentifascicolomessaggio').show();
+				$('#wsdmprotocollapulsante').hide();
+				$('#archiviaWsdmButton').hide();
+				
+				$("#annofascicolo").hide();
+				$("#numerofascicolo").hide();
+				$("#codicefascicolo").hide();
+				$("#oggettofascicolo").hide();
+				$("#oggettofascicolonuovo").hide();
+				$("#classificafascicolodescrizione").hide();
+				$("#classificafascicolonuovo").hide();
+				$("#descrizionefascicolo").hide();
+				$("#descrizionefascicolonuovo").hide();
+
+				$("#classificafascicolonuovoItalprot").hide();
+				$("#listafascicoli").hide();
+				$("#linkleggifascicoliItalprot").remove();
+				
+				$("#selezioneuocompetenza").remove();
+				
+				$("#strutturaonuovo").hide();
+				
+				$("#tipofascicolonuovo").hide();
+				$("#uocompetenzaTxt").hide();
+				
+				$("#nomeRup").hide();
+				$("#acronimoRup").hide();
 		}
 	}
 
@@ -1891,8 +1990,8 @@ function _testURL(url, tns) {
 				x.overrideMimeType("application/json;charset=UTF-8");
 			}
 		},
-		url: "pg/GetURL.do",
-		data: "url=" + url + "?wsdl&tns=" + tns,
+		url: "pg/GetInternalWSUrl.do",
+		data: "url=" + url + "&tns=" + tns,
 		success: function(data) {
 			if (data == true) {
 				_URLvalido = true;
@@ -2116,7 +2215,7 @@ function caricamentoCodiceAooTITULUS() {
 	if ($("#inserimentoinfascicolo").val() == "SI_FASCICOLO_NUOVO") {
 		var password = $("#password").val();
 		var username = $("#username").val();
-		if (username != null && password != null && username != "" && password != "") {
+		if ((username != null && password != null && username != "" && password != "") || _logincomune == '1') {
 			_popolaTabellatoCodiceAoo();
 		} else {
 			$('#codiceaoonuovo').find('option').not('[value=123]').remove();
@@ -2473,7 +2572,8 @@ function _getWSLoginConfigurazione(syscon, servizio, modo, idconfi) {
 		data: {
 			syscon: syscon,
 			servizio: servizio,
-			idconfi: idconfi
+			idconfi: idconfi,
+			pagina: "configurazione"
 		},
 		success: function(data) {
 			if (data) {
@@ -2895,7 +2995,7 @@ function caricamentoStrutturaJIRIDE() {
 		var ruolo = $("#ruolo option:selected").val();
 		var username = $("#username").val();
 		$('#strutturaonuovo').empty();
-		if (ruolo != null && ruolo != "" && username != null && username != "") {
+		if (ruolo != null && ruolo != "" && ((username != null && username != "") || _logincomune == '1')) {
 			_popolaTabellatoStrutturaDaServizio();
 		} else {
 			$('#codiceufficionuovo').empty();
@@ -3050,7 +3150,7 @@ function _gestioneWSLoginContratto(visibile) {
 	} else {
 		$("#username").show();
 		$("#username").closest('tr').show();
-		if (tiposistemaremoto != "JIRIDE" && tiposistemaremoto != "INFOR" && tiposistemaremoto != "PROTSERVICE" && tiposistemaremoto != "JPROTOCOL") {
+		if (tiposistemaremoto != "JIRIDE" && tiposistemaremoto != "INFOR" && tiposistemaremoto != "PROTSERVICE" && tiposistemaremoto != "JPROTOCOL" && tiposistemaremoto != "HALLEY") {
 			$("#password").show();
 			$("#password").closest('tr').show();
 		}
@@ -3426,7 +3526,7 @@ function _inizializzaCodiceUfficioFiltrato() {
 }
 
 function _popolaTabellatoClassificaTitulus() {
-	if ($("#username").val() == null || $("#username").val() == "" || $("#password").val() == null || $("#password").val() == "")
+	if (_logincomune != '1' && ($("#username").val() == null || $("#username").val() == "" || $("#password").val() == null || $("#password").val() == ""))
 		return;
 
 	_wait();
@@ -3821,7 +3921,7 @@ function gestioneCampoPosizioneTitulus() {
 function gestioneletturafascicoliItalprot() {
 	var utente = $("#username").val();
 	var password = $("#password").val();
-	if (utente == null || utente == "" && password == null || password == "") {
+	if (_logincomune != '1' && (utente == null || utente == "" && password == null || password == "")) {
 		alert("Valorizzare utente e password");
 		return;
 	}
@@ -3892,7 +3992,7 @@ function gestioneletturafascicoliLapisopera() {
 	var utente = $("#username").val();
 	var password = $("#password").val();
 	var cognome = $("#cognome").val();
-	if (utente == null || utente == "" || password == null || password == "" || cognome == null || cognome == "") {
+	if (_logincomune != '1' && (utente == null || utente == "" || password == null || password == "" || cognome == null || cognome == "")) {
 		alert("Valorizzare utente, password e cognome");
 		return;
 	}
@@ -3911,6 +4011,9 @@ function gestioneletturafascicoliLapisopera() {
 	}
 	$('#listafascicoliLapis').empty();
 	_wait();
+	var classificaList = [];
+	$('#classificafascicoloRic option').each(function() { if($(this).val()){classificaList.push( $(this).val())} }); 
+	
 	$.ajax({
 		type: "POST",
 		dataType: "json",
@@ -3949,8 +4052,10 @@ function gestioneletturafascicoliLapisopera() {
 						var numero;
 						var struttura;
 						$.map(json.data, function(item) {
-							annoFascicolo = item.anno;
 							classificaFascicolo = item.classifica;
+							if(classificaList.length>0 && !classificaList.includes(classificaFascicolo))
+								return;	
+							annoFascicolo = item.anno;
 							classificaDescFascicolo = item.classificaDesc;
 							oggetto = item.descrizione;
 							codice = item.codice;
@@ -4027,7 +4132,7 @@ function gestioneSelezioneFascicolo(valore, tipoSistema) {
 }
 
 function _popolaTabellatoClassificaNumix() {
-	if ($("#username").val() == null || $("#username").val() == "" || $("#password").val() == null || $("#password").val() == "")
+	if (_logincomune != '1' && ($("#username").val() == null || $("#username").val() == "" || $("#password").val() == null || $("#password").val() == ""))
 		return;
 
 	_wait();
@@ -4262,7 +4367,7 @@ function caricamentoClassificaNumix() {
 
 	var password = $("#password").val();
 	var username = $("#username").val();
-	if (username != null && password != null && username != "" && password != "") {
+	if (_logincomune == '1' || (username != null && password != null && username != "" && password != "")) {
 		_popolaTabellatoClassificaNumix();
 	} else {
 		$('#classificadocumento').empty()
@@ -4273,12 +4378,73 @@ function caricamentoClassificaNumix() {
 
 }
 
-function controlloFormatoAllegato(nomeFile) {
-	var fileFirmato = false;
-	nomeFile = nomeFile.toUpperCase();
-	var dimEstentisone = formatoFileFirmatoLapis.length;
-	if (formatoFileFirmatoLapis == nomeFile.substring(nomeFile.length - dimEstentisone))
-		fileFirmato = true;
-	return fileFirmato;
+function controlloFormatoAllegato(idprg, iddocdig,idconfi) {
+	var esito = [false,""];
+	$.ajax({
+			type: "POST",
+			dataType: "json",
+			async: false,
+			beforeSend: function(x) {
+				if(x && x.overrideMimeType) {
+					x.overrideMimeType("application/json;charset=UTF-8");
+				}
+			},
+			url: "pg/CheckPrimoDocumentoFirmato.do", 
+			data: {
+				idprg: idprg,
+				iddocdig: iddocdig,
+				idconfi: idconfi
+			},
+			success: function(json){
+				esito[0]=json.primoAllegatoFirmato
+				esito[1]=json.messaggioLapis
+			},
+			error: function(e){
+				esito[1] = "Errore durante l'operazione di verifica della firma per il primo file";
+			},
+			complete: function() {
+				_nowait();
+			}
+		});
+	return esito;
+}
+
+function controlloFormatoAllegatoDaForm(file,idconfi) {
+	var esito = [false,""];
+	
+	if(file != undefined){
+		var formdata = false;
+		if (window.FormData) {
+			formdata = new FormData();
+		}
+		if (formdata) {
+			formdata.append("file", file);
+			formdata.append("idconfi", idconfi);
+		}
+		
+		_wait();
+		$.ajax({
+			url: "pg/CheckPrimoDocumentoFirmato.do",
+			data: formdata,
+			enctype: 'multipart/form-data',
+			type: 'POST',
+			cache: false,
+			contentType: false,
+			processData: false,
+			dataType: "json",
+			async: false,
+			success: function(json){
+				esito[0]=json.primoAllegatoFirmato
+				esito[1]=json.messaggioLapis
+			},
+			error: function(e){
+				esito[1] = "Errore durante l'operazione di verifica della firma per il primo file";
+			},
+			complete: function() {
+				_nowait();
+			}
+		});
+	}
+	return esito;
 }
 

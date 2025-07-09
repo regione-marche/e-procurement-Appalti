@@ -31,6 +31,7 @@ import it.eldasoft.sil.w3.bl.GestioneServiziIDGARACIGManager;
 import it.eldasoft.sil.w3.bl.ValidazioneIDGARACIGManager;
 import it.eldasoft.utils.utility.UtilityDate;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
@@ -85,13 +86,25 @@ public class ElaboraRichiesteLottiAction extends ActionBaseNoOpzioni {
     String target = FORWARD_SUCCESS;
     String messageKey = null;
     boolean rpntFailed = false;
-
+    Long numgara = null;
+    String errore = null;
+    String evento = "";
+    String messaggioBaseResponse = "";
+    String oggevento = "";
+    String riferimentoG = "";
+    String riferimento = "";
+    Long numeroRichiesteDaElaborare = 0L;
+    Long numeroRichiesteElaborate = 0L;
+    Long numeroRichiesteNonValide = 0L;
+    String msg="Fine richiesta CIG massiva a SIMOG";
+    
     try {
-      Long numgara = Long.parseLong(request.getParameter("numgara"));
+      numgara = Long.parseLong(request.getParameter("numgara"));
       String recuperaUser = request.getParameter("recuperauser");
       String recuperaPassword = request.getParameter("recuperapassword");
       String inviaConCigNonPresenti = request.getParameter("inviaConCigNonPresenti");
       String rpntFailedString = request.getParameter("rpntFailed");
+
       if("1".equals(rpntFailedString)) {
         rpntFailed=true;
       }
@@ -123,16 +136,28 @@ public class ElaboraRichiesteLottiAction extends ActionBaseNoOpzioni {
 
       // Gestione lista dei lotti
       List<?> datiW3LOTT = sqlManager.getListVector(
-          "select numlott, oggetto, stato_simog from w3lott where numgara = ? and stato_simog in (1,3) order by numlott",
+          "select numlott, oggetto, stato_simog from w3lott where numgara = ? and stato_simog in (1,3) order by stato_simog, numlott",
           new Object[] { numgara });
 
       List<Object> listaStatoElaborazioneRichieste = new Vector<Object>();
-      Long numeroRichiesteDaElaborare = 0L;
-      Long numeroRichiesteElaborate = 0L;
+      
+      
 
       if (datiW3LOTT != null && datiW3LOTT.size() > 0) {
         numeroRichiesteDaElaborare = (long) datiW3LOTT.size();
-
+        messaggioBaseResponse="Risposta SIMOG modifica anagrafica gara";
+        oggevento=numgara.toString();
+        List<?> datiW3GARA = this.gestioneServiziIDGARACIGManager.getSqlManager().getVector("select id_gara, codgar from w3gara where numgara = ?", new Object[] { numgara }); 
+        String idgara = (String) SqlManager.getValueFromVectorParam(datiW3GARA, 0).getValue();
+        String codgar = (String) SqlManager.getValueFromVectorParam(datiW3GARA, 1).getValue();
+        riferimentoG = " (N.gara "+idgara;
+        if(StringUtils.stripToNull(codgar)!=null)
+          riferimentoG += ", rif.gara "+codgar.replace("$","");
+        riferimentoG += ")";
+        riferimento = riferimentoG;
+        
+        GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, -1, 1, oggevento, "INIT_RICMASSIVA", "Avvio richiesta CIG massiva a SIMOG: "+numeroRichiesteDaElaborare+" lotti da elaborare"+riferimento, null);  
+        
         for (int i = 0; i < datiW3LOTT.size(); i++) {
           Long numlott = (Long) SqlManager.getValueFromVectorParam(datiW3LOTT.get(i), 0).getValue();
           String oggetto = (String) SqlManager.getValueFromVectorParam(datiW3LOTT.get(i), 1).getValue();
@@ -149,23 +174,59 @@ public class ElaboraRichiesteLottiAction extends ActionBaseNoOpzioni {
 
           if (numeroErrori == 0) {
             if ((new Long(1)).equals(stato_simog)) {
-            //APPALTI-1061: verifico se il numero di cig in locale è pari al numero di cig su SIMOG: se negativo, sanare la situazione
-              HashMap<String, Object> mappaCigNonPresenti = this.gestioneServiziIDGARACIGManager.consultaLottiGara(simogwsuser, simogwspass, numgara,rpntFailed);
-              if(mappaCigNonPresenti.size()>0 && !"1".equals(inviaConCigNonPresenti)) {
+              if(!"1".equals(inviaConCigNonPresenti) && i==0) {
+                //APPALTI-1061: verifico se il numero di cig in locale è pari al numero di cig su SIMOG: se negativo, sanare la situazione
+                evento="CONSULTA_GARA";
+                messaggioBaseResponse="Risposta SIMOG consultazione anagrafica gara";
+                GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 0, 1, oggevento, evento, "Invio richiesta a SIMOG consultazione anagrafica gara"+riferimento, null);
+                              
+                HashMap<String, Object> mappaCigNonPresenti = this.gestioneServiziIDGARACIGManager.consultaLottiGara(simogwsuser, simogwspass, numgara,rpntFailed);
+                if(mappaCigNonPresenti.size()>0) {
+                  String alert = "Attenzione: in SIMOG sono presenti dei CIG ("+mappaCigNonPresenti.size()+") per la gara non associati ad alcuno dei lotti in anagrafica";
                   request.getSession().setAttribute("cigNonPresenti", mappaCigNonPresenti);
+                  GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 1, 2, oggevento, evento, messaggioBaseResponse+riferimento, alert);
+                  GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, -1, 1, oggevento, "FINE_RICMASSIVA", msg+riferimento, null);  
                   return mapping.findForward(FORWARD_WARNING);
-              }//APPALTI-1061 fine
+                }
+                GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 1, 1, oggevento, evento, messaggioBaseResponse+riferimento, null);
+              }
+              //APPALTI-1061 fine
+              
+              evento="INVIO_LOTTO";
+              messaggioBaseResponse="Risposta SIMOG assegnazione CIG";
+              oggevento = numgara+"/"+numlott;
+              String ngara = (String) this.gestioneServiziIDGARACIGManager.getSqlManager().getObject("select ngara from w3lott where numgara = ? and numlott = ?", new Object[] { numgara, numlott });
+              if(StringUtils.stripToNull(ngara)!=null)
+                riferimento = " (rif.gara "+ngara+")";
+              
+              GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 0, 1, oggevento, evento, "Invio richiesta a SIMOG assegnazione CIG"+riferimento, null);
               String cig = this.gestioneServiziIDGARACIGManager.richiestaCIG(simogwsuser, simogwspass, numgara, numlott,rpntFailed);
               if(cig!=null) {
               	this.anagraficaSimogManager.setGaraLotto("G", numgara, numlott, null, cig, 
               			new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()));
               }
+              GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 1, 1, oggevento, evento, messaggioBaseResponse+". CIG assegnato "+cig+riferimento, null);      
+              
             } else {
+              evento="MODIFICA_LOTTO";
+              messaggioBaseResponse="Risposta SIMOG modifica anagrafica lotto";
+              oggevento = numgara+"/"+numlott;
+              List<?> datiWLOTT = this.gestioneServiziIDGARACIGManager.getSqlManager().getVector("select ngara, cig from w3lott where numgara = ? and numlott = ?", new Object[] { numgara, numlott });
+              String ngara = (String) SqlManager.getValueFromVectorParam(datiWLOTT, 0).getValue();
+              String cig = (String) SqlManager.getValueFromVectorParam(datiWLOTT, 1).getValue();
+              riferimento = " (CIG "+cig;
+              if(StringUtils.stripToNull(ngara)!=null)
+                riferimento += ", rif.gara "+ngara;
+              riferimento+=")";
+              
+              GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 0, 1, oggevento, evento, "Invio richiesta a SIMOG modifica anagrafica lotto"+riferimento, null);  
               this.gestioneServiziIDGARACIGManager.modificaLOTTO(simogwsuser, simogwspass, numgara, numlott,rpntFailed);
+              GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 1, 1, oggevento, evento, messaggioBaseResponse+riferimento, null);      
             }
             numeroRichiesteElaborate = numeroRichiesteElaborate.longValue() + 1;
           } else {
             listaStatoElaborazioneRichieste.add(((Object) (new Object[] { numlott, oggetto })));
+            numeroRichiesteNonValide++;
           }
         }
       }
@@ -177,6 +238,7 @@ public class ElaboraRichiesteLottiAction extends ActionBaseNoOpzioni {
       request.getSession().setAttribute("numgara", numgara);
       request.getSession().setAttribute("numeroPopUp", "1");
     } catch (GestoreException e) {
+      errore = e.getMessage();
       target = FORWARD_ERROR;
       messageKey = "errors.gestioneIDGARACIG.error";
       logger.error(this.resBundleGenerale.getString(messageKey), e);
@@ -196,12 +258,30 @@ public class ElaboraRichiesteLottiAction extends ActionBaseNoOpzioni {
         }
       }
     } catch (Throwable e) {
+      errore = e.getMessage();
       target = CostantiGeneraliStruts.FORWARD_ERRORE_GENERALE;
       messageKey = "errors.applicazione.inaspettataException";
       logger.error(this.resBundleGenerale.getString(messageKey), e);
       this.aggiungiMessaggio(request, messageKey);
     }
+    if(errore!=null)
+      GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 1, 3, oggevento, evento, messaggioBaseResponse+riferimento, errore);
+    
+    if(numeroRichiesteDaElaborare>0) {
+      int err=0;
+      if(errore!=null)
+        err=1;
+      
+      Long diff = numeroRichiesteDaElaborare-numeroRichiesteElaborate-numeroRichiesteNonValide-err;
 
+      msg += ": "+numeroRichiesteElaborate+" richieste elaborate";
+      msg += ", "+numeroRichiesteNonValide+" richieste non elaborate per controllo dati non superato"; 
+      msg += ", "+err+" richieste non elaborate a causa di errori";
+      msg += ", "+(diff)+" richieste non elaborate a causa di errori sulle elaborazioni precedenti ";
+
+      GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, -1, 1, numgara.toString(), "FINE_RICMASSIVA", 
+      msg+riferimentoG, null);  
+    }
     if (messageKey != null) response.reset();
 
     if (logger.isDebugEnabled())

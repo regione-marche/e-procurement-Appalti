@@ -13,6 +13,7 @@ package it.eldasoft.sil.pg.web.struts;
 import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
 import it.eldasoft.gene.commons.web.struts.CostantiGeneraliStruts;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoResType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoType;
@@ -66,6 +67,13 @@ public class GetWSDMProtocolloAllegatoAction extends ActionBaseNoOpzioni {
       String servizio = request.getParameter("getprotocolloallegato_servizio");
       String idconfi = request.getParameter("getprotocolloallegato_idconfi");
 
+      String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+      if("1".equals(wsdmLoginComune)){
+        String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+        username = credenziali[0];
+        password = credenziali[1];
+      }
+
       WSDMProtocolloDocumentoResType wsdmProtocolloDocumentoRes = this.gestioneWSDMManager.wsdmProtocolloLeggi(username, password, ruolo,
           nome, cognome, codiceuo, idutente, idutenteunop, annoprotocollo, numeroprotocollo, servizio, idconfi);
 
@@ -75,17 +83,32 @@ public class GetWSDMProtocolloAllegatoAction extends ActionBaseNoOpzioni {
           if (wsdmProtocolloDocumento.getAllegati() != null) {
             WSDMProtocolloAllegatoType[] allegati = wsdmProtocolloDocumento.getAllegati();
             for (int a = 0; a < allegati.length; a++) {
-              if (nomeallegato.equals(allegati[a].getNome()) && tipoallegato.equals(allegati[a].getTipo())) {
-                String nomeAllegato = allegati[a].getNome();
-                byte[] contenutoAllegato = allegati[a].getContenuto();
-                response.setContentType("application/octet-stream");
-                response.setHeader("Content-Disposition", "attachment;filename=\"" + nomeAllegato + "\"");
-                ServletOutputStream output = response.getOutputStream();
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                baos.write(contenutoAllegato);
-                baos.close();
-                baos.writeTo(output);
-                output.flush();
+              if (tipoallegato == null || "".equals(tipoallegato.trim()) || "null".equals(tipoallegato.trim())) {
+                if (nomeallegato.equals(allegati[a].getNome())) {
+                  String nomeAllegato = allegati[a].getNome();
+                  byte[] contenutoAllegato = allegati[a].getContenuto();
+                  response.setContentType("application/octet-stream");
+                  response.setHeader("Content-Disposition", "attachment;filename=\"" + nomeAllegato + "\"");
+                  ServletOutputStream output = response.getOutputStream();
+                  ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                  baos.write(contenutoAllegato);
+                  baos.close();
+                  baos.writeTo(output);
+                  output.flush();
+                }
+              } else {
+                if (nomeallegato.equals(allegati[a].getNome()) && tipoallegato.equals(allegati[a].getTipo())) {
+                  String nomeAllegato = allegati[a].getNome();
+                  byte[] contenutoAllegato = allegati[a].getContenuto();
+                  response.setContentType("application/octet-stream");
+                  response.setHeader("Content-Disposition", "attachment;filename=\"" + nomeAllegato + "\"");
+                  ServletOutputStream output = response.getOutputStream();
+                  ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                  baos.write(contenutoAllegato);
+                  baos.close();
+                  baos.writeTo(output);
+                  output.flush();
+                }
               }
             }
           }

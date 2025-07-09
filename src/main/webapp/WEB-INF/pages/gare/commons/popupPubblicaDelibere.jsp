@@ -43,7 +43,7 @@
 			
 			window.onload = function () { 
 				window.opener.bloccaRichiesteServer();
-				window.opener.location = "${contextPath}/History.do?"+csrfToken+"&metodo=reload";
+				window.opener.location = "${contextPath}/History.do?metodo=reload";
 			}
 			</gene:javaScript>
 			</gene:redefineInsert>
@@ -56,6 +56,8 @@
 <gene:template file="popup-message-template.jsp">
 
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
+<c:set var="tipoPubSitoIstituzionale" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", tipoPubblicazioneSitoIstituzionale)}'/>
+<c:set var="urlDeliberaPortaleAppalti" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "invioScp.urlDeliberaPortaleAppalti")}'/>
 
 <gene:redefineInsert name="head">
 	<script type="text/javascript" src="${contextPath}/js/jHtmlArea-0.7.5.min.js"></script> 
@@ -65,8 +67,6 @@
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmfascicoloprotocollo.js?v=${sessionScope.versioneModuloAttivo}"></script>
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>		
 </gene:redefineInsert>
-
-
 
 <c:set var="modo" value="NUOVO" scope="request" />
 
@@ -155,6 +155,10 @@
 		</c:otherwise>
 	</c:choose>
 	
+	<c:set var="where" value="codgar=?"/>
+	<c:set var="sql" value="${'select sezlavpub from torn where '}${where}"/>
+	<c:set var="sezLavPubTORN" value="${gene:callFunctionN('it.eldasoft.gene.tags.functions.GetSafeDataFromDB', pageContext, sql, codgar)}"/>
+	
 	<gene:redefineInsert name="corpo">
 	<gene:formScheda entita="${entita }" gestisciProtezioni="false" 
 	plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestorePubblicaDelibere" 
@@ -206,36 +210,140 @@
 			<input type="hidden" name="ngara" id="ngara" value="${ngara}" />
 			<input type="hidden" name="idconfi" id="idconfi" value="${idconfi}" />
 			<input type="hidden" name="listaDocumenti" id="listaDocumenti" value="${param.listaDocumenti}" />
+
+			<c:if test="${ not empty bandoIdRegMarche and tipoPubSitoIstituzionale eq '1' }">
+				<input id="bandoIdRegMarche" type="hidden" name="bandoIdRegMarche" value="${bandoIdRegMarche}" /> 
+			</c:if>
+
+		<c:if test="${tipoPubSitoIstituzionale eq '1' and controlloSuperato eq 'SI'}">
+		<gene:campoScheda>
+		<td colSpan="2">
+			<tr>
+				<td colspan="2">
+					<b>Dati per pubblicazione su sito istituzionale</b>
+				</td>
+			</tr>
+			<tr>
+				<td class="etichetta-dato">Struttura (*)</td>
+				<td class="valore-dato">
+					<select id="strutturaRegionale" name="strutturaRegionale" style="width:350px;">
+						<option value=""></option>
+						<c:forEach items="${listaStruttureRegionali}" step="1" var="strutturaRegionale" varStatus="status" >
+							 <option value="${strutturaRegionale[1]}" <c:if test="${idStrutturaRegionale eq strutturaRegionale[1] }">selected</c:if>>${strutturaRegionale[0]}</option>
+						</c:forEach>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td class="etichetta-dato">Tema (*)</td>
+				<td class="valore-dato">
+					<select id="temaRegionale" name="temaRegionale" style="width:350px;">
+						<option value=""></option>
+						<c:forEach items="${listaTemiRegionali}" step="1" var="temaRegionale" varStatus="status" >
+							 <option value="${temaRegionale[1]}" <c:if test="${idTemaRegionale eq  temaRegionale[1]}">selected</c:if>>${temaRegionale[0]}</option>
+						</c:forEach>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td class="etichetta-dato">Tipo procedura (*)</td>
+				<td class="valore-dato">
+					<select id="tipologiaBando" name="tipologiaBando" style="width:350px;">
+						<option value=""></option>
+						<c:forEach items="${listaTipologieProcedure}" step="1" var="tipologiaProcedura" varStatus="status" >
+							 <option value="${tipologiaProcedura[1]}" <c:if test="${idTipologiaBando eq tipologiaProcedura[1] }">selected</c:if>>${tipologiaProcedura[0]}</option>
+						</c:forEach>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td class="etichetta-dato">Lavori pubblici? (*)</td>
+				<td class="valore-dato">
+					<select id="lavoriPubblici" name="lavoriPubblici" style="width:350px;">
+						<option value=""></option>
+						<option value="1">Si</option>
+						<option value="2">No</option>
+					</select>
+				</td>
+			</tr>
+		</td>
+		</gene:campoScheda>
+		</c:if>
 	</gene:formScheda>
 	</gene:redefineInsert>
-	
 
-	
 	<gene:javaScript>
-		
+
 		var $datepicker = $('#DATPUB');
 		$datepicker.datepicker();
 		$datepicker.datepicker( "option", "dateFormat", "dd/mm/yy" );
 		$datepicker.datepicker('setDate', new Date());
-		
+
 		<c:if test="${isProceduraTelematica}"> 
 			$("#DATPUB").prop("disabled",true);
 		</c:if>
-		
+
 		function annulla(){
 			window.close();
 		}
 		function conferma(){
+		
+		<c:if test="${tipoPubSitoIstituzionale eq '1'}">
+			var dataPubblicazione = getValue("DATPUB");
+			if(dataPubblicazione== null || dataPubblicazione==""){
+				alert("Specificare la data di pubblicazione");
+				return;
+			}
+			var strutturaRegionale = getValue("strutturaRegionale");
+			if(strutturaRegionale== null || strutturaRegionale==""){
+				alert("Specificare la struttura");
+				return;
+			}else{
+				var d = new Date();
+				var oggi = d.getDate()  + "/" + (d.getMonth()+1) + "/" + d.getFullYear();
+				if(dataPubblicazione > oggi){
+					alert("la data inserita non può essere precedente a quella attuale");
+					return;
+				}
+			}
+			var temaRegionale = getValue("temaRegionale");
+			if(temaRegionale== null || temaRegionale==""){
+				alert("Specificare il tema");
+				return;
+			}
+			var tipologiaBando = getValue("tipologiaBando");
+			if(tipologiaBando== null || tipologiaBando==""){
+				alert("Specificare il tipo procedura");
+				return;
+			}
+			var lavoriPubblici = getValue("lavoriPubblici");
+			if(lavoriPubblici== null || lavoriPubblici==""){
+				alert("Specificare se fa parte di lavori pubblici");
+				return;
+			}
+			<c:if test="${ empty urlDeliberaPortaleAppalti or urlDeliberaPortaleAppalti eq ''}">
+				alert("Url delle delibere del portale non valorizzato");
+				return;
+			</c:if>
+		</c:if>
+		
 			document.forms[0].jspPathTo.value="gare/commons/popupPubblicaIntegrazioni.jsp";
 			schedaConferma();
 		}
-		
-		
+
+		$(document).ready(function(){
+			const sezLavPubTORN = '${sezLavPubTORN}';
+			if (sezLavPubTORN != "") {
+				$("#lavoriPubblici").val(sezLavPubTORN);
+				$("#lavoriPubblici").attr('disabled',true);
+				$("#lavoriPubblici").css('background','#ececec');
+			}
+		});
+
 	</gene:javaScript>	
-  
+
 </gene:template>
 </div>
 
 	</c:otherwise>
 </c:choose>
-	

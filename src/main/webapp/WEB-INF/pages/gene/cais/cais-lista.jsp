@@ -18,6 +18,9 @@ Lista categorie d'iscrizione
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<%-- test per consentire utilizzo della pagina solo agli amministratori di sistema --%>
+<c:set var="nonusato" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.CheckOpzioniUtenteFunction", pageContext, "ou89")}' />
+
 <c:set var="visualizzaLink" value='${gene:checkProt(pageContext, "MASC.VIS.GENE.CAIS-scheda")}'/>
 <c:set var="tipoCatSelezionato" value="${gene:if(empty param.TIPO,1,param.TIPO)}"/>
 
@@ -154,7 +157,7 @@ Lista categorie d'iscrizione
 
 	<gene:javaScript>
 	function cambiaTipoCategoria(tipo) {
-		document.location.href="ApriPagina.do?"+csrfToken+"&href=gene/cais/cais-lista.jsp?TIPO="+tipo+"&filtroArchiviata="+${filtroArchiviata };
+		document.location.href="ApriPagina.do?href=gene/cais/cais-lista.jsp?TIPO="+tipo+"&filtroArchiviata="+${filtroArchiviata };
 	}
 	 
 	function nuovoPariLivello(livello1,livello2,livello3,livello4) {
@@ -199,7 +202,7 @@ Lista categorie d'iscrizione
 		}
 		document.getElementById("filtroArchiviata").value = filtroArchiviata;
 		
-		document.forms[0].action+="&filtroArchiviata=" + filtroArchiviata;  
+		document.forms[0].action+="?filtroArchiviata=" + filtroArchiviata;  
 		bloccaRichiesteServer();
 		listaVaiAPagina(0);
 		

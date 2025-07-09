@@ -161,7 +161,7 @@
 			if(rows <1){
 				openPopUpCustom("href=w3/commons/popup-login-simog.jsp", "loginSimog", 550, 400, "yes", "yes");
 			}else{
-				location.href = '${pageContext.request.contextPath}/ApriPagina.do?' + csrfToken + '&href=w3/w3deleghe/w3deleghe-scheda.jsp&modo=NUOVO';
+				location.href = '${pageContext.request.contextPath}/ApriPagina.do?href=w3/w3deleghe/w3deleghe-scheda.jsp&modo=NUOVO';
 			}
 		}		
 		

@@ -50,14 +50,14 @@
 
 	function nuova(){
 		if (document.getElementById("GARA").checked) {
-			location.href = '${pageContext.request.contextPath}/ApriPagina.do?' + csrfToken + '&href=w3/w3gara/w3gara-scheda.jsp&modo=NUOVO';
+			location.href = '${pageContext.request.contextPath}/ApriPagina.do?href=w3/w3gara/w3gara-scheda.jsp&modo=NUOVO';
 		} else if (document.getElementById("SCIG").checked) {
-			location.href = '${pageContext.request.contextPath}/ApriPagina.do?' + csrfToken + '&href=w3/w3smartcig/w3smartcig-scheda.jsp&modo=NUOVO';
+			location.href = '${pageContext.request.contextPath}/ApriPagina.do?href=w3/w3smartcig/w3smartcig-scheda.jsp&modo=NUOVO';
 		}
 	}
 	
 	function Annulla(){
-		document.location.href = '${pageContext.request.contextPath}/Home.do' + csrfToken;
+		document.location.href = '${pageContext.request.contextPath}/Home.do';
 	}
 
 </gene:javaScript>

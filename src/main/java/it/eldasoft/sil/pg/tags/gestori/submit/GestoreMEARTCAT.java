@@ -6,11 +6,17 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Vector;
 
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
+import it.eldasoft.gene.ws.objectstorage.UploadInfo;
 import org.apache.log4j.Logger;
 import org.apache.struts.upload.FormFile;
 import org.springframework.transaction.TransactionStatus;
 
+import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.db.datautils.DataColumn;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
@@ -104,7 +110,14 @@ public class GestoreMEARTCAT extends AbstractGestoreChiaveIDAutoincrementante {
     if (datiForm.isModifiedColumn("MEARTCAT.OBBLCERTIF")) {
       if ("2".equals(datiForm.getString("MEARTCAT.OBBLCERTIF"))) {
         try {
-          String deleteW_DOCDIG = "delete from w_docdig where w_docdig.idprg = ? and w_docdig.iddocdig in (select meallartcat.iddocdig from meallartcat where idartcat = ?)";
+          String where = " where w_docdig.idprg = ? and w_docdig.iddocdig in (select meallartcat.iddocdig from meallartcat where idartcat = ?)";
+          List<Vector> bucketRefs = this.sqlManager.getListVector("select bucket_ref, bucket_uuid from W_DOCDIG " + where + " and bucket_ref is not null and bucket_uuid is not null", new Object[] { "PG", id });
+          if (bucketRefs != null && !bucketRefs.isEmpty()) {
+            for (Vector v : bucketRefs) {
+              ObjectStorageUtils.deleteFile((String) SqlManager.getValueFromVectorParam(v, 0).getValue(), (String) SqlManager.getValueFromVectorParam(v, 1).getValue());
+            }
+          }
+          String deleteW_DOCDIG = "delete from w_docdig "+where;
           this.getSqlManager().update(deleteW_DOCDIG, new Object[] { "PG", id });
           String deleteMEALLAARTCAT = "delete from meallartcat where idartcat = ?";
           this.getSqlManager().update(deleteMEALLAARTCAT, new Object[] { id });
@@ -260,6 +273,8 @@ public class GestoreMEARTCAT extends AbstractGestoreChiaveIDAutoincrementante {
    */
   private void cancellaW_DOCDIC(String idprg, Long iddocdig) throws GestoreException {
     try {
+      UploadInfo oldBucketInfo = ObjectStorageUtils.getUploadInfo("select bucket_ref, bucket_uuid from w_docdig where idprg=? and iddocdig=?",new Object[] {idprg,iddocdig});
+      ObjectStorageUtils.deleteFile(oldBucketInfo.bucket_ref(),oldBucketInfo.uuid());
       String deleteW_DOCDIG = "delete from w_docdig where idprg = ? and iddocdig = ?";
       this.getSqlManager().update(deleteW_DOCDIG, new Object[] { idprg, iddocdig });
     } catch (SQLException e) {
@@ -298,6 +313,15 @@ public class GestoreMEARTCAT extends AbstractGestoreChiaveIDAutoincrementante {
       if (ff != null) {
         fname = ff.getFileName();
         if (fname.length() != 0 && ff.getFileSize() > 0) {
+          
+          if(!FileAllegatoManager.checkFileContent(ff.getFileData(),fname)){
+            throw new GestoreException("Il file selezionato da caricare viene scartato in quanto ha un contenuto in formato non valido secondo le verifiche mediante la libreria Apache Tika",
+                "upload.erroreVerificaContenuto", new String[]{fname}, null);
+          } else if(fname.toLowerCase().endsWith(".pdf") && FileAllegatoManager.isMaliciousPdf(ff.getFileData(), fname)) {
+            throw new GestoreException("Il file selezionato da caricare viene scartato in quanto sembra codificare dei contenuti non sicuri (malware)",
+                    "upload.erroreContenutoMalevolo", new String[]{fname}, null);
+          }
+            
           dccW_DOCDIG.addColumn("W_DOCDIG.DIGNOMDOC", JdbcParametro.TIPO_TESTO, fname);
           ByteArrayOutputStream baos = new ByteArrayOutputStream();
           baos.write(ff.getFileData());
@@ -308,6 +332,7 @@ public class GestoreMEARTCAT extends AbstractGestoreChiaveIDAutoincrementante {
         }
       }
       dccW_DOCDIG.insert("W_DOCDIG", this.geneManager.getSql());
+      ObjectStorageUtils.addFile(idprg, iddocdig);
 
     } catch (FileNotFoundException e) {
       throw new GestoreException("File da caricare non trovato", "uploadMultiplo", new String[] { fname }, e);
@@ -350,6 +375,15 @@ public class GestoreMEARTCAT extends AbstractGestoreChiaveIDAutoincrementante {
       if (ff != null) {
         fname = ff.getFileName();
         if (fname.length() != 0 && ff.getFileSize() > 0) {
+          
+          if(!FileAllegatoManager.checkFileContent(ff.getFileData(),fname)){
+            throw new GestoreException("Il file selezionato da caricare viene scartato in quanto ha un contenuto in formato non valido secondo le verifiche mediante la libreria Apache Tika",
+                "upload.erroreVerificaContenuto", new String[]{fname}, null);
+          } else if(fname.toLowerCase().endsWith(".pdf") && FileAllegatoManager.isMaliciousPdf(ff.getFileData(), fname)) {
+            throw new GestoreException("Il file selezionato da caricare viene scartato in quanto sembra codificare dei contenuti non sicuri (malware)",
+                    "upload.erroreContenutoMalevolo", new String[]{fname}, null);
+          }
+          
           dccW_DOCDIG.addColumn("W_DOCDIG.DIGNOMDOC", JdbcParametro.TIPO_TESTO, fname);
           ByteArrayOutputStream baos = new ByteArrayOutputStream();
           baos.write(ff.getFileData());
@@ -360,6 +394,7 @@ public class GestoreMEARTCAT extends AbstractGestoreChiaveIDAutoincrementante {
         }
       }
       dccW_DOCDIG.update("W_DOCDIG", this.geneManager.getSql());
+      ObjectStorageUtils.addFile(idprg, iddocdig);
 
     } catch (FileNotFoundException e) {
       throw new GestoreException("File da caricare non trovato", "uploadMultiplo", new String[] { fname }, e);

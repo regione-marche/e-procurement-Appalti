@@ -14,6 +14,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<%-- test per consentire utilizzo della pagina solo agli amministratori di sistema --%>
+<c:set var="nonusato" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.CheckOpzioniUtenteFunction", pageContext, "ou89")}' />
 
 <gene:template file="scheda-template.jsp" gestisciProtezioni="true" idMaschera="G1CRIMOD-scheda" schema="GARE">
 	<c:set var="entita" value="G1CRIMOD" />
@@ -83,7 +85,7 @@
 
 	<gene:javaScript>
 	function apriDettaglio(titolo){
-		link =  '${pageContext.request.contextPath}/ApriPagina.do?'+csrfToken+'&href=gare/goevmod/goevmod-lista.jsp&idcrimod=${id}&tipoCriterio=1&titolo=${titolo}';
+		link =  '${pageContext.request.contextPath}/ApriPagina.do?href=gare/goevmod/goevmod-lista.jsp&idcrimod=${id}&tipoCriterio=1&titolo=${titolo}';
 		document.location.href = link;
 	}
 	</gene:javaScript>

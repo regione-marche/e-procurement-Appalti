@@ -175,8 +175,16 @@
 			<c:set var="parametriWhere" value="N:${busta}"/>
 		</c:when>
 		<c:otherwise>
-			<c:set var="functionId" value="elenco"/>
-			<c:set var="parametriWhere" value=""/>
+			<c:choose>
+				<c:when test="${gene:callFunction2('it.eldasoft.sil.pg.tags.funzioni.CheckIsElPremFunction',pageContext,ngara) eq 'true'}">
+					<c:set var="functionId" value="elencopremiale"/>
+					<c:set var="parametriWhere" value=""/>
+				</c:when>
+				<c:otherwise>
+					<c:set var="functionId" value="elenco"/>
+					<c:set var="parametriWhere" value=""/>
+				</c:otherwise>
+			</c:choose>
 		</c:otherwise>
 	</c:choose>
 	
@@ -241,7 +249,6 @@
 	</c:choose>
 	
 	<gene:campoScheda campo="ID"  visibile="false" entita="QFORM" where="${whereQFORM}"/>
-	<gene:campoScheda campo="OGGETTO"  visibile="false" entita="QFORM" where="${whereQFORM}"/>
 	
 	<gene:campoScheda>
 		<td class="comandi-dettaglio" colSpan="2">

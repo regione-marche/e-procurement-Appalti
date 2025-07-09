@@ -69,7 +69,7 @@
 	<gene:gruppoCampi idProtezioni="CATG">
 		<c:choose>
 			<c:when test="${param.lottoDiGara eq 'true' and modo ne 'VISUALIZZA'}">
-				<gene:campoScheda>
+				<gene:campoScheda visibile="${empty param.bloccoModificatiDati or param.bloccoModificatiDati ne 'true'}">
 					<td id="titoloCategoriaPrevalente" colspan="1">
 						<b>${titoloCategoriaPrevalente}</b>
 					</td>
@@ -155,7 +155,7 @@
 						</td>
 																
 						<td style="text-align: right">
-							<c:if test='${modoAperturaScheda ne "VISUALIZZA" and gene:checkProtFunz(pageContext, "DEL","Elimina-Categ-Ulteriore")}'><a href="javascript:eliminaUlterioreCategoria(${contatore})" title="Elimina ${titoloCategoriaUlteriore}" class="link-generico">Elimina</a>&nbsp;
+							<c:if test='${modoAperturaScheda ne "VISUALIZZA" and gene:checkProtFunz(pageContext, "DEL","Elimina-Categ-Ulteriore") and (empty param.bloccoModificatiDati or param.bloccoModificatiDati ne "true")}'><a href="javascript:eliminaUlterioreCategoria(${contatore})" title="Elimina ${titoloCategoriaUlteriore}" class="link-generico">Elimina</a>&nbsp;
 							<a href="javascript:eliminaUlterioreCategoria(${contatore})" title="Elimina ${titoloCategoriaUlteriore}" class="link-generico"><img src='${pageContext.request.contextPath}/img/opzioni_del.gif' height='16' width='16' alt='Elimina ${titoloCategoriaUlteriore}'></a>&nbsp;</c:if>
 						</td>
 					</gene:campoScheda>
@@ -229,7 +229,7 @@
 						</td>
 												
 						<td style="text-align: right">
-							<c:if test='${modoAperturaScheda ne "VISUALIZZA" and gene:checkProtFunz(pageContext, "DEL","Elimina-Categ-Ulteriore")}'><a href="javascript:eliminaUlterioreCategoria(${contatore})" title="Elimina ${titoloCategoriaUlteriore}" class="link-generico">Elimina</a>&nbsp;
+							<c:if test='${modoAperturaScheda ne "VISUALIZZA" and gene:checkProtFunz(pageContext, "DEL","Elimina-Categ-Ulteriore") and (empty param.bloccoModificatiDati or param.bloccoModificatiDati ne "true")}'><a href="javascript:eliminaUlterioreCategoria(${contatore})" title="Elimina ${titoloCategoriaUlteriore}" class="link-generico">Elimina</a>&nbsp;
 							<a href="javascript:eliminaUlterioreCategoria(${contatore})" title="Elimina ${titoloCategoriaUlteriore}" class="link-generico"><img src='${pageContext.request.contextPath}/img/opzioni_del.gif' height='16' width='16' alt='Elimina ${titoloCategoriaUlteriore}'></a>&nbsp;</c:if>
 						</td>
 						
@@ -306,10 +306,9 @@
 				</td>
 				
 				<td style="text-align: right">
-							<c:if test='${gene:checkProtFunz(pageContext, "DEL","Elimina-Categ-Ulteriore")}'><a href="javascript:eliminaUlterioreCategoria(${contatore})" title="Elimina ${titoloCategoriaUlteriore}" class="link-generico">Elimina</a>&nbsp;
-							<a href="javascript:eliminaUlterioreCategoria(${contatore})" title="Elimina ${titoloCategoriaUlteriore}" class="link-generico"><img src='${pageContext.request.contextPath}/img/opzioni_del.gif' height='16' width='16' alt='Elimina ${titoloCategoriaUlteriore}'></a>&nbsp;</c:if>
-						</td>
-				
+					<c:if test='${gene:checkProtFunz(pageContext, "DEL","Elimina-Categ-Ulteriore") and (empty param.bloccoModificatiDati or param.bloccoModificatiDati ne "true")}'><a href="javascript:eliminaUlterioreCategoria(${contatore})" title="Elimina ${titoloCategoriaUlteriore}" class="link-generico">Elimina</a>&nbsp;
+					<a href="javascript:eliminaUlterioreCategoria(${contatore})" title="Elimina ${titoloCategoriaUlteriore}" class="link-generico"><img src='${pageContext.request.contextPath}/img/opzioni_del.gif' height='16' width='16' alt='Elimina ${titoloCategoriaUlteriore}'></a>&nbsp;</c:if>
+				</td>
 			</gene:campoScheda>
 			<gene:archivio titolo="Categorie d'iscrizione"
 				lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GARE.OPES.CATOFF"), "gene/cais/lista-categorie-iscrizione-popup.jsp", "")}'

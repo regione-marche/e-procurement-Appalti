@@ -104,12 +104,12 @@ public class GetListaUtentiStipulaAction extends Action {
             	 desute = sysute + " - " + email;
              }
              
-             if(!usrCorrente.equals(syscon)) {
+             //if(!usrCorrente.equals(syscon)) {
                  hMapCodiceUsr.put("codiceusr", syscon);
                  hMapCodiceUsr.put("descrizioneusr", desute);
                  hMapCodiceUsr.put("autori", autori);
                  hMap.add(hMapCodiceUsr);
-             }
+             //}
          }
 
          String msg = "msg provvisorio";

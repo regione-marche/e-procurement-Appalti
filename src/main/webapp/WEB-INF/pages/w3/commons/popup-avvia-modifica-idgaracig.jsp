@@ -71,7 +71,7 @@
 		
 		function avviaModificaIDGARACIG(entita,numgara,numlott){
 			var action = "${pageContext.request.contextPath}/w3/AvviaModificaIDGARACIG.do";
-			action=action + '?' + csrfToken + '&entita=' + entita + '&numgara=' + numgara + '&numlott=' + numlott;
+			action=action + '?entita=' + entita + '&numgara=' + numgara + '&numlott=' + numlott;
 			document.location.href=action;
 		}
 	

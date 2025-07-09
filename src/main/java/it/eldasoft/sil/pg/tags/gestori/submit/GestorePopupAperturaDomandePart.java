@@ -89,7 +89,7 @@ public class GestorePopupAperturaDomandePart extends AbstractGestoreEntita {
       try{
         try{
           this.sqlManager.update("update gare set fasgar=?, stepgar=? where ngara=?", new Object[]{new Long(-4), new Long(-40),ngara});
-          mepaManager.impostaComunicazioniAScartate(ngara,"DOMANDE");
+          mepaManager.impostaComunicazioniAScartate(ngara,"DOMANDE", null);
           livEvento = 1;
           errMsgEvento = "";
 

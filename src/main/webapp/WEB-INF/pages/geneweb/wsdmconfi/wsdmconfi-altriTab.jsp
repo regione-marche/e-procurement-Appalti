@@ -7,15 +7,11 @@
 			<c:when test="${modalita ne 'modifica'}">
 				<jsp:include page="..\wsdmconfipro\dettConfigPortaleWSDM.jsp">
 					<jsp:param name="idconfi" value="${idconfi}"/>
-					<jsp:param name="descri" value="${descri}"/>
-					<jsp:param name="codapp" value="${codapp}"/>
 				</jsp:include>
 			</c:when>
 			<c:otherwise>
 				<jsp:include page="..\wsdmconfipro\modConfigPortaleWSDM.jsp">
 					<jsp:param name="idconfi" value="${idconfi}"/>
-					<jsp:param name="descri" value="${descri}"/>
-					<jsp:param name="codapp" value="${codapp}"/>
 				</jsp:include>
 			</c:otherwise>
 		</c:choose>

@@ -82,11 +82,14 @@
 		</td>
 	</tr>
 	
-	<c:set var="where" value="V_SPESE_ADESIONI.NGARA = '${ngara}' and V_SPESE_ADESIONI.NCONT = ${ncont}"/>
+	<c:set var="where" value="V_SPESE_ADESIONI.NGARA = ? and V_SPESE_ADESIONI.NCONT = ? "/>
+	<c:set var="parametri" value="T:${ngara};N:${ncont}"/>
+	${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "V_SPESE_ADESIONI", where, parametri)}
+	
 	<c:set var="codiceGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetCodiceGaraFunction", pageContext)}' />	
 	<tr>
 		<td>
-			<gene:formLista entita="V_SPESE_ADESIONI" where='${where}' tableclass="datilista" sortColumn='2' gestisciProtezioni="true"   pagesize="25" >
+			<gene:formLista entita="V_SPESE_ADESIONI" tableclass="datilista" sortColumn='2' gestisciProtezioni="true"   pagesize="25" >
 				
 				<jsp:include page="/WEB-INF/pages/commons/bloccaModifica-pg-lista-scheda.jsp">
 					<jsp:param name="entita" value="V_GARE_TORN"/>
@@ -185,7 +188,7 @@
 <gene:javaScript>
 	
 	function listaVisualizzaPrenotazione(ngara,ncont, codimp,ngaral, cenintRigaPrenotazione){
-		var href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1aqspesa/g1aqspesa-lista.jsp";
+		var href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1aqspesa/g1aqspesa-lista.jsp";
 		href += "&cenint="+cenintRigaPrenotazione;
 		href += "&ngara=" + ngara + "&ncont=" + ncont;
 		href += "&codimp=" + codimp + "&ngaral=" + ngaral;
@@ -193,7 +196,7 @@
 	}
 	
 	function listaVisualizzaImpegnato(chiaveRigaImpegnato){
-		var href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/v_gare_adesioni/v_gare_adesioni-lista.jsp";
+		var href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/v_gare_adesioni/v_gare_adesioni-lista.jsp";
 		//href += "&key=" + chiaveRigaImpegnato;
 		var ngaraaq=getValCampoChiave(chiaveRigaImpegnato,"V_GARE_ADESIONI.NGARAAQ");
 		var cenint=getValCampoChiave(chiaveRigaImpegnato,"V_GARE_ADESIONI.CENINT");
@@ -206,7 +209,7 @@
 	}	
 	
 	function nuovaSpesa(){
-		document.forms[0].action+="&ngara=${ngara}&ncont=${ncont}&codimp=${param.codimp}&ngaral=${param.ngaral}";
+		document.forms[0].action+="?ngara=${ngara}&ncont=${ncont}&codimp=${param.codimp}&ngaral=${param.ngaral}";
 		document.forms[0].entita.value="G1AQSPESA";
 		listaNuovo();
 	}
@@ -220,7 +223,7 @@
 		var ncont="${param.ncont }";
 		var ngaral="${param.ngaral }";
 		var codimp="${param.codimp }";
-		document.pagineForm.action += "&modcont=" + modcont + "&isAccordoQuadro=" + isAccordoQuadro + "&codcont=" + codcont + "&ncont=" + ncont + "&ngaral=" + ngaral + "&codimp=" + codimp;
+		document.pagineForm.action += "?modcont=" + modcont + "&isAccordoQuadro=" + isAccordoQuadro + "&codcont=" + codcont + "&ncont=" + ncont + "&ngaral=" + ngaral + "&codimp=" + codimp;
 		selezionaPaginaDefault(pageNumber);
 	}
 </gene:javaScript>

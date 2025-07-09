@@ -119,7 +119,7 @@ public class GestorePopupAttivaElencoDitteDaInvitare extends AbstractGestoreEnti
                     this.sqlManager.update(insertDITGAMMIS, new Object[] { codgar, ngara, codiceDitta, Long.valueOf(-4), Long.valueOf(7) });
                   }
                   //aggiorno anche DITG:
-                  this.sqlManager.update(updateDITG, new Object[] { Long.valueOf(2), Long.valueOf(-4), codgar, ngara, codiceDitta });
+                  this.sqlManager.update(updateDITG, new Object[] { "2", Long.valueOf(-4), codgar, ngara, codiceDitta });
         	  }
         	  
         	  List listaDitteOrdinataNOI = sqlManager.getListVector( "select dittao, numordinv from ditg"

@@ -121,7 +121,9 @@
 
 
 <c:set var="garaEle" value="%|${garaElenco}|%"  />
-<c:set var="where" value="TIPOFILTRO = 1 AND (FILTROATT='1' OR FILTROMAN='1') AND (APPLICAELE IS NULL OR APPLICAELE LIKE '${garaEle}') ${whereTipoEle}" scope="request" />
+<c:set var="where" value="TIPOFILTRO = 1 AND (FILTROATT='1' OR FILTROMAN='1') AND (APPLICAELE IS NULL OR APPLICAELE LIKE ? ) ${whereTipoEle}" scope="request" />
+<c:set var="parametri" value="T:${garaEle}"/>
+${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "G1FILTRIELE", where, parametri)}
 
 <c:set var="modo" value="MODIFICA" scope="request" />
 
@@ -149,7 +151,7 @@
 				</td>
 			</tr>
 			<tr>
-				<td><gene:formLista entita="G1FILTRIELE" tableclass="datilista" gestisciProtezioni="true" sortColumn="2" where="${where}" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupFiltroSpecificoOp" pagesize="0">
+				<td><gene:formLista entita="G1FILTRIELE" tableclass="datilista" gestisciProtezioni="true" sortColumn="2" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupFiltroSpecificoOp" pagesize="0">
 					
 					<gene:campoLista title="Opzioni <br><center>${titoloMenu}</center>"	width="10">												 
 						<c:if test="${currentRow >= 0}">

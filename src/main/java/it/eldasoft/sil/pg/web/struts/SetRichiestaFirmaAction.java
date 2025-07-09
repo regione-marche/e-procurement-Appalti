@@ -82,6 +82,13 @@ public class SetRichiestaFirmaAction extends Action {
     String iddocdig =  request.getParameter("iddocdig");
     String syscon = request.getParameter("syscon");
 
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO,idconfi);
+      username = credenziali[0];
+      password = credenziali[1];
+    }
+
     WSDMProtocolloDocumentoInType wsdmProtocolloDocumentoIn = new WSDMProtocolloDocumentoInType();
     wsdmProtocolloDocumentoIn.setClassifica(classifica);
     wsdmProtocolloDocumentoIn.setOggetto(oggetto);
@@ -151,7 +158,6 @@ public class SetRichiestaFirmaAction extends Action {
       try {
         status = this.sqlManager.startTransaction();
         String insertSql = "insert into WSRICFIRMA(id,idprg,iddocdig,numerodoc,syscon,idconfiwsdm) values(?,?,?,?,?,?)";
-        String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
         if (wsdmLoginComune != null && "1".equals(wsdmLoginComune))
           syscon="-1";
         int id = this.genChiaviManager.getNextId("WSRICFIRMA");

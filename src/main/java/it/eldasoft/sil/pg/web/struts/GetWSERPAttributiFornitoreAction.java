@@ -242,7 +242,7 @@ public class GetWSERPAttributiFornitoreAction extends Action {
                   if("".equals(wsNazionalita)){
                     wsNazionalita = "Non presente";
                   }else{
-                    wsNazionalita = (String)this.sqlManager.getObject("select tab2d2 from tab2 where tab2cod = 'G_z23' and tab2d1 = ?", new Object[]{wsNazionalita});
+                    wsNazionalita = (String)this.sqlManager.getObject("select tab1desc from tab1, g_nazioni where tab1cod='Ag010' and tab1tip=codice and codiso = ?", new Object[]{wsNazionalita});
                   }
 
                   wsPec = fornitore.getPec();

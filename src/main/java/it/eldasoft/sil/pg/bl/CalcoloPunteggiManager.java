@@ -13,10 +13,15 @@ package it.eldasoft.sil.pg.bl;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Vector;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
 import it.eldasoft.gene.bl.GenChiaviManager;
@@ -57,7 +62,7 @@ public class CalcoloPunteggiManager {
   private static final String insertDpun = "insert into DPUN(ngara,necvan,dittao,coeffi,punteg) values(?,?,?,?,?)";
   private static final String updatePunteggi ="update ditg set #NOMECAMPO#=? where ngara5=? and dittao=?";
   private static final String selectG1CridefMaxpun0="select g1.necvan, g1.id from g1cridef g1, goev g where g1.ngara=? and g.ngara=g1.ngara and g.necvan=g1.necvan and g.tippar=? and (g1.modpunti=1 or g1.modpunti=3) and g1.maxpun = 0";
-  private static final String selectG1CridefAuto = "select g1.necvan, g1.id, g1.formula, g1.formato, g1.maxpun, g1.esponente from g1cridef g1, goev g where g1.ngara=? and g.ngara=g1.ngara and g.necvan=g1.necvan and g.tippar=? and modpunti = 2";
+  private static final String selectG1CridefAuto = "select g1.necvan, g1.id, g1.formula, g1.formato, g1.maxpun, g1.esponente, g1.numdeci from g1cridef g1, goev g where g1.ngara=? and g.ngara=g1.ngara and g.necvan=g1.necvan and g.tippar=? and modpunti = 2";
   private static final String selectG1Crival="select v.necvan, v.coeffi,v.punteg, g.livpar,g.necvan1 from g1cridef d, goev g, g1crival v where d.ngara=? and g.ngara=d.ngara and g.necvan=d.necvan and d.id=v.idcridef "
       + "and v.dittao=? and g.tippar=? and (g.livpar=1 or g.livpar=2) order by norpar, necvan1,norpar1,necvan";
 
@@ -66,9 +71,10 @@ public class CalcoloPunteggiManager {
   private static final String selectCrivalStg = "select valstg, id from g1crival g where idcridef = ? and necvan = ? and g.dittao = (select dittao from ditg where ngara5 = ? and ditg.dittao = g.dittao and (fasgar is null or fasgar > ?) )";
   private static final String selectCrivalNum = "select valnum, id from g1crival g where idcridef = ? and necvan = ? and g.dittao = (select dittao from ditg where ngara5 = ? and ditg.dittao = g.dittao and (fasgar is null or fasgar > ?) )";
   private static final String updateCrival = "update G1CRIVAL set coeffi = ?, punteg = ? where id = ?";
-  private static final String selectCrivalcom = "select coeffi from g1crivalcom g where g.idcrival = ?";
+  private static final String updateCrivalByIdcridef = "update G1CRIVAL set coeffi = ?, punteg = ? where idcridef = ?";
+  private static final String selectCrivalcom = "select coeffi from g1crivalcom g where g.idcrival = ? and coeffi is not null";
   private static final String deleteDpun = "delete from dpun where dpun.ngara=? and dpun.necvan=(select g.necvan from goev g where g.ngara=dpun.ngara and g.necvan=dpun.necvan and tippar=?)";
-  private static final String selectCriteri = "select v.id, g.maxpun from g1cridef g, g1crival v where g.id = v.idcridef and (g.modpunti = '1' or g.modpunti = '3') and g.maxpun > 0 and v.coeffi is null and v.punteg is null and g.ngara = ? and dittao = ?";
+  private static final String selectCriteri = "select v.id, g.maxpun, goev.isnoripar, g.id from g1cridef g, g1crival v, goev where g.id = v.idcridef and goev.necvan=g.necvan and goev.ngara=g.ngara and (g.modpunti = '1' or g.modpunti = '3') and g.maxpun > 0 and exists (select 1 from g1crival where g1crival.idcridef=g.id) and g.ngara = ? and dittao = ?";
   private static final String selectPunteggiGoev = "select g.necvan, g.necvan1, g.maxpun from goev g, g1cridef gr where g.ngara=? and g.ngara=gr.ngara and g.necvan=gr.necvan and tippar=? and (livpar=1 or livpar=2) and (modpunti=1 or modpunti=3)";
   private static final String selectDitte="select dittao from ditg where ngara5=? and (fasgar is null or fasgar > ?) order by NUMORDPL asc,NOMIMO asc";
   private static final String selectImpapp="select impapp from gare where ngara=?";
@@ -116,7 +122,7 @@ public class CalcoloPunteggiManager {
     return min;
   }
 
-  private void SetCoefficenteDaFormula(String ngara, Long idCridef, Long necvan, Long formula, Long formato, Double maxpun, Long fasgar,Double esponente,Double impapp, String modo) throws SQLException, GestoreException{
+  private void SetCoefficenteDaFormula(String ngara, Long idCridef, Long necvan, Long formula, Long formato, Double maxpun, Long fasgar,Double esponente,Double impapp, String modo, Long numDecimali) throws SQLException, GestoreException{
 
     String tabA1049 = (String)sqlManager.getObject("select tab1desc from tab1 where tab1cod=? and tab1tip=?", new Object[]{"A1049",new Long(1)});
     int decimali = Integer.parseInt(tabA1049);
@@ -229,7 +235,7 @@ public class CalcoloPunteggiManager {
         Long id = (Long) SqlManager.getValueFromVectorParam(datiG1crival.get(k),1).getValue();
         BigDecimal criregCoeffi = null;
         if(media.compareTo(BigDecimal.ZERO)==0 && bigValnum.compareTo(BigDecimal.ZERO)==0){
-          criregCoeffi = new BigDecimal(0);
+          criregCoeffi = x;
         }else{
           int res = bigValnum.compareTo(media);
           if(res <= 0){
@@ -239,7 +245,7 @@ public class CalcoloPunteggiManager {
               if(media.compareTo(max)==0){
                 //Non si dovrebbe mai entrare in questa casistica, perchè max == media solo se tutti i valori offerti sono uguali, quindi avremmo valnum == media
                 //e si ricadrebbe nel caso precedente con res == 0
-                criregCoeffi = new BigDecimal(0);
+                criregCoeffi = x;
               }else{
                 criregCoeffi = x.add(BigDecimal.valueOf(1).subtract(x).multiply((bigValnum.subtract(media)).divide((max.subtract(media)),precision, BigDecimal.ROUND_HALF_UP)));
               }
@@ -295,7 +301,7 @@ public class CalcoloPunteggiManager {
       }
 
       media = media.divide(BigDecimal.valueOf(datiG1crival.size()),precision, BigDecimal.ROUND_HALF_UP);
-      media.setScale(precision, BigDecimal.ROUND_HALF_UP);
+      media = media.setScale(precision, BigDecimal.ROUND_HALF_UP);
 
       for(int k=0;k<datiG1crival.size();k++){
         Double valnum = (Double) SqlManager.getValueFromVectorParam(datiG1crival.get(k),0).getValue();
@@ -304,7 +310,7 @@ public class CalcoloPunteggiManager {
         BigDecimal criregCoeffi = null;
         int res = bigValnum.compareTo(media);
         if(bigImpapp.compareTo(media)==0){
-          criregCoeffi = new BigDecimal(0);
+          criregCoeffi = x;
         }else{
           if(res >= 0){
             criregCoeffi = x.multiply((bigImpapp.subtract(bigValnum))).divide((bigImpapp.subtract(media)),precision, BigDecimal.ROUND_HALF_UP);
@@ -313,7 +319,7 @@ public class CalcoloPunteggiManager {
               if(min.compareTo(media)==0){
                 //Non si dovrebbe mai entrare in questa casistica, perchè min == media solo se tutti i valori offerti sono uguali, quindi avremmo valnum == media
                 //e si ricadrebbe nel caso precedente con res == 0
-                criregCoeffi = new BigDecimal(0);
+                criregCoeffi = x;
               }else{
                 criregCoeffi = x.add((BigDecimal.valueOf(1).subtract(x)).multiply(((media.subtract(bigValnum)).divide((media.subtract(min)),precision, BigDecimal.ROUND_HALF_UP))));
               }
@@ -364,6 +370,36 @@ public class CalcoloPunteggiManager {
         criregCoeffi = criregCoeffi.setScale(precision, BigDecimal.ROUND_HALF_UP);
         this.sqlManager.update(updateCrivalModificato, new Object[]{ criregCoeffi.doubleValue(),((criregCoeffi.multiply(bigMaxpun)).setScale(decimali, BigDecimal.ROUND_HALF_UP)).doubleValue(),id});
        }
+    }
+    if(formula == 16) {
+      List<Vector<JdbcParametro>> datiG1crival = this.sqlManager.getListVector(selectCrivalNumModificata, new Object[]{idCridef,necvan,ngara,fasgar});
+      BigDecimal media = new BigDecimal(0);
+      for(int k=0;k<datiG1crival.size();k++){
+        Double valnum = (Double) SqlManager.getValueFromVectorParam(datiG1crival.get(k),0).getValue();
+        BigDecimal bigValnum= BigDecimal.valueOf(valnum);
+        media = media.add(bigValnum);
+      }
+      media = media.divide(BigDecimal.valueOf(datiG1crival.size()),precision, BigDecimal.ROUND_HALF_UP);
+      media = media.setScale(numDecimali.intValue(), BigDecimal.ROUND_HALF_UP);
+
+      for(int k=0;k<datiG1crival.size();k++){
+        Double valnum = (Double) SqlManager.getValueFromVectorParam(datiG1crival.get(k),0).getValue();
+        BigDecimal bigValnum= BigDecimal.valueOf(valnum);
+        Long id = (Long) SqlManager.getValueFromVectorParam(datiG1crival.get(k),1).getValue();
+        BigDecimal criregCoeffi = null;
+        if(media.compareTo(BigDecimal.ZERO)==0 && bigValnum.compareTo(BigDecimal.ZERO)==0){
+          criregCoeffi = new BigDecimal(1);
+        }else{
+          int res = bigValnum.compareTo(media);
+          if(res < 0){
+            criregCoeffi = BigDecimal.valueOf(Math.pow(bigValnum.divide(media,precision, BigDecimal.ROUND_HALF_UP).doubleValue(), esponente));
+          }else{
+            criregCoeffi = new BigDecimal(1);
+          }
+        }
+        criregCoeffi = criregCoeffi.setScale(precision, BigDecimal.ROUND_HALF_UP);
+        this.sqlManager.update(updateCrivalModificato, new Object[]{ criregCoeffi.doubleValue(),((criregCoeffi.multiply(BigDecimal.valueOf(maxpun))).setScale(decimali, BigDecimal.ROUND_HALF_UP)).doubleValue(),id});
+      }
     }
   }
 
@@ -487,6 +523,7 @@ public class CalcoloPunteggiManager {
       boolean gruppoCriteriFigli=false;
       boolean ultimoGruppoSalvato=false;
       Double esponente = null;
+      Long numDecimali = null;
 
       //Inserimento occorrenza in G1CRIVAL per occorrenze di G1CRIDEF con MODPUNTI = 2
       if(datiG1cridefAuto!=null && datiG1cridefAuto.size()>0){
@@ -499,19 +536,18 @@ public class CalcoloPunteggiManager {
           formato=SqlManager.getValueFromVectorParam(datiG1cridefAuto.get(k),3).longValue();
           maxpun=SqlManager.getValueFromVectorParam(datiG1cridefAuto.get(k),4).doubleValue();
           esponente=SqlManager.getValueFromVectorParam(datiG1cridefAuto.get(k),5).doubleValue();
-          this.SetCoefficenteDaFormula(ngara,idCridef,necvan,formula,formato,maxpun,fasgar,esponente,impapp,modo);
+          numDecimali=SqlManager.getValueFromVectorParam(datiG1cridefAuto.get(k),6).longValue();
+          this.SetCoefficenteDaFormula(ngara,idCridef,necvan,formula,formato,maxpun,fasgar,esponente,impapp,modo,numDecimali);
         }
       }
 
       Integer numeroDecimali = new Integer(tabellatiManager.getDescrTabellato("A1049", "1"));
-
+      
+      List<Long> idcridefDaRiparametrare = new ArrayList<Long>();
       for(int i=0;i<listaDitteGara.size();i++){
         ditta = SqlManager.getValueFromVectorParam(listaDitteGara.get(i), 0).getStringValue();
-        punteggioPadre = 0;
-        punteggioTotale=0;
-        gruppoCriteriFigli=false;
-        necvanPadre=null;
         String updateCrival_Mod = replaceEnt(updateCrival,ENTITA_CRIVAL,modo);
+        String updateCrivalByIdcridef_Mod = replaceEnt(updateCrivalByIdcridef,ENTITA_CRIVAL,modo);
 
         //Inserimento occorrenza in G1CRIVAL per occorrenze di G1CRIDEF con MODPUNTI = 1 & MAXPUN = 0
         if(datiG1cridefmaxpun0!=null && datiG1cridefmaxpun0.size()>0){
@@ -548,7 +584,15 @@ public class CalcoloPunteggiManager {
             for(int j=0;j<datiG1crival.size();j++){
                Long idcrival =SqlManager.getValueFromVectorParam(datiG1crival.get(j),0).longValue();
                Double maxpunCridef =(Double) SqlManager.getValueFromVectorParam(datiG1crival.get(j),1).getValue();
-
+               String isnoripar =(String) SqlManager.getValueFromVectorParam(datiG1crival.get(j),2).getValue();
+               Long idcridef = SqlManager.getValueFromVectorParam(datiG1crival.get(j),3).longValue();
+               if(!"1".equals(isnoripar) && StringUtils.isNotBlank(tabellatiManager.getDescrTabellato("A1197", "1"))
+                   && "1".equals(tabellatiManager.getDescrTabellato("A1197", "1").substring(0,1))) {
+                 if(!idcridefDaRiparametrare.contains(idcridef)) {
+                   idcridefDaRiparametrare.add(idcridef);
+                 }
+               }
+                   
                List listaValutazioniCommissari = this.sqlManager.getListVector(selectCrivalcom_Mod, new Object[]{idcrival});
                Double mediaVal = new Double(0);
                if(listaValutazioniCommissari!=null && listaValutazioniCommissari.size()>0){
@@ -565,9 +609,45 @@ public class CalcoloPunteggiManager {
                }
             }
           }
-
         }
+       }
+      
+      
+      //riparametrazione punteggi/coeff commissione
+      for(int i=0; i<idcridefDaRiparametrare.size(); i++) {
+        Long idcridef = idcridefDaRiparametrare.get(i);
+        String selectMaxCoeffiCrival_Mod = replaceEnt("select max(coeffi) from g1crival where idcridef=?",ENTITA_CRIVAL,modo);
+        Double maxCoeffi = (Double) sqlManager.getObject(selectMaxCoeffiCrival_Mod, new Object[] {idcridef});
+        String selectMaxpunCridef_Mod = replaceEnt("select maxpun from g1cridef where id=?",ENTITA_CRIVAL,modo);
+        Double maxPun = (Double) sqlManager.getObject(selectMaxpunCridef_Mod, new Object[] {idcridef});
+        String selectCoeffiCrival_Mod = replaceEnt("select coeffi, id from g1crival where idcridef=?",ENTITA_CRIVAL,modo);
+        String updateCoeffiCrival_Mod = replaceEnt("update g1crival set coeffi=?, punteg=? where id=?",ENTITA_CRIVAL,modo);
+        if(maxCoeffi.doubleValue()!=1) {
+          List listaCoeffG1Crival = this.sqlManager.getListVector(selectCoeffiCrival_Mod, new Object[] {idcridef});
+          if(listaCoeffG1Crival!= null && listaCoeffG1Crival.size()>0) {
+            for(int j=0;j<listaCoeffG1Crival.size();j++){
+              Double coeff=SqlManager.getValueFromVectorParam(listaCoeffG1Crival.get(j), 0).doubleValue();
+              Long idcrival=SqlManager.getValueFromVectorParam(listaCoeffG1Crival.get(j), 1).longValue();
+              Double coeffirip =coeff.doubleValue() /maxCoeffi.doubleValue();
+              coeffirip =UtilityMath.round(coeffirip, 9);
+              Double puntegrip = coeffirip * maxPun.doubleValue();
+              puntegrip =UtilityMath.round(puntegrip,numeroDecimali);
+              
+              this.sqlManager.update(updateCoeffiCrival_Mod, new Object[]{new Double(coeffirip),new Double(puntegrip),idcrival});
+            }
+          }
 
+         
+        }
+        
+      }
+      for(int i=0;i<listaDitteGara.size();i++){
+        ditta = SqlManager.getValueFromVectorParam(listaDitteGara.get(i), 0).getStringValue();
+        punteggioPadre = 0;
+        punteggioTotale=0;
+        gruppoCriteriFigli=false;
+        necvanPadre=null;
+        
         String selectG1Crival_Mod = replaceEnt(selectG1Crival,ENTITA_CRIVAL,modo);
         datiG1crival = this.sqlManager.getListVector(selectG1Crival_Mod, new Object[]{ngara, ditta, new Long(tipo)});
         if(datiG1crival!=null && datiG1crival.size()>0){
@@ -646,9 +726,7 @@ public class CalcoloPunteggiManager {
             PunteggiTecniciImprese punTecImpresa= new PunteggiTecniciImprese().codimp(ditta).punteggio(BigDecimal.valueOf(punteggioTotale).setScale(numeroDecimali, BigDecimal.ROUND_HALF_UP).doubleValue());
             punteggiTecniciImprese.add(punTecImpresa);
           }
-
         }
-
       }
 
       //Lettura dei punteggi massimi

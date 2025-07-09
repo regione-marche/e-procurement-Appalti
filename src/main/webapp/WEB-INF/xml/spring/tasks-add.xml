@@ -23,4 +23,20 @@
 	<ref bean="acquisisciIscrizioniElencoManagerTrigger" />
 	<ref bean="acquisisciAggiornamentiElencoManagerTrigger" />
 	<ref bean="letturaProtocolloWSDMSchedulerTrigger" />
+	<ref bean="letturaDatiFascicoloWSDMSchedulerTrigger" />
+	<ref bean="conservazioneDocumentiAggiudicatarioTrigger" />
+	<ref bean="analizzaArchiviazioneDocumentiTrigger" />
+	<ref bean="verificaRegolaritaManagerTrigger" />
+	<ref bean="richiestaDURCManagerTrigger" />
+	<ref bean="scadenzaTerminiPatManagerTrigger" />
+	<ref bean="invioNotificheComunicazioniTrigger" />
+	<ref bean="acquisisciAggiornamentiERPAnagraficaTrigger" />
+	<ref bean="trasferisciFileAlDocumentaleTrigger" />
+	<ref bean="inviaCigNewADCTrigger" />
+	<ref bean="inviaDocumentiNewADCTrigger" />
+	<ref bean="inviaRupNewADCTrigger" />
+	<ref bean="consultaPubblicazioneSchedeANACTrigger" />
+	<ref bean="archiviaDocumentiDigiPTrigger" />
+	<ref bean="chiudiFascicoloTrigger" />
+	<ref bean="allineaCigNewADCTrigger" />
 </list>

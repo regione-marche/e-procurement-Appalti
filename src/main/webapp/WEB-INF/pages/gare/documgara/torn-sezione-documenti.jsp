@@ -14,6 +14,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 
+<c:set var="isVerificaPDFA" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "uploadFile.verifica.pdfA")}'/>
 <c:set var="digitalSignatureUrlCheck" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-check-url")}'/>
 <c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
 <c:choose>
@@ -59,9 +60,10 @@
 </c:if>
 <c:set var="gestioneERP" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.GetPropertyWsdmFunction", "wsdm.gestioneERP",idconfi)}'/>
 <c:set var="numeroDocumentoWSDM" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.CheckAssociataRdaJIRIDEFunction", pageContext, codiceGara)}' scope="request"/>
-<c:if test='${integrazioneWSERP eq "1" and tipoWSERP eq "AMIU"}'>
+<c:if test='${integrazioneWSERP eq "1" and (tipoWSERP eq "AMIU" or tipoWSERP eq "INARCASSA" or tipoWSERP eq "ARCHIFLOW" or tipoWSERP eq "CONI")}'>
 	<c:set var="presenzaRda" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetWSERPPresenzaRdaFunction", pageContext, codiceGara, null, requestScope.tipoWSERP)}' scope="request" />
 </c:if>
+<c:set var="isIntegrazioneBIC" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "integrazioneBic.attivaLetturaDaLFS")}'/>
 
 <c:choose> 
 	<c:when test="${gruppo eq 3}" >
@@ -106,7 +108,7 @@
 			<jsp:param name="nomeAttributoLista" value='documentiGara' />
 			<jsp:param name="idProtezioni" value="DOCUMGARA" />
 			<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/documgara/bando-documenti-gara.jsp"/>
-			<jsp:param name="arrayCampi" value="'DOCUMGARA_CODGAR_', 'DOCUMGARA_NGARA_', 'DOCUMGARA_NORDDOCG_','DOCUMGARA_GRUPPO_', 'DOCUMGARA_FASGAR_', 'DOCUMGARA_IDPRG_', 'DOCUMGARA_IDDOCDG_', 'DOCUMGARA_DESCRIZIONE_', 'DOCUMGARA_STATODOC_','DOCUMGARA_VALENZA_','DOCUMGARA_URLDOC_','DOCUMGARA_TIPOLOGIA_','W_DOCDIG_IDPRG_','W_DOCDIG_IDDOCDIG_','W_DOCDIG_DIGDESDOC_','W_DOCDIG_DIGNOMDOC_','selezioneFile_','tipoAllegato_','W_DOCDIG_DIGFIRMA_'"/>		
+			<jsp:param name="arrayCampi" value="'DOCUMGARA_CODGAR_', 'DOCUMGARA_NGARA_', 'DOCUMGARA_NORDDOCG_','DOCUMGARA_GRUPPO_', 'DOCUMGARA_FASGAR_', 'DOCUMGARA_IDPRG_', 'DOCUMGARA_IDDOCDG_', 'DOCUMGARA_DESCRIZIONE_', 'DOCUMGARA_STATODOC_','DOCUMGARA_VALENZA_','DOCUMGARA_URLDOC_','DOCUMGARA_TIPOLOGIA_','W_DOCDIG_IDPRG_','W_DOCDIG_IDDOCDIG_','W_DOCDIG_DIGDESDOC_','W_DOCDIG_DIGNOMDOC_','selezioneFile_','tipoAllegato_','W_DOCDIG_DIGFIRMA_','DOCUMGARA_URLLARGEFILE_'"/>
 			<jsp:param name="titoloSezione" value="Documento" />
 			<jsp:param name="titoloNuovaSezione" value="Nuovo documento" />
 			<jsp:param name="descEntitaVociLink" value="documento" />
@@ -119,6 +121,7 @@
 			<jsp:param name="funzEliminazione" value="delDocumento"/>
 			<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
 			<jsp:param name="associataRdaWSERP" value="${associataRdaWSERP}"/>
+			<jsp:param name="isVerificaPDFA" value="${isVerificaPDFA}"/>
 		</jsp:include>
 		<c:set var="condizioneModificaSezioneProfilo" value='${(genereGara eq "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMGARA")) || (genereGara ne "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-scheda.DOCUMGARA.DOCUMGARA")) }'/>
 	</c:if>
@@ -130,7 +133,7 @@
 			<jsp:param name="nomeAttributoLista" value='requisitiConcorrenti' />
 			<jsp:param name="idProtezioni" value="DOCUMREQ" />
 			<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/documgara/requisiti-concorrenti.jsp"/>
-			<jsp:param name="arrayCampi" value="'DOCUMGARA_CODGAR_', 'DOCUMGARA_NGARA_', 'DOCUMGARA_NORDDOCG_','DOCUMGARA_GRUPPO_', 'DOCUMGARA_FASGAR_', 'DOCUMGARA_IDPRG_', 'DOCUMGARA_IDDOCDG_','DOCUMGARA_DESCRIZIONE_','DOCUMGARA_STATODOC_','DOCUMGARA_VALENZA_','W_DOCDIG_IDPRG_','W_DOCDIG_IDDOCDIG_','W_DOCDIG_DIGDESDOC_','W_DOCDIG_DIGNOMDOC_','selezioneFile_'"/>		
+			<jsp:param name="arrayCampi" value="'DOCUMGARA_CODGAR_', 'DOCUMGARA_NGARA_', 'DOCUMGARA_NORDDOCG_','DOCUMGARA_GRUPPO_', 'DOCUMGARA_FASGAR_', 'DOCUMGARA_IDPRG_', 'DOCUMGARA_IDDOCDG_','DOCUMGARA_DESCRIZIONE_','DOCUMGARA_STATODOC_','DOCUMGARA_VALENZA_','W_DOCDIG_IDPRG_','W_DOCDIG_IDDOCDIG_','W_DOCDIG_DIGDESDOC_','W_DOCDIG_DIGNOMDOC_','selezioneFile_'"/>
 			<jsp:param name="titoloSezione" value="Requisito" />
 			<jsp:param name="titoloNuovaSezione" value="Nuovo requisito" />
 			<jsp:param name="descEntitaVociLink" value="requisito" />
@@ -141,6 +144,7 @@
 			<jsp:param name="firmaDocumento" value="${firmaDocumento}"/>
 			<jsp:param name="funzEliminazione" value="delDocumento"/>
 			<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
+			<jsp:param name="isVerificaPDFA" value="${isVerificaPDFA}"/>
 		</jsp:include>
 		<c:set var="condizioneModificaSezioneProfilo" value='${(genereGara eq "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMREQ")) || (genereGara ne "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-scheda.DOCUMGARA.DOCUMREQ")) }'/>
 	</c:if>
@@ -175,6 +179,7 @@
 			<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
 			<jsp:param name="bustalotti" value="${bustalotti}"/>
 			<jsp:param name="sezionitec" value="${sezionitec}"/>
+			<jsp:param name="isVerificaPDFA" value="${isVerificaPDFA}"/>
 		</jsp:include>
 		<c:set var="condizioneModificaSezioneProfilo" value='${(genereGara eq "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMCONC")) || (genereGara ne "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-scheda.DOCUMGARA.DOCUMCONC")) }'/>
 	</c:if>
@@ -186,7 +191,7 @@
 			<jsp:param name="nomeAttributoLista" value='documentiEsito' />
 			<jsp:param name="idProtezioni" value="DOCUMESITO" />
 			<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/documgara/documenti-esito.jsp"/>
-			<jsp:param name="arrayCampi" value="'DOCUMGARA_CODGAR_', 'DOCUMGARA_NGARA_', 'DOCUMGARA_NORDDOCG_','DOCUMGARA_GRUPPO_', 'DOCUMGARA_FASGAR_', 'DOCUMGARA_IDPRG_', 'DOCUMGARA_IDDOCDG_','DOCUMGARA_DESCRIZIONE_','DOCUMGARA_STATODOC_','DOCUMGARA_VALENZA_','DOCUMGARA_URLDOC_','DOCUMGARA_TIPOLOGIA_','W_DOCDIG_IDPRG_','W_DOCDIG_IDDOCDIG_','W_DOCDIG_DIGDESDOC_','W_DOCDIG_DIGNOMDOC_','selezioneFile_','tipoAllegato_','W_DOCDIG_DIGFIRMA_', 'DOCUMGARA_DATAPROV_', 'DOCUMGARA_NUMPROV_'"/>	
+			<jsp:param name="arrayCampi" value="'DOCUMGARA_CODGAR_', 'DOCUMGARA_NGARA_', 'DOCUMGARA_NORDDOCG_','DOCUMGARA_GRUPPO_', 'DOCUMGARA_FASGAR_', 'DOCUMGARA_IDPRG_', 'DOCUMGARA_IDDOCDG_','DOCUMGARA_DESCRIZIONE_','DOCUMGARA_STATODOC_','DOCUMGARA_VALENZA_','DOCUMGARA_URLDOC_','DOCUMGARA_TIPOLOGIA_','W_DOCDIG_IDPRG_','W_DOCDIG_IDDOCDIG_','W_DOCDIG_DIGDESDOC_','W_DOCDIG_DIGNOMDOC_','selezioneFile_','tipoAllegato_','W_DOCDIG_DIGFIRMA_', 'DOCUMGARA_DATAPROV_', 'DOCUMGARA_NUMPROV_','DOCUMGARA_URLLARGEFILE_'"/>
 			<jsp:param name="titoloSezione" value="Documento" />
 			<jsp:param name="titoloNuovaSezione" value="Nuovo documento" />
 			<jsp:param name="descEntitaVociLink" value="documento" />
@@ -199,6 +204,7 @@
 			<jsp:param name="funzEliminazione" value="delDocumento"/>
 			<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
 			<jsp:param name="associataRdaWSERP" value="${associataRdaWSERP}"/>
+			<jsp:param name="isVerificaPDFA" value="${isVerificaPDFA}"/>
 		</jsp:include>
 		<c:set var="condizioneModificaSezioneProfilo" value='${(genereGara eq "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMGARA")) || (genereGara ne "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-scheda.DOCUMGARA.DOCUMGARA")) }'/>
 	</c:if>
@@ -210,7 +216,7 @@
 			<jsp:param name="nomeAttributoLista" value='documentiTrasparenza' />
 			<jsp:param name="idProtezioni" value="DOCUMTRASP" />
 			<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/documgara/documenti-trasparenza.jsp"/>
-			<jsp:param name="arrayCampi" value="'DOCUMGARA_CODGAR_', 'DOCUMGARA_NGARA_', 'DOCUMGARA_NORDDOCG_','DOCUMGARA_GRUPPO_', 'DOCUMGARA_FASGAR_', 'DOCUMGARA_IDPRG_', 'DOCUMGARA_IDDOCDG_','DOCUMGARA_DESCRIZIONE_','DOCUMGARA_STATODOC_','DOCUMGARA_VALENZA_','W_DOCDIG_IDPRG_','DOCUMGARA_TIPOLOGIA_','W_DOCDIG_IDDOCDIG_','W_DOCDIG_DIGDESDOC_','W_DOCDIG_DIGNOMDOC_','selezioneFile_','DOCUMGARA_DITTAAGG_','IMPR_NOMIMP_','W_DOCDIG_DIGFIRMA_'"/>		
+			<jsp:param name="arrayCampi" value="'DOCUMGARA_CODGAR_', 'DOCUMGARA_NGARA_', 'DOCUMGARA_NORDDOCG_','DOCUMGARA_GRUPPO_', 'DOCUMGARA_FASGAR_', 'DOCUMGARA_IDPRG_', 'DOCUMGARA_IDDOCDG_','DOCUMGARA_DESCRIZIONE_','DOCUMGARA_STATODOC_','DOCUMGARA_VALENZA_','W_DOCDIG_IDPRG_','DOCUMGARA_TIPOLOGIA_','W_DOCDIG_IDDOCDIG_','W_DOCDIG_DIGDESDOC_','W_DOCDIG_DIGNOMDOC_','selezioneFile_','DOCUMGARA_DITTAAGG_','IMPR_NOMIMP_','W_DOCDIG_DIGFIRMA_','DOCUMGARA_URLLARGEFILE_'"/>
 			<jsp:param name="titoloSezione" value="Documento" />
 			<jsp:param name="titoloNuovaSezione" value="Nuovo documento" />
 			<jsp:param name="descEntitaVociLink" value="documento" />
@@ -222,6 +228,7 @@
 			<jsp:param name="firmaDocumento" value="${firmaDocumento}"/>
 			<jsp:param name="funzEliminazione" value="delDocumento"/>
 			<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
+			<jsp:param name="isVerificaPDFA" value="${isVerificaPDFA}"/>
 		</jsp:include>
 		<c:set var="condizioneModificaSezioneProfilo" value='${(genereGara eq "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMGARA")) || (genereGara ne "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-scheda.DOCUMGARA.DOCUMGARA")) }'/>
 	</c:if>
@@ -234,7 +241,7 @@
 			<jsp:param name="nomeAttributoLista" value='documentiInvito' />
 			<jsp:param name="idProtezioni" value="DOCUMINVITI" />
 			<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/documgara/documenti-invito.jsp"/>
-			<jsp:param name="arrayCampi" value="'DOCUMGARA_CODGAR_', 'DOCUMGARA_NGARA_', 'DOCUMGARA_NORDDOCG_','DOCUMGARA_GRUPPO_', 'DOCUMGARA_FASGAR_', 'DOCUMGARA_IDPRG_', 'DOCUMGARA_IDDOCDG_','DOCUMGARA_DESCRIZIONE_','DOCUMGARA_STATODOC_','DOCUMGARA_VALENZA_','W_DOCDIG_IDPRG_','DOCUMGARA_TIPOLOGIA_','W_DOCDIG_IDDOCDIG_','W_DOCDIG_DIGDESDOC_','W_DOCDIG_DIGNOMDOC_','selezioneFile_','DOCUMGARA_IDSTAMPA','NOMEDOCGEN_','DOCUMGARA_ALLMAIL_','DOCUMGARA_URLDOC_','tipoAllegato_','W_DOCDIG_DIGFIRMA_'"/>		
+			<jsp:param name="arrayCampi" value="'DOCUMGARA_CODGAR_', 'DOCUMGARA_NGARA_', 'DOCUMGARA_NORDDOCG_','DOCUMGARA_GRUPPO_', 'DOCUMGARA_FASGAR_', 'DOCUMGARA_IDPRG_', 'DOCUMGARA_IDDOCDG_','DOCUMGARA_DESCRIZIONE_','DOCUMGARA_STATODOC_','DOCUMGARA_VALENZA_','W_DOCDIG_IDPRG_','DOCUMGARA_TIPOLOGIA_','W_DOCDIG_IDDOCDIG_','W_DOCDIG_DIGDESDOC_','W_DOCDIG_DIGNOMDOC_','selezioneFile_','DOCUMGARA_IDSTAMPA','NOMEDOCGEN_','DOCUMGARA_ALLMAIL_','DOCUMGARA_URLDOC_','tipoAllegato_','W_DOCDIG_DIGFIRMA_','DOCUMGARA_URLLARGEFILE_'"/>
 			<jsp:param name="titoloSezione" value="Documento" />
 			<jsp:param name="titoloNuovaSezione" value="Nuovo documento" />
 			<jsp:param name="descEntitaVociLink" value="documento" />
@@ -249,6 +256,7 @@
 			<jsp:param name="condizioneBloccoAllmail" value="${condizioneBloccoAllmail}"/>
 			<jsp:param name="isProceduraTelematica" value="${isProceduraTelematica}"/>
 			<jsp:param name="associataRdaWSERP" value="${associataRdaWSERP}"/>
+			<jsp:param name="isVerificaPDFA" value="${isVerificaPDFA}"/>
 		</jsp:include>
 		<c:set var="condizioneModificaSezioneProfilo" value='${(genereGara eq "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMGARA")) || (genereGara ne "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-scheda.DOCUMGARA.DOCUMGARA")) }'/>
 	</c:if>
@@ -260,7 +268,7 @@
 			<jsp:param name="nomeAttributoLista" value='atti' />
 			<jsp:param name="idProtezioni" value="ATTI" />
 			<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/documgara/atti-documenti.jsp"/>
-			<jsp:param name="arrayCampi" value="'DOCUMGARA_CODGAR_', 'DOCUMGARA_NGARA_', 'DOCUMGARA_NORDDOCG_','DOCUMGARA_GRUPPO_', 'DOCUMGARA_FASGAR_', 'DOCUMGARA_IDPRG_', 'DOCUMGARA_IDDOCDG_','DOCUMGARA_DESCRIZIONE_','DOCUMGARA_STATODOC_','DOCUMGARA_VALENZA_','DOCUMGARA_URLDOC_','DOCUMGARA_TIPOLOGIA_','W_DOCDIG_IDPRG_','W_DOCDIG_IDDOCDIG_','W_DOCDIG_DIGDESDOC_','W_DOCDIG_DIGNOMDOC_','selezioneFile_','tipoAllegato_','W_DOCDIG_DIGFIRMA_', 'DOCUMGARA_DATAPROV_', 'DOCUMGARA_NUMPROV_'"/>		
+			<jsp:param name="arrayCampi" value="'DOCUMGARA_CODGAR_', 'DOCUMGARA_NGARA_', 'DOCUMGARA_NORDDOCG_','DOCUMGARA_GRUPPO_', 'DOCUMGARA_FASGAR_', 'DOCUMGARA_IDPRG_', 'DOCUMGARA_IDDOCDG_','DOCUMGARA_DESCRIZIONE_','DOCUMGARA_STATODOC_','DOCUMGARA_VALENZA_','DOCUMGARA_URLDOC_','DOCUMGARA_TIPOLOGIA_','W_DOCDIG_IDPRG_','W_DOCDIG_IDDOCDIG_','W_DOCDIG_DIGDESDOC_','W_DOCDIG_DIGNOMDOC_','selezioneFile_','tipoAllegato_','W_DOCDIG_DIGFIRMA_', 'DOCUMGARA_DATAPROV_', 'DOCUMGARA_NUMPROV_','DOCUMGARA_TIPOATTO_','DOCUMGARA_URLLARGEFILE_'"/>
 			<jsp:param name="titoloSezione" value="Documento" />
 			<jsp:param name="titoloNuovaSezione" value="Nuovo documento" />
 			<jsp:param name="descEntitaVociLink" value="documento" />
@@ -274,6 +282,7 @@
 			<jsp:param name="funzEliminazione" value="delDocumento"/>
 			<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
 			<jsp:param name="associataRdaWSERP" value="${associataRdaWSERP}"/>
+			<jsp:param name="isVerificaPDFA" value="${isVerificaPDFA}"/>
 		</jsp:include>
 		<c:set var="condizioneModificaSezioneProfilo" value='${(genereGara eq "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMGARA")) || (genereGara ne "3" and gene:checkProt(pageContext,"SEZ.MOD.GARE.TORN-scheda.DOCUMGARA.DOCUMGARA")) }'/>
 	</c:if>	
@@ -347,7 +356,18 @@
 					<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
 				</td>
 			</tr>
-		</c:if>	
+		</c:if>
+		<c:if test="${(gruppo eq 1 or gruppo eq 6) and modoAperturaScheda eq 'VISUALIZZA'  and autorizzatoModifiche ne '2' and gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.IntegrazioneBIC') and isIntegrazioneBIC eq '1' and !(genereGara eq '10' || genereGara eq '11' || genereGara eq '20')}">
+			<tr>
+				<td class="vocemenulaterale" >
+					<c:if test='${isNavigazioneDisattiva ne "1"}'>
+					<a href="javascript:aggiungiDocumentiBIC('${ngara}','${codiceGara}','${gruppo}','${isProceduraTelematica}');" title='Inserisci documenti BIC da commessa' tabindex="1513">
+						</c:if>
+						Inserisci documenti BIC da commessa
+						<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
+				</td>
+			</tr>
+		</c:if>
 		<c:if test='${gruppo eq "4" and autorizzatoModifiche ne "2" and !condizioneFunzArchivia and modoAperturaScheda eq "VISUALIZZA" and gruppo15Visibile and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.InsertDelibereAContrare")}'>
 			<tr>
 				<td class="vocemenulaterale" >
@@ -421,14 +441,27 @@
 			</tr>
 			
 		</c:if>	
-		<c:if test="${not empty integrazioneMDgueUrl and integrazioneMDgueUrl ne '' and (gruppo eq 1 or gruppo eq 6) and modoAperturaScheda eq 'VISUALIZZA'  and autorizzatoModifiche ne '2' and gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.InsertDocDGUE')}">
+		<c:if test="${!(not empty vernpa && gene:callFunctionN('it.eldasoft.sil.pg.tags.funzioni.GetSeAttivoModuloANACFormFunction', pageContext, codiceGara) eq 'true')}">
+			<c:if test="${not empty integrazioneMDgueUrl and integrazioneMDgueUrl ne '' and (gruppo eq 1 or gruppo eq 6) and modoAperturaScheda eq 'VISUALIZZA'  and autorizzatoModifiche ne '2' and gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.InsertDocDGUE')}">
+				<tr>
+					<td class="vocemenulaterale" >
+						<c:if test='${isNavigazioneDisattiva ne "1"}'>
+							<a href="javascript:insDocumentoMDGUE('${ngara}','${codiceGara}','${gruppo}','${isProceduraTelematica}','${tipologia}');" title='Inserisci documento con M-DGUE' tabindex="1512">
+						</c:if>
+							Inserisci documento con M-DGUE
+						<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
+					</td>
+				</tr>
+			</c:if>
+		</c:if>
+		<c:if test="${gene:callFunction('it.eldasoft.gene.tags.functions.GetPropertyFunction', 'largefiles.abilita') eq '1' and modoAperturaScheda eq 'VISUALIZZA'  and autorizzatoModifiche ne '2' && gruppo ne '3' and gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.InsertLargeFile')}">
 			<tr>
 				<td class="vocemenulaterale" >
 					<c:if test='${isNavigazioneDisattiva ne "1"}'>
-						<a href="javascript:insDocumentoMDGUE('${ngara}','${codiceGara}','${gruppo}','${isProceduraTelematica}','${tipologia}');" title='Inserisci documento con M-DGUE' tabindex="1512">
-					</c:if>
-						Inserisci documento con M-DGUE
-					<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
+					<a href="javascript:setupLargeFile('${ngara}','${codiceGara}','${gruppo}','${isProceduraTelematica}','${tipologia}');" title='Inserisci documento di grande dimensione' tabindex="1513">
+						</c:if>
+						Inserisci documento di grande dimensione
+						<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
 				</td>
 			</tr>
 		</c:if>
@@ -441,7 +474,21 @@
 	
 <gene:javaScript>
 
+<c:if test='${modo eq "MODIFICA" or modo eq "NUOVO"}'>
 document.forms[0].encoding="multipart/form-data";
+</c:if>
+
+	function aggiungiDocumentiBIC() {
+		var garaLotti = 0;
+		<c:if test="${genereGara eq 1 || genereGara eq 3}">
+			garaLotti = 1;
+		</c:if>
+		var gruppo = "${gruppo}";
+		var tipologia = "${tipologia }";
+		var isProceduraTelematica ="${isProceduraTelematica }";
+		var href = "href=gare/commons/popup-integrazione-bic.jsp?codgar="+getValue("GARE_CODGAR1")+"&ngara="+getValue("GARE_NGARA")+"&garaLotti=" + garaLotti+"&gruppo=" + gruppo+"&tipologia=" + tipologia;;
+		openPopUpCustom(href, "insDocumentiBIC", 1200, 450, "no", "yes");
+	}
 
 function apriPopupInsertPredefiniti() {
 	var lottoDiGara = 0;
@@ -477,16 +524,17 @@ function ConfermaModifica(){
 	<c:if test='${gruppo eq 6}'>
 		$('[id^="DOCUMGARA_ALLMAIL_"]').attr('disabled',false);
 	</c:if>
-	document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+	document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 	schedaConferma();
 }
  
 function ConfermaAnnulla(){
-	document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+	document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 	schedaAnnulla();
 }
  
 function scegliFile(indice) {
+	var file = document.getElementById("selFile[" + indice + "]").files[0];
 	var firmaDocumento="${firmaDocumento}";
 	if(firmaDocumento=='1'){
 		var digfirma = getValue("W_DOCDIG_DIGFIRMA_" + indice);
@@ -501,6 +549,7 @@ function scegliFile(indice) {
 	var lunghezza_stringa=selezioneFile.length;
 	var posizione_barra=selezioneFile.lastIndexOf("\\");
 	var nome=selezioneFile.substring(posizione_barra+1,lunghezza_stringa).toUpperCase();
+	var ext = nome.substring(nome.lastIndexOf('.')+1);
 	var tipoDoc="${gruppo}";
 	var idstampa="";
 	if(document.getElementById("DOCUMGARA_IDSTAMPA_" + indice ))
@@ -510,6 +559,8 @@ function scegliFile(indice) {
 			alert("Il formato del file selezionato non è valido.\nE' consentito solo il formato xml");
 			document.getElementById("selFile[" + indice + "]").value="";
 			setValue("W_DOCDIG_DIGNOMDOC_" + indice,"");
+			$('#checkPDFaDocMessage_'+indice).css("display", "none");
+			$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
 			return;
 		}
 	} else if(tipoDoc=="6"){
@@ -518,6 +569,8 @@ function scegliFile(indice) {
 			alert("Il formato del file selezionato non è valido.\nI formati consentiti sono: " + formatoAllegati);
 			document.getElementById("selFile[" + indice + "]").value="";
 			setValue("W_DOCDIG_DIGNOMDOC_" + indice,"");
+			$('#checkPDFaDocMessage_'+indice).css("display", "none");
+			$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
 			return;
 		}
 	}
@@ -525,9 +578,20 @@ function scegliFile(indice) {
 		alert("Il nome del file non può superare i 100 caratteri!");
 		document.getElementById("selFile[" + indice + "]").value="";
 		setValue("W_DOCDIG_DIGNOMDOC_" + indice,"");
+		$('#checkPDFaDocMessage_'+indice).css("display", "none");
+		$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
 	}else{
 		setValue("W_DOCDIG_DIGNOMDOC_" + indice,nome);
 		$("#spanRichiestaFirma_" + indice).show();
+		setValue("W_DOCDIG_DIGTIPDOC_"+indice,ext);
+		<c:if test="${isVerificaPDFA eq '1'}">
+			if(nome.includes('.PDF')){
+				checkValiditaPDFA(file,indice);
+			} else {
+				$('#checkPDFaDocMessage_'+indice).css("display", "none");
+				$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
+			}
+		</c:if>
 	}
 }
 
@@ -574,7 +638,7 @@ function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 			}else{
 				tracciamentoDownloadDocgara(idprg, iddocdig,key,gruppo,busta,tipologia);
 				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 			}
 		</c:when>
 		<c:otherwise>
@@ -586,7 +650,7 @@ function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 			}else{
 				tracciamentoDownloadDocgara(idprg, iddocdig,key,gruppo,busta,tipologia);
 				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 			}
 			
 		</c:otherwise>
@@ -595,7 +659,7 @@ function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 
 function visualizzaFileGenerato(nomeFile) {
 	var href = "${pageContext.request.contextPath}/DownloadTempFile.do";
-	document.location.href = href + "?"+csrfToken+"&nomeTempFile=" + nomeFile;
+	document.location.href = href + "?nomeTempFile=" + nomeFile;
 }
 
 <c:if test='${modo eq "MODIFICA" and gruppo eq 2}'>
@@ -792,8 +856,13 @@ function visualizzaFileGenerato(nomeFile) {
 
 	function delDocumento(id, label, tipo, campi){
 		var tippub = getValue("DOCUMGARA_STATODOC_" + id);
+		var vernpa="${not empty vernpa}";
+		var protAnacForm = "${gene:callFunctionN('it.eldasoft.sil.pg.tags.funzioni.GetSeAttivoModuloANACFormFunction', pageContext, codiceGara) eq 'true'}"
+		var idstampa = getValue("DOCUMGARA_IDSTAMPA_" + id);
 		if(tippub == 5)
 			alert("Non è possibile eliminare un documento già pubblicato")
+		else if (vernpa == 'true' && protAnacForm=='true' && idstampa == "DGUE")
+				alert("Non è possibile eliminare tale tipologia di documento")
 		else
 			delElementoSchedaMultipla(id,label,tipo,campi);
 	}
@@ -812,6 +881,64 @@ function visualizzaFileGenerato(nomeFile) {
 			historyReload();
 		}
 	</c:if>	
+	
+	function checkValiditaPDFA(file,indice) {
+		if(file != undefined){
+			var formdata = false;
+			if (window.FormData) {
+				formdata = new FormData();
+			}
+			if (formdata) {
+				formdata.append("file", file);
+			}
+			_wait();
+			$.ajax({
+				url: "${contextPath}/CheckFormatoFilePDFa.do",
+				data: formdata,
+				enctype: 'multipart/form-data',
+				type: 'POST',
+				cache: false,
+				contentType: false,
+				processData: false,
+				dataType: "json",
+				success: function(res) {
+					console.log(res);
+					if(res.esito == 'ko'){
+						$('#checkPDFaDocMessage_'+indice).css("display", "contents");
+						$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
+						setValue("W_DOCDIG_DIGTIPDOC_"+indice,"pdf");
+					} else {
+						$('#checkPDFaDocMessage_'+indice).css("display", "none");
+						$('#imgCheckPDFaDocMessage_'+indice).css("display", "unset");
+						setValue("W_DOCDIG_DIGTIPDOC_"+indice,"pdf/a");
+					}
+				},
+				error: function(e) {
+					alert('Errore nella verifica del file!');
+				},
+				complete: function() {
+					_nowait();
+				}
+			});
+		} else {
+			$('#checkPDFaDocMessage_'+indice).css("display", "none");
+			$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
+			setValue("W_DOCDIG_DIGTIPDOC_"+indice,null);
+		}
+	}
+		
+	function _wait() {
+		document.getElementById('bloccaScreen').style.visibility = 'visible';
+		$('#bloccaScreen').css("width", $(document).width());
+		$('#bloccaScreen').css("height", $(document).height());
+		document.getElementById('wait').style.visibility = 'visible';
+		$("#wait").offset({ top: $(window).height() / 2, left: ($(window).width() / 2) - 200 });
+	}
+
+	function _nowait() {
+		document.getElementById('bloccaScreen').style.visibility = 'hidden';
+		document.getElementById('wait').style.visibility = 'hidden';
+	}
 	
 </gene:javaScript>
 

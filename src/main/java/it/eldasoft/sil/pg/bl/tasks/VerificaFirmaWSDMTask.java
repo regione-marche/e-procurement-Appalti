@@ -15,6 +15,7 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.List;
 
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.springframework.jdbc.core.support.SqlLobValue;
@@ -142,6 +143,7 @@ public class VerificaFirmaWSDMTask {
                       try {
                         status = this.sqlManager.startTransaction();
                         this.sqlManager.update("update w_docdig set dignomdoc=?, digogg=?, digfirma=null where idprg=? and iddocdig=?", new Object[] {nomeAllegato, new SqlLobValue(contenutoAllegato, lobHandler), idprg, iddocdig });
+                        ObjectStorageUtils.addFile(idprg, iddocdig);
                         //Se l'allegato è relativo a C0OGGASS si deve aggiornare il nome del file in C0ANOMOGG
                         if(StringUtils.isNumeric(digkey1)) {
                           this.sqlManager.update("update C0OGGASS set C0ANOMOGG=? where C0ACOD=?", new Object[] {nomeAllegato,new Long(digkey1) });

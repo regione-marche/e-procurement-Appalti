@@ -23,6 +23,7 @@
 	<c:set var="amministratore" value="true"/>
 </c:if>
 <c:set var="uffintAbilitata" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.associazioneUffintAbilitata")}'/>
+<c:set var="multienteAbilitata" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "loginMultiEnte")}'/>
 
 
 
@@ -34,12 +35,18 @@
 	
 	<c:set var="idUtente" value="${sessionScope.profiloUtente.id}" />
 	
-	<c:if test="${uffintAbilitata eq '1' and !amministratore}">
+	<c:if test="${uffintAbilitata eq '1' and !amministratore and multienteAbilitata ne 1 }">
 		<c:if test="${!empty filtro}">
 			<c:set var="filtro" value="${filtro } AND "/>
 		</c:if>
 		<c:set var="filtro" value="${filtro} CENINT IN (select codein from usr_ein where syscon = ${idUtente} ) "/>
 		
+	</c:if>
+	<c:if test="${multienteAbilitata eq 1}">
+	<c:if test="${!empty filtro}">
+			<c:set var="filtro" value="${filtro } AND "/>
+		</c:if>
+		<c:set var="filtro" value="${filtro} CENINT = '${sessionScope.uffint}'" />
 	</c:if>
 	
 	<c:if test="${!empty filtro}">
@@ -65,9 +72,9 @@
 			<tr><td colspan="3"><b>Dati generali</b></td></tr>
 			<gene:campoTrova campo="CODICE" title="Codice gara o avviso"/> 
 			<gene:campoTrova campo="OGGETTO" title="Oggetto gara o avviso"/> 
-			<gene:campoTrova campo="NOMTEC" entita="TECNI"  from="TORN" where="torn.codgar = v_gare_profilo.codgar and tecni.codtec=torn.codrup" title="Resonsabile unico di procedimento"/> 
+			<gene:campoTrova campo="NOMTEC" entita="TECNI"  from="TORN" where="torn.codgar = v_gare_profilo.codgar and tecni.codtec=torn.codrup" title="RUP"/> 
 			<gene:campoTrova campo="GENERE"/> 
-			<gene:campoTrova campo="NUMAVCP" entita="TORN" where="torn.codgar = v_gare_profilo.codgar"/>
+			<gene:campoTrova campo="IDAPPALTONPA" entita="TORN" where="torn.codgar = v_gare_profilo.codgar"/>
 			<gene:campoTrova campo="TIPGEN" entita="TORN" where="torn.codgar = v_gare_profilo.codgar"/> 
 			<gene:campoTrova campo="TIPGAR"/> 
 			<gene:campoTrova entita="TORN" campo="ACCQUA" where="torn.codgar = v_gare_profilo.codgar" title="Accordo quadro?"/> 
@@ -106,7 +113,7 @@
   	var numCampiReali = parseInt(document.forms[0].campiCount.value);
   	document.forms[0].campiCount.value = numCampiReali +  numCampiFittizi + 2;
   	function trovaCreaNuovaGara(){
-			document.location.href = contextPath + "/pg/InitNuovaGara.do?" + csrfToken;
+			document.location.href = contextPath + "/pg/InitNuovaGara.do";
   	}
 	
 	var trovaEsegui_Default = trovaEsegui;

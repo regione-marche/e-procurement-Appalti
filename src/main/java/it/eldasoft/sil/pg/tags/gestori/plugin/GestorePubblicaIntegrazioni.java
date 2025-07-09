@@ -258,7 +258,7 @@ public class GestorePubblicaIntegrazioni extends AbstractGestorePreload {
               Long modlicg = (Long)this.sqlManager.getObject("select modlicg from gare where ngara=?", new Object[] {ngara});
               if(new Long(6).equals(modlicg)) {
                 String anonimatec= (String)sqlManager.getObject("select anonimatec from gare1 where ngara=?", new Object[]{ngara});
-                if("1".equals(anonimatec)) {
+                if("1".equals(anonimatec) || new Long(9).equals(iterga) || iterga.longValue()==10) {
                   String selectDocumentiGareAnonime = "select count(codgar) from DOCUMGARA where CODGAR=? and NGARA = ? and gruppo=? and busta=? and MODFIRMA = 1 and (isarchi is null or isarchi <>'1')";
                   Long conteggio = (Long)sqlManager.getObject(selectDocumentiGareAnonime, new Object[]{codgar,ngara, new Long(3), new Long(2) });
                   if(conteggio!=null && conteggio.longValue() > 0){

@@ -103,7 +103,7 @@
 			
 			window.onload = function () { 
 				window.opener.bloccaRichiesteServer();
-				window.opener.location = "${contextPath}/History.do?"+csrfToken+"&metodo=reload";
+				window.opener.location = "${contextPath}/History.do?metodo=reload";
 				dim1=800;
 				dim2=650;
 				window.resizeTo(dim1,dim2);	
@@ -266,6 +266,12 @@
 		<c:set var="abilitatoInvioMailDocumentale" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.AbilitatoInvioMailDocumentaleFunction", pageContext, idconfi)}'/>
 	</c:if>	
 	
+	<c:set var="tabellatoA1178" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1178", "1", "true")}'/>
+	<c:if test="${tabellatoA1178 eq '1'}" >
+		<c:set var="isConcProg" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.CheckIsConcProgFunction", pageContext, codgar)}'/>
+	</c:if>	
+	<c:set var="itergaTORN" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select iterga from torn where codgar=?", codgar)}'/>
+	
 	<c:set var="chiaveTorn" value="TORN.CODGAR=T:${codgar}"/>
 	<c:set var="tipologiaGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTipologiaGaraFunction",  pageContext,chiaveTorn)}'/>
 	<c:choose>
@@ -285,16 +291,13 @@
 		<c:set var="controlloPresenzaOffertaTecnica" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.ControlloPresenzaOffertaTecnicaFunction",  pageContext, valoreChiave, offertaUnica)}'/>
 	
 		<c:set var="tipoPubSitoIstituzionale" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", tipoPubblicazioneSitoIstituzionale)}'/>
-		<c:if test="${tipoPubSitoIstituzionale eq '2' }">
-			<c:choose>
-				<c:when test="${bando eq '1' }">
-					<c:set var="tipoUuid" value="BANDO" />
-				</c:when>
-				<c:when test="${bando eq '0' }">
-					<c:set var="tipoUuid" value="ESITO" />
-				</c:when>
-			</c:choose>
-			<c:set var="uuid" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetUuidFunction",  pageContext, codgar,tipoUuid)}' scope="request"/>
+		<c:set var="where" value="codgar=?"/>
+		<c:set var="sql" value="${'select sezlavpub from torn where '}${where}"/>
+		<c:set var="sezLavPubTORN" value="${gene:callFunctionN('it.eldasoft.gene.tags.functions.GetSafeDataFromDB', pageContext, sql, codgar)}"/>
+		<c:set var="nonusato" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.IsGestionePATFunction", pageContext, codgar)}'/>
+		
+		<c:if test="${isGestionePATISWEB eq 'true' }">
+			<c:set var="uuid" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetUuidFunction",  pageContext, codgar)}' scope="request"/>
 		</c:if>
 	</c:if>
 	
@@ -324,12 +327,38 @@
 	<gene:redefineInsert name="corpo">
 	<gene:formScheda entita="${entita }" gestisciProtezioni="false" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestorePubblicaSuPortale" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePubblicaSuPortale">
 			
+	<c:set var="mostraForzaPubblicazione" value="${param.forzapubblicazione ne 'true' and not empty requestScope.schedaAnacInPubblicazione and requestScope.schedaAnacInPubblicazione eq 'SI'}"/>
+			
 	<gene:campoScheda nome="msgPagina">
 		<td colSpan="2">
 			<br>
 			<c:choose>
 				<c:when test='${not empty requestScope.controlloSuperato and requestScope.controlloSuperato eq "NO"}' >
 					${requestScope.msg }
+				</c:when>
+				<c:when test='${mostraForzaPubblicazione eq "true"}' >
+					Non è stata ancora fatta la pubblicazione su PCP mediante le schede ANAC.
+					<br><br>
+					Per garantire la coerenza dei dati, prima di pubblicare sul portale è necessario attendere la pubblicazione sulla Piattaforma a Valore Legale di ANAC (PVL).
+					<br><br>
+					Vuoi procedere ugualmente alla pubblicazione su portale Appalti?
+					<br><br>
+					<table class="dettaglio-notab">
+						<tbody>
+							<tr id="rowmsgPagina">
+								<td colspan="2">
+								</td>
+							</tr>
+							<tr id="rowMOTIVAZIONE_FORZAPUBB">
+								<td class="etichetta-dato">Motivo pubblicazione anticipata (*)</td>
+								
+								<td class="valore-dato">
+									<input id="MOTIVAZIONE_FORZAPUBB" name="MOTIVAZIONE_FORZAPUBB" type="hidden" maxlength="155">
+									<textarea id="MOTIVAZIONE_FORZAPUBB_textarea" name="MOTIVAZIONE_FORZAPUBB_textarea" onchange="javascript:motivazioneChange()" rows="3" cols="75" maxlength="182"></textarea>
+								</td>
+							</tr>
+						</tbody>
+					</table>
 				</c:when>
 				<c:otherwise>
 					${requestScope.MsgConferma}
@@ -338,43 +367,51 @@
 					</c:if>
 				</c:otherwise>
 			</c:choose>
-			
-			<br>&nbsp;
-			<br>&nbsp;
+			<c:if test='${mostraForzaPubblicazione ne "true"}' >
+				<br>&nbsp;
+				<br>&nbsp;
+			</c:if>
 		</td>
 	</gene:campoScheda>
+	<c:if test="${param.forzapubblicazione eq 'true'}">
+		<gene:campoScheda title="Motivo ricorso alla pubblicazione forzata" campo="MOTIVAZIONE_FORZAPUBB" campoFittizio="true" value="${param.motivazione}" visibile="false" definizione="T182;0;;CLOB"/>
+	</c:if>
 
 		<gene:campoScheda campo="CODGAR" campoFittizio="true" defaultValue="${param.codgar}" visibile="false" definizione="T21;0"/>
 		<gene:campoScheda campo="NGARA" campoFittizio="true" defaultValue="${param.ngara}" visibile="false" definizione="T20;0"/>
 		<gene:campoScheda campo="LOTTODIGARA" campoFittizio="true" defaultValue="${param.lottoDiGara}" visibile="false" definizione="T1;0"/>
 		
-		<c:if test="${isProceduraTelematica && (bando=='3' || bando=='5') && requestScope.visualizzaDettaglioComunicazione && requestScope.controlloSuperato ne 'NO'}">
+		<c:if test="${isProceduraTelematica && (bando=='3' || bando=='5') && requestScope.visualizzaDettaglioComunicazione && requestScope.controlloSuperato ne 'NO' && mostraForzaPubblicazione ne 'true'}">
 			<gene:campoScheda nome="TitoloComunicazione">
 				<td colspan="2"><b>Comunicazione invito</b></td>
 			</gene:campoScheda>
 			<gene:campoScheda campo="COMMSGOGG" campoFittizio="true" definizione="T300;0;;;COMMSGOGG" obbligatorio="true" value="${requestScope.oggettoMail}"/>
-			<gene:campoScheda campo="COMINTEST" campoFittizio="true" definizione="T2;0;;SN;COMINTEST" value="${requestScope.abilitaIntestazioneVariabile}" visibile="${ abilitatoInvioMailDocumentale ne 'true'}"/>
-			<gene:campoScheda nome="intestazione" visibile="${ abilitatoInvioMailDocumentale ne 'true'}"> 
+			<gene:campoScheda campo="COMINTEST" campoFittizio="true" definizione="T2;0;;SN;COMINTEST" value="${requestScope.abilitaIntestazioneVariabile}" visibile="${ abilitatoInvioMailDocumentale ne 'true' && itergaTORN ne '10'}"/>
+			<gene:campoScheda nome="intestazione" visibile="${ abilitatoInvioMailDocumentale ne 'true' && itergaTORN ne '10'}"> 
 				<td class="etichetta-dato">Intestazione variabile</td>
 				<td class="valore-dato">Spett.le <i>Ragione Sociale</i>
 				</td>
 			</gene:campoScheda>
 			<gene:campoScheda campo="COMMSGTIP" campoFittizio="true" definizione="T2;0;;SN;COMMSGTIP" defaultValue="2" visibile='${htmlSupport eq "1"}'/>
 			<gene:campoScheda campo="COMMSGTES" campoFittizio="true" definizione="T2000;0;;CLOB;COMMSGTES" obbligatorio="true" value="${requestScope.testoMail}" gestore="it.eldasoft.gene.tags.gestori.decoratori.GestoreCampoTestoComunicazioneHTML"/>
-			<gene:campoScheda campo="COMMITT" campoFittizio="true" definizione="T60;0;;;COMMITT" value="${requestScope.mittenteMail}" visibile="${ abilitatoInvioMailDocumentale ne 'true'}"/>
+			<gene:campoScheda campo="COMMITT" campoFittizio="true" definizione="T60;0;;;COMMITT" value="${requestScope.mittenteMail}" visibile="${ abilitatoInvioMailDocumentale ne 'true' && itergaTORN ne '10'}"/>
 			
 			<c:set var="titoloDestinatari" value='<a class="left" href="javascript:showDestinatari()"><img id="onDestinatari" src="${pageContext.request.contextPath}/img/TreeExpand.png" alt="Apri dettaglio" title="Apri dettaglio" ><img id="offDestinatari" src="${pageContext.request.contextPath}/img/TreeCollapse.png" alt="Chiudi dettaglio" title="Chiudi dettaglio" style="display: none" ></a><b>Soggetti destinatari</b>' />
-			<gene:campoScheda title="${titoloDestinatari }" modificabile="false" nome="titoloDestinatari"/>
+			<gene:campoScheda title="${titoloDestinatari }" modificabile="false" nome="titoloDestinatari" visibile="${isConcProg ne 'true'}"/>
 			<gene:campoScheda addTr="false" >
 					<tr id="tr1">
 						<td colspan="2">
 							<table id="tabellaDestinatari" class="griglia" >
 								<tr style="BACKGROUND-COLOR: #A7BFD9;">
 									<td colspan="2" class="titolo-valore-dato" id="Intestazione" style="width:50%">Intestazione</td>
+									<c:if test="${itergaTORN ne '10'}">
 									<td colspan="2" class="titolo-valore-dato" id="Indirizzo" style="width:30%">Indirizzo</td>
 									<td colspan="2" class="titolo-valore-dato" id="Tipo" style="width:10%">Tipo indirizzo</td>
+									</c:if>
 									<c:if test="${integrazioneWSDM =='1'}">
+										<c:if test="${itergaTORN ne '10'}">
 										<td col span="2" class="titolo-valore-dato" id="Cod.Fisc." style="width:10%">Cod.fisc.</td>
+										</c:if>
 										<td col span="2" class="titolo-valore-dato" id="indimp" style="display: none;width:0%"> </td>
 										<td col span="2" class="titolo-valore-dato" id="nciimp" style="display: none;width:0%"> </td>
 										<td col span="2" class="titolo-valore-dato" id="locimp" style="display: none;width:0%"> </td>
@@ -389,20 +426,21 @@
 							<tr id="listaDestinatari_${status.index }">
 					</gene:campoScheda>
 					<gene:campoScheda title="Intestazione" hideTitle="true" addTr="false" modificabile="false" campo="INTESTAZIONE_${status.index }" campoFittizio="true" visibile="true" definizione="T2000;" value="${ldestinatario[0]}"/>
-					<gene:campoScheda title="Indirizzo mail" hideTitle="true" addTr="false" modificabile="false" campo="MAIL_${status.index }" campoFittizio="true" visibile="true" definizione="T100" value="${ldestinatario[1]}"/>
-					<gene:campoScheda title="Tipo indirizzo" hideTitle="true" addTr="false" modificabile="false" campo="TIPO_${status.index }" campoFittizio="true" visibile="true" definizione="T10" value="${ldestinatario[2]}"/>
+					<gene:campoScheda title="Indirizzo mail" hideTitle="true" addTr="false" modificabile="false" campo="MAIL_${status.index }" campoFittizio="true" visibile="${itergaTORN ne '10'}" definizione="T100" value="${ldestinatario[1]}"/>
+					<gene:campoScheda title="Tipo indirizzo" hideTitle="true" addTr="false" modificabile="false" campo="TIPO_${status.index }" campoFittizio="true" visibile="${itergaTORN ne '10'}" definizione="T10" value="${ldestinatario[2]}"/>
 					<gene:campoScheda title="Ditta" hideTitle="true" addTr="false" modificabile="false" campo="DITTA_${status.index }" campoFittizio="true" visibile="false" definizione="T16" value="${ldestinatario[3]}"/>
 					<c:if test="${integrazioneWSDM =='1'}">
-						<gene:campoScheda title="cod.fisc." hideTitle="true" addTr="false" modificabile="false" campo="CODFISC_${status.index }" campoFittizio="true" definizione="T16" value="${ldestinatario[4]}"/>
+						<gene:campoScheda title="cod.fisc." hideTitle="true" addTr="false" modificabile="false" campo="CODFISC_${status.index }" campoFittizio="true" visibile="${itergaTORN ne '10'}" definizione="T30" value="${ldestinatario[4]}"/>
 						<gene:campoScheda title="indimp" hideTitle="true" addTr="false" visibile="false" campo="INDIMP_${status.index }" campoFittizio="true" definizione="T100" value="${ldestinatario[5]}"/>
 						<gene:campoScheda title="nciimp" hideTitle="true" addTr="false" visibile="false" campo="NCIIMPC_${status.index }" campoFittizio="true" definizione="T100" value="${ldestinatario[6]}"/>
 						<gene:campoScheda title="locimp" hideTitle="true" addTr="false" visibile="false" campo="LOCIMP_${status.index }" campoFittizio="true" definizione="T100" value="${ldestinatario[7]}"/>
 						<gene:campoScheda title="codcit" hideTitle="true" addTr="false" visibile="false" campo="CODICIT_${status.index }" campoFittizio="true" definizione="T100" value="${ldestinatario[8]}"/>
-						<gene:campoScheda title="piva" hideTitle="true" addTr="false" visibile="false" campo="PIVA_${status.index }" campoFittizio="true" definizione="T16" value="${ldestinatario[9]}"/>
+						<gene:campoScheda title="piva" hideTitle="true" addTr="false" visibile="false" campo="PIVA_${status.index }" campoFittizio="true" definizione="T30" value="${ldestinatario[9]}"/>
 						<gene:campoScheda title="mailAgg" hideTitle="true" addTr="false" visibile="false" campo="MAIL_AGGIUNTIVA_${status.index }" campoFittizio="true" definizione="T100" value="${ldestinatario[10]}"/>
 						<gene:campoScheda title="provinciaRes" hideTitle="true" addTr="false" visibile="false" campo="PROVINCIA_RES_${status.index }" campoFittizio="true" definizione="T100" value="${ldestinatario[11]}"/>
 						<gene:campoScheda title="capRes" hideTitle="true" addTr="false" visibile="false" campo="CAP_RES_${status.index }" campoFittizio="true" definizione="T100" value="${ldestinatario[12]}"/>
 					</c:if>
+					<gene:campoScheda title="Idanonimo" hideTitle="true" addTr="false" modificabile="false" campo="IDANONIMO_${status.index }" campoFittizio="true" visibile="false" definizione="T50" value="${ldestinatario[13]}"/>
 					<gene:campoScheda addTr="false">									
 							</tr>
 					</gene:campoScheda>
@@ -436,6 +474,7 @@
 					<gene:campoScheda title="Nome" hideTitle="true" addTr="false" modificabile="false" campo="NOME_${status.index }" campoFittizio="true" visibile="true" definizione="T100" value="${doc[1]}" href="javascript:visualizzaFileAllegato('${doc[2]}','${doc[3]}',${gene:string4Js(doc[1])});"/>
 					<gene:campoScheda title="IDPRG" hideTitle="true" addTr="false" modificabile="false" campo="IDPRG_${status.index }" campoFittizio="true" visibile="false" definizione="T5" value="${doc[2]}" />
 					<gene:campoScheda title="IDDOCDIG" hideTitle="true" addTr="false" modificabile="false" campo="IDDOCDIG_${status.index }" campoFittizio="true" visibile="false" definizione="N7" value="${doc[3]}" />
+					<gene:campoScheda title="DIGTIPDOC" hideTitle="true" addTr="false" modificabile="false" campo="DIGTIPDOC_${status.index }" campoFittizio="true" visibile="false" definizione="T5" value="${doc[4]}" />
 					<gene:campoScheda addTr="false">									
 							</tr>
 					</gene:campoScheda>
@@ -461,7 +500,7 @@
 				</tr>
 				</gene:campoScheda>
 			</c:if>
-			<c:if test='${requestScope.controlloSuperato ne "NO" and bando ne "5"}' >
+			<c:if test='${requestScope.controlloSuperato ne "NO" and bando ne "5" && mostraForzaPubblicazione ne "true"}' >
 				<gene:campoScheda nome="Pubblicazione">
 					<td colspan="2"><b>Pubblicazione</b></td>
 				</gene:campoScheda>
@@ -470,7 +509,7 @@
 			
 						
 			<gene:fnJavaScriptScheda funzione="modifyHTMLEditor('#COMMSGTIP#')" elencocampi="COMMSGTIP" esegui="false" />
-			<c:if test="${ abilitatoInvioMailDocumentale ne 'true'}">
+			<c:if test="${ abilitatoInvioMailDocumentale ne 'true' && itergaTORN ne '10'}">
 				<gene:fnJavaScriptScheda funzione="gestioneCOMINTEST('#COMINTEST#')" elencocampi="COMINTEST" esegui="true" />
 			</c:if>
 			
@@ -488,7 +527,7 @@
 			</c:if>
 		</c:if>
 		
-		<c:if test='${requestScope.controlloSuperato ne "NO"}' >
+		<c:if test='${requestScope.controlloSuperato ne "NO" && mostraForzaPubblicazione ne "true"}' >
 			<c:set var = "condizioneItergaCifratura" value="${(iterga==2 || iterga==4 || iterga==7) && bando == '1' }"/>
 			<gene:campoScheda campo="DATPUB" campoFittizio="true" definizione="D;0;;;DATPUB" obbligatorio="true" visibile="${bando ne '5' }"/>
 			<c:if test="${cifraturaBuste eq '1' }">
@@ -536,7 +575,7 @@
 					</td>
 				</gene:campoScheda>
 			</c:if>
-			<c:if test="${(bando=='1' || (bando=='0' && empty bandoIdRegMarche)) and tipoPubSitoIstituzionale eq '1'}">
+			<c:if test="${(bando=='1' || (bando=='0' && (empty bandoIdRegMarche or countPubbliBandi eq '0'))) and tipoPubSitoIstituzionale eq '1'}">
 				<gene:campoScheda >
 				<td colSpan="2" >
 					
@@ -578,33 +617,33 @@
 							</select>
 						</td>						
 					</tr>
-					
+					<tr>
+						<td class="etichetta-dato">Lavori pubblici? (*)</td>
+						<td class="valore-dato">
+							<select id="lavoriPubblici" name="lavoriPubblici" style="width:350px;">
+								<option value=""></option>
+								<option value="1">Si</option>
+								<option value="2">No</option>
+							</select>
+						</td>
+					</tr>
 					
 				</td>
 				</gene:campoScheda>
 			</c:if>
-			<c:if test="${(bando=='1' || bando=='0' ) and tipoPubSitoIstituzionale eq '2' and empty uuid}">
-				<gene:campoScheda >
-				<td colSpan="2" >
-					
-					<tr>
-						<td colspan="2">
-							<b>Dati per pubblicazione su sito istituzionale</b>
-						</td>
-					</tr>
-					<tr >
-						<td class="etichetta-dato">Struttura (*)</td>
-						<td class="valore-dato">
-							<select id="strutturaATC" name="strutturaATC" style="width:350px;">
-								<option value=""></option>
-								<c:forEach items="${listaStruttureATC}" step="1" var="strutturATC" varStatus="status" >
-									 <option value="${strutturATC[0]}">${strutturATC[1]}</option>
-								</c:forEach>
-							</select>
-						</td>						
-					</tr>
-				</td>
-				</gene:campoScheda>
+			<c:if test="${ itergaTORN eq '3' or itergaTORN eq '5' or itergaTORN eq '6' or itergaTORN eq '8'  or itergaTORN eq '10'}">
+				<c:set var="isNegoziata" value="true"/>
+			</c:if>
+			<c:if test="${ itergaTORN eq '8' }">
+				<c:set var="isRicercaMercato" value="true"/>
+			</c:if>
+			<c:if test="${ gestioneAvvisiNegoziatePAT eq 'true' and isNegoziata eq 'true' and bando=='3'}">
+				<c:set var="mostraSelezioneAvvisoCollegato" value="true"/>
+			</c:if>
+			<c:set var="esistonoPubblicationiBandiPAT" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsistonoPubblicazioniBandiPATFunction", pageContext, codgar)}'/>
+			<c:if test="${(bando=='1' || (bando=='3' and (isNegoziata eq 'true')) || (bando=='0' and (esistonoPubblicationiBandiPAT eq 'false'))) 
+				and (not isRicercaMercato eq 'true') and isGestionePATISWEB eq 'true' and empty uuid}">
+				<c:set var="mostraSelezioneStrutturePAT" value="true"/>
 			</c:if>
 		</c:if>
 		<gene:campoScheda campo="BANDO" campoFittizio="true" defaultValue="${param.bando}" visibile="false" definizione="T1;0"/>
@@ -624,7 +663,8 @@
 		<input type="hidden" name="cifraturaBuste" id="cifraturaBuste" value="${cifraturaBuste }" />
 		<input type="hidden" name="idconfi" id="idconfi" value="${idconfi }" />
 		<input type="hidden" name="genereGara" id="genereGara" value="${tipologiaGara }" />
-		
+		<input type="hidden" name="forzapubblicazione" id="forzapubblicazione" value="${param.forzapubblicazione}" />
+		<input type="hidden" name="motivazione" id="motivazione" value="${param.motivazione}" />
 		
 		<c:if test="${(bando=='3' || bando=='1' || bando=='5') &&  integrazioneWSDM =='1' && requestScope.visualizzaDettaglioComunicazione}">
 			<input type="hidden" name="step" id="step" value="${step}" />
@@ -663,9 +703,10 @@
 			<input id="abilitazioneGare" type="hidden" value="${profiloUtente.abilitazioneGare}" />
 		</c:if>
 		<c:if test="${(bando=='1' || bando=='0') && tipoPubSitoIstituzionale eq '1' }">
-			<input id="bandoIdRegMarche" type="hidden" name="bandoIdRegMarche" value="${bandoIdRegMarche}" /> 
+			<input id="bandoIdRegMarche" type="hidden" name="bandoIdRegMarche" value="${bandoIdRegMarche}" />
+			<input id="countPubbliBandi" type="hidden" name="countPubbliBandi" value="${countPubbliBandi}" />
 		</c:if>
-		<c:if test="${(bando=='1' || bando=='0') && tipoPubSitoIstituzionale eq '2' }">
+		<c:if test="${(bando=='1' || bando=='0') && isGestionePATISWEB eq 'true' }">
 			<input id="uuid" type="hidden" name="uuid" value="${uuid}" /> 
 		</c:if>
 	</gene:formScheda>
@@ -673,7 +714,7 @@
 
 	
 	<c:choose>
-		<c:when test="${isProceduraTelematica && (bando=='3' || bando=='5') &&  integrazioneWSDM =='1'}">
+		<c:when test="${isProceduraTelematica && (bando=='3' || bando=='5') &&  integrazioneWSDM =='1' && itergaTORN != '10'}">
 			<c:set var="testoBottone" value="Protocolla e invia"/>
 		</c:when>
 		<c:when test="${isProceduraTelematica && (bando=='3' || bando=='5') }">
@@ -689,6 +730,10 @@
 				<c:when test='${not empty requestScope.controlloSuperato and requestScope.controlloSuperato eq "NO"}'>
 					<INPUT type="button" id="pulsanteAnnulla" class="bottone-azione" value="Annulla" title="Annulla" onclick="javascript:annulla()">&nbsp;
 				</c:when>
+				<c:when test='${mostraForzaPubblicazione eq "true"}'>
+					<INPUT type="button" id="pulsanteConferma" class="bottone-azione" value="Conferma" title="Conferma" onclick="javascript:forzaPubblicazione()">&nbsp;
+					<INPUT type="button" id="pulsanteAnnulla" class="bottone-azione" value="Annulla" title="Annulla" onclick="javascript:annulla()">&nbsp;
+				</c:when>
 				<c:otherwise>
 					<INPUT type="button" id="pulsanteConferma" class="bottone-azione" value="${testoBottone}" title="${testoBottone}" onclick="javascript:conferma()">&nbsp;
 					<INPUT type="button" id="pulsanteAnnulla" class="bottone-azione" value="Annulla" title="Annulla" onclick="javascript:annulla()">&nbsp;
@@ -700,6 +745,26 @@
 	
 	<gene:javaScript>
 	
+	function motivazioneChange(){
+		$('#MOTIVAZIONE_FORZAPUBB').val($('#MOTIVAZIONE_FORZAPUBB_textarea').val());
+	}
+	
+	function forzaPubblicazione(){
+		var motivo = $('#MOTIVAZIONE_FORZAPUBB')?.val()?.trim();
+		if(motivo.length>0){
+			reloadPopup.forzapubblicazione.value = "true";
+			reloadPopup.motivazione.value = motivo;
+			reloadPopup.submit();
+		}else{
+			alert("Per proseguire occorre fornire una motivazione!");
+		}
+			
+	}
+	
+		<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.obbligoAssociaFascicoloEsistente")}'>
+			_isObbligoAssociazioneFascicolo=true;
+		</c:if>
+	
 		var $datepicker = $('#DATPUB');
 		$datepicker.datepicker();
 		$datepicker.datepicker( "option", "dateFormat", "dd/mm/yy" );
@@ -709,7 +774,7 @@
 			$("#DATPUB").prop("disabled",true);
 		</c:if>
 		
-		<c:if test="${requestScope.controlloSuperato ne 'NO'}">
+		<c:if test="${requestScope.controlloSuperato ne 'NO' && mostraForzaPubblicazione ne 'true'}">
 			<c:if test="${cifraturaBuste eq '1' && isProceduraTelematica && (bando eq '3' or (bando eq '1' && integrazioneWSDM eq '1'))}">
 				var dim1=800;
 				var dim2=850;
@@ -727,7 +792,7 @@
 		</c:if>
 		
 		<c:choose>
-			<c:when test="${isProceduraTelematica && (bando=='3' || bando=='5') && integrazioneWSDM =='1'}">
+			<c:when test="${isProceduraTelematica && (bando=='3' || bando=='5') && integrazioneWSDM =='1' && itergaTORN != '10'}">
 								
 				function conferma() {
 					var step= $("#step").val();
@@ -813,11 +878,13 @@
 						var errori = controlloCampiObbligatori();
 					
 						if(!errori && "LAPISOPERA" == $("#tiposistemaremoto").val() ){
-							var nomePrimoAllegato = getValue("NOME_0");
-							var esito=controlloFormatoAllegato(nomePrimoAllegato);
-							if(!esito){
-								var msg="ATTENZIONE:  il sistema di protocollo accetta solo comunicazioni che abbiano un allegato principale (il primo allegato) firmato digitalmente  nel formato '.pdf.p7m'. Per procedere all'invio degli inviti, occore adeguare la documentazione allegata all'invito stesso dalla sezione 'Documenti dell'invito'.";
-								alert(msg);
+							var idprg = $("#IDPRG_0").val();
+							var iddocdig = $("#IDDOCDIG_0").val();
+							var idconfi = $("#idconfi").val();
+							var esito=controlloFormatoAllegato(idprg,iddocdig,idconfi);
+							if(!esito[0]){
+								var msg="ATTENZIONE:  il sistema di protocollo accetta solo comunicazioni che abbiano un allegato principale (il primo allegato) firmato digitalmente. Per procedere all'invio degli inviti, occore adeguare la documentazione allegata all'invito stesso dalla sezione 'Documenti dell'invito'.";
+								alert(esito[1]? esito[1] : msg);
 								errori=true;
 							}
 						}	
@@ -845,6 +912,9 @@
 								$("#nomeR").val($("#nomeRup").text());
 								
 							}
+							if ($("#tiposistemaremoto").val() == "ARCHIFLOW" ){
+								$("#nomeR").val($("#nomeRup").text());
+							}
 							
 							schedaConferma();
 							
@@ -869,7 +939,7 @@
 						if(controlloOggettoTestoLettera() == "NOK")
 							return;
 					</c:if>
-					<c:if test="${(bando=='1' || (bando=='0' && empty bandoIdRegMarche)) and tipoPubSitoIstituzionale eq '1'}">
+					<c:if test="${(bando=='1' || (bando=='0' && (empty bandoIdRegMarche or countPubbliBandi eq '0'))) and tipoPubSitoIstituzionale eq '1'}">
 						var strutturaRegionale = getValue("strutturaRegionale");
 						if(strutturaRegionale== null || strutturaRegionale==""){
 							alert("Specificare la struttura");
@@ -892,12 +962,9 @@
 							alert("Specificare il tipo procedura");
 							return;
 						}
-					</c:if>
-					
-					<c:if test="${(bando=='1' || bando=='0') and tipoPubSitoIstituzionale eq '2' and empty uuid}">
-						var strutturaATC = getValue("strutturaATC");
-						if(strutturaATC== null || strutturaATC==""){
-							alert("Specificare la struttura");
+						var lavoriPubblici = getValue("lavoriPubblici");
+						if(lavoriPubblici== null || lavoriPubblici==""){
+							alert("Specificare se fa parte di lavori pubblici");
 							return;
 						}
 					</c:if>
@@ -1120,7 +1187,7 @@
 			
 			function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 			}
 			
 			<c:if test="${ integrazioneWSDM =='1'}">
@@ -1165,8 +1232,19 @@
 						$("#rowPWD_C").hide();
 						$("#rowPWD_C1").hide();
 						$("#tr_generaPdf").hide();
-						if(_fascicoliPresenti==0 && "LAPISOPERA" == _tipoWSDM){
+						<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.obbligoAssociaFascicoloEsistente")}'>
+							_isObbligoAssociazioneFascicolo=true;
+						</c:if>
+						if("HALLEY" == _tipoWSDM && _fascicolazioneAbilitata == 1)
+							_isObbligoAssociazioneFascicolo=true;
+
+						if(_fascicoliPresenti==0 && ("LAPISOPERA" == _tipoWSDM || _isObbligoAssociazioneFascicolo)){
 							$("#pulsanteConferma").hide();
+						}
+						if ( $('#strutturaPAT').val() != '' ) {
+							$('#strutturaPAT').parent().parent().prev().hide();
+							$('#strutturaPAT').parent().parent().hide();
+							$('#avvisoSelezionato').parent().parent().hide();
 						}
 					}
 				}
@@ -1282,7 +1360,7 @@
 							$("#indirizzomittente").closest('tr').hide();
 						}
 						
-						if ((_tipoWSDM != "JIRIDE"  && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA") || ((_tipoWSDM == "JIRIDE" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "ARCHIFLOWFA") && _delegaInvioMailDocumentaleAbilitata != 1)) {
+						if ((_tipoWSDM != "JIRIDE"  && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "HALLEY") || ((_tipoWSDM == "JIRIDE" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "ARCHIFLOWFA" || _tipoWSDM == "HALLEY") && _delegaInvioMailDocumentaleAbilitata != 1)) {
 							$("#indirizzomittente").hide();
 							$("#indirizzomittente").closest('tr').hide();
 							$('#indirizzomittente option').eq(0).prop('selected', true);
@@ -1326,7 +1404,7 @@
 				   mostraParametriUtente(false);
 			</c:if>
 		</c:if>
-		<c:if test="${(bando=='1' || (bando == '3' && !isProceduraTelematica)) && requestScope.controlloSuperato ne 'NO' && integrazioneWSDM =='1'}">
+		<c:if test="${(bando=='1' || (bando == '3' && !isProceduraTelematica)) && requestScope.controlloSuperato ne 'NO' && integrazioneWSDM =='1' && mostraForzaPubblicazione ne 'true'}">
 			_wait();
 						
 			setTimeout(function(){
@@ -1343,9 +1421,11 @@
 					_controlloProtocollazioneDocBando();
 					if(_docTuttiNonProtocollati)
 						procollazioneTitulus =true;
-				}	
-				
-				if(_fascicoliPresenti==0 && "LAPISOPERA" == _tipoWSDM){
+				}
+				if("HALLEY" == _tipoWSDM && _fascicolazioneAbilitata == 1)
+					_isObbligoAssociazioneFascicolo=true;
+
+				if(_fascicoliPresenti==0 && ("LAPISOPERA" == _tipoWSDM || _isObbligoAssociazioneFascicolo)){
 					$("#pulsanteConferma").hide();
 				}
 				
@@ -1408,6 +1488,9 @@
 						$("#rigaSottotipo").hide();
 						
 					}
+					if ($("#tiposistemaremoto").val() == "ARCHIFLOW" ){
+						$("#nomeR").val($("#nomeRup").text());
+					}
 				}
 				/*
 				else{
@@ -1450,7 +1533,7 @@
 				}else if (tipoWSDM == "INFOR") {
 					showObj("rigaPassword",false);
 					showObj("rigaRuolo",false);
-				}else if (tipoWSDM == "URBI" || tipoWSDM == "PROTSERVICE" || tipoWSDM == "JPROTOCOL") {
+				}else if (tipoWSDM == "URBI" || tipoWSDM == "PROTSERVICE" || tipoWSDM == "JPROTOCOL" || tipoWSDM == "HALLEY") {
 					showObj("rigaRuolo",false);
 				}else if (tipoWSDM == "LAPISOPERA") {
 					showObj("rigaPassword",vis);
@@ -1585,8 +1668,47 @@
 			}
 			return esito;
 		}
+
+		function _waitgperm() {
+			document.getElementById('bloccaScreen').style.visibility='visible';
+			document.getElementById('wait').style.visibility='visible';
+			$("#wait").offset({ top: ($(window).height() / 2), left: ($(window).width() / 2) - 200});
+		}
+
+		function _nowaitgperm() {
+			document.getElementById('bloccaScreen').style.visibility='hidden';
+			document.getElementById('wait').style.visibility='hidden';
+		}
+		
+		<c:if test="${(bando=='1' || (bando=='0' && (empty bandoIdRegMarche or countPubbliBandi eq '0'))) and tipoPubSitoIstituzionale eq '1'}">
+			$(document).ready(function(){
+				const sezLavPubTORN = '${sezLavPubTORN}';
+				if (sezLavPubTORN != "") {
+					$("#lavoriPubblici").val(sezLavPubTORN);
+					$("#lavoriPubblici").attr('disabled',true);
+					$("#lavoriPubblici").css('background','#ececec');
+				}
+			});
+		</c:if>
+
 	</gene:javaScript>
 </gene:template>
+<form name="reloadPopup" id="reloadPopup" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+		<input type="hidden" name="href" value="${param.href}" />
+		<input type="hidden" name="ngara" id="ngaraReload" value="${param.ngara}" />
+		<input type="hidden" name="genere" id="genereReload" value="${param.genere}" />
+		<input type="hidden" name="codgar" id="codgarReload" value="${param.codgar}" />
+		<input type="hidden" name="isProceduraTelematica" id="isProceduraTelematicaReload" value="${param.isProceduraTelematica}" />
+		<input type="hidden" name="bando" id="bandoReload" value="${param.bando}" />
+		<input type="hidden" name="entita" id="entitaReload" value="${param.entita}"/>
+		<input type="hidden" name="valtec" id="valtecReload" value="${param.valtec}" />
+		<input type="hidden" name="integrazioneWSDM" id="integrazioneWSDMReload" value="${param.integrazioneWSDM}" />
+		<input type="hidden" name="idconfi" id="idconfiReload" value="${param.idconfi}" />
+		<input type="hidden" name="tipoPubblicazione" id="tipoPubblicazioneReload" value="${param.tipoPubblicazione}" />
+		<input type="hidden" name="garavviso" id="garavvisoReload" value="${param.garavviso}" />
+		<input type="hidden" name="forzapubblicazione" id="forzapubblicazione" value="${param.forzapubblicazione}" />
+		<input type="hidden" name="motivazione" id="motivazione" value="${param.motivazione}" />
+	</form>
 </div>
 
 	</c:otherwise>

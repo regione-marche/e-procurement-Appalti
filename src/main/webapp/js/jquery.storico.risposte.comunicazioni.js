@@ -1,14 +1,3 @@
-/*
- * Gestione della visualizzazione dello storico delle rettifiche dei termini di gara
- * 
- */
-
-/*
- * Genera lo storico per la rettifica dei termini di gara
- * @param {string} ngara codice della gara
- * @param {string} tipo tipo rettifica(1: termini partecipazione, 2: termini offerta, 3: apertura Plichi)
- * @returns {undefined}
- */
 function caricamentoStoricoRisposteComunicazioni(idprg, idcom, contextPath) {
          $.ajax({
              type: "GET",
@@ -44,6 +33,8 @@ function caricamentoStoricoRisposteComunicazioni(idprg, idcom, contextPath) {
 						$('#tabellaStoricoRisposte').append(_riga);
              				
              		});
+					$('#okrettbtn, #korettbtn').hide();
+					$('#okrettlink, #korettlink').closest('tr').hide();
              	}else{
 					$("#rigaElencoRisposte").hide();
 				}
@@ -53,3 +44,51 @@ function caricamentoStoricoRisposteComunicazioni(idprg, idcom, contextPath) {
              }
          });
      }
+ 
+ function caricamentoStoricoInoltriComunicazioni(idprg, idcom, contextPath) {
+     $.ajax({
+         type: "GET",
+         dataType: "json",
+         async: false,
+         beforeSend: function(x) {
+			if(x && x.overrideMimeType) {
+ 				x.overrideMimeType("application/json;charset=UTF-8");
+	    	}
+		 },
+         url: contextPath + "/pg/GetStoricoInoltri.do",
+         data: "idprg=" + idprg + "&idcom=" + idcom,
+         success: function(data){
+			 
+         	if (data && data.length > 0) {
+				var _intestazione='<tr style="BACKGROUND-COLOR: #EFEFEF;">';
+				_intestazione+='<td class="titolo-valore-dato" style="width:25%;">Oggetto</td>';
+				_intestazione+='<td class="titolo-valore-dato" style="width:15%;">Data inserimento</td>';
+				_intestazione+='<td class="titolo-valore-dato" style="width:10%;">Stato</td>';
+				_intestazione+='<td class="titolo-valore-dato" style="width:50%;">Destinatari</td>';
+				_intestazione+='</tr>';
+         		$('#tabellaStoricoInoltri').append(_intestazione);
+         		
+         		$.map( data, function( item ) {
+         			var _riga = '<tr >';
+         			var oggetto = item[0];
+         			_riga += '<td class="valore-dato">' + oggetto + '</td>';
+         			var dataInserimento = item[1];
+         			_riga += '<td class="valore-dato">' + dataInserimento + '</td>';
+         			var stato = item[2];
+         			_riga += '<td class="valore-dato">' + stato + '</td>';
+         			var destinatari = item[3];
+         			_riga += '<td class="valore-dato">' + destinatari + '</td>';
+         			_riga += '</tr>';
+					
+					$('#tabellaStoricoInoltri').append(_riga);
+         				
+         		});
+         	}else{
+				$("#rigaElencoInoltri").hide();
+			}
+         },
+         error: function(e){
+             alert("Errore nella lettura dello storico degli inoltri");
+         }
+     });
+ }

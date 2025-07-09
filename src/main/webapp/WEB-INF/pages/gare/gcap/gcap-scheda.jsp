@@ -53,6 +53,15 @@
 	</c:when>
 </c:choose>
 
+<c:choose>
+	<c:when test='${not empty param.cinecaUgovpaEditing}'>
+		<c:set var="cinecaUgovpaEditing" value='${param.cinecaUgovpaEditing}'/>
+	</c:when>
+	<c:when test='${not empty cinecaUgovpaEditing}'>
+		<c:set var="cinecaUgovpaEditing" value='${cinecaUgovpaEditing}'/>
+	</c:when>
+</c:choose>
+
 <c:if test="${!lottoOffertaUnica }">
 	<c:set var="genereGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTipologiaGaraFunction",  pageContext,keyParent)}' scope="request"/>
 </c:if>
@@ -148,13 +157,13 @@
 			</c:choose>
 			
 			<gene:campoScheda campo="CONTAF"  visibile="false"/>
-			<gene:campoScheda campo="NORVOC"  title="Numero d'ordine" value='${gene:if(modo eq "NUOVO",newNorvoc,datiRiga.GCAP_NORVOC)}' modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq}'/>
-			<gene:campoScheda campo="CODVOC"  obbligatorio="true" modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq}'/>
-			<gene:campoScheda campo="VOCE"  modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq}'/>
+			<gene:campoScheda campo="NORVOC"  title="Numero d'ordine" value='${gene:if(modo eq "NUOVO",newNorvoc,datiRiga.GCAP_NORVOC)}' modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq and cinecaUgovpaEditing ne "1"}'/>
+			<gene:campoScheda campo="CODVOC"  obbligatorio="true" modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq and cinecaUgovpaEditing ne "1"}'/>
+			<gene:campoScheda campo="VOCE"  modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq }'/>
 			<gene:campoScheda campo="DESEST"  entita="GCAP_EST" where="GCAP_EST.NGARA = GCAP.NGARA and GCAP_EST.CONTAF=GCAP.CONTAF" modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq}'/>
 			
 			<c:choose>
-				<c:when test="${modoAperturaScheda ne 'VISUALIZZA' and (empty datiRiga.GCAP_CODCAT or empty datiRiga.CAIS_TIPLAVG)}">
+				<c:when test="${modoAperturaScheda ne 'VISUALIZZA' and (empty datiRiga.GCAP_CODCAT or empty datiRiga.CAIS_TIPLAVG) }">
 					<c:set var="parametriWhere" value="T:${tipoAppalto}" />
 				</c:when>
 				<c:otherwise>
@@ -172,25 +181,25 @@
 				 formName="formCategoriaMerceologica"
 				 inseribile="false">
 				 
-					<gene:campoScheda campo="CODCAT"  defaultValue="${requestScope.initCODCAT}" />
+					<gene:campoScheda campo="CODCAT"  defaultValue="${requestScope.initCODCAT}" modificabile='${cinecaUgovpaEditing ne "1"}' />
 					<gene:campoScheda campo="DESCAT" title="Descrizione categoria" entita="CAIS" where="GCAP.CODCAT=CAIS.CAISIM" 
-						modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.GCAP.CODCAT")}' 
+						modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.GCAP.CODCAT") and cinecaUgovpaEditing ne "1"}' 
 						visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GCAP.CODCAT")}' defaultValue="${requestScope.initDESCAT}"/>
 					<gene:campoScheda campo="TIPLAVG" entita="CAIS" visibile="false" />	
 			</gene:archivio>
 			
-			<gene:campoScheda campo="CLASI1"  obbligatorio="true" defaultValue="3" visibile='${tipgen eq 1 && tipoForniture ne 98}' modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq}'/>
-			<gene:campoScheda campo="SOLSIC"  obbligatorio="true" visibile='${tipoForniture ne 98}' modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq}' defaultValue="2" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoNoSiSenzaNull"/>
+			<gene:campoScheda campo="CLASI1"  obbligatorio="true" defaultValue="3" visibile='${tipgen eq 1 && tipoForniture ne 98}' modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq }'/>
+			<gene:campoScheda campo="SOLSIC"  obbligatorio="true" visibile='${tipoForniture ne 98}' modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq and cinecaUgovpaEditing ne "1"}' defaultValue="2" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoNoSiSenzaNull"/>
 			<gene:campoScheda campo="SOGRIB"  visibile="false" defaultValue="2" />
-			<gene:campoScheda campo="SOGRIB_FIT" entita="TORN" campoFittizio="true" title="Soggetto a ribasso?" definizione="T2;0;;SN;G1SOGRIB" value="${datiRiga.GCAP_SOGRIB}" visibile='${tipoForniture ne 98}' modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq}' gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoSiNoInvertitoSenzaNull"/>
-			<gene:campoScheda campo="UNIMIS"  obbligatorio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoUnitaMisura" modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq}'/>
-			<gene:campoScheda campo="QUANTI"  obbligatorio="true" modificabile='${ esisteGaraOLIAMM ne "true" }'/>
+			<gene:campoScheda campo="SOGRIB_FIT" entita="TORN" campoFittizio="true" title="Soggetto a ribasso?" definizione="T2;0;;SN;G1SOGRIB" value="${datiRiga.GCAP_SOGRIB}" visibile='${tipoForniture ne 98}' modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq and cinecaUgovpaEditing ne "1"}' gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoSiNoInvertitoSenzaNull"/>
+			<gene:campoScheda campo="UNIMIS"  obbligatorio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoUnitaMisura" modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq and cinecaUgovpaEditing ne "1"}'/>
+			<gene:campoScheda campo="QUANTI"  obbligatorio="true" modificabile='${ esisteGaraOLIAMM ne "true" and cinecaUgovpaEditing ne "1"}'/>
 			<gene:campoScheda campo="CODCARR"  visibile='${integrazioneWSERP eq "1" && tipoWSERP eq "ATAC"}' modificabile='false'/>
 			<gene:campoScheda  campo="CODRDA"  visibile='${integrazioneWSERP eq "1" && tipoWSERP eq "ATAC"}' modificabile='false'/>
 			<gene:campoScheda campo="POSRDA"  visibile='${integrazioneWSERP eq "1" && tipoWSERP eq "ATAC"}' modificabile='false'/>
-			<gene:campoScheda campo="PREZUN"  modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq}'/>
+			<gene:campoScheda campo="PREZUN"  modificabile='${ esisteGaraOLIAMM ne "true" and empty contafaq and cinecaUgovpaEditing ne "1"}'/>
 			<gene:campoScheda campo="IMPORTO" entita="TORN" title="Importo" campoFittizio="true" definizione="F24.2;0;;MONEY5" modificabile="false" value="${importo}" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GCAP.PREZUN")}'/>
-			<gene:campoScheda campo="PERCIVA" visibile='${(tipoForniture eq "3" or tipoForniture eq "")}' />
+			<gene:campoScheda campo="PERCIVA" visibile='${(tipoForniture eq "3" or tipoForniture eq "")}' modificabile='${cinecaUgovpaEditing ne "1"}' />
 			<gene:campoScheda campo="IVAPROD"  visibile='${tipoForniture eq 98}' modificabile='${ esisteGaraOLIAMM ne "true"}'/>
 			<gene:campoScheda campo="NUNICONF"  visibile='${tipoForniture eq 98}'/>
 			<gene:campoScheda campo="CONTAFAQ"  visibile="false"/>
@@ -236,6 +245,7 @@
 			<input type="hidden" name="ngaraaq" id="ngaraaq" value="${ngaraaq}"/>
 			<input type="hidden" name="aqoper" id="aqoper" value="${aqoper}"/>
 			<input type="hidden" name="ribcal" id="ribcal" value="${ribcal}"/>
+			<input type="hidden" name="cinecaUgovpaEditing" id="cinecaUgovpaEditing" value="${cinecaUgovpaEditing}"/>
 			
 			<gene:campoScheda>
 				<jsp:include page="/WEB-INF/pages/commons/bloccaModifica-scheda.jsp">

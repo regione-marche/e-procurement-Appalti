@@ -41,21 +41,40 @@ public class IsW_CONFCOMPopolataFunction extends AbstractFunzioneTag {
     String ret = "false";
 
     try {
-      String select="select count(numpro) from w_confcom where genere = 1 or genere = ?";
-      if("56".equals(tipo)){
-        select="select numpro from w_confcom where genere = ?";
-        Long numpro = (Long)sqlManager.getObject(select, new Object[]{new Long(tipo)});
-        if(numpro!=null){
-          ret = "true";
-          pageContext.setAttribute("numeroModello", numpro, PageContext.REQUEST_SCOPE);
+      String select;
+      Long numOccorrenze = null;
+      if(tipo!=null){
+        switch (tipo){
+          case "4":
+          case "5":
+          case  "6":
+          case  "7":
+          case  "10":
+          case  "11":
+          case  "20":
+            select="select count(numpro) from w_confcom where genere = ?";
+            numOccorrenze = (Long)sqlManager.getObject(select, new Object[]{new Long(tipo)});
+            if(numOccorrenze!=null && numOccorrenze >0)
+              ret = "true";
+            break;
+          case "56":
+          case "61":
+            select="select numpro from w_confcom where genere = ?";
+            Long numpro = (Long)sqlManager.getObject(select, new Object[]{new Long(tipo)});
+            if(numpro!=null){
+              ret = "true";
+              pageContext.setAttribute("numeroModello", numpro, PageContext.REQUEST_SCOPE);
+            }
+            break;
+          default:
+            select="select count(numpro) from w_confcom where genere = 1 or genere = ?";
+            numOccorrenze = (Long)sqlManager.getObject(select, new Object[]{new Long(tipo)});
+            if(numOccorrenze!=null && numOccorrenze >0)
+              ret = "true";
+            break;
+
         }
-      }else{
-        if("10".equals(tipo) || "20".equals(tipo) || "4".equals(tipo) || "5".equals(tipo) || "6".equals(tipo) ||"7".equals(tipo) || "11".equals(tipo))
-          select="select count(numpro) from w_confcom where genere = ?";
-        Long numOccorrenze = (Long)sqlManager.getObject(select, new Object[]{new Long(tipo)});
-        if(numOccorrenze!=null && numOccorrenze.longValue()>0)
-          ret = "true";
-        }
+      }
     } catch (SQLException e) {
       throw new JspException("Errore durante la lettura dei dati della tabella W_CONFCOM",e);
     }

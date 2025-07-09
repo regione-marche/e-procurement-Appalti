@@ -54,7 +54,7 @@
 <gene:javaScript>
 
 	function calcoloAggiudicazioneLotto(){
-		document.location.href=contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/gare/gare-pg-aggiudProvDefLotti.jsp&key="+chiaveRiga + "&bustalotti=${bustalotti}&paginaFasiGara=aggiudProvDefOffertaUnica&idconfi=${idconfi}";
+		document.location.href=contextPath + "/ApriPagina.do?href=gare/gare/gare-pg-aggiudProvDefLotti.jsp&key="+chiaveRiga + "&bustalotti=${bustalotti}&paginaFasiGara=aggiudProvDefOffertaUnica&idconfi=${idconfi}";
 		
 	}
 
@@ -74,7 +74,7 @@
 		chiave += "DITG.DITTAO=T:" + ditta + ";";
 		chiave += "DITG.NGARA5=T:" + ngara;
 				
-		var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/ditg/inserimentoOfferteDitteEscluse-lista.jsp";
+		var href = contextPath + "/ApriPagina.do?href=gare/ditg/inserimentoOfferteDitteEscluse-lista.jsp";
 		href += "&key=" + chiave;
 		href += "&modalitaGara=" + modlicg;
 		href += "&isGaraLottiConOffertaUnica=true";
@@ -86,6 +86,5 @@
 		openPopUpCustom("href=gare/gare/gare-popup-calcoloAggiudicazione-tuttiLotti.jsp&ngara="+codiceGara, "calcoloAggTuttiLotti", 700, 400, "yes","yes");
 		
 	}
-		
-	
+
 </gene:javaScript>

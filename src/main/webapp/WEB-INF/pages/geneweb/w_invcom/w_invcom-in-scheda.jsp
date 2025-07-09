@@ -27,7 +27,9 @@
 	</c:choose>
 
 	<gene:setString name="titoloMaschera" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTitleComunicazioneFunction", pageContext, "W_INVCOM_IN")}' />
-	
+	<c:set var="idprg" value='${gene:getValCampo(key,"IDPRG")}'/>
+	<c:set var="idcom" value='${gene:getValCampo(key,"IDCOM")}'/>
+	<c:set var="tmp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetDatiFS12RettificaFunction",pageContext,idprg,idcom)}'/>
 	<gene:redefineInsert name="modelliPredisposti" />
 	<gene:redefineInsert name="documentiAssociati" />
 	<gene:redefineInsert name="noteAvvisi" />
@@ -37,7 +39,7 @@
 			<gene:pagina title="Dati generali" idProtezioni="W_INVCOM">
 				<jsp:include page="w_invcom-in-pg-datigen.jsp" />
 			</gene:pagina>
-			<gene:pagina title="Allegati" idProtezioni="W_DOCDIG">
+			<gene:pagina title="Allegati" idProtezioni="W_DOCDIG" selezionabile="${requestScope.isRettificaCodificata ne 'true'}">
 				<jsp:include page="w_invcom-in-pg-lista-w_docdig.jsp" />
 			</gene:pagina>	
 		</gene:formPagine>

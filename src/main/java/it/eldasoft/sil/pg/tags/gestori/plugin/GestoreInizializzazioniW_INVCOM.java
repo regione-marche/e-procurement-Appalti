@@ -19,6 +19,8 @@ import java.util.Vector;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 
+import org.apache.commons.lang.StringUtils;
+
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
@@ -32,6 +34,7 @@ import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.sicurezza.CriptazioneException;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityStringhe;
 import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
@@ -131,8 +134,9 @@ public class GestoreInizializzazioniW_INVCOM extends AbstractGestorePreload {
       if (UtilityTags.SCHEDA_MODO_INSERIMENTO.equals(modo)) {
 
         String rispondi = page.getRequest().getParameter("rispondi");
+        String inoltra = page.getRequest().getParameter("inoltra");
 
-        if (rispondi == null) {
+        if (rispondi == null && inoltra == null) {
           // nuovo da modulo invia comunicazioni
 
           String numModello = page.getRequest().getParameter("numModello");
@@ -224,16 +228,22 @@ public class GestoreInizializzazioniW_INVCOM extends AbstractGestorePreload {
 
             if(genere != null && (genere.longValue()==4 || genere.longValue()==5 || genere.longValue()==6 || new Long(1).equals(commodello))){
                 singolaDitta = true;
-                String selectDitta = "select ditg.nprogg, ditg.numordpl, ditg.dittao, impr.nomest, impr.cfimp, impr.pivimp, impr.dtrisoa, impr.DSCANC from impr,ditg where impr.codimp = ditg.dittao and impr.codimp = ? and ditg.ngara5 = ?";
+                
+                String selectDitta = "select ditg.nprogg, ditg.numordpl, ditg.dittao, impr.nomest, impr.cfimp, impr.pivimp, impr.dtrisoa, impr.DSCANC from impr,ditg where impr.codimp = ditg.dittao and ditg.dittao = ? and ditg.ngara5 = ?";
                 Vector datiDitta =  sqlManager.getVector(selectDitta,new Object[] { ditta, gara });
+                if(datiDitta==null) {//cerco l'occorrenza solo in ditg, potrei essere nel caso di concorso di progettazione in fase anonima (dittao <> codimp)
+                  selectDitta = "select ditg.nprogg, ditg.numordpl, ditg.dittao, ditg.nomimo from ditg where ditg.dittao = ? and ditg.ngara5 = ?";
+                  datiDitta =  sqlManager.getVector(selectDitta,new Object[] { ditta, gara });
+                }else {
+                  cfimp =  ((JdbcParametro) datiDitta.get(4)).getStringValue();
+                  pivimp =  ((JdbcParametro) datiDitta.get(5)).getStringValue();
+                  g_dtrisoa =  ((JdbcParametro) datiDitta.get(6)).dataValue();
+                  g_dscanc =  ((JdbcParametro) datiDitta.get(7)).dataValue();
+                }
                 g1nprogg = ((JdbcParametro) datiDitta.get(0)).getStringValue();
                 g1numordpl =  ((JdbcParametro) datiDitta.get(1)).getStringValue();
                 dittao =  ((JdbcParametro) datiDitta.get(2)).getStringValue();
-                nomimp =  ((JdbcParametro) datiDitta.get(3)).getStringValue();
-                cfimp =  ((JdbcParametro) datiDitta.get(4)).getStringValue();
-                pivimp =  ((JdbcParametro) datiDitta.get(5)).getStringValue();
-                g_dtrisoa =  ((JdbcParametro) datiDitta.get(6)).dataValue();
-                g_dscanc =  ((JdbcParametro) datiDitta.get(7)).dataValue();
+                nomimp= ((JdbcParametro) datiDitta.get(3)).getStringValue();
             }
 
 
@@ -359,37 +369,70 @@ public class GestoreInizializzazioniW_INVCOM extends AbstractGestorePreload {
         } else {
           // nuovo da modulo comunicazioni ricevute, usando la funzione rispondi
 
+          Boolean isInoltra = "1".equals(inoltra);
+          page.setAttribute("comunicazioneInoltrata",inoltra, PageContext.REQUEST_SCOPE);
           String idprg = "";
           String idcom = "";
           if (key.get("W_INVCOM.IDPRG") != null)
             idprg = ((JdbcParametro) key.get("W_INVCOM.IDPRG")).getStringValue();
           if (key.get("W_INVCOM.IDCOM") != null)
             idcom = ((JdbcParametro) key.get("W_INVCOM.IDCOM")).getStringValue();
-          String sql = "select commsgogg from w_invcom where idprg = ? and idcom = ?";
+          String sql = "select commsgogg,commsgtes from w_invcom where idprg = ? and idcom = ?";
           try {
-            String commsgogg =  (String) sqlManager.getObject(sql,new Object[] { idprg, idcom });
-            commsgogg = "R: " + commsgogg;
+        	Vector<?> datiComunicazione = sqlManager.getVector(sql,new Object[] { idprg, idcom });
+            String commsgogg = SqlManager.getValueFromVectorParam(datiComunicazione, 0).getStringValue();
+            String commsgtes = SqlManager.getValueFromVectorParam(datiComunicazione, 1).getStringValue();
+            if (isInoltra) {
+            	commsgogg = "I: " + commsgogg;
+            	page.setAttribute("initCOMMSGTES",commsgtes, PageContext.REQUEST_SCOPE);
+            } else {
+            	commsgogg = "R: " + commsgogg;
+            }
             if(commsgogg.length() >300)
               commsgogg = commsgogg.substring(0, 300);
             page.setAttribute("initCOMMSGOGG",commsgogg, PageContext.REQUEST_SCOPE);
             page.setAttribute("idprgComunicazPadre",idprg, PageContext.REQUEST_SCOPE);
             page.setAttribute("idcomComunicazPadre",idcom, PageContext.REQUEST_SCOPE);
           }catch(SQLException e) {
+        	  String messaggioEccezione = "Errore durante la selezione dei dati della comunicazione ";
+        	  if (isInoltra) {
+        		  messaggioEccezione += "da inoltrare";
+        	  } else {
+        		  messaggioEccezione += "a cui rispondere";
+        	  }
             throw new JspException(
-                "Errore durante la selezione dei dati della comunicazione a cui rispondere", e);
+            		messaggioEccezione, e);
           }
-
-          sql = "select userkey1 from w_puser inner join w_invcom on w_puser.usernome=w_invcom.comkey1 and w_puser.userent = ? where idprg = ? and idcom = ?";
+          
+          sql = "select userkey1, comkey2, committ from w_puser inner join w_invcom on w_puser.usernome=w_invcom.comkey1 and w_puser.userent = ? where idprg = ? and idcom = ?";
           try {
-            String codimp =  (String) sqlManager.getObject(sql,new Object[] { "IMPR", idprg, idcom });
-            page.setAttribute("initDESCODSOG", codimp, PageContext.REQUEST_SCOPE);
+            Vector datiW_INVCOM = sqlManager.getVector(sql,new Object[] { "IMPR", idprg, idcom });
+            if(datiW_INVCOM!=null) {
+              String userkey1=((JdbcParametro) datiW_INVCOM.get(0)).getStringValue();
+              String comkey2=((JdbcParametro) datiW_INVCOM.get(1)).getStringValue();
+              String committ=((JdbcParametro) datiW_INVCOM.get(2)).getStringValue();
+              String ngara=comkey2;
+              Long iterga = (Long) sqlManager.getObject("select iterga from torn,gare where ngara=? and codgar=codgar1",new Object[] {comkey2});
+              if((new Long(9).equals(iterga) || new Long(10).equals(iterga)) && committ.indexOf("operatore")==0) {//siamo entrati in fase anonima!
+                try {
+                  if(new Long(10).equals(iterga))
+                    ngara= (String) sqlManager.getObject("select ngarapa from gare where ngara=? ",new Object[] {comkey2});
+                  String dittao = (String) sqlManager.getObject("select dittao from DITG where idanonimo = ? and ngara5 = ?", new Object[] {pgManager.codifica(ngara+"#"+userkey1), comkey2});
+                  if(StringUtils.isNotBlank(dittao))
+                      userkey1 = dittao;
+                } catch (CriptazioneException e) {
+                }
+              }
+              page.setAttribute("initDESCODSOG", userkey1, PageContext.REQUEST_SCOPE);
+            }
+            
           }catch(SQLException e) {
             throw new JspException(
                 "Errore durante la selezione dei dati della comunicazione a cui rispondere", e);
           }
 
           String commodello = page.getRequest().getParameter("commodello");
-          if("1".equals(commodello)) {
+          if("1".equals(commodello) || "11".equals(commodello) || "12".equals(commodello) || "16".equals(commodello) || "17".equals(commodello)) {
             String comtipma = page.getRequest().getParameter("comtipma");
             page.setAttribute("initCOMMODELLO",commodello, PageContext.REQUEST_SCOPE);
             page.setAttribute("initCOMTIPMA",comtipma, PageContext.REQUEST_SCOPE);

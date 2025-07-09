@@ -15,6 +15,7 @@ import java.io.StringWriter;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -30,8 +31,10 @@ import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 import org.springframework.transaction.TransactionStatus;
 
+import it.eldasoft.gene.bl.GenChiaviManager;
 import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
@@ -66,6 +69,10 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
   private PgManagerEst1       pgManagerEst1;
 
   private MEPAManager         mepaManager;
+  
+  private TabellatiManager    tabellatiManager;
+  
+  private GenChiaviManager    genChiaviManager;
 
   private String selectW_DOCDIG = "select idprg, iddocdig from w_docdig where digent = ? and idprg = ? and digkey1 = ? and lower(dignomdoc) = '" + CostantiAppalti.nomeFileDatiPartecipazione + "'";
 
@@ -90,6 +97,15 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
   public void setMepaManager(MEPAManager mepaManager) {
     this.mepaManager = mepaManager;
   }
+  
+  public void setTabellatiManager(TabellatiManager tabellatiManager) {
+    this.tabellatiManager = tabellatiManager;
+  }
+  
+  public void setGenChiaviManager(GenChiaviManager genChiaviManager) {
+    this.genChiaviManager = genChiaviManager;
+  }
+
 
   @Override
   public final ActionForward execute(final ActionMapping mapping, final ActionForm form, final HttpServletRequest request,
@@ -119,10 +135,12 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
     String codgar1 = (String) this.sqlManager.getObject("select codgar1 from gare where ngara = ?", new Object[] { ngara });
     Long iterga = null;
     Long offtel = null;
-    Vector<?> datiTorn = this.sqlManager.getVector("select iterga,offtel from torn where codgar = ?", new Object[] { codgar1 });
+    String isconcprog = "";
+    Vector<?> datiTorn = this.sqlManager.getVector("select iterga,offtel,isconcprog from torn where codgar = ?", new Object[] { codgar1 });
     if(datiTorn !=null && datiTorn.size()>0){
       iterga = SqlManager.getValueFromVectorParam(datiTorn, 0).longValue();
       offtel = SqlManager.getValueFromVectorParam(datiTorn, 1).longValue();
+      isconcprog = SqlManager.getValueFromVectorParam(datiTorn, 2).stringValue();
     }
     String dbFunctionDateToString = sqlManager.getDBFunction("DATETIMETOSTRING",
         new String[] { "comdatprot" });
@@ -153,7 +171,7 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
       logEvento.setLivEvento(livEvento);
       logEvento.setOggEvento(ngara);
       logEvento.setCodEvento("GA_ACQUISIZIONE_OFFERTE_INIT");
-      logEvento.setDescr("Inizio acquisizione offerte da portale Appalti");
+      logEvento.setDescr("Inizio acquisizione offerte da portale Appalti"+(new Long(9).equals(iterga) || new Long(10).equals(iterga)?" in forma anonima":""));
       logEvento.setErrmsg(errMsgEvento);
       LogEventiUtils.insertLogEventi(logEvento);
     } catch (Exception le) {
@@ -176,7 +194,8 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
         erroreGestito=true;
         messageKey ="errors.gestoreException.*.acquisizione.OfferteDaPortale.DatiIncosistenti";
         messaggioPerLog = resBundleGenerale.getString(messageKey);
-        throw new GestoreException("Non é possibile procedere con l'acquisizione delle offerte da portale Appalti perché dati inconsistenti.","acquisizione.OfferteDaPortale.DatiIncosistenti" , new Exception());
+        result.put("Esito", "Errore");
+        result.put("MsgErrore", messaggioPerLog);
       }
 
       //Controllo che la data termine presentazione offerte non sia passata
@@ -187,16 +206,18 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
         messaggioPerLog = resBundleGenerale.getString(messageKey);
         messaggioPerLog = messaggioPerLog.replace("{0}", esitoControllo[1]);
         messaggioPerLog = messaggioPerLog.replace("{1}", esitoControllo[2]);
-        throw new GestoreException("Non é possibile procedere con l'acquisizione delle offerte da portale Appalti perché termini non scaduti.","acquisizione.OfferteDaPortale.TerminiNonScaduti", new Object[]{esitoControllo[1],esitoControllo[2]} , new Exception());
+        result.put("Esito", "Errore");
+        result.put("MsgErrore", messaggioPerLog);
       }
-      
+
       //Controllo che la gara non sia sospesa
       boolean isGaraSospesa = pgManagerEst1.isGaraSospesa(codgar1);
       if(isGaraSospesa){
         erroreGestito=true;
         messageKey ="errors.gestoreException.*.acquisizione.OfferteDaPortale.GaraSospesa";
         messaggioPerLog = resBundleGenerale.getString(messageKey);
-        throw new GestoreException("Non é possibile procedere con l'acquisizione delle offerte da portale Appalti perché gara sospesa.","acquisizione.OfferteDaPortale.GaraSospesa", new Object[]{} , new Exception());
+        result.put("Esito", "Errore");
+        result.put("MsgErrore", messaggioPerLog);
       }
 
       // Si determina se la gara è ad Offerta unica
@@ -215,6 +236,11 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
         String gestione = null; // valori gestiti: "S" standard, "R" solo inserimento RT
         boolean acquisito = false;
         boolean esisteDITG = false;
+        //mescolamento result set per iterga 9!
+        if(iterga.longValue() == 9) {
+          Collections.shuffle(datiW_INVCOM);
+        }
+        
         for (int i = 0; i < datiW_INVCOM.size(); i++) {
           try {
             //variabili per tracciatura eventi
@@ -226,8 +252,20 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
 
             String w_invcom_idprg = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 0).getValue();
             Long w_invcom_idcom = (Long) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 1).getValue();
+
+            //APPALTI-874
+            Long iddocdig = (Long) this.sqlManager.getObject("select iddocdig from w_docdig where digkey1=? and digent='W_INVCOM' and upper(DIGNOMDOC) LIKE 'RIEPILOGO_BUSTE.PDF%'", new Object[] {w_invcom_idcom.toString()});
+            if(iddocdig!=null) {
+              Long occorrenzeWsAllegati = (Long) this.sqlManager.getObject("select count(*) from wsallegati where key1=? and key2=? and entita=?", new Object[] {w_invcom_idprg,iddocdig.toString(), "W_DOCDIG"});
+              if(new Long(0).equals(occorrenzeWsAllegati))
+                mepaManager.gestioneWSALLEGATI(w_invcom_idcom, w_invcom_idprg, iddocdig);
+            }
             String comkey1 = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 2).getValue();
             String userkey1 = (String) this.sqlManager.getObject(selectW_PUSER, new Object[] { comkey1 });
+            if(new Long(10).equals(iterga)) {
+              String ngarapa = (String) sqlManager.getObject("select ngarapa from gare where ngara=?",new Object[] {ngara});
+              userkey1 = (String) sqlManager.getObject("select dittao from DITG where idanonimo = ? and ngara5 = ?", new Object[] {pgManager.codifica(ngarapa+"#"+userkey1), ngara});
+            }
             String comnumprot = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 3).getValue();
             Timestamp comdatprotTimestamp=null;
             String comdatprotString = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 4).getValue();
@@ -235,7 +273,7 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
               comdatprotTimestamp = new Timestamp(UtilityDate.convertiData(comdatprotString, UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS).getTime());
             }
             comkey3 = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 5).getValue();
-            if (iterga != null && iterga.longValue() != 1) {
+            if (iterga != null && (iterga.longValue() != 1 && iterga.longValue() != 9)) {
 
 
               if (userkey1 != null) {
@@ -357,18 +395,25 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
                   logger.error(this.erroreStackToString(e));
                 }
                 if (document != null) {
+                  String codiceCNEL=document.getTipoPartecipazione().getCodiceCNEL();
                   Calendar dataPresentazione = document.getTipoPartecipazione().getDataPresentazione();
                   if (dataPresentazione != null) {
                     Date datoff = dataPresentazione.getTime();
                     String datoffFormat = UtilityDate.convertiData(datoff, UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS);
                     if (datoffFormat != null) {
                       String oraoff = datoffFormat.substring(11);
-                      this.sqlManager.update(updateDITG, new Object[] { datoff, oraoff, comnumprot, comdatprotTimestamp,  codgar1, ngara, userkey1 });
-
+                      this.sqlManager.update(updateDITG, new Object[] { datoff, oraoff, comnumprot, comdatprotTimestamp, codgar1, ngara, userkey1 });
+                      this.sqlManager.update("update ditg set codcnel=? where codgar5=? and dittao=?", new Object[] {codiceCNEL, codgar1, userkey1});
                       acquisito = true;
                       codiceDittaEventi=userkey1;
                     }
                   }
+                  
+                  //gestisco l'avvalimento 
+                  if(document.getTipoPartecipazione().getAvvalimento() && document.getTipoPartecipazione().getImpreseAusiliarie()!=null) {
+                    pgManagerEst1.inserisciDitteAvvalimento(ngara,userkey1,document.getTipoPartecipazione().getImpreseAusiliarie().getImpresaAusiliariaList(),request);
+                  }
+                  
                   //Nel caso di bustalotti=1 si deve gestire l'aggiornamento della partecipazione dei lotti
                   TipoPartecipazioneType tipoPartecipazione = document.getTipoPartecipazione();
                   GestoreDITG gestoreDITG = new GestoreDITG();
@@ -377,7 +422,7 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
 
                 }
               }
-            } else if (iterga != null && iterga.longValue() == 1) {
+            } else if (iterga != null && (iterga.longValue() == 1 || iterga.longValue() == 9)) {
               boolean gestioneComponenti = false;
               String codiceRaggruppamento = "";
               String codimp = "";
@@ -400,33 +445,35 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
                 if (document != null) {
                   String ragioneSociale = (String) sqlManager.getObject("select nomest from impr where codimp=?", new Object[] { codimp });
                   if (ragioneSociale.length() > 61) ragioneSociale = ragioneSociale.substring(0, 60);
-                  if (document.getTipoPartecipazione().getRti()) {
-                    // Inserimento in anagrafica della RTI
-                    String nomeRTI = document.getTipoPartecipazione().getDenominazioneRti();
-                    Double quotaMandataria = null;
-                    if (document.getTipoPartecipazione().isSetQuotaMandataria())
-                      quotaMandataria = new Double(document.getTipoPartecipazione().getQuotaMandataria());
-                    codiceRaggruppamento = geneManager.calcolaCodificaAutomatica("IMPR", "CODIMP");
-                    String nomeRTITroncato = nomeRTI;
-                    if (nomeRTITroncato.length() > 61) nomeRTITroncato = nomeRTITroncato.substring(0, 60);
-                    Long tipimp = (Long) sqlManager.getObject("select tipimp from impr where codimp=?", new Object[] { codimp });
-                    Long tipimpNewRTI = null;
-                    if (tipimp != null && tipimp.longValue() <= 5)
-                      tipimpNewRTI = new Long(3);
-                    else if (tipimp != null && tipimp.longValue() > 5) tipimpNewRTI = new Long(10);
-                    sqlManager.update("insert into IMPR (CODIMP,NOMIMP,NOMEST,TIPIMP) values(?,?,?,?)", new Object[] { codiceRaggruppamento,
-                        nomeRTITroncato, nomeRTI, new Long(tipimpNewRTI) });
-                    sqlManager.update("insert into RAGIMP (IMPMAN,CODDIC,NOMDIC,CODIME9,QUODIC) values(?,?,?,?,?)", new Object[] { "1",
-                        codimp, ragioneSociale, codiceRaggruppamento, new Double(quotaMandataria) });
-                    gestioneComponenti = true;
-                    codimp = codiceRaggruppamento;
-                    ragioneSociale = nomeRTITroncato;
-                  } else {
-                    // Si controlla se l'impresa è un consorzio
-                    Long tipoImpresa = (Long) this.sqlManager.getObject("select tipimp from impr where codimp=?", new Object[] { userkey1 });
-                    if (tipoImpresa != null && (tipoImpresa.longValue() == 2 || tipoImpresa.longValue() == 11)) {
+                  if(iterga.longValue() != 9) {
+                    if (document.getTipoPartecipazione().getRti()) {
+                      // Inserimento in anagrafica della RTI
+                      String nomeRTI = document.getTipoPartecipazione().getDenominazioneRti();
+                      Double quotaMandataria = null;
+                      if (document.getTipoPartecipazione().isSetQuotaMandataria())
+                        quotaMandataria = new Double(document.getTipoPartecipazione().getQuotaMandataria());
+                      codiceRaggruppamento = geneManager.calcolaCodificaAutomatica("IMPR", "CODIMP");
+                      String nomeRTITroncato = nomeRTI;
+                      if (nomeRTITroncato.length() > 61) nomeRTITroncato = nomeRTITroncato.substring(0, 60);
+                      Long tipimp = (Long) sqlManager.getObject("select tipimp from impr where codimp=?", new Object[] { codimp });
+                      Long tipimpNewRTI = null;
+                      if (tipimp != null && tipimp.longValue() <= 5)
+                        tipimpNewRTI = new Long(3);
+                      else if (tipimp != null && tipimp.longValue() > 5) tipimpNewRTI = new Long(10);
+                      sqlManager.update("insert into IMPR (CODIMP,NOMIMP,NOMEST,TIPIMP) values(?,?,?,?)", new Object[] { codiceRaggruppamento,
+                          nomeRTITroncato, nomeRTI, new Long(tipimpNewRTI) });
+                      sqlManager.update("insert into RAGIMP (IMPMAN,CODDIC,NOMDIC,CODIME9,QUODIC) values(?,?,?,?,?)", new Object[] { "1",
+                          codimp, ragioneSociale, codiceRaggruppamento, new Double(quotaMandataria) });
                       gestioneComponenti = true;
-                      codiceRaggruppamento = userkey1;
+                      codimp = codiceRaggruppamento;
+                      ragioneSociale = nomeRTITroncato;
+                    } else {
+                      // Si controlla se l'impresa è un consorzio
+                      Long tipoImpresa = (Long) this.sqlManager.getObject("select tipimp from impr where codimp=?", new Object[] { userkey1 });
+                      if (tipoImpresa != null && (tipoImpresa.longValue() == 2 || tipoImpresa.longValue() == 11)) {
+                        gestioneComponenti = true;
+                        codiceRaggruppamento = userkey1;
+                      }
                     }
                   }
                   // Inserimento delle componenti del consorzio/RTI
@@ -444,6 +491,15 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
                   }
                   // Inserimento in DITG
                   Vector<DataColumn> elencoCampi = new Vector<DataColumn>();
+                  Long progressivoOperatore=null;
+                  if(iterga.longValue() == 9) {
+                    progressivoOperatore= new Long(this.genChiaviManager.getNextId("G1IMPRCONC"));
+                    String numeroOperatore= String.format("%5s", progressivoOperatore.toString()).replace(' ', '0');
+                    ragioneSociale="operatore "+numeroOperatore;
+                    String dittaoAnonimo="ope"+numeroOperatore;
+                    elencoCampi.add(new DataColumn("DITG.IDANONIMO", new JdbcParametro(JdbcParametro.TIPO_TESTO, pgManager.codifica(ngara+"#"+codimp))));
+                    codimp=dittaoAnonimo;
+                  }
                   elencoCampi.add(new DataColumn("DITG.NGARA5", new JdbcParametro(JdbcParametro.TIPO_TESTO, ngara)));
                   elencoCampi.add(new DataColumn("DITG.CODGAR5", new JdbcParametro(JdbcParametro.TIPO_TESTO, codgar1)));
                   elencoCampi.add(new DataColumn("DITG.DITTAO", new JdbcParametro(JdbcParametro.TIPO_TESTO, codimp)));
@@ -466,10 +522,27 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
                       elencoCampi.add(new DataColumn("DITG.INVOFF", new JdbcParametro(JdbcParametro.TIPO_TESTO, "1")));
                     }
                   }
+                  String codiceCNEL=document.getTipoPartecipazione().getCodiceCNEL();
+                  elencoCampi.add(new DataColumn("DITG.CODCNEL", new JdbcParametro(JdbcParametro.TIPO_TESTO, codiceCNEL)));
+                  
                   DataColumnContainer containerDITG = new DataColumnContainer(elencoCampi);
                   GestoreDITG gestoreDITG = new GestoreDITG();
                   gestoreDITG.setRequest(request);
+                  if(iterga.longValue() == 9) {
+                    //inserimento in g1imprconc
+                    sqlManager.update("insert into G1IMPRCONC (CODIMP,NOMIMP,ISRT) values(?,?,?)", new Object[] {codimp,ragioneSociale,document.getTipoPartecipazione().getRti()?"1":"2"});
+                    //inserimento in w_puser
+                    Long newIdUser = new Long(genChiaviManager.getNextId("W_PUSER"));
+                    sqlManager.update("insert into W_PUSER (IDUSER,USERNOME,USERENT,USERKEY1) values (?,?,?,?)", 
+                        new Object[] {newIdUser, this.pgManager.codifica(comkey1), "G1IMPRCONC", codimp});
+                  }
                   gestoreDITG.inserisci(status, containerDITG);
+                  
+                  //gestisco l'avvalimento 
+                  if(document.getTipoPartecipazione().getAvvalimento() && document.getTipoPartecipazione().getImpreseAusiliarie()!=null) {
+                    pgManagerEst1.inserisciDitteAvvalimento(ngara,codimp,document.getTipoPartecipazione().getImpreseAusiliarie().getImpresaAusiliariaList(),request);
+                  }
+                  
                   // Inizializzazione documenti della ditta
                   pgManager.inserimentoDocumentazioneDitta(codgar1, ngara, codimp);
 
@@ -509,10 +582,14 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
             logEvento.setLivEvento(esitoAquisizione);
             logEvento.setOggEvento(ngara);
             logEvento.setCodEvento("GA_ACQUISIZIONE_OFFERTE");
-            logEvento.setDescr("Acquisizione offerta ditta " + codiceDittaEventi + " (cod.operatore " + comkey1 + ", id.comunicazione " + w_invcom_idcom + ")" );
+            logEvento.setDescr("Acquisizione offerta ditta " + codiceDittaEventi + " (" + (!(new Long(9).equals(iterga) || new Long(10).equals(iterga))? "cod.operatore " + comkey1 + ", ":"acquisizione in forma anonima, ") +"id.comunicazione " + w_invcom_idcom + ")" );
             logEvento.setErrmsg("");
             LogEventiUtils.insertLogEventi(logEvento);
 
+          }catch(Exception e) {
+            logger.error("Errore nell'acquisizione delle offerte",e);
+            commit=false;
+            throw e; //per non regressione si rilancia l'eccezione
           } finally {
             if (status != null) {
               try {
@@ -537,7 +614,7 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
         errMsgEvento = genericMsgErr;
         status = this.sqlManager.startTransaction();
 
-        if (iterga != null && iterga.longValue() != 1) {
+        if (iterga != null && iterga.longValue() != 1 && iterga.longValue() != 9) {
 
 
           // Esclusione ditte che non hanno presentato offerta
@@ -559,7 +636,7 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
                   // lotti
                   updateDITG_ESCLUSIONE = "update ditg set invoff = '2', ammgar = '2', numordpl = null where codgar5 = ? and dittao = ?";
                   this.sqlManager.update(updateDITG_ESCLUSIONE, new Object[] { codgar1, dittao_esclusione });
-                  updateDITG_ESCLUSIONE = "update ditg set fasgar = 1 where codgar5 = ? and dittao = ? and (partgar is null or partgar!=2)";
+                  updateDITG_ESCLUSIONE = "update ditg set fasgar = 1 where codgar5 = ? and dittao = ? and (partgar is null or partgar!='2')";
                   this.sqlManager.update(updateDITG_ESCLUSIONE, new Object[] { codgar1, dittao_esclusione });
                 }else
                   this.sqlManager.update(updateDITG_ESCLUSIONE, new Object[] { codgar1, ngara, dittao_esclusione });
@@ -577,12 +654,12 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
           isGaraLottiConOffertaUnica = "true";
 
         String isProceduraAggiudicazioneAperta = "false";
-        if(new Long(1).equals(iterga))
+        if(new Long(1).equals(iterga) || new Long(9).equals(iterga))
           isProceduraAggiudicazioneAperta = "true";
 
         Long paginaAttiva = new Long(GestioneFasiRicezioneFunction.FASE_RICEZIONE_PLICHI);
-
-        pgManagerEst1.setNumeroOrdine(ngara, codgar1, isGaraLottiConOffertaUnica, isProceduraAggiudicazioneAperta, "false",paginaAttiva.toString(), 4);
+        if(!(new Long(9).equals(iterga) || new Long(10).equals(iterga)))
+          pgManagerEst1.setNumeroOrdine(ngara, codgar1, isGaraLottiConOffertaUnica, isProceduraAggiudicazioneAperta, "false",paginaAttiva.toString(), 4);
 
       } finally {
         if (status != null) {
@@ -600,7 +677,7 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
         }
       }
       //Procedura non aperta
-      if (iterga != null && iterga.longValue() != 1) {
+      if (iterga != null && iterga.longValue() != 1 && iterga.longValue() != 9) {
     	boolean acquisito = false;
     	genere = (Long) this.sqlManager.getObject("select genere from gare where ngara=?", new Object[] { ngara });
         String selectW_INVCOM_rinuncia = "select idprg, idcom, comkey1, comnumprot, " + dbFunctionDateToString + ", comkey3, commsgtes, " + dbFunctionDateToStringDatins + " from w_invcom where comkey2 = ? and comstato = '5' and comtipo = 'FS14' order by comkey1, comkey3";
@@ -618,8 +695,20 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
        	     status = this.sqlManager.startTransaction();
        	     String w_invcom_idprg = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM_rinuncia.get(i), 0).getValue();
        	     Long w_invcom_idcom = (Long) SqlManager.getValueFromVectorParam(datiW_INVCOM_rinuncia.get(i), 1).getValue();
+
+       	     //APPALTI-874
+       	     Long iddocdig = (Long) this.sqlManager.getObject("select iddocdig from w_docdig where digkey1=? and digent='W_INVCOM' and upper(DIGNOMDOC) LIKE 'COMUNICAZIONE.PDF%'", new Object[] {w_invcom_idcom.toString()});
+       	     if(iddocdig!=null) {
+         	   Long occorrenzeWsAllegati = (Long) this.sqlManager.getObject("select count(*) from wsallegati where key1=? and key2=? and entita=?", new Object[] {w_invcom_idprg,iddocdig.toString(), "W_DOCDIG"});
+               if(new Long(0).equals(occorrenzeWsAllegati))
+                 mepaManager.gestioneWSALLEGATI(w_invcom_idcom, w_invcom_idprg, iddocdig);
+       	     }
        	     String comkey1 = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM_rinuncia.get(i), 2).getValue();
        	     String userkey1 = (String) this.sqlManager.getObject(selectW_PUSER, new Object[] { comkey1 });
+         	 if(new Long(10).equals(iterga)) {
+              String ngarapa = (String) sqlManager.getObject("select ngarapa from gare where ngara=?",new Object[] {ngara});
+              userkey1 = (String) sqlManager.getObject("select dittao from DITG where idanonimo = ? and ngara5 = ?", new Object[] {pgManager.codifica(ngarapa+"#"+userkey1), ngara});
+             }
        	     String codiceDittaEventi=userkey1;
        	     String comnumprot = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM_rinuncia.get(i), 3).getValue();
        	     Timestamp comdatprotTimestamp=null;
@@ -693,10 +782,14 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
              logEvento.setLivEvento(1);
              logEvento.setOggEvento(ngara);
              logEvento.setCodEvento("GA_ACQUISIZIONE_RINUNCIA");
-             logEvento.setDescr("Acquisizione rinuncia invio offerta ditta " + codiceDittaEventi + " (cod.operatore " + comkey1 + ", id.comunicazione " + w_invcom_idcom + ")" );
+             logEvento.setDescr("Acquisizione rinuncia invio offerta ditta " + codiceDittaEventi + " ("+(!new Long(10).equals(iterga)? "cod.operatore " + comkey1 + ", ":"acquisizione in forma anonima, ")+"id.comunicazione " + w_invcom_idcom + ")" );
              logEvento.setErrmsg("");
              LogEventiUtils.insertLogEventi(logEvento);
 
+             }catch(Exception e) {
+               logger.error("Errore nell'acquisizione delle offerte",e);
+               commit=false;
+               throw e; //per non regressione si rilancia l'eccezione
              }finally {
                   if (status != null) {
                       try {
@@ -715,6 +808,29 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
            }
         }
      }
+      //APPALTI-1372
+      boolean commitAnonimizzazione = false;
+      try {
+        status = this.sqlManager.startTransaction();
+        String descA1178 = this.tabellatiManager.getDescrTabellato("A1178", "1");
+        if(descA1178!=null && descA1178.length()>0 && "1".equals(descA1178.substring(0, 1)) && "1".equals(isconcprog)) {
+          this.sqlManager.update("update ditg set nomimo='****' where  codgar5 = ? and ngara5 = ?", new Object[] {codgar1, ngara});
+          commitAnonimizzazione=true;
+        }
+      }catch(Exception e) {
+          logger.error("Errore nell'anonimizzazione delle ditta in gara",e);
+      }finally {
+        if (status != null) {
+          try {
+            if (commitAnonimizzazione == true) {
+              this.sqlManager.commitTransaction(status);
+            } else {
+              this.sqlManager.rollbackTransaction(status);
+            }
+          } catch (SQLException e) {
+          }
+         }
+       }
      } catch (GestoreException ge) {
       livEvento = 3;
       if(erroreGestito){
@@ -732,7 +848,7 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
         logEvento.setLivEvento(livEvento);
         logEvento.setOggEvento(ngara);
         logEvento.setCodEvento("GA_ACQUISIZIONE_OFFERTE_FINE");
-        logEvento.setDescr("Fine acquisizione offerte da portale Appalti:" +
+        logEvento.setDescr("Fine acquisizione offerte da portale Appalti"+(new Long(9).equals(iterga) || new Long(10).equals(iterga)?" in forma anonima":"")+":" +
             numeroAcquisizioni + " acquisizioni offerte, " +
             numeroAcquisizioniErrore + " acquisizioni offerte con errore," +
         	numeroRinunce + " acquisizioni rinuncia, " +
@@ -800,7 +916,11 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
     String codiceDittaEventi=null;
     String msgErrMessaggioFS10_FS11 = null;
     Object[] ret=new Object[3];
-
+    //isrt mi serve per skippare la gestione sottostante  (nei concorsi di prog. un'impresa che partecipa alla proced. aperta in rt non deve generare inserimenti qui)
+    String isrt = null;
+    if(iterga.longValue() == 10)
+      isrt = (String) sqlManager.getObject("select isrt from g1imprconc where codimp=?", new Object[] {userkey1});
+        
     String codimp = userkey1;
     TipoPartecipazioneDocument document = null;
     try {
@@ -809,51 +929,70 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
     }catch (Exception e) {
       logger.error(this.erroreStackToString(e));
     }
-    if (document != null) {
+    if (document != null && !"1".equals(isrt)) {
       String ragioneSociale = (String) sqlManager.getObject("select nomest from impr where codimp=?", new Object[] { codimp });
-      if (ragioneSociale.length() > 61) ragioneSociale = ragioneSociale.substring(0, 60);
+      if (iterga.longValue() != 10 && ragioneSociale.length() > 61) ragioneSociale = ragioneSociale.substring(0, 60);
 
       String codiceRaggruppamento = "";
-
+      TipoPartecipazioneType tipoPartecipazione = document.getTipoPartecipazione();
       if (document.getTipoPartecipazione().getRti()){
         // Inserimento in anagrafica della RTI
-        String nomeRTI = document.getTipoPartecipazione().getDenominazioneRti();
-        Double quotaMandataria = null;
-        if (document.getTipoPartecipazione().isSetQuotaMandataria())
-          quotaMandataria = new Double(document.getTipoPartecipazione().getQuotaMandataria());
-        codiceRaggruppamento = geneManager.calcolaCodificaAutomatica("IMPR", "CODIMP");
-        String nomeRTITroncato = nomeRTI;
-        if (nomeRTITroncato.length() > 61) nomeRTITroncato = nomeRTITroncato.substring(0, 60);
-        Long tipimp = (Long) sqlManager.getObject("select tipimp from impr where codimp=?", new Object[] { codimp });
-        Long tipimpNewRTI = null;
-        if ((tipimp == null) || (tipimp != null && tipimp.longValue() <= 5))
-          tipimpNewRTI = new Long(3);
-        else if (tipimp != null && tipimp.longValue() > 5) tipimpNewRTI = new Long(10);
-        sqlManager.update("insert into IMPR (CODIMP,NOMIMP,NOMEST,TIPIMP) values(?,?,?,?)", new Object[] {
-            codiceRaggruppamento, nomeRTITroncato, nomeRTI, new Long(tipimpNewRTI) });
-        sqlManager.update("insert into RAGIMP (IMPMAN,CODDIC,NOMDIC,CODIME9,QUODIC) values(?,?,?,?,?)", new Object[] { "1",
-            codimp, ragioneSociale, codiceRaggruppamento, new Double(quotaMandataria) });
-
-        codimp = codiceRaggruppamento;
-        ragioneSociale = nomeRTITroncato;
-
-
-        // Inserimento delle componenti del consorzio/RTI
-        ProfiloUtente profilo = (ProfiloUtente) request.getSession().getAttribute(CostantiGenerali.PROFILO_UTENTE_SESSIONE);
-        TipoPartecipazioneType tipoPartecipazione = document.getTipoPartecipazione();
-        // Si controlla se vi sono partecipanti
-        if (tipoPartecipazione.isSetPartecipantiRaggruppamento()) {
-          Long tipoImpresa = new Long(2);
-          if (tipoPartecipazione.isSetDenominazioneRti()) tipoImpresa = new Long(3);
-          pgManager.gestionePartecipanti(tipoPartecipazione.getPartecipantiRaggruppamento(), codiceRaggruppamento, tipoImpresa,
-              profilo.getId(), ngara, userkey1);
-        }
-
+        if(iterga.longValue() != 10) {
+          String nomeRTI = document.getTipoPartecipazione().getDenominazioneRti();
+          Double quotaMandataria = null;
+          if (document.getTipoPartecipazione().isSetQuotaMandataria())
+            quotaMandataria = new Double(document.getTipoPartecipazione().getQuotaMandataria());
+          codiceRaggruppamento = geneManager.calcolaCodificaAutomatica("IMPR", "CODIMP");
+          String nomeRTITroncato = nomeRTI;
+          if (nomeRTITroncato.length() > 61) nomeRTITroncato = nomeRTITroncato.substring(0, 60);
+          Long tipimp = (Long) sqlManager.getObject("select tipimp from impr where codimp=?", new Object[] { codimp });
+          Long tipimpNewRTI = null;
+          if ((tipimp == null) || (tipimp != null && tipimp.longValue() <= 5))
+            tipimpNewRTI = new Long(3);
+          else if (tipimp != null && tipimp.longValue() > 5) tipimpNewRTI = new Long(10);
+          sqlManager.update("insert into IMPR (CODIMP,NOMIMP,NOMEST,TIPIMP) values(?,?,?,?)", new Object[] {
+              codiceRaggruppamento, nomeRTITroncato, nomeRTI, new Long(tipimpNewRTI) });
+          sqlManager.update("insert into RAGIMP (IMPMAN,CODDIC,NOMDIC,CODIME9,QUODIC) values(?,?,?,?,?)", new Object[] { "1",
+              codimp, ragioneSociale, codiceRaggruppamento, new Double(quotaMandataria) });
+  
+          codimp = codiceRaggruppamento;
+          ragioneSociale = nomeRTITroncato;
+  
+  
+          // Inserimento delle componenti del consorzio/RTI
+          ProfiloUtente profilo = (ProfiloUtente) request.getSession().getAttribute(CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+          // Si controlla se vi sono partecipanti
+          if (tipoPartecipazione.isSetPartecipantiRaggruppamento()) {
+            Long tipoImpresa = new Long(2);
+            if (tipoPartecipazione.isSetDenominazioneRti()) tipoImpresa = new Long(3);
+            pgManager.gestionePartecipanti(tipoPartecipazione.getPartecipantiRaggruppamento(), codiceRaggruppamento, tipoImpresa,
+                profilo.getId(), ngara, userkey1);
+          }
         if(gestione  == "S")
           request.setAttribute("offertaRT", "1");
-
+        }
+        
         // Inserimento in DITG
         Vector<DataColumn> elencoCampi = new Vector<DataColumn>();
+        if(new Long(10).equals(iterga)) {
+          String idanonimo= (String) sqlManager.getObject("select idanonimo from ditg where codgar5=? and ngara5=? and dittao=?", new Object[] {codgar1,ngara,userkey1});
+          Long progressivoOperatore= new Long(this.genChiaviManager.getNextId("G1IMPRCONC"));
+          String numeroOperatore= String.format("%5s", progressivoOperatore.toString()).replace(' ', '0');
+          ragioneSociale="operatore "+numeroOperatore;
+          String dittaoAnonimo="ope"+numeroOperatore;
+          elencoCampi.add(new DataColumn("DITG.IDANONIMO",  new JdbcParametro(JdbcParametro.TIPO_TESTO,idanonimo)));
+
+          //inserimento in G1IMPRCONC
+          sqlManager.update("insert into G1IMPRCONC (CODIMP,NOMIMP,ISRT) values(?,?,?)", new Object[] {dittaoAnonimo,ragioneSociale,isrt});
+          //inserimento in W_PUSER
+          Long newIdUser = new Long(genChiaviManager.getNextId("W_PUSER"));
+          String usernomePadre = (String) sqlManager.getObject("select usernome from W_PUSER where userkey1=? and userent='G1IMPRCONC'", new Object[] {userkey1});
+          sqlManager.update("insert into W_PUSER (IDUSER,USERNOME,USERENT,USERKEY1) values (?,?,?,?)", 
+              new Object[] {newIdUser, usernomePadre, "G1IMPRCONC", dittaoAnonimo});
+          
+          codimp=dittaoAnonimo;
+        }
+        String codiceCNEL=document.getTipoPartecipazione().getCodiceCNEL();
         elencoCampi.add(new DataColumn("DITG.NGARA5", new JdbcParametro(JdbcParametro.TIPO_TESTO, ngara)));
         elencoCampi.add(new DataColumn("DITG.CODGAR5", new JdbcParametro(JdbcParametro.TIPO_TESTO, codgar1)));
         elencoCampi.add(new DataColumn("DITG.DITTAO", new JdbcParametro(JdbcParametro.TIPO_TESTO, codimp)));
@@ -865,6 +1004,7 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
         elencoCampi.add(new DataColumn("DITG.ACQUISIZIONE", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, new Long(5))));
         elencoCampi.add(new DataColumn("DITG.NCOMOPE", new JdbcParametro(JdbcParametro.TIPO_TESTO, comkey3)));
         elencoCampi.add(new DataColumn("DITG.DITTAINV", new JdbcParametro(JdbcParametro.TIPO_TESTO, codiceDittaInv)));
+        elencoCampi.add(new DataColumn("DITG.CODCNEL", new JdbcParametro(JdbcParametro.TIPO_TESTO, codiceCNEL)));
         //Nel caso di gara telematica solo upload non va impostato il partgr
         if(!new Long(2).equals(offtel))
           elencoCampi.add(new DataColumn("DITG.PARTGAR", new JdbcParametro(JdbcParametro.TIPO_TESTO, "1")));
@@ -888,6 +1028,11 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
         gestoreDITG.inserisci(status, containerDITG);
         // Inizializzazione documenti della ditta
         pgManager.inserimentoDocumentazioneDitta(codgar1, ngara, codimp);
+        
+        //gestisco l'avvalimento 
+        if(document.getTipoPartecipazione().getAvvalimento() && document.getTipoPartecipazione().getImpreseAusiliarie()!=null) {
+          pgManagerEst1.inserisciDitteAvvalimento(ngara,codimp,document.getTipoPartecipazione().getImpreseAusiliarie().getImpresaAusiliariaList(),request);
+        }
 
         mepaManager.gestioneLottiOffertaUnica(ngara, codimp,containerDITG, gestoreDITG, tipoPartecipazione.getCodiceLottoArray(),faseGaraLong,status, "INS",false,"FS11",iterga);
 
@@ -907,7 +1052,6 @@ public class AcquisisciOfferteDaPortaleAction extends Action {
         Long tipoImpresa = (Long) this.sqlManager.getObject("select tipimp from impr where codimp=?", new Object[] { userkey1 });
         if (tipoImpresa != null && (tipoImpresa.longValue() == 2 || tipoImpresa.longValue() == 11)) {
           esisteDITG = true;
-          TipoPartecipazioneType tipoPartecipazione = document.getTipoPartecipazione();
           if (tipoPartecipazione.isSetPartecipantiRaggruppamento()) {
             tipoImpresa = new Long(2);
             ProfiloUtente profilo = (ProfiloUtente) request.getSession().getAttribute(CostantiGenerali.PROFILO_UTENTE_SESSIONE);

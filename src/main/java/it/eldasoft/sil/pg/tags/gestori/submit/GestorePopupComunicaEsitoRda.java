@@ -22,7 +22,9 @@ import it.eldasoft.sil.pg.bl.GestioneWSERPManager;
 import it.eldasoft.sil.pg.bl.erp.AmiuWSERPManager;
 import it.eldasoft.sil.pg.bl.erp.AtacWSERPManager;
 import it.eldasoft.sil.pg.bl.erp.CavWSERPManager;
+import it.eldasoft.sil.pg.bl.erp.InarcassaWSERPManager;
 import it.eldasoft.sil.pg.bl.erp.RaiwayWSERPManager;
+import it.eldasoft.sil.pg.bl.erp.SiglaWSERPManager;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
@@ -34,6 +36,7 @@ import it.maggioli.eldasoft.ws.erp.WSERPFornitoreType;
 import it.maggioli.eldasoft.ws.erp.WSERPGaraType;
 import it.maggioli.eldasoft.ws.erp.WSERPOdaType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaResType;
+import it.maggioli.eldasoft.ws.erp.WSERPRdaType;
 
 import java.sql.Timestamp;
 import java.util.Calendar;
@@ -251,6 +254,51 @@ AbstractGestoreEntita {
               throw new GestoreException(
                   "Errore durante la creazione del fornitore nell' ERP",
                   "creaFornitoreErp",new Object[] {comunicazione + wserpFornitoreRes.getMessaggio()}, null);
+            }
+          }
+        } else if ("INARCASSA".equals(tipoWSERP)){
+          //inserire la parte relativa al fornitore
+          InarcassaWSERPManager inarcassaWSERPManager = (InarcassaWSERPManager) UtilitySpring.getBean("inarcassaWSERPManager",
+              this.getServletContext(), InarcassaWSERPManager.class);
+          HashMap datiMask = new HashMap();
+          idFornitore = impl.getString("IDFORNITORE");
+          idFornitore = UtilityStringhe.convertiNullInStringaVuota(idFornitore);
+
+
+          datiMask.put("idFornitore", idFornitore);
+          datiMask.put("ditta", ditta);
+          datiMask.put("codgar", codgar);
+          datiMask.put("ngara", ngara);
+          ditta =StringUtils.stripToEmpty(ditta);
+          if(!"".equals(ditta)) {
+            WSERPFornitoreResType wserpFornitoreRes = inarcassaWSERPManager.inviaDatiFornitore(username,password,datiMask);
+            if(wserpFornitoreRes.isEsito()){
+              WSERPFornitoreType newFornitore = wserpFornitoreRes.getFornitore();
+              String newIdFornitore = newFornitore.getIdFornitore();
+              idFornitore = newIdFornitore;
+              idFornitore = UtilityStringhe.convertiNullInStringaVuota(idFornitore);
+              if(!"".equals(idFornitore)){
+                //occorre verificare se si tratta di una RTI
+                Long tipimp = (Long)this.sqlManager.getObject("select tipimp from impr where codimp = ?", new Object[]{ditta});
+                if(tipimp != null && (tipimp.longValue()==3 || tipimp.longValue()==10)){
+                  String mandataria = (String)this.sqlManager.getObject("select coddic from ragimp" +
+                      " where codime9 = ? and impman = ? ", new Object[]{ditta, "1"});
+                  ditta= mandataria;
+                }
+                this.sqlManager.update("update impr set cgenimp = ? where codimp = ? and cgenimp is null", new Object[] {idFornitore, ditta});
+              }
+            }else{
+              String comunicazione = "";
+              this.getRequest().setAttribute("RISULTATO", "ERRORI");
+              if(wserpFornitoreRes.getMessaggio().contains("RESPONSE_KO")) {
+                throw new GestoreException(
+                    "Errore durante la creazione del fornitore nell' ERP",
+                    "aggiornaFornitoreErp",new Object[] {wserpFornitoreRes.getMessaggio().split("%%%")[1]}, null);
+              } else {
+                throw new GestoreException(
+                  "Errore durante la creazione del fornitore nell' ERP",
+                  "creaFornitoreErp",new Object[] {comunicazione + wserpFornitoreRes.getMessaggio()}, null);
+              }
             }
           }
         }else{
@@ -512,6 +560,36 @@ AbstractGestoreEntita {
           this.getRequest().setAttribute("RISULTATO", "CALCOLOINFO");
         }
 
+      }else if("INARCASSA".equals(tipoWSERP)){
+        //inserire la parte relativa ad aggiorna/Procedura
+        InarcassaWSERPManager inarcassaWSERPManager = (InarcassaWSERPManager) UtilitySpring.getBean("inarcassaWSERPManager",
+            this.getServletContext(), InarcassaWSERPManager.class);
+        HashMap datiMask = new HashMap();
+        datiMask.put("codgar", codgar);
+        datiMask.put("ngara", ngara);
+
+        WSERPRdaResType wserpRdaRes = inarcassaWSERPManager.inviaDatiAggiudicazione(username, password, datiMask);
+        if(!wserpRdaRes.isEsito()){
+          esitoComunicazioneRda++ ;
+          String messaggioErrore = wserpRdaRes.getMessaggio();
+          if(wserpRdaRes.getMessaggio().contains("%%%")) {
+            messaggioErrore = wserpRdaRes.getMessaggio().split("%%%")[1];
+          }
+          UtilityStruts.addMessage(this.getRequest(), "error",
+              "wserp.erp.aggiornaProceduraERP.error",
+              new Object[] { messaggioErrore});
+        }else{
+          Timestamp ts = new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime());
+          String tsStr = "OK-" + ts.toString();
+          this.gestioneWSERPManager.updNumeroRdo(tipoWSERP, codgar, ngara, tsStr);
+        }
+
+        if(esitoComunicazioneRda > 0){
+          this.getRequest().setAttribute("RISULTATO", "CALCOLOINFO");
+        }else{
+          this.getRequest().setAttribute("RISULTATO", "CALCOLOESEGUITO");
+        }
+
       }else if("AMIU".equals(tipoWSERP)){
 
         AmiuWSERPManager amiuWSERPManager = (AmiuWSERPManager) UtilitySpring.getBean("amiuWSERPManager",
@@ -623,7 +701,53 @@ AbstractGestoreEntita {
         //this.getRequest().setAttribute("RISULTATO", "CALCOLOESEGUITO");
 
 
-      }else{
+      } else if("SIGLA".equals(tipoWSERP)){
+        
+        tipoContratto = impl.getString("TIPO_CONTR");
+        tipoContratto = UtilityStringhe.convertiNullInStringaVuota(tipoContratto);
+        String tipoNorma = impl.getString("TIPO_NORMA");
+        tipoNorma = UtilityStringhe.convertiNullInStringaVuota(tipoNorma);
+        String proceduraAmministrativa = impl.getString("PROC_AMMI");
+        proceduraAmministrativa = UtilityStringhe.convertiNullInStringaVuota(proceduraAmministrativa);
+        String tipoOrgano = impl.getString("TIPO_ORGANO");
+        tipoOrgano = UtilityStringhe.convertiNullInStringaVuota(tipoOrgano);
+
+        SiglaWSERPManager siglaWSERPManager = (SiglaWSERPManager) UtilitySpring.getBean("siglaWSERPManager",
+            this.getServletContext(), SiglaWSERPManager.class);
+        HashMap datiMask = new HashMap();
+        datiMask.put("codgar", codgar);
+        datiMask.put("ngara", ngara);
+        datiMask.put("iaggiu", iaggiu);
+        datiMask.put("oggettoGara", oggettoGara);
+        datiMask.put("tipoContratto", tipoContratto);
+        datiMask.put("tipoNorma", tipoNorma);
+        datiMask.put("proceduraAmministrativa", proceduraAmministrativa);
+        datiMask.put("tipoOrgano", tipoOrgano);
+        
+        WSERPRdaResType wserpRdaRes = siglaWSERPManager.inviaDatiContratto(username, password, datiMask);
+        if(!wserpRdaRes.isEsito()){
+          esitoComunicazioneRda++ ;
+          UtilityStruts.addMessage(this.getRequest(), "warning",
+              "wserp.erp.mancataCreazioneContratto.warning",
+              new Object[] { wserpRdaRes.getMessaggio()});
+        }else{
+          if(wserpRdaRes.getRdaArray() != null && wserpRdaRes.getRdaArray().length > 0) {
+            WSERPRdaType rdaType = wserpRdaRes.getRdaArray(0);
+            if(rdaType != null && rdaType.getCodiceCarrello() != null) {
+              String pgContratto = rdaType.getCodiceCarrello();
+              this.getSqlManager().update(
+                  "update gare set nrepat = ?  where codgar1 = ? and ngara = ? ",
+                  new Object[] { pgContratto, codgar, ngara });
+            }
+          }
+        }
+
+        if(esitoComunicazioneRda > 0){
+          this.getRequest().setAttribute("RISULTATO", "CALCOLOWARNING");
+        }else{
+          this.getRequest().setAttribute("RISULTATO", "CALCOLOINFO");
+        }
+      } else{
         Vector datiTorn = sqlManager.getVector("select accqua, aqoper, aqnumope, codcigaq, tipgen from torn, gare where ngara = ? and codgar1 = codgar", new Object[]{ngara});
         if(datiTorn!=null){
           accqua = SqlManager.getValueFromVectorParam(datiTorn, 0).stringValue();
@@ -906,20 +1030,30 @@ AbstractGestoreEntita {
                   datiGara.setCodiceCigMaster(codcigaq);
                 }
 
-
+                String[] codiceCupArray = null;
+                if(cupprg != null && !"".equals(cupprg)) {
+                  codiceCupArray = new String[1];
+                  codiceCupArray[0] = cupprg;
+                }                
                 List<String> datiNCup = sqlManager.getListVector("select cup from garecup where ngara = ?", new Object[]{ngara});
                 if(datiNCup!=null){
-                  String[] codiceCupArray = new String[datiNCup.size()+1];
-                  codiceCupArray[0] = cupprg;
+                  int indice = 0;
+                  if(cupprg != null && !"".equals(cupprg)) {
+                    codiceCupArray = new String[datiNCup.size()+1];
+                    codiceCupArray[0] = cupprg;
+                    indice = 1;
+                  } else {
+                    codiceCupArray = new String[datiNCup.size()];
+                  }
                   for (int c = 0; c < datiNCup.size(); c++) {
                     String cup = (String) SqlManager.getValueFromVectorParam(datiNCup.get(c), 0).getValue();
-                    codiceCupArray[c+1] = cup;
+                    codiceCupArray[c+indice] = cup;
                   }
-                  datiGara.setCodiceCupArray(codiceCupArray);
-                }else{
-                  String[] codiceCupArray = new String[1];
-                  codiceCupArray[0] = cupprg;
                 }
+                if(codiceCupArray != null) {
+                  datiGara.setCodiceCupArray(codiceCupArray);                  
+                }
+                
                 datiGara.setCodiceFornitore(idFornitore);//esterno(SAP)
                 datiGara.setDefinizioneCig(oggettoGara);
                 datiGara.setImportoAggiudicazione(iaggiu);

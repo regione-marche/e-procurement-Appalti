@@ -19,6 +19,7 @@ import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.utils.spring.UtilitySpring;
 
@@ -161,12 +162,13 @@ public class GestoreInsertDocumentiGruppo15 extends
                 // Si deve calcolare il valore di IDDOCDIG
                 Long maxIDDOCDIG = (Long) this.sqlManager.getObject(
                     "select max(IDDOCDIG) from W_DOCDIG where IDPRG= ?",
-                    new Object[] { idprg });
+                    new Object[] { "PG" });
 
                 long newIDDOCDIG = 1;
                 if (maxIDDOCDIG != null && maxIDDOCDIG.longValue() > 0)
                   newIDDOCDIG = maxIDDOCDIG.longValue() + 1;
 
+                campiDaCopiareW_DOCDIG.setValue("IDPRG", "PG");
                 campiDaCopiareW_DOCDIG.setValue("IDDOCDIG", new Long(
                     newIDDOCDIG));
                 campiDaCopiareW_DOCDIG.setValue("DIGKEY2", new Long(
@@ -185,11 +187,12 @@ public class GestoreInsertDocumentiGruppo15 extends
                 // Inserimento del nuovo record su w_docdig
                 campiDaCopiareW_DOCDIG.insert("W_DOCDIG",
                     this.sqlManager);
+                ObjectStorageUtils.addFile("PG", newIDDOCDIG);
 
                 // Aggiornamento dei campi IDPRG e IDDOCDG di documgara
                 this.sqlManager.update(
                     "update DOCUMGARA set IDPRG=?,IDDOCDG = ? where CODGAR=? and NORDDOCG=?",
-                    new Object[] { idprg, new Long(newIDDOCDIG),
+                    new Object[] { "PG", new Long(newIDDOCDIG),
                         codgar, new Long(newNorddocg) });
               }
             }

@@ -72,14 +72,13 @@ public class GestoreAggiornaCOMDATLET extends AbstractGestoreChiaveNumerica {
     String errMsgEvento = null;
     String idprg="";
     Long idcom = null;
-    String operatore="";
     String chiave = "";
     try {
       idprg=datiForm.getString("W_INVCOM.IDPRG");
       idcom = datiForm.getLong("W_INVCOM.IDCOM");
-      operatore = datiForm.getString("W_INVCOM.COMKEY1");
+      //operatore = datiForm.getString("W_INVCOM.COMKEY1");
       chiave = datiForm.getString("W_INVCOM.COMKEY2");
-      descrEvento +=" (id: " + idprg + " - " + idcom.toString() +", cod.operatore: " + operatore + ")";
+      descrEvento +=" (id: " + idprg + " - " + idcom.toString() +")";
       datiForm.getColumn("W_INVCOM.COMDATLET").setValue(new JdbcParametro(JdbcParametro.TIPO_DATA, new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime())));
       ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
           CostantiGenerali.PROFILO_UTENTE_SESSIONE);

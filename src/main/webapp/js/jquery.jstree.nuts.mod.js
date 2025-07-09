@@ -319,10 +319,20 @@ function _caricaAlberoNUTS(modo, nutsref, nutsrefview) {
  */
 function _selNUTS(node, nutsref, nutsrefview) {
 	var nutscodice = node.attr("codice");
-	nutsref.val(nutscodice);
-	nutsref.change();
-	nutsrefview.text(nutscodice);
-	$("#finestraalberonuts").dialog( "close" );
+	var lunghezzaNUTS = nutscodice.length;
+	if (lunghezzaNUTS != 5) {
+		if (confirm('Il codice NUTS selezionato non e\' valido: occorre indicare una provincia. \r\nTale valore non verra\' considerato nell\'eventuale compilazione dell\'eform mediante M-Eform. \r\nConfermi ugualmente il valore selezionato?')) {
+			nutsref.val(nutscodice);
+			nutsref.change();
+			nutsrefview.text(nutscodice);
+			$("#finestraalberonuts").dialog( "close" );
+		}
+	} else {
+		nutsref.val(nutscodice);
+		nutsref.change();
+		nutsrefview.text(nutscodice);
+		$("#finestraalberonuts").dialog( "close" );
+	}
 }
 
 

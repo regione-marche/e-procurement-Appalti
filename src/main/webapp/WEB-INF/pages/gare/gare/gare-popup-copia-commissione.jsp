@@ -37,6 +37,7 @@
 			${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, lottoSorgente, "SC", "20")}
 		</c:otherwise>
 	</c:choose>
+	<c:set var="codgar" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select codgar from TORN where codgar=?", codgar)}'/>
 
 	<c:set var="esistonoComponenti" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.ConteggioComponentiCommissioneFunction",pageContext,lottoSorgente)}' />
 

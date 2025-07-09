@@ -10,11 +10,9 @@
  */
 package it.eldasoft.sil.pg.bl;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.math.BigDecimal;
-import java.security.GeneralSecurityException;
+import java.nio.charset.StandardCharsets;
 import java.security.Security;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -30,10 +28,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
-import javax.crypto.Cipher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
 
+import it.appaltiecontratti.cryptography.algorithm.EncryptionAlgorithm;
+import it.appaltiecontratti.cryptography.algorithm.EncryptionType;
+import it.appaltiecontratti.cryptography.configuration.CBCConfiguration;
+import it.appaltiecontratti.cryptography.configuration.EncryptionBuilder;
+import it.appaltiecontratti.cryptography.configuration.GCMConfiguration;
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
@@ -80,6 +83,7 @@ import it.eldasoft.sil.portgare.datatypes.OffertaTecnicaType;
 import it.eldasoft.sil.portgare.datatypes.ProdottoType;
 import it.eldasoft.sil.portgare.datatypes.TipoPartecipazioneDocument;
 import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.sicurezza.CriptazioneException;
 import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityNumeri;
 import it.maggioli.eldasoft.security.SymmetricEncryptionUtils;
@@ -147,17 +151,17 @@ public class MEPAManager {
 
 	private static final String UPDATE_GARECONT_FROM_WSDM = "UPDATE garecont SET nproat=? WHERE ngara=? AND ncont=?";
 
-	private static final String selectW_INVCOM = "select idprg, idcom, comkey1, comkeysess, comstato, comkey3 from w_invcom where comkey2 = ? and (comstato = '5' or comstato='13') and comtipo = ?";
+	private static final String selectW_INVCOM = "select idprg, idcom, comkey1, comkeysess, comstato, comkey3, comkeyalg from w_invcom where comkey2 = ? and (comstato = '5' or comstato='13') and comtipo = ?";
 
-	private static final String selectW_INVCOM_FILTRO_COMKEY3 = "select idprg, idcom, comkey1, comkeysess, comstato, comkey3 from w_invcom where comkey2 = ? and (comstato = '5' or comstato='13') and comtipo = ? and comkey3 = ?";
+	private static final String selectW_INVCOM_FILTRO_COMKEY3 = "select idprg, idcom, comkey1, comkeysess, comstato, comkey3, comkeyalg from w_invcom where comkey2 = ? and (comstato = '5' or comstato='13') and comtipo = ? and comkey3 = ?";
 
 	private static final String selectW_INVCOM_SCARTATE = "select count(*) from w_invcom where comkey2 = ? and (comstato = '8' or comstato='20') and comtipo = ?";
 
 	private static final String selectW_INVCOM_SCARTATE_FILTRO_COMKEY3 = "select count(*) from w_invcom where comkey2 = ? and (comstato = '8' or comstato='20') and comtipo = ? and comkey3 = ?";
 
-	private static final String selectW_INVCOM_STEP2 = "select idprg, idcom, comkey1, comkeysess, comstato, comkey3 from w_invcom where comkey2 = ? and comstato = '16' and comtipo = ?";
+	private static final String selectW_INVCOM_STEP2 = "select idprg, idcom, comkey1, comkeysess, comstato, comkey3, comkeyalg from w_invcom where comkey2 = ? and comstato = '16' and comtipo = ?";
 
-	private static final String selectW_INVCOM_FILTRO_COMKEY3_STEP2 = "select idprg, idcom, comkey1, comkeysess, comstato, comkey3 from w_invcom where comkey2 = ? and comstato = '16' and comtipo = ? and comkey3 = ?";
+	private static final String selectW_INVCOM_FILTRO_COMKEY3_STEP2 = "select idprg, idcom, comkey1, comkeysess, comstato, comkey3, comkeyalg from w_invcom where comkey2 = ? and comstato = '16' and comtipo = ? and comkey3 = ?";
 
 	private static final String selectW_DOCDIG = "select idprg, iddocdig from w_docdig where digent = ? and idprg = ? and digkey1 = ? and digkey3 is null order by iddocdig";
 
@@ -907,6 +911,7 @@ public class MEPAManager {
         DataColumnContainer containerW_DOCDIG = new DataColumnContainer(elencoCampiW_DOCDIG);
 
         containerW_DOCDIG.insert("W_DOCDIG", sqlManager);
+        ObjectStorageUtils.addFile("PG", newIDDOCDIG);
 
         // Inserimento in MEALLISCRIZPROD
         Long idMEALLISCRIZPROD = new Long(genChiaviManager.getNextId("MEALLISCRIZPROD"));
@@ -1599,13 +1604,10 @@ public class MEPAManager {
    * @param request
    * @return HashMap<String, Object>
    * @throws GestoreException
-   * @throws GeneralSecurityException
-   * @throws ParseException
-   * @throws JspException
    * @throws NumberFormatException
    */
   public HashMap<String, Object> aperturaDocumentazioneProcedureTelematiche(String ngara, String comtipo, String dittao, Long fasgarSuccessivo, Long stepgarSuccessivo,
-      String password, HttpServletRequest request) throws GestoreException, GeneralSecurityException, ParseException, NumberFormatException, JspException {
+      String password, HttpServletRequest request) throws GestoreException, NumberFormatException {
 
     HashMap<String, Object> hMap = new HashMap<String, Object>();
 
@@ -1615,6 +1617,7 @@ public class MEPAManager {
     int numeroAcquisizioni = 0;
     int numeroAcquisizioniErrore = 0;
     int numeroAcquisizioniScartate = 0;
+    int numeroAcquisizioniSaltatePerFS12RettificaInCorso = 0;
 
     String nomeCampo = null;
     String codEvento = null;
@@ -1643,6 +1646,8 @@ public class MEPAManager {
         if("1".equals(isconcprog))
           decodificaIdanonimo = true;
       }
+      Long iterga = (Long) this.sqlManager.getObject("select iterga from torn where codgar = ?", new Object[] {codgar1});
+      String isFineConc = (String) this.sqlManager.getObject("select isfineconc from torn where codgar = ?", new Object[] {codgar1});
 
       List<?> datiW_INVCOM  = null;
       boolean gestioneSingolaDitta= false;
@@ -1675,7 +1680,7 @@ public class MEPAManager {
 
       if (datiW_INVCOM != null && datiW_INVCOM.size() > 0) {
 
-        Cipher decoder = null;
+        byte[] decodedSessionKey = null;
         String comstato= null;
         String garaChiavibuste = ngara;
         if(bustalotti!= null && bustalotti.longValue()==1)
@@ -1690,6 +1695,7 @@ public class MEPAManager {
         String w_invcom_comkey1 = null;
         Long w_invcom_idcom = null;
         String comkey3=null;
+        String comkeyalg=null;
         for (int i = 0; i < datiW_INVCOM.size(); i++) {
 
           if("FS10A".equals(comtipo)){
@@ -1742,9 +1748,17 @@ public class MEPAManager {
             String w_invcom_comkeysess = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 3).getValue();
             comstato = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 4).getValue();
             comkey3  = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 5).getValue();
+            comkeyalg = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 6).getValue();
 
             userkey1 = (String) this.sqlManager.getObject(selectW_PUSER, new Object[] { w_invcom_comkey1 });
-            decoder = cifraturaBusteManager.getDecifratoreBuste(pin, garaChiavibuste, comtipo, w_invcom_comkeysess, w_invcom_comkey1);
+            
+            String ngaraTmp=ngara;
+            if(new Long(10).equals(iterga))
+              ngaraTmp = (String) this.sqlManager.getObject("select ngarapa from gare where ngara=?", new Object[] {ngara});
+            if((new Long(9).equals(iterga) || new Long(10).equals(iterga)) && !"1".equals(isFineConc)) {
+              userkey1 = (String) this.sqlManager.getObject("select dittao from DITG where idanonimo = ? and ngara5 = ? and rtofferta is null", new Object[] {this.pgManager.codifica(ngaraTmp+"#"+userkey1),ngara});
+            }
+            decodedSessionKey = cifraturaBusteManager.decodeSessionKey(pin, garaChiavibuste, comtipo, w_invcom_comkeysess);
 
 
             //Nel caso di bustalotti=1 si devono prendere i dati dall'occorrenza complementare di gare
@@ -1862,21 +1876,43 @@ public class MEPAManager {
                       }
                     }
                     if (data != null) {
-                      this.inserimentoDocumentidaXML(listaDocumenti, codgar1, userkey1, ngara, new Date(data.getTime()), ora, comtipoChiamataFunz, decoder, w_invcom_idcom.toString());
+                      this.inserimentoDocumentidaXML(listaDocumenti, codgar1, userkey1, ngara, new Date(data.getTime()), ora, comtipoChiamataFunz, decodedSessionKey, w_invcom_idcom.toString(),comkeyalg,w_invcom_comkey1);
                       //Gestione offerta economica
                       if(new Long(1).equals(offtel) && "FS11C".equals(comtipo)){
-                        acquisito = this.inserimentoOffertadaXML(ngara,codgar1,userkey1,offertaEconomica,decoder);
+                        acquisito = this.inserimentoOffertadaXML(ngara,codgar1,userkey1,offertaEconomica,decodedSessionKey,comkeyalg,w_invcom_comkey1);
                       }else if(new Long(3).equals(offtel) && "FS11C".equals(comtipo)){
-                        acquisito = this.inserimentoOffertadaJson(listaDocumenti,ngara,codgar1,userkey1,w_invcom_idcom.toString(),decoder);
+                        acquisito = this.inserimentoOffertadaJson(listaDocumenti,ngara,codgar1,userkey1,w_invcom_idcom.toString(),decodedSessionKey,comkeyalg,w_invcom_comkey1);
                       }else{
                         if(new Long(1).equals(offtel) && controlliOepvManager.checkQualuqueFormatoDefinito(ngara, new Long(1)) && "FS11B".equals(comtipo)){
-                          acquisito = inserimentoOfferteTecnicheDaXML(ngara, codgar1, userkey1, listaCriteriValutazioneTec, decoder, 1, sez);
+                          acquisito = inserimentoOfferteTecnicheDaXML(ngara, codgar1, userkey1, listaCriteriValutazioneTec, decodedSessionKey, 1, sez,comkeyalg,w_invcom_comkey1);
                         }else{
                           acquisito = true;
                         }
                       }
                     }
                   }
+                }
+                //decodifica allegati alle comunicazioni di rettifica per la ditta
+                Long commodello = null;
+                if ("FS11B".equals(comtipo))
+                  commodello = 13L;
+                if ("FS11C".equals(comtipo))
+                  commodello = 18L;
+                if (commodello != null) {
+                  List<?> allegatiFS12Rettifica = sqlManager.getListVector("select d.idprg,d.iddocdig,i.idcom,i.comkeysess,i.comkeyalg from w_docdig d ,w_invcom i " +
+                          "where d.idprg=i.idprg and CAST (i.idcom AS VARCHAR(30))=d.digkey1 and d.idprg='PA' and i.commodello=? " +
+                          "and i.comkey1=? and ((i.comkey2=? and i.comkey3 is null) or i.comkey3=?) and i.comkeysess is not null and d.digkey4='crypt'", new Object[]{commodello, w_invcom_comkey1, ngara, ngara});
+                  if (allegatiFS12Rettifica != null && !allegatiFS12Rettifica.isEmpty())
+                    for (int j = 0; j < allegatiFS12Rettifica.size(); j++) {
+                      String idprg = (String) SqlManager.getValueFromVectorParam(allegatiFS12Rettifica.get(j), 0).getValue();
+                      Long iddocdig = (Long) SqlManager.getValueFromVectorParam(allegatiFS12Rettifica.get(j), 1).getValue();
+                      Long idcom = (Long) SqlManager.getValueFromVectorParam(allegatiFS12Rettifica.get(j), 2).getValue();
+                      String comkeysessRett = (String) SqlManager.getValueFromVectorParam(allegatiFS12Rettifica.get(j),3).getValue();
+                      String comkeyalgRett = (String) SqlManager.getValueFromVectorParam(allegatiFS12Rettifica.get(j),4).getValue();
+
+                      byte[] decodedSessionKeyRett = cifraturaBusteManager.decodeSessionKey(pin, garaChiavibuste, comtipo, comkeysessRett);
+                      decodeFileRettifica(userkey1, ngara, idprg, iddocdig, decodedSessionKeyRett, comkeyalgRett, w_invcom_comkey1);
+                    }
                 }
               }
             }
@@ -1943,7 +1979,7 @@ public class MEPAManager {
 
             //Tracciatura acquisizione singolo messaggio
             if(esitoAquisizione==1 || esitoAquisizione==3){
-              descEvento += " ditta " + userkey1 + " (cod.operatore " + w_invcom_comkey1 + ", id.comunicazione " + w_invcom_idcom + ") ";
+              descEvento += " ditta " + userkey1 + " (" + (!new Long(9).equals(iterga) && !new Long(10).equals(iterga) || "1".equals(isFineConc)? "cod.operatore " + w_invcom_comkey1 + ", ":"acquisizione in forma anonima, ") +"id.comunicazione " + w_invcom_idcom + ") ";
               LogEvento logEvento = LogEventiUtils.createLogEvento(request);
               logEvento.setLivEvento(esitoAquisizione);
               logEvento.setOggEvento(ngara);
@@ -1957,7 +1993,7 @@ public class MEPAManager {
             //Si deve tracciare l'errore
             //Tranne per il caso di password sbagliata, visto che la password è sempre la stessa per tutte le buste, quindi va bloccata
             //l'esecuzione riemettendo l'eccezione
-            descEvento += " ditta " + userkey1 + " (cod.operatore " + w_invcom_comkey1 + ", id.comunicazione " + w_invcom_idcom + ") ";
+            descEvento += " ditta " + userkey1 + " (" + (!new Long(9).equals(iterga) && !new Long(10).equals(iterga) || "1".equals(isFineConc)? "cod.operatore " + w_invcom_comkey1 + ", ":"acquisizione in forma anonima, ") +"id.comunicazione " + w_invcom_idcom + ") ";
             LogEvento logEvento = LogEventiUtils.createLogEvento(request);
             logEvento.setLivEvento(3);
             logEvento.setOggEvento(ngara);
@@ -2001,6 +2037,7 @@ public class MEPAManager {
     hMap.put("numeroAcquisizioni", new Long(numeroAcquisizioni));
     hMap.put("numeroAcquisizioniErrore", new Long(numeroAcquisizioniErrore));
     hMap.put("numeroAcquisizioniScartate", new Long(numeroAcquisizioniScartate));
+    hMap.put("numeroAcquisizioniSaltatePerFS12RettificaInCorso", new Long(numeroAcquisizioniSaltatePerFS12RettificaInCorso));
 
     return hMap;
 
@@ -2020,7 +2057,7 @@ public class MEPAManager {
    * @throws GestoreException
    */
   private void inserimentoDocumentidaXML(ListaDocumentiType listaDocumenti, String codgar, String codimp, String ngara, Date data, String ora,
-      String bustaFS, Cipher decoder,String idCom) throws GestoreException {
+      String bustaFS, byte[] decodedSessionKey, String idCom, String algoritmo, String chiaveProtezione) throws GestoreException {
 
     if (listaDocumenti != null) {
       String sezTec = null;
@@ -2032,6 +2069,7 @@ public class MEPAManager {
         sezTec = "2";
       }
       String nomeFile = null;
+      String tipoFile = null;
       DocumentoType documento = null;
       String updateIMPRDOCG = "update IMPRDOCG set IDPRG = ?, IDDOCDG = ?, DATARILASCIO = ?, ORARILASCIO = ?, SITUAZDOCI = ?, UUID =? where CODGAR=? and CODIMP=? and NORDDOCI=? and PROVENI=?";
       String uuid=null;
@@ -2040,6 +2078,7 @@ public class MEPAManager {
       while(iterator.hasNext()) {
         documento = iterator.next();
         nomeFile = documento.getNomeFile();
+        tipoFile = documento.getContentType();
         if(CostantiAppalti.nomeFileQestionario.equals(nomeFile))
           continue;
 
@@ -2076,9 +2115,10 @@ public class MEPAManager {
           }
 
           try {
-            if (decoder != null)
-              file = SymmetricEncryptionUtils.translate(decoder, file);
-          } catch (GeneralSecurityException e) {
+            if (decodedSessionKey != null) {
+              file = ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(file),decodedSessionKey,chiaveProtezione)).toByteArray();
+            }
+          } catch (Exception e) {
             throw new GestoreException("Errore nella decriptazione del documento " + nomeFile + " della ditta " + codimp + " per la gara " + ngara + "("  + e.getMessage() + ")", null, e);
           }
 
@@ -2091,16 +2131,17 @@ public class MEPAManager {
 
           try {
             // Inserimento in W_DOCDIG
-            String selectW_DOCDIG_MAX = "select max(IDDOCDIG) from W_DOCDIG where IDPRG = 'PA'";
+            String selectW_DOCDIG_MAX = "select max(IDDOCDIG) from W_DOCDIG where IDPRG = 'PG'";
             Long nProgressivoW_DOCDIG = (Long) sqlManager.getObject(selectW_DOCDIG_MAX, null);
             if (nProgressivoW_DOCDIG == null) nProgressivoW_DOCDIG = new Long(0);
             Long newProgressivoW_DOCDIG = new Long(nProgressivoW_DOCDIG.longValue() + 1);
 
             Vector<DataColumn> vectorW_DOCDIG = new Vector<DataColumn>();
-            vectorW_DOCDIG.add(new DataColumn("W_DOCDIG.IDPRG", new JdbcParametro(JdbcParametro.TIPO_TESTO, "PA")));
+            vectorW_DOCDIG.add(new DataColumn("W_DOCDIG.IDPRG", new JdbcParametro(JdbcParametro.TIPO_TESTO, "PG")));
             vectorW_DOCDIG.add(new DataColumn("W_DOCDIG.IDDOCDIG", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, newProgressivoW_DOCDIG)));
             vectorW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGENT", new JdbcParametro(JdbcParametro.TIPO_TESTO, "IMPRDOCG")));
             vectorW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGNOMDOC", new JdbcParametro(JdbcParametro.TIPO_TESTO, nomeFile)));
+            vectorW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGTIPDOC", new JdbcParametro(JdbcParametro.TIPO_TESTO, tipoFile)));
             vectorW_DOCDIG.add(new DataColumn("W_DOCDIG.DIGOGG", new JdbcParametro(JdbcParametro.TIPO_BINARIO, baos)));
             if(StringUtils.isNotBlank(documento.getFirmacheck())){
             	logger.info("firmacheck impostato nella busta.xml");
@@ -2112,6 +2153,7 @@ public class MEPAManager {
             }
             DataColumnContainer dataColumnContainerW_DOCDIG = new DataColumnContainer(vectorW_DOCDIG);
             dataColumnContainerW_DOCDIG.insert("W_DOCDIG", sqlManager);
+            ObjectStorageUtils.addFile("PG", newProgressivoW_DOCDIG);
 
             // Inserimento in IMPRDOCG
             Long progressivo = null;
@@ -2125,9 +2167,9 @@ public class MEPAManager {
               if((new Long(1)).equals(bustalotti) && (bustaFS.equals("FS11B") || bustaFS.equals("FS11C") ))
                 sqlManager.update(
                     updateIMPRDOCG + " and NGARA=?",
-                    new Object[] { "PA", newProgressivoW_DOCDIG, data, ora, new Long(2), uuid, codgar, codimp, progressivo, new Long(1), ngara });
+                    new Object[] { "PG", newProgressivoW_DOCDIG, data, ora, new Long(2), uuid, codgar, codimp, progressivo, new Long(1), ngara });
               else
-                sqlManager.update(updateIMPRDOCG, new Object[] { "PA", newProgressivoW_DOCDIG, data, ora, new Long(2), uuid, codgar, codimp, progressivo, new Long(1) });
+                sqlManager.update(updateIMPRDOCG, new Object[] { "PG", newProgressivoW_DOCDIG, data, ora, new Long(2), uuid, codgar, codimp, progressivo, new Long(1) });
             } else {
               String selectIMPRDOCG_MAX = "select max(NORDDOCI) from IMPRDOCG where CODGAR=? and CODIMP=?";
               Long nProgressivoIMPRDOCG = (Long) sqlManager.getObject(selectIMPRDOCG_MAX, new Object[] { codgar, codimp });
@@ -2148,7 +2190,7 @@ public class MEPAManager {
               vectorIMPRDOCG.add(new DataColumn("IMPRDOCG.NGARA", new JdbcParametro(JdbcParametro.TIPO_TESTO, ngara)));
               vectorIMPRDOCG.add(new DataColumn("IMPRDOCG.CODIMP", new JdbcParametro(JdbcParametro.TIPO_TESTO, codimp)));
               vectorIMPRDOCG.add(new DataColumn("IMPRDOCG.NORDDOCI", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, progressivo)));
-              vectorIMPRDOCG.add(new DataColumn("IMPRDOCG.IDPRG", new JdbcParametro(JdbcParametro.TIPO_TESTO, "PA")));
+              vectorIMPRDOCG.add(new DataColumn("IMPRDOCG.IDPRG", new JdbcParametro(JdbcParametro.TIPO_TESTO, "PG")));
               vectorIMPRDOCG.add(new DataColumn("IMPRDOCG.IDDOCDG", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, newProgressivoW_DOCDIG)));
               vectorIMPRDOCG.add(new DataColumn("IMPRDOCG.SITUAZDOCI", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, new Long(2))));
               vectorIMPRDOCG.add(new DataColumn("IMPRDOCG.PROVENI", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, proveni)));
@@ -2180,7 +2222,7 @@ public class MEPAManager {
 
             // Aggiornamento di W_DOCDIG con il riferimento a IMPRDOCG
             sqlManager.update("update W_DOCDIG set DIGKEY1 = ?, DIGKEY2 = ?, DIGKEY3 = ? where IDPRG=? and IDDOCDIG=?",
-                new Object[] { codgar, progressivo.toString(), codimp, "PA", newProgressivoW_DOCDIG });
+                new Object[] { codgar, progressivo.toString(), codimp, "PG", newProgressivoW_DOCDIG });
             logger.info("All OK");
           } catch (SQLException e) {
         	  logger.error("All KO",e);
@@ -2364,6 +2406,7 @@ public class MEPAManager {
 		LobHandler lobHandler = new DefaultLobHandler(); // reusable object
 		parametri[7] = new SqlLobValue(baos, lobHandler);
 		sqlManager.update(INSERT_W_DOCDIG, parametri);
+        ObjectStorageUtils.addFile(idprg, newIddocdig);
 
 
 		int numeroAllegati = 2;
@@ -2440,6 +2483,7 @@ public class MEPAManager {
             }
 
             sqlManager.update(INSERT_W_DOCDIG, parametri);
+            ObjectStorageUtils.addFile(idprg, newIddocdig);
 
             if("1".equals(integrazioneWSDM)){
               idAllegatiNuovi[i] = newIdDocdig;
@@ -2690,7 +2734,7 @@ public class MEPAManager {
            wsdmProtocolloDocumentoIn.setAllegati(allegati);
 
 
-           if(abilitatoInvioMailDocumentale && ("ENGINEERING".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM))){
+           if(abilitatoInvioMailDocumentale && ("ENGINEERING".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM) || "HALLEY".equals(tipoWSDM))){
              WSDMInviaMailType inviaMail = new WSDMInviaMailType();
              // Testo email
              inviaMail.setTestoMail(testoMail);
@@ -2698,6 +2742,7 @@ public class MEPAManager {
                // Oggetto email
                inviaMail.setOggettoMail(oggettodocumento);
              }
+             inviaMail.setMittenteMail(datiWSDM.get("indirizzomittente"));//APPALTI-2175
              // Destinatari
              String selectW_INVCOMDESMail = "select desmail from w_invcomdes where idprg = ? and idcom = ?";
              List<?> datiW_INVCOMDESMail = this.sqlManager.getListVector(selectW_INVCOMDESMail, new Object[] { idprg, newIdcom });
@@ -2732,8 +2777,9 @@ public class MEPAManager {
              String annoProtocolloString=null;
              if(annoProtocollo==null && !"LAPISOPERA".equals(tipoWSDM)) {
                annoProtocollo= this.gestioneWSDMManager.getAnnoFromDate(dataProtocollo);
-               annoProtocolloString = annoProtocollo.toString();
              }
+             if(annoProtocollo!=null)
+               annoProtocolloString=annoProtocollo.toString();
 
              datiWSDM.put("numeroDocumento", numeroDocumento);
              datiWSDM.put("annoProtocollo", annoProtocolloString);
@@ -2751,7 +2797,7 @@ public class MEPAManager {
              Object param[]=null;
              String updateW_INVCOM = null;
 
-             if(abilitatoInvioMailDocumentale && ("JIRIDE".equals(tipoWSDM) || "ARCHIFLOW".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM) || "JPROTOCOL".equals(tipoWSDM))){
+             if(abilitatoInvioMailDocumentale && ("JIRIDE".equals(tipoWSDM) || "ARCHIFLOW".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM) || "PRISMA".equals(tipoWSDM) || "JPROTOCOL".equals(tipoWSDM) || "HALLEY".equals(tipoWSDM))){
                updateW_INVCOM = "update w_invcom set comstato = ?, comdatprot = ?, comnumprot = ?, committ = ? where idprg = ? and idcom = ?";
                param = new Object[]{statoComunicazione, dataProtocollo,
                    numeroProtocollo, indirizzoMittente, idprg,  newIdcom };
@@ -2953,7 +2999,7 @@ public class MEPAManager {
 	 * @throws ParseException
      */
 	private boolean inserimentoOffertadaXML(String ngara,String codgar, String codimp,OffertaEconomicaType offertaEconomica,
-	    Cipher decoder) throws GestoreException, NumberFormatException, JspException, ParseException{
+	    byte[] decodedSessionKey, String algoritmo, String chiaveProtezione) throws GestoreException, NumberFormatException, JspException, ParseException{
 	  Long modlicg=null;
 	  Long ribcal=null;
 	  String sicinc=null;
@@ -3003,16 +3049,16 @@ public class MEPAManager {
         if((new Long(5).equals(modlicg) || new Long(14).equals(modlicg)) && (new Long(1).equals(ribcal) || new Long(3).equals(ribcal))){
           if(offertaEconomica.isSetPercentualeRibasso() && !offertaEconomica.isSetPercentualeRibassoCifrato())
             ribasso =  new Double(-offertaEconomica.getPercentualeRibasso());
-          else if(offertaEconomica.isSetPercentualeRibassoCifrato() && decoder!=null){
+          else if(offertaEconomica.isSetPercentualeRibassoCifrato() && decodedSessionKey!=null){
             datoCifrato = offertaEconomica.getPercentualeRibassoCifrato();
-            datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+            datoDecifrato =  ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(datoCifrato),decodedSessionKey,chiaveProtezione)).toByteArray();
             ribasso = Double.valueOf(new String(datoDecifrato));
             ribasso = new Double(-ribasso.doubleValue());
           }else if(offertaEconomica.isSetPercentualeAumento() && !offertaEconomica.isSetPercentualeAumentoCifrato())
             ribasso =  new Double(offertaEconomica.getPercentualeAumento());
-          else if(offertaEconomica.isSetPercentualeAumentoCifrato() && decoder!=null){
+          else if(offertaEconomica.isSetPercentualeAumentoCifrato() && decodedSessionKey!=null){
             datoCifrato = offertaEconomica.getPercentualeAumentoCifrato();
-            datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+            datoDecifrato = ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(datoCifrato),decodedSessionKey,chiaveProtezione)).toByteArray();
             ribasso = Double.valueOf(new String(datoDecifrato));
           }else{
             logger.error("Errore nell'acquisizione dell'offerta economica della gara " + ngara + " per la ditta " + codimp +". Nel tracciato xml non e' presente il ribasso");
@@ -3021,9 +3067,9 @@ public class MEPAManager {
 
           if(offertaEconomica.isSetImportoOfferto() && !offertaEconomica.isSetImportoOffertoCifrato())
             importoOfferto= new Double(offertaEconomica.getImportoOfferto());
-          else if (offertaEconomica.isSetImportoOffertoCifrato() && decoder!=null) {
+          else if (offertaEconomica.isSetImportoOffertoCifrato() && decodedSessionKey!=null) {
             datoCifrato = offertaEconomica.getImportoOffertoCifrato();
-            datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+            datoDecifrato = ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(datoCifrato),decodedSessionKey,chiaveProtezione)).toByteArray();
             importoOfferto = Double.valueOf(new String(datoDecifrato));
           }else{
             //Nel caso di ribasso pesato non si entrerà mai in questa casistica
@@ -3036,9 +3082,9 @@ public class MEPAManager {
 
           if(offertaEconomica.isSetImportoOfferto() && !offertaEconomica.isSetImportoOffertoCifrato())
             importoOfferto= new Double(offertaEconomica.getImportoOfferto());
-          else if (offertaEconomica.isSetImportoOffertoCifrato() && decoder!=null) {
+          else if (offertaEconomica.isSetImportoOffertoCifrato() && decodedSessionKey!=null) {
             datoCifrato = offertaEconomica.getImportoOffertoCifrato();
-            datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+            datoDecifrato = ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(datoCifrato),decodedSessionKey,chiaveProtezione)).toByteArray();
             importoOfferto = Double.valueOf(new String(datoDecifrato));
           }else{
             logger.error("Errore nell'acquisizione dell'offerta economica della gara " + ngara + " per la ditta " + codimp +". Nel tracciato xml non e' presente l'importo offerto");
@@ -3056,16 +3102,16 @@ public class MEPAManager {
         }else if((new Long(1).equals(modlicg) || new Long(13).equals(modlicg) || new Long(17).equals(modlicg)) && new Long(1).equals(ribcal)){
           if(offertaEconomica.isSetPercentualeRibasso() && !offertaEconomica.isSetPercentualeRibassoCifrato())
             ribasso =  new Double(-offertaEconomica.getPercentualeRibasso());
-          else if(offertaEconomica.isSetPercentualeRibassoCifrato() && decoder!=null){
+          else if(offertaEconomica.isSetPercentualeRibassoCifrato() && decodedSessionKey!=null){
             datoCifrato = offertaEconomica.getPercentualeRibassoCifrato();
-            datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+            datoDecifrato = ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(datoCifrato),decodedSessionKey,chiaveProtezione)).toByteArray();
             ribasso = Double.valueOf(new String(datoDecifrato));
             ribasso = new Double(-ribasso.doubleValue());
           }else if(offertaEconomica.isSetPercentualeAumento() && !offertaEconomica.isSetPercentualeAumentoCifrato())
             ribasso =  new Double(offertaEconomica.getPercentualeAumento());
-          else if(offertaEconomica.isSetPercentualeAumentoCifrato() && decoder!=null){
+          else if(offertaEconomica.isSetPercentualeAumentoCifrato() && decodedSessionKey!=null){
             datoCifrato = offertaEconomica.getPercentualeAumentoCifrato();
-            datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+            datoDecifrato = ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(datoCifrato),decodedSessionKey,chiaveProtezione)).toByteArray();
             ribasso = Double.valueOf(new String(datoDecifrato));
           }else{
             logger.error("Errore nell'acquisizione dell'offerta economica della gara " + ngara + " per la ditta " + codimp +". Nel tracciato xml non e' presente il ribasso");
@@ -3076,9 +3122,9 @@ public class MEPAManager {
           if(controlliOepvManager.isVecchiaOepv(codgar)){
             if(offertaEconomica.isSetImportoOfferto() && !offertaEconomica.isSetImportoOffertoCifrato())
               importoOfferto= new Double(offertaEconomica.getImportoOfferto());
-            else if (offertaEconomica.isSetImportoOffertoCifrato() && decoder!=null) {
+            else if (offertaEconomica.isSetImportoOffertoCifrato() && decodedSessionKey!=null) {
               datoCifrato = offertaEconomica.getImportoOffertoCifrato();
-              datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+              datoDecifrato = ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(datoCifrato),decodedSessionKey,chiaveProtezione)).toByteArray();
               importoOfferto = Double.valueOf(new String(datoDecifrato));
             }else{
               logger.error("Errore nell'acquisizione dell'offerta economica della gara " + ngara + " per la ditta " + codimp +". Nel tracciato xml non e' presente l'importo offerto");
@@ -3087,7 +3133,7 @@ public class MEPAManager {
             elencoCampiDITG.add(new DataColumn("DITG.IMPOFF", new JdbcParametro(JdbcParametro.TIPO_DECIMALE, importoOfferto)));
           }else{
             boolean esito = false;
-            esito=this.inserimentoOfferteTecnicheDaXML(ngara, codgar, codimp, offertaEconomica.getListaCriteriValutazione(), decoder, 2, null);
+            esito=this.inserimentoOfferteTecnicheDaXML(ngara, codgar, codimp, offertaEconomica.getListaCriteriValutazione(), decodedSessionKey, 2, null,algoritmo,chiaveProtezione);
             if(!esito)
             return false;
           }
@@ -3099,9 +3145,9 @@ public class MEPAManager {
         Double importoPermuta = null;
         if(offertaEconomica.isSetImportoOffertoPerPermuta() && !offertaEconomica.isSetImportoOffertoPerPermutaCifrato()){
           importoPermuta = new Double(offertaEconomica.getImportoOffertoPerPermuta());
-        }else if(offertaEconomica.isSetImportoOffertoPerPermutaCifrato() && decoder!=null){
+        }else if(offertaEconomica.isSetImportoOffertoPerPermutaCifrato() && decodedSessionKey!=null){
           datoCifrato = offertaEconomica.getImportoOffertoPerPermutaCifrato();
-          datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+          datoDecifrato = ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(datoCifrato),decodedSessionKey,chiaveProtezione)).toByteArray();
           importoPermuta = Double.valueOf(new String(datoDecifrato));
         }
 	    elencoCampiDITG.add(new DataColumn("DITG.IMPPERM", new JdbcParametro(JdbcParametro.TIPO_DECIMALE,
@@ -3110,9 +3156,9 @@ public class MEPAManager {
 	    Double importoCanoneAssistenza= null;
         if(offertaEconomica.isSetImportoOffertoPerCanoneAssistenza() && !offertaEconomica.isSetImportoOffertoPerCanoneAssistenzaCifrato()){
           importoCanoneAssistenza = new Double(offertaEconomica.getImportoOffertoPerCanoneAssistenza());
-        }else if(offertaEconomica.isSetImportoOffertoPerCanoneAssistenzaCifrato() && decoder!=null){
+        }else if(offertaEconomica.isSetImportoOffertoPerCanoneAssistenzaCifrato() && decodedSessionKey!=null){
           datoCifrato = offertaEconomica.getImportoOffertoPerCanoneAssistenzaCifrato();
-          datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+          datoDecifrato = ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(datoCifrato),decodedSessionKey,chiaveProtezione)).toByteArray();
           importoCanoneAssistenza = Double.valueOf(new String(datoDecifrato));
         }
         elencoCampiDITG.add(new DataColumn("DITG.IMPCANO", new JdbcParametro(JdbcParametro.TIPO_DECIMALE,
@@ -3216,17 +3262,17 @@ public class MEPAManager {
                 if(isRigaOffertaCaricabile) {
                     if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitario() && !listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitarioCifrato())
                         prezzoUnitario= new Double(listaComponentiOfferta.getComponenteDettaglioArray(i).getPrezzoUnitario());
-                      else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitarioCifrato() && decoder!=null) {
+                      else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitarioCifrato() && decodedSessionKey!=null) {
                         datoCifrato = listaComponentiOfferta.getComponenteDettaglioArray(i).getPrezzoUnitarioCifrato();
-                        datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+                        datoDecifrato = ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(datoCifrato),decodedSessionKey,chiaveProtezione)).toByteArray();
                         prezzoUnitario = Double.valueOf(new String(datoDecifrato));
                       }else
                         prezzoUnitario = null;
                       if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitario() && !listaComponentiOfferta.getComponenteDettaglioArray(i).isSetPrezzoUnitarioCifrato())
                         importo= new Double(listaComponentiOfferta.getComponenteDettaglioArray(i).getImporto());
-                      else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetImportoCifrato() && decoder!=null) {
+                      else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetImportoCifrato() && decodedSessionKey!=null) {
                         datoCifrato = listaComponentiOfferta.getComponenteDettaglioArray(i).getImportoCifrato();
-                        datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+                        datoDecifrato = ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(datoCifrato),decodedSessionKey,chiaveProtezione)).toByteArray();
                         importo = Double.valueOf(new String(datoDecifrato));
                       }else
                         importo = null;
@@ -3236,9 +3282,9 @@ public class MEPAManager {
                         //Gestione ribasso pesato
                         if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibasso() && !listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoCifrato())
                           ribassoPrezzoUnit= new Double(-listaComponentiOfferta.getComponenteDettaglioArray(i).getRibasso());
-                        else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoCifrato() && decoder!=null) {
+                        else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoCifrato() && decodedSessionKey!=null) {
                           datoCifrato = listaComponentiOfferta.getComponenteDettaglioArray(i).getRibassoCifrato();
-                          datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+                          datoDecifrato = ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(datoCifrato),decodedSessionKey,chiaveProtezione)).toByteArray();
                           ribassoPrezzoUnit = Double.valueOf(new String(datoDecifrato));
                           ribassoPrezzoUnit = new Double(-ribassoPrezzoUnit.doubleValue());
                         }else
@@ -3246,9 +3292,9 @@ public class MEPAManager {
 
                         if(listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoPesato() && !listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoPesatoCifrato())
                           ribassoPesato= new Double(-listaComponentiOfferta.getComponenteDettaglioArray(i).getRibassoPesato());
-                        else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoPesatoCifrato() && decoder!=null) {
+                        else if (listaComponentiOfferta.getComponenteDettaglioArray(i).isSetRibassoPesatoCifrato() && decodedSessionKey!=null) {
                           datoCifrato = listaComponentiOfferta.getComponenteDettaglioArray(i).getRibassoPesatoCifrato();
-                          datoDecifrato = SymmetricEncryptionUtils.translate(decoder, datoCifrato);
+                          datoDecifrato = ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(datoCifrato),decodedSessionKey,chiaveProtezione)).toByteArray();
                           ribassoPesato = Double.valueOf(new String(datoDecifrato));
                           ribassoPesato = new Double(-ribassoPesato.doubleValue());
                         }else
@@ -3342,12 +3388,11 @@ public class MEPAManager {
 
         }
 
-      } catch (SQLException e) {
-        throw new GestoreException("Errore nell'acquisizione dell'offerta economica", null, e);
-      } catch (GeneralSecurityException e) {
+      } catch (Exception e) {
+        logger.error(e);
         throw new GestoreException("Errore nell'acquisizione dell'offerta economica", null, e);
       }
-      return true;
+    return true;
 	}
 
 	/**
@@ -3360,9 +3405,8 @@ public class MEPAManager {
 	 * @param decoder
 	 * @return boolean
 	 * @throws GestoreException
-	 * @throws GeneralSecurityException
 	 */
-	private boolean inserimentoOffertadaJson(ListaDocumentiType listaDocumenti, String ngara,String codgar, String codimp, String idCom,Cipher decoder) throws GestoreException, GeneralSecurityException{
+	private boolean inserimentoOffertadaJson(ListaDocumentiType listaDocumenti, String ngara,String codgar, String codimp, String idCom,byte[] decodedSessionKey, String algoritmo, String chiaveProtezione) throws Exception {
 	  Double ribasso = null;
       Double importoOfferto = null;
 	  byte[] file = null;
@@ -3385,8 +3429,8 @@ public class MEPAManager {
 	  }
 
 	  if(file != null && file.length>0) {
-	    if(decoder!=null)
-	      file = SymmetricEncryptionUtils.translate(decoder, file);
+	    if(decodedSessionKey!=null)
+	      file =  ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(file),decodedSessionKey,chiaveProtezione)).toByteArray();
 	    //Conversione in json della stringa
 	    String json = new String(file);
         JSONObject jsonOggetto = (JSONObject)JSONSerializer.toJSON(json);
@@ -3598,9 +3642,9 @@ public class MEPAManager {
      *
      * @throws SQLException
      */
-	public void impostaComunicazioniAScartate(String ngara, String tipo) throws SQLException{
+	public void impostaComunicazioniAScartate(String ngara, String tipo, String dittao) throws SQLException{
 
-	 this.impostaComunicazioniA(ngara, tipo, 8);
+	 this.impostaComunicazioniA(ngara, tipo, 8, dittao);
 
     }
 
@@ -3615,12 +3659,17 @@ public class MEPAManager {
      *
      * @throws SQLException
      */
-    public void impostaComunicazioniDaRiaquisire(String ngara) throws SQLException{
+    public void impostaComunicazioniDaRiaquisire(String ngara, String dittao) throws SQLException{
 
-     this.impostaComunicazioniA(ngara, "OFFERTE", 5);
+     this.impostaComunicazioniA(ngara, "OFFERTE", 5, dittao);
 
     }
 
+  public void impostaComunicazioneDaRiaquisire(String ngara, String tipo, String dittao) throws SQLException{
+
+    this.impostaComunicazioniA(ngara, tipo, 5, dittao);
+
+  }
     /**
      * Viene eseguito per la gara/lotto passato come parametro il controllo all'esistenza
      * di comunicazioni di tipo FS11A','FS11B' e 'FS11C'(nel caso si consideri l'offerta,
@@ -3632,9 +3681,9 @@ public class MEPAManager {
      *
      * @throws SQLException
      */
-    public void impostaComunicazioniAnonimeAScartate(String ngara, String tipo) throws SQLException{
+    public void impostaComunicazioniAnonimeAScartate(String ngara, String tipo, String dittao) throws SQLException{
 
-     this.impostaComunicazioniA(ngara, tipo, 20);
+     this.impostaComunicazioniA(ngara, tipo, 20, dittao);
 
     }
 
@@ -3649,11 +3698,17 @@ public class MEPAManager {
      *
      * @throws SQLException
      */
-    public void impostaComunicazioniAnonimeDaRiaquisire(String ngara) throws SQLException{
+    public void impostaComunicazioniAnonimeDaRiaquisire(String ngara, String dittao) throws SQLException{
 
-     this.impostaComunicazioniA(ngara, "OFFERTE", 13);
+     this.impostaComunicazioniA(ngara, "OFFERTE", 13, dittao);
 
     }
+
+  public void impostaComunicazioneAnonimeDaRiaquisire(String ngara, String tipo, String dittao) throws SQLException{
+
+    this.impostaComunicazioniA(ngara, tipo, 13, dittao);
+
+  }
 
     /**
      * Viene eseguito per il lotto di una gara a lotti plico unico con offerte distinte
@@ -3666,9 +3721,9 @@ public class MEPAManager {
      *
      * @throws SQLException
      */
-    public void impostaComunicazioniDaRiaquisireLottoPlicoUnicoOfferteDistinte(String ngara) throws SQLException{
+    public void impostaComunicazioniDaRiaquisireLottoPlicoUnicoOfferteDistinte(String ngara, String dittao) throws SQLException{
 
-     this.impostaComunicazioniA(ngara, "OFFERTE_ECO_LOTTI_DISTINTI", 5);
+     this.impostaComunicazioniA(ngara, "OFFERTE_ECO_LOTTI_DISTINTI", 5, dittao);
 
     }
 
@@ -3694,9 +3749,10 @@ public class MEPAManager {
      *
      * @throws SQLException
      */
-    private void impostaComunicazioniA(String ngara, String tipo, int statoDaImpostare) throws SQLException{
+    private void impostaComunicazioniA(String ngara, String tipo, int statoDaImpostare, String dittao) throws SQLException{
 
      String codgar1 = (String) this.sqlManager.getObject("select codgar1 from gare where ngara = ?", new Object[] {ngara});
+     Long iterga = (Long) this.sqlManager.getObject("select iterga from torn where codgar = ?", new Object[] {codgar1});
      Long bustalotti = (Long)this.sqlManager.getObject("select bustalotti from gare where ngara=?", new Object[]{codgar1});
      boolean fs10a = false;
 
@@ -3715,18 +3771,35 @@ public class MEPAManager {
      //Nel caso di bustalotti=1, la busta FS11A è associata alla gara, mentre le buste FS11B e FS11C sono associate ai lotti.
      //Nel caso di chiamata della funziona dall'attivazione dell'apertura/chiusura della documentazione amministrativa, ngara è
      //quello della gara, quindi si deve tenere conto che invece FS11B e FS11C sono associati ai lotti
-     String selecDatitW_INVCOM = "select idcom, comkey1, comtipo, comkey3 from w_invcom where comkey2 = ? and comstato = " + Integer.toString(statoIniziale) + " and comtipo ";
+     String selecDatitW_INVCOM = "select idcom, comkey1, comtipo, comkey3 from w_invcom where comkey2 = ? and comstato = '" + Integer.toString(statoIniziale) + "' and comtipo ";
      if((new Long(1)).equals(bustalotti) && "DOC_AMM".equals(tipo)){
-       selecDatitW_INVCOM = "select idcom, comkey1, comtipo, comkey3 from w_invcom where comkey2 like ? and comstato = " + Integer.toString(statoIniziale) + " and comtipo ";
+       selecDatitW_INVCOM = "select idcom, comkey1, comtipo, comkey3 from w_invcom where comkey2 like ? and comstato = '" + Integer.toString(statoIniziale) + "' and comtipo ";
        parametriW_invcom[0] = ngara + "%";
      }else
        parametriW_invcom[0] = ngara ;
 
-     if("OFFERTE".equals(tipo) || "OFFERTE_ECO_LOTTI_DISTINTI".equals(tipo) || "DOC_AMM".equals(tipo)){
+     if (StringUtils.isNotEmpty(dittao)) {
+       if ("DOC_AMM".equals(tipo)) {
+         selecDatitW_INVCOM += "= 'FS11A'";
+       } else if ("OFFERTE".equals(tipo) || "OFFERTE_ECO_LOTTI_DISTINTI".equals(tipo)) {
+         selecDatitW_INVCOM += "in ('FS11B','FS11C')";
+       } else {
+         selecDatitW_INVCOM += "= 'FS10A'";
+         fs10a = true;
+       }
+     } else if("OFFERTE".equals(tipo) || "OFFERTE_ECO_LOTTI_DISTINTI".equals(tipo) || "DOC_AMM".equals(tipo)){
        selecDatitW_INVCOM += "in ('FS11A','FS11B','FS11C')";
      }else{
        selecDatitW_INVCOM += "= 'FS10A'";
        fs10a = true;
+     }
+
+     if (StringUtils.isNotEmpty(dittao)) {
+       selecDatitW_INVCOM += " and comkey1=(select usernome from w_puser where userkey1=? and userent='IMPR')";
+       Object[] newPar = new Object[parametriW_invcom.length + 1];
+       System.arraycopy(parametriW_invcom, 0, newPar, 0, parametriW_invcom.length);
+       newPar[parametriW_invcom.length] = dittao;
+       parametriW_invcom = newPar;
      }
 
      String selectAmmgar = "select ammgar from ditg where codgar5 = ? and ngara5 = ? and dittao = ? ";
@@ -3747,6 +3820,16 @@ public class MEPAManager {
          String w_invcom_comkey1 = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 1).getValue();
          comtipo = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 2).getValue();
          String userkey1 = (String) this.sqlManager.getObject(selectW_PUSER, new Object[] { w_invcom_comkey1 });
+         if(new Long(9).equals(iterga) || new Long(10).equals(iterga)) {
+           String ngaraTmp = ngara;
+           if(new Long(10).equals(iterga))
+             ngaraTmp = (String) this.sqlManager.getObject("select NGARAPA from GARE where NGARA = ?",new Object[] {ngara});
+           try {
+             userkey1 = (String) this.sqlManager.getObject("select dittao from DITG where idanonimo = ? and ngara5 = ? and rtofferta is null", new Object[] {this.pgManager.codifica(ngaraTmp+"#"+userkey1),ngara});
+           }catch(CriptazioneException e) {
+             logger.error("Errore nel calcolo dell'idanonimo", e);
+           }
+         }
          comkey3 = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 3).getValue();
 
          //Nel caso di bustalotti=1 si devono prendere i dati dall'occorrenza complementare di gare, tranne nel caso
@@ -3782,7 +3865,7 @@ public class MEPAManager {
            }
          }
 
-         if (esisteDITG && !"FS11A".equals(comtipo)) {
+         if (esisteDITG && (!"FS11A".equals(comtipo) || ("FS11A".equals(comtipo) && StringUtils.isNotEmpty(dittao)))) {
            Object par1[] = new Object[3];
            par1[0] = par[0];
            par1[1] = par[1];
@@ -3791,7 +3874,7 @@ public class MEPAManager {
            String ammgar =(String)this.sqlManager.getObject(selectAmmgar, par1);
            if(ammgar==null)
              ammgar="";
-           if(("2".equals(ammgar) && (statoDaImpostare == 8 || statoDaImpostare == 20)) || (("1".equals(ammgar) || "".equals(ammgar) ) && (statoDaImpostare == 5 || statoDaImpostare == 13))){
+           if(("2".equals(ammgar) && (statoDaImpostare == 5 || statoDaImpostare == 13) && StringUtils.isNotEmpty(dittao) && (statoIniziale == 8 || statoIniziale == 20)) || ("2".equals(ammgar) && (statoDaImpostare == 8 || statoDaImpostare == 20)) || (("1".equals(ammgar) || "".equals(ammgar) ) && (statoDaImpostare == 5 || statoDaImpostare == 13))){
              this.sqlManager.update("update W_INVCOM set COMSTATO = ?, COMDATASTATO = ? where IDPRG=? and IDCOM=?", new Object[] { Integer.toString(statoDaImpostare),
                  new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()), "PA", w_invcom_idcom });
            }
@@ -3930,7 +4013,7 @@ public class MEPAManager {
      * @throws SQLException, IOException, XmlException
      */
 	public TipoPartecipazioneDocument estrazioneDocumentMessaggioFS10_FS11(String selectW_DOCDIG, String w_invcom_idprg, String w_invcom_idcom)
-	    throws SQLException, IOException, XmlException {
+            throws SQLException, IOException, XmlException, GestoreException {
 	  TipoPartecipazioneDocument document = null;
 	  List<?> datiW_DOCDIG = this.sqlManager.getVector(selectW_DOCDIG, new Object[] { "W_INVCOM", w_invcom_idprg, w_invcom_idcom.toString() });
 	  if (datiW_DOCDIG != null && datiW_DOCDIG.size() > 0) {
@@ -4180,6 +4263,8 @@ public class MEPAManager {
               IsBustaElaborata = "NonEsiste";
             else if("5".equals(comstato) || "7".equals(comstato) || "13".equals(comstato) || "17".equals(comstato))
               IsBustaElaborata = "No";
+            else if ("8".equals(comstato) || "20".equals(comstato))
+              IsBustaElaborata = "Ritirata";
             else
               IsBustaElaborata = "Si";
       }
@@ -4199,13 +4284,26 @@ public class MEPAManager {
     public String GetStatoBusta(String ngara, String ditta, String busta) throws SQLException{
       String stato = null;
       if (ngara != null) {
+        String idanonimo = (String) sqlManager.getObject("select idanonimo from ditg where ngara5=? and dittao=?",new Object[] {ngara,ditta});
+        String codimp=ditta;
+        if(StringUtils.isNotBlank(idanonimo)) {
+          try {
+            String iddecodificato=this.pgManager.decodifica(idanonimo);
+            if(iddecodificato.indexOf("#")>-1) {
+              String[] token = iddecodificato.split("#");
+              codimp=token[token.length-1];
+            }
+          } catch (Exception e) {
+            logger.error("Errore nella decifratura dell'idanonimo",e);
+          }
+        }
         String selectbuste = "select comstato from ditg "
-            + "left outer join ragimp on (codime9=dittao and impman='1') "
-            + "inner join w_puser on (userkey1=dittao or (userkey1=coddic and impman='1')) "
+            + "left outer join ragimp on (codime9=? and impman='1') "
+            + "inner join w_puser on (userkey1=? or (userkey1=coddic and impman='1')) "
             + "inner join w_invcom on (comkey1=usernome and comkey2=ngara5 and (comkey3 = ncomope or comkey3 is null) and comtipo=?) "
-            + "where ngara5=? and dittao=?";
+            + "where ngara5=? and dittao=? and comstato <> '99'";
 
-            stato = (String) sqlManager.getObject(selectbuste, new Object[] {busta, ngara, ditta});
+            stato = (String) sqlManager.getObject(selectbuste, new Object[] {codimp,codimp,busta, ngara, ditta});
 
       }
       return stato;
@@ -4382,7 +4480,7 @@ public class MEPAManager {
       return ret;
     }
 
-    private boolean inserimentoOfferteTecnicheDaXML(String ngara,String codgar, String ditta, ListaCriteriValutazioneType listaCriteriValutazione,Cipher decoder, Integer tippar, String sezioneTec) throws SQLException, GestoreException, GeneralSecurityException, ParseException{
+    private boolean inserimentoOfferteTecnicheDaXML(String ngara,String codgar, String ditta, ListaCriteriValutazioneType listaCriteriValutazione,byte[] decodedSessionKey, Integer tippar, String sezioneTec, String algoritmo, String chiaveProtezione) throws Exception {
 
       //despar darà da sostiturire con idcridef
       ArrayList<Long> listaPunteggi = new ArrayList<Long>();
@@ -4443,7 +4541,7 @@ public class MEPAManager {
 
             if(attr.isSetValoreCifrato()){
               byte[] cifrato = attr.getValoreCifrato();
-              byte[] datoDecifrato = SymmetricEncryptionUtils.translate(decoder, cifrato);
+              byte[] datoDecifrato =  ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(cifrato),decodedSessionKey,chiaveProtezione)).toByteArray();
 
               if(type == 3 || type == 4){
                 valoreStg = new String(datoDecifrato);
@@ -4512,5 +4610,99 @@ public class MEPAManager {
         String sqlInsert="insert into ditgeventi(NGARA,DITTAO,CODGAR, " + nomeCampo + ") values(?,?,?,?)";
         this.sqlManager.update(sqlInsert, new Object[]{ngara,userkey1,codgar1, new Timestamp(dataCorrente.getTime())});
       }
+    }
+
+    public String checkFS12RettificaInCorso(String ngara, String comtipo) throws SQLException {
+      String result = "OK";
+      Long commmodello10Or15 = 10L;
+      Long commmodello11Or16 = 11L;
+
+      if("FS11C".equals(comtipo)) {
+        commmodello10Or15 = 15L;
+        commmodello11Or16 = 16L;
+      }
+      //cerco una qualsiasi comunicazione che non ha ricevuto risposta per la gar
+      Long richiesteRettificaAperte = (Long) this.sqlManager.getObject("select count(*) from w_invcom i where i.commodello=? and i.idprg='PA' and((i.comkey2=? and i.comkey3 is null) or i.comkey3=?) and i.comdatlet is null " +
+              "and exists (select 1 from w_invcom w where w.comtipo=? and w.comstato='5' and w.comkey1=i.comkey1 and (w.comkey2=i.comkey2 or (w.comkey2=i.comkey3 and i.comkey3 is not null)))  ", new Object[]{commmodello10Or15,ngara,ngara,comtipo});
+
+      if(richiesteRettificaAperte>0)//verifica che le richiesta (10,15) abbiano avuto risposta
+        result="KO-open";
+      else{
+        String whereScadenza = "";
+        String tipoDB = SqlManager.getTipoDB();
+        if("ORA".equals(tipoDB))
+          whereScadenza = " and to_date(to_char(i.COMDATSCA,'dd/mm/yyyy') || ' ' || i.COMORASCA, 'dd/mm/yyyy HH24:mi') > sysdate";
+        else if("MSQ".equals(tipoDB))
+          whereScadenza =" and CONVERT(DATETIME,CONVERT(varchar,i.COMDATSCA,103) + ' ' + i.COMORASCA) > CURRENT_TIMESTAMP";
+        else if("POS".equals(tipoDB))
+          whereScadenza =" and TO_TIMESTAMP(to_char(i.COMDATSCA,'DD/MM/YYYY') || ' ' || i.COMORASCA, 'DD/MM/YYYY HH24:MI:SS') > current_timestamp";
+
+        //Cerco l'ultima comunicazione di autorizzazione rettifica registrata per ogni ditta (and ii.idcom in (select max(id ... ). Escludo quelle i cui termini sono scaduti
+        //Verifico che per la comunicazione lo stato della relative busta tecnica/economica sia ancora in stato 5 (and exists (select 1...)
+        //La join -- w_invcom ii on i.idcomris=ii.idcom and ii.idprg='PA' -- serve a recuperare il mittente originale, da cercare nelle due select successive (=ii.comkey1)
+        //Se non esiste una comunicazione a questa risposta, il count è >0
+        Long richiestaRettificaInAttesa= (Long) this.sqlManager.getObject("select count(*) from w_invcom i join w_invcom ii on i.idcomris=ii.idcom and ii.idprg='PA' where i.commodello=? and i.idprg='PG' and((i.comkey1=? and i.comkey2 is null) or i.comkey2=?) "
+                +whereScadenza+
+                " and ii.idcom in (select max(idcom) from w_invcom where idprg='PA' and commodello=? and comkey1=ii.comkey1 and comkey2=ii.comkey2 and (comkey3=ii.comkey3 or (comkey3 is null and ii.comkey3 is null))) " +
+                " and exists (select 1 from w_invcom w where w.comtipo=? and w.comstato='5' and w.comkey1=ii.comkey1 and (w.comkey2=ii.comkey2 or (w.comkey2=ii.comkey3 and ii.comkey3 is not null))) " +
+                "and not exists (select 1 from w_invcom x where x.idprgris=i.idprg and x.idcomris=i.idcom)", new Object[]{commmodello11Or16,ngara,ngara,commmodello10Or15,comtipo});
+          if (richiestaRettificaInAttesa > 0)//verifica che le richiesta (11,16) abbiano avuto risposta
+            result="KO-noresp";
+
+      }
+      return result;
+    }
+
+    private void decodeFileRettifica(String codimp, String ngara, String idprg, Long iddocdig, byte[] decodedSessionKey, String algoritmo, String chiaveProtezione) throws GestoreException {
+
+      BlobFile file;
+      byte[] fileBytes;
+      try {
+        file = this.fileAllegatoManager.getFileAllegato(idprg, iddocdig);
+        if (file == null)
+          throw new IOException("");
+        else
+          fileBytes = file.getStream();
+      } catch (IOException e) {
+        throw new GestoreException("Errore nell'acquisizione della documentazione della ditta " + codimp + " per la gara " + ngara + ". Viene fatto riferimento a allegati non disponibili", null, new Exception());
+      }
+
+      try {
+        if (decodedSessionKey != null)
+          fileBytes = ((ByteArrayOutputStream) decodificaFile(algoritmo,new ByteArrayInputStream(fileBytes),decodedSessionKey,chiaveProtezione)).toByteArray();
+      } catch (Exception e) {
+        throw new GestoreException("Errore nella decriptazione del documento " + file.getNome() + " della ditta " + codimp + " per la gara " + ngara + "(" + e.getMessage() + ")", null, e);
+      }
+
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      try {
+        baos.write(fileBytes);
+        // Update in W_DOCDIG
+        DataColumnContainer w_docdig = new DataColumnContainer(new DataColumn[]{
+                new DataColumn("W_DOCDIG.IDPRG", new JdbcParametro(JdbcParametro.TIPO_TESTO, idprg)),
+                new DataColumn("W_DOCDIG.IDDOCDIG", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, iddocdig)),
+                new DataColumn("W_DOCDIG.DIGKEY4", new JdbcParametro(JdbcParametro.TIPO_TESTO, null)),
+                new DataColumn("W_DOCDIG.DIGOGG", new JdbcParametro(JdbcParametro.TIPO_BINARIO, baos))});
+
+        w_docdig.getColumn("W_DOCDIG.IDPRG").setChiave(true);
+        w_docdig.getColumn("W_DOCDIG.IDDOCDIG").setChiave(true);
+        w_docdig.setOriginalValue("W_DOCDIG.IDPRG", new JdbcParametro(JdbcParametro.TIPO_TESTO, idprg));
+        w_docdig.setOriginalValue("W_DOCDIG.IDDOCDIG", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, iddocdig));
+        w_docdig.setOriginalValue("W_DOCDIG.DIGKEY4", new JdbcParametro(JdbcParametro.TIPO_TESTO, "crypt"));
+        w_docdig.setOriginalValue("W_DOCDIG.DIGOGG", new JdbcParametro(JdbcParametro.TIPO_BINARIO, null));
+        w_docdig.update("W_DOCDIG", this.sqlManager);
+        ObjectStorageUtils.addFile(idprg, iddocdig);
+      } catch (Exception e) {
+        throw new GestoreException("Errore nella scrittura del documento " + file.getNome() + " su w_docdig della ditta " + codimp + " per la gara " + ngara + "(" + e.getMessage() + ")", null, e);
+      }
+    }
+
+    private OutputStream decodificaFile(String algoritmo, InputStream file, byte[] key, String chiaveProtezione) throws Exception {
+      if("AES-GCM".equals(algoritmo))
+        return EncryptionBuilder.encryption(EncryptionType.DECRYPT, EncryptionAlgorithm.GCM)
+                .configuration(new GCMConfiguration(new String(key, StandardCharsets.UTF_8), file)).process();
+      else
+        return EncryptionBuilder.encryption(EncryptionType.DECRYPT, EncryptionAlgorithm.CBC)
+                .configuration(new CBCConfiguration(file, key,chiaveProtezione)).process();
     }
 }

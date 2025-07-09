@@ -15,7 +15,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.List;
+import java.util.Vector;
 
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
 import org.springframework.transaction.TransactionStatus;
 
 import it.eldasoft.gene.bl.FileAllegatoManager;
@@ -73,8 +77,15 @@ public class GestoreVerificaDocumenti extends AbstractGestoreEntita {
     Long proveni = new Long(2);
 
   //cancellazione di W_DOCDIG
-    String delete="delete from w_docdig where IDPRG in(select IMPRDOCG.IDPRG from IMPRDOCG where CODGAR = ? and NORDDOCI=? and CODIMP = ? and NGARA = ? and PROVENI=?) and IDDOCDIG in (select IMPRDOCG.IDDOCDG from IMPRDOCG where CODGAR = ? and NORDDOCI=? and CODIMP = ? and NGARA = ? and PROVENI=?)";
+    String where = " where IDPRG in(select IMPRDOCG.IDPRG from IMPRDOCG where CODGAR = ? and NORDDOCI=? and CODIMP = ? and NGARA = ? and PROVENI=?) and IDDOCDIG in (select IMPRDOCG.IDDOCDG from IMPRDOCG where CODGAR = ? and NORDDOCI=? and CODIMP = ? and NGARA = ? and PROVENI=?)";
+    String delete="delete from w_docdig "+where;
     try {
+      List<Vector> bucketRefs = this.sqlManager.getListVector("select bucket_ref, bucket_uuid from W_DOCDIG " + where + " and bucket_ref is not null and bucket_uuid is not null", new Object[] { codgar, norddoci, codimp,ngara, proveni, codgar,norddoci,codimp, ngara, proveni});
+      if (bucketRefs != null && !bucketRefs.isEmpty()) {
+        for (Vector v : bucketRefs) {
+          ObjectStorageUtils.deleteFile((String) SqlManager.getValueFromVectorParam(v, 0).getValue(), (String) SqlManager.getValueFromVectorParam(v, 1).getValue());
+        }
+      }
       this.sqlManager.update(delete, new Object[] { codgar, norddoci, codimp,ngara, proveni, codgar,norddoci,codimp, ngara, proveni});
     } catch (SQLException e) {
       throw new GestoreException(
@@ -196,6 +207,12 @@ public class GestoreVerificaDocumenti extends AbstractGestoreEntita {
           if(!FileAllegatoManager.isEstensioneFileAmmessa(fileName)){
             throw new GestoreException("Il file selezionato da caricare ha un'estensione non accettata",
                 "upload.estensioneNonAmmessa", new String[]{fileName}, null);
+          }else if(!FileAllegatoManager.checkFileContent(this.getForm().getSelezioneFile().getFileData(),fileName)){
+            throw new GestoreException("Il file selezionato da caricare viene scartato in quanto ha un contenuto in formato non valido secondo le verifiche mediante la libreria Apache Tika",
+                "upload.erroreVerificaContenuto", new String[]{fileName}, null);
+          } else if(fileName.toLowerCase().endsWith(".pdf") && FileAllegatoManager.isMaliciousPdf(this.getForm().getSelezioneFile().getFileData(), fileName)) {
+            throw new GestoreException("Il file selezionato da caricare viene scartato in quanto sembra codificare dei contenuti non sicuri (malware)",
+                    "upload.erroreContenutoMalevolo", new String[]{fileName}, null);
           }else{
             baos = new ByteArrayOutputStream();
             baos.write(this.getForm().getSelezioneFile().getFileData());
@@ -213,7 +230,8 @@ public class GestoreVerificaDocumenti extends AbstractGestoreEntita {
           int len = impl.getString("FILEDAALLEGARE").length();
           int posizioneBarra = impl.getString("FILEDAALLEGARE").lastIndexOf("\\");
           nomeFile=impl.getString("FILEDAALLEGARE").substring(posizioneBarra+1,len).toUpperCase();
-
+          String digtipdoc = impl.getString("W_DOCDIG_DIGTIPDOC");
+          
           impl.addColumn("W_DOCDIG.IDPRG", JdbcParametro.TIPO_TESTO,"PG");
           impl.getColumn("W_DOCDIG.IDPRG").setChiave(true);
           impl.addColumn("W_DOCDIG.IDDOCDIG", JdbcParametro.TIPO_NUMERICO,new Long(newIDDOCDIG));
@@ -223,7 +241,9 @@ public class GestoreVerificaDocumenti extends AbstractGestoreEntita {
           impl.addColumn("W_DOCDIG.DIGKEY2", JdbcParametro.TIPO_NUMERICO,new Long(progressivo.longValue() + 1));
           impl.addColumn("W_DOCDIG.DIGNOMDOC", JdbcParametro.TIPO_TESTO,nomeFile);
           impl.addColumn("W_DOCDIG.DIGOGG", JdbcParametro.TIPO_BINARIO,baos);
+          impl.addColumn("W_DOCDIG.DIGTIPDOC", JdbcParametro.TIPO_TESTO,digtipdoc);
           impl.insert("W_DOCDIG", sqlManager);
+          ObjectStorageUtils.addFile("PG", newIDDOCDIG);
           inserimentoW_DOCDIG = true;
         }
 

@@ -10,17 +10,19 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.utils.spring.UtilitySpring;
-import it.eldasoft.utils.utility.UtilityStringhe;
-
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.Vector;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityDate;
+import it.eldasoft.utils.utility.UtilityStringhe;
 
 /**
  * Funzione che recupera i dati di stipula
@@ -63,6 +65,23 @@ public class GetDatiStipulaFunction extends AbstractFunzioneTag {
           pageContext.setAttribute("idpadre",id_padre,PageContext.REQUEST_SCOPE);
           Long id_originario = SqlManager.getValueFromVectorParam(datiStipula, 5).longValue();
           pageContext.setAttribute("idoriginario",id_originario,PageContext.REQUEST_SCOPE);
+
+          if(stato!=null && stato.longValue()==6) {
+            Vector<?> datiG1aggisto = sqlManager.getVector("select ditta, dattoa, nomest from g1aggisto, impr where idstipula=? and ditta=codimp",new Object[] { idS });
+            if (datiG1aggisto != null && datiG1aggisto.size() > 0){
+              String ditta = SqlManager.getValueFromVectorParam(datiG1aggisto, 0).stringValue();
+              Timestamp dattoa = SqlManager.getValueFromVectorParam(datiG1aggisto, 1).dataValue();
+              String dattoaString=null;
+              if(dattoa!=null)
+                dattoaString=UtilityDate.convertiData(dattoa, UtilityDate.FORMATO_GG_MM_AAAA);
+              String nomest = SqlManager.getValueFromVectorParam(datiG1aggisto, 2).stringValue();
+              Object iaggiu = sqlManager.getObject("select sum(iaggiu) from g1aggisto where idstipula=?",new Object[] { idS });
+              pageContext.setAttribute("dittaG1aggisto",ditta,PageContext.REQUEST_SCOPE);
+              pageContext.setAttribute("dattoaG1aggisto",dattoaString,PageContext.REQUEST_SCOPE);
+              pageContext.setAttribute("nomestG1aggisto",nomest,PageContext.REQUEST_SCOPE);
+              pageContext.setAttribute("iaggiuG1aggisto",iaggiu,PageContext.REQUEST_SCOPE);
+            }
+          }
         }
 
       } catch (SQLException e) {

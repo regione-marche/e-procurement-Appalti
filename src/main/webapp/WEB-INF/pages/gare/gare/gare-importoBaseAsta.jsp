@@ -75,6 +75,9 @@
 			<gene:calcoloCampoScheda funzione='toMoney(toVal("#GARE_IMPMIS#") + toVal("#GARE_IMPCOR#") + toVal("#GARE_ONPRGE#"))' 
 			elencocampi="GARE_IMPMIS;GARE_IMPCOR;GARE_ONPRGE" />
 		</gene:campoScheda>
+
+		<gene:fnJavaScriptScheda funzione="calcoloValmax('#GARE1_IMPRIN#','#GARE1_IMPSERV#','#GARE1_IMPPROR#','#GARE1_IMPALTRO#','#GARE_IMPAPP#')" elencocampi="GARE_IMPAPP" esegui="true"/>
+
 		<gene:campoScheda title="di cui soggetto a ribasso" campo="IMPAPP_RIB" campoFittizio="true" modificabile="false"
 		  definizione="F15;0;;MONEY;" visibile='${gene:checkProt( pageContext,"COLS.VIS.GARE.GARE.IMPNRL") or gene:checkProt( pageContext,"COLS.VIS.GARE.GARE.IMPSIC")}'>
 			<gene:calcoloCampoScheda funzione='toMoney(toVal("#GARE_IMPAPP#") - toVal("#GARE_IMPNRL#") - toVal("#GARE_IMPSIC#") - toVal("#GARE_ONPRGE#"))' elencocampi="GARE_IMPAPP;GARE_IMPNRL;GARE_IMPSIC;GARE_ONPRGE" />
@@ -94,10 +97,12 @@
 			<gene:campoScheda campo="MODMANO" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile='false' defaultValue="${requestScope.initMODMANO}"/>
 		</c:if>
 		<gene:fnJavaScriptScheda funzione="sbiancaCampiSeNonValorizzato('#GARE_IMPAPP#', 'GARE_IMPNRL;GARE_IMPSIC;GARE1_IMPMANO')" elencocampi="GARE_IMPAPP" esegui="false"/>
-		<c:if test="${modo ne 'VISUALIZZA'}">
-			<gene:fnJavaScriptScheda funzione="calcoloImportoDaPercentualeManodopera('#GARE_IMPAPP#', '#IMPPER#','#GARE_IMPNRL#','#GARE_IMPSIC#','#GARE_ONPRGE#')" elencocampi="GARE_IMPAPP;IMPPER;GARE_IMPNRL;GARE_IMPSIC" esegui="false"/>
+		<c:if test="${gene:checkProt( pageContext,'COLS.VIS.GARE.TORN.MODMANO') and gene:checkProt( pageContext,'COLS.VIS.GARE.GARE1.IMPMANO')}">
+			<c:if test="${modo ne 'VISUALIZZA'}">
+				<gene:fnJavaScriptScheda funzione="calcoloImportoDaPercentualeManodopera('#GARE_IMPAPP#', '#IMPPER#','#GARE_IMPNRL#','#GARE_IMPSIC#','#GARE_ONPRGE#')" elencocampi="GARE_IMPAPP;IMPPER;GARE_IMPNRL;GARE_IMPSIC" esegui="false"/>
+			</c:if>
+			<gene:fnJavaScriptScheda funzione="calcoloPercentualeManodopera('#GARE_IMPAPP#', '#GARE1_IMPMANO#','#GARE_IMPNRL#','#GARE_IMPSIC#','#GARE_ONPRGE#')" elencocampi="GARE1_IMPMANO" esegui="true"/>
 		</c:if>
-		<gene:fnJavaScriptScheda funzione="calcoloPercentualeManodopera('#GARE_IMPAPP#', '#GARE1_IMPMANO#','#GARE_IMPNRL#','#GARE_IMPSIC#','#GARE_ONPRGE#')" elencocampi="GARE1_IMPMANO" esegui="true"/>
 		<gene:campoScheda campo="IMPMANO" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" modificabile="${param.campiModificabili}"/>
 		<c:set var="IMPPERmodificabile" value="${param.campiModificabili and gene:checkProt(pageContext,'COLS.MOD.GARE.GARE1.IMPMANO')}" />
 		<gene:campoScheda title='Costi manodopera in percentuale' campo="IMPPER" visibile="${gene:checkProt( pageContext,'COLS.VIS.GARE.TORN.MODMANO') and gene:checkProt( pageContext,'COLS.VIS.GARE.GARE1.IMPMANO')}" campoFittizio="true" modificabile="${IMPPERmodificabile}"  definizione="F13.5;0;;PRC;" />

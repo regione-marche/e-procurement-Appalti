@@ -46,7 +46,7 @@ public class GestioneCPVOggettoComplementareFunction extends
               + "from GARCPV "
               + "where NGARA = ? "
               + "and TIPCPV = ? "
-              + "order by NUMCPV asc", new Object[] { nGara, new Integer(2) });
+              + "order by NUMCPV asc", new Object[] { nGara, "2" });
 
       if (cpv != null && cpv.size() > 0)
         pageContext.setAttribute("cpv", cpv, PageContext.REQUEST_SCOPE);

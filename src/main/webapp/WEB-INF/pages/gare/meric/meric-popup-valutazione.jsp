@@ -103,7 +103,7 @@
 		
 		function attivaValutazioneProdotti(id, tipo){
 			bloccaRichiesteServer();
-			var action = "${pageContext.request.contextPath}/pg/ValutazioneProdotti.do?"+csrfToken+"&id=" + id + "&tipo=" + tipo;
+			var action = "${pageContext.request.contextPath}/pg/ValutazioneProdotti.do?id=" + id + "&tipo=" + tipo;
 			document.location.href=action;
 		}
 	

@@ -30,8 +30,18 @@
 <c:set var="key" value="GARE.NGARA=T:${ngara1}" />
 <c:set var="genere" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTipologiaGaraFunction", pageContext, key)}' scope="request"/>
 
-<c:set var="variabileNull" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GestorePopupAggiudicazioneDefinitivaFunction", pageContext, numeroGara, genere)}' />
+<c:set var="ngarapa" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from gare,torn where ngarapa=? and codgar=codgar1 and torn.iterga=10", ngara1)}' />
+<c:choose>
+	<c:when test="${not empty ngarapa}">
+		<c:set var="ngara1"  value="${ngarapa}"/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="ngara1" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from gare where ngara = ?", ngara1)}' />
+</c:otherwise> 
+	
+</c:choose>
 
+<c:set var="variabileNull" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GestorePopupAggiudicazioneDefinitivaFunction", pageContext, ngara1, genere)}' />
 <c:set var="condizione" value="DITG.STAGGI in (3,4,5,6,10) and DITG.CONGRUO = '1'"/>
 
 <div style="width:97%;">
@@ -123,8 +133,10 @@
 								${msgCommissione}
 								<br><br>
 							</c:if>
-												
-							<gene:formLista entita="DITG"	where="DITG.NGARA5 = '${ngara1}' AND ${condizione}" tableclass="datilista" sortColumn="6;7;4" pagesize="0" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAggiudicazioneDefinitiva">
+
+							<c:set var="modlicg" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetMODLICGFunction",pageContext,ngara1)}'/>
+
+							<gene:formLista entita="DITG" where="DITG.NGARA5 = '${ngara1}' AND ${condizione}" tableclass="datilista" sortColumn="6;${modlicg eq 6 or modlicg eq 17 ? '-' : ''}7;4" pagesize="0" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAggiudicazioneDefinitiva">
 								<gene:campoLista title="Scegli" width="40">
 									<center>
 									<c:choose>
@@ -144,7 +156,13 @@
 								<gene:campoLista campo="STAGGI"  ordinabile="false" width="200"/>
 								<gene:campoLista campo="RIBAUO"  visibile="false" />
 								<gene:campoLista campo="DITTAO"  visibile="false" />
-								<gene:campoLista campo="AMMINVERSA"   ordinabile="false" title="Esito verif. proc.inversa" visibile="${inversa eq '1' }" width="50"/>
+								<c:if test="${not empty ngarapa}">
+									<c:set var="sql4amminver1grado" value="select AMMINVERSA from DITG where (dittao=? or dittao in (select d.dittainv from ditg d where d.dittao=? and d.ngara5=?)) and ngara5=?" />
+									<c:set var="esitoProcPrimoGrado" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, sql4amminver1grado, datiRiga.DITG_DITTAO, datiRiga.DITG_DITTAO ,datiRiga.DITG_NGARA5, numeroGara)}' />
+									<gene:campoLista campo="AMMINVERSA_1G" campoFittizio="true" value="${esitoProcPrimoGrado}" visibile="true" title="Esito verif. proc.inversa (1° grado)" definizione="T100;;A1170;;G1AMMINVERSA" width="50"/>
+									<gene:campoLista campo="AMMINVERSA_1GFIT"  title="" visibile="false" value="${esitoProcPrimoGrado}" campoFittizio="true" definizione="T3" edit="true"/>
+								</c:if>
+								<gene:campoLista campo="AMMINVERSA"   ordinabile="false" title="Esito verif. proc.inversa ${not empty ngarapa?'(2° grado)':''}" visibile="${inversa eq '1' }" width="50"/>
 								<gene:campoLista campo="AMMINVERSA_FIT"  title="" visibile="false" value="${datiRiga.DITG_AMMINVERSA }" campoFittizio="true" definizione="T3" edit="true"/>
 								<gene:campoLista campo="PRIMAAGGIUDICATARIASELEZIONATA" campoFittizio="true" value="" visibile="false" edit="true" definizione="T10" />
 								<input type="hidden" id="aqoper" name="aqoper" value="${aqoper }" />
@@ -178,7 +196,10 @@
 			</c:when>
 			<c:otherwise>
 				<c:set var="modo" value="MODIFICA" scope="request" />
-				<gene:formScheda entita="DITG" where="DITG.NGARA5 = '${numeroGara}' AND DITG.DITTAO = '${PRIMAAGGIUDICATARIASELEZIONATA}'" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAggiudicazioneDefinitiva">
+
+				<c:set var="ngarapa" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngarapa from gare,torn where ngara=? and codgar=codgar1 and torn.iterga=10", numeroGara)}' />
+
+				<gene:formScheda entita="DITG" where="DITG.NGARA5 = '${numeroGara}' AND DITG.DITTAO = '${PRIMAAGGIUDICATARIASELEZIONATA}'" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAggiudicazioneDefinitiva" gestisciProtezioni="true">
 					<c:choose>
 						<c:when test="${aqoper eq 2 }">
 							<c:set var="Label" value="Aggiudicazione definitiva"/>
@@ -193,6 +214,9 @@
 					<gene:campoScheda campo="CODGAR5" visibile="false" />
 					<gene:campoScheda campo="DITTAO" modificabile="false" visibile="${aqoper ne 2 }"/>
 					<gene:campoScheda campo="NGARA5" visibile="false" />
+					<c:if test="${not empty ngarapa}">
+						<gene:campoScheda campo="NGARA_PRIMOGRADO" value="${ngarapa}" definizione="T20" campoFittizio="true" visibile="false" />
+					</c:if>
 					<gene:campoScheda campo="NOMIMO" modificabile="false" visibile="${aqoper ne 2 }"/>
 
 					<c:choose>
@@ -253,11 +277,11 @@
 			</c:otherwise>
 		</c:choose>
 	</c:otherwise>
-</c:choose>	
+</c:choose>
 
 	</gene:redefineInsert>
 
-	
+
 	<gene:javaScript>
 	$("#pulschiudi").hide();
 <c:choose>
@@ -284,7 +308,7 @@
 		showObj("listaDitteVuota", false);
 
 		$( "input[name='dittaDefinitiva']").hide();
-		
+
 		function chiudi(){
 			window.opener.historyReload();
 			window.close();
@@ -304,7 +328,7 @@
 		showObj("listaDitteVuota", false);
 
 		$( "input[name='dittaDefinitiva']").hide();
-		
+
 		function chiudi(){
 			window.opener.historyReload();
 			window.close();
@@ -315,7 +339,7 @@
 		showObj("jsPopUpDITG_DITTAO", false);
 		showObj("jsPopUpDITG_NOMIMO", false);
 		showObj("jsPopUpDITG_RIBAUO", false);
-		
+
 		function annulla(){
 			window.close();
 		}
@@ -323,7 +347,7 @@
 		function conferma(){
 			<c:if test="${ bloccoDattoa eq true}">
 				var dattoa = getValue("GARE_DATTOA");
-		 		if(dattoa==null || dattoa==""){ 
+		 		if(dattoa==null || dattoa==""){
 		 			alert("Non è possibile sbiancare la data dell'atto di aggiudicazione perche' altri lotti della gara sono gia' aggiudicati");
 		 			return;
 		 		}
@@ -340,7 +364,7 @@
 		function annulla(){
 			window.close();
 		}
-		
+
 		function conferma(){
 			<c:choose>
 				<c:when test="${aqoper eq 2}">
@@ -383,7 +407,7 @@
 					var elementoSelezionato = getValueCheckedRadio(document.forms[0].dittaDefinitiva);
 					if(elementoSelezionato != "") {
 		  				var ditta = elementoSelezionato.split(";")[0];
-		  				<c:if test="${inversa eq '1' }">
+		  				<c:if test="${inversa eq '1' && empty ngarapa}">
 		  					var amminversa = elementoSelezionato.split(";")[1];
 		  					if(amminversa==null || amminversa==""){
 		  						alert("La ditta non è selezionabile perchè non è stato specificato l'esito della verifica della documentazione amministrativa successiva all'apertura offerte (procedura inversa)");
@@ -396,6 +420,40 @@
 		  						return;
 		  					}
 		  				</c:if>
+						<c:if test="${not empty ngarapa}">
+							var numRighe = "${datiRiga.rowCount }";
+							var amminversa_1g= null;
+							var controlloAmminversaConcorsiSuperato=true;
+							for(var i=1;i<=numRighe;i++){
+								if(document.getElementById('dittaDefinitiva' + i).checked){
+									amminversa_1g = getValue("AMMINVERSA_1GFIT_" + i);
+									if(amminversa_1g==null || amminversa_1g==""){
+				  						alert("La ditta non è selezionabile perchè non è stato specificato l'esito della verifica della documentazione amministrativa successiva all'apertura offerte per il 1° grado del concorso di progettazione (procedura inversa)");
+				  						return;
+				  					}else if(amminversa_1g==2){
+				  						alert("La ditta non è selezionabile perchè è risultata 'Non idonea' nella verifica della documentazione amministrativa successiva all'apertura offerte per il 1° grado del concorso di progettazione (procedura inversa)");
+				  						return;
+				  					}else if(amminversa_1g==10){
+				  						alert("La ditta non è selezionabile perchè è in corso il soccorso istruttorio per la verifica della documentazione amministrativa successiva all'apertura offerte per il 1° grado del concorso di progettazione (procedura inversa)");
+				  						return;
+				  					}
+								}
+							}
+							<c:if test="${inversa eq '1'}">
+								var amminversa = elementoSelezionato.split(";")[1];
+								if(amminversa==null || amminversa==""){
+			  						alert("La ditta non è selezionabile perchè non è stato specificato l'esito della verifica della documentazione amministrativa successiva all'apertura offerte per il 2° grado del concorso di progettazione (procedura inversa)");
+			  						return;
+			  					}else if(amminversa==2){
+			  						alert("La ditta non è selezionabile perchè è risultata 'Non idonea' nella verifica della documentazione amministrativa successiva all'apertura offerte per il 2° grado del concorso di progettazione (procedura inversa)");
+			  						return;
+			  					}else if(amminversa==10){
+			  						alert("La ditta non è selezionabile perchè è in corso il soccorso istruttorio per la verifica della documentazione amministrativa successiva all'apertura offerte per il 2° grado del concorso di progettazione (procedura inversa)");
+			  						return;
+			  					}
+							</c:if>	
+						</c:if>
+						
 		  				document.getElementById("PRIMAAGGIUDICATARIASELEZIONATA_1").value = ditta;
 						document.forms[0].metodo.value = "updateLista";
 						document.forms[0].key.value = document.forms[0].keyParent.value;
@@ -406,12 +464,12 @@
 		 			}
 				</c:otherwise>
 			</c:choose>
-			
+
 		}
 
 	</c:otherwise>
 </c:choose>
-	
+
 	<c:if test='${!empty modoRichiamo}' >
 		 var dattoa = getValue("GARE_DATTOA");
 		 if(dattoa==null || dattoa==""){
@@ -419,8 +477,8 @@
 		 	setValue("GARE_DATTOA",DateToString(data));
 		 }
 	</c:if>
-	
-	
+
+
 	</gene:javaScript>
 </gene:template>
 

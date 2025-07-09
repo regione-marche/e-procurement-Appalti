@@ -33,6 +33,7 @@ import it.eldasoft.utils.utility.UtilityStringhe;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
@@ -137,9 +138,9 @@ public class GestoreAggiudicazioneDefinitiva extends AbstractGestoreEntita {
 	          if (oldRidiso==null || "".equals(oldRidiso)) oldRidiso="2";
 
 	          String update="";
-	          if(!ridiso.equals(oldRidiso)){
-	              if ("1".equals(ridiso)) update="update gare set impgar = impgar /2, ridiso=? where CODGAR1 = ? and DITTA = ? and NGARA <>? and genere is null";
-	              else update="update gare set impgar = impgar * 2, ridiso=?  where CODGAR1 = ? and DITTA = ? and NGARA <>? and genere is null";
+	          if(!ridiso.equals(oldRidiso)){//riduzione del 30%  (prima 50%) APPALTI-1377 - DLgs 36-2023 
+	              if ("1".equals(ridiso)) update="update gare set impgar = impgar * (1-0.3), ridiso=? where CODGAR1 = ? and DITTA = ? and NGARA <>? and genere is null";
+	              else update="update gare set impgar = impgar / (1-0.3), ridiso=?  where CODGAR1 = ? and DITTA = ? and NGARA <>? and genere is null";
 
 	              try {
 	                this.sqlManager.update(update, new Object[]{ridiso,codgar,ditta, ngara });
@@ -374,55 +375,80 @@ public class GestoreAggiudicazioneDefinitiva extends AbstractGestoreEntita {
 
 	    if(numeroElenco!=null && !"".equals(numeroElenco)){
 	      try{
-	      String codiceElenco = "$" + numeroElenco;
-	      Long tipoalgo = (Long)sqlManager.getObject("select tipoalgo from garealbo where ngara=? and codgar= ?", new Object[]{numeroElenco, codiceElenco});
-	      String select="select catiga, numcla from catg where ngara=? and ncatg=1";
-          String catiga=null;
-          Long numcla=null;
-          Long tipgen = datiForm.getLong("TORN.TIPGEN");
-          String codiceStazApp = datiForm.getString("TORN.CENINT");
-          Vector datiCatg = this.geneManager.getSql().getVector(select, new Object[] { ngara });
-          if(datiCatg!=null && datiCatg.size()>0){
-            catiga = (String)((JdbcParametro) datiCatg.get(0)).getValue();
-            numcla = (Long)((JdbcParametro) datiCatg.get(1)).getValue();
-          }
+			  String codiceElenco = "$" + numeroElenco;
+			  Vector datiGAREALBO = this.sqlManager.getVector("select tipoalgo, aggrtcomp from garealbo where ngara=? and codgar= ?", new Object[] { numeroElenco, codiceElenco });
+			  Long tipoalgo = ((JdbcParametro) datiGAREALBO.get(0)).longValue();
+			  String aggrtcomp = ((JdbcParametro) datiGAREALBO.get(1)).stringValue();
+			  String select="select catiga, numcla from catg where ngara=? and ncatg=1";
+			  String catiga=null;
+			  Long numcla=null;
+			  Long tipgen = datiForm.getLong("TORN.TIPGEN");
+			  String codiceStazApp = datiForm.getString("TORN.CENINT");
+			  Vector datiCatg = this.geneManager.getSql().getVector(select, new Object[] { ngara });
+			  if(datiCatg!=null && datiCatg.size()>0){
+				catiga = (String)((JdbcParametro) datiCatg.get(0)).getValue();
+				numcla = (Long)((JdbcParametro) datiCatg.get(1)).getValue();
+			  }
 
-	      String dittaOrig= datiForm.getColumn("GARE.DITTA").getOriginalValue().stringValue();
-	      Timestamp dattoa = datiForm.getData("GARE.DATTOA");
-	      Timestamp dattoaOrig = datiForm.getColumn("GARE.DATTOA").getOriginalValue().dataValue();
-	      ditta=StringUtils.stripToNull(ditta);
-	      dittaOrig=StringUtils.stripToNull(dittaOrig);
-	      //Long acquisizione=null;
-	      //Long acquisizioneOrig=null;
-	      String dittaConteggio=null;
-	      String dittaConteggioOrig=null;
-	      if(ditta!=null){
-	        dittaConteggio = this.pgManager.getDittaSelezionataDaElenco(ditta,ngara);
-	        //acquisizione=(Long)this.sqlManager.getObject("select acquisizione from ditg where ngara5=? and dittao=?", new Object[]{ngara,dittaConteggio});
-	      }
-	      if(dittaOrig!=null){
-	        dittaConteggioOrig = this.pgManager.getDittaSelezionataDaElenco(dittaOrig,ngara);
-	        //acquisizioneOrig=(Long)this.sqlManager.getObject("select acquisizione from ditg where ngara5=? and dittao=?", new Object[]{ngara,dittaConteggioOrig});
-	      }
+			  String dittaOrig= datiForm.getColumn("GARE.DITTA").getOriginalValue().stringValue();
+			  Timestamp dattoa = datiForm.getData("GARE.DATTOA");
+			  Timestamp dattoaOrig = datiForm.getColumn("GARE.DATTOA").getOriginalValue().dataValue();
+			  ditta=StringUtils.stripToNull(ditta);
+			  dittaOrig=StringUtils.stripToNull(dittaOrig);
+			  //Long acquisizione=null;
+			  //Long acquisizioneOrig=null;
+			  String dittaConteggio=null;
+			  String dittaConteggioOrig=null;
+			  Long tipimpDitta = null;
+			  Long tipimpDittaOrig = null;
+			  if(ditta!=null){
+				dittaConteggio = this.pgManager.getDittaSelezionataDaElenco(ditta,ngara);
+				tipimpDitta = (Long) sqlManager.getObject("select tipimp from impr where codimp=?", new Object[] {ditta});
+				//acquisizione=(Long)this.sqlManager.getObject("select acquisizione from ditg where ngara5=? and dittao=?", new Object[]{ngara,dittaConteggio});
+			  }
+			  if(dittaOrig!=null){
+				dittaConteggioOrig = this.pgManager.getDittaSelezionataDaElenco(dittaOrig,ngara);
+				tipimpDittaOrig = (Long) sqlManager.getObject("select tipimp from impr where codimp=?", new Object[] {dittaOrig});
+				//acquisizioneOrig=(Long)this.sqlManager.getObject("select acquisizione from ditg where ngara5=? and dittao=?", new Object[]{ngara,dittaConteggioOrig});
+			  }
 
-	      if((ditta!=null && dittaOrig==null && dattoa!=null && dattoaOrig==null) || (ditta!=null && dittaOrig!=null && dattoaOrig==null && dattoa!=null) ||
-	          (ditta!=null && dittaOrig==null && dattoa!=null && dattoaOrig!=null)){
-	        //Si incrementa il conteggio per ditta se è stata selezionata da elenco
-	        if(dittaConteggio!=null)
-	          this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, numeroElenco, dittaConteggio, catiga, tipgen, numcla, codiceStazApp, tipoalgo, "INS");
-	      }else if((ditta==null && dittaOrig!=null && ((dattoa==null && dattoaOrig!=null) || (dattoa!=null && dattoaOrig!=null))) ||
-	          (ditta!=null && dittaOrig!=null && !ditta.equals(dattoaOrig) && dattoa==null && dattoaOrig!=null) ||
-	          (dattoa==null && dattoaOrig!=null && ditta!=null && dittaOrig!=null && ditta.equals(dattoaOrig))){
-	        //Si decrementa il conteggio per ditta originale se è stata selezionata da elenco
-	        if(dittaConteggioOrig!=null)
-	          this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, numeroElenco, dittaConteggioOrig, catiga, tipgen, numcla, codiceStazApp, tipoalgo, "DEL");
-	      }else if(ditta!=null && dittaOrig!=null && !ditta.equals(dattoaOrig) && dattoa!=null && dattoaOrig!=null){
-	        //Si decrementa il conteggio per ditta originale se è stata selezionata da elenco e poi si incrementa il conteggio per ditta se è stata selezionata da elenco
-	        if(dittaConteggioOrig!=null)
-	          this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, numeroElenco, dittaConteggioOrig, catiga, tipgen, numcla, codiceStazApp, tipoalgo, "DEL");
-	        if(dittaConteggio!=null)
-	          this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, numeroElenco, dittaConteggio, catiga, tipgen, numcla, codiceStazApp, tipoalgo, "INS");
-	      }
+			  boolean cancellaDittaOrig = false;
+			  boolean inserisciDitta = false;
+			  if(ditta!=null && dattoa!=null && (dittaOrig==null || dattoaOrig==null)){
+				//Si incrementa il conteggio per ditta se è stata selezionata da elenco
+				inserisciDitta = true;
+			  }else if ((dittaOrig != null && dattoaOrig != null) && (ditta == null || dattoa == null)) {
+				//Si decrementa il conteggio per ditta originale se è stata selezionata da elenco
+				cancellaDittaOrig = true;
+			  }else if(ditta!=null && dittaOrig!=null && !ditta.equals(dittaOrig) && dattoa!=null && dattoaOrig!=null){
+				//Si decrementa il conteggio per ditta originale se è stata selezionata da elenco e poi si incrementa il conteggio per ditta se è stata selezionata da elenco
+				cancellaDittaOrig = true;
+				inserisciDitta = true;
+			  }
+			  if (cancellaDittaOrig) {
+				  if ("1".equals(aggrtcomp) && Arrays.asList(3L, 10L).contains(tipimpDittaOrig)) {
+					  List<Vector<?>> listaDitteDelRT = sqlManager.getListVector("select coddic from ragimp where codime9=?", new Object[]{ditta});
+					  for (Vector<?> dittaDelRT : listaDitteDelRT) {
+						  String coddic = ((JdbcParametro) dittaDelRT.get(0)).getStringValue();
+						  this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, numeroElenco, coddic, catiga, tipgen, numcla, codiceStazApp, tipoalgo, "DEL");
+					  }
+				  } else if (dittaConteggioOrig != null) {
+					  this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, numeroElenco, dittaConteggioOrig, catiga, tipgen, numcla, codiceStazApp, tipoalgo, "DEL");
+				  }
+			  }
+			  if (inserisciDitta) {
+				  if ("1".equals(aggrtcomp) && Arrays.asList(3L, 10L).contains(tipimpDitta)) {
+					  AggiudicazioneManager aggiudicazioneManager = (AggiudicazioneManager) UtilitySpring.getBean( "aggiudicazioneManager", this.getServletContext(), AggiudicazioneManager.class);
+					  aggiudicazioneManager.controlloDitteNonInElenco(ditta,codiceElenco, numeroElenco);
+					  List<Vector<?>> listaDitteDelRT = sqlManager.getListVector("select coddic from ragimp where codime9=?", new Object[]{ditta});
+					  for (Vector<?> dittaDelRT : listaDitteDelRT) {
+						  String coddic = ((JdbcParametro) dittaDelRT.get(0)).getStringValue();
+						  this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, numeroElenco, coddic, catiga, tipgen, numcla, codiceStazApp, tipoalgo, "INS");
+					  }
+				  } else if (dittaConteggio != null) {
+					  this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, numeroElenco, dittaConteggio, catiga, tipgen, numcla, codiceStazApp, tipoalgo, "INS");
+				  }
+			  }
 	      }catch(SQLException e) {
             throw new GestoreException(
                 "Errore nell'aggiornamento del numero aggiudicazioni della ditta "+ ditta + "  della gara " + ngara, null,e);

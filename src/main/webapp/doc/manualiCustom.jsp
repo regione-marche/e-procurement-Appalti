@@ -8,7 +8,8 @@
 
 <jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
 <c:set var="urlWsArt80" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", urlWsArt80)}'/>
-<c:set var="urlCOS" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "cos.sftp.url")}'/>
+<c:set var="modatalitaConservazione" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "conservazione.modalita")}'/>
+<c:set var="urlMEFORMS" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "integrazioneMEforms.url")}'/>
 
 <c:if test='${fn:contains(listaOpzioniDisponibili, "OP114#")}'>
 	<br>
@@ -30,7 +31,7 @@
 
 <tr id="rowManualeUsoAppalti">
 	<td>
-			<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/manuale_usoAppaltiGare.pdf');" tabindex="2020">
+			<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/Manuale_usoAppaltiGare.pdf');" tabindex="2020">
 							Manuale d'uso Appalti - Gare e procedure di affidamento</a></b><br>
 				<br>
 					Il documento descrive le modalità di utilizzo dell'applicativo Appalti e le sue varie funzioni.
@@ -65,23 +66,15 @@
 	</td>
 </tr>
 
-<tr id="rowManualeUsoConcorsi">
+<tr id="rowManualeUsoAffidamentiDiretti">
 	<td>
-		<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/concorsi-progettazione-idee.pdf');" tabindex="2024">
-						Manuale d'uso Appalti - Concorsi di progettazione e di idee</a></b><br>
+		<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/Manuale_usoAppaltiAffidamenti diretti.pdf');" tabindex="2024">
+						Manuale d'uso Appalti - Affidamenti diretti</a></b><br>
 			<br>
-					Il documento descrive la modalità di utilizzo dell'applicativo Appalti per l'espletamento dei concorsi di progettazione e di idee.
+					Il documento descrive la modalità di utilizzo dell'applicativo Appalti per gli affidamenti diretti.
 	</td>
 </tr>
 
-<tr id="rowManualeUsoAppalti190">
-	<td>
-		<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/manuale_usoAppalti190.pdf');" tabindex="2025">
-						Manuale d'uso Appalti - Adempimenti L.190/2012</a></b><br>
-			<br>
-					Il documento descrive il modulo dell'applicativo Appalti per la compilazione e pubblicazione dei dati ai sensi dell'art. 1 comma 32 Legge n. 190/2012 "Legge anticorruzione".
-	</td>
-</tr>
 <tr id="rowNoteCalcoloSogliaAnomalia">
 	<td>
 			<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/calcoloSogliaAnomalia_note.pdf');" tabindex="2026">
@@ -90,6 +83,38 @@
 					Il documento descrive le modalità del calcolo soglia d'anomalia nell'applicativo Appalti.
 	</td>
 </tr>
+
+<tr id="rowFVOE">
+	<td>
+		<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/Manuale_usoAppaltiVerifiche FVOE.pdf');" tabindex="2027">
+			Manuale d'uso Appalti - Verifiche FVOE</a></b><br>
+		<br>
+		Il documento descrive le modalità di integrazione dell'applicativo Appalti con FVOE per la verifica dei dati e documenti.
+	</td>
+</tr>
+
+<tr id="rowManualeUsoMDGUE">
+	<td>
+			<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/Manuale_usoMDgueRequest_SA.pdf');" tabindex="2028">
+							Manuale d'uso Appalti - Compilazione DGUE request elettronico italiano "eDGUE-IT"</a></b><br>
+				<br>
+					Il documento descrive le modalità di compilazione del documento DGUE elettronico italiano.
+	</td>
+	</td>
+</tr>
+
+<c:if test='${not empty urlMEFORMS and urlMEFORMS ne ""}'>
+<tr id="rowManualeUsoMEFORMS">
+	<td>
+		<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/Manuale_usoM-eForms.pdf');" tabindex="2029">
+			Manuale d'uso Appalti - Compilazione mediante M-Eforms dei formulari europei</a></b><br>
+		<br>
+		Il manuale descrive le modalità di compilazione, mediante integrazione con l'applicativo M-Eforms, dei formulari elettronici per la pubblicazione a livello europeo di avvisi e bandi.
+	</td>
+	</td>
+</tr>
+</c:if>
+
 <c:if test='${titulusConfigurato eq "SI"}'>
 	
 	<tr id="rowTitulus">
@@ -103,18 +128,7 @@
 	
 </c:if>
 
-<c:if test='${not empty urlWsArt80 and urlWsArt80 ne ""}'>
-	<tr id="rowManualeUsoAppaltiart80">
-		<td>
-			<b><a class="link-generico" href="javascript:apriManuale('${contextPath}/doc/manuale_verificaDitteArt80.pdf');" tabindex="2035">
-							Manuale d'uso Appalti - Verifica requisiti operatori art.80 DLgs.50/2016</a></b><br>
-				<br>
-					Il documento descrive le funzionalità dell'applicativo Appalti per la verifica requisiti generali degi operatori di cui all'art. 80 del DLgs 50/2016
-		</td>
-	</tr>
-</c:if>
-
-<c:if test='${not empty urlCOS and urlCOS ne ""}'>
+<c:if test='${modatalitaConservazione eq "1"}'>
 	
 	<tr id="rowCos">
 		<td>
@@ -136,43 +150,38 @@
 		$("#rowManualeUsoOEPV").insertAfter("#rowManualeUsoAppalti");
 		$("#rowManualeEspletamento").insertAfter("#rowManualeUsoOEPV");
 		$("#rowManualeUsoOEPVCommissioni").insertAfter("#rowManualeEspletamento");
-		$("#rowManualeUsoConcorsi").insertAfter("#rowManualeUsoOEPVCommissioni");
+		$("#rowManualeUsoAffidamentiDiretti").insertAfter("#rowManualeUsoOEPVCommissioni");
+		$("#rowManualeUsoConcorsi").insertAfter("#rowManualeUsoAffidamentiDiretti");
 		$("#rowManualeUsoAppalti190").insertAfter("#rowManualeUsoConcorsi");
 		$("#rowNoteCalcoloSogliaAnomalia").insertAfter("#rowManualeUsoAppalti190");
+		$("#rowManualeUsoMEFORMS").insertAfter("#rowNoteCalcoloSogliaAnomalia");
+		$("#rowFVOE").insertAfter("#rowManualeUsoMDGUE");
+<%/* Rimosso temporaneamente link manuale concorsi di progettazione per passaggio da vecchia a nuova gestione*/%>
 		
 			
 		<c:if test='${titulusConfigurato eq "SI"}'>
-			$("#rowTitulus").insertAfter("#rowNoteCalcoloSogliaAnomalia");
+			$("#rowTitulus").insertAfter("#rowFVOE");
 		</c:if>
 		
-		<c:if test='${not empty urlWsArt80 and urlWsArt80 ne ""}'>
-			<c:choose>
-				<c:when test='${titulusConfigurato eq "SI"}'>
-					$("#rowManualeUsoAppaltiart80").insertAfter("#rowTitulus");		
-				</c:when>
-				<c:otherwise>
-					$("#rowManualeUsoAppaltiart80").insertAfter("#rowNoteCalcoloSogliaAnomalia");
-				</c:otherwise>
-			</c:choose>
-			
+		<c:if test='${modatalitaConservazione eq "1"}'>
+			$("#rowCos").insertAfter("#rowFVOE");
 		</c:if>
-		
-		<c:if test='${not empty urlCOS and urlCOS ne ""}'>
-			<c:choose>
-				<c:when test='${not empty urlWsArt80 and urlWsArt80 ne ""}'>
-					$("#rowCos").insertAfter("#rowManualeUsoAppaltiart80");		
-				</c:when>
-				<c:otherwise>
-					<c:choose>
-						<c:when test='${titulusConfigurato eq "SI"}'>
-							$("#rowCos").insertAfter("#rowTitulus");		
-						</c:when>
-						<c:otherwise>
-							$("#rowCos").insertAfter("#rowNoteCalcoloSogliaAnomalia");
-						</c:otherwise>
-					</c:choose>	
-				</c:otherwise>
-			</c:choose>
-		</c:if>
-		
+
+<%/* rowManualeUsoMDGUE sempre presente, si può usare come elemento per mettere in coda senza rifare la gestione qui sotto*/%>
+		<c:choose>
+			<c:when test='${modatalitaConservazione eq "1"}'>
+				$("#rowManualeUsoMDGUE").insertAfter("#rowCos");	
+			</c:when>
+			<c:otherwise>
+				$("#rowManualeUsoMDGUE").insertAfter("#rowFVOE");
+			</c:otherwise>
+		</c:choose>
+		<c:choose>
+			<c:when test='${not empty urlMEFORMS and urlMEFORMS ne ""}'>
+				$("#rowManualeUsoMDGUE").insertAfter("#rowManualeUsoMEFORMS");
+			</c:when>
+			<c:otherwise>
+				$("#rowManualeUsoMDGUE").insertAfter("#rowNoteCalcoloSogliaAnomalia");
+			</c:otherwise>
+		</c:choose>
 	</gene:javaScript>

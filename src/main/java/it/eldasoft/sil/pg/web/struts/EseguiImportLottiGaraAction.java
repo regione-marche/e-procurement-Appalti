@@ -93,7 +93,12 @@ public class EseguiImportLottiGaraAction extends ActionBaseNoOpzioni {
 			tmp = (String) request.getAttribute("isCodificaAutomatica");
 		if("1".equals(tmp))
 			isCodificaAutomatica = true;
-
+		
+		// Lettura eventuale pgarof 
+        String pgarof = null;
+        if(request.getParameter("percGarProv") != null)
+          pgarof = request.getParameter("percGarProv");
+        
 
 		UploadFileForm fileExcel = (UploadFileForm) form;
 
@@ -101,7 +106,7 @@ public class EseguiImportLottiGaraAction extends ActionBaseNoOpzioni {
 			try {
 				LoggerImportOffertaPrezzi loggerImport =
 					this.importExportLottiGaraManager.importLottiGara(
-						(UploadFileForm) form, codgar, isGaraLottiOffDist, request.getSession());
+						(UploadFileForm) form, codgar, isGaraLottiOffDist, request.getSession(), pgarof);
 
 	    	if(loggerImport.getListaMsgVerificaFoglio().size() > 0)
 	    		risultato = "KO";

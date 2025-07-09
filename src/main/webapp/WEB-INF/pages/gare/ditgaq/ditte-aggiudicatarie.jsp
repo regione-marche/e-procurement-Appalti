@@ -108,7 +108,7 @@
 		<gene:campoScheda campo="IMPSIC_${param.contatore}" entita="GARE" campoFittizio="true"  modificabile="false" definizione="F15;0;;MONEY;G1IMPSIC" value="${impsic}"  visibile="${param.sicinc eq '2' }"/>
 		<gene:campoScheda campo="IMPPERM_${param.contatore}" entita="DITG" campoFittizio="true"  modificabile="false" definizione="F15;0;;MONEY;G1IMPPERM" value="${item[8]}" visibile="${ param.ultdetlic eq '1' or param.ultdetlic eq '3'}" title="di cui importo per permuta"/>
 		<gene:campoScheda campo="IMPCANO_${param.contatore}" entita="DITG" campoFittizio="true"  modificabile="false" definizione="F15;0;;MONEY;G1IMPCANO" value="${item[9]}" visibile="${ param.ultdetlic eq '2' or param.ultdetlic eq '3' }" title="di cui importo per canone assistenza"/>
-		<gene:campoScheda campo="RICSUB_${param.contatore}" entita="DITG" campoFittizio="true"  definizione="T2;0;;SN;G1RICSUB" value="${item[10]}" />
+		<gene:campoScheda campo="RICSUB_${param.contatore}" entita="DITG" campoFittizio="true"  definizione="T2;0;;SN;G1RICSUB" value="${item[10]}" visibile="false"/>
 		<gene:campoScheda campo="RIDISO_${param.contatore}" entita="DITGAQ" campoFittizio="true"  definizione="T2;0;;SN;G1RIDISODQ" value="${item[11]}" />
 		<gene:campoScheda campo="IMPGAR_${param.contatore}" entita="DITGAQ" campoFittizio="true" definizione="F15;0;;MONEY;G1IMPGARDQ" value="${item[12]}" >
 			<gene:calcoloCampoScheda funzione='calcolaIMPGAR(${param.contatore})' elencocampi='DITGAQ_RIDISO_${param.contatore}'/>
@@ -177,7 +177,7 @@
 		<gene:campoScheda campo="IMPSIC_${param.contatore}" entita="GARE" campoFittizio="true"  modificabile="false" definizione="F15;0;;MONEY;G1IMPSIC"  />
 		<gene:campoScheda campo="IMPPERM_${param.contatore}" entita="DITG" campoFittizio="true"  modificabile="false" definizione="F15;0;;MONEY;G1IMPPERM" title="di cui importo per permuta" />
 		<gene:campoScheda campo="IMPCANO_${param.contatore}" entita="DITG" campoFittizio="true"  modificabile="false" definizione="F15;0;;MONEY;G1IMPCANO" title="di cui importo per canone assistenza" />
-		<gene:campoScheda campo="RICSUB_${param.contatore}" entita="DITG" campoFittizio="true"  definizione="T2;0;;SN;G1RICSUB"  />
+		<gene:campoScheda campo="RICSUB_${param.contatore}" entita="DITG" campoFittizio="true"  definizione="T2;0;;SN;G1RICSUB" visibile="false"/>
 		<gene:campoScheda campo="RIDISO_${param.contatore}" entita="DITGAQ" campoFittizio="true"   definizione="T2;0;;SN;G1RIDISODQ" />
 		<gene:campoScheda campo="IMPGAR_${param.contatore}" entita="DITGAQ" campoFittizio="true" definizione="F15;0;;MONEY;G1IMPGARDQ" />
 		

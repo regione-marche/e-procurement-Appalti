@@ -23,11 +23,11 @@
 	$(function() {
 				$("#configurazione").append(
 "				<p>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gene/cais/cais-lista.jsp&filtroArchiviata=2'+ '&' + csrfToken;\">\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gene/cais/cais-lista.jsp&filtroArchiviata=2';\">\n"+
 "					<img alt=\"Categorie d'iscrizione\" src=\"${contextPath}/img/Content-33.png\"></a>\n"+
 "					&nbsp;&nbsp;&nbsp;\n"+
 "					<b>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gene/cais/cais-lista.jsp&filtroArchiviata=2'+ '&' + csrfToken;\">Categorie d'iscrizione</a>\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gene/cais/cais-lista.jsp&filtroArchiviata=2';\">Categorie d'iscrizione</a>\n"+
 "					</b>\n"+
 "				</p>\n"
 				);
@@ -39,11 +39,11 @@
 	$(function() {
 				$("#configurazione").append(
 "				<p>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/detmot/detmot-lista.jsp'+ '&' + csrfToken;\">\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/detmot/detmot-lista.jsp';\">\n"+
 "					<img alt=\"Dettagli motivo esclusione ditte in gara\" src=\"${contextPath}/img/DettagliMotivoEsclusione.png\"></a>\n"+
 "					&nbsp;&nbsp;&nbsp;\n"+
 "					<b>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/detmot/detmot-lista.jsp'+ '&' + csrfToken;\">Dettagli motivo esclusione ditte in gara</a>\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/detmot/detmot-lista.jsp';\">Dettagli motivo esclusione ditte in gara</a>\n"+
 "					</b>\n"+
 "				</p>\n"
 				);
@@ -54,11 +54,11 @@
 	$(function() {
 				$("#configurazione").append(
 "				<p>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-selezione.jsp'+ '&' + csrfToken;\">\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-selezione.jsp';\">\n"+
 "					<img alt=\"Documentazione di gara\" src=\"${contextPath}/img/ArchivioDocumentazione.png\"></a>\n"+
 "					&nbsp;&nbsp;&nbsp;\n"+
 "					<b>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-selezione.jsp'+ '&' + csrfToken;\">Documentazione di gara e di contratto</a>\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-selezione.jsp';\">Documentazione di gara e di contratto</a>\n"+
 "					</b>\n"+
 "				</p>\n"
 				);
@@ -69,11 +69,11 @@
 	$(function() {
 				$("#configurazione").append(
 "				<p>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=geneweb/w_confcom/modelliComunicazioni-lista.jsp'+ '&' + csrfToken;\">\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=geneweb/w_confcom/modelliComunicazioni-lista.jsp';\">\n"+
 "					<img alt=\"Modelli di comunicazioni\" src=\"${contextPath}/img/ModelliComunicazioni.png\"></a>\n"+
 "					&nbsp;&nbsp;&nbsp;\n"+
 "					<b>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=geneweb/w_confcom/modelliComunicazioni-lista.jsp'+ '&' + csrfToken;\">Modelli di comunicazioni</a>\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=geneweb/w_confcom/modelliComunicazioni-lista.jsp';\">Modelli di comunicazioni</a>\n"+
 "					</b>\n"+
 "				</p>\n"
 				);
@@ -84,11 +84,11 @@
 	$(function() {
 				$("#configurazione").append(
 "				<p>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/g1crimod/g1crimod-lista.jsp'+ '&' + csrfToken;\">\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/g1crimod/g1crimod-lista.jsp';\">\n"+
 "					<img alt=\"Modelli di criteri\" src=\"${contextPath}/img/modelliCriteriOepv.png\"></a>\n"+
 "					&nbsp;&nbsp;&nbsp;\n"+
 "					<b>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/g1crimod/g1crimod-lista.jsp'+ '&' + csrfToken;\">Modelli di criteri di valutazione per OEPV</a>\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/g1crimod/g1crimod-lista.jsp';\">Modelli di criteri di valutazione per OEPV</a>\n"+
 "					</b>\n"+
 "				</p>\n"
 				);
@@ -114,11 +114,11 @@
 		$(function() {
 					$("#parametri").append(
 	"					<p>\n"+
-	"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=geneweb/w_config/dettConfig.jsp&detail=WSERP'+ '&' + csrfToken;\">\n"+
+	"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=geneweb/w_config/dettConfig.jsp&detail=WSERP';\">\n"+
 	" 					<img alt=\"Gestione parametri\" src=\"${contextPath}/img/configurazioneWSERP.png\"></a>\n"+
 	"					&nbsp;&nbsp;&nbsp;\n"+
 	"					<b>\n"+
-	"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=geneweb/w_config/dettConfig.jsp&detail=WSERP'+ '&' + csrfToken;\">Integrazione con sistema ERP</a>\n"+
+	"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=geneweb/w_config/dettConfig.jsp&detail=WSERP';\">Integrazione con sistema ERP</a>\n"+
 	"					</b>\n"+
 	"					</p>\n"
 					);
@@ -130,11 +130,11 @@
 		$(function() {
 					$("#parametri").append(
 	"					<p>\n"+
-	"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=geneweb/w_config/dettConfig.jsp&detail=Vigilanza'+ '&' + csrfToken;\">\n"+
+	"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=geneweb/w_config/dettConfig.jsp&detail=Vigilanza';\">\n"+
 	" 					<img alt=\"Gestione parametri\" src=\"${contextPath}/img/Status-30.png\"></a>\n"+
 	"					&nbsp;&nbsp;&nbsp;\n"+
 	"					<b>\n"+
-	"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=geneweb/w_config/dettConfig.jsp&detail=Vigilanza'+ '&' + csrfToken;\">Integrazione con Vigilanza</a>\n"+
+	"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=geneweb/w_config/dettConfig.jsp&detail=Vigilanza';\">Integrazione con Vigilanza</a>\n"+
 	"					</b>\n"+
 	"					</p>\n"
 					);
@@ -144,11 +144,11 @@
 	$(function() {
 				$("#parametri").append(
 "				<p>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/confopeco/confopeco-lista.jsp'+ '&' + csrfToken;\">\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/confopeco/confopeco-lista.jsp';\">\n"+
 "					<img alt=\"Configurazione selezione da elenco operatori\" src=\"${contextPath}/img/ConfigurazioneElencoOperatori.png\"></a>\n"+
 "					&nbsp;&nbsp;&nbsp;\n"+
 "					<b>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/confopeco/confopeco-lista.jsp'+ '&' + csrfToken;\">Configurazione selezione da elenco operatori</a>\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/confopeco/confopeco-lista.jsp';\">Configurazione selezione da elenco operatori</a>\n"+
 "					</b>\n"+
 "				</p>\n"
 				);
@@ -159,11 +159,11 @@
 	$(function() {
 				$("#configurazione").append(
 "				<p>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/catpub/catpub-lista.jsp'+ '&' + csrfToken;\">\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/catpub/catpub-lista.jsp';\">\n"+
 "					<img alt=\"Pubblicazioni bando ed esito di gara\" src=\"${contextPath}/img/PubblicazioniBandoEsito.png\"></a>\n"+
 "					&nbsp;&nbsp;&nbsp;\n"+
 "					<b>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/catpub/catpub-lista.jsp'+ '&' + csrfToken;\">Pubblicazioni bando ed esito di gara</a>\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/catpub/catpub-lista.jsp';\">Pubblicazioni bando ed esito di gara</a>\n"+
 "					</b>\n"+
 "				</p>\n"
 				);
@@ -175,15 +175,29 @@
 	$(function() {
 				$("#parametri").append(
 "				<p>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/catsca/catsca-lista.jsp'+ '&' + csrfToken;\">\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/catsca/catsca-lista.jsp';\">\n"+
 "					<img alt=\"Configurazione scadenze gara\" src=\"${contextPath}/img/ConfigurazioneScadenzeGara.png\"></a>\n"+
 "					&nbsp;&nbsp;&nbsp;\n"+
 "					<b>\n"+
-"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/catsca/catsca-lista.jsp'+ '&' + csrfToken;\">Configurazione scadenze gara</a>\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/catsca/catsca-lista.jsp';\">Configurazione scadenze gara</a>\n"+
 "					</b>\n"+
 "				</p>\n"
 				);
 			});
 	</c:if>
+	
+		
+	$(function() {
+				$("#parametri").append(
+"				<p>\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/g1confidur/g1confidur-lista.jsp';\">\n"+
+"					<img alt=\"Configurazione durata procedimento di gara\" src=\"${contextPath}/img/Time-3.png\"></a>\n"+
+"					&nbsp;&nbsp;&nbsp;\n"+
+"					<b>\n"+
+"					<a class=\"link-generico\" href=\"javascript:document.location.href='${contextPath}/ApriPagina.do?href=gare/g1confidur/g1confidur-lista.jsp';\">Configurazione durata procedimento di gara</a>\n"+
+"					</b>\n"+
+"				</p>\n"
+				);
+			});
 		
 	

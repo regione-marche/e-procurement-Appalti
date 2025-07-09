@@ -1,13 +1,21 @@
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
 import it.eldasoft.gene.bl.GenChiaviManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
+import it.eldasoft.gene.db.domain.LogEvento;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreChiaveIDAutoincrementante;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.StipuleManager;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityStringhe;
 
 import java.sql.SQLException;
+import java.util.Vector;
 
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
@@ -62,17 +70,19 @@ public class GestoreG1DOCSTIPULA extends AbstractGestoreChiaveIDAutoincrementant
   }
 
   @Override
-  public void afterInsertEntita(TransactionStatus status, DataColumnContainer datiForm) throws GestoreException {
-
-
-
-
-  }
-
-
-  @Override
   public void preDelete(TransactionStatus status, DataColumnContainer datiForm) throws GestoreException {
+    Long idDocStipula = datiForm.getLong("G1DOCSTIPULA.ID");
 
+    try {
+    String codStipula = (String) this.sqlManager.getObject("select s.codstipula "
+        + "from g1stipula s "
+        + "join g1docstipula d on d.idstipula = s.id "
+        + "where d.id = ? ", new Object[] { idDocStipula });
+    
+    datiForm.addColumn("G1DOCSTIPULA.CODSTIPULA", JdbcParametro.TIPO_TESTO, codStipula);
+    } catch (Exception e) {
+      throw new GestoreException( "Si e' verificato un errore durante la lettura dei documenti della stipula ",null, e);
+    }
   }
 
   @Override
@@ -119,5 +129,104 @@ public class GestoreG1DOCSTIPULA extends AbstractGestoreChiaveIDAutoincrementant
     this.getRequest().setAttribute("salvataggioOK", "true");
   }
 
+  
+  
+  
+  
+
+  @Override
+  public void afterDeleteEntita(TransactionStatus status, DataColumnContainer datiForm) throws GestoreException {
+    String codStipula = datiForm.getString("G1DOCSTIPULA.CODSTIPULA");
+    Long idDocStipula = datiForm.getLong("G1DOCSTIPULA.ID");
+
+    try {
+      String codiceApplicazione = (String) this.getRequest().getSession().getAttribute(CostantiGenerali.MODULO_ATTIVO);
+      codiceApplicazione = UtilityStringhe.convertiNullInStringaVuota(codiceApplicazione);
+      if("".equals(codiceApplicazione)){
+        codiceApplicazione = ConfigManager.getValore(CostantiGenerali.PROP_CODICE_APPLICAZIONE);
+      }
+
+      LogEvento logEvento = LogEventiUtils.createLogEvento(this.getRequest());
+      logEvento.setCodApplicazione(codiceApplicazione);
+      logEvento.setLivEvento(1);
+      logEvento.setOggEvento(codStipula);
+      logEvento.setCodEvento("GA_STIPULA_DOC_DELETE");
+      logEvento.setDescr("Eliminazione documento stipula (Id doc. "+idDocStipula+")");
+      logEvento.setErrmsg("");
+      LogEventiUtils.insertLogEventi(logEvento);
+    } catch (Exception le) {
+      logger.error("Errore inaspettato durante la tracciatura su w_logeventi", le);
+    }
+  }
+  
+  @Override
+  public void afterInsertEntita(TransactionStatus status, DataColumnContainer datiForm) throws GestoreException {
+    Long idDocStipula = datiForm.getLong("G1DOCSTIPULA.ID");
+
+    try {
+      
+      String codStipula = (String) this.sqlManager.getObject("select s.codstipula "
+          + "from g1stipula s "
+          + "join g1docstipula d on d.idstipula = s.id "
+          + "where d.id = ? ", new Object[] { idDocStipula });
+      
+      
+      String codiceApplicazione = (String) this.getRequest().getSession().getAttribute(CostantiGenerali.MODULO_ATTIVO);
+      codiceApplicazione = UtilityStringhe.convertiNullInStringaVuota(codiceApplicazione);
+      if("".equals(codiceApplicazione)){
+        codiceApplicazione = ConfigManager.getValore(CostantiGenerali.PROP_CODICE_APPLICAZIONE);
+      }
+
+      LogEvento logEvento = LogEventiUtils.createLogEvento(this.getRequest());
+      logEvento.setCodApplicazione(codiceApplicazione);
+      logEvento.setLivEvento(1);
+      logEvento.setOggEvento(codStipula);
+      logEvento.setCodEvento("GA_STIPULA_DOC_INSERT");
+      logEvento.setDescr("Inserimento documento stipula (Id doc. "+idDocStipula+")");
+      logEvento.setErrmsg("");
+      LogEventiUtils.insertLogEventi(logEvento);
+    } catch (Exception le) {
+      logger.error("Errore inaspettato durante la tracciatura su w_logeventi", le);
+    }
+  }
+  
+  @Override
+  public void afterUpdateEntita(TransactionStatus status, DataColumnContainer datiForm) throws GestoreException {
+    Long idDocStipula = datiForm.getLong("G1DOCSTIPULA.ID");
+
+    try {
+      
+      String codStipula = (String) this.sqlManager.getObject("select s.codstipula "
+          + "from g1stipula s "
+          + "join g1docstipula d on d.idstipula = s.id "
+          + "where d.id = ? ", new Object[] { idDocStipula });
+      
+      
+      String codiceApplicazione = (String) this.getRequest().getSession().getAttribute(CostantiGenerali.MODULO_ATTIVO);
+      codiceApplicazione = UtilityStringhe.convertiNullInStringaVuota(codiceApplicazione);
+      if("".equals(codiceApplicazione)){
+        codiceApplicazione = ConfigManager.getValore(CostantiGenerali.PROP_CODICE_APPLICAZIONE);
+      }
+
+      LogEvento logEvento = LogEventiUtils.createLogEvento(this.getRequest());
+      logEvento.setCodApplicazione(codiceApplicazione);
+      logEvento.setLivEvento(1);
+      logEvento.setOggEvento(codStipula);
+      logEvento.setCodEvento("GA_STIPULA_DOC_EDIT");
+      logEvento.setDescr("Modifica documento stipula (Id doc. "+idDocStipula+")");
+      logEvento.setErrmsg("");
+      LogEventiUtils.insertLogEventi(logEvento);
+    } catch (Exception le) {
+      logger.error("Errore inaspettato durante la tracciatura su w_logeventi", le);
+    }
+  }
+
+  
+  
+  
+  
+  
+  
+  
 
 }

@@ -29,12 +29,34 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 <c:set var="filtroLivelloUtente" value='${gene:callFunction2("it.eldasoft.gene.tags.utils.functions.FiltroLivelloUtenteFunction", pageContext, "G1STIPULA")}' />
 <gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.PulisciSessioneFiltriFunction" parametro=""/>
 
+<c:set var="integrazioneWSERP" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSERPFunction", pageContext)}' />
+<c:set var="tipoWSERP" value='${requestScope.tipoWSERP}' />
+
+<c:set var="isCodificaAutomatica" value='${gene:callFunction3("it.eldasoft.gene.tags.functions.IsCodificaAutomaticaFunction", pageContext, "G1STIPULA", "CODSTIPULA")}'/>
+
+
+<c:choose>
+	<c:when test='${   
+						integrazioneWSERP eq "1" 
+					and tipoWSERP eq "RAI" 
+					and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp") }'>
+		<c:set var="isAbilitataFunzioneErp" value="1" />
+	</c:when>
+	<c:otherwise>					
+		<c:set var="isAbilitataFunzioneErp" value="0" />
+	</c:otherwise>				
+</c:choose>
+
+<input type="hidden" name="isAbilitataFunzioneErp" id="isAbilitataFunzioneErp" value="${isAbilitataFunzioneErp }" />
+
+<c:set var="codContrattoErp" value='${gene:getValCampo(key, "G1STIPULA.NREPAT")}' />
 
 <jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
 
 <gene:redefineInsert name="head">
-<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>		
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>
 </gene:redefineInsert>
+
 <c:choose>
 	<c:when test='${not empty param.ngara}'>
 		<c:set var="ngara" value="${param.ngara}" />
@@ -97,6 +119,9 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 
 <c:set var="idStipula" value='${gene:getValCampo(key, "G1STIPULA.ID")}' />
 
+<c:set var="sql" value="select vernpa from torn where codgar=?"/>
+<c:set var="verNPA" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, sql, codgar)}'/>
+
 <c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.RichiestaCIG") and not (isCigAbilitato eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InviaDatiCIG"))}'>
 	<c:set var="esisteAnagraficaCollSimog" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsisteAnagraficaCollSimogFunction", pageContext, idStipula)}'/>
 </c:if>
@@ -108,7 +133,6 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 
 <%/* Viene riportato tipoGara, in modo tale che, in caso di errorie riapertura della pagina, 
      venga riaperta considerando il valore definito inizialmente per la prima apertura della pagina */%>
-
 
 <gene:redefineInsert name="schedaNuovo" />
 <gene:redefineInsert name="pulsanteNuovo" />
@@ -123,15 +147,24 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	<c:set var="integrazioneWSDMDocumentale" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNDocumentaleFunction", pageContext, datiRiga.G1STIPULA_CODSTIPULA,idconfi)}' />
 	<c:if test='${integrazioneWSDM eq "1" or integrazioneWSDMDocumentale eq "1"}'>
 		<c:set var="tipoWSDM" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetTipoWSDMFunction", pageContext, "FASCICOLOPROTOCOLLO", "NO",idconfi)}' />
-		<c:set var="isFascicoloDocumentaleAbilitato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.IsFascicoloDocumentaleValidoFunction",  pageContext, datiRiga.G1STIPULA_CODSTIPULA,idconfi)}' />
-		
+		<c:set var="isFascicoloDocumentaleAbilitato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.IsApplicaFascicolazioneValidaFunction",  pageContext, datiRiga.G1STIPULA_CODSTIPULA,idconfi)}' />
 	</c:if>
 </c:if>
 
+<c:if test='${		  modo eq "NUOVO"
+				 and  integrazioneWSERP eq "1" 
+				 and  tipoWSERP eq "RAI" 
+				 and  gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp") 
+             }'>
+	<c:set var="esisteGaraNumeroContrattoErp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteGaraNumeroContrattoErpFunction",  pageContext, ngara, codiga )}' />
+</c:if>
+
+
+
 <gene:redefineInsert name="addToAzioni" >
 
-	<c:if test='${modo eq "VISUALIZZA" and (abilitazioneGare eq "A" || utente eq requestScope.creatore || utente eq requestScope.assegnatario) and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.G1STIPULA-scheda.DATIGEN.AttivaContratto")}'>
-		<c:if test="${datiRiga.G1STIPULA_STATO ne 5}" >
+	<c:if test='${richiestaApprovazioneFirma ne "1" and modo eq "VISUALIZZA" and (abilitazioneGare eq "A" || utente eq requestScope.creatore || utente eq requestScope.assegnatario) and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.G1STIPULA-scheda.DATIGEN.AttivaContratto")}'>
+		<c:if test="${datiRiga.G1STIPULA_STATO ne 5 and datiRiga.G1STIPULA_STATO ne 6}" >
 			<tr>
 			  <td class="vocemenulaterale" >
 					  <a href="javascript:setStatoStipula(1);" title="Attiva contratto" tabindex="1500" >Attiva contratto</a>
@@ -146,8 +179,15 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		  	</tr>
 	  	</c:if>
 	</c:if>
+	<c:if test='${richiestaApprovazioneFirma ne "1" and modo eq "VISUALIZZA" and datiRiga.G1STIPULA_STATO ne 6 and (abilitazioneGare eq "A" || utente eq requestScope.creatore || utente eq requestScope.assegnatario) and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.G1STIPULA-scheda.DATIGEN.AnnullaContratto")}'>
+		<tr>
+		  <td class="vocemenulaterale" >
+				  <a href="javascript:setStatoStipula(3);" title="Annulla contratto" tabindex="1501" >Annulla contratto</a>
+		  </td>
+	  	</tr>
+	</c:if>
 	
-	<c:if test='${modo eq "VISUALIZZA" and !(empty idpadre) and datiRiga.G1STIPULA_TIPOVAR eq 2 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.RichiestaCIGCollegato")}'>
+	<c:if test='${empty verNPA and richiestaApprovazioneFirma ne "1" and modo eq "VISUALIZZA" and !(empty idpadre) and datiRiga.G1STIPULA_TIPOVAR eq 2 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.RichiestaCIGCollegato")}'>
 		<c:choose>
 		<c:when test='${isCigAbilitato eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InviaDatiCIG")}'>
 		</c:when>
@@ -168,13 +208,29 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	</c:if>
 	
 	
-	<c:if test='${modo eq "VISUALIZZA" and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.Condividi-stipula")}'>
+	<c:if test='${richiestaApprovazioneFirma ne "1" and modo eq "VISUALIZZA" and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.Condividi-stipula")}'>
 		<tr>
 			<td class="vocemenulaterale" >
 				<a href="javascript:apriGestionePermessiStipula('${datiRiga.G1STIPULA_ID}','${datiRiga.G1STIPULA_CODSTIPULA}',${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'});" title="Condividi e proteggi stipula" tabindex="1505">Condividi e proteggi stipula</a>
 			</td>
 		</tr>
 	</c:if>
+	
+	<c:if test='${modo eq "VISUALIZZA" and integrazioneWSERP eq "1" and tipoWSERP eq "RAI" and requestScope.initCODSTIPULAPADRE eq null and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp") }'>
+		<tr>
+			<td class="vocemenulaterale" >
+				<a href="javascript:popUpAssociaContrattoErp();" title="Associa contratto Sap" tabindex="1505">Associa contratto Sap</a>
+			</td>
+		</tr>
+	</c:if>	
+	
+	<c:if test='${modo eq "VISUALIZZA" and integrazioneWSERP eq "1" and tipoWSERP eq "INARCASSA"}'>
+		<tr>
+			<td class="vocemenulaterale" >
+				<a href="javascript:popUpRecuperaOda();" title="Recupera ODA" tabindex="1505">Recupera ODA</a>
+			</td>
+		</tr>
+	</c:if>	
 	
 	<c:if test='${modo eq "VISUALIZZA" and ((fn:contains(listaOpzioniDisponibili, "OP114#") and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.RiceviComunicazioni")) || (gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.InviaComunicazioni")))}'>
 		<tr>
@@ -245,7 +301,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 </gene:redefineInsert>
 <gene:redefineInsert name="addToDocumenti" >	
 	<c:set var="creaFascicolo" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.GetPropertyWsdmFunction", accessoCreaFascicolo,idconfi)}'/>
-	<c:if test='${modo eq "VISUALIZZA"  and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.CreaFascicolo") and integrazioneWSDM eq "1" and creaFascicolo eq "1"}'>
+	<c:if test='${modo eq "VISUALIZZA"  and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.CreaFascicolo") and integrazioneWSDM eq "1" and creaFascicolo eq "1" and not gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.obbligoAssociaFascicoloEsistente")}'>
 		<c:set var="esisteFascicoloAssociato" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteFascicoloAssociatoFunction", pageContext, "G1STIPULA", idStipula,idconfi)}' scope="request"/>
 		
 		<c:if test='${esisteFascicoloAssociato ne "true" and  (tipoWSDM eq "IRIDE" or tipoWSDM eq "JIRIDE" )}' >
@@ -269,7 +325,8 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		</c:if>
 	</c:if>
 	<c:if test='${modo eq "VISUALIZZA"  and ((integrazioneWSDMDocumentale eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciAlDocumentale"))
-                          or (!empty exportCOS and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciCos"))
+                          or (conservazioneAttiva eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciCos"))
+                          or (conservazioneAttiva eq "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciDigiP"))
                           or (!empty exportDocumenti and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ExportDocumenti")))}'>
 			<tr>
 				<c:choose>
@@ -307,6 +364,23 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			</tr>
 		</c:if>
 </gene:redefineInsert>
+	
+	<c:choose>
+		<c:when test="${stato eq 6 }">
+			<c:set var="whereV_GARE_STIPULA" value="V_GARE_STIPULA.ID=${idStipula}"/>
+		</c:when>
+		<c:otherwise>
+			<c:set var="whereV_GARE_STIPULA" value="V_GARE_STIPULA.NGARA=G1STIPULA.NGARA AND V_GARE_STIPULA.NCONT=G1STIPULA.NCONT"/>
+		</c:otherwise>
+	</c:choose>
+
+	<c:set var="msgChiaveErrore">
+		<fmt:message key="match.tags.template.dettaglio.campoChiave.messaggio">
+			<fmt:param value="$"/>
+		</fmt:message>
+	</c:set>
+
+	<c:set var="msgChiaveErrore" value="${fn:replace(msgChiaveErrore, '\\\\', '')}" />
 
 	<gene:gruppoCampi idProtezioni="STIPDG">
 		<gene:campoScheda >
@@ -314,13 +388,15 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		</gene:campoScheda>
 		<gene:campoScheda campo="ID" visibile="false" />
 		<gene:campoScheda campo="NGARAVAR" visibile="false" />
-		<gene:campoScheda campo="CODSTIPULA"  modificabile="false" />
+		<gene:campoScheda campo="CODSTIPULA"  modificabile="${isCodificaAutomatica eq 'false' && modo eq 'NUOVO'}" obbligatorio="${isCodificaAutomatica eq 'false' && modo eq 'NUOVO'}" keyCheck="true">
+			<gene:checkCampoScheda funzione='"##".indexOf("$") < 0' obbligatorio="true" messaggio="${msgChiaveErrore}" />
+		</gene:campoScheda>
 		<gene:campoScheda campo="ID_PADRE" defaultValue="${idpadre}"  visibile="false" />
 		<gene:campoScheda title="Codice stipula precedente" campo="CODSTIPULA_FIT" campoFittizio="true" definizione="T20" value="${requestScope.initCODSTIPULAPADRE}" visibile="${!empty datiRiga.G1STIPULA_ID_PADRE}" modificabile="false"/>
 		<gene:campoScheda campo="ID_ORIGINARIO" defaultValue="${idoriginario}" visibile="false" />
 		<gene:campoScheda campo="LIVELLO" visibile="false" />
 		<gene:campoScheda campo="NGARA" defaultValue="${ngara}" modificabile="false" visibile="false"/>
-		<gene:campoScheda title="Codice gara" campo="CODICE" entita="V_GARE_STIPULA"  defaultValue="${initCODICE}" modificabile="false" where="V_GARE_STIPULA.NGARA=G1STIPULA.NGARA AND V_GARE_STIPULA.NCONT=G1STIPULA.NCONT"/>	
+		<gene:campoScheda title="Codice gara" campo="CODICE" entita="V_GARE_STIPULA"  defaultValue="${initCODICE}" modificabile="false" where="${whereV_GARE_STIPULA }"/>	
 		<gene:campoScheda campo="NCONT" defaultValue="${ncont}"  visibile="false" />
 		<c:choose>
 			<c:when test="${!empty (filtroLivelloUtente)}">
@@ -354,23 +430,104 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	
 	<gene:gruppoCampi idProtezioni="STIPEC">
 	<c:choose>
-		<c:when test='${empty idpadre}'>
+		<c:when test='${stato eq 6 || not empty idpadre}'>
 			<gene:campoScheda >
-					<td colspan="2"><b>Estremi del contratto</b></td>
+				<td colspan="2"><b>Estremi atto aggiuntivo /variante</b></td>
 			</gene:campoScheda>
-			<gene:campoScheda entita="GARE" campo="TIATTO" where="GARE.NGARA='${requestScope.codiceLotto}'" />
-			<gene:campoScheda entita="GARE" campo="NREPAT" where="GARE.NGARA='${requestScope.codiceLotto}'" />
-			<gene:campoScheda entita="GARECONT" campo="NUMCONT" where="GARECONT.NGARA=G1STIPULA.NGARA AND GARECONT.NCONT=G1STIPULA.NCONT" />
-			<gene:campoScheda entita="GARE" campo="DAATTO" where="GARE.NGARA='${requestScope.codiceLotto}'" />
+			<gene:campoScheda campo="TIATTO" />
+			<c:choose>
+				<c:when test='${ (    (modo eq "NUOVO") 
+				                   or (modo eq "VISUALIZZA")
+				                   or (modo eq "MODIFICA") 
+				                  )
+				                and integrazioneWSERP eq "1" 
+				                and tipoWSERP eq "RAI" 
+				                and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp") }'>				                
+					<c:choose>
+						<c:when test='${ modo eq "VISUALIZZA" }'>
+							<gene:campoScheda campo="NREPAT" 
+											  href="javascript:popUpVisualizzaContrattoErp();"
+											  modificabile="false" >
+								&nbsp;&nbsp;&nbsp;<input type="button" value="Elimina associazione" id="EliminaAssociazioneErp" class="bottone-azione" onclick="javascript:eliminaAssociazioneContrattoErp();" style="display:none;" />
+							</gene:campoScheda>	
+							<gene:campoScheda campo="DAATTO" 
+									          modificabile="false" />	
+						</c:when>
+						<c:otherwise>
+							<gene:campoScheda campo="NREPAT" 
+											  href="javascript:popUpVisualizzaContrattoErp();"
+											  modificabile='${requestScope.initCODSTIPULAPADRE ne null}'
+											  defaultValue="${initNREPAT}"
+											  />
+							<gene:campoScheda campo="DAATTO" 
+									          modificabile="true" />											  
+						</c:otherwise>
+					</c:choose>			              
+				</c:when>			
+				<c:otherwise>
+					<gene:campoScheda campo="NREPAT" />
+					<gene:campoScheda campo="DAATTO" />			
+				</c:otherwise>
+			</c:choose>				           		
 		</c:when>
 		<c:otherwise>
 			<gene:campoScheda >
-					<td colspan="2"><b>Estremi atto aggiuntivo /variante</b></td>
+					<td colspan="2"><b>Estremi del contratto</b></td>
 			</gene:campoScheda>
-			<gene:campoScheda campo="TIATTO" />
-			<gene:campoScheda campo="NREPAT" />
-			<gene:campoScheda campo="DAATTO" />
-		</c:otherwise>
+			<gene:campoScheda entita="GARE" campo="TIATTO" where="GARE.NGARA='${requestScope.codiceLotto}'" />			
+			<c:choose>
+				<c:when test='${ (modo eq "VISUALIZZA" or modo eq "MODIFICA")
+				                and integrazioneWSERP eq "1" 
+				                and tipoWSERP eq "RAI" 
+				                and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp") }'>
+					<gene:campoScheda entita="GARE" campo="NREPAT" href="javascript:popUpVisualizzaContrattoErp();" modificabile="false">			   
+					    &nbsp;&nbsp;&nbsp;<input type="button" value="Elimina associazione" id="EliminaAssociazioneErp" class="bottone-azione" onclick="javascript:eliminaAssociazioneContrattoErp();" style="display:none;" />			    
+					</gene:campoScheda>
+				</c:when>
+				<c:otherwise>
+					<c:choose>
+						<c:when test='${ (   modo eq "NUOVO" )
+										 and integrazioneWSERP eq "1" 
+										 and tipoWSERP eq "RAI" 
+										 and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp") }'>
+							<gene:campoScheda entita="GARE" campo="NREPAT" defaultValue="${numeroContrattoErp}" modificabile="false" />										 
+	                    </c:when>
+	                    <c:otherwise>									                				
+							<gene:campoScheda entita="GARE" campo="NREPAT" where="GARE.NGARA='${requestScope.codiceLotto}'" />
+						</c:otherwise>
+					</c:choose>			
+				</c:otherwise>
+			</c:choose>						
+			<gene:campoScheda entita="GARECONT" campo="NUMCONT" where="GARECONT.NGARA=G1STIPULA.NGARA AND GARECONT.NCONT=G1STIPULA.NCONT" />
+			<c:choose>
+				<c:when test='${ (modo eq "VISUALIZZA" or modo eq "MODIFICA") 
+				                and integrazioneWSERP eq "1" 
+				                and tipoWSERP eq "RAI" 
+				                and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp") }'>
+				    <c:choose>
+					    <c:when test='${ (modo eq "VISUALIZZA") }'>          
+							<gene:campoScheda entita="GARE" campo="DAATTO" modificabile="false" />
+						</c:when>
+					    <c:when test='${ (modo eq "MODIFICA") }'>          
+							<gene:campoScheda entita="GARE" campo="DAATTO" modificabile="true" />
+						</c:when>
+				    </c:choose>										
+				</c:when>
+				<c:otherwise>				
+					<c:choose>
+						<c:when test='${   ( modo eq "NUOVO") 
+						                and integrazioneWSERP eq "1" 
+						                and tipoWSERP eq "RAI" 
+						                and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp") }'>
+							<gene:campoScheda entita="GARE" campo="DAATTO" defaultValue="${dataContrattoErp}" modificabile="true" />
+						</c:when>
+						<c:otherwise>					
+							<gene:campoScheda entita="GARE" campo="DAATTO" where="GARE.NGARA='${requestScope.codiceLotto}'" />
+						</c:otherwise>				
+					</c:choose>	
+				</c:otherwise>
+			</c:choose>									
+		</c:otherwise>		
 	</c:choose>
 	</gene:gruppoCampi>
 	<gene:gruppoCampi idProtezioni="STIPIC">
@@ -384,25 +541,38 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		<c:set var="assegnatario" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetDescrizioneUtenteStipulaFunction", pageContext, datiRiga.G1STIPULA_ASSEGNATARIO)}'/>
 		<gene:campoScheda title="Contract Manager" campo="ASSEGNATO_A" campoFittizio="true" definizione="T80;0;;;G_USYSUTE" value="${assegnatario}" visibile="${modo ne 'NUOVO'}" modificabile="false"/>
 		<gene:campoScheda campo="STATO" defaultValue="1" modificabile="false" visibile="${modo ne 'NUOVO'}"/>
+		<gene:campoScheda campo="MOTNEG" visibile="${stato eq 6 }"/>
+		<gene:campoScheda campo="DATNEG" visibile="${stato eq 6 }"/>
 		<gene:campoScheda campo="ISARCHI" visibile="${datiRiga.G1STIPULA_ISARCHI eq '1'}" />
 	</gene:gruppoCampi>
 	<gene:gruppoCampi idProtezioni="STIPDA">
 		<gene:campoScheda >
 			<td colspan="2"><b>Ditta aggiudicataria</b></td>
 		</gene:campoScheda>
-		<gene:archivio titolo="ditta" 
-			lista="gene/impr/impr-lista-popup.jsp"
-			scheda="gene/impr/impr-scheda.jsp"
-			schedaPopUp="gene/impr/impr-scheda-popup.jsp"
-			campi="IMPR.CODIMP;IMPR.NOMEST"
-			functionId="skip"
-			chiave="V_GARE_STIPULA_CODIMP"
-			inseribile="false">
-			<gene:campoScheda entita="V_GARE_STIPULA" campo="CODIMP" defaultValue="${initCODIMP}" modificabile="false" where="V_GARE_STIPULA.NGARA=G1STIPULA.NGARA AND V_GARE_STIPULA.NCONT=G1STIPULA.NCONT"/>
-			<gene:campoScheda title="Ragione sociale" entita="IMPR" from="V_GARE_STIPULA" campo="NOMEST" defaultValue="${initNOMIMP}" modificabile="false" where="V_GARE_STIPULA.CODIMP=IMPR.CODIMP AND V_GARE_STIPULA.NGARA=G1STIPULA.NGARA AND V_GARE_STIPULA.NCONT=G1STIPULA.NCONT" />
-		</gene:archivio>
-		<gene:campoScheda title="Importo di aggiudicazione (del lotto o totale dei lotti aggiudicati)" campo="IAGGIU" entita="V_GARE_STIPULA" defaultValue="${initIAGGIU}" where="V_GARE_STIPULA.NGARA=G1STIPULA.NGARA AND V_GARE_STIPULA.NCONT=G1STIPULA.NCONT" modificabile="false" />
-		<gene:campoScheda title="Data atto aggiudicazione" entita="GARE" campo="DATTOA" where="GARE.NGARA='${requestScope.codiceLotto}'" defaultValue="${initDATTOA}" modificabile="${dattoaMod }"/>
+		<c:choose>
+			<c:when test="${stato eq 6 }">
+				<gene:campoScheda title="Codice ditta aggiudicataria" campo="CODIMP_FIT" campoFittizio="true" definizione="T10;0;;;G1VGS_CODIMP" value="${dittaG1aggisto}" modificabile="false"/>
+				<gene:campoScheda title="Ragione sociale" campo="NOMEST_FIT" campoFittizio="true" definizione="T2000;0;;;G1VGS_NOMEST" value="${nomestG1aggisto}" modificabile="false" />
+				<gene:campoScheda title="Importo di aggiudicazione (del lotto o totale dei lotti aggiudicati)" campo="IAGGIU_FIT" campoFittizio="true" definizione="F15.5;0;;MONEY;G1VGS_IAGGIU" value="${iaggiuG1aggisto}" modificabile="false" />
+				<gene:campoScheda title="Data atto aggiudicazione" campo="DATTOA_FIT" campoFittizio="true" definizione="D;0;;DATA_ELDA;DATTOA" value="${dattoaG1aggisto}" modificabile="${dattoaMod }" />
+			</c:when>
+			<c:otherwise>
+				<gene:archivio titolo="ditta" 
+					lista="gene/impr/impr-lista-popup.jsp"
+					scheda="gene/impr/impr-scheda.jsp"
+					schedaPopUp="gene/impr/impr-scheda-popup.jsp"
+					campi="IMPR.CODIMP;IMPR.NOMEST"
+					functionId="skip"
+					chiave="V_GARE_STIPULA_CODIMP"
+					inseribile="false">
+					<gene:campoScheda entita="V_GARE_STIPULA" campo="CODIMP" defaultValue="${initCODIMP}" modificabile="false" where="V_GARE_STIPULA.NGARA=G1STIPULA.NGARA AND V_GARE_STIPULA.NCONT=G1STIPULA.NCONT"/>
+					<gene:campoScheda title="Ragione sociale" entita="IMPR" from="V_GARE_STIPULA" campo="NOMEST" defaultValue="${initNOMIMP}" modificabile="false" where="V_GARE_STIPULA.CODIMP=IMPR.CODIMP AND V_GARE_STIPULA.NGARA=G1STIPULA.NGARA AND V_GARE_STIPULA.NCONT=G1STIPULA.NCONT" />
+				</gene:archivio>
+				<gene:campoScheda title="Importo di aggiudicazione (del lotto o totale dei lotti aggiudicati)" campo="IAGGIU" entita="V_GARE_STIPULA" defaultValue="${initIAGGIU}" where="V_GARE_STIPULA.NGARA=G1STIPULA.NGARA AND V_GARE_STIPULA.NCONT=G1STIPULA.NCONT" modificabile="false" />
+				<gene:campoScheda title="Data atto aggiudicazione" entita="GARE" campo="DATTOA" where="GARE.NGARA='${requestScope.codiceLotto}'" defaultValue="${initDATTOA}" modificabile="${dattoaMod }"/>
+			</c:otherwise>
+		</c:choose>
+		
 	</gene:gruppoCampi>
 	
 	<gene:gruppoCampi idProtezioni="STIPAC">
@@ -417,7 +587,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			 chiave="V_GARE_STIPULA_CENINT"
 			 functionId="skip|abilitazione:1_parentFormName:formUFFINTGare"
 			 formName="formUFFINTGare">
-				<gene:campoScheda campo="CENINT" entita="V_GARE_STIPULA" where="V_GARE_STIPULA.NGARA=G1STIPULA.NGARA AND V_GARE_STIPULA.NCONT=G1STIPULA.NCONT" obbligatorio="true" defaultValue="${requestScope.initCENINT}" modificabile="false" />
+				<gene:campoScheda campo="CENINT" entita="V_GARE_STIPULA" where="${whereV_GARE_STIPULA}" obbligatorio="true" defaultValue="${requestScope.initCENINT}" modificabile="false" />
 			<c:choose>
 				<c:when test='${modo eq "NUOVO"}' >
 					<gene:campoScheda campo="NOMEIN" title="Denominazione" modificabile="false" campoFittizio="true" definizione="T254;;;;NOMEIN" value="${requestScope.initNOMEIN}"/>
@@ -435,7 +605,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			 campi="TECNI.CODTEC;TECNI.NOMTEC"
 			 functionId="skip"
 			 chiave="V_GARE_STIPULA_CODRUP">
-				<gene:campoScheda entita="V_GARE_STIPULA" campo="CODRUP" modificabile="false" where="V_GARE_STIPULA.NGARA=G1STIPULA.NGARA AND V_GARE_STIPULA.NCONT=G1STIPULA.NCONT" defaultValue="${requestScope.initCODTECRUP}" />
+				<gene:campoScheda entita="V_GARE_STIPULA" campo="CODRUP" modificabile="false" where="${whereV_GARE_STIPULA }" defaultValue="${requestScope.initCODTECRUP}" />
 			<c:choose>
 				<c:when test='${modo eq "NUOVO"}' >
 					<gene:campoScheda campo="NOMTECRUP" title="Nome" modificabile="false" campoFittizio="true" definizione="T161;;;;NOMTEC1" value="${requestScope.initNOMTECRUP}"/>
@@ -474,7 +644,18 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		</gene:campoScheda>
 		<gene:campoScheda entita="GARE" campo="NGARA" visibile="false" defaultValue="${requestScope.codiceLotto}" where="GARE.NGARA='${requestScope.codiceLotto}'"/>
 		<c:choose>
-			<c:when test='${empty idpadre}'>
+			<c:when test='${stato eq 6 or not empty idpadre}'>
+				<gene:campoScheda campo="RIDISO" defaultValue="${initRIDISO}"/>
+				<gene:campoScheda campo="IMPGAR" defaultValue="${initIMPGAR}">
+					<gene:calcoloCampoScheda funzione='calcolaIMPGARVariante()' elencocampi='G1STIPULA_RIDISO'/>
+				</gene:campoScheda>
+				<gene:campoScheda campo="NQUIET" defaultValue="${initNQUIET}"/>
+				<gene:campoScheda campo="DQUIET" defaultValue="${initDQUIET}"/>
+				<gene:campoScheda campo="DSCAPO" defaultValue="${initDSCAPO}"/>
+				<gene:campoScheda campo="ISTCRE" defaultValue="${initISTCRE}"/>
+				<gene:campoScheda campo="INDIST" defaultValue="${initINDIST}"/>
+			</c:when>
+			<c:otherwise>
 				<gene:campoScheda entita="GARE" campo="RIDISO" defaultValue="${initRIDISO}" where="GARE.NGARA='${requestScope.codiceLotto}'"/>
 				<gene:campoScheda entita="GARE" campo="IMPGAR" defaultValue="${initIMPGAR}" where="GARE.NGARA='${requestScope.codiceLotto}'">
 					<gene:calcoloCampoScheda funzione='calcolaIMPGAR()' elencocampi='GARE_RIDISO'/>
@@ -488,22 +669,18 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				
 				<gene:campoScheda entita="GARE" campo="ISTCRE" defaultValue="${initISTCRE}" where="GARE.NGARA='${requestScope.codiceLotto}'" />
 				<gene:campoScheda entita="GARE" campo="INDIST" defaultValue="${initINDIST}" where="GARE.NGARA='${requestScope.codiceLotto}'" />
-			</c:when>
-			<c:otherwise>
-				<gene:campoScheda campo="RIDISO" defaultValue="${initRIDISO}"/>
-				<gene:campoScheda campo="IMPGAR" defaultValue="${initIMPGAR}">
-					<gene:calcoloCampoScheda funzione='calcolaIMPGARVariante()' elencocampi='G1STIPULA_RIDISO'/>
-				</gene:campoScheda>
-				<gene:campoScheda campo="NQUIET" defaultValue="${initNQUIET}"/>
-				<gene:campoScheda campo="DQUIET" defaultValue="${initDQUIET}"/>
-				<gene:campoScheda campo="DSCAPO" defaultValue="${initDSCAPO}"/>
-				<gene:campoScheda campo="ISTCRE" defaultValue="${initISTCRE}"/>
-				<gene:campoScheda campo="INDIST" defaultValue="${initINDIST}"/>
 			</c:otherwise>
 		</c:choose>
 	</gene:gruppoCampi>
+	<c:if test='${integrazioneWSERP eq "1" and tipoWSERP eq "INARCASSA" }'>
+		<gene:gruppoCampi idProtezioni="STIODA">
+			<gene:campoScheda >
+				<td colspan="2"><b>Oda</b></td>
+			</gene:campoScheda>
+			<gene:campoScheda campo="NUMODA" modificabile = "false" />
+		</gene:gruppoCampi>
+	</c:if>
 	
-			
 	<c:if test="${isFascicoloDocumentaleAbilitato eq '1'}">
 		<c:set var="tipoWSDM" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetTipoWSDMFunction", pageContext, "FASCICOLOPROTOCOLLO", "NO",idconfi)}' />
 		<gene:gruppoCampi idProtezioni="ISPGD">
@@ -546,6 +723,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			</c:choose>
 			
 			<gene:campoScheda campo="ISPGD_FIT" campoFittizio="true" title="Riferimento al fascicolo" definizione="T40;"  value="${rifFascicolo}" modificabile="false"/>
+			<gene:campoScheda campo="ISCHIUSO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=${intToString} and WSFASCICOLO.ENTITA='G1STIPULA'" visibile="${datiRiga.WSFASCICOLO_ISCHIUSO eq '1'}" modificabile="false"/>
 			<gene:campoScheda campo="CODICE" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=${intToString} and WSFASCICOLO.ENTITA='G1STIPULA'" visibile="false"/>
 			<gene:campoScheda campo="ANNO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=${intToString} and WSFASCICOLO.ENTITA='G1STIPULA'" visibile="false"/>
 			<gene:campoScheda campo="NUMERO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=${intToString} and WSFASCICOLO.ENTITA='G1STIPULA'" visibile="false"/>
@@ -558,6 +736,23 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			
 		</gene:gruppoCampi>
 	</c:if>	
+	<c:if test="${ modo eq 'VISUALIZZA' or modo eq 'MODIFICA' }">
+	<c:set var="configurazioneNotificheComunicazioni" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "comunicazioni.notifiche.idcfg")}'/>
+	<c:if test="${!empty configurazioneNotificheComunicazioni}">
+		<jsp:include page="/WEB-INF/pages/geneweb/w_invcom/modaleModificaIndirizziNotifiche.jsp">
+			<jsp:param value="${ codgar }" name="codiceGara"/>
+			<jsp:param value="true" name="isStipula"/>
+			<jsp:param value="${idStipula }" name="idStipula"/>
+		</jsp:include>
+		<gene:gruppoCampi idProtezioni="NOTIFICHECOMUNICAZIONI">
+			<gene:campoScheda>
+				<td id="placeHolderModaleNotifiche" colspan="2"><b>Notifica comunicazioni ricevute</b></td>
+			</gene:campoScheda>
+			<gene:campoScheda campo="INDNOTIFICHE" entita="G1STIPULA" modificabile="true" speciale="true">
+				<gene:popupCampo titolo="Selezione destinatari" href="apriModaleModificaIndirizziNotifiche();" />
+			</gene:campoScheda>
+		</gene:gruppoCampi>
+	</c:if></c:if>
 		
 	<gene:campoScheda>
 		<td class="comandi-dettaglio" colSpan="2">
@@ -587,6 +782,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 
 <input type="hidden" name="autorizzatoModifiche" value="${autorizzatoModifiche }" />
 <input type="hidden" name="modcont" value="${requestScope.modcont}" />
+
 
 
 </gene:formScheda>
@@ -630,9 +826,9 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		
 		if (newRidiso != oldRidiso) {
 			if (newRidiso==1) {
-				importoCauzione = importoCauzione / 2;
+				importoCauzione = importoCauzione * (1-0.3);//riduzione del 30%  (prima 50%) - DLgs 36-2023 
 			}else{ 
-				importoCauzione = importoCauzione * 2;
+				importoCauzione = importoCauzione / (1-0.3);
 			}
 		}
 		ridisoPrec = newRidiso;
@@ -644,7 +840,10 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			var codStipula = getValue("G1STIPULA_CODSTIPULA");
 			var chiave = "G1STIPULA.ID=N:${idStipula}";
 			var href = contextPath + "/ApriPagina.do?href=geneweb/w_invcom/w_invcom-in-lista.jsp&chiave=" + chiave;
-			href+="&" + csrfToken;
+			var idconfi = "${idconfi}"; 
+			if(idconfi){
+				href = href + "&idconfi="+idconfi;
+			}
 			document.location.href = href;
 		}
 	<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.G1STIPULA.InviaComunicazioni")}'>
@@ -653,7 +852,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			var chiaveWSDM=getValue("G1STIPULA_ID");
 			var codStipula = getValue("G1STIPULA_CODSTIPULA");
 			var chiave = "G1STIPULA.ID=N:${idStipula}";
-			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=geneweb/w_invcom/w_invcom-lista.jsp&entita=" + document.forms[0].entita.value + "&chiave=" + chiave;
+			var href = contextPath + "/ApriPagina.do?href=geneweb/w_invcom/w_invcom-lista.jsp&entita=" + document.forms[0].entita.value + "&chiave=" + chiave;
 			href+="&entitaWSDM=" + entitaWSDM + "&chiaveWSDM=" + chiaveWSDM;
 			var idconfi = "${idconfi}"; 
 			if(idconfi){
@@ -684,7 +883,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				href = href + "&idconfi="+idconfi;
 			}
 			href+="&ditta="+ditta;
-			document.location.href = href + "&" + csrfToken;
+			document.location.href = href;
 		}
 	</c:if>
 
@@ -704,6 +903,13 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		}
 	
 		function impostaStato(opz){
+			var motneg = $("#motivoAnnullamento").val();
+			if(opz==3){
+				if(motneg==null || motneg==""){
+					alert("Per procedere si deve valorizzare il campo 'Motivo annullamento'");
+					return;
+				}
+			}
 			_wait();
 			id = $('#G1STIPULA_ID').val();
 			$.ajax({
@@ -718,7 +924,8 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				url: contextPath + "/pg/SetStatoStipula.do",
 				data: {
 					id: id,
-					opz: opz
+					opz: opz,
+					motneg: motneg
 				},
 				success: function (data) {
 					if (data) {
@@ -727,7 +934,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 					}
 				},
 				error: function (e) {
-					alert("Errore durante la modifica dello stato del qform");
+					alert("Errore durante la modifica dello stato della stipula");
 				},
 				complete: function () {
 					_nowait();
@@ -742,7 +949,15 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			var titolo="Attiva contratto";
 			if(opz==2){
 				titolo="Disattiva contratto";
+			}else if(opz==3){
+				titolo="Annulla contratto";
 			}
+			var widthM= 650;
+			var	heightM= 250;
+			if(opz==3){
+				heightM = 400; 
+			}
+			
 			var opt = {
 				open: function(event, ui) { 
 					$(this).parent().children().children('.ui-dialog-titlebar-close').hide();
@@ -756,10 +971,19 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 					_dialog_title.css("color","#002856");
 					$(this).parent().find("div.ui-dialog-buttonpane").css("background","#FFFFFF");
 				},
+				position: { using: function( pos ) {
+	                $( this ).css({
+						top:'50%',
+						left: '50%',
+						marginRight: '50%',
+						transform: 'translate(-50%, -50%)'
+						
+					});
+	          }},
 				autoOpen: false,
 				modal: true,
-				width: 550,
-				height:250,
+				width: widthM,
+				height:heightM,
 				title: titolo,
 				buttons: {
 					"Conferma": {
@@ -776,11 +1000,36 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 							$( this ).dialog( "close" );
 							$("#trAttivazione").hide();
 							$("#trDisattivazione").hide();
+							$("#trAnnullamento").hide();
 						}
 					 }
 				 }
 			};
 			$("#mascheraImpostaStato").dialog(opt).dialog("open");
+			
+			$("#spanErrore").hide();
+			$("#spanNoAttivazione").hide();
+			$("#spanNoAttivazione1").hide();
+			$("#spanWarnAttenzione").hide();
+			$("#spanWarnAttivazione").hide();
+			$("#spanWarnAttivazione1").hide();
+			$("#spanConfermaWarnAttivazione").hide();
+			$("#spanConfermaAttivazione").hide();
+			$("#botConferma").hide();
+			
+			$("#spanNoDisattivazione").hide();
+			$("#spanConfermaDisattivazione").hide();
+			
+			$("#spanNoAnnullamento").hide();
+			$("#spanNoAnnullamento1").hide();
+			$("#spanConfermaAnnullamento").hide();
+			$("#spanWarnAnnullamento").hide();
+			$("#spanWarnAnnullamento1").hide();
+			$("#spanWarnAnnullamento2").hide();
+			$("#spanMotivonAnnullamento").hide();
+			
+			
+			
 			if(opz==1){
 				var oggetto=getValue("G1STIPULA_OGGETTO");
 				var idPadre=getValue("G1STIPULA_ID_PADRE");
@@ -788,11 +1037,20 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				var tipovar = getValue("G1STIPULA_TIPOVAR");
 				var cigvar = getValue("G1STIPULA_CIGVAR");
 				var statoErr = 0;
-				var statoWarn = 0;
+				var statoWarn = 0;							
+				
 				if(idPadre==null ||idPadre==''){
-					dataStipula=getValue("GARE_DAATTO");
+					
+					// var isAbilitataFunzioneErp = $("#isAbilitataFunzioneErp").val(); 
+					
+					// if (isAbilitataFunzioneErp=="1"){
+					//    dataStipula=getValue("G1STIPULA_DAATTO");
+					// } else {
+					   dataStipula=getValue("GARE_DAATTO");
+					// }
+
 				}else{
-					dataStipula=getValue("G1STIPULA_DAATTO");
+					dataStipula=getValue("G1STIPULA_DAATTO");					
 				}
 				var dataPubbl=getValue("G1STIPULA_DATPUB");
           		var controllo = '';
@@ -815,15 +1073,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 					}
 				}
 				
-				$("#spanErrore").hide();
-				$("#spanNoAttivazione").hide();
-				$("#spanNoAttivazione1").hide();
-				$("#spanWarnAttenzione").hide();
-				$("#spanWarnAttivazione").hide();
-				$("#spanWarnAttivazione1").hide();
-				$("#spanConfermaWarnAttivazione").hide();
-				$("#spanConfermaAttivazione").hide();
-				$("#botConferma").hide();
+				
 
 				if(statoErr==1){
 					$("#spanErrore").show();
@@ -870,12 +1120,50 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 					$("#botConferma").show();
 				}
 				$("#trDisattivazione").show();
+			}else if(opz==3){
+				$("#motivoAnnullamento").val('');
+				var statoErr = 0;
+				var stato = getValue("G1STIPULA_STATO");
+				var idPadre = getValue("G1STIPULA_ID_PADRE");
+				var livello = getValue("G1STIPULA_LIVELLO");
+				if(stato != 5 ){
+					statoErr = 1;
+				}else if(idPadre != null && idPadre != ""){
+					statoErr = 2;
+				}
+				
+				$("#spanNoAnnullamento").hide();
+				$("#spanNoAnnullamento1").hide();
+				$("#spanConfermaAnnullamento").hide();
+				$("#spanWarnAnnullamento").hide();
+				$("#spanWarnAnnullamento1").hide();
+				$("#spanWarnAnnullamento2").hide();
+				$("#botConferma").hide();
+
+				if(statoErr>0){
+					if(idPadre != null && idPadre != ""){
+						$("#spanNoAnnullamento1").show();
+					}else if(stato != 5){
+						$("#spanNoAnnullamento").show();
+					}
+				}else {
+					$("#spanConfermaAnnullamento").show();
+					$("#spanWarnAnnullamento").show();
+					$("#spanWarnAnnullamento1").show();
+					$("#spanMotivonAnnullamento").show();
+					$("#botConferma").show();
+					if(livello >0){
+						$("#spanWarnAnnullamento2").show();
+					}
+				}
+				$("#trAnnullamento").show();
 			}
 		}
+				
 	</c:if>
 		
 	function listaDiscussioni(){
-		var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=geneweb/w_discuss_p/w_discuss_p-lista.jsp&entita=" + document.forms[0].entita.value + "&chiave=" + document.forms[0].key.value;
+		var href = contextPath + "/ApriPagina.do?href=geneweb/w_discuss_p/w_discuss_p-lista.jsp&entita=" + document.forms[0].entita.value + "&chiave=" + document.forms[0].key.value;
 		document.location.href = href;
 	}
 	function apriGestionePermessiStipula(id,codstipula,permessoModifica) {
@@ -999,6 +1287,81 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		formVisualizzaDocumenti.gartel.value = "";
 		formVisualizzaDocumenti.submit();
 	}
+	
+	function popUpAssociaContrattoErp(){
+	   var codStipula = $('#G1STIPULA_CODSTIPULA').val();
+	   var codCig =  $('#G1STIPULA_CIGVAR').val();   
+	   var idPadre = getValue("G1STIPULA_ID_PADRE");
+	   var href = "href=gare/g1stipula/popup-richiesta-numero-contratto-Erp.jsp&modo=NUOVO&idStipula=${idStipula}&codStipula=${codStipula}&idPadre="+idPadre;
+	   openPopUpCustom(href, "Associa numero contratto Sap", 800, 450, "yes", "yes");
+	}
+	
+	function popUpRecuperaOda(){
+	   var codStipula = $('#G1STIPULA_CODSTIPULA').val();
+	   var codCig =  $('#G1STIPULA_CIGVAR').val();   
+	   var idPadre = getValue("G1STIPULA_ID_PADRE");
+	   var href = "href=gare/g1stipula/g1stipula-popup-recuperaOda.jsp&idStipula=${idStipula}&codStipula=${codStipula}&idPadre="+idPadre;
+	   openPopUpCustom(href, "Ricerca ODA", 800, 450, "yes", "yes");
+	}
+	
+	function popUpVisualizzaContrattoErp(){
+	   var codContrattoErp = $('#GARE_NREPAT').val();
+	   var idPadre=getValue("G1STIPULA_ID_PADRE");
+
+	   if (idPadre){
+	      codContrattoErp = $('#G1STIPULA_NREPAT').val(); 
+	   }
+	   	  
+	   var href = "href=gare/g1stipula/popup-richiesta-numero-contratto-Erp.jsp&modo=VISUALIZZA&idStipula=${idStipula}&codContrattoErp="+codContrattoErp;
+	   openPopUpCustom(href, "Visualizza numero contratto Sap associato", 800, 450, "yes", "yes");
+	}
+	
+	function eliminaAssociazioneContrattoErp(){
+
+			var conferma = confirm("Sei sicuro di voler eliminare l'associazione creata?");
+			if(conferma) {
+				var codStipula = $('#G1STIPULA_CODSTIPULA').val();
+				var idPadre=getValue("G1STIPULA_ID_PADRE");
+				var codContrattoErp = $('#GARE_NREPAT').val();		                	        
+				
+				$.ajax({
+					url: "pg/EliminaAssociazioneContrattoErp.do",
+					type: 'POST',
+					data: {
+							numeroContrattoErp:  codContrattoErp
+						   ,idStipula: "${idStipula}"
+						   ,codStipula: codStipula
+						   ,idPadre : idPadre
+						  },
+					cache: false,
+					dataType: "json",
+					success: function(rispostaJson) {				    
+						historyReload();				    
+					},
+					error: function(e) {
+						alert("Errore durante l'eliminazione dell'associazione al contratto Erp");
+					},
+					complete: function() {
+						// _nowait();
+					}
+				});		   
+			}
+	}
+	
+	function visualizzaPulsanteEliminaAssociazioneErp() {
+	    var codContrattoErp = $('#GARE_NREPAT').val();
+        
+	    var condizionaPerRai = ${modo eq "VISUALIZZA" && integrazioneWSERP eq "1" && tipoWSERP eq "RAI" && gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp") };
+	
+	    if (condizionaPerRai && codContrattoErp) {
+	        $("#EliminaAssociazioneErp").show();
+	    } else {
+	        // $("#EliminaAssociazioneErp").hide();
+	    }
+	}
+	
+	visualizzaPulsanteEliminaAssociazioneErp();	
+	
 </gene:javaScript>
 
 <c:choose>
@@ -1044,8 +1407,32 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				<span id="spanConfermaDisattivazione">Confermi l'operazione?</span>
 			</td>				
 		</tr>
+		<tr id="trAnnullamento" style="display:none;"> 
+			<td colspan="2">
+				Mediante tale funzione si procede all'annullamento del contratto. 
+				<br><br>
+				<span id="spanNoAnnullamento"><b>Non &egrave; possibile procedere perch&egrave; il contatto non &egrave; attivo.</b></span>
+				<span id="spanNoAnnullamento1"><b>Non &egrave; possibile procedere perch&egrave; la stipula &egrave; atto aggiuntivo o variante di un'altro contratto.</b> <br>Risulta comunque possibile procedere all'annullamento del contratto principale e in cascata di tutte le varianti ad esso collegate.</span>
+				<span id="spanWarnAnnullamento"><b>ATTENZIONE:</b></span>
+				<span id="spanWarnAnnullamento1"><br><b>il contratto, una volta annullato, non può più essere riattivato.</b> Si dovrà necessariamente procedere con una nuova stipula.</span>
+				<span id="spanWarnAnnullamento2"><br><br><b>ATTENZIONE:<br>a questo contratto sono collegati uno o più atti aggiuntivi o variante.</b> Procedendo con l'operazione verranno annullati anche questi contratti derivati.</span>
+				<span id="spanConfermaAnnullamento"><br><br>Confermi l'operazione? <br>Indicare il motivo per cui si vuole annullare la stipula.</span>
+				<span id="spanMotivonAnnullamento"><br><br>
+				<table style="font: 11px Verdana, Arial, Helvetica, sans-serif;">
+					<tr>
+					<td style="width:30%; text-align:left;">
+						Motivo annullamento *:
+					</td>
+					<td style="width:70%">
+						<textarea  id="motivoAnnullamento"  rows="4" cols="60"/>${datiRiga.G1STIPULA.MOTNEG}</textarea><br><br></span>
+					</td >
+					</tr>
+				</table>
+				
+			</td>				
+		</tr>
 	</table>
-	</div>
+</div>
 
 <c:if test="${! empty sessionScope.uffint}">
 	<c:set var="filtroUffint" value=" CODEIN = '${sessionScope.uffint}'"/>

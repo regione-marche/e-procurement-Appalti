@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
 import org.springframework.transaction.TransactionStatus;
 
 import it.eldasoft.gene.bl.FileAllegatoManager;
@@ -75,7 +76,7 @@ public class GestoreCopiaComunicazione extends AbstractGestoreEntita {
 
     String  idprg = UtilityStruts.getParametroString(this.getRequest(),"idprg");
     String  idcomString = UtilityStruts.getParametroString(this.getRequest(),"idcom");
-    String  copiaDescc = UtilityStruts.getParametroString(this.getRequest(),"descc");
+    //String  copiaDescc = UtilityStruts.getParametroString(this.getRequest(),"descc");
     Long idcom = new Long(idcomString);
     String committ = UtilityStruts.getParametroString(this.getRequest(),"committ");
     String allegati = dataColumnContainer.getString("ALLEGATI");
@@ -88,14 +89,14 @@ public class GestoreCopiaComunicazione extends AbstractGestoreEntita {
     String update="";
     //Caricamento dati W_INVCOM
     select="select coment,comkey1,comkey2,comkey3,comkey4,comkey5,comintest,commsgogg,commsgtes,commodello,compub,comtipo," +
-    		"comdatastato,comdatapub,comtipma,commsgtip,COMDATSCA,COMORASCA  from w_invcom where idprg=? and idcom=?";
+    		"comdatastato,comdatapub,comtipma,commsgtip,COMDATSCA,COMORASCA,idcfg,cometich  from w_invcom where idprg=? and idcom=?";
 
     try {
       Vector datiW_INVCOM = sqlManager.getVector(select, new Object[]{idprg,idcom});
       if(datiW_INVCOM!=null){
         update = "insert into w_invcom(IDPRG,IDCOM,COMENT,COMKEY1,COMKEY2,COMKEY3,COMKEY4,COMKEY5,COMCODOPE,COMDATINS,COMMITT," +
         		"COMSTATO,COMINTEST,COMMSGOGG,COMMSGTES,COMMODELLO,COMPUB,COMTIPO,COMDATASTATO,COMDATAPUB,COMTIPMA,COMMSGTIP,IDCFG," +
-                "COMDATSCA,COMORASCA ) " + "values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "COMDATSCA,COMORASCA,COMETICH ) " + "values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         Long newIdcom = (Long)sqlManager.getObject("select max(idcom) from w_invcom where idprg=?", new Object[]{idprg});
         if(newIdcom==null)
           newIdcom = new Long(0);
@@ -105,7 +106,7 @@ public class GestoreCopiaComunicazione extends AbstractGestoreEntita {
         ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
             CostantiGenerali.PROFILO_UTENTE_SESSIONE);
 
-        Object[] parametri = new Object[25];
+        Object[] parametri = new Object[26];
         parametri[0] = idprg;
         parametri[1] = newIdcom;
         parametri[2] = SqlManager.getValueFromVectorParam(datiW_INVCOM, 0).stringValue();
@@ -140,24 +141,29 @@ public class GestoreCopiaComunicazione extends AbstractGestoreEntita {
         if(!"1".equals(supportoHtml)) {
           parametri[21] = null;
         }
+        if("HOMEPG".equals(parametri[2])){
+          parametri[22] = SqlManager.getValueFromVectorParam(datiW_INVCOM, 18).stringValue();;
+        }else {
         //Codice stazione appaltante della gara
-        String chiave = SqlManager.getValueFromVectorParam(datiW_INVCOM, 1).stringValue();
-        String cenint = (String)this.sqlManager.getObject("select cenint from torn,gare where codgar1=codgar and ngara=?", new Object[]{chiave});
-        parametri[22] = cenint;
+          String chiave = SqlManager.getValueFromVectorParam(datiW_INVCOM, 1).stringValue();
+          String cenint = (String)this.sqlManager.getObject("select cenint from torn,gare where codgar1=codgar and ngara=?", new Object[]{chiave});
+          parametri[22] = cenint;
+        }
         parametri[23] = SqlManager.getValueFromVectorParam(datiW_INVCOM, 16).dataValue();
         parametri[24] = SqlManager.getValueFromVectorParam(datiW_INVCOM, 17).stringValue();
+        parametri[25] = SqlManager.getValueFromVectorParam(datiW_INVCOM, 19).longValue();
         sqlManager.update(update, parametri);
 
         //Copia dei destinatari
         if("1".equals(destinatari)){
           String addDescc = ""; 
-          if("false".equals(copiaDescc)) {
+          if(!"1".equals(ConfigManager.getValore("comunicazione.inviocopiaconoscenza"))){
             addDescc = "and (descc <> '1' or descc is null)";
           }
-          select="select IDCOMDES,DESCODENT,DESCODSOG,DESMAIL,DESTESTO,DESIDDOCDIG,DESINTEST,COMTIPMA,DESCC from " +
+          select="select IDCOMDES,DESCODENT,DESCODSOG,DESMAIL,DESTESTO,DESIDDOCDIG,DESINTEST,COMTIPMA,DESCC,IDANONIMO from " +
           		"w_invcomdes where idprg = ?  and IDCOM = ? "+addDescc;
           if("1".equals(copiaDestinatariErrore))
-            select += " and (desstato=3 or desstato =5)";
+            select += " and (desstato='3' or desstato ='5')";
           List lsitaW_INVCOMDES = sqlManager.getListVector(select, new Object[]{idprg,idcom});
           if(lsitaW_INVCOMDES!=null && lsitaW_INVCOMDES.size()>0){
             for(int i=0;i<lsitaW_INVCOMDES.size();i++){
@@ -171,12 +177,13 @@ public class GestoreCopiaComunicazione extends AbstractGestoreEntita {
               String desintest = ((JdbcParametro) comunicazione.get(6)).stringValue();
               Long comtipma = ((JdbcParametro) comunicazione.get(7)).longValue();
               String descc = ((JdbcParametro) comunicazione.get(8)).stringValue();
+              String idanonimo = ((JdbcParametro) comunicazione.get(9)).stringValue();
 
               update = "insert into w_invcomdes(IDPRG ,IDCOM,IDCOMDES,DESCODENT,DESCODSOG,DESMAIL," +
-              		"DESTESTO,DESIDDOCDIG,DESDATINV,DESDATINV_S,DESSTATO,DESERRORE,DESINTEST,COMTIPMA,DESCC) values(" +
-              		"?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+              		"DESTESTO,DESIDDOCDIG,DESDATINV,DESDATINV_S,DESSTATO,DESERRORE,DESINTEST,COMTIPMA,DESCC,IDANONIMO) values(" +
+              		"?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
-              parametri = new Object[15];
+              parametri = new Object[16];
               parametri[0] = idprg;
               parametri[1] = newIdcom;
               parametri[2] = invcomdes;
@@ -192,6 +199,7 @@ public class GestoreCopiaComunicazione extends AbstractGestoreEntita {
               parametri[12] = desintest;
               parametri[13] = comtipma;
               parametri[14] = descc;
+              parametri[15] = idanonimo;
               sqlManager.update(update, parametri);
             }
 
@@ -214,7 +222,7 @@ public class GestoreCopiaComunicazione extends AbstractGestoreEntita {
 
             for(int i=0;i<lsitaW_DOCDIG.size();i++){
 
-              Long newIddocdig = (Long)sqlManager.getObject("select max(iddocdig) from w_docdig where idprg=?", new Object[]{idprg});
+              Long newIddocdig = (Long)sqlManager.getObject("select max(iddocdig) from w_docdig where idprg=?", new Object[]{"PG"});
               if(newIddocdig==null)
                 newIddocdig = new Long(0);
               newIddocdig = new Long(newIddocdig.longValue() + 1);
@@ -228,6 +236,7 @@ public class GestoreCopiaComunicazione extends AbstractGestoreEntita {
               campiDaCopiareW_DOCDIG.getColumn("IDPRG" ).setChiave(true);
 
               campiDaCopiareW_DOCDIG.getColumn("IDDOCDIG" ).setChiave(true);
+              campiDaCopiareW_DOCDIG.setValue("IDPRG","PG");
               campiDaCopiareW_DOCDIG.setValue("IDDOCDIG",newIddocdig);
               campiDaCopiareW_DOCDIG.setValue("DIGKEY1",idprg);
               campiDaCopiareW_DOCDIG.setValue("DIGKEY2",newIdcom.toString());
@@ -243,6 +252,7 @@ public class GestoreCopiaComunicazione extends AbstractGestoreEntita {
 
               // Inserimento del nuovo record su w_docdig
               campiDaCopiareW_DOCDIG.insert("W_DOCDIG", this.geneManager.getSql());
+              ObjectStorageUtils.addFile("PG", newIddocdig);
             }
           }
         }

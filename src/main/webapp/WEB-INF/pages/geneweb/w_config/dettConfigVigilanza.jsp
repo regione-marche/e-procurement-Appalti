@@ -59,9 +59,9 @@
 <script type="text/javascript">
 <!--
 
-	arrayProprieta = [["PG","it.eldasoft.sil.pg.vigilanza.nomeApplicativo" ],["PG","it.eldasoft.sil.pg.vigilanza.ws.url"],["W_","it.eldasoft.sil.pl.vigilanza.ws.login.comune"],["W_","it.eldasoft.sil.pl.vigilanza.ws.login.utente"],["W_","it.eldasoft.sil.pl.vigilanza.ws.login.password"],["W_","it.eldasoft.sil.pl.vigilanza.ossreg"],["PG","it.eldasoft.inviodaticig.ws.url"],["PG","it.eldasoft.inviodaticig.nomeApplicativo"]];
+	arrayProprieta = [["PG","it.eldasoft.sil.pg.vigilanza.nomeApplicativo" ],["PG","it.eldasoft.sil.pg.vigilanza.ws.url"],["W_","it.eldasoft.sil.pl.vigilanza.ws.login.comune"],["W_","it.eldasoft.sil.pl.vigilanza.ws.login.utente"],["W_","it.eldasoft.sil.pl.vigilanza.ws.login.password"],["W_","it.eldasoft.sil.pl.vigilanza.ossreg"],["PG","it.eldasoft.inviodaticig.ws.url"],["PG","it.eldasoft.inviodaticig.nomeApplicativo"],["W_","it.eldasoft.sil.pg.vigilanza.smartCig"],["W_","it.eldasoft.sil.pg.vigilanza.elencoPartecipanti"]];
 	                                                                                                                                                                    											
-	tipoProprieta = [ "","url","-b","","passw","-b","url",""];	
+	tipoProprieta = [ "","url","-b","","passw","-b","url","","-b","-b"];	
 	
 	function _testURL(url, tns) {
 	var _URLvalido = false;
@@ -75,8 +75,8 @@
 				x.overrideMimeType("application/json;charset=UTF-8");
 			}
 		},
-		url: "pg/GetURL.do",
-		data: "url=" + url + "?wsdl&tns=" + tns, 
+		url: "pg/GetInternalWSUrl.do",
+		data: "url=" + url + "&tns=" + tns, 
 		success: function(data){
 			if (data == true) {
 				_URLvalido = true;
@@ -234,6 +234,22 @@
 				</td>
 				<td class="valore-dato">
 					<span id="prop6"></span>
+				</td>
+			</tr>
+			<tr id="">
+				<td class="etichetta-dato">
+					<span id="titleProp9" >Consenti invio smartCIG a Vigilanza?</span>
+				</td>
+				<td class="valore-dato">
+					<span id="prop9"></span>
+				</td>
+			</tr>
+			<tr id="">
+				<td class="etichetta-dato">
+					<span id="titleProp10" >Invia elenco partecipanti?</span>
+				</td>
+				<td class="valore-dato">
+					<span id="prop10"></span>
 				</td>
 			</tr>
 			<tr>

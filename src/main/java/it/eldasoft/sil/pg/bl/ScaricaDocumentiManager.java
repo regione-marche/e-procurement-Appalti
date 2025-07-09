@@ -13,7 +13,6 @@ package it.eldasoft.sil.pg.bl;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
@@ -79,13 +78,7 @@ public class ScaricaDocumentiManager {
     String nomeFile = (String)sqlManager.getObject("select dignomdoc from w_docdig where idprg = ? and iddocdig = ?", new Object[] {idprg,iddocdg});
     nomeFile = idprg +iddocdg + "_" + nomeFile;
     if("false".equals(archivioCreato)){
-      zipOut = new ZipOutputStream(new FileOutputStream(pathArchivioDocumenti + "/" + nomeArchivio));
-      zipOut.setMethod(ZipOutputStream.DEFLATED);
-      zipOut.setLevel(Deflater.DEFAULT_COMPRESSION);
       this.addFileToArchive(nomeArchivio,pathArchivioDocumenti,idprg,iddocdg,nomeFile,zipOut);
-      zipOut.closeEntry();
-      zipOut.flush();
-      zipOut.close();
     }else{
       addFilesToZip(pathArchivioDocumenti + "/" + nomeArchivio,idprg, iddocdg ,nomeFile);
     }
@@ -153,13 +146,7 @@ public class ScaricaDocumentiManager {
 
     String nomeFile = nomeCartella + "_" +numDocDitta + "_" + nomeDoc;
     if("false".equals(archivioCreato)){
-      zipOut = new ZipOutputStream(new FileOutputStream(pathArchivioDocumenti + "/" + nomeArchivio));
-      zipOut.setMethod(ZipOutputStream.DEFLATED);
-      zipOut.setLevel(Deflater.DEFAULT_COMPRESSION);
       this.addFileToArchive(nomeArchivio,pathArchivioDocumenti,idprg,iddocdg,nomeFile,zipOut,nomeCartella);
-      zipOut.closeEntry();
-      zipOut.flush();
-      zipOut.close();
     }else{
       addFilesToZip(pathArchivioDocumenti + "/" + nomeArchivio,idprg, iddocdg ,nomeFile,cambioCartella,nomeCartella);
     }
@@ -191,19 +178,27 @@ public class ScaricaDocumentiManager {
 
   public void addFileToArchive(String nomeArchivio, String pathArchivioDocumenti, String idprg, Long iddocdig, String nome, ZipOutputStream zipOut, String nomeCartella) throws Exception {
     BlobFile file = this.fileAllegatoManager.getFileAllegato(idprg,iddocdig);
-    OutputStream out = new FileOutputStream(pathArchivioDocumenti + "/" + nomeArchivio);
-    out.write(file.getStream());
-    out.close();
+    //OutputStream out = new FileOutputStream(pathArchivioDocumenti + "/" + nomeArchivio);
+    //out.write(file.getStream());
+    //out.close();
 
     //Aggiungo il file allo zip
     try {
+      ZipOutputStream out = new ZipOutputStream(new FileOutputStream(pathArchivioDocumenti + "/" + nomeArchivio));
+      out.setMethod(ZipOutputStream.DEFLATED);
+      out.setLevel(Deflater.DEFAULT_COMPRESSION);
+      
         if(nomeCartella!=null && !"".equals(nomeCartella)) {
-            zipOut.putNextEntry(new ZipEntry(nomeCartella+"/"));
-            zipOut.putNextEntry(new ZipEntry(nomeCartella+"/"+nome));
+          out.putNextEntry(new ZipEntry(nomeCartella+"/"));
+          out.putNextEntry(new ZipEntry(nomeCartella+"/"+nome));
         }else {
-            zipOut.putNextEntry(new ZipEntry(nome));
+          out.putNextEntry(new ZipEntry(nome));
         }
-        zipOut.write(file.getStream(), 0, file.getStream().length);
+        out.write(file.getStream(), 0, file.getStream().length);
+        out.closeEntry();
+        out.flush();
+        out.close();
+        zipOut = out;
     } catch (ZipException e) {
         // il file è già presente nello zip .., lo ignoro
         /*

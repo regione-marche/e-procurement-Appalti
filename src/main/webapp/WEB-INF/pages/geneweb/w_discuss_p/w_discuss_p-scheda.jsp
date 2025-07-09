@@ -246,7 +246,7 @@
 				
 				<gene:javaScript>
 					function aggiungiDestinatari(discid_p, disckey1, entitaParent){
-						openPopUpCustom("href=geneweb/w_discuss_p/w_discuss_p-aggiungi-destinatari-popup.jsp&modo=NUOVO"+"&discid_p=" + discid_p + "&disckey1=" + disckey1 + "&" + "&entitaParent=" + entitaParent + "&" + csrfToken, "aggiungidestinatari", 850, 500, "yes", "yes");
+						openPopUpCustom("href=geneweb/w_discuss_p/w_discuss_p-aggiungi-destinatari-popup.jsp&modo=NUOVO"+"&discid_p=" + discid_p + "&disckey1=" + disckey1 + "&" + "&entitaParent=" + entitaParent, "aggiungidestinatari", 850, 500, "yes", "yes");
 					}
 				
 				</gene:javaScript>

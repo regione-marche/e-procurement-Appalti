@@ -48,7 +48,7 @@ public class GestorePopupImportaAffidamentiEsterni extends AbstractGestoreEntita
 
   private static final String insertGarecont = "insert into garecont(ngara, ncont, dverbc, dcertu, impliq, codimp) values(?,?,?,?,?,?)";
 
-  private static final String insertGare1 = "insert into gare1(ngara, codgar1) values(?,?)";
+  private static final String insertGare1 = "insert into gare1(ngara, codgar1, ammrin,ammopz) values(?,?,'2','2')";
 
   private static final String updateGarecont="update garecont set dverbc=?, dcertu=?, impliq=? where ngara=? and ncont=?";
   private static final String updateAppa="update appa set dconsd=?, dult=?, itotaleliqui=? where codlav=? and nappal=?";
@@ -358,11 +358,11 @@ public class GestorePopupImportaAffidamentiEsterni extends AbstractGestoreEntita
       esito=false;
     }
 
-    if((cfimp!=null && cfimp.length()>16) || (cfest!=null && cfest.length()>16)){
-      if(cfimp!=null && cfimp.length()>16)
-        msgControlli.append("  il codice fiscale della ditta aggiudicataria è più lungo di 16 caratteri (campo CFIMP)\n");
+    if((cfimp!=null && cfimp.length()>30) || (cfest!=null && cfest.length()>30)){
+      if(cfimp!=null && cfimp.length()>30)
+        msgControlli.append("  il codice fiscale della ditta aggiudicataria è più lungo di 30 caratteri (campo CFIMP)\n");
       else
-        msgControlli.append("  l'ID fiscale estero della ditta aggiudicataria è più lungo di 16 caratteri (campo CFEST)\n");
+        msgControlli.append("  l'ID fiscale estero della ditta aggiudicataria è più lungo di 30 caratteri (campo CFEST)\n");
       esito=false;
     }
 

@@ -8,6 +8,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import it.eldasoft.utils.properties.ConfigManager;
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
@@ -58,6 +59,14 @@ public class GetWSDMFascicoloMetadatiAction extends Action {
     String servizio = request.getParameter("servizio");
     String idconfi = request.getParameter("idconfi");
     Long anno = null;
+
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+      username = credenziali[0];
+      password = credenziali[1];
+    }
+
     if (request.getParameter("anno") != null && !"".equals(request.getParameter("anno"))) {
       anno = new Long(request.getParameter("anno"));
     }

@@ -140,6 +140,8 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
     String ricastae = null;
     Long iterga = null;
     String calcsome = null;
+    String tipoconc = null;
+    String isriconclusa = null;
 
     paginaFasiGara = pageContext.getRequest().getParameter("paginaFasiGara");
     //String bustalotti = (String)params[0];
@@ -168,7 +170,7 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
 
     try {
       Vector<?> obj = sqlManager.getVector(
-          "select TIPTOR, TIPGEN, COMPREQ, OFFTEL, GARTEL, ITERGA, RIBCAL, CALCSOME from TORN, GARE "
+          "select TIPTOR, TIPGEN, COMPREQ, OFFTEL, GARTEL, ITERGA, RIBCAL, CALCSOME, TIPOCONC, ISRICONCLUSA from TORN, GARE "
               + "where TORN.CODGAR = GARE.CODGAR1 "
               + "and GARE.NGARA = ?", new Object[] { codiceGara });
       if (obj.get(0) != null) {
@@ -227,6 +229,14 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
            pageContext.setAttribute("calcoloSogliaAnomaliaExDLgs2017", calcsome,
                PageContext.REQUEST_SCOPE);
         }
+      if (obj.get(8) != null) {
+        tipoconc = ((JdbcParametro) obj.get(8)).getStringValue();
+      }
+      if (obj.get(9) != null) {
+        isriconclusa = ((JdbcParametro) obj.get(9)).getStringValue();
+        pageContext.setAttribute("isriconclusa", isriconclusa,
+            PageContext.REQUEST_SCOPE);
+      }
 
       // Estrazione del campo GARE.GENERE con una query specifica, in modo da
       // estrarre tale campo SEMPRE dall'occorrenza complementare (se esistente),
@@ -354,6 +364,8 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
 
         if (((JdbcParametro) datiLotto.get(1)).getValue() != null){
           faseGara =  ((JdbcParametro) datiLotto.get(1)).longValue();
+          if(new Long(10).equals(iterga) && "1".equals(isriconclusa))//bloccare la valutazione tecnica se concorso 2 grado concluso
+            faseGara=7L;
           pageContext.setAttribute("faseGara", faseGara,
               PageContext.REQUEST_SCOPE);
         }
@@ -395,7 +407,7 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
           if (stepWizardFasiGara >= FASE_CALCOLO_AGGIUDICAZIONE){ //if (faseGara >= FASE_CALCOLO_AGGIUDICAZIONE){
 	      	  pageContext.setAttribute("bloccoAggiudicazione", new Long(1),
 	      	  		PageContext.REQUEST_SCOPE);
-	      	  if(isGaraLottiConOffertaUnica && codiceGara.equals(codiceTornata)){
+	      	  if((isGaraLottiConOffertaUnica && codiceGara.equals(codiceTornata)) || (new Long(9).equals(iterga) && "2".equals(tipoconc))){
 	      	  	// La condizione codiceGara.equals(codiceTornata) serve per distinguere
 	      	  	// se si sta usando le fasi di gara per l'occorrenze complementare
 	      	  	// (in cui codiceGara e codiceTornata coincidono) o per i
@@ -511,6 +523,14 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
     			modalitaAggiudicazioneGara,	direzioneWizard, isSorteggioControlloRequisiti,
     			isValtec, ricastae, visOffertaEco);
     paginaAttivaWizard = "" + wizardPaginaAttiva;
+    if (wizardPaginaAttiva == FASE_CHIUSURA_VALUTAZIONE_TECNICA && stepWizardFasiGara<FASE_CHIUSURA_VALUTAZIONE_TECNICA) {
+      try {
+        pgManager.aggiornaFaseGara(new Long(FASE_CHIUSURA_VALUTAZIONE_TECNICA), codiceGara, false);
+      } catch (GestoreException e) {
+        throw new JspException(
+            "Errore durante l'aggionamento della fase gara ", e);
+      }
+    }
 
 
     //Gestione Offerta espressa mediante ribasso o prezzo
@@ -848,7 +868,7 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
     // GestioneAggiudProvDefOffertaUnicaFunction che estende questa classe
     paginaAttivaWizard = this.gestioneAvanzamentoWizard(paginaAttivaWizard, pageContext,
         modalitaAggiudicazioneGara, iterga, isGaraLottiConOffertaUnica, isSorteggioControlloRequisiti,
-        isValtec, ricastae, visOffertaEco);
+        isValtec, ricastae, visOffertaEco, tipoconc);
     wizardPaginaAttiva = UtilityNumeri.convertiIntero(paginaAttivaWizard).intValue();
 
     // Gestione del filtro sulle ditte in base all'avanzamento del wizard
@@ -1017,7 +1037,7 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
   protected String gestioneAvanzamentoWizard(String paginaAttivaWizard,
       PageContext pageContext, Long modalitaAggiudicazioneGara, Long iterGara,
       boolean isGaraLottiConOffertaUnica, boolean isSorteggioControlloRequisiti,
-      boolean isValtec, String ricastae, boolean visOffertaEco) {
+      boolean isValtec, String ricastae, boolean visOffertaEco, String tipoconc) {
 
   	int wizardPaginaAttiva = UtilityNumeri.convertiIntero(
   			paginaAttivaWizard).intValue();
@@ -1124,7 +1144,7 @@ public class GestioneFasiGaraFunction extends AbstractFunzioneTag {
       listaPagineDaVisitare.remove(TITOLO_FASI_GARA[8]);
     }
 
-    if(Long.valueOf(8).equals(iterGara)) {
+    if(Long.valueOf(8).equals(iterGara) || (Long.valueOf(9).equals(iterGara) && "2".equals(tipoconc))) {
         listaPagineVisitate.remove(TITOLO_FASI_GARA[10]);
         listaPagineDaVisitare.remove(TITOLO_FASI_GARA[10]);
         listaPagineVisitate.remove(TITOLO_FASI_GARA[11]);

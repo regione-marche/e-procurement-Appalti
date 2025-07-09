@@ -45,12 +45,13 @@
 		</gene:formScheda>
 	</gene:redefineInsert>
 	<gene:javaScript>
-		
+		<c:if test='${modo eq "MODIFICA" or modo eq "NUOVO"}'>
 		document.forms[0].encoding="multipart/form-data";
+		</c:if>
 				
 		function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 			}
 			
 		function chiudi(){
@@ -65,7 +66,7 @@
 		function archivioImpresa(){
 			var codiceImpresa = getValue("MEISCRIZPROD_CODIMP");
 			var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-			document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href;
+			document.location.href = contextPath + "/ApriPagina.do?" + href;
 		}
 		
 		<c:if test="${modo eq 'VISUALIZZA'}">

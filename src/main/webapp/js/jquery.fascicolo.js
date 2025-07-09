@@ -4,6 +4,7 @@
 */
 var fascicoloAssociato = false;
 var sbiancaDatiFascicolo = false;
+var _skipGetWSDMFascicolo = false;
 
 $(window).ready(function (){
 	/*
@@ -63,12 +64,12 @@ $(window).ready(function (){
 			    },	
 			    annofascicolo: {
 					"required": function() {
-						return $('#tiposistemaremoto').val() == 'IRIDE' || $('#tiposistemaremoto').val() == 'ENGINEERING' ;
+						return $('#tiposistemaremoto').val() == 'IRIDE' || $('#tiposistemaremoto').val() == 'ENGINEERING' || $('#tiposistemaremoto').val() == 'HALLEY';
 			        }
 			    },	
 			    numerofascicolo: {
 					"required": function() {
-						return $('#tiposistemaremoto').val() == 'IRIDE' || $('#tiposistemaremoto').val() == 'JIRIDE' || $('#tiposistemaremoto').val() == 'ENGINEERING' ;
+						return $('#tiposistemaremoto').val() == 'IRIDE' || $('#tiposistemaremoto').val() == 'JIRIDE' || $('#tiposistemaremoto').val() == 'ENGINEERING' || $('#tiposistemaremoto').val() == 'HALLEY';
 			        }
 			    }	
 			},
@@ -113,10 +114,12 @@ $(window).ready(function (){
 		if (_tableDocumentiFascicolo != null) {
 			_tableDocumentiFascicolo.destroy(true);
 		}
+
+		$("#wsdmChiudiFascicolo").hide();
 				
 				
 		$("#oggettofascicolo").text("");
-		if($('#tiposistemaremoto').val()!='DOCER' && $('#tiposistemaremoto').val()!='LAPISOPERA')
+		if($('#tiposistemaremoto').val()!='DOCER' && $('#tiposistemaremoto').val()!='LAPISOPERA' && $('#tiposistemaremoto').val()!='HALLEY')
 			$("#classificafascicolodescrizione").text("");
 		$("#descrizionefascicolo").text("");
 		
@@ -155,6 +158,30 @@ $(window).ready(function (){
 			$("#descrizionefascicolo").hide();
 			$("#oggettofascicolo").closest('tr').hide();
 			$("#oggettofascicolo").hide();
+		}else if($('#tiposistemaremoto').val()=='HALLEY'){
+			_controlloGestioneStrutturaCompetente();
+			$("#sezioneclassificafascicolo").show();
+			$("#classificafascicolonuovoselect").empty();
+			_popolaTabellato("classificafascicolo", "classificafascicolonuovoselect");
+			var classifica = $("#classificafascicolodescrizione").text();
+			$("#classificafascicolonuovoselect option[value='"+classifica+"']").attr("selected", "selected");
+			_setDescrizioneCodiceTabellato("classificafascicolo", classifica, "classificafascicolo", 2);
+			$("#classificafascicolodescrizione").closest('tr').hide();
+		}
+
+		if($('#tiposistemaremoto').val()=='HALLEY' && (_gestioneStrutturaCompetente == 1)){
+			$("#sezionestruttura").show();
+			$("#strutturaonuovoselect").empty();
+			_popolaTabellato("struttura", "strutturaonuovoselect");
+			var struttura = $("#strutturaonuovo option").val()
+			$("#strutturaonuovoselect option[value="+struttura+"]").attr("selected", "selected");
+			_setDescrizioneCodiceTabellato("struttura", struttura, "struttura", 2);
+		} else {
+			$("#sezionestruttura").remove();
+		}
+
+		if(fascicoloAssociato && isWSDocumentoPopolato && $('#tiposistemaremoto').val()=='PALEO'){
+			$("#wsdmChiudiFascicolo").show();
 		}
 		
 		//Se non c'è il fascicolo o il fasciolo è presente ma non ci sono elementi documentali
@@ -184,7 +211,9 @@ $(window).ready(function (){
 			var numero = $("#numerofascicolo").val();
 			
 			if (codice != null || (anno != null && numero != null)) {
-				_getWSDMFascicolo(true,600,true);
+				if(!_skipGetWSDMFascicolo) {
+					_getWSDMFascicolo(true, 600, true);
+				}
 				if($('#tiposistemaremoto').val()=='ARCHIFLOW'){
 					$("#spanannofascicolo").show();
 					$("#spannumerofascicolo").show();
@@ -207,6 +236,9 @@ $(window).ready(function (){
 	 * Eventi
 	 */
 	$('#wsdmSalvaPulsante, #wsdmSalvaMenu').click(function() {
+		$('#documentifascicolomessaggio').text("");
+		$('#documentifascicolomessaggio').hide();
+		_erroreLetturaFascicolo=false;
 		if($('#tiposistemaremoto').val()=="JIRIDE" && _gestioneStrutturaCompetente == 1){
 			_getWSDMStruttura();
 			if(_erroreLetturaStruttura){
@@ -220,9 +252,23 @@ $(window).ready(function (){
 			}
 			
 		}
+		if($('#tiposistemaremoto').val()=="HALLEY" && _gestioneStrutturaCompetente == 1){
+			$("#strutturaonuovo").val($("#strutturaonuovoselect").val())
+			if($("#strutturaonuovo").val() == null || $("#strutturaonuovo").val() == ""){
+				alert("Non e' possibile procedere con l'associazione. Valorizzare la struttura competente.");
+				sbiancaDatiFascicolo = true;
+				return;
+			}
+		}
+
 		sbiancaDatiFascicolo = false;
 		if($("#parametririchiestafascicolo").validate().form()){
 			_wait();
+			_getWSDMFascicolo(false,600,true);//verifico se esiste il fascicolo!
+			if(_erroreLetturaFascicolo) {
+				sbiancaDatiFascicolo = true;
+				return;
+			}
 			$("body").off("click", "#documentifascicolo tbody tr");
 			_removeTabsDettaglioDocumento();
 			$("#wsdmSalvaPulsante").hide();
@@ -307,7 +353,149 @@ $(window).ready(function (){
 		_gestioneWSFascicolo();
 		_nowait();
     });
-	
+
+	$('#wsdmChiudiFascicolo').on("click",function() {
+		$("#sezioneErrori").hide();
+		var opt = {
+			open: function (event, ui) {
+				$(this).parent().children().children('.ui-dialog-titlebar-close').hide();
+				$(this).parent().css("border-color", "#C0C0C0");
+				var _divtitlebar = $(this).parent().find("div.ui-dialog-titlebar");
+				_divtitlebar.css("border", "0px");
+				_divtitlebar.css("background", "#FFFFFF");
+				var _dialog_title = $(this).parent().find("span.ui-dialog-title");
+				_dialog_title.css("font-size", "13px");
+				_dialog_title.css("font-weight", "bold");
+				_dialog_title.css("color", "#002856");
+				$(this).parent().find("div.ui-dialog-buttonpane").css("background", "#FFFFFF");
+				$("#chiudiFascicoloWsdmButton").focus();
+			},
+			position: {
+				using: function (pos) {
+					$(this).css({
+						top: '50%',
+						left: '50%',
+						marginRight: '50%',
+						transform: 'translate(-50%, -50%)'
+
+					});
+				}
+			},
+			autoOpen: false,
+			modal: true,
+			width: 700,
+			height: 250,
+			title: 'Chiudi fascicolo',
+			buttons: {
+				"Conferma": {
+					text: "Conferma",
+					id: "chiudiFascicoloWsdmButton",
+					click: _chiudiFascicolo,
+					style: "display: none;"
+				},
+				"Annulla": {
+					text: "Annulla",
+					click: function () {
+						$(this).dialog("close");
+					},
+					id: "annullaFascicoloWsdmButton",
+				},
+				"Chiudi": {
+					text: "Chiudi",
+					id: "refreshWsdmButton",
+					click: function() {
+						historyReload();
+					},
+					style: "display: none;"
+				}
+			}
+		};
+
+		$.ajax({
+			type: "GET",
+			dataType: "json",
+			async: false,
+			url: "pg/WSDMChiudiFascicolo.do",
+			data : {
+				codicefascicolo : $("#codicefascicolo").val(),
+				metodo: "check"
+			},
+
+			complete: function() {
+				_nowait();
+			},
+
+			success: function(data){
+				if(data.esito === 'KO') {
+					$("#erroriTrasmissione").html(data.errors);
+					$("#sezioneErrori").show();
+				}else if(data.warnings) {
+					$("#warningsTrasmissione").html(data.warnings);
+					$("#sezioneWarning").show();
+
+				}
+			},
+
+			error: function(e){
+				alert("Errore nella richiesta di chiusura del fascicolo");
+			},
+		});
+
+		$("#codicefascicolodisplay").val($("#codicefascicolo").val());
+		$("#mascheraParametriWSDM").dialog(opt).dialog("open");
+		if($("#sezioneErrori").is(":hidden"))
+			$("#chiudiFascicoloWsdmButton").show();
+
+	});
+
+	function _chiudiFascicolo() {
+		$("#sezioneErrori").hide();
+		_wait();
+		$.ajax({
+			type: "GET",
+			dataType: "json",
+			async: false,
+			url: "pg/WSDMChiudiFascicolo.do",
+			data : {
+				username: $("#username").val(),
+				password: $("#password").val(),
+				ruolo: $("#ruolo option:selected").val(),
+				nome : $("#nome").val(),
+				cognome : $("#cognome").val(),
+				codiceuo : $("#codiceuo option:selected").val(),
+				codicefascicolo : $("#codicefascicolo").val(),
+				servizio: $("#servizio").val(),
+				idconfi: $("#idconfi").val(),
+				metodo: "chiudi",
+				key1: $("#key1").val()
+			},
+
+			complete: function() {
+				_nowait();
+			},
+
+			success: function(data){
+				if(data.esito === 'OK') {
+					$("#sezioneMessaggi").html("Fascicolo chiuso con successo<br><br>");
+					$("#chiudiFascicoloWsdmButton").hide();
+					$("#annullaFascicoloWsdmButton").hide();
+					$("#refreshWsdmButton").show();
+				}else if(data.messaggio) {
+					$("#erroriTrasmissione").html(data.messaggio);
+					$("#sezioneErrori").show();
+					$("#chiudiFascicoloWsdmButton").hide();
+				}
+			},
+
+			error: function(e){
+				alert("Errore nella richiesta di chiusura del fascicolo");
+			},
+		});
+
+
+
+	};
+
 });
 
 

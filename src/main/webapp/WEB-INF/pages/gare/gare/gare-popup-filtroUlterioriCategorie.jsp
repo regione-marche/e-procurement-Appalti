@@ -117,7 +117,9 @@
 	</c:otherwise>
 </c:choose>
 	
-<c:set var="where" value="V_GARE_CATEGORIE.NGARA='${ngara}'" scope="request" />
+<c:set var="where" value="V_GARE_CATEGORIE.NGARA= ? " scope="request" />
+<c:set var="parametri" value="T:${ngara}"/>
+${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "V_GARE_CATEGORIE", where, parametri)}
 
 <c:set var="modo" value="MODIFICA" scope="request" />
 
@@ -159,7 +161,7 @@
 				</td>
 			</tr>
 			<tr>
-				<td><gene:formLista entita="V_GARE_CATEGORIE" tableclass="datilista" gestisciProtezioni="true" sortColumn="7;5;6" where="${where}" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupFiltroUltCategorie" pagesize="0">
+				<td><gene:formLista entita="V_GARE_CATEGORIE" tableclass="datilista" gestisciProtezioni="true" sortColumn="7;5;6" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupFiltroUltCategorie" pagesize="0">
 					<c:set var="oldData" value="${newData}"/>
 					<c:set var="newData" value="${datiRiga.V_GARE_CATEGORIE_ISPREV }"/>
 					

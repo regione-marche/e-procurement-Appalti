@@ -45,7 +45,7 @@ public class GetValoriVariantiStipulaFunction extends AbstractFunzioneTag {
       if(!"".equals(codice)){
     	Long countVariantiStipula = (Long) sqlManager.getObject("select count(*) from g1stipula where ngara=? and ncont=? and id_padre is not null", new Object[] {codice,ncont});
     	if(Long.valueOf(0)< countVariantiStipula) {
-            String selectVariantiStipula = "select id, ngara, codstipula, oggetto, impstipula, tiatto, nrepat, daatto, u1.sysute, u2.sysute, stato" +
+            String selectVariantiStipula = "select id, ngara, codstipula, oggetto, impstipula, tiatto, nrepat, daatto, u1.sysute, u2.sysute, stato, numoda" +
             		" from g1stipula" +
             		" left join usrsys u1 on g1stipula.syscon=u1.syscon" +
             		" left join usrsys u2 on g1stipula.assegnatario=u2.syscon"+

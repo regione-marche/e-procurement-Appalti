@@ -148,7 +148,7 @@ public class ScaricaTuttiDocumentiBustaAction  extends DispatchActionAjaxLogged{
       descr+= " per la busta " + bustaDescr;
     }
     descr+= " su file zip (cod.ditta: " + ditta ;
-    if(fase!=null && !"".equals(fase))
+    if(fase!=null && !"".equals(fase) && !"".equals(busta) && !"0".equals(busta))
       descr+=", fase: " + fase;
     descr+=")";
 
@@ -181,9 +181,11 @@ public class ScaricaTuttiDocumentiBustaAction  extends DispatchActionAjaxLogged{
     logevento.setErrmsg(errMsg);
     LogEventiUtils.insertLogEventi(logevento);
 
-    ditta = (String)sqlManager.getObject("select nomimp from impr where codimp = ?", new Object[] {ditta});
-    if(ditta!=null)
-      ditta = ScaricaDocumentiManager.replaceInvalidChar(ditta);
+    String nomeImpresa = (String)sqlManager.getObject("select nomimp from impr where codimp = ?", new Object[] {ditta});
+    if(nomeImpresa==null)//adeguamento per concorsi
+      nomeImpresa = (String)sqlManager.getObject("select nomimp from g1imprconc where codimp = ?", new Object[] {ditta});
+    if(nomeImpresa!=null)
+      ditta = ScaricaDocumentiManager.replaceInvalidChar(nomeImpresa);
 
     if(ngara!=null)
       ngara = ScaricaDocumentiManager.replaceInvalidChar(ngara);

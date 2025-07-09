@@ -127,7 +127,7 @@ public class DgueGenTokenAppAction extends DispatchActionBaseNoOpzioni {
         paramDgueJwtKey = new PropsConfig();
         paramDgueJwtKey.setCodApp("PG");
         paramDgueJwtKey.setChiave(DGUE_JWTKEY);
-        paramDgueJwtKey.setValore(RandomStringUtils.random(8,true,true));
+        paramDgueJwtKey.setValore(RandomStringUtils.random(256,true,true));
         toInsert[1] = paramDgueJwtKey;
 
         paramDgueJwtKeyExpiration = new PropsConfig();

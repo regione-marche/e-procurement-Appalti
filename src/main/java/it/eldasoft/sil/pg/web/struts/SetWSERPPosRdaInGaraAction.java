@@ -19,6 +19,11 @@ import org.apache.struts.action.ActionMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 public class SetWSERPPosRdaInGaraAction extends Action {
 
@@ -60,35 +65,133 @@ public class SetWSERPPosRdaInGaraAction extends Action {
 
         WSERPConfigurazioneOutType configurazione = gestioneWSERPManager.wserpConfigurazioneLeggi(servizio);
         String tipoWSERP = configurazione.getRemotewserp();
-        if("RAIWAY".equals(tipoWSERP)){
-            WSERPRdaType erpSearch= new WSERPRdaType();
-            erpSearch.setCodiceRda(codiceRda);
-            WSERPRdaResType wserpRdaRes = this.gestioneWSERPManager.wserpListaRda(username, password, servizio, erpSearch);
-            if(!wserpRdaRes.isEsito()){
-                throw new GestoreException("Si e' verificato un errore durante la associazione delle RdA: " + wserpRdaRes.getMessaggio(),
-                    "wserp.erp.associarda.remote.error", null);
-            }else{
-                WSERPRdaType[] rdaArray = wserpRdaRes.getRdaArray();
-                if(!"".equals(arrmultikey)){
-                    String[] multikey = arrmultikey.split(";");
-                    int index = 0;
-                    WSERPPosizioneRdaType[] posizioneArray = new WSERPPosizioneRdaType[multikey.length];
-                    for (String mkey : multikey) {
-                        boolean found = false;
-                        for (int i = 0; i < rdaArray[0].getPosizioneRdaArray().length && !found ; i++) {
-                            if (rdaArray[0].getPosizioneRdaArray(i).getPosizioneRiferimento().equals(mkey)){
-                                posizioneArray[index] = rdaArray[0].getPosizioneRdaArray(i);
-                                found = true;
-                                index ++;
-                            }
-                        }
-                    }
-                    rdaArray[0].setPosizioneRdaArray(posizioneArray);
-                    this.gestioneWSERPManager.insCollegamentoRda(request, username, password, servizio, codiceGara, codice, rdaArray, linkrda, uffint);
-                    result.put("Esito", "0");
-                }
-            }
-        }
+        
+        switch(tipoWSERP) {
+	        case "RAIWAY":
+		        {
+		            WSERPRdaType erpSearch= new WSERPRdaType();
+		            erpSearch.setCodiceRda(codiceRda);
+		            WSERPRdaResType wserpRdaRes = this.gestioneWSERPManager.wserpListaRda(username, password, servizio, erpSearch);
+		            if(!wserpRdaRes.isEsito()){
+		                throw new GestoreException("Si e' verificato un errore durante la associazione delle RdA: " + wserpRdaRes.getMessaggio(),
+		                    "wserp.erp.associarda.remote.error", null);
+		            }else{
+		                WSERPRdaType[] rdaArray = wserpRdaRes.getRdaArray();
+		                if(!"".equals(arrmultikey)){
+		                    String[] multikey = arrmultikey.split(";");
+		                    int index = 0;
+		                    WSERPPosizioneRdaType[] posizioneArray = new WSERPPosizioneRdaType[multikey.length];
+		                    for (String mkey : multikey) {
+		                        boolean found = false;
+		                        for (int i = 0; i < rdaArray[0].getPosizioneRdaArray().length && !found ; i++) {
+		                            if (rdaArray[0].getPosizioneRdaArray(i).getPosizioneRiferimento().equals(mkey)){
+		                                posizioneArray[index] = rdaArray[0].getPosizioneRdaArray(i);
+		                                found = true;
+		                                index ++;
+		                            }
+		                        }
+		                    }
+		                    rdaArray[0].setPosizioneRdaArray(posizioneArray);
+		                    this.gestioneWSERPManager.insCollegamentoRda(request, username, password, servizio, codiceGara, codice, rdaArray, linkrda, uffint);
+		                    result.put("Esito", "0");
+		                }
+		            }
+		        }; break;
+	        case "INARCASSA": {
+	        	    this.gestioneWSERPManager.eliminaAssociazionePosizioni(codice);
+	        	    
+	        		String[] multikey = arrmultikey.split(";");
+	        		
+	        		// dai checkbox selezionati estrai codiceRda e posizioneRiferimento
+	        		// e per ogni Rda ricava le posizioni e li inserisco in una mappa 
+	        		// ( devo strutturare il dato partendo da un dato "piatto" )
+	        	    Map<String, Map<String, Boolean>> mappaRdaPosizioni = new HashMap<>(); 
+
+	        		for (String mkeys : multikey) {
+	        		    String[] info = mkeys.split("-");
+	        		    String codRda = info[0];
+	        		    String posRiferimento = info[1];
+	        		    
+	        		    if (mappaRdaPosizioni.containsKey(codRda)) {
+	        		    	// se ho inserito gia' una rda allora devo inserire questa posizione
+	        		    	Map<String, Boolean> posizioneHash = mappaRdaPosizioni.get(codRda);
+	        		    	posizioneHash.put(posRiferimento, true);
+	        		    } else {
+	        		    	// non c'e' questa rda quindi la devo inserire nella mappa con al relativa posizione
+	        		    	Map<String,Boolean> posizioneHash = new HashMap<>();
+	        		    	posizioneHash.put(posRiferimento, true);
+	        		    	
+	        		    	mappaRdaPosizioni.put(codRda, posizioneHash);	        		    	
+	        		    }//if
+	        		       
+	        		}//for
+	        		
+	        		// per ogni rda chiamo il servizio per ottenere le info su rda e relative posizioni	        			        	
+	        		List<WSERPRdaResType> listaInfoRda = new ArrayList<WSERPRdaResType>();
+	        		List<WSERPRdaResType> listaRdaKo = new ArrayList<WSERPRdaResType>();
+	        		
+	        		WSERPRdaType erpSearch= new WSERPRdaType();
+	        		Iterator<String> chiaviRda = mappaRdaPosizioni.keySet().iterator();
+	        		while(chiaviRda.hasNext()) {
+	        			
+		        		// per ogni rda eseguo la chiamate e filtro le posizioni in base a quelle che sono state 
+		        		// selezionate	        	        	
+	        				        		    
+	        		    // imposto l'Rda di cui voglio ottenere le info
+	        			String codRda = chiaviRda.next();
+	        		    erpSearch.setCodiceRda(codRda);
+	        		    WSERPRdaResType wserpRdaRes = this.gestioneWSERPManager.wserpListaRda(username, password, servizio, erpSearch);
+	        		    
+	        		    if(wserpRdaRes.isEsito()){
+	        		    	listaInfoRda.add(wserpRdaRes);
+	        		    } else {
+	        		       // gestione dell'errore => dobbiamo annullare tutte le rda associate
+	        		    	listaRdaKo.add(wserpRdaRes);
+	        		    }//if
+	        		    	        		    	        		    
+	        		}//while
+	        		
+	        		// se ci sono stati errori lo segnalo e non registro nulla
+	        		// altrimenti registro le informazioni
+	        		if (listaRdaKo.isEmpty()) {
+	        			// significa che le chiamate sono andate tutte a buon fine e ho, quindi, ho recuperato
+	        			// i dati di tutte le rda / posizioni coinvolte
+	        			// Ora bisogna filtrare le posizioni che abbiamo tenendo solo quelle che sono state selezionate
+	        			// ( quelle presenti nella mappaRdaPosizioni ) 
+	        			
+	        			for (Iterator iterator = listaInfoRda.iterator(); iterator.hasNext();) {
+	        				// estraggo rda
+							WSERPRdaResType wserpRdaResType = (WSERPRdaResType) iterator.next();
+							WSERPRdaType[] rdaArray = wserpRdaResType.getRdaArray();
+							WSERPRdaType rda = rdaArray[0];
+							
+							// filtro le posizioni di queste rda con quelle che sono state selezionate nella tabella
+							List<WSERPPosizioneRdaType> listaPosizioniFiltrate = new ArrayList<WSERPPosizioneRdaType>();
+							Map<String,Boolean> posizioneHash = mappaRdaPosizioni.get(rda.getCodiceRda());
+							for( WSERPPosizioneRdaType posizione: rda.getPosizioneRdaArray() ) {								
+								if (posizioneHash.containsKey(posizione.getPosizioneRiferimento())) {
+									listaPosizioniFiltrate.add(posizione);
+								}//if
+							}//for
+							
+							// sovrascrivo le posizioni con quelle filtrate
+							// nota: questo è necessario per il funzionamento della insCollegamentoRda
+							WSERPPosizioneRdaType[] newPosizioneRdaArray = listaPosizioniFiltrate.toArray(new WSERPPosizioneRdaType[0]);
+							rda.setPosizioneRdaArray(newPosizioneRdaArray);
+							
+							// effettuo il collegamento a db...
+							this.gestioneWSERPManager.insCollegamentoRda(request, username, password, servizio, codiceGara, codice, rdaArray, linkrda, uffint);
+		                    result.put("Esito", "0");
+						}//for
+	        			
+	        		} else {
+	        			// significa che ci sono delle chiamate che non sono andate bene => riporto eccezione
+	        			// TODO:ROS: da vedere cosa riportare in questo caso
+	        		}//if
+	        		
+	             }; break;
+    	}//switch;
+	      
         out.print(result);
         out.flush();
         return null;

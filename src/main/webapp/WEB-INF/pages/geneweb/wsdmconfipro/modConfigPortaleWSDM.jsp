@@ -23,12 +23,10 @@
 <c:set var="isNavigazioneDisabilitata" value="1" scope="request" />
 
 <c:set var="idconfi" value="${param.idconfi}"/>
-<c:set var="descri" value="${param.descri}"/>
 <c:set var="wsdmProtocollo" value="${param.wsdmProtocollo}"/>
 <c:set var="key" value='WSDMCONFI.ID=N:${idconfi}' scope="request" />
 <c:set var="keyParent" value='WSDMCONFI.ID=N:${idconfi}' scope="request" />
 <c:set var="contextPath" value="${pageContext.request.contextPath}" scope="request" />
-<c:set var="codapp" value="${param.codapp}"/>
 
 <link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/jquery/wsdm/jquery.wsdm.css" >
 <script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.validate.min.js"></script>
@@ -130,6 +128,7 @@
 	//49		""		protocollazione.wsdm.stipule.registro
 	//50		""		protocollazione.wsdm.stipule.indice
 	//51		""		protocollazione.wsdm.stipule.titolazione
+	//52		""		protocollazione.wsdm.divisione
 	
 	arrayProprieta = [[idconfi,"wsdm.fascicoloprotocollo.url"],[idconfi,"protocollazione.wsdm.username"],[idconfi,"protocollazione.wsdm.password"],[idconfi,"protocollazione.wsdm.nome"],
 		[idconfi,"protocollazione.wsdm.cognome"],[idconfi,"protocollazione.wsdm.ruolo"],[idconfi,"protocollazione.wsdm.codiceUO"],[idconfi,"protocollazione.wsdm.idUtente"],
@@ -145,9 +144,10 @@
 		[idconfi,"protocollazione.wsdm.tipoDocumento.inviaComunicazione"],[idconfi,"protocollazione.wsdm.supporto"],[idconfi,"protocollazione.wsdm.tipoAssegnazione"],
 		[idconfi,"protocollazione.wsdm.sottotipoGara"],[idconfi,"protocollazione.wsdm.sottotipoComunicazione"],[idconfi,"protocollazione.wsdm.posizioneAllegatoComunicazione"],
 		[idconfi,"protocollazione.wsdm.descUnitaOperativaDestinataria"],[idconfi,"protocollazione.wsdm.tipoFirma"],[idconfi,"protocollazione.wsdm.stipule.classifica"],
-		[idconfi,"protocollazione.wsdm.stipule.tipoDocumento"],[idconfi,"protocollazione.wsdm.stipule.registro"],[idconfi,"protocollazione.wsdm.stipule.indice"],[idconfi,"protocollazione.wsdm.stipule.titolazione"]];
+		[idconfi,"protocollazione.wsdm.stipule.tipoDocumento"],[idconfi,"protocollazione.wsdm.stipule.registro"],[idconfi,"protocollazione.wsdm.stipule.indice"],[idconfi,"protocollazione.wsdm.stipule.titolazione"],
+		[idconfi,"protocollazione.wsdm.divisione"]];
 											
-	tipoProprieta = [ "label","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","-b","","","","","","","","","","-b","","","","","","",""];											
+	tipoProprieta = [ "label","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","-b","","","","","","","","","","-b","","","","","","","",""];
 	
 	var condLoginComune;
 	var condUrlProtocollo;
@@ -316,7 +316,7 @@
 		<input type="text" id="prop2" name="valore"title="Username" class="testo" type="text" size="50" value="" maxlength="100"/>
 	</td>
 </tr>
-<c:if test="${wsdmProtocollo ne 'IRIDE' and wsdmProtocollo ne 'JIRIDE' and wsdmProtocollo ne 'INFOR' and wsdmProtocollo ne 'PROTSERVICE' and wsdmProtocollo ne 'JPROTOCOL'}">
+<c:if test="${wsdmProtocollo ne 'IRIDE' and wsdmProtocollo ne 'JIRIDE' and wsdmProtocollo ne 'INFOR' and wsdmProtocollo ne 'PROTSERVICE' and wsdmProtocollo ne 'JPROTOCOL' and wsdmProtocollo ne 'HALLEY'}">
 	<tr id="sez3">
 		<td class="etichetta-dato">
 			<span id="titleProp3" >Password</span>
@@ -395,7 +395,7 @@
 			<b><br>Parametri specifici per procedure di Gara</b>
 		</td>
 	</tr>
-<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT'}">
+<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT' or wsdmProtocollo eq 'HALLEY'}">
 	<tr id="sez9">
 		<td class="etichetta-dato">
 			<span id="titleProp9" >Classifica</span>
@@ -508,7 +508,7 @@
 			<b><br>Parametri specifici per Elenco operatori</b>
 		</td>
 	</tr>
-<c:if test="${wsdmProtocollo eq 'JIRIDE'or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT'}">
+<c:if test="${wsdmProtocollo eq 'JIRIDE'or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT' or wsdmProtocollo eq 'HALLEY'}">
 	<tr id="sez17">
 		<td class="etichetta-dato">
 			<span id="titleProp17" >Classifica</span>
@@ -520,7 +520,7 @@
 		</td>
 	</tr>
 </c:if>
-<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'TITULUS' or wsdmProtocollo eq 'ARCHIFLOW' or wsdmProtocollo eq 'URBI' or wsdmProtocollo eq 'DOCER' or wsdmProtocollo eq 'JDOC' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'ITALPROT'}">
+<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'TITULUS' or wsdmProtocollo eq 'ARCHIFLOW' or wsdmProtocollo eq 'URBI' or wsdmProtocollo eq 'DOCER' or wsdmProtocollo eq 'JDOC' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'ITALPROT' or wsdmProtocollo eq 'ARCHIFLOWFA'}">
 	<tr id="sez18">
 		<td class="etichetta-dato">
 			<span id="titleProp18" >Tipo documento</span>
@@ -572,7 +572,7 @@
 			<b><br>Parametri specifici per Catalogo elettronico</b>
 		</td>
 	</tr>
-<c:if test="${wsdmProtocollo eq 'JIRIDE'or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT'}">
+<c:if test="${wsdmProtocollo eq 'JIRIDE'or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT' or wsdmProtocollo eq 'HALLEY'}">
 	<tr id="sez22">
 		<td class="etichetta-dato">
 			<span id="titleProp22" >Classifica</span>
@@ -584,7 +584,7 @@
 		</td>
 	</tr>
 </c:if>
-<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'TITULUS' or wsdmProtocollo eq 'ARCHIFLOW' or wsdmProtocollo eq 'URBI' or wsdmProtocollo eq 'DOCER' or wsdmProtocollo eq 'JDOC' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'ITALPROT'}">
+<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'TITULUS' or wsdmProtocollo eq 'ARCHIFLOW' or wsdmProtocollo eq 'URBI' or wsdmProtocollo eq 'DOCER' or wsdmProtocollo eq 'JDOC' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'ITALPROT' or wsdmProtocollo eq 'ARCHIFLOWFA'}">
 	<tr id="sez23">
 		<td class="etichetta-dato">
 			<span id="titleProp23" >Tipo documento</span>
@@ -636,7 +636,7 @@
 			<b><br>Parametri specifici per Avvisi</b>
 		</td>
 	</tr>
-<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT'}">
+<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT' or wsdmProtocollo eq 'HALLEY'}">
 	<tr id="sez27">
 		<td class="etichetta-dato">
 			<span id="titleProp27" >Classifica</span>
@@ -648,7 +648,7 @@
 		</td>
 	</tr>
 </c:if>
-<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'TITULUS' or wsdmProtocollo eq 'ARCHIFLOW' or wsdmProtocollo eq 'URBI' or wsdmProtocollo eq 'JDOC' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'ITALPROT'}">
+<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'TITULUS' or wsdmProtocollo eq 'ARCHIFLOW' or wsdmProtocollo eq 'URBI' or wsdmProtocollo eq 'JDOC' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'ITALPROT' or wsdmProtocollo eq 'ARCHIFLOWFA'}">
 	<tr id="sez28">
 		<td class="etichetta-dato">
 			<span id="titleProp28" >Tipo documento</span>
@@ -758,7 +758,7 @@
 			<b><br>Altri parametri</b>
 		</td>
 	</tr>
-<c:if test="${wsdmProtocollo eq 'PRISMA'}">
+<c:if test="${wsdmProtocollo eq 'PRISMA' or wsdmProtocollo eq 'ARCHIFLOW'}">
 	<tr id="sez32">
 		<td class="etichetta-dato">
 			<span id="titleProp32" >Struttura</span>
@@ -767,6 +767,18 @@
 			<input type="hidden" id="codapp32" name="idconfi" value="${idconfi}" />
 			<input type="hidden" id="chiave32" name="chiave" value="protocollazione.wsdm.struttura" maxlength="60" />
 			<input type="text" id="prop32" name="valore"title="Struttura" class="testo" type="text" size="50" value="" maxlength="100"/>
+		</td>
+	</tr>
+</c:if>
+<c:if test="${wsdmProtocollo eq 'ARCHIFLOW'}">
+	<tr id="sez52">
+		<td class="etichetta-dato">
+			<span id="titleProp52" >Divisione</span>
+		</td>
+		<td class="valore-dato">
+			<input type="hidden" id="codapp52" name="idconfi" value="${idconfi}" />
+			<input type="hidden" id="chiave52" name="chiave" value="protocollazione.wsdm.divisione" maxlength="60" />
+			<input type="text" id="prop52" name="valore"title="Divisione" class="testo" type="text" size="50" value="" maxlength="100"/>
 		</td>
 	</tr>
 </c:if>
@@ -834,7 +846,7 @@
 		</td>
 	</tr>
 </c:if>
-<c:if test="${wsdmProtocollo eq 'ENGINEERING' or wsdmProtocollo eq 'ENGINEERINGDOC' or wsdmProtocollo eq 'PRISMA' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'DOCER'}">
+<c:if test="${wsdmProtocollo eq 'ENGINEERING' or wsdmProtocollo eq 'ENGINEERINGDOC' or wsdmProtocollo eq 'PRISMA' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'DOCER' or wsdmProtocollo eq 'HALLEY'}">
 	<tr id="sez38">
 		<td class="etichetta-dato">
 			<span id="titleProp38" >Id unità operativa destinataria</span>
@@ -934,10 +946,8 @@
 </tr>
 
 	<input id="wsdmProtocollo" name="wsdmProtocollo" type="hidden" value="${param.wsdmProtocollo}"/>
-	<input id="descri" name="descri" type="hidden" value="${descri}"/>
 	<input id="servizio" name="servizio" type="hidden" value="" />
 	<input id="tabellatiInDB" name="tabellatiInDB" type="hidden" value="" />
-	<input id="codapp" name="codapp" type="hidden" value="${codapp }" />
 <tr>
 	<td class="comandi-dettaglio" colspan="2" >
 		<INPUT type="button" class="bottone-azione" value="Salva" title="Salva modifiche" onclick="javascript:gestisciSubmit()">

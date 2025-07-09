@@ -375,7 +375,7 @@ document.getElementById("numeroDitte").value = ${currentRow}+1;
 			var objId = this.id;
 			var numeroRiga = objId.substr(objId.lastIndexOf("_") + 1);
 			var stepWizard = "${stepWizard }";
-			if(this.value != "2" && this.value != "6" && this.value != "9"){
+			if(this.value != "2" && this.value != "6" && this.value != "9" && this.value != "11"){
 				setValue("V_DITGAMMIS_FASGAR_" + numeroRiga, "");
 				if(stepWizard == "20")
 					setValue("DITG_INVOFF_" + numeroRiga, "1");
@@ -392,7 +392,7 @@ document.getElementById("numeroDitte").value = ${currentRow}+1;
 				setValue("DITG_PARTGAR_" + numeroRiga, "1");
 				
 			<c:if test="${garaInversa eq '1' && (isBustaElaborata eq 'Si' or isBustaElaborata eq 'NonEsiste')}">
-				if(this.value == "2" || this.value == "6" || this.value == "9"){
+				if(this.value == "2" || this.value == "6" || this.value == "9" || this.value == "11"){
 					setValue("DITG_AMMINVERSA_" + numeroRiga, "");
 					showObj("colDITG_AMMINVERSA_" + numeroRiga, false);
 				}else{

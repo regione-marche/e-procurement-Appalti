@@ -64,6 +64,8 @@
 	<gene:redefineInsert name="corpo">
 				
 		<c:set var="modo" value="MODIFICA" scope="request" />
+		
+		<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from GARE where ngara=?", ngara)}'/>
 
 		<gene:formScheda entita="GARE" where="GARE.NGARA = '${ngara}'" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAnnullaAperturaOfferte">
 			<gene:campoScheda>

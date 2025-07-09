@@ -111,12 +111,24 @@
 </c:if>
 
 <c:choose>
+	<c:when test="${iterga eq 8}">
+		<c:set var="isRicercaMercatoNegoziata" value="true" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="isRicercaMercatoNegoziata" value="false" />
+	</c:otherwise>
+</c:choose>
+
+<c:choose>
 	<c:when test='${gruppo eq 3 and garaElencoCatalogo ne "true"}'>
 		<c:set var="varQuestionari" value="${gestioneQuestionariPreq},${gestioneQuestionariAmm},${gestioneQuestionariTec},${gestioneQuestionariEco}" />
 		<c:set var="dati" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetBusteDocumentiConcorrentiJsonFunction", pageContext,codiceGara,numeroGara,varQuestionari)}'></c:set>
 	</c:when>
 	<c:when test='${gruppo eq 3 and garaElencoCatalogo eq "true"}'>
 		<c:set var="dati" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetFaseleDocumentiOperatoriJsonFunction", pageContext,codiceGara,numeroGara,gestioneQuestionariIscriz)}'></c:set>
+	</c:when>
+	<c:when test='${gruppo eq 0}'>
+		<c:set var="dati" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.npa.GetListaAnacFormPCPFunction", pageContext,codiceGara,numeroGara)}'></c:set>
 	</c:when>
 	<c:otherwise>
 		<c:set var="dati" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetTipologieDocumentiJsonFunction", pageContext,codiceGara,numeroGara)}'></c:set>
@@ -131,7 +143,16 @@
 </gene:redefineInsert>
 <gene:campoScheda>
 	<c:if test="${dati eq '[]'}">
-		<td colspan="2"><b>Non &egrave; possibile effettuare pubblicazioni</b></td>
+		<c:choose>
+			<c:when test="${gruppo ne 0}">
+			<td colspan="2"><b>Non &egrave; possibile effettuare pubblicazioni</b></td>
+			</c:when>
+			<c:otherwise>
+			<td colspan="2"><br>
+			Nessun elemento estratto
+			<br><br></td>
+			</c:otherwise>
+		</c:choose>
 	</c:if>
 	<c:if test="${dati ne '[]'}">
 		<td colspan="2"><b>&nbsp;</b>
@@ -139,15 +160,22 @@
 		<div id="jstree2" class="demo"></div></td>		
 	</c:if>
 	<c:if test='${autorizzatoModifiche ne "2" and isIntegrazionePortaleAlice eq "true"}'>
-		<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.PubblicaSuPortale")}'>
+		<c:if test='${gruppo ne 0 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.PubblicaSuPortale")}'>
 			<tr class="comandi-dettaglio">
 				<td colspan="2">
 					<INPUT type="button"  class="bottone-azione" value='Pubblica su portale Appalti' title='Pubblica su portale Appalti' onclick="javascript:pubblicaSuPortaleAppalti();">
 				</td>
 			</tr>
 		</c:if>
+		<c:if test='${gruppo eq 0 and gene:checkProt(pageContext, "FUNZ.VIS.INS.GARE.AGGIUNGIANACFORM")}'>
+			<tr class="comandi-dettaglio">
+				<td colspan="2">
+					<INPUT type="button"  class="bottone-azione" value='Aggiungi scheda ANAC' title='Aggiungi scheda ANAC' onclick="javascript:document.formAggiungiAnacForm.submit();">
+				</td>
+			</tr>
+		</c:if>
 	<gene:redefineInsert name="addToAzioni" >
-		<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.PubblicaSuPortale")}'>
+		<c:if test='${gruppo ne 0 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.PubblicaSuPortale")}'>
 			<tr>
 				<td class="vocemenulaterale" >
 					<a href="javascript:pubblicaSuPortaleAppalti()" title="Pubblica su portale Appalti" tabindex="1505">
@@ -156,7 +184,18 @@
 				</td>
 			</tr>
 		</c:if>
-		<c:if test='${gruppo ne 3 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InviaAttiSCP") and not empty integrazioneSCP}'>
+		<c:if test='${gruppo ne 0 and isRicercaMercatoNegoziata eq "false" and integrazioneWSERP eq "1" and tipoWSERP eq "ATAC"}'>
+			<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.AcquisisciDocumentiERP")}'>
+				<tr>
+					<td class="vocemenulaterale" >
+						<a href="javascript:acquisisciDocumenti('${codiceGara}','${iterga}')" title="Acquisisci documenti" tabindex="1505">
+						Acquisisci documenti
+						</a>
+					</td>
+				</tr>
+			</c:if>
+		</c:if>
+		<c:if test='${gruppo ne 0 and gruppo ne 3 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InviaAttiSCP") and not empty integrazioneSCP and empty vernpa}'>
 			<tr>
 				<td class="vocemenulaterale" >
 					<a href="javascript:inviaAttiScp()" title="Invia dati a SCP" tabindex="1505">
@@ -165,10 +204,19 @@
 				</td>
 			</tr>
 		</c:if>
+		<c:if test='${gruppo eq "0" and gene:checkProt(pageContext, "FUNZ.VIS.INS.GARE.AGGIUNGIANACFORM")}'>
+			<tr>
+				<td class="vocemenulaterale" >
+					<a href="javascript:document.formAggiungiAnacForm.submit()" title="Aggiungi scheda ANAC">
+					Aggiungi scheda ANAC
+					</a>
+				</td>
+			</tr>
+		</c:if>
 	</gene:redefineInsert>
 	</c:if>
 	<gene:redefineInsert name="addToDocumenti" >
-		<c:if test='${autorizzatoModifiche ne "2" and modoAperturaScheda eq "VISUALIZZA" and (integrazioneWSERP eq "1" and (tipoWSERP eq "SMEUP" || tipoWSERP eq "UGOVPA" || tipoWSERP eq "AVM") and visAllegatiRda eq "true")}'>
+		<c:if test='${gruppo ne 0 and autorizzatoModifiche ne "2" and modoAperturaScheda eq "VISUALIZZA" and (integrazioneWSERP eq "1" and (tipoWSERP eq "SMEUP" || tipoWSERP eq "UGOVPA" || tipoWSERP eq "AVM") and visAllegatiRda eq "true")}'>
 			<tr>
 				<td class="vocemenulaterale">
 					<a href="javascript:visAllegatiRda('${chiaveRda}');" title='Visualizza documenti allegati RdA' tabindex="1508">
@@ -288,6 +336,12 @@ $("#jstree2").bind("select_node.jstree", function (e, data) {
 	 var href = data.node.a_attr.href;
 	 document.location.href = href;
 });
+
+function acquisisciDocumenti(codiceGara,iterga){
+	var href = "href=gare/commons/popup-AcquisisciDocumentiRda.jsp?codiceGara=" + codiceGara + "&iterga=" + iterga;
+	openPopUpCustom(href, "acquisisciDocumentiRda", 500, 300, "no", "yes");
+}
+
 
 <c:choose>
 	<c:when test="${genere eq 10 or genere eq 11 or genere eq 20}">

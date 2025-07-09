@@ -1,5 +1,26 @@
 package it.eldasoft.sil.pg.bl;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.rmi.RemoteException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.UUID;
+import java.util.Vector;
+
+import javax.servlet.http.HttpSession;
+import javax.xml.rpc.ServiceException;
+
+import org.apache.axis.MessageContext;
+import org.apache.axis.transport.http.HTTPConstants;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.apache.xmlbeans.XmlOptions;
+
 import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.WebUtilities;
@@ -38,27 +59,6 @@ import it.eldasoft.simog.ws.xmlbeans.W3Z20Type;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.utility.UtilityFiscali;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.rmi.RemoteException;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
-import java.util.Vector;
-
-import javax.servlet.http.HttpSession;
-import javax.xml.rpc.ServiceException;
-
-import org.apache.axis.MessageContext;
-import org.apache.axis.transport.http.HTTPConstants;
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
-import org.apache.xmlbeans.XmlOptions;
-
 
 public class InviaDatiRichiestaCigManager {
 
@@ -76,19 +76,19 @@ public class InviaDatiRichiestaCigManager {
 
   private static final String CTR_LOTTI_OGGETTO                 = "L'oggetto della gara non è valorizzato nei lotti ";
 
-  private static final String CTR_GARA_RUP                      = "Il riferimento al responsabile unico procedimento non e' valorizzato";
+  private static final String CTR_GARA_RUP                      = "Il riferimento al RUP non e' valorizzato";
 
   private static final String CTR_GARA_IMPORTO                  = "L'importo a base di gara non e' valorizzato";
 
   private static final String CTR_LOTTI_IMPORTO                 = "L'importo a base di gara non è valorizzato nei lotti ";
 
-  private static final String CTR_RUP_INTESTAZIONE              = "Il nome del responsabile unico procedimento non e' valorizzato";
+  private static final String CTR_RUP_INTESTAZIONE              = "Il nome del RUP non e' valorizzato";
 
-  private static final String CTR_RUP_CF                        = "Il codice fiscale del responsabile unico procedimento non e' valorizzato";
+  private static final String CTR_RUP_CF                        = "Il codice fiscale del RUP non e' valorizzato";
 
-  private static final String CTR_RUP_CF_NON_VALIDO             = "Il codice fiscale del responsabile unico procedimento non ha un formato valido";
+  private static final String CTR_RUP_CF_NON_VALIDO             = "Il codice fiscale del RUP non ha un formato valido";
 
-  private static final String CTR_RUP_PIVA_NON_VALIDA           = "La partita Iva del responsabile unico procedimento non ha un formato valido";
+  private static final String CTR_RUP_PIVA_NON_VALIDA           = "La partita Iva del RUP non ha un formato valido";
 
   private static final String CTR_GARE_TORN_TIPGAR              = "Il tipo procedura non è valorizzato";
 
@@ -994,14 +994,14 @@ public class InviaDatiRichiestaCigManager {
             if(aqdurata!=null){
                 if(aqtempo != null) {
               	  if(aqtempo.longValue()==1) {
-              		  tempoUtile= aqdurata.intValue() * 30;	  
+              		  tempoUtile= aqdurata.intValue() * 30;
               	  }else if(aqtempo.longValue()==3) {
-              		  tempoUtile= aqdurata.intValue();	  
+              		  tempoUtile= aqdurata.intValue();
               	  }else {
               		  tempoUtile= aqdurata.intValue() * 365;
               	  }
                 }else {
-              	  tempoUtile= aqdurata.intValue() * 365;            		
+              	  tempoUtile= aqdurata.intValue() * 365;
                 }
             }
           }else{
@@ -1845,6 +1845,8 @@ public class InviaDatiRichiestaCigManager {
       sezioneVisibile=false;
     else if("3".equals(genere) && (!geneManager.getProfili().checkProtec(profilo, "SEZ", "VIS","GARE.GARE-scheda.DATIGENOFFUNICA." + sezione) || !geneManager.getProfili().checkProtec(profilo, "PAGE", "VIS","GARE.GARE-scheda.DATIGENOFFUNICA")))
       sezioneVisibile=false;
+    else if("11".equals(genere) && !geneManager.getProfili().checkProtec(profilo, "SEZ", "VIS","GARE.GAREAVVISI-scheda.DATIGEN." + sezione))
+      sezioneVisibile=false;
 
     if(sezioneVisibile){
       String MessageError1 = "";
@@ -2338,7 +2340,7 @@ public class InviaDatiRichiestaCigManager {
    }
    return res;
  }
- 
+
  /**
   * Vengono effettuati i controlli sui campi codnuts e locint, ma solo se da profilo risultano visibili.
   * Si verificando che siano presenti almeno uno dei due tra NUTS o ISTAT.
@@ -2368,7 +2370,7 @@ public class InviaDatiRichiestaCigManager {
    else if("3".equals(genere) && (!geneManager.getProfili().checkProtec(profilo, "SEZ", "VIS","GARE.TORN-OFFUNICA-scheda.ALTRIDATI.LOC") || !geneManager.getProfili().checkProtec(profilo, "PAGE", "VIS","GARE.TORN-OFFUNICA-scheda.ALTRIDATI")))
      sezioneVisibile=false;
    if(campoVisibile && sezioneVisibile) {
-	   visIstat=true;  
+	   visIstat=true;
    }
    campoVisibile=true;
    if (!geneManager.getProfili().checkProtec(profilo, "COLS", "VIS","GARE.TORN.CODNUTS"))
@@ -2376,33 +2378,33 @@ public class InviaDatiRichiestaCigManager {
    if(campoVisibile){
 	   visNuts=true;
    }
-   
+
    codnuts = StringUtils.stripToEmpty(codnuts);
    locint = StringUtils.stripToEmpty(locint);
-   
+
    if(visNuts && visIstat) {
 	   if("".equals(codnuts) && "".equals(locint)) {
 	     res[0]="NOK";
 	     res[1]="NOK";
 	   }
    }
-   
+
    if(visNuts && !visIstat) {
 	   if("".equals(codnuts)) {
 	     res[0]="NOK";
 	     res[1]="OK";
 	   }
    }
-   
+
    if(!visNuts && visIstat) {
 	   if("".equals(locint)) {
 	     res[0]="OK";
 	     res[1]="NOK";
 	   }
    }
-   
+
    return res;
-   
+
  }
- 
+
 }

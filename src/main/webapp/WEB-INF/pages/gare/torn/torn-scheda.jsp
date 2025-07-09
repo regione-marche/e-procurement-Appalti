@@ -20,8 +20,8 @@
 	<c:when test='${modo eq "NUOVO" and param.tipoGara eq "garaDivisaLottiOffUnica"}' >
 		<c:set var="tipologiaGara" value='3' scope="request"/>
 	</c:when>
-	<c:otherwise>
-		<c:set var="tipologiaGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTipologiaGaraFunction",  pageContext,key)}' scope="request"/>
+	<c:otherwise>	    
+ 		<c:set var="tipologiaGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTipologiaGaraFunction",  pageContext,key)}' scope="request"/>
 	</c:otherwise>
 </c:choose>
 

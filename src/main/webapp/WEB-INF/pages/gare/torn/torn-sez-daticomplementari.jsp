@@ -24,6 +24,8 @@
 	</c:otherwise>
 </c:choose>
 
+<c:set var="verNPA" value="${param.verNPA}"/>
+
 	<gene:gruppoCampi idProtezioni="COMPBANDO" visibile="${param.tornata || param.garaLottoUnico}">
 		<gene:campoScheda nome="COMPBANDO">
 			<td colspan="2"><b>Dati complementari per la presentazione della domanda di partecipazione o dell'offerta</b></td>
@@ -38,6 +40,18 @@
 				<gene:campoScheda campo="CODNUTS" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" />
 			</c:otherwise>
 		</c:choose>
+
+		<c:if test="${not empty verNPA}">
+			<gene:campoScheda campo="MOTCIG" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }"/>
+			<gene:campoScheda campo="DEROGASA" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }"/>
+			<gene:campoScheda campo="ISNODPCM24" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }"/>
+			<gene:campoScheda campo="ISNOINIZIA" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }"
+				visibile="${not (modo eq 'VISUALIZZA' and datiRiga.TORN_ISNODPCM24 eq '1')}" />
+			<gene:campoScheda campo="STRUMPROC" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }"/>
+			<gene:campoScheda campo="MOTESCLU" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" visibile="${datiRiga.TORN_ISCONCES ne '1'}" modificabile="${param.datiModificabili }"/>
+			<gene:campoScheda campo="MOTESCLC" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" visibile="${datiRiga.TORN_ISCONCES eq '1'}" modificabile="${param.datiModificabili }"/>
+			<gene:campoScheda campo="FATTRA" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }"/>
+		</c:if>
 		<c:if test="${param.tornata || param.garaLottoUnico }">
 			<gene:campoScheda campo="MODREA" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoModrea"/>
 		</c:if>
@@ -57,8 +71,16 @@
 		<gene:campoScheda campo="PAGDOC" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }"/> 
 		<gene:campoScheda campo="MODFIN" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }"/> 
 		<gene:campoScheda campo="APFINFC" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }"/>
-		<gene:campoScheda campo="PROGEU" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }"/> 
+		<gene:campoScheda campo="PROGEU" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }" /> 
 		<gene:campoScheda campo="ACCAPPUB" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }"/>
+
+		<gene:campoScheda campo="ORDIELE" entita="TORN" modificabile="${param.datiModificabili }" />
+		<gene:campoScheda campo="RIESAME" entita="TORN" modificabile="${param.datiModificabili }" />
+
+		<c:if test="${not empty verNPA}">
+			<gene:campoScheda campo="RELUPROC" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }"/>
+			<gene:campoScheda campo="MOTAGGIDIR" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="${param.datiModificabili }"/>
+		</c:if>
 
 	</gene:gruppoCampi>
 			
@@ -75,6 +97,7 @@
 	<gene:fnJavaScriptScheda funzione="setVisibilitaNOFDIT('#TORN_OFFLOT#')" elencocampi="TORN_OFFLOT" esegui="true"/>
 	<gene:fnJavaScriptScheda funzione="setVisibilitaNGADIT('#TORN_OFFLOT#')" elencocampi="TORN_OFFLOT" esegui="true"/>
 	<gene:fnJavaScriptScheda funzione="setVisibilitaPROGEU('#TORN_APFINFC#')" elencocampi="TORN_APFINFC" esegui="true"/>
+	
 	
 	<gene:javaScript>
 	
@@ -125,7 +148,7 @@
 	
 	function setVisibilitaAMMVAR(iterga) {
 		var visibile = false;
-		if (iterga == 1 || iterga == 2 || iterga == 4) {
+		if (iterga == 1 || iterga == 2 || iterga == 4 || iterga == 9) {
 			visibile = true;
 		}
 		showObj("rowTORN_AMMVAR", visibile);
@@ -153,7 +176,7 @@
 	
 	function setVisibilitaDocumenti(iterga) {
 		var visibile = false;
-		if (iterga ==1 || iterga == 2 || iterga == 4) {
+		if (iterga ==1 || iterga == 2 || iterga == 4 || iterga == 9) {
 			visibile = true;
 		}
 		showObj("rowTORN_IMPDOC", visibile);
@@ -163,7 +186,7 @@
 	
 	function setVisibilitaELEPAR(modlic,iterga) {
 		var visibile = false;
-		if (modlic == 6 && (iterga==1 || iterga==2 || iterga==4)) {
+		if (modlic == 6 && (iterga==1 || iterga==2 || iterga==4 || iterga == 9)) {
 			visibile = true;
 		}
 		showObj("rowTORN_ELEPAR", visibile);
@@ -175,6 +198,22 @@
 		openPopUpCustom("href=gene/tabnuts/dettaglio-codice-nuts.jsp&key=" + document.forms[0].key.value + "&keyParent=" + document.forms[0].keyParent.value + "&modo="+(modifica ? "MODIFICA":"VISUALIZZA")+"&campo="+campo+"&valore="+ getValue(campo), "formNUTS", 700, 300, 1, 1);
 	}
 	
-
+	function gestisciISNODPCM24() {
+		if (${modo ne 'VISUALIZZA' and (not empty verNPA or not empty initVERNPA)}){
+			if (!($('#TORN_ISNODPCM24').val() == '1')) {
+				$('#rowTORN_ISNOINIZIA').show();
+			} else {
+				$('#TORN_ISNOINIZIA').val('');
+				$('#rowTORN_ISNOINIZIA').hide();
+			}
+		}
+	}
+	
+	$(document).ready(function(){
+		gestisciISNODPCM24();
+		$('#TORN_ISNODPCM24').change(function(){
+			gestisciISNODPCM24();
+		});
+	});
 	
 	</gene:javaScript>

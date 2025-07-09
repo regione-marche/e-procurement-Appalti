@@ -116,7 +116,7 @@
 				document.forms[0].activePage.value = 0;
 				document.forms[0].jspPath.value="/WEB-INF/pages/gare/g1stipula/g1stipula-scheda.jsp";
 				document.forms[0].jspPathTo.value="/WEB-INF/pages/gare/g1stipula/g1stipula-scheda.jsp";
-				document.forms[0].action = document.forms[0].action + "&ngara=" + ngara + "&ncont=" + ncont+ "&codiga=" + codiga;
+				document.forms[0].action = document.forms[0].action + "?ngara=" + ngara + "&ncont=" + ncont+ "&codiga=" + codiga;
 				bloccaRichiesteServer();
 				document.forms[0].submit();
 			}

@@ -81,7 +81,11 @@ public class GestioneDatiStipulaFunction extends AbstractFunzioneTag {
 
           pageContext.setAttribute("whereLottiAggiudicati",whereLottiAggiudicati,PageContext.REQUEST_SCOPE);
 
+
         }
+
+        Long stato= (Long)sqlManager.getObject("select stato from g1stipula where id=?", new Object[] {new Long(idS)});
+        pageContext.setAttribute("statoStipula",stato,PageContext.REQUEST_SCOPE);
 
       } catch (SQLException e) {
         throw new JspException("Errore nell'estrarre i dati della gara/lotto collegata alla stipula", e);

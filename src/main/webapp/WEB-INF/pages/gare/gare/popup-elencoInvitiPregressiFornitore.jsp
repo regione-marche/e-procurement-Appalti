@@ -54,8 +54,7 @@
 </c:choose>
 
 <c:set var="nomimo" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetNOMIMOFunction", pageContext, codiceElenco, codiceGara, codiceDitta)}' />
-
-${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, codiceElenco, "SC", "20")}
+<c:set var="codiceElenco" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ELENCOE from gare where ELENCOE = ?", codiceElenco)}' />
 ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, codiceDitta, "SC", "10")}
 <c:set var="where" value="DITG.NGARA5 = GARE.NGARA AND GARE.ELENCOE = '${codiceElenco}' AND DITG.ACQUISIZIONE = 3"/> 
 
@@ -66,7 +65,7 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 		<table class="lista">
 			<tr>
 			<td> 
-			<gene:formLista entita="GARE" where="${where} ${filtro}" pagesize="25" tableclass="datilista" gestisciProtezioni="false" sortColumn="-2" >
+			<gene:formLista entita="GARE" where="${where}" pagesize="25" tableclass="datilista" gestisciProtezioni="false" sortColumn="-2" >
 
 					<gene:campoLista campo="GENERE" ordinabile="false" visibile="false"/>
 					<gene:campoLista campo="NGARA5" entita="DITG" where="GARE.NGARA = DITG.NGARA5 and DITTAO = '${codiceDitta}'" ordinabile="false"/>

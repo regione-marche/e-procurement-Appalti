@@ -123,11 +123,12 @@
 			<gene:campoScheda campo="NGARA" campoFittizio="true" defaultValue="${param.ngara}"  visibile="false" definizione="T20;0"/>
 			<gene:campoScheda campo="CODGARA" campoFittizio="true" defaultValue="${param.codgar1}"  visibile="false" definizione="T21;0"/>
 			<gene:campoScheda campo="ESINEG" campoFittizio="true" defaultValue="${param.esineg}" title="Tipo di esito" definizione="T100;0;A1088;;G1ESINEGG"/>
+			<gene:campoScheda campo="GIUSTNEG" campoFittizio="true" defaultValue="${not empty initGiustneg ? initGiustneg : param.giustneg}" title="Giustificazione" definizione="T100;;A1z27;;G1GIUSTNEG"/>
 			<gene:campoScheda campo="DATNEG" campoFittizio="true" defaultValue="${param.datneg}" title="Data" definizione="D;0;;DATA_ELDA;G1DATNEGG"/>
 			<c:if test='${gene:checkProt(pageContext,"COLS.VIS.GARE.GARE1.NPANNREVAGG")}' >
 				<gene:campoScheda campo="NPANNREVAGG" campoFittizio="true" defaultValue="${param.npannrevagg}" title="N.protocollo" definizione="T14;0;;;NPANREVAGG"/>
 			</c:if>
-			<gene:campoScheda campo="NOTNEG" campoFittizio="true" defaultValue="${initNotneg}" title="Note" definizione="T2000;0;;NOTE;G1NOTNEG"/>
+			<gene:campoScheda campo="NOTNEG" campoFittizio="true" defaultValue="${not empty initNotneg ? initNotneg : param.notneg}" title="Note" definizione="T2000;0;;NOTE;G1NOTNEG"/>
 			<gene:campoScheda campo="ISLOTTOOFFDISTINTE" campoFittizio="true" defaultValue="${param.isLottoOffDistinte}"  visibile="false" definizione="T2;0"/>
 			<gene:campoScheda campo="ISOFFERTAUNICA" campoFittizio="true" defaultValue="${param.isOffertaUnica}"  visibile="false" definizione="T2;0"/>
 			<gene:campoScheda campo="ISOFFERTEDISTINTE" campoFittizio="true" defaultValue="${param.isOfferteDistinte}"  visibile="false" definizione="T2;0"/>
@@ -144,14 +145,20 @@
 		function conferma() {
 			var esineg=getValue("ESINEG");
 			var datneg=getValue("DATNEG");
+			var giustneg=getValue("GIUSTNEG");
 			if(esineg!=null && esineg!="" && (datneg==null || datneg=="")){
 				alert("Valorizzare il campo 'Data'");
+				return;
+			}
+			if(esineg!=null && esineg!="" && (giustneg==null || giustneg=="")){
+				alert("Valorizzare il campo 'Giustificazione'");
 				return;
 			}
 			if(esineg==null || esineg==""){
 				setValue("DATNEG","");
 				setValue("NOTNEG","");
 				setValue("NPANNREVAGG","");
+				setValue("GIUSTNEG","");
 			}
 			
 			document.forms[0].jspPathTo.value="gare/commons/popup-ImpostaGaraNonAggiudicata.jsp";
@@ -167,6 +174,7 @@
 				setValue("DATNEG","");
 				setValue("NOTNEG","");
 				setValue("NPANNREVAGG","");
+				setValue("GIUSTNEG","");
 			}
 		}
 	</gene:javaScript>

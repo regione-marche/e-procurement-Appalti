@@ -21,6 +21,9 @@
 
 <gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.GestioneDitteConcorrentiFunction" parametro="${key}" />
 
+<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.IsElencoElPremFunction" />
+<c:set var="delpremcont" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.GetDelpremcontFromNgaraFunction", pageContext, not empty gene:getValCampo(key,"NGARA") ? gene:getValCampo(key,"NGARA") : gene:getValCampo(key,"CODGAR"))}' />
+
 <jsp:include page="/WEB-INF/pages/gare/gare/bloccaModifica-fasiGara.jsp" >
 	<jsp:param name="entita" value="V_GARE_TORN" />
 	<jsp:param name="inputFiltro" value="${inputFiltro}" />
@@ -124,10 +127,10 @@
 						</c:when>
 						<c:otherwise>	
 							
-						<c:if test='${isGaraUsoAlbo and autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "INS","INS")}'>
+						<c:if test='${isGaraUsoAlbo and gene:checkProtFunz(pageContext, "INS","INS")}'>
 								<c:set var="tipoalgo" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTIPOALGOFunction", pageContext, codiceElenco)}'/>
-								<c:if test="${modalitaSelezioneDitteElenco eq 'MAN' or  modalitaSelezioneDitteElenco eq 'MISTA'}">
-									<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selUltimaAggiudicataria")}'>
+								<c:if test="${modalitaSelezioneDitteElenco eq 'MAN' or  modalitaSelezioneDitteElenco eq 'MISTA' or (modalitaSelezioneDitteElenco eq 'AUTO' and isElencoElPrem eq 'true')}">
+									<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selUltimaAggiudicataria")}'>
 										<tr>
 											<td class="vocemenulaterale">
 												<a href="javascript:SelUltimaAgg();" title='Sel. da elenco ultima aggiudicataria' tabindex="1501">
@@ -137,18 +140,29 @@
 										</tr>
 									</c:if>
 									
-									<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selDaElenco")}'>
-										<c:set var="aggnumord" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetAGGNUMORDFunction", pageContext, codiceElenco)}'/>
+									<c:if test='${isElencoElPrem eq "true" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selElPrem")}'>
 										<tr>
 											<td class="vocemenulaterale">
-												<a href="javascript:SelEleOpEco(0);" title='Sel. da elenco mediante rotazione' tabindex="1502">
-													Sel. da elenco mediante rotazione
+												<a href="javascript:selezioneElementiPremiali();" title='Sel. da elenco elementi premiali (1)' tabindex="1501">
+													Sel. da elenco elementi premiali (1)
 												</a>
 											</td>
 										</tr>
 									</c:if>
+
+									<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selDaElenco")}'>
+										<c:set var="aggnumord" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetAGGNUMORDFunction", pageContext, codiceElenco)}'/>
+										<tr>
+											<td class="vocemenulaterale">
+													<a href="javascript:SelEleOpEco(0);" title='Sel. da elenco mediante rotazione${isElencoElPrem eq "true" ? " (2)" : ""}' tabindex="1501">
+														Sel. da elenco mediante rotazione${isElencoElPrem eq "true" ? " (2)" : ""}
+													</a>
+											</td>
+										</tr>
+									</c:if>
 								</c:if>
-								<c:if test="${(modalitaSelezioneDitteElenco eq 'AUTO' or  modalitaSelezioneDitteElenco eq 'MISTA') and  gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selDaElenco')}">
+								
+								<c:if test="${autorizzatoModifiche ne 2 and (modalitaSelezioneDitteElenco eq 'AUTO' or modalitaSelezioneDitteElenco eq 'MISTA') and !(isElencoElPrem eq 'true') and  gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selDaElenco')}">
 										<tr>
 											<td class="vocemenulaterale">
 												<a href="javascript:SelEleOpEco(1);" title='Sel. autom. da elenco mediante rotazione' tabindex="1503">
@@ -208,7 +222,7 @@
 								</tr>
 							</c:if>
 						
-							<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext,"DEL","LISTADELSEL") and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA") }'>
+							<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext,"DEL","LISTADELSEL") and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA" or (modalitaSelezioneDitteElenco eq "AUTO" and isElencoElPrem eq "true")) }'>
 								<tr>
 									<td class="vocemenulaterale">
 										<a href="javascript:listaEliminaSelezione();" title="Elimina selezionati" tabindex="1504">
@@ -245,6 +259,17 @@
 									</td>
 								</tr>
 							</c:if>
+							<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FVOE") and gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.GetSeAttivoModuloANACFormFunction", pageContext, codiceGara) eq "true"}'>
+								<c:set var="visualizzaFVOE" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.CheckVisualizzaFVOEFunction", pageContext,codiceGara)}' />
+								<tr>
+									<td class="vocemenulaterale">
+										<a href='javascript:apriFVOE();' title="Verifiche FVOE" tabindex="1514">
+											Verifiche FVOE
+										</a>
+									</td>
+								</tr>
+							</c:if>
+							<c:if test="${gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIGARA.impostaFiltro')}">
 							<tr>
 								<td class="vocemenulaterale">
 									<a href="javascript:impostaFiltro();" title='Imposta filtro' tabindex="1509">
@@ -252,6 +277,7 @@
 									</a>
 								</td>
 							</tr>
+							</c:if>
 						</c:otherwise>
 						</c:choose>
 				</gene:redefineInsert>
@@ -259,7 +285,7 @@
 		
 		<c:set var="tipoImpresa" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTipologiaImpresaFunction",  pageContext,chiaveRigaJava)}'/>
 				
-		<c:set var="condizioneEliminazione" value='${(gene:checkProtFunz(pageContext, "DEL","DEL") or gene:checkProtFunz(pageContext,"DEL","LISTADELSEL")) and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA")}'/>
+		<c:set var="condizioneEliminazione" value='${(gene:checkProtFunz(pageContext, "DEL","DEL") or gene:checkProtFunz(pageContext,"DEL","LISTADELSEL")) and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA" or (modalitaSelezioneDitteElenco eq "AUTO" and isElencoElPrem eq "true"))}'/>
 		
 		<c:choose>
 			<c:when test='${(empty updateLista or updateLista ne 1) and autorizzatoModifiche ne 2 and (condizioneEliminazione
@@ -299,7 +325,7 @@
 						</gene:PopUp>
 					</c:if>
 					
-					<c:if test='${(gene:checkProtFunz(pageContext, "DEL","DEL") or gene:checkProtFunz(pageContext,"DEL","LISTADELSEL")) and( empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or (modalitaSelezioneDitteElenco eq "MISTA" and datiRiga.DITG_ACQAUTO ne "1"))}'>
+					<c:if test='${(gene:checkProtFunz(pageContext, "DEL","DEL") or gene:checkProtFunz(pageContext,"DEL","LISTADELSEL")) and( empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or (modalitaSelezioneDitteElenco eq "MISTA" and datiRiga.DITG_ACQAUTO ne "1") or (modalitaSelezioneDitteElenco eq "AUTO" and isElencoElPrem eq "true"))}'>
 						<input type="checkbox" name="keys" value="${chiaveRiga}"  />
 					</c:if>
 				</gene:campoLista>
@@ -329,6 +355,7 @@
 				<gene:campoLista  campo="DPROFF_FIT_NASCOSTO" campoFittizio="true" definizione="T25;0;;" value="${datiRiga.DITG_DPROFF}" edit="true" visibile="false"/>
 				<gene:campoLista campo="ORAOFF" visibile="false" edit="${updateLista eq 1}" />
 				<gene:campoLista campo="MEZOFF" visibile="false" edit="${updateLista eq 1}" />
+				<gene:campoLista campo="CODCNEL" visibile="false" edit="${updateLista eq 1}" />
 				
 				<gene:campoLista campo="AMMGAR"  visibile="false" edit="${updateLista eq 1}" />
 				<gene:campoLista campo="MOTIES"  visibile="false" edit="${updateLista eq 1}" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoTestoCodifcaDoppiApici"/>
@@ -494,25 +521,28 @@
 						</c:if>
 					</c:if>
 					&nbsp;<br><br>
-					<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "INS", "INS") and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA") and empty ngaraaq}'>
+					<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "INS", "INS") and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA") and empty ngaraaq and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA")}'>
 						<INPUT type="button"  class="bottone-azione" value='Aggiungi ditta da anagrafica' title='Aggiungi ditta da anagrafica' onclick="javascript:aggiungiDitta();">&nbsp;&nbsp;&nbsp;
 					</c:if>
 					<c:if test='${autorizzatoModifiche ne 2 and tipoWSERP eq "CAV" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ImportaAnagraficaRda")}'>
 						<INPUT type="button"  class="bottone-azione" value='Importa anagrafica da Rda' title='Importa anagrafica da Rda' onclick="javascript:importaAnagraficaRda();">&nbsp;&nbsp;&nbsp;
 					</c:if>
-					<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "DEL", "LISTADELSEL") and empty modalitaSelezioneDitteElenco or (modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA")}'>
+					<c:if test='${autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "DEL", "LISTADELSEL") and empty modalitaSelezioneDitteElenco or (modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA" or (modalitaSelezioneDitteElenco eq "AUTO" and isElencoElPrem eq "true"))}'>
 						<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.lista.listaEliminaSelezione")}' title='${gene:resource("label.tags.template.lista.listaEliminaSelezione")}' onclick="javascript:listaEliminaSelezione();">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 					</c:if>
 					
-					<c:if test='${isGaraUsoAlbo and autorizzatoModifiche ne 2 and gene:checkProtFunz(pageContext, "INS", "INS")}'>
+					<c:if test='${isGaraUsoAlbo and gene:checkProtFunz(pageContext, "INS", "INS")}'>
 						<br><br>
+						<c:if test='${isElencoElPrem eq "true" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selElPrem")}'>
+							<INPUT type="button"  class="bottone-azione" value='Sel. da elenco elementi premiali (1)' title='Sel. da elenco elementi premiali (1)' onclick="javascript:selezioneElementiPremiali();">
+						</c:if>
 						<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selDaElenco")}'>
 							<c:set var="aggnumord" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetAGGNUMORDFunction", pageContext, codiceElenco)}'/>
 							<c:set var="stazioneAppaltante" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetStazioneAppaltanteFunction", pageContext, gene:getValCampo(key,"NGARA"), "GARE")}'/>
-							<c:if test='${modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA"}'>
-									<INPUT type="button"  class="bottone-azione" value='Sel. da elenco mediante rotazione' title='Sel. da elenco mediante rotazione' onclick="javascript:SelEleOpEco(0);">
-							</c:if>
-							<c:if test='${modalitaSelezioneDitteElenco eq "AUTO" or  modalitaSelezioneDitteElenco eq "MISTA"}'>
+								<c:if test='${(modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA" or (modalitaSelezioneDitteElenco eq "AUTO" and isElencoElPrem eq "true")) and autorizzatoModifiche ne 2}'>
+										<INPUT type="button"  class="bottone-azione" value='Sel. da elenco mediante rotazione${isElencoElPrem eq "true" ? " (2)" : ""}' title='Sel. da elenco mediante rotazione${isElencoElPrem eq "true" ? " (2)" : ""}' onclick="javascript:SelEleOpEco(0);">
+								</c:if>
+							<c:if test='${(modalitaSelezioneDitteElenco eq "AUTO" or  modalitaSelezioneDitteElenco eq "MISTA") and !(isElencoElPrem eq "true") and autorizzatoModifiche ne 2}'>
 									<INPUT type="button"  class="bottone-azione" value='Sel. autom. da elenco mediante rotazione' title='Sel. autom. da elenco mediante rotazione' onclick="javascript:SelEleOpEco(1);">
 							</c:if>
 						</c:if>
@@ -564,14 +594,16 @@
 	</c:when>
 	<c:otherwise>
 		var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
+		document.location.href = contextPath + "/ApriPagina.do?" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
 	</c:otherwise>
 </c:choose>
 	}
 	
 		<c:if test='${not empty RISULTATO and RISULTATO eq "FASI_GARA_ATTIVATE"}'>
-			bloccaRichiesteServer();
-			selezionaPagina(eval(document.pagineForm.activePage.value)+1);
+			$(document).ready(function() {
+				bloccaRichiesteServer();
+				selezionaPagina(eval(document.pagineForm.activePage.value)+1);
+			});
 		</c:if>
 		
 
@@ -624,12 +656,14 @@
 			
 			if(bloccoAggiudicazione=="1")
 				bloccoPagina=true;				
-			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gene/ragdet/ragdet-lista.jsp";
+			var href = contextPath + "/ApriPagina.do?href=gene/ragdet/ragdet-lista.jsp";
 			href += "&key=" + chiaveRiga+ "&bloccoPagina=" + bloccoPagina;
 			document.location.href = href;
 		}
-		
-		
+
+		function selezioneElementiPremiali(){
+			formSelezioneElementiPremiali.submit();
+		}
 		
 		function SelEleOpEco(modalita){
 			var selezioneAutomaticaDitte = false;
@@ -675,10 +709,28 @@
 				var msg="Non è possibile procedere con la selezione da elenco perchè non è stata specificata la stazione appaltante della gara";
 				alert(msg);
 				return;
+			} else if(${isElencoElPrem eq "true"}) {
+				if (${isElencoElPremOB eq "true" or inseritiElementiPremiali eq "true"}) {
+					let msg = "Non è possibile procedere con la selezione da elenco perchè ";
+					if (${empty delpremcont}) {
+						msg += "non è stato eseguito il calcolo punteggi degli operatori in elenco.";
+						msg += '\r\nAccedere a "Sel.da elenco elementi premiali(1)" per eseguire il calcolo.';
+						alert(msg);
+						return;
+					} else if (${ditteSenzaPunteggio eq "true"}) {
+						msg += "non è stato eseguito il calcolo punteggi per tutti gli operatori economici dell'elenco.";
+						msg += "\r\nAccedere a 'Sel.da elenco elementi premiali(1)' per annullare e rieseguire il calcolo.";
+						alert(msg);
+						return;
+					}
+				} else {
+					if (!(confirm("Non è stato definito nessun elemento premiale per la gara. \r\nProcedere comunque alla selezione da elenco degli operatori?"))) {
+						return;
+					}
+				}
 			}
 			
 			href = "href=gare/gare/gare-popup-selOpEconomici.jsp";
-			href += "&" + csrfToken;
 			href += "&categoriaPrev=" + categoriaPrev;
 			href += "&classifica=${classifica}";
 			href += "&garaElenco=${codiceElenco}";
@@ -696,7 +748,7 @@
 			href += "&inserimentoDitteIterSemplificato=SI";
 			href += "&selezioneAutomaticaDitte=" + selezioneAutomaticaDitte;
 			href += "&modalitaSelezioneMista=" + modalitaSelezioneMista;
-			openPopUpCustom(href, "elencoOperatoriEconomici", 1000, 550, "yes", "yes");
+			openPopUpCustom(href, "elencoOperatoriEconomici", 1100, 650, "yes", "yes");
 		
 		}
 		
@@ -1033,7 +1085,7 @@
 			if(bloccoAggiudicazione=="1")
 				bloccoPagina=true;			
 		
-			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/ditg/dettaglioAvvalimentoDitta.jsp";
+			var href = contextPath + "/ApriPagina.do?href=gare/ditg/dettaglioAvvalimentoDitta.jsp";
 			href += "&key=" + chiaveRiga + "&bloccoPagina=" + bloccoPagina;
 			document.location.href = href;
 		}
@@ -1086,5 +1138,27 @@
 			href += "&inserimentoDitteIterSemplificato=SI";
 			openPopUpCustom(href, "aggiungiDitta", 800, 400, "yes", "yes");
 		}
+    function apriFVOE(){
+        var visualizzaFVOE = "${visualizzaFVOE eq 'true'}";
+        if(visualizzaFVOE!=="true"){
+            alertFVOENonAccessibile();
+            return;
+        }
+        bloccaRichiesteServer();
+        document.formVisualizzaFVOE.submit();
+    }
 		
 </gene:javaScript>
+
+<form name="formVisualizzaFVOE" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+    <input type="hidden" name="href" value="gare/g1fvoe/g1fvoe-lista.jsp" />
+    <input type="hidden" name="codiceGara" value="${codiceGara}" />
+    <input type="hidden" name="autorizzatoModifiche" value="${autorizzatoModifiche }" />
+	<input type="hidden" name="idconfi" value="${idconfi}" />
+</form>
+
+<form name="formSelezioneElementiPremiali" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+	<input type="hidden" name="href" value="gare/elpremgare/elpremgare-lista.jsp" />
+	<input type="hidden" name="key" value="${key}" />
+</form>
+

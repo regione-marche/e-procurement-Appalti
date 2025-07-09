@@ -144,6 +144,10 @@
 		<c:when test='${tipoWSERP eq "RAIWAY"}'>
 			<c:set var="masktitle" value="Aggiorna procedura su ERP" />
 		</c:when>
+		<c:when test='${tipoWSERP eq "SIGLA"}'>
+			<c:set var="masktitle" value="Crea contratto in SIGLA" />
+			<c:set var="integrazioneSIGLA" value='${tipoWSERP eq "SIGLA" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GestioneUnicaERP")}' />
+		</c:when>
 		<c:otherwise>
 			<c:set var="masktitle" value="Aggiorna RdA con i dati di aggiudicazione" />
 		</c:otherwise>
@@ -169,6 +173,7 @@
 	<gene:setString name="titoloMaschera" value="${masktitle}" />
 	
 	<gene:redefineInsert name="corpo">
+		<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from GARE where ngara=?", ngara)}'/>
 		<c:set var="chiave" value="${ngara}" />
 		
 		<c:choose>
@@ -359,6 +364,45 @@
 							</table>
 					</gene:campoScheda>
 				</c:if>
+				
+				
+			</c:if>
+			<c:if test='${integrazioneSIGLA && empty(RISULTATO)}'>
+				<gene:campoScheda addTr="false">
+						<tr>
+							<td id ="parInserimentoContrattoSigla" colspan="2" style="border-bottom: 0px #FFFFFF solid">
+							<br>
+							<b>Altri dati contratto</b>
+							<br>
+							<br>								
+							<table id ="tabInserimentoContrattoSigla" class="dettaglio-notab">
+								<tr>
+								<td class="etichetta-dato">Tipo Norma</td>
+								<td class="valore-dato">
+									<select id="tipoNorma" name="tipo_norma"></select>
+								</td>						
+								</tr>
+								<tr>
+								<td class="etichetta-dato">Tipologia contratto</td>
+								<td class="valore-dato">
+									<select id="tipoContratto" name="tipo_contratto"></select>
+								</td>						
+								</tr>
+								<tr>
+								<td class="etichetta-dato">Procedura Amministrativa</td>
+								<td class="valore-dato">
+									<select id="proceduraAmministrativa" name="procedura_amministrativa"></select>
+								</td>						
+								</tr>
+								<tr>
+								<td class="etichetta-dato">Organo</td>
+								<td class="valore-dato">
+									<select id="tipoOrgano" name="tipo_organo"></select>
+								</td>						
+								</tr>
+							</table>
+						</tr>
+				</gene:campoScheda>
 			</c:if>
 			
 			
@@ -399,7 +443,16 @@
 							<c:set var="isFornitoreERP" value="false" />
 						</c:otherwise>
 					</c:choose>
-				</c:when>	
+				</c:when>
+				<c:when test='${integrazioneSIGLA}'>
+					<c:set var="str_preinvio" value="Verra' creato il contratto in SIGLA." />
+					<c:set var="str_calcoloinfo" value="Contratto in SIGLA creato." />			
+					<c:set var="str_calcolowarning" value="La creazione del contratto in SIGLA ha presentato degli errori/warning." />					
+				</c:when>
+				<c:when test='${tipoWSERP eq "INARCASSA"}'>
+					<c:set var="str_preinvio" value="Vengono aggiornate le RdA in gara a seguito del calcolo dell'aggiudicazione." />
+					<c:set var="str_calcolowarning" value="La creazione del contratto in INARCASSA ha presentato degli errori/warning." />					
+				</c:when>
 				<c:otherwise>
 					<c:set var="str_calcolowarning" value="L'aggiornamento delle RdA con i dati di aggiudicazione ha presentato degli errori/warning." />
 					<c:set var="str_preinvio" value="Vengono aggiornate le RdA in gara
@@ -432,6 +485,13 @@
 				<c:when test='${tipoWSERP eq "ATAC"}'>
 					<gene:campoScheda>
 						<td colSpan="2"><br>${str_esito_message} 
+							<br>&nbsp;<br>
+						</td>
+					</gene:campoScheda>
+				</c:when>
+				<c:when test='${RISULTATO eq "ERRORI" and tipoWSERP eq "INARCASSA"}'>
+					<gene:campoScheda>
+						<td colSpan="2"><br>${str_calcolowarning} 
 							<br>&nbsp;<br>
 						</td>
 					</gene:campoScheda>
@@ -483,7 +543,17 @@
 			<input id="modoPag" type="hidden" value="" />
 			<input id="oggGara" type="hidden" value="" />
 			<input id="tipoContr" type="hidden" value="" />
-										
+			
+			<c:if test='${integrazioneSIGLA}'>
+				<gene:campoScheda campo="TIPO_NORMA" campoFittizio="true" visibile="false" definizione="T20" value=""/>
+				<gene:campoScheda campo="PROC_AMMI" campoFittizio="true" visibile="false" definizione="T20" value=""/>
+				<gene:campoScheda campo="TIPO_ORGANO" campoFittizio="true" visibile="false" definizione="T20" value=""/>
+				<input id="tipNorma" type="hidden" value="" />
+				<input id="tipContratto" type="hidden" value="" />
+				<input id="procAmministrativa" type="hidden" value="" />
+				<input id="tipOrgano" type="hidden" value="" />
+			</c:if>
+			
 			<c:choose>
 				<c:when test='${RISULTATO eq "CALCOLOWARNING"}'>
 				<gene:campoScheda>
@@ -498,7 +568,14 @@
 							<INPUT type="button" class="bottone-azione" value="Chiudi" title="Chiudi" onclick="javascript:annulla();">&nbsp;&nbsp;
 						</td>
 					</gene:campoScheda>
-				</c:when>				
+				</c:when>
+				<c:when test='${RISULTATO eq "ERRORI" and tipoWSERP eq "INARCASSA"}'>
+					<gene:campoScheda>
+						<td class="comandi-dettaglio" colSpan="2">
+							<INPUT type="button" class="bottone-azione" value="Chiudi" title="Chiudi" onclick="javascript:annulla();">&nbsp;&nbsp;
+						</td>
+					</gene:campoScheda>
+				</c:when>
 				<c:otherwise>
 				<gene:campoScheda>
 					<td class="comandi-dettaglio" colSpan="2">
@@ -554,7 +631,24 @@
 			var tipoContr = $("#p4").val();
 			document.forms[0].tipoContr.value=$("#tipoContr").val();
 			setValue("TIPO_CONTR", tipoContr);
-						
+			
+			<c:if test='${integrazioneSIGLA}'>
+				var tipoContratto = $("#tipoContratto").val();
+				document.forms[0].tipContratto.value=$("#tipContratto").val();
+				setValue("TIPO_CONTR", tipoContratto);
+				
+				var tipoNorma = $("#tipoNorma").val();
+				document.forms[0].tipNorma.value=$("#tipNorma").val();
+				setValue("TIPO_NORMA", tipoNorma);
+				
+				var proceduraAmministrativa = $("#proceduraAmministrativa").val();
+				document.forms[0].procAmministrativa.value=$("#procAmministrativa").val();
+				setValue("PROC_AMMI", proceduraAmministrativa);
+				
+				var tipoOrgano = $("#tipoOrgano").val();
+				document.forms[0].tipOrgano.value=$("#tipOrgano").val();
+				setValue("TIPO_ORGANO", tipoOrgano);
+			</c:if>
 			
 			var isConferma ="true";
 			
@@ -592,6 +686,12 @@
 						}
 					}
 				</c:when>
+				<c:when test='${integrazioneSIGLA}'>
+					if(tipoNorma== null || tipoNorma==''){
+						isConferma = "false";
+					 	alert('Valorizzare il tipo norma!');
+					}
+				</c:when>
 				<c:otherwise>
 				</c:otherwise>
 			</c:choose>
@@ -608,6 +708,10 @@
 	$("#tabCreaCig").css("border-top","#A0AABA 1px solid");
 	$("#tabCreaCig").css("border-bottom","#A0AABA 1px solid");
 	
+	<c:if test='${integrazioneSIGLA}'>
+		$("#tabInserimentoContrattoSigla").css("border-top","#A0AABA 1px solid");
+		$("#tabInserimentoContrattoSigla").css("border-bottom","#A0AABA 1px solid");
+	</c:if>
 	$("#msgctrl").css("border-bottom","#FFFFFF");
 
 	<c:if test='${tipoWSERP eq "AVM"}'>
@@ -619,6 +723,16 @@
 	_popolaWSERPTabellato("CAV02","condpag");
 	_popolaWSERPTabellato("CAV03","p3");
 	_popolaWSERPTabellato("CAV04","p4");
+		<c:if test='${!empty tipoContrattoRda}'>
+			$('#p4 option[value="${tipoContrattoRda}"').attr('selected','selected');
+		</c:if>
+	</c:if>
+	
+	<c:if test='${integrazioneSIGLA}'>
+	_popolaWSERPTabellato("ISS01","tipoNorma");
+	_popolaWSERPTabellato("ISS02","tipoContratto");
+	_popolaWSERPTabellato("ISS03","proceduraAmministrativa");
+	_popolaWSERPTabellato("ISS04","tipoOrgano");
 		<c:if test='${!empty tipoContrattoRda}'>
 			$('#p4 option[value="${tipoContrattoRda}"').attr('selected','selected');
 		</c:if>

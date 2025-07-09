@@ -2,7 +2,9 @@ package it.eldasoft.sil.pg.web.struts;
 
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
+import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.sil.pg.bl.tasks.ArchiviazioneDocumentiManager;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.maggioli.eldasoft.ws.dm.WSDMDocumentoCollegaResType;
 
 import java.io.PrintWriter;
@@ -23,6 +25,7 @@ public class AssociaDocumentiDittaProtocolloAction extends Action {
 
   private SqlManager          sqlManager;
   private ArchiviazioneDocumentiManager archiviazioneDocumentiManager;
+  private GestioneWSDMManager gestioneWSDMManager;
 
   public void setSqlManager(SqlManager sqlManager) {
     this.sqlManager = sqlManager;
@@ -30,6 +33,10 @@ public class AssociaDocumentiDittaProtocolloAction extends Action {
 
   public void setArchiviazioneDocumentiManager(ArchiviazioneDocumentiManager archiviazioneDocumentiManager) {
     this.archiviazioneDocumentiManager = archiviazioneDocumentiManager;
+  }
+
+  public void setGestioneWSDMManager(GestioneWSDMManager gestioneWSDMManager) {
+      this.gestioneWSDMManager = gestioneWSDMManager;
   }
 
   @Override
@@ -49,16 +56,27 @@ public class AssociaDocumentiDittaProtocolloAction extends Action {
     String tipoCollegamento = request.getParameter("tipocollegamento");
     String codgar = request.getParameter("codgar");
     String idconfi = request.getParameter("idconfi");
+
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO,idconfi);
+      username = credenziali[0];
+      //password = credenziali[1];
+    }
+
     int esitoAzione=1;
     long numeroElaborazioni=0;
 
     //Si devono elaborare i documenti delle ditte in stato 3 e 21
-    String selectDocumenti = "select d.ngara, d.codimp, d.IDPRG, d.iddocdg, d.busta, g.id, d.codgar from v_gare_docditta d join w_docdig w on d.iddocdg=w.iddocdig and d.idprg=w.idprg "
-          + " join  gardoc_wsdm g  on d.iddocdg=g.key2 and d.idprg=g.key1 and g.entita='W_DOCDIG' and g.stato_archiviazione in (3,21) and g.provenienza='3' "
+    String selectDocumentiProvenienza3 = "select d.ngara, d.codimp, d.IDPRG, d.iddocdg, d.busta, g.id, CAST(null as NUMERIC(12)) as idcom from v_gare_docditta d join w_docdig w on d.iddocdg=w.iddocdig and d.idprg=w.idprg "
+          + " join  gardoc_wsdm g  on CAST(d.iddocdg AS VARCHAR(30))=g.key2 and d.idprg=g.key1 and g.entita='W_DOCDIG' and g.stato_archiviazione in (3,21) and g.provenienza='3' "
           + " where d.codgar = ? and d.idprg is not null and d.iddocdg is not null and d.doctel='1' order by d.codgar, d.ngara, d.bustaord, d.codimp, d.norddoci";
+    List listaDocumenti = this.sqlManager.getListVector(selectDocumentiProvenienza3, new Object[]{codgar});
 
-    List listaDocumenti = this.sqlManager.getListVector(selectDocumenti, new Object[]{codgar});
-
+    String selectDocumentiProvenienza6 = "select CAST(null as VARCHAR(20)) as ngara, CAST(null as VARCHAR(10)) as codimp, d.idprg,d.iddocdig,CAST(null as NUMERIC(7)) as busta, g.id, i.idcom " +
+            "from gardoc_wsdm g join w_docdig d on (g.key1=d.idprg and CAST(d.iddocdig AS VARCHAR(30))=g.key2) join w_invcom i on (d.idprg=i.idprg and d.digkey1=CAST(i.idcom as VARCHAR(30))) " +
+            "where i.comkey2 in (select ngara from gare where codgar1=?) and i.commodello in (13,18) and g.entita='W_DOCDIG' and g.stato_archiviazione in (3,21) and g.provenienza='6'";
+    listaDocumenti.addAll(this.sqlManager.getListVector(selectDocumentiProvenienza6, new Object[]{codgar}));
 
       if(listaDocumenti!= null && listaDocumenti.size()>0){
         String ngara=null;
@@ -69,6 +87,7 @@ public class AssociaDocumentiDittaProtocolloAction extends Action {
         Long stato_archiviazione = null;
         String esito = null;
         Long idGardoc = null;
+        Long idcomFs12 = null;
         WSDMDocumentoCollegaResType wdmDocumentoCollegaResType = null;
         TransactionStatus status = null;
         boolean commitTransaction = false;
@@ -83,7 +102,8 @@ public class AssociaDocumentiDittaProtocolloAction extends Action {
             iddocdg = SqlManager.getValueFromVectorParam(listaDocumenti.get(i), 3).longValue();
             busta = SqlManager.getValueFromVectorParam(listaDocumenti.get(i), 4).longValue();
             idGardoc = SqlManager.getValueFromVectorParam(listaDocumenti.get(i), 5).longValue();
-            wdmDocumentoCollegaResType = this.archiviazioneDocumentiManager.collegaDocumenti(ngara, codgar, ditta, tipoCollegamento, busta, null, idprg, iddocdg.toString(), username, ruolo,idconfi);
+            idcomFs12 = SqlManager.getValueFromVectorParam(listaDocumenti.get(i), 6).longValue();
+            wdmDocumentoCollegaResType = this.archiviazioneDocumentiManager.collegaDocumenti(ngara, codgar, ditta, tipoCollegamento, busta, null, idprg, iddocdg.toString(), username, ruolo,idconfi,idprg,idcomFs12);
             if(wdmDocumentoCollegaResType!=null){
               if(wdmDocumentoCollegaResType.isEsito()){
                 stato_archiviazione = new Long(20);

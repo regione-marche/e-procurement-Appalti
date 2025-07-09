@@ -58,6 +58,7 @@ public class VisualizzaPermessiUtentiGaraTelematicaStandardAction extends Dispat
 		String permessimodificabili = request.getParameter("permessimodificabili");
 		String codein = request.getParameter("codein");
 		String genereGara = request.getParameter("genereGara");
+		String uffint = (String) request.getSession().getAttribute("uffint");
 		
 		try {
 		  request.getSession().setAttribute("codgar", codgar);
@@ -72,7 +73,7 @@ public class VisualizzaPermessiUtentiGaraTelematicaStandardAction extends Dispat
 	          CostantiGenerali.PROFILO_UTENTE_SESSIONE)).getId();
 		  
 		  if (this.permessiManager.hasAccountCondivisionePredefinita(
-				new Integer(utenteDiRiferimento), CostantiPermessi.VALORE_DEFAULT_PREDEFINITO_GARE)) {
+				new Integer(utenteDiRiferimento), CostantiPermessi.VALORE_DEFAULT_PREDEFINITO_GARE, uffint)) {
 		    request.setAttribute("esisteCondivisionePredefinita", "1");
 		  }
 		} catch (Throwable e) {
@@ -115,6 +116,7 @@ public class VisualizzaPermessiUtentiGaraTelematicaStandardAction extends Dispat
 		String messageKey = null;
 
 		try {
+  		    String uffint = (String) request.getSession().getAttribute("uffint");
 			String valoreChiave = request.getParameter("codgar");
 			if (valoreChiave == null)
 				valoreChiave = (String) request.getAttribute("codgar");
@@ -144,7 +146,7 @@ public class VisualizzaPermessiUtentiGaraTelematicaStandardAction extends Dispat
 						this.permessiManager.insertPermessiPredefiniti(
 							"CODGAR", valoreChiave, new Integer(utenteDiRiferimento),
 							CostantiPermessi.VALORE_DEFAULT_PREDEFINITO_GARE,
-							listaPermessiEntita);
+							listaPermessiEntita, uffint);
 						inserito = true;
 					} catch (DataIntegrityViolationException div) {
 						if (numeroTentativi < CostantiGenerali.NUMERO_MAX_TENTATIVI_INSERT) {

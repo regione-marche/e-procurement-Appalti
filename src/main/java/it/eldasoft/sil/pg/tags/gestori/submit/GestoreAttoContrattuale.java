@@ -146,9 +146,9 @@ public class GestoreAttoContrattuale extends
     			if (oldRidiso==null || "".equals(oldRidiso)) oldRidiso="2";
 
     			String update="";
-    			if(!ridiso.equals(oldRidiso)){
-    				if ("1".equals(ridiso)) update="update gare set impgar = impgar /2 where CODGAR1 = ? and DITTA = ? and genere is null";
-    				else update="update gare set impgar = impgar * 2 where CODGAR1 = ? and DITTA = ? and genere is null";
+    			if(!ridiso.equals(oldRidiso)){//riduzione del 30%  (prima 50%) APPALTI-1377 - DLgs 36-2023 
+    				if ("1".equals(ridiso)) update="update gare set impgar = impgar * (1-0.3) where CODGAR1 = ? and DITTA = ? and genere is null";
+    				else update="update gare set impgar = impgar / (1-0.3) where CODGAR1 = ? and DITTA = ? and genere is null";
 
     				this.sqlManager.update(update, new Object[]{params[17],params[18]});
     			}
@@ -209,15 +209,16 @@ public class GestoreAttoContrattuale extends
         gestoreDITGAQ.update(status, newDataColumnContainer);
 
         //Se è stata modoficata l'entità DITG si deve forzare l'aggiornamento
-        if (datiForm.isModifiedColumn("DITG.RICSUB_" + i)) {
+        if (datiForm.isModifiedColumn("DITG.RICSUB_" + i) || datiForm.isModifiedColumn("DITG.CODCNEL_" + i) ) {
           String ricsub = datiForm.getString("DITG.RICSUB_" + i);
+          String codcnel = datiForm.getString("DITG.CODCNEL_" + i);
           String dittao = newDataColumnContainer.getString("DITGAQ.DITTAO");
           try {
-            this.sqlManager.update("update ditg set ricsub=? where ngara5=? and dittao=? and codgar5=?",
-                new Object[]{ricsub,datiForm.getString("GARE.NGARA"),dittao,datiForm.getString("GARE.CODGAR1")});
+            this.sqlManager.update("update ditg set ricsub=?, codcnel=? where ngara5=? and dittao=? and codgar5=?",
+                new Object[]{ricsub,codcnel,datiForm.getString("GARE.NGARA"),dittao,datiForm.getString("GARE.CODGAR1")});
           } catch (SQLException e) {
             throw new GestoreException(
-                "Errore nell'aggiornamento del campo DITG.RICSUB per la ditta:" + dittao + " della gara:" + datiForm.getString("GARE.NGARA"), null, e);
+                "Errore nell'aggiornamento per la ditta:" + dittao + " della gara:" + datiForm.getString("GARE.NGARA"), null, e);
           }
         }
       }

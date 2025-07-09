@@ -413,7 +413,7 @@ public class PlManager {
           		"idprg = ? and idcom = ?", new Object[] { idprg,idcom });
 
           this.geneManager.deleteTabelle(new String[] { "W_DOCDIG" },
-          		"digkey1 = ? and digkey2 = ? and digent = 'W_INVCOM'",
+          		"digkey1 = ? and digkey2 = ? and digent in ('W_INVCOM','W_INVCOMDES')",
               new Object[] { idprg,idcom.toString() });
         }
         if (coment.equals("PERI")) {

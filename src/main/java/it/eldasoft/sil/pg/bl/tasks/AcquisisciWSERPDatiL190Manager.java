@@ -22,6 +22,7 @@ import it.maggioli.eldasoft.ws.erp.WSERPLiquidatoResType;
 import it.maggioli.eldasoft.ws.erp.WSERPLiquidatoType;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -68,21 +69,33 @@ public void acquisisciDatiL190() throws GestoreException {
           logger.info("Avvio della procedura di acquisizione dei dati di L190");
         }
 
-        if("AVM".equals(tipoWSERP) || "UGOV".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "SMEUP".equals(tipoWSERP) || "TPER".equals(tipoWSERP) || "ENEA".equals(tipoWSERP) || "ATAC".equals(tipoWSERP)){
+        if("AVM".equals(tipoWSERP) || "UGOV".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "SMEUP".equals(tipoWSERP) || "TPER".equals(tipoWSERP)
+        		|| "ENEA".equals(tipoWSERP) || "ATAC".equals(tipoWSERP) || "AMIU".equals(tipoWSERP) || "INARCASSA".equals(tipoWSERP) || "CONI".equals(tipoWSERP)){
 
           Calendar cal = Calendar.getInstance();
           Calendar newCal = Calendar.getInstance();
 
-          int year = cal.get(Calendar.YEAR);
-          year = year-2;
+          Calendar todayCal = Calendar.getInstance();
+          
+          if("CONI".equals(tipoWSERP)) {
+            newCal.set(Calendar.MONTH,-6);
+          } else if ("INARCASSA".equals(tipoWSERP)){
+              newCal.set(Calendar.MONTH,-12);
+          } else {
+            // PER GLI ALTRI SI TORNA INDIETRO DI DUE ANNI
+            int year = cal.get(Calendar.YEAR);
+            year = year-2;
+  
+            newCal.set(Calendar.YEAR,year);
+            newCal.set(Calendar.MONTH,0);
+          }
 
-          newCal.set(Calendar.YEAR,year);
-          newCal.set(Calendar.MONTH,0);
           newCal.set(Calendar.DAY_OF_MONTH,1);
           newCal.set(Calendar.HOUR_OF_DAY, 0);
           newCal.set(Calendar.MINUTE, 0);
           newCal.set(Calendar.SECOND, 0);
-
+          
+          Calendar filterCal = newCal;
           Date filterDate = newCal.getTime();
 
           String selezioneCIG = "select ga.codcig, gc.ngara, gc.ncont, gc.impliq, gc.dverbc, gc.dcertu" +
@@ -115,8 +128,53 @@ public void acquisisciDatiL190() throws GestoreException {
 
               boolean acqOK = true;
 
-              if("ENEA".equals(tipoWSERP)){ //MULTICIG-ARRAY
-                WSERPLiquidatoResType liqRes = gestioneWSERPManager.wserpDatiL190(username, password, servizio, null, null, null);
+              if("ENEA".equals(tipoWSERP) || "AMIU".equals(tipoWSERP) || "INARCASSA".equals(tipoWSERP) || "CONI".equals(tipoWSERP)){ //MULTICIG-ARRAY
+            	  WSERPLiquidatoResType liqRes = new WSERPLiquidatoResType();
+	        	if("ENEA".equals(tipoWSERP)) {
+	        		  liqRes = gestioneWSERPManager.wserpDatiL190(username, password, servizio, null, null, null);	  
+	        	}  
+	        	if("AMIU".equals(tipoWSERP)) {
+	        		  String[] cigMultiArray = new String[listaCIG.size()];
+	        		  for (int c = 0; c < listaCIG.size(); c++){
+	                      String c_cig = SqlManager.getValueFromVectorParam(listaCIG.get(c), 0).stringValue();
+	                      c_cig = UtilityStringhe.convertiNullInStringaVuota(c_cig);
+	                      if(!"".equals(c_cig) ){
+	                    	  cigMultiArray[c] = c_cig; 
+	                      }
+	        		  }
+	        		  liqRes = gestioneWSERPManager.wserpDatiL190(username, password, servizio, cigMultiArray, filterCal, todayCal);
+	        	}
+	        	if("INARCASSA".equals(tipoWSERP) || "CONI".equals(tipoWSERP)) {
+	        	  List<WSERPLiquidatoType> lista = new ArrayList<>();
+	        	  liqRes.setEsito(Boolean.TRUE);
+                  for (int c = 0; c < listaCIG.size(); c++){
+                    WSERPLiquidatoResType liqResSingolo = new WSERPLiquidatoResType(); 
+                    String[] cigMultiArray = new String[1];
+                    String c_cig = SqlManager.getValueFromVectorParam(listaCIG.get(c), 0).stringValue();
+                    c_cig = UtilityStringhe.convertiNullInStringaVuota(c_cig);
+                    cigMultiArray[0] = c_cig;
+                    Date dcertu = (Date) SqlManager.getValueFromVectorParam(listaCIG.get(c), 5).getValue();
+                    Calendar dcertuCalendar = null;
+                    if(dcertu != null) {
+                      dcertuCalendar = Calendar.getInstance();
+                      dcertuCalendar.setTime(dcertu);
+                    }
+                    liqResSingolo = gestioneWSERPManager.wserpDatiL190(username, password, servizio, cigMultiArray, null, dcertuCalendar);
+                    if(!liqResSingolo.isEsito()){
+                      //liqRes.setEsito(Boolean.FALSE);
+                      logger.info("Invio CIG: " + c_cig +"\r\n Errore:" + liqResSingolo.getMessaggio());
+                      liqRes.setMessaggio(liqResSingolo.getMessaggio());
+                    } else {
+                      for (int i = 0; i < liqResSingolo.getLiquidatoArray().length; i++) {
+                        if(liqResSingolo.getLiquidatoArray(i) != null) {
+                          lista.add(liqResSingolo.getLiquidatoArray(i));
+                        }
+                      }
+                    }
+                  }
+                  liqRes.setLiquidatoArray(lista.toArray(new WSERPLiquidatoType[0]));
+                }
+                
                 if(liqRes.isEsito()){
                   WSERPLiquidatoType[] liqArray = liqRes.getLiquidatoArray();
                   if(liqArray != null){
@@ -136,26 +194,38 @@ public void acquisisciDatiL190() throws GestoreException {
                       }
 
                       Double impLiquidato = liquidatoType.getImpLiquidato();
-                      if(!"".equals(codcig) && impLiquidato != null && impLiquidato != new Double(0)){
-                        for (int c = 0; c < listaCIG.size(); c++){
-                          String c_cig = SqlManager.getValueFromVectorParam(listaCIG.get(c), 0).stringValue();
-                          c_cig = UtilityStringhe.convertiNullInStringaVuota(c_cig);
-                          if(!"".equals(c_cig) && codcig.equals(c_cig)){
-                            String c_ngara = SqlManager.getValueFromVectorParam(listaCIG.get(c), 1).stringValue();
-                            Long c_ncont = (Long) SqlManager.getValueFromVectorParam(listaCIG.get(c), 2).getValue();
-                            Double c_impliq = SqlManager.getValueFromVectorParam(listaCIG.get(c), 3).doubleValue();
-                            Date c_dverbc = (Date) SqlManager.getValueFromVectorParam(listaCIG.get(c), 4).getValue();
-                            Date c_dcertu = (Date) SqlManager.getValueFromVectorParam(listaCIG.get(c), 5).getValue();
-                            gestioneWSERPManager.updDatiL190Cig(tipoWSERP, codcig, impLiquidato, dataInizio, dataUltimazione, c_ngara, c_ncont, c_impliq, c_dverbc, c_dcertu);
+                      
+                      boolean updCondition = false;
+                      if("INARCASSA".equals(tipoWSERP)) {
+                    	  if(!"".equals(codcig)){
+                        	  updCondition = true;
                           }
-                        }//for
+                      }else {
+                    	  if(!"".equals(codcig) && impLiquidato != null && !impLiquidato.equals(Double.valueOf(0))){
+                        	  updCondition = true;
+                          }
+                      }
+                    		  
+                      if(updCondition){
+                          for (int c = 0; c < listaCIG.size(); c++){
+                            String c_cig = SqlManager.getValueFromVectorParam(listaCIG.get(c), 0).stringValue();
+                            c_cig = UtilityStringhe.convertiNullInStringaVuota(c_cig);
+                            if(!"".equals(c_cig) && codcig.equals(c_cig)){
+                              String c_ngara = SqlManager.getValueFromVectorParam(listaCIG.get(c), 1).stringValue();
+                              Long c_ncont = (Long) SqlManager.getValueFromVectorParam(listaCIG.get(c), 2).getValue();
+                              Double c_impliq = SqlManager.getValueFromVectorParam(listaCIG.get(c), 3).doubleValue();
+                              Date c_dverbc = (Date) SqlManager.getValueFromVectorParam(listaCIG.get(c), 4).getValue();
+                              Date c_dcertu = (Date) SqlManager.getValueFromVectorParam(listaCIG.get(c), 5).getValue();
+                              gestioneWSERPManager.updDatiL190Cig(tipoWSERP, codcig, impLiquidato, dataInizio, dataUltimazione, c_ngara, c_ncont, c_impliq, c_dverbc, c_dcertu);
+                            }
+                          }//for
                       }
                     }//for
 
                   }else{
                     if (logger.isInfoEnabled()) {
                       logger.info("Aggiornamento CIG: \r\n" +
-                      " Non risulta possibile recuperare i dati da ENEA");
+                      " Non risulta possibile recuperare i dati dal sistema ERP");
                     }
                   }
                 }else{

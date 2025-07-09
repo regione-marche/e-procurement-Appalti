@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
 
@@ -91,8 +92,10 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
     boolean copiaScadenzario = datiForm.getLong("COPIA_SCADENZARIO").intValue() == 1 ? true : false;
     boolean copiaDocumentazione = datiForm.getLong("COPIA_DOCUMENTAZIONE").intValue() == 1 ? true : false;
     boolean copiaTermini = datiForm.getLong("COPIA_TERMINI").intValue() == 1 ? true : false;
+    
+    boolean copiaComeLotto = false;
 
-  //variabili per tracciatura eventi, solo per la creazione di una gara a lotto unico
+  //variabili per tracciatura eventi
     int livEvento = 1;
     String codEvento = "GA_CREAZIONE_PROCEDURA_DACOPIA";
     String oggEvento = "";
@@ -229,8 +232,15 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
                   offtelDestinazione= new Long(0);
                 if(offtel.longValue()!=offtelDestinazione.longValue() && "1".equals(gartel)){
                   if(offtelDestinazione!=null && offtelDestinazione.longValue()==1){
-                    this.sqlManager.update("delete from w_docdig where IDPRG in(select DOCUMGARA.IDPRG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=?) " +
-                            "and IDDOCDIG in (select DOCUMGARA.IDDOCDG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=? )",
+                    String where = " where IDPRG in(select DOCUMGARA.IDPRG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=?) " +
+                    "and IDDOCDIG in (select DOCUMGARA.IDDOCDG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=? )";
+                    List<Vector> bucketRefs = this.sqlManager.getListVector("select bucket_ref, bucket_uuid from W_DOCDIG " + where + " and bucket_ref is not null and bucket_uuid is not null", new Object[]{codiceGaraDestinazione, new Long(3),"Offerta economica",codiceGaraDestinazione, new Long(3),"Offerta economica"});
+                    if (bucketRefs != null && !bucketRefs.isEmpty()) {
+                      for (Vector v : bucketRefs) {
+                        ObjectStorageUtils.deleteFile((String) SqlManager.getValueFromVectorParam(v, 0).getValue(), (String) SqlManager.getValueFromVectorParam(v, 1).getValue());
+                      }
+                    }
+                    this.sqlManager.update("delete from w_docdig "+where,
                             new Object[]{codiceGaraDestinazione, new Long(3),"Offerta economica",codiceGaraDestinazione, new Long(3),"Offerta economica"});
                     this.sqlManager.update("delete from documgara where codgar=? and busta=? and descrizione=?",new Object[]{codiceGaraDestinazione, new Long(3),"Offerta economica"});
                     //si inserisce in DOCUMGARA l'occorrenza per l'offerta economica
@@ -244,8 +254,15 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
                         "values(?,?,?,?,?,?,?,?,?,?,?)", new Object[]{codiceGaraDestinazione, new Long(newNorddocg), new Long(3), new Long(3), new Long(1),
                           "Offerta economica", "1", new Long(1), new Long(0), "1", new Long(1) });
                   }else if(offtelDestinazione!=null && offtelDestinazione.longValue()==2){
-                    this.sqlManager.update("delete from w_docdig where IDPRG in(select DOCUMGARA.IDPRG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=? and gentel = ?) " +
-                        "and IDDOCDIG in (select DOCUMGARA.IDDOCDG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=? and gentel = ?)",
+                    String where = " where IDPRG in(select DOCUMGARA.IDPRG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=? and gentel = ?) " +
+                    "and IDDOCDIG in (select DOCUMGARA.IDDOCDG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=? and gentel = ?)";
+                    List<Vector> bucketRefs = this.sqlManager.getListVector("select bucket_ref, bucket_uuid from W_DOCDIG " + where + " and bucket_ref is not null and bucket_uuid is not null", new Object[]{codiceGaraDestinazione, new Long(3),"Offerta economica","1", codiceGaraDestinazione, new Long(3),"Offerta economica","1"});
+                    if (bucketRefs != null && !bucketRefs.isEmpty()) {
+                      for (Vector v : bucketRefs) {
+                        ObjectStorageUtils.deleteFile((String) SqlManager.getValueFromVectorParam(v, 0).getValue(), (String) SqlManager.getValueFromVectorParam(v, 1).getValue());
+                      }
+                    }
+                    this.sqlManager.update("delete from w_docdig "+where,
                         new Object[]{codiceGaraDestinazione, new Long(3),"Offerta economica","1", codiceGaraDestinazione, new Long(3),"Offerta economica","1"});
                     this.sqlManager.update("delete from documgara where codgar=? and gentel = ? and busta=? and descrizione=?",new Object[]{codiceGaraDestinazione, "1", new Long(3),"Offerta economica"});
                   }
@@ -289,7 +306,7 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
             // PgManager.copiaTORN
             boolean copiaGareDaTorn = false;
 
-            boolean copiaComeLotto = datiForm.getLong(
+            copiaComeLotto = datiForm.getLong(
                 "COPIA_COME_LOTTO").intValue() == 1 ? true : false;
 
             String codiceLotto = null;
@@ -401,15 +418,22 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
 
               //Copia della documentazione di gara
               if(copiaDocumentazione){
-                pgManager.copiaDocumentazione(status,nGaraSorgente, codiceGaraSorgente, nGaraDestinazione, codiceGaraDestinazione, false,"GARE");
+                pgManager.copiaDocumentazione(status,nGaraSorgente, codiceGaraSorgente, nGaraDestinazione, codiceGaraDestinazione, false,"GARE",this.getRequest());
                 if(offtel==null)
                   offtel= new Long(0);
                 if(offtelDestinazione==null)
                   offtelDestinazione= new Long(0);
                 if(offtel.longValue()!=offtelDestinazione.longValue() && "1".equals(gartel)){
                   if(offtelDestinazione!=null && offtelDestinazione.longValue()==1){
-                    this.sqlManager.update("delete from w_docdig where IDPRG in(select DOCUMGARA.IDPRG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=?) " +
-                    		"and IDDOCDIG in (select DOCUMGARA.IDDOCDG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=? )",
+                    String where = "where IDPRG in(select DOCUMGARA.IDPRG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=?) " +
+                    "and IDDOCDIG in (select DOCUMGARA.IDDOCDG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=? )";
+                    List<Vector> bucketRefs = this.sqlManager.getListVector("select bucket_ref, bucket_uuid from W_DOCDIG " + where + " and bucket_ref is not null and bucket_uuid is not null", new Object[]{codiceGaraDestinazione, new Long(3),"Offerta economica",codiceGaraDestinazione, new Long(3),"Offerta economica"});
+                    if (bucketRefs != null && !bucketRefs.isEmpty()) {
+                      for (Vector v : bucketRefs) {
+                        ObjectStorageUtils.deleteFile((String) SqlManager.getValueFromVectorParam(v, 0).getValue(), (String) SqlManager.getValueFromVectorParam(v, 1).getValue());
+                      }
+                    }
+                    this.sqlManager.update("delete from w_docdig "+where,
                     		new Object[]{codiceGaraDestinazione, new Long(3),"Offerta economica",codiceGaraDestinazione, new Long(3),"Offerta economica"});
                     this.sqlManager.update("delete from documgara where codgar=? and busta=? and descrizione=?",new Object[]{codiceGaraDestinazione, new Long(3),"Offerta economica"});
                     //si inserisce in DOCUMGARA l'occorrenza per l'offerta economica
@@ -423,8 +447,15 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
                         "values(?,?,?,?,?,?,?,?,?,?,?,?)", new Object[]{codiceGaraDestinazione, nGaraDestinazione, new Long(newNorddocg), new Long(3), new Long(3), new Long(1),
                           "Offerta economica", "1", new Long(1), new Long(0), "1", new Long(1) });
                   }else if(offtelDestinazione!=null && offtelDestinazione.longValue()==2){
-                    this.sqlManager.update("delete from w_docdig where IDPRG in(select DOCUMGARA.IDPRG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=? and gentel = ?) " +
-                        "and IDDOCDIG in (select DOCUMGARA.IDDOCDG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=? and gentel = ?)",
+                    String where = "where IDPRG in(select DOCUMGARA.IDPRG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=? and gentel = ?) " +
+                    "and IDDOCDIG in (select DOCUMGARA.IDDOCDG from DOCUMGARA where CODGAR = ? and busta=? and descrizione=? and gentel = ?)";
+                    List<Vector> bucketRefs = this.sqlManager.getListVector("select bucket_ref, bucket_uuid from W_DOCDIG " + where + " and bucket_ref is not null and bucket_uuid is not null", new Object[]{codiceGaraDestinazione, new Long(3),"Offerta economica","1", codiceGaraDestinazione, new Long(3),"Offerta economica","1"});
+                    if (bucketRefs != null && !bucketRefs.isEmpty()) {
+                      for (Vector v : bucketRefs) {
+                        ObjectStorageUtils.deleteFile((String) SqlManager.getValueFromVectorParam(v, 0).getValue(), (String) SqlManager.getValueFromVectorParam(v, 1).getValue());
+                      }
+                    }
+                    this.sqlManager.update("delete from w_docdig "+where,
                         new Object[]{codiceGaraDestinazione, new Long(3),"Offerta economica","1", codiceGaraDestinazione, new Long(3),"Offerta economica","1"});
                     this.sqlManager.update("delete from documgara where codgar=? and gentel = ? and busta=? and descrizione=?",new Object[]{codiceGaraDestinazione, "1", new Long(3),"Offerta economica"});
                   }
@@ -488,10 +519,8 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
 
           }
         }catch( GestoreException e){
-          if(tipoCopia.equalsIgnoreCase("listaTornate")){
             livEvento = 3;
             errMsgEvento = e.getMessage();
-          }
           throw e;
         }
       } else if(tipoCopia.equalsIgnoreCase("listaLotti")){
@@ -509,7 +538,7 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
         // Flag copia offerte delle ditte
         boolean copiaOfferte = datiForm.getLong("COPIA_OFFERTE").intValue() == 1 ? true : false;
 
-        boolean copiaComeLotto =
+        copiaComeLotto =
           datiForm.getLong("COPIA_COME_LOTTO").intValue() == 1 ? true : false;
         boolean copiaGareDaTorn = false;
         boolean copiaComeLottoNellaStessaGara = true;
@@ -527,6 +556,10 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
             codiceGaraDestinazione = datiForm.getString("CODICE_GARA");
             nGaraDestinazione = destinazione;
           }
+          
+          codEvento = "GA_CREAZIONE_LOTTO_DACOPIA";
+          oggEvento = nGaraDestinazione;
+          descrEvento = "Inserimento lotto di gara mediante funzione di copia (cod.lotto sorgente "+nGaraSorgente+")";
 
           try{
             /*
@@ -562,6 +595,8 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
           }catch (SQLException e) {
             this.ripristinoParametri();
             this.getRequest().setAttribute("RISULTATO", "KO");
+            livEvento = 3;
+            errMsgEvento = e.getMessage();
             throw new GestoreException("Errore nella verifica sul campo CODIGA dei lotti !",null, e);
           }
 
@@ -605,7 +640,7 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
 
           //Copia della documentazione di gara
           if(copiaDocumentazione){
-            pgManager.copiaDocumentazione(status,nGaraSorgente, codiceGaraSorgente, nGaraDestinazione, codiceGaraDestinazione, true,"GARE");
+            pgManager.copiaDocumentazione(status,nGaraSorgente, codiceGaraSorgente, nGaraDestinazione, codiceGaraDestinazione, true,"GARE",this.getRequest());
           }else{
 
             String SelectLottiFormatoDef = "select g1cridef.ngara from g1cridef, gare, goev where gare.ngara = ? and g1cridef.ngara = gare.ngara and g1cridef.formato != 100 and g1cridef.ngara = goev.ngara and goev.necvan = g1cridef.necvan and goev.tippar = 1";
@@ -666,10 +701,14 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
         } catch (GestoreException e) {
           this.ripristinoParametri();
           this.getRequest().setAttribute("RISULTATO", "KO");
+          livEvento = 3;
+          errMsgEvento = e.getMessage();
           throw e;
         } catch (SQLException e) {
           this.ripristinoParametri();
           this.getRequest().setAttribute("RISULTATO", "KO");
+          livEvento = 3;
+          errMsgEvento = e.getMessage();
           throw new GestoreException("Errore nella copia del lotto di gara !",null, e);
         }
 
@@ -678,7 +717,7 @@ public class GestoreCopiaGara extends AbstractGestoreEntita {
     } finally{
       //Tracciatura eventi
       try {
-        if(tipoCopia.equalsIgnoreCase("listaTornate")){
+        if(tipoCopia.equalsIgnoreCase("listaTornate") || copiaComeLotto){
           LogEvento logEvento = LogEventiUtils.createLogEvento(this.getRequest());
           logEvento.setLivEvento(livEvento);
           logEvento.setOggEvento(oggEvento);

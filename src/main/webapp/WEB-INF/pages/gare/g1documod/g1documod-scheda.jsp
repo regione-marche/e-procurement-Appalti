@@ -20,6 +20,9 @@
 	value="${fn:join(profiloUtente.funzioniUtenteAbilitate,'#')}#"
 	scope="request" />
 
+<%-- test per consentire utilizzo della pagina solo agli amministratori di sistema --%>
+<c:set var="nonusato" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.CheckOpzioniUtenteFunction", pageContext, "ou89")}' />
+
 <c:set var="idDocumod" value='${gene:getValCampo(key, "G1DOCUMOD.ID")}' />
 <c:set var="tmp" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetDatiG1documodFunction", pageContext, idDocumod)}'/>
 
@@ -133,16 +136,18 @@
 
 	<gene:javaScript>
 	
+		<c:if test="${modo eq 'NUOVO' or modo eq 'MODIFICA'}">
 			document.forms[0].encoding="multipart/form-data";
+		</c:if>
 		
 		
 			function schedaConfermaUploadMultiplo(){
-				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken+"&gruppo=${gruppo}"+"&busta=${busta}";
+				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?gruppo=${gruppo}"+"&busta=${busta}";
 					schedaConferma();
 			}
 			
 			function schedaAnnullaUploadMultiplo(){
-				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken+"&gruppo=${gruppo}"+"&busta=${busta}";
+				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?gruppo=${gruppo}"+"&busta=${busta}";
 				schedaAnnulla();
 			}
 
@@ -163,7 +168,7 @@
 
 			function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 			}
 	
 		<c:choose>

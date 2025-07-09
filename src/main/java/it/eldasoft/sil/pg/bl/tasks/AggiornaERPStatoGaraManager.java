@@ -14,11 +14,17 @@ import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.WebUtilities;
 import it.eldasoft.gene.db.domain.BlobFile;
+import it.eldasoft.gene.db.domain.LogEvento;
+import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.sil.pg.bl.GestioneWSERPManager;
+import it.eldasoft.sil.pg.bl.erp.ConiWSERPManager;
+import it.eldasoft.sil.pg.bl.erp.EusisWSERPManager;
+import it.eldasoft.sil.pg.bl.erp.InarcassaWSERPManager;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.utility.UtilityDate;
+import it.eldasoft.utils.utility.UtilityNumeri;
 import it.eldasoft.utils.utility.UtilityStringhe;
 import it.maggioli.eldasoft.ws.conf.WSERPConfigurazioneOutType;
 import it.maggioli.eldasoft.ws.dm.WSDMFascicoloModificaResType;
@@ -26,14 +32,17 @@ import it.maggioli.eldasoft.ws.erp.WSERPAllegatoType;
 import it.maggioli.eldasoft.ws.erp.WSERPFornitoreResType;
 import it.maggioli.eldasoft.ws.erp.WSERPFornitoreType;
 import it.maggioli.eldasoft.ws.erp.WSERPGaraType;
+import it.maggioli.eldasoft.ws.erp.WSERPOdaResType;
 import it.maggioli.eldasoft.ws.erp.WSERPOdaType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaResType;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 import javax.servlet.jsp.JspException;
@@ -53,6 +62,12 @@ public class AggiornaERPStatoGaraManager {
 
   private FileAllegatoManager      fileAllegatoManager;
 
+  private InarcassaWSERPManager      inarcassaWSERPManager;
+
+  private ConiWSERPManager      coniWSERPManager;
+  
+  private EusisWSERPManager      eusisWSERPManager;
+
   public void setGestioneWSERPManager(GestioneWSERPManager gestioneWSERPManager) {
     this.gestioneWSERPManager = gestioneWSERPManager;
   }
@@ -68,7 +83,18 @@ public class AggiornaERPStatoGaraManager {
   public void setFileAllegatoManager(FileAllegatoManager fileAllegatoManager) {
     this.fileAllegatoManager = fileAllegatoManager;
   }
-
+  
+  public void setInarcassaWSERPManager(InarcassaWSERPManager inarcassaWSERPManager) {
+    this.inarcassaWSERPManager = inarcassaWSERPManager;
+  }
+  
+  public void setConiWSERPManager(ConiWSERPManager coniWSERPManager) {
+    this.coniWSERPManager = coniWSERPManager;
+  }
+  
+  public void setEusisWSERPManager(EusisWSERPManager eusisWSERPManager) {
+    this.eusisWSERPManager = eusisWSERPManager;
+  }
   /**
    *Aggiornamento dello stato della gara
    * @throws JspException 
@@ -540,15 +566,15 @@ public class AggiornaERPStatoGaraManager {
 
 
         }//if FNM
-        //cf24
+        
         
         if("RAIWAY".equals(tipoWSERP)) {
         	
-            //Data di Filtro - Sottraggo 6 mesi alla data odierna / ora un anno (APPALTI-880)
+            //Data di Filtro - Sottraggo 6 mesi alla data odierna / ora un anno (APPALTI-1503)
             date = new Date();
             cal = Calendar.getInstance();
             cal.setTime(date);
-            cal.add(Calendar.MONTH, -6);
+            cal.add(Calendar.YEAR, -1);
             filterDate = cal.getTime();
             
             String selezioneGareDaAggiornare = "select v.codgar, v.codice, v.stato, v.esito, r.numrda, v.codstato, g.ditta, v.genere," +
@@ -595,15 +621,7 @@ public class AggiornaERPStatoGaraManager {
                     numeroRdo = UtilityStringhe.convertiNullInStringaVuota(numeroRdo);
                     String numeroAvcp = SqlManager.getValueFromVectorParam(listaGareDaAgg.get(g), 13).stringValue();
                     numeroAvcp = UtilityStringhe.convertiNullInStringaVuota(numeroAvcp);
-                    Date dataPresOfferta = (Date) SqlManager.getValueFromVectorParam(listaGareDaAgg.get(g),14).getValue();
-                    Date dataEsameOffertaAmm = (Date) SqlManager.getValueFromVectorParam(listaGareDaAgg.get(g),15).getValue();
                     Date dataAttoAgg = (Date) SqlManager.getValueFromVectorParam(listaGareDaAgg.get(g),16).getValue();
-                    Date dataAnnullamento = (Date) SqlManager.getValueFromVectorParam(listaGareDaAgg.get(g),17).getValue();
-                    Long iterga = (Long) SqlManager.getValueFromVectorParam(listaGareDaAgg.get(g), 18).getValue();
-                    Date dataBandoAvviso = (Date) SqlManager.getValueFromVectorParam(listaGareDaAgg.get(g),19).getValue();
-                    Date dataInvitoDitte = (Date) SqlManager.getValueFromVectorParam(listaGareDaAgg.get(g),20).getValue();
-                    Date dataTerminiPartecipazione = (Date) SqlManager.getValueFromVectorParam(listaGareDaAgg.get(g),21).getValue();
-                    Long esitoGaraNonAggiudicata = (Long) SqlManager.getValueFromVectorParam(listaGareDaAgg.get(g), 22).getValue();
                     Double importoAggiudicazione = null;
                     Object objImpAgg = SqlManager.getValueFromVectorParam(listaGareDaAgg.get(g), 23).getValue();
                     if (objImpAgg instanceof Long){
@@ -656,8 +674,8 @@ public class AggiornaERPStatoGaraManager {
                                         if(new Long(1).equals(nazimp)){
                                           siglanaz = "IT";
                                         }else{
-                                          siglanaz = (String) this.sqlManager.getObject("select tab2d1 from tab2 where tab2cod= ?" +
-                                                  " and tab2tip =? ", new Object[]{"G_z23",nazimp.toString()});
+                                          siglanaz = (String) this.sqlManager.getObject("select codiso from g_nazioni where codice =? ",
+                                                  new Object[]{nazimp});
                                         }
                                       }
                                       String capimp = (String) SqlManager.getValueFromVectorParam(datiIMPR.get(0), 6).getValue();
@@ -730,7 +748,7 @@ public class AggiornaERPStatoGaraManager {
                                       fornitore.setNazionalita(siglanaz);
                                       /*
                                        codificaISO 3166 a 2 lettere
-                                       tab2 G_z23
+                                       codiso.g_nazioni
                                        */
                                       fornitore.setIscrizioneCCIAA(iscrCCIAABool);
                                       fornitore.setCellulare(cellimp);
@@ -775,17 +793,105 @@ public class AggiornaERPStatoGaraManager {
                               }//if ditta aggiudicataria
                     	  }
                       }
-                          
+                        
+                      //Nel caso di gare a lotti predispongo la chiamata per i lotti 
+                      //controllo sia il caso genere 1 sia il genere 3
+            		  WSERPGaraType[] datiLottoArray = null;
+            		  WSERPOdaType[] odaLottoArray = null;
 
-                      
-                      
-                      
-                      
+                      if(Long.valueOf(1).equals(genere) || Long.valueOf(3).equals(genere)) {
+                    	  String selNumLotti = "select count(*) from v_gare_genere where codgar = ? and genere = ? ";
+                    	  Long genereLotto = null;
+                    	  switch (genere.intValue()) {
+        					case 1:
+        						genereLotto =Long.valueOf(100);
+        						break;
+        					case 3:
+        						genereLotto =Long.valueOf(300);
+        						break;
+        					
+                    		}
+
+                    	  
+                    	  Long numLotti = (Long) sqlManager.getObject(selNumLotti, new Object[] {codgar,genereLotto});
+                    	  if(numLotti!=null) {
+                    		  //WSERPGaraType[] 
+                    				  datiLottoArray = new WSERPGaraType[numLotti.intValue()];
+                    		  //WSERPOdaType[]
+                    				  odaLottoArray = new WSERPOdaType[numLotti.intValue()];
+                    		  String selezioneLottiDaAggiornare = "select g.ngara,g.codiga, g.codcig, g.iaggiu, g.dattoa"
+                    		  		+ " from v_gare_genere v,gare g where"
+                    		  		+ " v.codgar=g.codgar1 and v.codice=g.ngara"
+                    		  		+ " and  v.codgar = ? and v.genere = ? ";
+                    		  
+                    		  List<?> listaLottiDaAgg = sqlManager.getListVector(selezioneLottiDaAggiornare, new Object[] {codgar,genereLotto});
+                              if(listaLottiDaAgg.size() > 0){
+                            	  importoAggiudicazione = Double.valueOf(0);
+                            	  dataAttoAgg= null;
+                            	  
+                            	  for (int l = 0; l < listaLottiDaAgg.size(); l++){
+                            		  WSERPGaraType datiLotto = new WSERPGaraType();
+                            		  WSERPOdaType odaLotto = new WSERPOdaType();
+                                      String numeroGara = SqlManager.getValueFromVectorParam(listaLottiDaAgg.get(l), 0).stringValue();
+                                      numeroGara = UtilityStringhe.convertiNullInStringaVuota(numeroGara);
+                                      String codiga = SqlManager.getValueFromVectorParam(listaLottiDaAgg.get(l), 1).stringValue();
+                                      codiga = UtilityStringhe.convertiNullInStringaVuota(codiga);
+                                      odaLotto.setIdLotto(codiga);
+                                      String codcig = SqlManager.getValueFromVectorParam(listaLottiDaAgg.get(l), 2).stringValue();
+                                      codcig = UtilityStringhe.convertiNullInStringaVuota(codcig);
+                                      datiLotto.setCodiceCig(codcig);
+                                      Double importoAggLotto = null;
+                                      Object objImpAggLotto = SqlManager.getValueFromVectorParam(listaLottiDaAgg.get(l), 3).getValue();
+                                      if (objImpAggLotto instanceof Long){
+                                          importoAggLotto = ((Long) objImpAggLotto).doubleValue();
+                                      }else{
+                                        if(objImpAggLotto instanceof Double){
+                                          importoAggLotto = (Double) objImpAggLotto;
+                                        }
+                                      }
+                                      datiLotto.setImportoAggiudicazione(importoAggLotto);
+                                      //sommo  gli importi di aggiudicazione dei lotti
+                                      if(importoAggiudicazione!=null && importoAggLotto!=null){
+                                    	  importoAggiudicazione +=  importoAggLotto;
+                                      }
+                                      
+                                      Date dataAttoAggLotto = (Date) SqlManager.getValueFromVectorParam(listaLottiDaAgg.get(l),4).getValue();
+                                      if(dataAttoAggLotto != null){
+                	                      Calendar caldataAttoAggLotto = Calendar.getInstance();
+                	                      caldataAttoAggLotto.setTime(dataAttoAggLotto);
+                	                      datiLotto.setDataAggiudicazione(caldataAttoAggLotto);
+                	                      if(dataAttoAgg != null){
+                    	                      if(dataAttoAgg.before(dataAttoAggLotto)){
+                    	                    	  dataAttoAgg = dataAttoAggLotto;
+                    	                      }
+                	                      }else {
+                	                    	  dataAttoAgg = dataAttoAggLotto;
+                	                      }
+                                      }
+                                      
+                                      odaLotto.setNumeroGara(numeroGara);
+                                      
+                                      datiLottoArray[l] = datiLotto;
+                                      odaLottoArray[l] = odaLotto;
+                                      
+                            	  }//for lotto
+                            	  
+                            	  //arrotondo importo aggiudicazione
+                            	  importoAggiudicazione = (Double) UtilityNumeri.arrotondaNumero(importoAggiudicazione,Integer.valueOf(2)); 
+                            	  
+                              }
+                    	  }
+                    	  
+                      }///fine giro lotti
                       
                       //invoco il ws aggiorna procedura
                       oda.setCodiceRda(numeroRda);
-                      oda.setIdLotto(ngara);
-                      oda.setNumeroGara(codgar);
+                      //oda.setIdLotto(ngara); nella gara a lotto unico non dovrebbe esserci
+                      if(Long.valueOf(2).equals(genere)){
+                    	  oda.setNumeroGara(ngara);
+                      }else {
+                    	  oda.setNumeroGara(codgar);
+                      }
 
                       odaArray[0] = oda;
 
@@ -805,14 +911,43 @@ public class AggiornaERPStatoGaraManager {
 	                      datiGara.setDataAggiudicazione(caldataAttoAgg);
                       }
                       
-                      
                       datiGara.setImportoAggiudicazione(importoAggiudicazione);
+                      
+                      if(!"".equals(numeroAvcp)) {
+                    	datiGara.setNumeroAVCP(numeroAvcp);
+                      }
                       
                       WSERPRdaResType res = gestioneWSERPManager.wserpAggiudicaRdaGara(null, null, "WSERP", odaArray, datiGara);
                       if(res.isEsito()){
                           Timestamp ts = new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime());
                           String tsStr = "OK-" + ts.toString();
+                          //nel caso  di plichi distinti non ha effetto
                     	  this.gestioneWSERPManager.updNumeroRdo(tipoWSERP, codgar, ngara, tsStr);
+                      }
+                      
+                      if(Long.valueOf(1).equals(genere) || Long.valueOf(3).equals(genere)) {
+                    	  if(datiLottoArray!=null && odaLottoArray!=null) {
+                    		  //setto odaArray datiGara per ciascun lotto e faccio la chiamata
+                    		  for (int l = 0; l < datiLottoArray.length; l++){
+                    			  WSERPGaraType datiLotto = datiLottoArray[l];
+                    			  WSERPOdaType odaLotto = odaLottoArray[l];
+                    			  oda=odaArray[0];
+                    			  datiGara.setDataAggiudicazione(datiLotto.getDataAggiudicazione());
+                    			  oda.setIdLotto(odaLotto.getIdLotto());
+                    			  datiGara.setCodiceCig(datiLotto.getCodiceCig());
+                    			  datiGara.setImportoAggiudicazione(datiLotto.getImportoAggiudicazione());
+                    			  ngara = odaLotto.getNumeroGara();
+                    			  
+                    			  //faccio la chiamata
+                                  WSERPRdaResType resLotto = gestioneWSERPManager.wserpAggiudicaRdaGara(null, null, "WSERP", odaArray, datiGara);
+                                  if(resLotto.isEsito()){
+                                      Timestamp ts = new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime());
+                                      String tsStr = "OK-" + ts.toString();
+                                	  this.gestioneWSERPManager.updNumeroRdo(tipoWSERP, codgar, ngara, tsStr);
+                                  }
+                    			  
+                    		  }
+                    	  }
                       }
             
                   }//for
@@ -827,14 +962,411 @@ public class AggiornaERPStatoGaraManager {
         }
         
 
+        
+        if("INARCASSA".equals(tipoWSERP)){
 
+          if (logger.isInfoEnabled()) {
+            logger.info("Avvio della procedura di aggiornamento Oda contratto");
+          }
+          
+          Long i_syscon = new Long(-1);
+          String servizio ="WSERP";
+          String[] credenziali = gestioneWSERPManager.wserpGetLogin(i_syscon, servizio);
+          String username = credenziali[0];
+          String password = credenziali[1];
+          
+          try {
+            
+            String selezionaCodiciImprese= "select codimp from impr where cgenimp is not null";
 
-      //}//if
+          
+            List<?> listaImprese = sqlManager.getListVector(selezionaCodiciImprese, new Object[] {});
+            if(listaImprese != null && !listaImprese.isEmpty()){
+              for (int i = 0; i < listaImprese.size(); i++){
+                String ditta = SqlManager.getValueFromVectorParam(listaImprese.get(i), 0).stringValue();
+                if(!"".equals(ditta)) {
+                  HashMap datiMask = new HashMap();
+                  datiMask.put("ditta", ditta);
+                  WSERPFornitoreResType wserpFornitoreRes = inarcassaWSERPManager.inviaDatiFornitore(username,password,datiMask);
+                  if(!wserpFornitoreRes.isEsito()) {
+                    if(wserpFornitoreRes.getMessaggio().contains("%%%")) {
+                      logger.error("Codice fornitore "+ditta+": "+wserpFornitoreRes.getMessaggio().split("%%%")[1]);
+                    } else {
+                      logger.error(wserpFornitoreRes.getMessaggio());
+                    }
+                  }
+                } 
+              }
+            }
+          } catch (Exception e) {
+            throw new GestoreException("Errore aggiornamento dati imprese", null, e);
+          }
+          
+          
+          
+          try {
+          
+            //Data di Filtro - Sottraggo 6 mesi alla data odierna
+            date = new Date();
+            cal = Calendar.getInstance();
+            cal.setTime(date);
+            cal.add(Calendar.MONTH, -6);
+  
+            filterDate = cal.getTime();
+  
+            String selezionaNumOda = "select s.numoda "
+                + "from g1stipula s "
+                + "inner join g1docstipula d on s.id = d.idstipula "
+                + "inner join W_DOCDIG w on CAST(d.id AS VARCHAR(10)) = w.digkey1 and w.digent = 'G1DOCSTIPULA' "
+                + "inner join gare g on s.ngara = g.ngara "
+                + "where s.stato = 5 "
+                + "and d.fase = 4 "
+                + "and d.visibilita = 3 "
+                + "and ((s.id = s.id_originario and (g.daatto is not null and g.daatto > ?)) "
+                + "     or (s.id != s.id_originario and (s.daatto is not null and s.daatto > ?))) "
+                + "group by s.numoda ";
+
+          
+            List<?> listaNumOda = sqlManager.getListVector(selezionaNumOda, new Object[] {filterDate,filterDate});
+            if(listaNumOda != null && !listaNumOda.isEmpty()){
+              WSERPOdaType[] odaArray = new WSERPOdaType[listaNumOda.size()];
+              for (int i = 0; i < listaNumOda.size(); i++){
+                String numoda = SqlManager.getValueFromVectorParam(listaNumOda.get(i), 0).stringValue();
+                numoda = UtilityStringhe.convertiNullInStringaVuota(numoda);
+                
+                WSERPOdaType oda = new WSERPOdaType();
+                
+                if(!numoda.isEmpty()) {
+                  
+                  oda.setCodiceOda(numoda);
+                  
+                  String selezionaDatiDoc = "select w.idprg, w.iddocdig, w.dignomdoc "
+                      + "from g1stipula s "
+                      + "inner join g1docstipula d on s.id = d.idstipula "
+                      + "inner join W_DOCDIG w on CAST(d.id AS VARCHAR(10)) = w.digkey1 and w.digent = 'G1DOCSTIPULA' "
+                      + "inner join gare g on s.ngara = g.ngara "
+                      + "where s.stato = 5 "
+                      + "and d.fase = 4 "
+                      + "and d.visibilita = 3 "
+                      + "and ((s.id = s.id_originario and (g.daatto is not null and g.daatto > ?)) "
+                      + "     or (s.id != s.id_originario and (s.daatto is not null and s.daatto > ?))) "
+                      + "and s.numoda = ?";
+  
+                
+                  List<?> listaDatiDoc = sqlManager.getListVector(selezionaDatiDoc, new Object[] {filterDate,filterDate,numoda});
+                  if(listaDatiDoc != null && !listaDatiDoc.isEmpty()){
+                    WSERPAllegatoType[] allegatoArray = new WSERPAllegatoType[listaDatiDoc.size()];
+                    for (int y = 0; y < listaDatiDoc.size(); y++){
+                      String idprg = SqlManager.getValueFromVectorParam(listaDatiDoc.get(y), 0).stringValue();
+                      idprg = UtilityStringhe.convertiNullInStringaVuota(idprg);
+                      Long iddocdig = (Long) SqlManager.getValueFromVectorParam(listaDatiDoc.get(y), 1).getValue();
+                      String dignomdoc = SqlManager.getValueFromVectorParam(listaDatiDoc.get(y), 2).stringValue();
+                      dignomdoc = UtilityStringhe.convertiNullInStringaVuota(dignomdoc);
+                      
+                      WSERPAllegatoType allegato = new WSERPAllegatoType();
+                      BlobFile digogg = fileAllegatoManager.getFileAllegato(idprg, iddocdig);
+                      allegato.setNome(dignomdoc);
+                      allegato.setContenuto(digogg.getStream());
+                      allegato.setTitolo(dignomdoc);
+                      
+                      allegatoArray[y] = allegato;
+                    }
+                    oda.setAllegatoArray(allegatoArray);
+                  }
+                  odaArray[i] = oda;
+                }
+              }
+              
+              WSERPOdaResType res = gestioneWSERPManager.wserpAggiornaOdaContratto(username, password, servizio, odaArray);
+              if(!res.isEsito()) {
+                logger.error(res.getMessaggio());
+              }
+            }
+          } catch (SQLException e) {
+            throw new GestoreException("Errore nella lettura delle gare da aggiornare ", null, e);
+          } catch (IOException e) {
+            throw new GestoreException("Errore nell'invio dei documenti dell'aggiudicatario ", null, e);
+          }
+          
+
+          if (logger.isInfoEnabled()) {
+            logger.info("Fine della procedura di aggiornamento Oda contratto");
+          }
+
+        }//if INARCASSA
+        
+        if("CONI".equals(tipoWSERP)){
+
+          //Data di Filtro - Sottraggo 6 mesi alla data odierna
+          Date datenow = new Date();
+          Calendar cale = Calendar.getInstance();
+          cale.setTime(datenow);
+          cale.add(Calendar.MONTH, -6);
+
+          Date filterData = cale.getTime();
+          
+          
+          Long i_syscon = new Long(-1);
+          String servizio ="WSERP";
+          String[] credenziali = gestioneWSERPManager.wserpGetLogin(i_syscon, servizio);
+          String username = credenziali[0];
+          String password = credenziali[1];
+          
+          try {
+          String selezionaGare = "select g.codgar1, g.ngara, g.ditta "
+              + "from gare g "
+              + "inner join torn t on g.codgar1 = t.codgar "
+              + "WHERE (exists(select e.ngara from pubg e where g.ngara = e.ngara and e.tippubg = 12) "
+              + "or exists (select b.codgar9 from pubbli b where t.codgar = b.codgar9 and (b.tippub = 11 or b.tippub = 13))) "
+              + "and exists (select g1.ngara from gare g1 where g1.ditta is not null and g1.esineg is null and t.codgar = g1.codgar1) "
+              + "and exists (select r.numrda from garerda r where t.codgar = r.codgar and r.numrda is not null) "
+              + "and (g.daatto is null or (g.daatto is not null and g.daatto > ?)) and g.datneg is null ";
+
+          List<?> listaGare = sqlManager.getListVector(selezionaGare, new Object[] { filterData });
+          if(listaGare != null && !listaGare.isEmpty()){
+            for (int y = 0; y < listaGare.size(); y++){
+              String codgar = SqlManager.getValueFromVectorParam(listaGare.get(y), 0).stringValue();
+              String ngara = SqlManager.getValueFromVectorParam(listaGare.get(y), 1).stringValue();
+              String ditta = SqlManager.getValueFromVectorParam(listaGare.get(y), 2).stringValue();
+
+              if(!"".equals(ditta)) {
+                
+                WSERPFornitoreResType wserpFornitoreRes = this.coniWSERPManager.inviaDatiFornitore(username,password,ditta,ngara);
+                if(!wserpFornitoreRes.isEsito()) {
+                  logger.error(wserpFornitoreRes.getMessaggio());
+                } else {
+                  WSERPFornitoreType fornitoreERP = wserpFornitoreRes.getFornitore();
+                  String idFornitore = fornitoreERP.getCodiceFornitore();
+                  idFornitore = UtilityStringhe.convertiNullInStringaVuota(idFornitore);
+                  if(!"".equals(idFornitore)){
+                    this.gestioneWSERPManager.updFornitore(tipoWSERP, ditta, idFornitore, null);
+                    WSERPRdaResType wserpRdaResType = this.coniWSERPManager.inviaDatiAggiudicazione(username,password,codgar,ngara);
+                    if(!wserpRdaResType.isEsito()) {
+                      logger.error(wserpRdaResType.getMessaggio());
+                    } 
+                  }
+                }
+              }
+            
+              
+            }
+          }
+          
+          } catch (Exception e) {
+            throw new GestoreException("Errore nella lettura delle gare da aggiornare ", null, e);
+          }
+        }
+        
+        
+        if("ARCHIFLOW".equals(tipoWSERP)){
+
+          if (logger.isInfoEnabled()) {
+            logger.info("Avvio della procedura di aggiornamento dati aggiudicazione");
+          }
+
+          //Data di Filtro - Sottraggo 6 mesi alla data odierna
+          Date datenow = new Date();
+          Calendar cale = Calendar.getInstance();
+          cale.setTime(datenow);
+          cale.add(Calendar.MONTH, -6);
+
+          Date filterData = cale.getTime();
+          
+          
+          Long i_syscon = new Long(-1);
+          String servizio ="WSERP";
+          String[] credenziali = gestioneWSERPManager.wserpGetLogin(i_syscon, servizio);
+          String username = credenziali[0];
+          String password = credenziali[1];
+          
+          try {
+            
+            String selezionaGare = "select g.codgar1, r.codcarr "
+                + "from gare g "
+                + "inner join torn t on g.codgar1 = t.codgar "
+                + "INNER JOIN garerda r ON t.codgar = r.codgar and r.numrda is not null "
+                + "INNER JOIN wsfascicolo f ON ((g.ngara = f.key1 and f.entita='GARE') "
+                + "                            or (g.codgar1 = f.key1 and f.entita='TORN')) and f.codice is not null "
+                + "WHERE (exists(select e.ngara from pubg e where g.ngara = e.ngara and e.tippubg = 12) "
+                + "or exists (select b.codgar9 from pubbli b where t.codgar = b.codgar9 and (b.tippub = 11 or b.tippub = 13))) "
+                + "and exists (select g1.ngara from gare g1 where g1.ditta is not null and g1.esineg is null and t.codgar = g1.codgar1) ";
+            
+            List<?> listaGare = sqlManager.getListVector(selezionaGare, new Object[] { });
+            if(listaGare != null && !listaGare.isEmpty()){
+              for (int y = 0; y < listaGare.size(); y++){
+                Boolean garaDaAggiudicare = Boolean.TRUE;
+                String codiceGara = SqlManager.getValueFromVectorParam(listaGare.get(y), 0).stringValue();
+                String codcarr = SqlManager.getValueFromVectorParam(listaGare.get(y), 1).stringValue();
+                
+                String critlicgConcatenati = null;
+                String codcigConcatenati = null;
+                String catigaCatoffConcatenati = null;
+                
+                String selezionaDatiGara = "select g.critlicg, g.codcig, tg.catiga, op.catoff "
+                    + "from gare g  "
+                    + "left join catg tg on tg.ngara = g.ngara "
+                    + "left join opes op on tg.ngara = op.ngara3 "
+                    + "where g.codgar1 = ? "
+                    + "and tg.ncatg = 1 "
+                    + "and (g.daatto is null or (g.daatto is not null and g.daatto > ?)) and (g.datneg is null or (g.datneg is not null and g.datneg > ?)) ";
+                
+                List<?> listaDatiGara = sqlManager.getListVector(selezionaDatiGara, new Object[] { codiceGara, filterData, filterData });
+                if(listaDatiGara != null && !listaDatiGara.isEmpty()){
+                  List<String> listaCritlicg = new ArrayList<>();
+                  List<String> listaCodcig = new ArrayList<>();
+                  List<String> listaCatigaCatoff = new ArrayList<>();
+                  for (int x = 0; x < listaDatiGara.size(); x++){
+                    Long critlicg = SqlManager.getValueFromVectorParam(listaDatiGara.get(x), 0).longValue();
+                    String codcig = SqlManager.getValueFromVectorParam(listaDatiGara.get(x), 1).stringValue();
+                    String catiga = SqlManager.getValueFromVectorParam(listaDatiGara.get(x), 2).stringValue();
+                    String catoff = SqlManager.getValueFromVectorParam(listaDatiGara.get(x), 3).stringValue();
+                    
+                    if(critlicg != null) {
+                      listaCritlicg.add(critlicg.toString());
+                    }
+                    if(codcig != null) {
+                      listaCodcig.add(codcig);
+                    }
+                    if(catiga != null) {
+                      listaCatigaCatoff.add(catiga);
+                    }
+                    if(catoff != null) {
+                      listaCatigaCatoff.add(catoff);
+                    }
+                    
+                  }
+                  
+                  if(!listaCritlicg.isEmpty()) {
+                    critlicgConcatenati = String.join("|", listaCritlicg);
+                  }
+                  if(!listaCodcig.isEmpty()) {
+                    codcigConcatenati = String.join("|", listaCodcig);
+                  }
+                  if(!listaCatigaCatoff.isEmpty()) {
+                    catigaCatoffConcatenati = String.join("|", listaCatigaCatoff);
+                  }
+                } else {
+                  garaDaAggiudicare = Boolean.FALSE;
+                }
+                
+                if(Boolean.TRUE.equals(garaDaAggiudicare)) {
+                  
+                  WSERPOdaType[] odaArray = new WSERPOdaType[1];
+                  WSERPOdaType oda = new WSERPOdaType();
+                  WSERPGaraType datiGara = new WSERPGaraType();
+                  datiGara.setDefinizioneCig(critlicgConcatenati);
+                  datiGara.setCodiceCig(codcigConcatenati);
+                  oda.setCodiceCategoria(catigaCatoffConcatenati);
+                  datiGara.setStato("GARA AGGIUDICATA");
+                  oda.setCodiceCarrello(codcarr);
+                  odaArray[0] = oda;
+                  int livEvento = 1;
+                  WSERPRdaResType res = new WSERPRdaResType();
+                  try {
+                    res = gestioneWSERPManager.wserpAggiudicaRdaGara(username, password, servizio, odaArray, datiGara);
+                    if(!res.isEsito()) {
+                      logger.error(res.getMessaggio());
+                      livEvento = 3;
+                    }
+                  } catch (Exception e) {
+                    // TODO: handle exception
+                  } finally {
+
+                    try {
+                      LogEvento logEvento = new LogEvento();
+                      logEvento.setCodApplicazione("PG");
+                      logEvento.setLivEvento(livEvento);
+                      logEvento.setOggEvento(codiceGara);
+                      logEvento.setCodEvento("GA_ARCHIFLOW_INVIO_AGG");
+                      String descrizione = "Invio aggiudicazione Archiflow per la gara: "+codiceGara;
+                      logEvento.setDescr(descrizione);
+                      logEvento.setErrmsg(res.getMessaggio());
+                      LogEventiUtils.insertLogEventi(logEvento);
+                    } catch (Exception le) {
+                      logger.error("Errore inaspettato durante la tracciatura su w_logeventi", le);
+                    }
+
+                  }
+                }
+                
+              }
+            }
+            
+            
+          } catch (Exception e) {
+            throw new GestoreException("Errore nella lettura delle gare da aggiornare ", null, e);
+          }
+          
+          if (logger.isInfoEnabled()) {
+            logger.info("Fine della procedura di aggiornamento dati aggiudicazione");
+          }
+
+        }
+        
+        
+        if("EUSIS".equals(tipoWSERP)){
+
+          //Data di Filtro - Sottraggo un giorno alla data odierna
+          Date datenow = new Date();
+          Calendar cale = Calendar.getInstance();
+          cale.setTime(datenow);
+          cale.add(Calendar.DAY_OF_MONTH, -1);
+          
+          Date filterData = cale.getTime();
+
+          Long i_syscon = new Long(-1);
+          String servizio ="WSERP";
+          String[] credenziali = gestioneWSERPManager.wserpGetLogin(i_syscon, servizio);
+          String username = credenziali[0];
+          String password = credenziali[1];
+
+          try {
+            String selezionaGare = "select distinct a.codgar1, a.ngara, a.codevento "
+                + "from ( "
+                + "select g.codgar1, g.ngara, w.codevento, w.dataora "
+                + "from gare g  "
+                + "inner join torn t on g.codgar1 = t.codgar  "
+                + "inner join w_logeventi w on w.oggevento = g.ngara  "
+                + "WHERE (exists(select e.ngara from pubg e where g.ngara = e.ngara and e.tippubg = 12)  "
+                + "or exists (select b.codgar9 from pubbli b where t.codgar = b.codgar9 and (b.tippub = 11 or b.tippub = 13)))  "
+                + "and exists (select g1.ngara from gare g1 where g1.ditta is not null and g1.esineg is null and t.codgar = g1.codgar1)  "
+                + "and w.codevento in ('GA_AGGIUDICAZIONE_DEF','GA_RETTIFICA_IMPORTO_AGG') "
+                + "and w.dataora is not null and w.dataora > ?  "
+                + "order by w.dataora asc "
+                + ") a";
+
+            List<?> listaGare = sqlManager.getListVector(selezionaGare, new Object[] { filterData });
+            if(listaGare != null && !listaGare.isEmpty()){
+              for (int y = 0; y < listaGare.size(); y++){
+                String codgar = SqlManager.getValueFromVectorParam(listaGare.get(y), 0).stringValue();
+                String ngara = SqlManager.getValueFromVectorParam(listaGare.get(y), 1).stringValue();
+                String codevento = SqlManager.getValueFromVectorParam(listaGare.get(y), 2).stringValue();
+
+                WSERPRdaResType wserpRdaResType = this.eusisWSERPManager.inviaDatiAggiudicazione(username,password,codgar,ngara,codevento);
+                if(!wserpRdaResType.isEsito()) {
+                  logger.error(wserpRdaResType.getMessaggio());
+                }
+              }
+            }
+          } catch (Exception e) {
+            throw new GestoreException("Errore nella lettura delle gare da aggiornare ", null, e);
+          }
+        }
+        
+        
+        
 
     if (logger.isDebugEnabled())
       logger.debug("updateStatoGara: fine metodo");
   }
 
+  
+  
+  public Long getGenereByCodgar(String codgar) throws Exception {
+    String genereSql = "select genere from v_gare_genere where codgar = ? ";
+    return (Long) this.sqlManager.getObject(genereSql, new Object[]{codgar});
+  }
+  
 }
 
 

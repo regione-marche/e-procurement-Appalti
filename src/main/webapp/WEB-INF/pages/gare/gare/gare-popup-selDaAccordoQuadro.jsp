@@ -72,6 +72,10 @@
 		<jsp:include page="/WEB-INF/pages/commons/iconeCheckUncheck.jsp" />
 	</gene:set>
 	
+	<c:set var="ngaraaq" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select NGARA from V_GCAP_DPRE where NGARA=?", ngaraaq)}'/>
+	<c:set var="ditta" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select COD_DITTA from V_GCAP_DPRE where COD_DITTA=?", ditta)}'/>
+	<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select NGARA from GARE where NGARA=?", ngara)}'/>
+	
 	<c:choose>
 		<c:when test='${aqoper eq "1"}'>
 			<c:set var="entita" value="V_GCAP_DPRE" />

@@ -196,7 +196,7 @@ public class GestorePopupArchiviaDocumenti extends
 
             //Si deve controllare che dopo gli aggiornamenti siano rispettate le condizioni per la pubblicazione su Portale
            String msgErrore = "";
-           if("1".equals(tipoDoc) || "4".equals(tipoDoc) || "6".equals(tipoDoc)){
+           if("1".equals(tipoDoc) || "6".equals(tipoDoc)){
               //Deve rimanere almeno un documento
               Long conteggio = (Long)this.sqlManager.getObject(select,parametri);
               if(conteggio==null || conteggio.longValue()==0){
@@ -231,8 +231,12 @@ public class GestorePopupArchiviaDocumenti extends
                 Long conteggio2_1 = null; //tecnico qualitativo
                 Long conteggio2_2 = null; //tecnico quantitativo
                 if (!"1".equals(bustalotti)) {
+                  Long conteggioGareNoCostofisso = (Long)sqlManager.getObject("select count(*) from GARE where gare.codgar1 = ? AND gare.codgar1 != gare.ngara AND GARE.NGARA NOT IN "
+                      + "(SELECT GARE.NGARA FROM GARE1, GARE WHERE GARE.NGARA=GARE1.NGARA AND GARE1.COSTOFISSO = '1' AND GARE.MODLICG=6)", new Object[] {codgar});
+
                   String selectBusta = select + " and busta=3";
-                  conteggio1 = (Long) this.sqlManager.getObject(selectBusta, parametri);
+                  if(conteggioGareNoCostofisso>0)//APP-1454 (non vogliamo controlli sulla busta economica se tutti i lotti sono oepv a costo fisso)
+                    conteggio1 = (Long) this.sqlManager.getObject(selectBusta, parametri);
                   if ("6".equals(modlic) || "1".equals(valtec)) {
                     if ("1".equals(sezionitec)) {
                       selectBusta = select + " and busta=2 and seztec = 1";
@@ -280,7 +284,7 @@ public class GestorePopupArchiviaDocumenti extends
                   parametri = new Object[] { codgar, new Long(3), new Long(3) };
                   Long conteggio = (Long)sqlManager.getObject(select, parametri);
                   if(conteggio==null || (conteggio!=null && conteggio.longValue()==0)){
-                    if(!pgManager.controlloDocumentazioneLotti(codgar, false, new Long(3),true, false,false)){
+                    if(!pgManager.controlloDocumentazioneLotti(codgar, false, new Long(3),true, true,false)){
                       conteggio1 = new Long (0);
                     }
                   }

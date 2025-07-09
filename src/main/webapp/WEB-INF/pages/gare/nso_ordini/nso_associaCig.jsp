@@ -132,7 +132,7 @@
 					document.forms[0].jspPath.value="/WEB-INF/pages/gare/nso_ordini/nso_ordini-scheda.jsp";
 					document.forms[0].jspPathTo.value="/WEB-INF/pages/gare/nso_ordini/nso_ordini-scheda.jsp";
 					var ngara = getValue("NSO_ORDINI_NGARA");
-					document.forms[0].action = document.forms[0].action + "&tipoAppalto=${param.tipoAppalto}&ngara=" + ngara;
+					document.forms[0].action = document.forms[0].action + "?tipoAppalto=${param.tipoAppalto}&ngara=" + ngara;
 					bloccaRichiesteServer();
 					document.forms[0].submit();
 				}
@@ -160,7 +160,6 @@
 		href += "&offtel="+offtel;
 		href += "&modlicg=" + "";
 		href += "&isGaraLottiConOffertaUnica=" + isGaraLottiConOffertaUnica;
-		href += "&" + csrfToken;
 		document.location.href = href;
 	}
 	

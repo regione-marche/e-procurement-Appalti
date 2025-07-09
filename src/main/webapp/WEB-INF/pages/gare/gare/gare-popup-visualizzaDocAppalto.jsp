@@ -41,6 +41,8 @@
 	</c:otherwise>
 </c:choose>
 
+<c:set var="codgar" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetCodgar1Function", pageContext, ngara)}' />
+
 <c:set var="obj" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetAssociazioneGaraLavoroFunction", pageContext, ngara)}' />
 
 <c:set var="where" value="(C0OGGASS.C0AENT='APPA' AND C0OGGASS.C0AKEY1='${clavor}' AND C0OGGASS.C0AKEY2='${numera}') or (C0OGGASS.C0AENT='PERI' AND C0OGGASS.C0AKEY1='${clavor}')" />
@@ -67,8 +69,7 @@
 					</c:choose>
 					
 					<input type="hidden" name="tipgen" id="tipgen" value="${tipgen}" />
-					<input type="hidden" name="clavor" id="clavor" value="${clavor}" />
-                    <input type="hidden" name="numera" id="numera" value="${numera}" />
+					<input type="hidden" name="ngara" id="ngara" value="${ngara}" />
                	
 				</gene:formLista></td>
 			</tr>
@@ -86,8 +87,8 @@
 					function visualizzaFileDIGOGG(c0acod, dignomdoc) {
 						if (confirm("Si sta per scaricare (download) una copia del file in locale. Ogni modifica verrà apportata alla copia locale ma non all\'originale. Continuare?"))
 						{
-							var href = "${pageContext.request.contextPath}/VisualizzaFileDIGOGG.do";
-							document.location.href = href+"?c0acod=" + c0acod + "&dignomdoc=" + dignomdoc + "&" + csrfToken;
+							var href = "${pageContext.request.contextPath}/pg/DownloadDocumentoAssociato.do";
+							document.location.href = href+"?c0acod=" + c0acod + "&dignomdoc=" + dignomdoc + "&codgar=${codgar}&campo=clavor";
 						}
 					}
 				</c:when>
@@ -96,7 +97,7 @@
 						var tipgen="${tipgen }";
 						var clavor="${clavor }";
 						var numera="${numera }";
-						document.location.href='${pageContext.request.contextPath}/pg/DocumentoAssociatoAppaltoDaGare.do?'+csrfToken+'&metodo=download&id=' + id + '&tipgen=' + tipgen + '&clavor=' + clavor + '&numera=' + numera;
+						document.location.href='${pageContext.request.contextPath}/pg/DocumentoAssociatoAppaltoDaGare.do?metodo=download&id=' + id + '&tipgen=' + tipgen + '&clavor=' + clavor + '&numera=' + numera;
 					}
 				</c:otherwise>
 			</c:choose>		

@@ -54,6 +54,8 @@
 	
 	<c:set var="esisteStipulaGara" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteStipulaGaraFunction",  pageContext, ngara, ditta)}'/>
 	
+	<c:set var="dpubatti" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select dpubatti from gare1 where ngara=?", ngara)}'/>
+	
 	<gene:setString name="titoloMaschera" value="Annulla aggiudicazione definitiva" />
 	
 	<gene:redefineInsert name="corpo">
@@ -98,6 +100,13 @@
 						</td>
 					</gene:campoScheda>
 				</c:when>
+				<c:when test="${not empty dpubatti}">
+					<gene:campoScheda>
+						<td colSpan="2"><br>Non é possibile procedere con l'annullamento dell'aggiudicazione perchè è già stata effettuata la pubblicazione degli atti e offerte di gara
+							<br>&nbsp;<br>
+						</td>
+					</gene:campoScheda>
+				</c:when>
 				<c:otherwise>
 					<gene:campoScheda>
 						<td colSpan="2"><br>Viene annullata l'aggiudicazione definitiva, ripristinando la gara  
@@ -116,7 +125,7 @@
 			<input type="hidden" name="isGaraLottiConOffertaUnica" id="isGaraLottiConOffertaUnica" value="${isGaraLottiConOffertaUnica }" />							
 			<gene:campoScheda>
 				<td class="comandi-dettaglio" colSpan="2">
-					<c:if test='${!empty ditta and ditta ne "" and RISULTATO ne "VARIAZIONI_PREZZO" and esisteVariazionePrezzo ne "true" and esisteStipulaGara ne "true"}'>
+					<c:if test='${!empty ditta and ditta ne "" and RISULTATO ne "VARIAZIONI_PREZZO" and esisteVariazionePrezzo ne "true" and esisteStipulaGara ne "true" and empty dpubatti}'>
 						<INPUT type="button" class="bottone-azione" value="Conferma" title="Conferma" onclick="javascript:conferma();">
 					</c:if>
 					<INPUT type="button" class="bottone-azione" value="Annulla" title="Annulla" onclick="javascript:annulla();">&nbsp;&nbsp;

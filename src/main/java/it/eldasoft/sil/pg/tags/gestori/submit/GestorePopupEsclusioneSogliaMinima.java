@@ -366,12 +366,12 @@ public class GestorePopupEsclusioneSogliaMinima extends
   private void riparametrazionePunteggioCriteri(String ngara, Long fase, boolean punteggiIntermedi) throws SQLException, GestoreException{
 
     String selectDitteGara = "select dittao from ditg where ngara5=? and (fasgar is null or fasgar > ?) order by NUMORDPL asc,NOMIMO asc";
-    String selectMaxCoeffi="select max(d.coeffi),d.necvan from dpun d, goev g, ditg t where d.ngara=? and d.ngara=g.ngara and"
+    String selectMaxCoeffi="select max(d.coeffi),d.necvan, g.isnoripar from dpun d, goev g, ditg t where d.ngara=? and d.ngara=g.ngara and"
         + " d.ngara=t.ngara5 and d.necvan=g.necvan and d.dittao=t.dittao and (g.livpar=1 or g.livpar=2) and (t.fasgar is null or t.fasgar > ?)"
-        + " and g.tippar=? group by d.necvan";
-    String selectMaxCoeffiConSottocriteri="select max(d.coeffirip),d.necvan from dpun d, goev g, ditg t where d.ngara=? and d.ngara=g.ngara and"
+        + " and g.tippar=? group by d.necvan, g.isnoripar";
+    String selectMaxCoeffiConSottocriteri="select max(d.coeffirip),d.necvan, g.isnoripar from dpun d, goev g, ditg t where d.ngara=? and d.ngara=g.ngara and"
       + " d.ngara=t.ngara5 and d.necvan=g.necvan and d.dittao=t.dittao and (g.livpar=3) and (t.fasgar is null or t.fasgar > ?)"
-      + " and g.tippar=? group by d.necvan";
+      + " and g.tippar=? group by d.necvan, g.isnoripar";
     String selectDatiCriterio ="select d.coeffi,g.maxpun,d.dittao,d.punteg from dpun d,goev g , ditg t where d.ngara=? and d.ngara=g.ngara and"
         + " d.ngara=t.ngara5 and d.necvan=g.necvan and d.necvan=? and d.dittao=t.dittao and (t.fasgar is null or t.fasgar > ?)";
     String selectDatiCriterioConSottocriteri ="select d.coeffirip,g.maxpun,d.dittao,d.puntegrip from dpun d,goev g , ditg t where d.ngara=? and d.ngara=g.ngara and"
@@ -407,16 +407,18 @@ public class GestorePopupEsclusioneSogliaMinima extends
     if(listaCoeffiCriteri!=null && listaCoeffiCriteri.size()>0){
       Double maxCoeffi=null;
       Long necvan=null;
+      String isnoripar="";
       List<?> listaDatiCriterio = null;
       boolean riparametrazioneSenzaCalcolo=false;
 
-      //Riparametrazione per i criteri con tippar=1 e 2
+      //Riparametrazione per i criteri con livpar=1 e 2
       for(int i=0;i<listaCoeffiCriteri.size();i++){
         maxCoeffi=SqlManager.getValueFromVectorParam(listaCoeffiCriteri.get(i), 0).doubleValue();
         necvan=SqlManager.getValueFromVectorParam(listaCoeffiCriteri.get(i), 1).longValue();
+        isnoripar=SqlManager.getValueFromVectorParam(listaCoeffiCriteri.get(i), 2).stringValue();
         if(maxCoeffi!=null){
           riparametrazioneSenzaCalcolo=false;
-          if(maxCoeffi.doubleValue()==1)
+          if(maxCoeffi.doubleValue()==1 || "1".equals(isnoripar))
             riparametrazioneSenzaCalcolo=true;
           listaDatiCriterio = this.sqlManager.getListVector(selectDatiCriterio, new Object[]{ngara,necvan,fase});
           if(listaDatiCriterio!=null && listaDatiCriterio.size()>0){
@@ -486,15 +488,17 @@ public class GestorePopupEsclusioneSogliaMinima extends
       if(listaCriteriConSottoCrit!=null && listaCriteriConSottoCrit.size()>0){
         maxCoeffi=null;
         necvan=null;
+        isnoripar="";
         listaDatiCriterio = null;
         riparametrazioneSenzaCalcolo=false;
         
         for(int i=0;i<listaCriteriConSottoCrit.size();i++){
           maxCoeffi=SqlManager.getValueFromVectorParam(listaCriteriConSottoCrit.get(i), 0).doubleValue();
           necvan=SqlManager.getValueFromVectorParam(listaCriteriConSottoCrit.get(i), 1).longValue();
+          isnoripar=SqlManager.getValueFromVectorParam(listaCriteriConSottoCrit.get(i), 2).stringValue();
           if(maxCoeffi!=null){
             riparametrazioneSenzaCalcolo=false;
-            if(maxCoeffi.doubleValue()==1)
+            if(maxCoeffi.doubleValue()==1 || "1".equals(isnoripar))
               riparametrazioneSenzaCalcolo=true;
             listaDatiCriterio = this.sqlManager.getListVector(selectDatiCriterioConSottocriteri, new Object[]{ngara,necvan,fase});
             if(listaDatiCriterio!=null && listaDatiCriterio.size()>0){
@@ -593,9 +597,9 @@ public class GestorePopupEsclusioneSogliaMinima extends
         gestoreDITG.aggiornaStatoAmmissioneDITG(codgar, ngara, ditta, fase, columnsV_DITGAMMIS, status);
         if("1".equals(tipo))
           this.sqlManager.update("update ditg set ribauo=null,puneco=null,impoff=null,impsicazi=null,impperm=null,impcano=null,"
-              + "fasgar=?, ammgar=? where ngara5=? and dittao=?", new Object[]{fase, new Long(2), ngara, ditta});
+              + "fasgar=?, ammgar=? where ngara5=? and dittao=?", new Object[]{fase, "2", ngara, ditta});
         else
-          this.sqlManager.update("update ditg set fasgar=?, ammgar=? where ngara5=? and dittao=?", new Object[]{fase, new Long(2), ngara, ditta});
+          this.sqlManager.update("update ditg set fasgar=?, ammgar=? where ngara5=? and dittao=?", new Object[]{fase, "2", ngara, ditta});
       }
     }
   }

@@ -82,9 +82,9 @@
 </c:if>
 
 ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, ngara, "SC", "20")}
-<c:set var="where" value="GARE.PRECED=? and GARE.ESINEG is null and exists (select CODGAR9 from PUBBLI where PUBBLI.CODGAR9=GARE.CODGAR1 and (PUBBLI.TIPPUB=11 or PUBBLI.TIPPUB=13))"/>
-<c:set var="parametri" value="T:${ngara}"/>
-${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunction", pageContext, "GARE", where, parametri)}
+<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select NGARA from GARE where NGARA=?", ngara)}'/>
+<c:set var="where" value="GARE.PRECED='${ngara}' and GARE.ESINEG is null and exists (select CODGAR9 from PUBBLI where PUBBLI.CODGAR9=GARE.CODGAR1 and (PUBBLI.TIPPUB=11 or PUBBLI.TIPPUB=13))"/>
+
 
 <c:set var="modo" value="MODIFICA" scope="request" />
 
@@ -137,7 +137,7 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunctio
 		<table class="lista">
 			<c:if test="${controlliSuperati eq 'true' and (RISULTATO eq 'OK' or empty RISULTATO)  }">
 			<tr>
-				<td><gene:formLista entita="GARE" pagesize="${risultatiPerPagina}" tableclass="datilista" gestisciProtezioni="false" sortColumn="-2" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAggiornaDaRilanci">
+				<td><gene:formLista entita="GARE" where="${where}" pagesize="${risultatiPerPagina}" tableclass="datilista" gestisciProtezioni="false" sortColumn="-2" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAggiornaDaRilanci">
 					<gene:campoLista title=""	width="20">
 						<c:if test="${currentRow >= 0 }">
 							<input type="radio" value="${datiRiga.GARE_NGARA}" name="keyRilancio" id="keys${currentRow}"  onclick="javascript:impostaRilancio('${datiRiga.GARE_NGARA}');"  <c:if test="${datiRiga.GARE_FASGAR ne 6}">disabled="disabled"</c:if>/>

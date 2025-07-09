@@ -22,6 +22,7 @@ import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestorePreload;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.GestioneProgrammazioneManager;
 import it.eldasoft.sil.pg.bl.GestioneWSERPManager;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.utils.properties.ConfigManager;
@@ -34,12 +35,17 @@ import it.maggioli.eldasoft.ws.erp.WSERPRdaResType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaType;
 
 import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Vector;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import net.sf.json.JSONObject;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Gestore di plugin dei dati generali di GARE
@@ -55,6 +61,8 @@ public class GestoreDatiGeneraliTorn extends AbstractGestorePreload {
 	PgManager pgManager = null;
 
 	private GestioneWSERPManager gestioneWSERPManager = null;
+
+	private GestioneProgrammazioneManager gestioneProgrammazioneManager;
 
 	public GestoreDatiGeneraliTorn(BodyTagSupportGene tag) {
 		super(tag);
@@ -76,6 +84,9 @@ public class GestoreDatiGeneraliTorn extends AbstractGestorePreload {
 
 		gestioneWSERPManager = (GestioneWSERPManager) UtilitySpring.getBean("gestioneWSERPManager",
 			page, GestioneWSERPManager.class);
+
+		gestioneProgrammazioneManager = (GestioneProgrammazioneManager) UtilitySpring.getBean("gestioneProgrammazioneManager",
+				page, GestioneProgrammazioneManager.class);
 
 		HashMap key = null;
 		String oggettoEvento = null;
@@ -100,6 +111,20 @@ public class GestoreDatiGeneraliTorn extends AbstractGestorePreload {
 
 		String modo = (String) page.getAttribute(UtilityTags.DEFAULT_HIDDEN_PARAMETRO_MODO, PageContext.REQUEST_SCOPE);
 
+		if (UtilityTags.SCHEDA_MODO_VISUALIZZA.equals(modo) || UtilityTags.SCHEDA_MODO_MODIFICA.equals(modo)) {
+			key = UtilityTags.stringParamsToHashMap((String) page.getAttribute(UtilityTags.DEFAULT_HIDDEN_KEY_TABELLA, PageContext.REQUEST_SCOPE),null);
+			String codgar = ((JdbcParametro) key.get("TORN.CODGAR")).getStringValue();
+			
+			try {
+				String verNPA = (String) sqlManager.getObject("select vernpa from torn where codgar=?", new Object[] {codgar});
+				page.setAttribute("verNPA", verNPA, PageContext.REQUEST_SCOPE);
+				String nomeDRP = (String) sqlManager.getObject("select nomtec from tecni where codtec=(select coddrp from torn where codgar=?)", new Object[] {codgar});
+				page.setAttribute("initNOMDRP", nomeDRP, PageContext.REQUEST_SCOPE);
+			} catch (SQLException e) {
+				throw new JspException("Errore in fase di esecuzione delle select di inizializzazione", e);
+			}
+		}
+
 		if (UtilityTags.SCHEDA_MODO_VISUALIZZA.equals(modo)) {
 			key = UtilityTags.stringParamsToHashMap(
 					(String) page.getAttribute(UtilityTags.DEFAULT_HIDDEN_KEY_TABELLA, PageContext.REQUEST_SCOPE),
@@ -122,6 +147,16 @@ public class GestoreDatiGeneraliTorn extends AbstractGestorePreload {
 				}
 			}
 		}else if(UtilityTags.SCHEDA_MODO_INSERIMENTO.equals(modo)) {
+
+			try {
+				String verNPA = pgManager.getVersioneNpaCorrente();
+				if (StringUtils.isNotBlank(verNPA)) {
+					page.setAttribute("initVERNPA", verNPA, PageContext.REQUEST_SCOPE);
+				}
+			} catch (SQLException e) {
+				throw new JspException("Errore in fase di esecuzione delle select di inizializzazione", e);
+			}
+
 	        //Visualizzazione sul Portale dell'espletamento di gara telematica
 	        String defA1115_8 = tabellatiManager.getDescrTabellato("A1115", "8");
 	        boolean resDefA1115_8 = false;
@@ -133,7 +168,7 @@ public class GestoreDatiGeneraliTorn extends AbstractGestorePreload {
 	        	page.setAttribute("initESPLPORT", "1", PageContext.REQUEST_SCOPE);
 	        }
 	        
-			if("RAIWAY".equals(tipoWSERP)){
+			if("RAIWAY".equals(tipoWSERP) || "ARCHIFLOW".equals(tipoWSERP)){
 				String numeroRda = page.getRequest().getParameter("numeroRda");
 				if(numeroRda!=null) {
 					String divisione = page.getRequest().getParameter("divisione");
@@ -148,6 +183,35 @@ public class GestoreDatiGeneraliTorn extends AbstractGestorePreload {
 					}
 				}
 				
+			}
+
+			if(gestioneProgrammazioneManager.isAttivaIntegrazioneProgrammazione()){
+				try{
+					String arrRda = page.getRequest().getParameter("arrRda");
+					arrRda = UtilityStringhe.convertiNullInStringaVuota(arrRda);
+					String[] rda = null;
+					if(!"".equals(arrRda)) {
+						arrRda = arrRda.substring(0, arrRda.length() - 1);
+						rda = arrRda.split(";");
+
+						if (rda.length == 1) {
+							ProfiloUtente profilo = (ProfiloUtente) page.getSession().getAttribute(
+									CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+							Long syscon = new Long(profilo.getId());
+							String uffintGara = (String) page.getSession().getAttribute(CostantiGenerali.UFFICIO_INTESTATARIO_ATTIVO);
+
+							JSONObject obj = gestioneProgrammazioneManager.consultaRda(syscon, uffintGara, "codiceApplicativoNonCollegato", rda[0], null, null, null);
+
+							JSONObject rdaObj = obj.getJSONArray("listaRdA").getJSONObject(0);
+							if(rdaObj.get("descrizione")!=null)
+								page.setAttribute("initDESTOR", rdaObj.getString("descrizione"), PageContext.REQUEST_SCOPE);
+							if(rdaObj.get("importo")!=null)
+								page.setAttribute("initIMPTOR", rdaObj.getDouble("importo"), PageContext.REQUEST_SCOPE);
+						}
+					}
+				} catch (Exception e) {
+					throw new JspException("Errore nel recupero del codice della gara", e);
+				}
 			}
 
 		}
@@ -177,8 +241,13 @@ public class GestoreDatiGeneraliTorn extends AbstractGestorePreload {
 		erpSearch.setCodiceRda(numeroRda);
 		erpSearch.setEsercizio(esercizio);
 		WSERPRdaResType wserpRdaRes = null;
-		if("RAIWAY".equals(tipoWSERP) && numeroRda!=null){
-			wserpRdaRes = this.gestioneWSERPManager.wserpListaRda(username, password, servizio, erpSearch );
+		if(("RAIWAY".equals(tipoWSERP) || "ARCHIFLOW".equals(tipoWSERP)) && numeroRda!=null){
+		  if("RAIWAY".equals(tipoWSERP)) {
+		    wserpRdaRes = this.gestioneWSERPManager.wserpListaRda(username, password, servizio, erpSearch );		    
+		  }
+		  if("ARCHIFLOW".equals(tipoWSERP)) {
+		    wserpRdaRes = this.gestioneWSERPManager.wserpDettaglioRda(username, password, servizio, erpSearch );
+		  }
 			WSERPRdaType[] rdaArray = wserpRdaRes.getRdaArray();
 			if(rdaArray!= null){
 				WSERPRdaType rda = rdaArray[0];
@@ -191,16 +260,22 @@ public class GestoreDatiGeneraliTorn extends AbstractGestorePreload {
 					boolean inserimentoGarerda= true;
 					page.setAttribute("initGarerda", new Boolean(inserimentoGarerda),PageContext.REQUEST_SCOPE);
 					page.setAttribute("initNUMRDA",codiceRda, PageContext.REQUEST_SCOPE);
+	                String note = rda.getNoteDecorrenzaDurata();
+	                if (note != null) {
+	                  if (note.length() > 2000)
+	                    note = note.substring(0, 2000);
+	                  page.setAttribute("initALTNEG", note, PageContext.REQUEST_SCOPE);
+	                }
 					Date dataConsegna = null;
-					if(dataConsegna != null){
-						rda.getDataConsegna().getTime();
+					if(rda.getDataConsegna() != null){
+						dataConsegna = rda.getDataConsegna().getTime();
 						page.setAttribute("initDATRIL",  UtilityDate.convertiData(
 								dataConsegna, UtilityDate.FORMATO_GG_MM_AAAA), PageContext.REQUEST_SCOPE);
 					}
 
 					Date dataCreazione = null;
-					if(dataCreazione != null){
-						rda.getDataCreazioneRda().getTime();
+					if(rda.getDataCreazioneRda() != null){
+						dataCreazione = rda.getDataCreazioneRda().getTime();
 						page.setAttribute("initDATCRE", UtilityDate.convertiData(
 								dataCreazione, UtilityDate.FORMATO_GG_MM_AAAA), PageContext.REQUEST_SCOPE);
 					}
@@ -225,6 +300,29 @@ public class GestoreDatiGeneraliTorn extends AbstractGestorePreload {
 							page.setAttribute("initISGREEN", "2", PageContext.REQUEST_SCOPE);
 						}
 					}
+					String durata = rda.getDurata();
+					Boolean accqua = rda.getAccqua();
+		            if(accqua){
+		              page.setAttribute("initACCQUA", "1", PageContext.REQUEST_SCOPE);
+		              page.setAttribute("initAQDURATA",durata, PageContext.REQUEST_SCOPE);
+		              page.setAttribute("initAQTEMPO","3", PageContext.REQUEST_SCOPE);
+		            } else {
+		              page.setAttribute("initACCQUATorn", "2", PageContext.REQUEST_SCOPE);
+		              page.setAttribute("initTEUTILT",durata, PageContext.REQUEST_SCOPE);
+		              page.setAttribute("TEMESI","1", PageContext.REQUEST_SCOPE);
+		            }
+		            String criterio = rda.getTipoGestione();
+		            if(criterio != null) {
+			            if(criterio.contains("minor") && criterio.contains("prezzo")) {
+			            	page.setAttribute("initCRITLIC","1", PageContext.REQUEST_SCOPE);
+			            }
+			            if(criterio.contains("economicamente") && criterio.contains("vantaggiosa")) {
+			            	page.setAttribute("initCRITLIC","2", PageContext.REQUEST_SCOPE);
+			            }
+			            if(criterio.contains("Miglior") && criterio.contains("rapporto") && criterio.contains("prezzo")) {
+			            	page.setAttribute("initCRITLIC","2", PageContext.REQUEST_SCOPE);
+			            }
+		            }
 					WSERPAnagraficaType[] wserpAnagraficaArray = rda.getTecniciArray();
 					if(wserpAnagraficaArray !=null){
 						for(int i=0; i < wserpAnagraficaArray.length; i++){
@@ -239,6 +337,20 @@ public class GestoreDatiGeneraliTorn extends AbstractGestorePreload {
 							}
 						}
 					}
+				}
+				if("ARCHIFLOW".equals(tipoWSERP)) {
+				  String numRda = rda.getCodiceRda();
+		            String descrizione = rda.getDescrizione();
+		            numRda = UtilityStringhe.convertiNullInStringaVuota(numRda);
+		            String oggetto = rda.getOggetto();
+		            page.setAttribute("initDESTOR", oggetto, PageContext.REQUEST_SCOPE);
+		            page.setAttribute("initVOCE", descrizione, PageContext.REQUEST_SCOPE);
+		            page.setAttribute("initNUMRDA",numRda, PageContext.REQUEST_SCOPE);
+		            page.setAttribute("initGarerda", Boolean.TRUE,PageContext.REQUEST_SCOPE);
+		            String divisione = rda.getDivisione();
+		            page.setAttribute("initSTRUTTURA", divisione, PageContext.REQUEST_SCOPE);
+		            Double impapp = rda.getValoreStimato();
+		            page.setAttribute("initIMPTOR",impapp, PageContext.REQUEST_SCOPE);
 				}
 			}
 			

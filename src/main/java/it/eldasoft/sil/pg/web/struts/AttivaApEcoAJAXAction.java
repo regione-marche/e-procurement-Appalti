@@ -92,6 +92,7 @@ public class AttivaApEcoAJAXAction extends Action {
     Long numeroAcquisizioni = new Long(0);
     Long numeroAcquisizioniErrore = new Long(0);
     Long numeroAcquisizioniScartate = new Long(0);
+    Long numeroAcquisizioniSaltatePerFS12RettificaInCorso = new Long(0);
 
     //variabili per tracciatura eventi
     String genericMsgErr = "Errore inaspettato durante la tracciatura su w_logeventi";
@@ -160,6 +161,8 @@ public class AttivaApEcoAJAXAction extends Action {
         numeroAcquisizioni = (Long) hMap.get("numeroAcquisizioni");
         numeroAcquisizioniErrore = (Long) hMap.get("numeroAcquisizioniErrore");
         numeroAcquisizioniScartate = (Long) hMap.get("numeroAcquisizioniScartate");
+        numeroAcquisizioniSaltatePerFS12RettificaInCorso = (Long) hMap.get("numeroAcquisizioniSaltatePerFS12RettificaInCorso");
+
         request.getSession().setAttribute("passBusteC", password);
 
         //best case
@@ -186,7 +189,8 @@ public class AttivaApEcoAJAXAction extends Action {
         logEvento.setDescr("Fine apertura busta economica: " +
             numeroAcquisizioni + " buste aperte, " +
             numeroAcquisizioniErrore + " buste con errore, " +
-            numeroAcquisizioniScartate + " buste non aperte perché appartenenti a ditte escluse dalla gara");
+            numeroAcquisizioniScartate + " buste non aperte perché appartenenti a ditte escluse dalla gara, " +
+            numeroAcquisizioniSaltatePerFS12RettificaInCorso + " buste non aperte perché rettifica busta economica in corso");
 
         logEvento.setErrmsg(errMsgEvento);
         LogEventiUtils.insertLogEventi(logEvento);
@@ -197,12 +201,14 @@ public class AttivaApEcoAJAXAction extends Action {
       logger.info("Apertura busta economica (gara "+ngara+"): numero acquisizioni " + numeroAcquisizioni);
       logger.info("Apertura busta economica (gara "+ngara+"): numero acquisizioni con errore " + numeroAcquisizioniErrore);
       logger.info("Apertura busta economica (gara "+ngara+"): non acquisite perchè escluse dalla gara " + numeroAcquisizioniScartate);
+      logger.info("Apertura busta tecnica (gara "+ngara+"): non acquisite perchè rettifica busta economica in corso " + numeroAcquisizioniSaltatePerFS12RettificaInCorso);
 
       result.put("ngara", ngara);
       result.put("dittao", dittao);
       result.put("numeroAcquisizioni", numeroAcquisizioni);
       result.put("numeroAcquisizioniErrore", numeroAcquisizioniErrore);
       result.put("numeroAcquisizioniScartate", numeroAcquisizioniScartate);
+      result.put("numeroAcquisizioniSaltatePerFS12RettificaInCorso", numeroAcquisizioniSaltatePerFS12RettificaInCorso);
       //result.put("autorizzatoModifica", (new Boolean(autorizzatoModifica)).toString());
     }
 

@@ -23,7 +23,7 @@
 <c:if test='${not empty param.isGaraCatalogo and gene:matches(param.isGaraCatalogo, "^true|false$", true)}' />
 <c:if test='${not empty param.isGaraElenco and gene:matches(param.isGaraElenco, "^true|false$", true)}' />
 <c:if test='${not empty param.paginaAttivaWizard and gene:matches(param.paginaAttivaWizard, "^-?[0-9]+$", true)}' />
-<c:if test='${not empty param.stepWizard and gene:matches(param.stepWizard, "^-?[0-9]+$", true)}' />
+<c:if test='${not empty param.stepWizard and gene:matches(param.stepWizard, "^-?[\\\\.0-9]+$", true)}' />
 
 <style type="text/css">
 	

@@ -85,7 +85,7 @@
 	</c:otherwise>
 </c:choose>
 
-<c:set var="esitoControllo" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ControlliValiditaFunzAnnullamentoFunction", pageContext, ngara, tipo,genere )}' />
+<c:set var="esitoControllo" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.ControlliValiditaFunzAnnullamentoFunction", pageContext, ngara, tipo,genere,iterga )}' />
 
 <gene:setString name="titoloMaschera" value='Annulla ${msgTitolo }' />
 
@@ -102,6 +102,10 @@
 		<c:choose>
 			<c:when test="${esitoControllo eq 'NOK'}">
 				Operazione non disponibile. Verificare il possesso del privilegio di amministratore di sistema e la fase corrente della gara.
+				<br><br>
+			</c:when>
+			<c:when test="${esitoControllo eq 'CONCLUSA'}">
+				Operazione non disponibile. L'indagine di mercato è conclusa.
 				<br><br>
 			</c:when>
 			<c:when test="${esitoControllo eq 'NO-BUSTE'}">

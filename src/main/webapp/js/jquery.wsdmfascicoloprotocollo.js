@@ -11,6 +11,7 @@ var _tableDatiPersonalizzati = null;
 var _strutturaJiride = null;
 var _strutturaDaServizio = null;
 var _erroreLetturaStruttura = false;
+var _erroreLetturaFascicolo = false;
 /*
  * Legge i dati di riferimento del fascicolo contenuto nella tabella WSFASCICOLO.
  * I dati di riferimento servono per la successiva interrogazione dei servizi remoti.
@@ -66,11 +67,11 @@ function _getWSFascicolo(sistemaRemoto) {
 				$("#strutturaonuovo").append($("<option/>", {value: item[5], text: "" }));
 				$("#strutturaonuovo option").eq(0).prop('selected', true);
 				if(sistemaRemoto=="ARCHIFLOWFA" || sistemaRemoto=="PRISMA" || sistemaRemoto=="FOLIUM" || sistemaRemoto=="JPROTOCOL" || sistemaRemoto=="INFOR" || sistemaRemoto=="TITULUS" || sistemaRemoto=="DOCER"
-					|| sistemaRemoto=="ITALPROT" || sistemaRemoto=="LAPISOPERA"){
+					|| sistemaRemoto=="ITALPROT" || sistemaRemoto=="LAPISOPERA" || sistemaRemoto=="HALLEY"){
 					$('#classificafascicolonuovo').find('option').not('[value=123]').remove();
 					$("#classificafascicolonuovo").append($("<option/>", {value: item[6], text: "" }));
 					$("#classificafascicolonuovo option").eq(0).prop('selected', true);
-					if(sistemaRemoto=="FOLIUM" || sistemaRemoto=="JPROTOCOL" || sistemaRemoto=="TITULUS" || sistemaRemoto=="DOCER" || sistemaRemoto=="ITALPROT" ){
+					if(sistemaRemoto=="FOLIUM" || sistemaRemoto=="JPROTOCOL" || sistemaRemoto=="TITULUS" || sistemaRemoto=="DOCER" || sistemaRemoto=="ITALPROT" || sistemaRemoto=="HALLEY" ){
 						if(sistemaRemoto=="TITULUS"){
 							var codice = item[6];
 							var descrizione = item[7];
@@ -111,6 +112,8 @@ function _getWSFascicolo(sistemaRemoto) {
 					if(item[10]!=null)
 						testoUoCompetenza+=item[10];
 					$("#uocompetenzaTxt").val(testoUoCompetenza);
+				}else if(sistemaRemoto=="HALLEY"){
+					$("#classificafascicolodescrizione").text(item[6]);
 				}
 				
 				
@@ -196,6 +199,10 @@ function _gestioneWSFascicolo() {
 		$("#codicefascicolo").closest('tr').hide();
 		$("#oggettofascicolo").hide();
 		$("#oggettofascicolo").closest('tr').hide();
+	}else if (tiposistemaremoto == "HALLEY"){
+		$("#descrizionefascicolo").hide();
+		$("#descrizionefascicolo").closest('tr').hide();
+		_controlloGestioneStrutturaCompetente();
 	}
 	
 	if (modoapertura == "VISUALIZZA" || modoapertura == "MODIFICA_LOGIN") {
@@ -205,14 +212,30 @@ function _gestioneWSFascicolo() {
 		$("#numerofascicolo").addClass("readonly");
 		$("#codicefascicolo").prop("readonly", true);
 		$("#codicefascicolo").addClass("readonly");
-
+		if (tiposistemaremoto == "HALLEY" && _gestioneStrutturaCompetente == 1){
+			$("#strutturaonuovoselect").hide();
+			$("#struttura").show();
+		}
+		if (tiposistemaremoto == "HALLEY"){
+			$("#classificafascicolonuovoselect").hide();
+			$("#classificafascicolo").show();
+		}
 	} else {
 		$("#annofascicolo").prop("readonly", false);
 		$("#annofascicolo").removeClass("readonly");
 		$("#numerofascicolo").prop("readonly", false);
 		$("#numerofascicolo").removeClass("readonly");
-		$("#codicefascicolo").prop("readonly", false);
-		$("#codicefascicolo").removeClass("readonly");
+		if(tiposistemaremoto != "HALLEY") {
+			$("#codicefascicolo").prop("readonly", false);
+			$("#codicefascicolo").removeClass("readonly");
+		}else{
+			$("#classificafascicolonuovoselect").show();
+			$("#classificafascicolo").hide();
+		}
+		if (tiposistemaremoto == "HALLEY" && _gestioneStrutturaCompetente == 1){
+			$("#strutturaonuovoselect").show();
+			$("#struttura").hide();
+		}
 	}
 }
 
@@ -290,10 +313,12 @@ function _getWSDMFascicolo(popolaDocumentiFascicolo, ritardo, chiamataCompleta) 
 	var classifica = $("#classificafascicolonuovo option:selected").val();
 	if ($("#tiposistemaremoto").val() == "PRISMA" && $("#classificafascicolonuovoPrisma").is(':visible')){
 		classifica = $("#classificafascicolonuovoPrisma").val();
+	}else if ($("#tiposistemaremoto").val() == "HALLEY" && $("#classificafascicolonuovoselect").is(':visible')){
+		classifica = $("#classificafascicolonuovoselect").val();
 	}
 		
 	$("#oggettofascicolo").text("");
-	if ($("#tiposistemaremoto").val() != "DOCER" && $("#tiposistemaremoto").val() != "LAPISOPERA")
+	if ($("#tiposistemaremoto").val() != "DOCER" && $("#tiposistemaremoto").val() != "LAPISOPERA" && $("#tiposistemaremoto").val() != "HALLEY")
 		$("#classificafascicolodescrizione").text("");
 	$("#descrizionefascicolo").text("");
 	$('#documentifascicolomessaggio').text("");
@@ -329,11 +354,11 @@ function _getWSDMFascicolo(popolaDocumentiFascicolo, ritardo, chiamataCompleta) 
 			idconfi:idconfi
 		},
 		success: function(json){
-			if (json.esito == true) {
+			if (json.esito == true && ($("#tiposistemaremoto").val() != "HALLEY" || json.annofascicolo!=null || json.numerofascicolo!=null || json.codicefascicolo!=null)) {
 				if(!($("#tiposistemaremoto").val() == "LAPISOPERA" && popolaDocumentiFascicolo && chiamataCompleta)){
 					if ($("#tiposistemaremoto").val() == "IRIDE" || $("#tiposistemaremoto").val() == "JIRIDE" || $("#tiposistemaremoto").val() == "ENGINEERING" 
 						|| $("#tiposistemaremoto").val() == "ENGINEERINGDOC" || $("#tiposistemaremoto").val() == "ARCHIFLOW" || $("#tiposistemaremoto").val() == "PRISMA"
-						|| $("#tiposistemaremoto").val() == "LAPISOPERA") {
+						|| $("#tiposistemaremoto").val() == "LAPISOPERA" || $("#tiposistemaremoto").val() == "HALLEY") {
 						$("#codicefascicolo").val(json.codicefascicolo);
 					}
 					if($("#tiposistemaremoto").val() == "ARCHIFLOW" || $("#tiposistemaremoto").val() == "PRISMA" || $("#tiposistemaremoto").val() == "JIRIDE" || $("#tiposistemaremoto").val() == "LAPISOPERA"){
@@ -400,6 +425,7 @@ function _getWSDMFascicolo(popolaDocumentiFascicolo, ritardo, chiamataCompleta) 
 				var messaggio = "La richiesta di lettura del fascicolo segnala il seguente errore: " + json.messaggio;
 				$('#documentifascicolomessaggio').text(messaggio);
 				$('#documentifascicolomessaggio').show(tempo);
+				_erroreLetturaFascicolo=true;
 			}
 			if (popolaDocumentiFascicolo == true) {
 				_popolaDocumentiFascicolo(json.iTotalRecords, json.data);
@@ -409,6 +435,7 @@ function _getWSDMFascicolo(popolaDocumentiFascicolo, ritardo, chiamataCompleta) 
 			var messaggio = "Errore durante la lettura del fascicolo";
 			$('#documentifascicolomessaggio').text(messaggio);
 			$('#documentifascicolomessaggio').show(tempo);
+			_erroreLetturaStruttura = true;
 		},
 		complete: function(e){
 			/*
@@ -477,7 +504,11 @@ function _popolaDocumentiFascicolo(numeroTotale, documentifascicolo) {
 				"data": "oggetto",
 				"visible": true,
 				"targets": [ 0 ],
-				"sTitle": "Oggetto"
+				"sTitle": "Oggetto",
+				"render":  function (data) {
+					// Render as plain text to prevent XSS
+					return $('<div/>').text(data).html();
+				}
 			},
 			{
 				"data": "numerodocumento",
@@ -624,7 +655,7 @@ function _popolaDocumentiFascicolo(numeroTotale, documentifascicolo) {
 	        	_getWSDMDocumento(r.numerodocumento);
 	        }
 	        
-	        if ($("#tiposistemaremoto").val() == "ENGINEERING" || $("#tiposistemaremoto").val() == "JPROTOCOL") {
+	        if ($("#tiposistemaremoto").val() == "ENGINEERING" || $("#tiposistemaremoto").val() == "JPROTOCOL" || $("#tiposistemaremoto").val() == "HALLEY") {
 	        	if($("#tiposistemaremoto").val() == "JPROTOCOL"){
 					$('#codiceuo option').remove();
 					$("#codiceuo").append($("<option/>", {value: codiceUo ,text: codiceUo }));
@@ -1219,7 +1250,11 @@ function _popolaTabellaAllegati(numeroTotale, allegati) {
 				"visible": true,
 				"sWidth": "400px",
 				"sTitle": "Titolo",
-				"targets": [ 0 ]
+				"targets": [ 0 ],
+				"render":  function (data) {
+					// Render as plain text to prevent XSS
+					return $('<div/>').text(data).html();
+				}
 			},
 			{
 				"data": "nomeallegato",
@@ -1243,6 +1278,8 @@ function _popolaTabellaAllegati(numeroTotale, allegati) {
 							}
 						} else if ($("#tiposistemaremoto").val() == "JPROTOCOL") {
 							_href = "javascript:scaricaAllegato('" +  full.urlallegato + "');";
+						} else if ($("#tiposistemaremoto").val() == "HALLEY") {
+							_href = "javascript:_getProtocolloAllegato('" + _annoprotocollo + "','" + _numeroprotocollo + "','" + full.nomeallegato + "','" + full.tipoallegato + "');";
 						} else {
 							_href = "javascript:_getDocumentoAllegato('" + _numerodocumento + "','" + full.nomeallegato + "','" + full.tipoallegato + "');";
 						}

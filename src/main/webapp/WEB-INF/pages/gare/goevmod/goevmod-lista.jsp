@@ -122,7 +122,11 @@
 	</tr>
 	<tr>
 		<td>
-					<gene:formLista entita="GOEVMOD" where='GOEVMOD.IDCRIMOD = ${idcrimod} and GOEVMOD.TIPPAR=${tipoCriterio}' tableclass="datilista" sortColumn="4;6;7;3;"
+		<c:set var="where" value="GOEVMOD.IDCRIMOD = ? and GOEVMOD.TIPPAR= ?"/>
+		<c:set var="parametri" value="N:${idcrimod};N:${tipoCriterio}"/>
+		${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "GOEVMOD", where, parametri)}
+		
+					<gene:formLista entita="GOEVMOD" tableclass="datilista" sortColumn="4;6;7;3;"
 						gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreGOEV" pagesize="25" >					
 														
 						<gene:campoLista title="Opzioni<center>${titoloMenu}</center>" width="50">
@@ -151,10 +155,19 @@
 						<gene:campoLista campo="TIPPARFIT" campoFittizio = "true" value = "${datiRiga.GOEVMOD_TIPPAR}" definizione = "N7" edit="true" visibile="false" />
 						<gene:campoLista campo="LIVPARFIT" campoFittizio = "true" value = "${datiRiga.GOEVMOD_LIVPAR}" definizione = "N7" edit="true" visibile="false" />
 						<gene:campoLista title="&nbsp;" width="20">
-							<c:if test="${datiRiga.GOEVMOD_LIVPAR ne 3 && gene:checkProt(pageContext, 'MASC.VIS.GARE.G1CRIDEF-scheda')}">
-								<a href="javascript:dettaglioModalitaAssegnazionePunteggio('${datiRiga.G1CRIDEF_ID}','${datiRiga.GOEVMOD_ID}');" title="Dettaglio assegnazione punteggio" >
-									<img width="16" height="16" title="Dettaglio assegnazione punteggio" alt="Dettaglio assegnazione punteggio" src="${pageContext.request.contextPath}/img/dettaglio-criteri.png"/>
-								</a>
+							<c:if test="${gene:checkProt(pageContext, 'MASC.VIS.GARE.G1CRIDEF-scheda')}">
+								<c:choose>
+									<c:when test="${datiRiga.GOEVMOD_LIVPAR ne 3}">
+										<a href="javascript:dettaglioModalitaAssegnazionePunteggio('${datiRiga.G1CRIDEF_ID}','${datiRiga.GOEVMOD_ID}');" title="Dettaglio assegnazione punteggio" >
+											<img width="16" height="16" title="Dettaglio assegnazione punteggio" alt="Dettaglio assegnazione punteggio" src="${pageContext.request.contextPath}/img/dettaglio-criteri.png"/>
+										</a>
+									</c:when>
+									<c:when test="${datiRiga.GOEVMOD_LIVPAR eq 3}">
+										<a href="javascript:dettaglioRiparametrazione('${datiRiga.GOEVMOD_ID}');" title="Dettaglio assegnazione punteggio" >
+											<img width="16" height="16" title="Dettaglio assegnazione punteggio" alt="Dettaglio assegnazione punteggio" src="${pageContext.request.contextPath}/img/dettaglio-criteri.png"/>
+										</a>
+									</c:when>
+								</c:choose>
 							</c:if>
 						</gene:campoLista>
 						<gene:campoLista campo="FORMATO" title="Formato" entita="G1CRIDEF" where="G1CRIDEF.IDGOEVMOD = GOEVMOD.ID" ordinabile="false" width="100"/>
@@ -198,16 +211,22 @@
 	inizializzaLista();
             
 	function cambiaPaginaCriteri(pagina){
-		link =  '${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/goevmod/goevmod-lista.jsp&idcrimod=${idcrimod}&tipoCriterio='+ pagina + "&titolo=${titolo}";
+		link =  '${pageContext.request.contextPath}/ApriPagina.do?href=gare/goevmod/goevmod-lista.jsp&idcrimod=${idcrimod}&tipoCriterio='+ pagina + "&titolo=${titolo}";
 		document.location.href = link;	
 	}
 	
 	function dettaglioModalitaAssegnazionePunteggio(id, idgoevmod){
-		var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/g1cridef/g1cridef-modelli-scheda.jsp";
+		var href = contextPath + "/ApriPagina.do?href=gare/g1cridef/g1cridef-modelli-scheda.jsp";
 		href += "&key=G1CRIDEF.ID=N:" + id ;
 		href += "&idgoevmod=" + idgoevmod ;
 		document.location.href = href;
 	}    
+
+	function dettaglioRiparametrazione(idgoevmod){
+		var href = contextPath + "/ApriPagina.do?href=gare/goevmod/goevmod-dettaglioRiparametrazione.jsp";
+		href += "&key=GOEVMOD.ID=N:" + idgoevmod ;
+		document.location.href = href;
+	}	
 
 	</gene:javaScript>
 </table>

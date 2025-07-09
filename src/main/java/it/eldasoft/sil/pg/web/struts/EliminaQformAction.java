@@ -60,6 +60,7 @@ public class EliminaQformAction extends Action {
       try {
         status = this.sqlManager.startTransaction();
         this.sqlManager.update("delete from qform where id = ? ", new Object[] { new Long(id) });
+        this.sqlManager.update("delete from elpremalbo where idqform = ? ", new Object[] { new Long(id) });
         if("1".equals(busta) || "4".equals(busta)) {
           Vector<?> datiTorn = this.sqlManager.getVector("select offtel,iterga from torn where codgar=?", new Object[] {codiceGara});
           if(datiTorn!=null && datiTorn.size()>0) {

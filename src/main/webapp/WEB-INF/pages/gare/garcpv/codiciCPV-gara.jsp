@@ -56,8 +56,11 @@
 		<gene:campoScheda campo="NUMCPV" entita="GARCPV" visibile="false" where="${where}"/>
 		<c:choose>
 			<c:when test="${param.datiModificabili }">
-				<gene:campoScheda campo="CODCPV" entita="GARCPV" href="#" where="${where}" defaultValue ="${param.initCODCPV }" title="Codice CPV principale" speciale="true">
-					<gene:popupCampo titolo="Dettaglio codice CPV" href="#" />
+				<gene:campoScheda campo="CODCPV" entita="GARCPV" href="#" where="${where}" defaultValue ="${param.initCODCPV }" title="Codice CPV principale"
+					speciale="${not param.bloccoModificaPCP}">
+					<c:if test="${not param.bloccoModificaPCP}">
+						<gene:popupCampo titolo="Dettaglio codice CPV" href="#" />
+					</c:if>
 				</gene:campoScheda>
 			</c:when>
 			<c:otherwise>
@@ -84,6 +87,7 @@
 		<jsp:param name="sezioneEliminabile" value="true"/>
 		<jsp:param name="sezioneInseribile" value="${param.datiModificabili }"/>
 		<jsp:param name="datiModificabili" value="${param.datiModificabili }"/>
+		<jsp:param name="bloccoModificaPCP" value="${param.bloccoModificaPCP}"/>
 	</jsp:include>
 	<gene:javaScript>
 	
@@ -94,9 +98,11 @@
 	
 	$(window).ready(function (){
 		
+		<c:if test="${not param.bloccoModificaPCP}">
 		_creaFinestraAlberoCpvVP();
 		_creaFinestraAlberoCpvVSUPP();
 		_creaLinkAlberoCpvVP($("#GARCPV_CODCPV").parent(), "${modo}", $("#GARCPV_CODCPV"), $("#GARCPV_CODCPVview") );
+		</c:if>
 		
 		$("input[name*='CPV']").attr('readonly','readonly');
 		$("input[name*='CPV']").attr('tabindex','-1');

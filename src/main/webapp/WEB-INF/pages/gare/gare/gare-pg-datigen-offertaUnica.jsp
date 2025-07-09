@@ -18,12 +18,17 @@
 <fmt:setBundle basename="AliceResources" />
 
 <script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>
-<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.jstree.js"></script>
-<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.jstree.cpvvp.mod.js"></script>
-<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.jstree.cpvvsupp.mod.js"></script>
-<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/jquery/cpvvp/jquery.cpvvp.mod.css" >
 
 <jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
+
+<c:choose>
+	<c:when test="${not empty param.keyParent}">
+		<c:set var="codiceGara" value='${gene:getValCampo(param.keyParent, "CODGAR")}'/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="codiceGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetCodiceGaraFunction", pageContext)}' />
+	</c:otherwise>
+</c:choose>
 
 <c:set var="filtroLivelloUtente" value='${gene:callFunction2("it.eldasoft.gene.tags.utils.functions.FiltroLivelloUtenteFunction", pageContext, "PERI")}' />
 <c:if test="${not empty filtroLivelloUtente}" >
@@ -40,23 +45,28 @@
 	<c:set var="isCigAbilitato" value='1' scope="request"/>
 </c:if>	
 
-<c:set var="codiceGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetCodiceGaraFunction", pageContext)}' />
 <c:set var="codiceGaraRda" value='${codiceGara}' />
 
 <c:set var="isCodificaAutomatica" value='${gene:callFunction3("it.eldasoft.gene.tags.functions.IsCodificaAutomaticaFunction", pageContext, "TORN", "CODGAR")}'/>
 
-<c:set var="esisteGaraOLIAMMF" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsisteGaraOLIAMMFunction", pageContext, gene:getValCampo(param.keyParent, "CODGAR"))}'/>
+<c:set var="esisteGaraOLIAMMF" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsisteGaraOLIAMMFunction", pageContext, codiceGara)}'/>
 
-<c:set var="offtel" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetOFFTELFunction",  pageContext,gene:getValCampo(param.keyParent, "CODGAR"))}' />
+<c:set var="offtel" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetOFFTELFunction",  pageContext,codiceGara)}' />
 <c:set var="garaQformOfferte" value="${offtel eq '3'}"/>
 
 <c:set var="bloccoPubblicazionePortaleBando" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteBloccoPubblicazionePortaleFunction", pageContext,codiceGara,"BANDO","false")}' />
 <c:set var="bloccoPubblicazionePortaleEsito" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteBloccoPubblicazionePortaleFunction", pageContext,codiceGara,"ESITO","false")}' />
 <c:set var="applicareBloccoPubblicazioneGareNonTelematiche" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext,"A1153","1","true")}' />
 
+<c:if test='${modo ne "NUOVO"}'>
+	<c:set var="bloccoModificaPCP" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.npa.GetBloccoModificaPCP", pageContext, codiceGara, "true")}'/>
+</c:if>
+
+<c:set var="moduloAnacFormAttivo" value="${gene:callFunctionN('it.eldasoft.sil.pg.tags.funzioni.GetSeAttivoModuloANACFormFunction', pageContext, codiceGara) eq 'true'}"/>
+
 <c:choose>
 	<c:when test='${(isProceduraTelematica || applicareBloccoPubblicazioneGareNonTelematiche eq "1") && (bloccoPubblicazionePortaleEsito eq "TRUE" || bloccoPubblicazionePortaleBando eq "TRUE")}'>
-		<c:set var="modificaLabel" value='Modifica dopo pubblicazione' />
+		<c:set var="modificaLabel" value='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' />
 		<c:set var="bloccoModificaPubblicazione" value='TRUE' />
 		<c:set var="bloccoModificatiDati" value='true' />
 		<c:set var="campiModificabili" value="true"/>		
@@ -69,6 +79,10 @@
 	</c:otherwise>
 </c:choose>
 
+<c:if test="${bloccoModificaPCP}">
+	<c:set var="bloccoModificatiDati" value='true' />
+</c:if>
+
 <c:set var="integrazioneptendpoint" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "integrazionePT.url")}'/>
 <c:if test="${!empty integrazioneptendpoint && modo eq 'VISUALIZZA'}">
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.integrazionept.js"></script>
@@ -80,11 +94,11 @@
 
 <c:set var="esisteIntegrazioneLavori" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneLavoriFunction", pageContext)}' />
 <c:if test="${esisteIntegrazioneLavori eq 'TRUE'}">
-	<c:set var="modcont" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetModcontFunction", pageContext, gene:getValCampo(param.keyParent, "CODGAR"))}' />
+	<c:set var="modcont" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetModcontFunction", pageContext, codiceGara)}' />
 </c:if>
 
 <c:if test='${modo eq "NUOVO"}'>
-	<c:set var="isProceduraTelematica" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.IsProceduraTelematicaGaraFunction", pageContext, gene:getValCampo(param.keyParent,"CODGAR"))}'/>
+	<c:set var="isProceduraTelematica" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.IsProceduraTelematicaGaraFunction", pageContext, codiceGara)}'/>
 </c:if>
 
 <c:if test='${modo ne "MODIFICA" && modo ne "NUOVO"}'>
@@ -112,7 +126,7 @@
 	<c:set var="isCigAbilitato" value='1' scope="request"/>
 </c:if>	
 <c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.RichiestaCIG") and not (isCigAbilitato eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.InviaDatiCIG"))}'>
-	<c:set var="esisteAnagraficaSimog" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsisteAnagraficaSimogFunction", pageContext, gene:getValCampo(param.keyParent, "CODGAR"))}'/>
+	<c:set var="esisteAnagraficaSimog" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsisteAnagraficaSimogFunction", pageContext, codiceGara)}'/>
 </c:if>
 
 <c:if test='${modo ne "MODIFICA" && modo ne "NUOVO" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.IntegrazioneProgrammazione") && integrazioneProgrammazione eq "1"}'>
@@ -122,8 +136,8 @@
 			
 <%/* Dati generali della gara */%>
 <gene:formScheda entita="GARE" gestisciProtezioni="true" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreDatiGenerali" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreGARE">
-
 <input type="hidden" name="bloccoModificaPubblicazione" value="${bloccoModificaPubblicazione}" />
+<input type="hidden" name="bloccoModificaPCP" value="${bloccoModificaPCP}" />
 
 <c:set var="pathDocAssociatiPL" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.sil.pg.pathDocumentiAssociatiPL")}' />
 <c:set var="documentiAssociatiDB" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.documentiAssociatiDB")}'/>
@@ -216,11 +230,19 @@
 
 	<c:set var="msgChiaveErrore" value="${fn:replace(msgChiaveErrore, '\\\\', '')}" />	
 	
-	<gene:campoScheda visibile="${ campiModificabili eq 'false' and modo eq 'MODIFICA'}">
+	<gene:campoScheda visibile="${ bloccoModificatiDati and modo eq 'MODIFICA'}">
 		<td colspan="2" style="color:#0000FF">
 		<br><b>ATTENZIONE:</b>&nbsp;
-		Parte dei dati sono in sola consultazione perché la gara è pubblicata su portale Appalti<br>&nbsp;
-		</td>	
+		Parte dei dati sono in sola consultazione perché <c:if test="${bloccoModificaPCP}"> sono state inviate delle schede ad ANAC. </c:if>
+		<c:if test="${bloccoModificaPubblicazione}">
+			<c:choose>
+				<c:when test="${bloccoModificaPCP}">La gara è anche </c:when>
+				<c:otherwise>la gara è </c:otherwise>
+			</c:choose>
+			pubblicata su portale Appalti.
+		 </c:if>
+		    <br>&nbsp;
+		</td>
 	</gene:campoScheda>
 	
 	<gene:gruppoCampi idProtezioni="GEN">
@@ -251,7 +273,7 @@
 		</c:choose>
 		<gene:campoScheda campo="NUMAVCP" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="false"/>
 		<gene:campoScheda campo="CODIGA" obbligatorio="${not gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.PersonalizzazioneAutovie') && not garaLottoUnico}" modificabile ="${campiModificabili and not gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.PersonalizzazioneAutovie')}"/>
-		<gene:campoScheda campo="CODCIG" modificabile="${campiModificabili and esisteAnagraficaSimog ne 'true'}" defaultValue="${requestScope.initCODCIG}" />
+		<gene:campoScheda campo="CODCIG" modificabile="${(campiModificabili and esisteAnagraficaSimog ne 'true') and  ((empty verNPA and empty initVERNPA) or not moduloAnacFormAttivo)}" defaultValue="${requestScope.initCODCIG}" />
 	<c:choose>
 		<c:when test='${fn:startsWith(datiRiga.GARE_CODCIG,"#") or fn:startsWith(datiRiga.GARE_CODCIG,"$") or fn:startsWith(datiRiga.GARE_CODCIG,"NOCIG")}'>
 			<gene:campoScheda campo="CODCIG_FIT" title="Codice CIG fittizio" campoFittizio="true" value="${datiRiga.GARE_CODCIG}" definizione="T10;;;;G1CODCIG" modificabile="false" />
@@ -261,11 +283,13 @@
 		</c:otherwise>
 	</c:choose>
 		
+		<c:if test="${(empty verNPA and empty initVERNPA) or !moduloAnacFormAttivo}">
 		<gene:campoScheda campo="ESENTE_CIG" campoFittizio="true" computed="true" title="Esente CIG?" definizione="T10;;;SN" defaultValue="2" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoSiNoSenzaNull" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.CODCIG") }' modificabile="${campiModificabili and esisteAnagraficaSimog ne 'true'}"/>
+		</c:if>
 		<gene:campoScheda campo="MOTESENTECIG" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" />
 		<gene:fnJavaScriptScheda funzione="gestioneEsenteCIG()" elencocampi="ESENTE_CIG" esegui="false" />
 		
-		<gene:campoScheda campo="CODGAR1" visibile="false" defaultValue="${gene:getValCampo(param.keyParent, 'CODGAR')}"/>
+		<gene:campoScheda campo="CODGAR1" visibile="false" defaultValue="${codiceGara}"/>
 		<c:choose>
 			<c:when test='${modo eq "NUOVO" and not empty requestScope.initTIPGEN}'>
 				<gene:campoScheda campo="TIPGEN" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile='false' 
@@ -298,6 +322,9 @@
 		<gene:campoScheda campo="RIBCAL" obbligatorio="true" defaultValue="${valoreDefaultRibcal}" modificabile="${campiModificabili}" visibile="${not garaQformOfferte}" />
 		<gene:campoScheda campo="RIBCAL_FIT" title="Offerta espressa mediante" campoFittizio="true" modificabile="false" definizione="T100;0;;;G1RIBCAL" visibile="${not garaQformOfferte}"/>
 		<gene:campoScheda campo="CALCSOANG" obbligatorio="true" defaultValue="${requestScope.initCALCSOAN}" modificabile="${campiModificabili}"/>
+		<gene:campoScheda campo="METOEPV" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" obbligatorio="true" defaultValue="${requestScope.initMETOEPV}" modificabile="${campiModificabili}"/>
+		<c:set var="defaultLimOEPV" value='${requestScope.initLIMOEPV}'/>
+		<gene:campoScheda campo="LIMOEPV" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" defaultValue='${defaultLimOEPV}'/>
 		
 		<gene:fnJavaScriptScheda funzione='gestioneAccordoQuadroLotti("${modo}","${requestScope.initACCQUATorn }","${requestScope.initAQOPER }")' elencocampi='TORN_ACCQUA' esegui="true" />
 		<gene:fnJavaScriptScheda funzione='gestioneAQNUMOPE("#GARE1_AQOPER#")' elencocampi='GARE1_AQOPER' esegui="true" />
@@ -327,6 +354,7 @@
 		
 		
 		<gene:fnJavaScriptScheda funzione='gestioneCRITLICG("#GARE_CRITLICG#")' elencocampi='GARE_CRITLICG' esegui="false" />
+		<gene:fnJavaScriptScheda funzione='gestioneMETOEPV("#GARE_CRITLICG#","#GARE_CALCSOANG#","${defaultLimOEPV}")' elencocampi='GARE_CRITLICG;GARE_CALCSOANG' esegui="true" />
 		<gene:fnJavaScriptScheda funzione='gestioneCOSTOFISSO_SEZIONITEC("#GARE_CRITLICG#")' elencocampi='GARE_CRITLICG' esegui="true" />
 		<gene:fnJavaScriptScheda funzione='gestioneCALCSOANG("#GARE_CALCSOANG#","true")' elencocampi='GARE_CALCSOANG' esegui="false" />
 		<gene:fnJavaScriptScheda funzione='gestioneFlagSicurezzaInclusa("#GARE_MODLICG#","#GARE_DETLICG#")' elencocampi="GARE_MODLICG;GARE_DETLICG" esegui="true" />
@@ -349,13 +377,14 @@
 		<gene:campoScheda campo="IDCOMMALBO" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" defaultValue="${requestScope.initIDCOMMALBO}" visibile="false" />
 		<gene:campoScheda campo="GARTEL" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile ="false"/>
 		<gene:campoScheda campo="ACCQUA" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile ="false"/>
+		<gene:campoScheda campo="ISCONCES" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile ="false"/>
 		
 		<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.DettaglioSoggettiAggregati") && modo eq "VISUALIZZA" }' >
 			<gene:campoScheda addTr="false">
 				<tr id="rowLinkDetSogAgg" style="display: none;">
 					<td colspan="2" class="valore-dato" id="colonnaLinkDetSogAgg">
-						<c:set var="titoloFunzione" value="Elenco soggetti per cui agisce la centrale di committenza"/>
-						<c:set var="titoloFunzioneJs" value="Elenco soggetti per cui agisce la centrale di committenza"/>
+						<c:set var="titoloFunzione" value="Elenco soggetti per cui agisce la stazione appaltante"/>
+						<c:set var="titoloFunzioneJs" value="Elenco soggetti per cui agisce la stazione appaltante"/>
 						<c:if test="${datiRiga.TORN_ALTRISOG ne 3 or  empty datiRiga.TORN_ACCQUA}">
 							<c:set var="titoloFunzione" value="Elenco soggetti qualificati a ricorrere all'accordo quadro"/>
 							<c:set var="titoloFunzioneJs" value="Elenco soggetti qualificati a ricorrere all#accordo quadro"/>
@@ -380,11 +409,11 @@
 		<c:choose>
 			<c:when test='${modo eq "MODIFICA"}' >
 				<c:set var="functionId" value="modificaGareDatigen" />
-				<c:set var="parametriWhere" value="T:${datiRiga.TORN_TIPGEN};T:${datiRiga.GARE_NGARA}" />
+				<c:set var="parametriWhere" value="N:${datiRiga.TORN_TIPGEN};T:${datiRiga.GARE_NGARA}" />
 			</c:when>
 			<c:otherwise>
 				<c:set var="functionId" value="gareDatigen" />
-				<c:set var="parametriWhere" value="T:${datiRiga.TORN_TIPGEN}" />
+				<c:set var="parametriWhere" value="N:${datiRiga.TORN_TIPGEN}" />
 			</c:otherwise>
 		</c:choose>
 
@@ -413,7 +442,7 @@
 	
 	<gene:gruppoCampi idProtezioni="RUP" >
 		<gene:campoScheda nome="RUP">
-			<td colspan="2"><b>Soggetto per cui agisce la centrale di committenza</b></td>
+			<td colspan="2"><b>Soggetto per cui agisce la stazione appaltante</b></td>
 		</gene:campoScheda>
 		<gene:archivio titolo="Uffici intestatari"
 			lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GARE.TORN.CENINT"),"gene/uffint/uffint-lista-popup.jsp","")}'
@@ -421,15 +450,28 @@
 			schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda-popup.jsp","")}'
 			campi="UFFINT.CODEIN;UFFINT.NOMEIN"
 			 chiave="CENINT_GARALTSOG"
-			 functionId="nullIscuc|abilitazione:1_parentFormName:formUFFINTGareAltriSogg"
+			 functionId="skip|abilitazione:1_parentFormName:formUFFINTGareAltriSogg"
 			 formName="formUFFINTGareAltriSogg">
 			 <gene:campoScheda campo="CENINT_GARALTSOG" title="Codice stazione appaltante aderente" campoFittizio="true" definizione="T16;0;;;G1CENINTSOG" value="${initCenintGaraltsog }"
 			 	modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.GARALTSOG.CENINT") && campiModificabili}' 
-				visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARALTSOG.CENINT")}' />
+				visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARALTSOG.CENINT")}' >
+				<gene:checkCampoScheda funzione='sbiancaCentroCostoAltSog()' obbligatorio="false" messaggio="" onsubmit="false"/>
+			</gene:campoScheda>
 			 <gene:campoScheda campo="NOMEIN_GARALTSOG" title="Denominazione" campoFittizio="true" definizione="T254;0;;NOTE;NOMEIN" value="${initNomeinGaraltsog }"
 				modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.TORN.CENINT") && campiModificabili}' 
-				visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.TORN.CENINT")}' />
+				visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.TORN.CENINT")}' >
+				<gene:checkCampoScheda funzione='sbiancaCentroCostoAltSog()' obbligatorio="false" messaggio="" onsubmit="false"/>
+			</gene:campoScheda>
 		</gene:archivio>
+
+			<gene:campoScheda campo="CODCENTRO_GARALTSOG" visibile="false" campoFittizio="true" definizione="T100;0;;;" value="${initCodcentroGaraltsog}"/>
+			<gene:campoScheda campo="NOMCENTRO_GARALTSOG" visibile="false" campoFittizio="true" definizione="T2000;0;;;" value="${initNomcentroGaraltsog}" />
+
+		<c:if test='${not empty verNPA or not empty initVERNPA}'>
+			<gene:campoScheda campo="CENTROCOSTO_GARALTSOG" title="Centro di costo" speciale="true" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARALTSOG.CODCENTRO")}' modificabile="true" campoFittizio="true" definizione="T2000;0;;;;" value="${not empty initCodcentroGaraltsog? (initCodcentroGaraltsog.concat(' - ').concat(initNomcentroGaraltsog)) : null}">
+				<gene:popupCampo titolo="Seleziona centro di costo" href="javascript:valorizzaCentroCosto(getValue('CENINT_GARALTSOG'),'altsog')" />
+			</gene:campoScheda>
+		</c:if>
 		<gene:archivio titolo="Tecnici"
 			 lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GARE.TORN.CODRUP"),"gene/tecni/tecni-lista-popup.jsp","")}'
 			 scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda.jsp","")}'
@@ -438,12 +480,12 @@
 			 functionId="skip"
 			 chiave="GARALTSOG_CODRUP"
 			 inseribile="true">
-				<gene:campoScheda campo="CODRUP_GARALTSOG" title="Codice resp.unico procedimento stazione appaltante aderente" campoFittizio="true" definizione="T10;0;;;G1CODRUPSOG" value="${requestScope.initCodrupGaraltsog}"
+				<gene:campoScheda campo="CODRUP_GARALTSOG" title="Codice RUP stazione appaltante aderente" campoFittizio="true" definizione="T10;0;;;G1CODRUPSOG" value="${requestScope.initCodrupGaraltsog}"
 					modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.GARALTSOG.CODRUP") && campiModificabili}' 
-					visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARALTSOG.CODRUP")}' />
+					visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARALTSOG.CODRUP") and empty verNPA and empty initVERNPA}' />
 				<gene:campoScheda campo="NOMTEC_GARALTSOG" title="Nome" campoFittizio="true" definizione="T161;;;;NOMTEC1" value="${requestScope.initNomtecGaraltsog}"
 					modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.TORN.CODRUP") && campiModificabili}' 
-					visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.TORN.CODRUP")}'/>
+					visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.TORN.CODRUP") and empty verNPA and empty initVERNPA}'/>
 		</gene:archivio>
 		
 	</gene:gruppoCampi>
@@ -452,7 +494,28 @@
 		
 	<gene:fnJavaScriptScheda funzione="visualizzaESettaCorrettivo('#GARE_MODLICG#', '#TORN_TIPGEN#', '#GARE_CORGAR1#', 'GARE_CORGAR1')" elencocampi="GARE_MODLICG" esegui="true"/>
 	<gene:fnJavaScriptScheda funzione='gestioneULTDETLIC("#GARE_CRITLICG#","#GARE_DETLICG#")' elencocampi='GARE_CRITLICG;GARE_DETLICG' esegui="true" />	
-	
+
+		<c:choose>
+			<c:when test='${tipologiaGara == "3" && param.lottoOffertaUnica ne "true"}'>
+				<c:set var="whereCPV" value="GARCPV.NGARA = TORN.CODGAR AND GARCPV.TIPCPV = '1'" />
+				<c:set var="chiaveCPV" value='${gene:getValCampo(key, "CODGAR")}' />
+			</c:when>
+			<c:otherwise>
+				<c:set var="whereCPV" value="GARCPV.NGARA = GARE.NGARA AND GARCPV.TIPCPV = '1'" />
+				<c:set var="chiaveCPV" value='${gene:getValCampo(key, "NGARA")}' />
+			</c:otherwise>
+		</c:choose>
+
+		<gene:campoScheda campo="NGARA" entita="GARCPV" visibile="false" where="${whereCPV}" value='${chiaveCPV}'/>
+		<gene:campoScheda campo="NUMCPV" entita="GARCPV" visibile="false" where="${whereCPV}"/>
+		<gene:campoScheda campo="CODCPV" entita="GARCPV" visibile="false" where="${whereCPV}" defaultValue ="${initCODCPV}" />
+
+		<gene:campoScheda campo="CUPPRG" visibile="false" defaultValue ="${initCUPPRG}" />
+		<gene:campoScheda campo="CUPMST"  visibile="false" modificabile="${campiModificabili}"/>
+
+		<gene:campoScheda campo="CODCUI" visibile="false" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" defaultValue ="${initCODCUI}"/>
+		<gene:campoScheda campo="ANNINT" visibile="false" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" />
+
 	<c:if test='${integrazioneWSERP eq "1"}'>
 		<c:choose>
 			<c:when test='${tipoWSERP eq "FNM"}'>
@@ -462,18 +525,27 @@
 				<gene:campoScheda campo="NUMRDA" entita="GARERDA" where="GARE.CODGAR1=GARERDA.CODGAR AND GARE.NGARA=GARERDA.NGARA" modificabile="false" href="javascript:visMetaDati('${datiRiga.GARERDA_NUMRDA}','${datiRiga.GARERDA_ESERCIZIO}','${tipoWSERP}');"/>
 				<gene:campoScheda campo="ESERCIZIO" entita="GARERDA" where="GARE.CODGAR1=GARERDA.CODGAR AND GARE.NGARA=GARERDA.NGARA" modificabile="false"/>
 			</c:when>
-			<c:when test='${tipoWSERP eq "CAV" || tipoWSERP eq "AMIU"}'>
+			<c:when test='${tipoWSERP eq "CAV" || tipoWSERP eq "AMIU" || tipoWSERP eq "INARCASSA" || tipoWSERP eq "CONI"}'>
 				<c:if test='${modoAperturaScheda ne "NUOVO"}' >
 					<c:set var="tmp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GestioneRichiesteAcquistoFunction", pageContext, codiceGaraRda, gene:getValCampo(key, "NGARA"))}'/>
 				</c:if>
-				<c:set var="arrayCampiGarerda" value="'GARERDA_ID_', 'GARERDA_CODGAR_', 'GARERDA_CODCARR_', 'GARERDA_NUMRDA_', 'GARERDA_POSRDA_', 'GARERDA_DATCRE_', 'GARERDA_DATRIL_', 'GARERDA_DATACONS_', 'GARERDA_LUOGOCONS_', 'GARERDA_CODVOC_', 'GARERDA_VOCE_', 'GARERDA_CODCAT_', 'GARERDA_UNIMIS_', 'GARERDA_QUANTI_', 'GARERDA_PREZUN_', 'GARERDA_PERCIVA_', 'GARERDA_ESERCIZIO_', 'GARERDA_NGARA_'"/>
+								
+				<c:choose>
+					<c:when test='${tipoWSERP eq "INARCASSA" || tipoWSERP eq "CONI"}'>
+						<c:set var="arrayCampiGarerda" value="'GARERDA_ID_', 'GARERDA_CODGAR_', 'GARERDA_CODCARR_', 'GARERDA_NUMRDA_', 'GARERDA_POSRDA_', 'GARERDA_DATCRE_', 'GARERDA_DATRIL_', 'GARERDA_DATACONS_', 'GARERDA_LUOGOCONS_', 'GARERDA_CODVOC_', 'GARERDA_VOCE_', 'GARERDA_CODCAT_', 'GARERDA_UNIMIS_', 'GARERDA_QUANTI_', 'GARERDA_PREZUN_', 'GARERDA_IMPORTO_', 'GARERDA_PERCIVA_', 'GARERDA_ESERCIZIO_', 'GARERDA_NGARA_'"/>
+					</c:when>
+					<c:otherwise>
+						<c:set var="arrayCampiGarerda" value="'GARERDA_ID_', 'GARERDA_CODGAR_', 'GARERDA_CODCARR_', 'GARERDA_NUMRDA_', 'GARERDA_POSRDA_', 'GARERDA_DATCRE_', 'GARERDA_DATRIL_', 'GARERDA_DATACONS_', 'GARERDA_LUOGOCONS_', 'GARERDA_CODVOC_', 'GARERDA_VOCE_', 'GARERDA_CODCAT_', 'GARERDA_UNIMIS_', 'GARERDA_QUANTI_', 'GARERDA_PREZUN_', 'GARERDA_PERCIVA_', 'GARERDA_ESERCIZIO_', 'GARERDA_NGARA_'"/>
+					</c:otherwise>
+				</c:choose>
+
 				<jsp:include page="/WEB-INF/pages/commons/interno-scheda-multipla.jsp" >
 					<jsp:param name="entita" value='GARERDA'/>
-					<jsp:param name="chiave" value='${gene:getValCampo(keyParent, "CODGAR")}'/>
+					<jsp:param name="chiave" value='${codiceGara}'/>
 					<jsp:param name="nomeAttributoLista" value='listaRichiesteAcquisto' />
 					<jsp:param name="idProtezioni" value="GARERDA" />
 					<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/garerda/richieste-acquisto.jsp"/>
-					<jsp:param name="arrayCampi" value="'GARERDA_ID_', 'GARERDA_CODGAR_', 'GARERDA_CODCARR_', 'GARERDA_NUMRDA_', 'GARERDA_POSRDA_', 'GARERDA_DATCRE_', 'GARERDA_DATRIL_', 'GARERDA_DATACONS_', 'GARERDA_LUOGOCONS_', 'GARERDA_CODVOC_', 'GARERDA_VOCE_', 'GARERDA_CODCAT_', 'GARERDA_UNIMIS_', 'GARERDA_QUANTI_', 'GARERDA_PREZUN_', 'GARERDA_PERCIVA_', 'GARERDA_ESERCIZIO_', 'GARERDA_NGARA_', 'GARERDA_STRUTTURA_'"/>
+					<jsp:param name="arrayCampi" value="'GARERDA_ID_', 'GARERDA_CODGAR_', 'GARERDA_CODCARR_', 'GARERDA_NUMRDA_', 'GARERDA_POSRDA_', 'GARERDA_DATCRE_', 'GARERDA_DATRIL_', 'GARERDA_DATACONS_', 'GARERDA_LUOGOCONS_', 'GARERDA_CODVOC_', 'GARERDA_VOCE_', 'GARERDA_CODCAT_', 'GARERDA_UNIMIS_', 'GARERDA_QUANTI_', 'GARERDA_PREZUN_', 'GARERDA_IMPORTO_', 'GARERDA_PERCIVA_', 'GARERDA_ESERCIZIO_', 'GARERDA_NGARA_', 'GARERDA_STRUTTURA_'"/>
 					<jsp:param name="sezioneListaVuota" value="true" />
 					<jsp:param name="titoloSezione" value="Richiesta di acquisto" />
 					<jsp:param name="titoloNuovaSezione" value="Nuova richiesta di acquisto" />
@@ -507,62 +579,19 @@
 		<jsp:param name="lottoDiGara" value='true'/>
 		<jsp:param name="codiceGara" value='${parametroCodiceGara}'/>
 		<jsp:param name="campiModificabili" value='${campiModificabili}'/>
+		<jsp:param name="bloccoModificatiDati" value='${bloccoModificatiDati}'/>
 	</jsp:include>
-	
-	
-	
-	
-	<jsp:include page="/WEB-INF/pages/gare/garcpv/codiciCPV-gara.jsp">
-		<jsp:param name="datiModificabili" value="true"/>
-		<jsp:param name="lottoOffertaUnica" value="true"/>
-		<jsp:param name="initCODCPV" value="${initCODCPV }"/>
-	</jsp:include> 
-	
-	<gene:gruppoCampi idProtezioni="CUP" >
-		<gene:campoScheda>
-			<td colspan="2"><b>Codice CUP</b></td>
-		</gene:campoScheda>
-		<gene:campoScheda campo="CUPPRG" defaultValue ="${initCUPPRG}" />
-		<gene:campoScheda campo="CUPMST"  modificabile="${campiModificabili}"/>
-	</gene:gruppoCampi>
-	
-	<gene:gruppoCampi idProtezioni="CUI" >
-		<gene:campoScheda>
-			<td colspan="2"><b>Programmazione</b></td>
-		</gene:campoScheda>
-		<gene:campoScheda campo="CODCUI" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" defaultValue ="${initCODCUI}"/>
-		<gene:campoScheda campo="ANNINT" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" />
-	</gene:gruppoCampi>
-	
-	<c:if test='${integrazioneWSERP eq "1" && tipoWSERP eq "TPER"}'>
-		<c:if test='${modoAperturaScheda ne "NUOVO"}' >
-			<c:set var="ngaraCup" value='${gene:getValCampo(param.key, "NGARA")}'/>
-			<c:set var="tmp" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GestioneMultiplaCupFunction", pageContext, ngaraCup)}'/>
-			<jsp:include page="/WEB-INF/pages/commons/interno-scheda-multipla.jsp" >
-				<jsp:param name="entita" value='GARECUP'/>
-				<jsp:param name="chiave" value='${ngaraCup}'/>
-				<jsp:param name="nomeAttributoLista" value='listaNCup' />
-				<jsp:param name="idProtezioni" value="GARECUP" />
-				<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/garecup/garecup-scheda.jsp"/>
-				<jsp:param name="arrayCampi" value="'GARECUP_ID_', 'GARECUP_NGARA_', 'GARECUP_CUP_'"/>
-				<jsp:param name="sezioneListaVuota" value="false" />
-				<jsp:param name="titoloSezione" value="Altro codice CUP" />
-				<jsp:param name="titoloNuovaSezione" value="Nuovo codice CUP" />
-				<jsp:param name="descEntitaVociLink" value="codice CUP" />
-				<jsp:param name="msgRaggiuntoMax" value="i codici CUP"/>
-				<jsp:param name="usaContatoreLista" value="true" />
-			</jsp:include>
-		</c:if>
-	</c:if>
+
 	
 	<gene:gruppoCampi idProtezioni="OPZ" >
 		<gene:campoScheda>
 			<td colspan="2"><b>Opzioni e rinnovi </b></td>
 		</gene:campoScheda>
-		<gene:campoScheda campo="AMMRIN" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" modificabile="${campiModificabili}"/>
+		<gene:campoScheda campo="AMMRIN" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" modificabile="${campiModificabili}" defaultValue="2"/>
 		<gene:campoScheda campo="DESRIN" entita="GARE1" where="GARE1.NGARA=GARE.NGARA"/>
+		<gene:campoScheda campo="NUMRIN" entita="GARE1" />
 		<gene:campoScheda campo="IMPRIN" entita="GARE1" where="GARE1.NGARA=GARE.NGARA"/>
-		<gene:campoScheda campo="AMMOPZ" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" modificabile="${campiModificabili}"/>
+		<gene:campoScheda campo="AMMOPZ" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" modificabile="${campiModificabili}" defaultValue="2"/>
 		<gene:campoScheda campo="DESOPZ" entita="GARE1" where="GARE1.NGARA=GARE.NGARA"/>
 		<gene:campoScheda campo="IMPSERV" entita="GARE1" where="GARE1.NGARA=GARE.NGARA"/>
 		<gene:campoScheda campo="IMPPROR" entita="GARE1" where="GARE1.NGARA=GARE.NGARA"/>
@@ -573,31 +602,29 @@
 	<gene:fnJavaScriptScheda funzione="setVisibilitaDaAmmrin('#GARE1_AMMRIN#','#VALMAX_FIT#')" elencocampi="GARE1_AMMRIN" esegui="true"/>
 	<gene:fnJavaScriptScheda funzione="setVisibilitaDaAmmpoz('#GARE1_AMMOPZ#','#VALMAX_FIT#')" elencocampi="GARE1_AMMOPZ" esegui="true"/>
 	<gene:fnJavaScriptScheda funzione="calcoloValmax('#GARE1_IMPRIN#','#GARE1_IMPSERV#','#GARE1_IMPPROR#','#GARE1_IMPALTRO#','#GARE_IMPAPP#')" elencocampi="GARE1_IMPRIN;GARE1_IMPSERV;GARE1_IMPPROR;GARE1_IMPALTRO;GARE_IMPAPP" esegui="false"/>
-	
-	
-	<gene:gruppoCampi idProtezioni="AVC">
+
+	<gene:gruppoCampi idProtezioni="ALTIMP" visibile="${not empty verNPA or not empty initVERNPA}">
 		<gene:campoScheda>
-			<td colspan="2"><b>Contributo a Autorità Nazionale AntiCorruzione</b></td>
+			<td colspan="2"><b>Altri importi</b></td>
 		</gene:campoScheda>
-		<gene:campoScheda campo="IDIAUT" modificabile="${campiModificabili}"/>
+		<gene:campoScheda campo="IMPSOMME" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" defaultValue="${initIMPSOMME}"/>
+		<gene:campoScheda campo="IMPCANONI" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" visibile="${datiRiga.TORN_ISCONCES eq '1'}"/>
+		<gene:campoScheda campo="IMPUTENZA" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" visibile="${datiRiga.TORN_ISCONCES eq '1'}"/>
+		<gene:campoScheda campo="IMPINTRO" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" visibile="${datiRiga.TORN_ISCONCES eq '1'}"/>
 	</gene:gruppoCampi>
-	
-	<gene:gruppoCampi idProtezioni="CAU">
-		<gene:campoScheda>
-			<td colspan="2"><b>Garanzia provvisoria</b></td>
-		</gene:campoScheda>
-		<gene:campoScheda campo="PGAROF" defaultValue="${requestScope.initPGAROF}" modificabile="${campiModificabili}"/>
-		<gene:campoScheda campo="GAROFF" modificabile="${campiModificabili}"/>
-		<gene:campoScheda campo="MODCAU" modificabile="${campiModificabili}"/>
-	</gene:gruppoCampi>
-	
-	<gene:fnJavaScriptScheda funzione="settaCauzione('#GARE_IMPAPP#', '#GARE_PGAROF#')" elencocampi="GARE_IMPAPP;GARE_PGAROF" esegui="false"/>
+
+	<gene:campoScheda campo="IDIAUT" visibile="false"/>
 	<gene:fnJavaScriptScheda funzione="calcoloImportiAnac('#VALMAX_FIT#')" elencocampi="VALMAX_FIT;GARE_IMPAPP" esegui="false"/>
-	
-	<jsp:include page="/WEB-INF/pages/gene/attributi/sezione-attributi-generici.jsp">
-		<jsp:param name="entitaParent" value="GARE"/>
-	</jsp:include>
-	
+
+	<gene:campoScheda campo="PGAROF" defaultValue="${requestScope.initPGAROF}" visibile="false"/>
+	<gene:campoScheda campo="GAROFF" visibile="false"/>
+	<gene:fnJavaScriptScheda funzione="settaCauzione('#VALMAX_FIT#', '#GARE_PGAROF#')" elencocampi="VALMAX_FIT;GARE_PGAROF" esegui="false"/>
+
+	<c:set var="whereCPV" value="GARCPV.NGARA = GARE.NGARA AND GARCPV.TIPCPV = '1'" />
+	<c:set var="chiaveCPV" value='${gene:getValCampo(key, "NGARA")}' />
+	<gene:campoScheda campo="NGARA" entita="GARCPV" visibile="false" where="${whereCPV}" value='${chiaveCPV}'/>
+	<gene:campoScheda campo="CODCPV" entita="GARCPV" visibile="false" where="${whereCPV}" value='${chiaveCPV}'/>
+
 	<gene:campoScheda campo="CLIV1" visibile="false"/>
 	
 	<gene:redefineInsert name="schedaNuovo" >
@@ -666,7 +693,7 @@
 				</c:otherwise>
 			</c:choose>
 		</c:if>
-		<c:if test='${bloccoModificatiDati and modo eq "VISUALIZZA" and condizioneCig eq "true" and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.IntegraCodiceCig") and esisteAnagraficaSimog ne "true"}'>
+		<c:if test='${empty verNPA and bloccoModificatiDati and modo eq "VISUALIZZA" and condizioneCig eq "true" and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.IntegraCodiceCig") and esisteAnagraficaSimog ne "true"}'>
 			<tr>
 				<td class="vocemenulaterale">
 					<a href="javascript:integraCodiceCig('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','Si','${datiRiga.GARE_CODCIG}','${datiRiga.TORN_NUMAVCP}');" title='Integra codice CIG' tabindex="1505">
@@ -702,8 +729,9 @@
 	
 	var idconfi = "${idconfi}";
 	
-	<c:if test="${!empty integrazioneptendpoint && modo eq 'VISUALIZZA'}">
+	
 		$(window).ready(function (){
+		<c:if test="${!empty integrazioneptendpoint && modo eq 'VISUALIZZA'}">
 			var _v1 = "${pageContext.request.contextPath}";
 			var _v2 = "${integrazioneptendpoint}";
 			var _v3 = 123;
@@ -711,8 +739,11 @@
 			myIntegrazionePT.init(_v1,_v2,_v3,_v4);
 			myIntegrazionePT.creaFinestraSchedaIntervento();
 			myIntegrazionePT.creaLinkSchedaIntervento($("#rowGARE1_CODCUI td:eq(1)"));
+		</c:if>
+		$("#CENTROCOSTO_GARALTSOG").prop('disabled', true);
+		$("#CENTROCOSTO_GARALTSOG").css('background-color', '#ECECEC');
 		});
-	</c:if>
+	
 	
 	<c:if test='${modoAperturaScheda eq "NUOVO" }'>
 		function initGare1(){
@@ -752,6 +783,39 @@
 			</c:if>
 		</c:if>
 		
+		<c:if test='${integrazioneWSERP eq "1" && (tipoWSERP eq "INARCASSA" || tipoWSERP eq "CONI")}'>
+			
+				function initGarerda(){
+					var numRdaList = "${initNUMRDA}";					
+					var voceRdaList = "${initVOCE}";
+					var importoRdaList = "${initIMPORTORDA}";
+					// var tipoRdaList = "${initTIPORDA}";
+					var numRdaArray = numRdaList.split(';');
+					var voceRdaArray = voceRdaList.split(';');
+					var importoRdaArray = importoRdaList.split(';');
+					// var tipoRdaArray = tipoRdaList.split(';');
+					
+					// alert("**** numRdaArray.length= "+numRdaArray.length); //TODO:ROS: commento da togliere
+					for(var ind=0; ind < numRdaArray.length; ind++){
+						if(ind>0){
+							showNextElementoSchedaMultipla('GARERDA', new Array(${arrayCampiGarerda}), new Array());
+						}//if
+						var numRda  = numRdaArray[ind];  // campo Numero che vedo in pagina
+						var voceRda = voceRdaArray[ind]; // campo Descrizione che vedo in pagina
+						// var tipoRda = tipoRdaArray[ind];
+						var importoRda = importoRdaArray[ind];
+						var k =ind+1; 
+						setValue("GARERDA_NUMRDA_"+k,numRda);
+						setValue("GARERDA_VOCE_"+k,voceRda);
+						// setValue("GARERDA_ESERCIZIO_"+k,tipoRda);
+						//setValue("GARERDA_PREZUN_"+k,importoRda);
+						setValue("GARERDA_IMPORTO_"+k,importoRda);
+					}//for				
+				}
+				initGarerda();
+			
+		</c:if>		
+		
 	</c:if>
 	
 	function setTipoCategorie(tipoCategoria){
@@ -775,16 +839,15 @@
 	// dell'archivio delle categorie dell'appalto per la categoria prevalente
 	function setTipoCategoriaPrevalentePerArchivio(tipoCategoria){
 		if(document.forms[0].modo.value != "VISUALIZZA"){
-			document.formCategoriaPrevalenteGare.archFunctionId.value = "default_save:filtroLotto";
-			var parametriWhere = "";
-		
+			document.formCategoriaPrevalenteGare.archFunctionId.value = "categorieGaraLotto_save:filtroLotto";
+			var parametriWhere = "${codiceGara};${codiceGara};";
+
 			if(getValue("CATG_CATIGA") == "" || getValue("CAIS_TIPLAVG") == ""){
-				parametriWhere = "T:" + tipoCategoria;
+				parametriWhere += "N:" + tipoCategoria;
 				setValue("CAIS_TIPLAVG", "" + tipoCategoria);
 			} else {
-				parametriWhere = "T:" + getValue("CAIS_TIPLAVG");
+				parametriWhere += "N:" + getValue("CAIS_TIPLAVG");
 			}
-			
 			document.formCategoriaPrevalenteGare.archWhereParametriLista.value = parametriWhere;
 		}
 	}
@@ -792,15 +855,14 @@
 	function setTipoCategoriaUlteriorePerArchivio(tipoCategoria){
 		if(document.forms[0].modo.value != "VISUALIZZA"){
 			for(var i=1; i <= maxIdUlterioreCategoriaVisualizzabile; i++){
-				eval("document.formUlterioreCategoriaGare" + i + ".archFunctionId").value = "default_save:filtroLotto";
-				var parametriWhere = ""
-			
+				eval("document.formUlterioreCategoriaGare" + i + ".archFunctionId").value = "categorieGaraLotto_save:filtroLotto";
+				var parametriWhere = "${codiceGara};${codiceGara};";
+
 				if(getValue("OPES_CATOFF_" + i) == ""){
-					parametriWhere = "T:" + tipoCategoria;
+					parametriWhere += "N:" + tipoCategoria;
 				} else {
-					parametriWhere = "T:" + getValue("CAIS_TIPLAVG_" + i);
+					parametriWhere += "N:" + getValue("CAIS_TIPLAVG_" + i);
 				}
-				
 				eval("document.formUlterioreCategoriaGare" + i + ".archWhereParametriLista").value = parametriWhere;
 			}
 		}
@@ -809,7 +871,7 @@
 	<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.DettaglioSoggettiAggregati") && modo eq "VISUALIZZA" }' >
 		var accqua = getValue("TORN_ACCQUA");
 		var altrisog = getValue("TORN_ALTRISOG");
-		if((accqua==1 && (altrisog== 1 || altrisog== null || altrisog== "")) || altrisog== 3){
+		if((accqua==1 && (altrisog== 1 || altrisog== 4 || altrisog== null || altrisog== "")) || altrisog== 3){
 			$( '#rowLinkDetSogAgg' ).show( "fast" );
 			//Per visualizzare il link allineato al margine sinistro.
 			$("#colonnaLinkDetSogAgg").css("padding-left","0px");
@@ -831,22 +893,26 @@
 	        var codiceGara="${codiceGara}";
 	        document.forms[0].keyParent.value="TORN.CODGAR=T:" + codiceGara;
 	    }
+	    var tipoAppalto = getValue("TORN_TIPGEN");
         <c:choose>
 		<c:when test='${tipoWSERP eq "AMIU"}'>
-			var tipoAppalto = getValue("TORN_TIPGEN");
-			document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/garerda/associa-rda-wsdm.jsp&modo=NUOVO&tipoAppalto="+ tipoAppalto +"&chiavePadre='"+getValue("keyParent")+"'&lottoOffertaUnica=SI";
+			
+			document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/garerda/associa-rda-wsdm.jsp&modo=NUOVO&tipoAppalto="+ tipoAppalto +"&chiavePadre='"+getValue("keyParent")+"'&lottoOffertaUnica=SI";
 			document.location.href = href;
 		</c:when>
+		<c:when test='${(tipoWSERP eq "INARCASSA" || tipoWSERP eq "CONI") and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GestioneUnicaERP") }'>
+			    document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/commons/lista-rda-scheda.jsp&modo=NUOVO&tipoAppalto="+ tipoAppalto +"&chiavePadre='"+getValue("keyParent")+"'&lottoOffertaUnica=SI";
+				document.location.href = href;
+		</c:when>
 		<c:when test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.AssociaGaraAppalto") && esisteIntegrazioneLavori eq "TRUE" && modcont eq "1"}' >
-			var tipoAppalto = getValue("TORN_TIPGEN");
-			var href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/gare/trovaAppalto/associaAppalto.jsp&modo=NUOVO&tipoAppalto=" + tipoAppalto + "&chiavePadre='"+getValue("keyParent")+"'&lottoOffertaUnica=SI";
+			var href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/gare/trovaAppalto/associaAppalto.jsp&modo=NUOVO&tipoAppalto=" + tipoAppalto + "&chiavePadre='"+getValue("keyParent")+"'&lottoOffertaUnica=SI";
 			if(idconfi){
 				href = href + "&idconfi="+idconfi;
 			}
 			document.location.href = href;
 		</c:when>
 		<c:otherwise>
-	        document.forms[0].action += "&tipoAppalto=" + getValue("TORN_TIPGEN");
+	        document.forms[0].action += "?tipoAppalto=" + getValue("TORN_TIPGEN");
 			schedaNuovo();
 		</c:otherwise>
 		</c:choose>
@@ -877,8 +943,8 @@
 
 		showObj("row"+campoCorrettivo, visualizza);
 	}
-	
-	//Funzione per aggiornare il campo GAROFF
+ 
+ 	//Funzione per aggiornare il campo GAROFF
 	function settaCauzione(importoAppalto, percentualeCauzione) {
 		var decimali = "${requestScope.numeroDecimali}";
 				
@@ -908,23 +974,6 @@
 		<c:forEach items="${listaScaglioniA1z01}" var="scaglione" varStatus="indice" >
 			arrayScaglioni[${indice.index}] = new Array("${scaglione.tipoTabellato}", "${scaglione.descTabellato}");
 		</c:forEach>
-		//Funzione per aggiornare il campo IDIAUT
-		/*
-		function settaContributo(importoAppalto,arrayScaglioni){
-			for(var i=0; i < arrayScaglioni.length; i++){
-				var scaglione = parseFloat(arrayScaglioni[i][1]);
-				var importoGara;
-				if (importoAppalto == null) importoGara=0;
-				else importoGara = importoAppalto;
-				importoGara = parseFloat(importoGara);
-				if (importoGara < scaglione) {
-					if (arrayScaglioni[i][0] == null || arrayScaglioni[i][0] == "") setValue("GARE_IDIAUT",  "");
-					else setValue("GARE_IDIAUT",  eval(parseFloat(arrayScaglioni[i][0])));
-					break;
-				}
-			}
-		}
-		*/
 		function calcoloImportiAnac(importo){
 			settaContributo(importo,arrayScaglioni,"GARE_IDIAUT");
 		}
@@ -987,6 +1036,20 @@
 			showObj("rowGARE_MODASTG", true);
 		}
 		
+	}
+
+	function gestioneMETOEPV(critlicg,calcsoan,defaultLimOepv) {
+		if (critlicg == 2 && calcsoan == 1){
+			showObj("rowGARE1_METOEPV", true);
+			showObj("rowGARE1_LIMOEPV", true);
+			if(document.forms[0].GARE1_METOEPV.value=='')
+				document.forms[0].GARE1_LIMOEPV.value=defaultLimOepv;
+		}else{
+			document.forms[0].GARE1_METOEPV.value='';
+			showObj("rowGARE1_METOEPV", false);
+			document.forms[0].GARE1_LIMOEPV.value='';
+			showObj("rowGARE1_LIMOEPV", false);
+		}
 	}
 	
 	function gestioneCOSTOFISSO_SEZIONITEC(critlicg) {
@@ -1108,8 +1171,6 @@
  			setValue("GARE_SICINC",1);
  	
  	}
- 	
- 	
 		
 	function gestioneULTDETLIC(critlic,detlic) {
 		if ((critlic == 1 && (detlic == 3 || detlic == 4)) || critlic == 2) {
@@ -1124,16 +1185,19 @@
 		if (altrisog=='2') {
 			showObj("rowCENINT_GARALTSOG",true);
 			showObj("rowNOMEIN_GARALTSOG",true);
+			showObj("rowCENTROCOSTO_GARALTSOG",true);
 			showObj("rowCODRUP_GARALTSOG",true);
 			showObj("rowNOMTEC_GARALTSOG",true);
 		} else {
 			showObj("rowRUP", false);
 			showObj("rowCENINT_GARALTSOG",false);
 			showObj("rowNOMEIN_GARALTSOG",false);
+			showObj("rowCENTROCOSTO_GARALTSOG",false);
 			showObj("rowCODRUP_GARALTSOG",false);
 			showObj("rowNOMTEC_GARALTSOG",false);
 			setValue("CENINT_GARALTSOG", "");
 			setValue("NOMEIN_GARALTSOG", "");
+			setValue("CENTROCOSTO_GARALTSOG", "");
 			setValue("CODRUP_GARALTSOG", "");
 			setValue("NOMTEC_GARALTSOG", "");
 		}
@@ -1201,7 +1265,7 @@
 		</c:if>
 		
 		<c:if test='${campiModificabili}'>
-		if ("2" == getValue("ESENTE_CIG") || "No" == getValue("ESENTE_CIG")) {
+		if ("2" == getValue("ESENTE_CIG") || "No" == getValue("ESENTE_CIG") || "" == getValue("ESENTE_CIG")) {
 			if (!controllaCIG("GARE_CODCIG")) {
 				outMsg("Codice CIG non valido", "ERR");
 				onOffMsg();
@@ -1357,12 +1421,14 @@
 			</c:if>
 			showObj("rowCODCIG_FIT", true);
 			showObj("rowGARE1_MOTESENTECIG", true);
+			showObj("rowTORN_IDAPPALTONPA", false);
 		} else {
 			showObj("rowGARE_CODCIG", true);
 			showObj("rowCODCIG_FIT", false);
 			setValue("CODCIG_FIT", "", false);
 			showObj("rowGARE1_MOTESENTECIG", false);
 			setValue("GARE1_MOTESENTECIG", "", false);
+			showObj("rowTORN_IDAPPALTONPA", true);
 		}
 	</c:if>
 	}
@@ -1379,7 +1445,7 @@
 		eliminaUlterioreCategoria = alertModifica;
 	</c:if>
 	
-	<c:if test='${integrazioneWSERP eq "1" && (tipoWSERP eq "FNM" || tipoWSERP eq "CAV" || tipoWSERP eq "AMIU")}'>
+	<c:if test='${integrazioneWSERP eq "1"}'>
 		function visMetaDati(numeroRda,esercizio,tipoWSERP){
 			var ngara = getValue("GARE_NGARA");
 			var href="href=gare/garerda/popup-rda-metadati.jsp&ngara=" + ngara + "&numeroRda=" + numeroRda  + "&esercizio=" + esercizio + "&tipoWSERP=" + tipoWSERP + "&idconfi=" + idconfi;
@@ -1399,16 +1465,6 @@
 		}
 		
 		
-	</c:if>
-	<c:if test='${integrazioneWSERP eq "1" && tipoWSERP eq "TPER"}'>
-	function validazioneCup(campo){
-		var valore = campo.value;
-		if(valore!=null && valore.length!=15){
-			alert('Il valore del codice CUP specificato non \u00e8 valido: deve avere una lunghezza di 15 caratteri');
-			this.focus();
-		}
-		
-	}
 	</c:if>
 	
 	
@@ -1462,12 +1518,38 @@
 	
 	<c:if test='${modo eq "MODIFICA"}'>
 		var bloccoModificatiDati = $("#bloccoModificatiDati").val();
-		bloccaDopoPubblicazione(bloccoModificatiDati,"${offtel}");
+		var bloccoModificaPCP = "${bloccoModificaPCP}";
+		bloccaDopoPubblicazione(bloccoModificatiDati,"${offtel}","",bloccoModificaPCP,"${impoOpzRinnModificabili}","${bloccoModificaPubblicazione}");
 	</c:if>
 	
 	function getListaRdaRdi(){
 		formListaRdaRdi.submit();
 	}
+
+	function sbiancaCentroCostoAltSog(){
+		setValue("CENTROCOSTO_GARALTSOG","");
+		setValue("CODCENTRO_GARALTSOG","");
+		setValue("NOMCENTRO_GARALTSOG_","");	
+		return true;	
+	}
+
+	function controlloCODIGA() {
+		var codiga = Number($('#GARE_CODIGA').val());
+		if ($('#GARE_CODIGA').val() === '') {
+			return;
+		}
+		if (!Number.isInteger(codiga) || codiga < 1) {
+			alert('Il campo \"Lotto\" deve essere un numero intero positivo');
+			$('#GARE_CODIGA').val('');
+		}
+	}
+
+	$(document).ready(function() {
+		$('#GARE_CODIGA').change(function(){
+			controlloCODIGA();
+		});
+	});
+
 	
 </gene:javaScript>
 

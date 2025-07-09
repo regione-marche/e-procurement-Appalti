@@ -117,7 +117,9 @@
 						</tr>
 					</c:if>
 				</gene:redefineInsert>
-								
+
+				<c:set var="gestioneNonAggFacilitata" value="${param.tipoAggiudicazione eq 'provvisoria'}"/>
+
 				<gene:campoLista title="Opzioni" width="50">
 				<c:if test='${currentRow >= 0 && visualizzaPopUp}'>
 					<gene:PopUp variableJs="rigaPopUpMenu${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'">
@@ -126,6 +128,9 @@
 						</c:if>
 						<c:if test='${visualizzaPopUp && param.tipoAggiudicazione eq "definitiva" && gene:checkProt(pageContext, "MASC.VIS.GARE.GARE-scheda")}' >
 								<gene:PopUpItem title="Aggiudicazione definitiva lotto di gara" href="javascript:aggiudicazioneLotto();" />
+						</c:if>
+						<c:if test='${gestioneNonAggFacilitata and gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.GetNumeroDitteAmmesseFunction", pageContext, datiRiga.GARE_NGARA, "true") eq 0 and gene:checkProtFunz(pageContext, "MOD","MOD") and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ImpostaGaraNonAggiud")}'>
+							<gene:PopUpItem title="Imposta lotto non aggiudicato" href="javascript:apriPopupImpostaLottoNonAggiudicato('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','${datiRiga.GARE_ESINEG}','${datiRiga.GARE_DATNEG}','${datiRiga.GARE1_NPANNREVAGG}','${datiRiga.GARE1_GIUSTNEG}')" />
 						</c:if>
 					</gene:PopUp>
 				</c:if>
@@ -149,7 +154,12 @@
 				<gene:campoLista campo="IMPAPP" headerClass="sortable" width="120" />
 				<gene:campoLista campo="DITTA" visibile="false" />
 				<gene:campoLista campo="DITTAP" visibile="false" />
-				<gene:campoLista title="Fase aggiudicazione" width="150" ordinabile="false" >
+				<c:if test="${gestioneNonAggFacilitata}">
+					<gene:campoLista campo="NDITTEAMM" width="60" title="N.ditte" campoFittizio="true" headerClass="sortable" definizione="N10;;;;" >
+						${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.GetNumeroDitteAmmesseFunction", pageContext, datiRiga.GARE_NGARA, "true")}
+					</gene:campoLista>
+				</c:if>
+				<gene:campoLista campo="FASGAR" entita="GARE" campoFittizio="true" title="Fase aggiudicazione" width="150" ordinabile="false" definizione="T100;;;;" >
 				
 					<c:choose>
 						<c:when test="${empty datiRiga.GARE_DITTA and empty datiRiga.GARE_DITTAP}">
@@ -164,9 +174,11 @@
 					</c:choose>
 				
 				</gene:campoLista>
+				<gene:campoLista campo="NPANNREVAGG" entita = "GARE1" where= "GARE1.NGARA = GARE.NGARA" visibile="false" />
+				<gene:campoLista campo="GIUSTNEG" entita = "GARE1" visibile="false" />
 				<gene:campoLista campo="ESINEG" visibile="false" />
-				<gene:campoLista title="Lotto annullato?" width="50" ordinabile="false" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.ESINEG")}'>
-				
+				<gene:campoLista campo="DATNEG" visibile="false" />
+				<gene:campoLista campo="LOTTOANN" campoFittizio="true" definizione="T2;;;;" title="Lotto non aggiud.?" width="70" ordinabile="false" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.ESINEG")}'>
 					<c:choose>
 						<c:when test="${not empty datiRiga.GARE_ESINEG}">
 							Si
@@ -182,4 +194,26 @@
 			</gene:formLista>
 		</td>
 	</tr>
-		
+
+<script>
+	$(document).ready(function() {
+		$('[id^="colLOTTOANN_"]').each(function(){
+			objId = this.id;
+			numeroRiga = objId.substr(objId.lastIndexOf("_") + 1);
+			if ($('#' + objId).text() == 'Si') {
+				$('#colGARE_FASGAR_' + numeroRiga).text('');
+			}
+		});
+	});
+
+	<c:if test="${activePage eq 10 or (activePage eq 9 and bustalotti eq 2)}">
+	function apriPopupImpostaLottoNonAggiudicato(ngara,codgar1,esineg,datneg,npannrevagg,giustneg) {
+		if (giustneg == '') {giustneg = "4";}
+		if (esineg == '') {esineg = 5;}
+		if (datneg == '') {datneg = new Date().toLocaleDateString("it-IT");}
+		var href="href=gare/commons/popup-ImpostaGaraNonAggiudicata.jsp&ngara=" + ngara + "&codgar1=" + codgar1 + "&esineg=" + esineg + "&datneg=" + datneg + "&npannrevagg=" + npannrevagg + "&giustneg=" + giustneg;
+		href+="&isLottoOffUnica=Si";
+		openPopUpCustom(href, "impostaGaraNonAggiudicata", 850, 400, "yes", "yes");
+	}
+	</c:if>
+</script>

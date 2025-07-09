@@ -1,14 +1,5 @@
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.springframework.transaction.TransactionStatus;
-
 import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
@@ -23,6 +14,7 @@ import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreChiaveIDAutoincre
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveIDAutoincrementante;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
@@ -32,6 +24,18 @@ import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityStringhe;
 import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.Vector;
 
 public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
 
@@ -87,8 +91,8 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
 
     // Cancellazione degli oggetti associati alla comunicazione
     geneManager.deleteTabelle(new String[] { "W_DOCDIG" },
-        "IDPRG = ? AND DIGENT = ? AND DIGKEY1 = ? AND DIGKEY2 = ?",
-        new Object[] { idprg, "W_INVCOM", idprg, idcom.toString() });
+        "IDPRG = ? AND DIGENT in ('W_INVCOM','W_INVCOMDES') AND DIGKEY1 = ? AND DIGKEY2 = ?",
+        new Object[] { idprg, idprg, idcom.toString() });
 
     if (logger.isDebugEnabled())
       logger.debug("GestoreW_INVCOM: preDelete: fine metodo");
@@ -240,13 +244,24 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
       // la comunicazione e' stata inserita da rispondi di una comunicazione ricevuta
 
       try {
-        String codimp = datiForm.getColumn("W_INVCOMDES.DESCODSOG").getValue().stringValue();
-        String nomimp = (String)sqlManager.getObject("select nomimp from impr where codimp=?", new Object[]{codimp});
-        StringBuffer buf = new StringBuffer();
-        // inserisco il mittente della mail ricevuta come destinatario della risposta
-        boolean msgAvviso = inserisciSoggDest(idprg ,idcom ,codimp ,"" ,nomimp ,pgManager ,buf , condizioneDelegaInvioMailDocumentale);
-        if (msgAvviso) {
-          throw new GestoreException("Soggetto destinatario con codice " + codimp + " non contenente tutti i dati necessari per predisporre la comunicazione",null);
+        String descodsog = datiForm.getColumn("W_INVCOMDES.DESCODSOG").getValue().stringValue();
+        String nomimp = (String)sqlManager.getObject("select nomimp from impr where codimp=?", new Object[]{descodsog});
+        if(compub.longValue()!=3){
+          StringBuffer buf = new StringBuffer();
+          // inserisco il mittente della mail ricevuta come destinatario della risposta
+          boolean msgAvviso = inserisciSoggDest(idprg ,idcom ,descodsog ,"" ,nomimp ,pgManager ,buf , condizioneDelegaInvioMailDocumentale);
+          if (msgAvviso) {
+            throw new GestoreException("Soggetto destinatario con codice " + descodsog + " non contenente tutti i dati necessari per predisporre la comunicazione",null);
+          }
+        }else {//se compub=3 non gestire le mail
+          Vector datiOperatore = sqlManager.getVector("select nomimo,idanonimo from ditg where codgar5=? and ngara5=? and dittao=?", new Object[]{codgar,ngara,descodsog});
+          if(datiOperatore != null && datiOperatore.size() > 0){//verifico se esiste un record con idanonimo (significa che siamo in fase anonima)
+           String nomimo = SqlManager.getValueFromVectorParam(datiOperatore, 0).toString();
+           String idanonimo = SqlManager.getValueFromVectorParam(datiOperatore, 1).toString();
+           inserisciSoggDestNoMail(idprg, idcom, codgar, ngara, descodsog, nomimo, idanonimo);
+          }else {//se entriamo qui sotto, non ci troviamo in fase anonima
+            inserisciSoggDestNoMail(idprg, idcom, codgar, ngara, descodsog, nomimp, null);
+          }
         }
       } catch (SQLException e) {
         throw new GestoreException("Errore nell'inserimento del soggetto destinatario ricavato dalla comunicazione a cui si risponde",null, e);
@@ -269,46 +284,132 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
           Long numModelloLong = new Long(numModello);
           String filtroSog = (String)sqlManager.getObject("select filtrosog from w_confcom where numpro = ?", new Object[]{numModelloLong});
 
-          String select="select dittao,nomimp,tipimp from ditg,impr where codgar5=? and ngara5=? and dittao = codimp and RTOFFERTA is null  ";
-          if(filtroSog!=null && !"".equals(filtroSog))
-            select+=" and " + filtroSog;
-
-          List listaDittao = sqlManager.getListVector(select, new Object[]{codgar,ngara});
-          if(listaDittao!=null && listaDittao.size()>0){
-            StringBuffer buf = new StringBuffer("<br><ul>");
-            boolean msgAvviso = false;
-            boolean mandatariaPresente =true;
-            for(int i=0;i<listaDittao.size();i++){
-              String dittao = SqlManager.getValueFromVectorParam(listaDittao.get(i), 0).stringValue();
-              String nomimp = SqlManager.getValueFromVectorParam(listaDittao.get(i), 1).stringValue();
-              String tipologiaImpresa = SqlManager.getValueFromVectorParam(listaDittao.get(i), 2).getStringValue();
-              tipologiaImpresa = UtilityStringhe.convertiNullInStringaVuota(tipologiaImpresa);
-              if ("3".equals(tipologiaImpresa) || "10".equals(tipologiaImpresa)) {
-               String selectComponenti= "select CODDIC, NOMDIC from RAGIMP,IMPR where CODIME9 = ? and CODDIC=CODIMP and IMPMAN='1'";
-                List listaComponenti = sqlManager.getListVector(selectComponenti,new Object[]{ dittao });
-                if (listaComponenti != null && listaComponenti.size() == 1){
-                  for (int k = 0; k< listaComponenti.size(); k++) {
-                    String codComponente = SqlManager.getValueFromVectorParam( listaComponenti.get(k), 0).getStringValue();
-                    String nomeComponente = SqlManager.getValueFromVectorParam( listaComponenti.get(k), 1).getStringValue();
-                    nomeComponente = nomimp+" - "+nomeComponente+" - Mandataria";
-                    if(inserisciSoggDest(idprg ,idcom ,dittao ,codComponente, nomeComponente ,pgManager ,buf,  condizioneDelegaInvioMailDocumentale ))
-                      msgAvviso = true;
+          if(compub.longValue()!=3) {
+            String select="select dittao,nomimp,tipimp from ditg,impr where codgar5=? and ngara5=? and dittao = codimp and RTOFFERTA is null  ";
+            if(filtroSog!=null && !"".equals(filtroSog))
+              select+=" and " + filtroSog;
+  
+            List listaDittao = sqlManager.getListVector(select, new Object[]{codgar,ngara});
+            if(listaDittao!=null && listaDittao.size()>0){
+              StringBuffer buf = new StringBuffer("<br><ul>");
+              boolean msgAvviso = false;
+              boolean mandatariaPresente =true;
+              for(int i=0;i<listaDittao.size();i++){
+                String dittao = SqlManager.getValueFromVectorParam(listaDittao.get(i), 0).stringValue();
+                String nomimp = SqlManager.getValueFromVectorParam(listaDittao.get(i), 1).stringValue();
+                String tipologiaImpresa = SqlManager.getValueFromVectorParam(listaDittao.get(i), 2).getStringValue();
+                tipologiaImpresa = UtilityStringhe.convertiNullInStringaVuota(tipologiaImpresa);
+                if ("3".equals(tipologiaImpresa) || "10".equals(tipologiaImpresa)) {
+                 String selectComponenti= "select CODDIC, NOMDIC from RAGIMP,IMPR where CODIME9 = ? and CODDIC=CODIMP and IMPMAN='1'";
+                  List listaComponenti = sqlManager.getListVector(selectComponenti,new Object[]{ dittao });
+                  if (listaComponenti != null && listaComponenti.size() == 1){
+                    for (int k = 0; k< listaComponenti.size(); k++) {
+                      String codComponente = SqlManager.getValueFromVectorParam( listaComponenti.get(k), 0).getStringValue();
+                      String nomeComponente = SqlManager.getValueFromVectorParam( listaComponenti.get(k), 1).getStringValue();
+                      nomeComponente = nomimp+" - "+nomeComponente+" - Mandataria";
+                      if(inserisciSoggDest(idprg ,idcom ,dittao ,codComponente, nomeComponente ,pgManager ,buf,  condizioneDelegaInvioMailDocumentale ))
+                        msgAvviso = true;
+                    }
+                  }else{
+                    mandatariaPresente=false;
+                    buf.append("<li style=\"list-style-type: disc;margin-left: 30px;\" >");
+                    buf.append(dittao);
+                    buf.append(" - ");
+                    buf.append(nomimp);
+                    buf.append("</li>");
+                    msgAvviso = true;
                   }
                 }else{
-                  mandatariaPresente=false;
-                  buf.append("<li style=\"list-style-type: disc;margin-left: 30px;\" >");
-                  buf.append(dittao);
-                  buf.append(" - ");
-                  buf.append(nomimp);
-                  buf.append("</li>");
+                  //per le ditte singole
+                  if(inserisciSoggDest(idprg ,idcom ,dittao ,"" ,nomimp ,pgManager ,buf, condizioneDelegaInvioMailDocumentale ))
+                    msgAvviso = true;
+                }
+              }
+              if(msgAvviso){
+                buf.append("</ul>");
+                // Aggiungo il messaggio al request
+                String msg ="warnings.comunicazioni.indirizzoMailVuotoSenzaFax";
+                if(condizioneDelegaInvioMailDocumentale)
+                  msg ="warnings.comunicazioni.indirizzoPECVuoto";
+                if(!mandatariaPresente)
+                  msg+="ConRT";
+                UtilityStruts.addMessage(this.getRequest(), "warning",
+                    msg, new Object[] { buf.toString() });
+              }
+  
+            }
+          }else {
+            String select="select dittao,nomimo,idanonimo from ditg where codgar5=? and ngara5=? ";
+            if(filtroSog!=null && !"".equals(filtroSog))
+              select+=" and " + filtroSog;
+  
+            List listaDittao = sqlManager.getListVector(select, new Object[]{codgar,ngara});
+            if(listaDittao!=null && listaDittao.size()>0){
+              for(int i=0;i<listaDittao.size();i++){
+                  String dittao = SqlManager.getValueFromVectorParam(listaDittao.get(i), 0).stringValue();
+                  String nomimo = SqlManager.getValueFromVectorParam(listaDittao.get(i), 1).stringValue();
+                  String idanonimo = SqlManager.getValueFromVectorParam(listaDittao.get(i), 2).stringValue();
+                  inserisciSoggDestNoMail(idprg, idcom, codgar, ngara, dittao, nomimo, idanonimo);
+              }
+            }
+          }
+        } catch (SQLException e) {
+          throw new GestoreException("Errore nell'inserimento dei soggetti destinatari",null, e);
+        }
+      }else if(ditta!= null && !"".equals(ditta)){
+
+        if(compub.longValue()!=3) {
+          try {
+            Vector<JdbcParametro> datiDitg = new Vector<>();
+            Long genere = null;
+            if(StringUtils.isNotBlank(numModello)) {
+              Long numModelloLong = new Long(numModello);
+              genere = (Long) sqlManager.getObject("select genere from w_confcom where numpro = ?", new Object[]{numModelloLong});
+            }
+            if (new Long(61).equals(genere)) {//stiamo facendo una comunicazione per FVOE: le ditte non sono mai in RTI e vanno recuperate dalla IMPR e non da DITG
+              datiDitg = this.sqlManager.getVector("select tipimp,nomimp from impr where codimp=?", new Object[]{ditta});
+            }else{
+              datiDitg = this.sqlManager.getVector("select tipimp,nomimp from ditg,impr where codgar5=? and ngara5=? and dittao=? and dittao = codimp", new Object[]{codgar,ngara,ditta});
+            }
+            Long idcomdes = null;
+            String tipologiaImpresa = datiDitg.get(0).getStringValue();
+            String nomimp = datiDitg.get(1).getStringValue();
+            String[] mailFax = new String[0];
+            tipologiaImpresa = UtilityStringhe.convertiNullInStringaVuota(tipologiaImpresa);
+            StringBuffer buf = new StringBuffer("<br><ul>");
+            boolean msgAvviso=false;
+            boolean mandatariaPresente=true;
+            if ("3".equals(tipologiaImpresa) || "10".equals(tipologiaImpresa)) {
+  
+              String selectComponenti= "select CODDIC, NOMDIC from RAGIMP,IMPR where CODIME9 = ? and CODDIC=CODIMP and IMPMAN='1'";
+              List listaComponenti = sqlManager.getListVector(selectComponenti,new Object[]{ ditta });
+              if (listaComponenti != null && listaComponenti.size() == 1){
+                for (int k = 0; k< listaComponenti.size(); k++) {
+                  String codComponente = SqlManager.getValueFromVectorParam( listaComponenti.get(k), 0).getStringValue();
+                  String nomeComponente = SqlManager.getValueFromVectorParam( listaComponenti.get(k), 1).getStringValue();
+  
+                  nomeComponente = nomimp+" - "+nomeComponente+" - Mandataria";
+                  //per ogni ditta componente
+                  //StringBuffer buf = new StringBuffer("");
+                  if(inserisciSoggDest(idprg ,idcom ,ditta ,codComponente ,nomeComponente ,pgManager ,buf , condizioneDelegaInvioMailDocumentale ))
                   msgAvviso = true;
                 }
               }else{
-                //per le ditte singole
-                if(inserisciSoggDest(idprg ,idcom ,dittao ,"" ,nomimp ,pgManager ,buf, condizioneDelegaInvioMailDocumentale ))
-                  msgAvviso = true;
+                mandatariaPresente=false;
+                buf.append("<li style=\"list-style-type: disc;margin-left: 30px;\" >");
+                buf.append(ditta);
+                buf.append(" - ");
+                buf.append(nomimp);
+                buf.append("</li>");
+                msgAvviso = true;
               }
+            }else{
+              //per ogni ditta singola
+              //StringBuffer buf = new StringBuffer("");
+             if(inserisciSoggDest(idprg ,idcom ,ditta ,"" ,nomimp ,pgManager ,buf , condizioneDelegaInvioMailDocumentale ))
+               msgAvviso = true;
             }
+  
             if(msgAvviso){
               buf.append("</ul>");
               // Aggiungo il messaggio al request
@@ -320,78 +421,98 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
               UtilityStruts.addMessage(this.getRequest(), "warning",
                   msg, new Object[] { buf.toString() });
             }
-
+  
+          } catch (SQLException e) {
+            throw new GestoreException("Errore nell'inserimento dei soggetti destinatari",null, e);
           }
-        } catch (SQLException e) {
-          throw new GestoreException("Errore nell'inserimento dei soggetti destinatari",null, e);
-        }
-      }else if(ditta!= null && !"".equals(ditta)){
-
-        try {
-          Long idcomdes = null;
-          Vector<JdbcParametro> datiDitg = new Vector<JdbcParametro>();
-          datiDitg = this.sqlManager.getVector("select tipimp,nomimp from ditg,impr where codgar5=? and ngara5=? and dittao=? and dittao = codimp", new Object[]{codgar,ngara,ditta});
-          String tipologiaImpresa = datiDitg.get(0).getStringValue();
-          String nomimp = datiDitg.get(1).getStringValue();
-          String[] mailFax = new String[0];
-          tipologiaImpresa = UtilityStringhe.convertiNullInStringaVuota(tipologiaImpresa);
-          StringBuffer buf = new StringBuffer("<br><ul>");
-          boolean msgAvviso=false;
-          boolean mandatariaPresente=true;
-          if ("3".equals(tipologiaImpresa) || "10".equals(tipologiaImpresa)) {
-
-            String selectComponenti= "select CODDIC, NOMDIC from RAGIMP,IMPR where CODIME9 = ? and CODDIC=CODIMP and IMPMAN='1'";
-            List listaComponenti = sqlManager.getListVector(selectComponenti,new Object[]{ ditta });
-            if (listaComponenti != null && listaComponenti.size() == 1){
-              for (int k = 0; k< listaComponenti.size(); k++) {
-                String codComponente = SqlManager.getValueFromVectorParam( listaComponenti.get(k), 0).getStringValue();
-                String nomeComponente = SqlManager.getValueFromVectorParam( listaComponenti.get(k), 1).getStringValue();
-
-                nomeComponente = nomimp+" - "+nomeComponente+" - Mandataria";
-                //per ogni ditta componente
-                //StringBuffer buf = new StringBuffer("");
-                if(inserisciSoggDest(idprg ,idcom ,ditta ,codComponente ,nomeComponente ,pgManager ,buf , condizioneDelegaInvioMailDocumentale ))
-                msgAvviso = true;
-              }
-            }else{
-              mandatariaPresente=false;
-              buf.append("<li style=\"list-style-type: disc;margin-left: 30px;\" >");
-              buf.append(ditta);
-              buf.append(" - ");
-              buf.append(nomimp);
-              buf.append("</li>");
-              msgAvviso = true;
+        }else {
+          try {
+            Vector datiOperatore = sqlManager.getVector("select nomimo,idanonimo from ditg where codgar5=? and ngara5=? and dittao=?", new Object[]{codgar,ngara,ditta});
+            if(datiOperatore != null && datiOperatore.size() > 0){
+             String nomimo = SqlManager.getValueFromVectorParam(datiOperatore, 0).toString();
+             String idanonimo = SqlManager.getValueFromVectorParam(datiOperatore, 1).toString();
+             inserisciSoggDestNoMail(idprg, idcom, codgar, ngara, ditta, nomimo,idanonimo);
             }
-          }else{
-            //per ogni ditta singola
-            //StringBuffer buf = new StringBuffer("");
-           if(inserisciSoggDest(idprg ,idcom ,ditta ,"" ,nomimp ,pgManager ,buf , condizioneDelegaInvioMailDocumentale ))
-             msgAvviso = true;
+          }catch(SQLException e) {
+            throw new GestoreException("Errore nell'inserimento dei soggetti destinatari",null, e);
           }
-
-          if(msgAvviso){
-            buf.append("</ul>");
-            // Aggiungo il messaggio al request
-            String msg ="warnings.comunicazioni.indirizzoMailVuotoSenzaFax";
-            if(condizioneDelegaInvioMailDocumentale)
-              msg ="warnings.comunicazioni.indirizzoPECVuoto";
-            if(!mandatariaPresente)
-              msg+="ConRT";
-            UtilityStruts.addMessage(this.getRequest(), "warning",
-                msg, new Object[] { buf.toString() });
-          }
-
-        } catch (SQLException e) {
-          throw new GestoreException("Errore nell'inserimento dei soggetti destinatari",null, e);
         }
       }
     }
 
+	Long idcomino = datiForm.getLong("W_INVCOM.IDCOMINO");
+	if (idcomino != null) {
+
+		FileAllegatoManager fileAllegatoManager = (FileAllegatoManager) UtilitySpring.getBean("fileAllegatoManager",
+				this.getServletContext(), FileAllegatoManager.class);
+      String dbFunctionDateToString = sqlManager.getDBFunction("DATETIMETOSTRING", new String[] { "firmacheckts" });
+      String select = "select idprg, iddocdig, dignomdoc, digdesdoc, digtipdoc, firmacheck, " + dbFunctionDateToString + " from w_docdig"
+				+ " where digkey1=? and dignomdoc not in ('comunicazione.pdf', 'comunicazione.pdf.tsd') and digent = 'W_INVCOM'";
+		try {
+			List<Vector<?>> listaAllegati = sqlManager.getListVector(select, new Object[] { idcomino.toString() });
+			if (listaAllegati != null && listaAllegati.size() > 0) {
+				for (int i = 0; i < listaAllegati.size(); i++) {
+					String idprgAllegato = SqlManager.getValueFromVectorParam(listaAllegati.get(i), 0).getStringValue();
+					Long iddocdig = (Long) SqlManager.getValueFromVectorParam(listaAllegati.get(i), 1).getValue();
+					String nomeAllegato = SqlManager.getValueFromVectorParam(listaAllegati.get(i), 2).getStringValue();
+					String descrizioneAllegato = SqlManager.getValueFromVectorParam(listaAllegati.get(i), 3).getStringValue();
+					String tipoAllegato = SqlManager.getValueFromVectorParam(listaAllegati.get(i), 4).getStringValue();
+					descrizioneAllegato =  UtilityStringhe.convertiNullInStringaVuota(descrizioneAllegato);
+                    JdbcParametro firmacheck = (JdbcParametro) listaAllegati.get(i).get(5);
+                    String firmacheckts = (String) ((JdbcParametro) listaAllegati.get(i).get(6)).getValue();
+
+					BlobFile fileAllegato = null;
+					ByteArrayOutputStream contenuto = null;
+					fileAllegato = fileAllegatoManager.getFileAllegato(idprgAllegato, iddocdig);
+
+					if (fileAllegato != null && fileAllegato.getStream() != null) {
+						contenuto = new ByteArrayOutputStream();
+						contenuto.write(fileAllegato.getStream());
+					} else {
+						contenuto = null;
+					}
+
+					Long newIddocdg = (Long) sqlManager
+							.getObject("select max(IDDOCDIG) + 1 from " + "W_DOCDIG where IDPRG='PG'", null);
+
+					DataColumnContainer dccW_docdig = new DataColumnContainer(new DataColumn[] {
+							new DataColumn("W_DOCDIG.IDPRG", new JdbcParametro(JdbcParametro.TIPO_TESTO, "PG")),
+							new DataColumn("W_DOCDIG.IDDOCDIG", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, newIddocdg)),
+							new DataColumn("W_DOCDIG.DIGENT", new JdbcParametro(JdbcParametro.TIPO_TESTO, "W_INVCOM")),
+							new DataColumn("W_DOCDIG.DIGKEY1", new JdbcParametro(JdbcParametro.TIPO_TESTO, "PG")),
+							new DataColumn("W_DOCDIG.DIGKEY2", new JdbcParametro(JdbcParametro.TIPO_TESTO, idcom)),
+							new DataColumn("W_DOCDIG.DIGNOMDOC", new JdbcParametro(JdbcParametro.TIPO_TESTO, nomeAllegato)),
+							new DataColumn("W_DOCDIG.DIGDESDOC", new JdbcParametro(JdbcParametro.TIPO_TESTO, descrizioneAllegato)),
+							new DataColumn("W_DOCDIG.DIGTIPDOC", new JdbcParametro(JdbcParametro.TIPO_TESTO, tipoAllegato)),
+							new DataColumn("W_DOCDIG.DIGOGG", new JdbcParametro(JdbcParametro.TIPO_BINARIO, contenuto)) });
+					dccW_docdig.insert("W_DOCDIG", this.sqlManager);
+                    ObjectStorageUtils.addFile("PG", newIddocdg);
+                    if (firmacheckts != null) {
+                      SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+                      java.util.Date parsedDate = dateFormat.parse(firmacheckts);
+                      sqlManager.update("update w_docdig set firmacheckts=?, firmacheck=? where idprg=? and iddocdig=?",
+                              new Object[] { new Timestamp(parsedDate.getTime()), firmacheck.getValue(), "PG", newIddocdg });
+                    }
+				}
+			}
+		} catch (SQLException | IOException | ParseException e) {
+			throw new GestoreException("Errore nell'inserimento dei documenti allegati", null, e);
+		}
+	}
 
 
     if (logger.isDebugEnabled())
       logger.debug("GestoreW_INVCOM: preInsert: fine metodo");
 
+  }
+  
+  private void inserisciSoggDestNoMail(String idprg, Long idcom, String codgar, String ngara, String ditta, String nomimo,String idanonimo) throws SQLException{
+    Long idcomdes = (Long) sqlManager.getObject("select max(idcomdes) + 1 from w_invcomdes where idprg = ? and idcom = ?",
+        new Object[] { idprg, idcom });
+    if (idcomdes == null) idcomdes = new Long(1);
+    String update = "insert into w_invcomdes (idprg, idcom, idcomdes, descodent,descodsog,desmail,desintest,comtipma,idanonimo)" +
+        " values(?,?,?,?,?,?,?,?,?) ";
+    sqlManager.update(update, new Object[] {idprg, idcom, idcomdes, "IMPR", ditta, null, nomimo, null, idanonimo });
   }
 
   private boolean inserisciSoggDest(String idprg, Long idcom,String dittao ,String codComponente, String nomimo ,PgManager pgManager ,
@@ -469,57 +590,70 @@ public class GestoreW_INVCOM extends AbstractGestoreChiaveNumerica {
     }
 
     Long COMPUB = (Long)datiForm.getObject("W_INVCOM.COMPUB");
-    if(datiForm.isModifiedColumn("W_INVCOM.COMPUB") && new Long (2).equals(COMPUB)) {
+    
+
+        
+    if(datiForm.isModifiedColumn("W_INVCOM.COMPUB")) {
 
     	String entita = "W_INVCOM";
     	String chiave1 = datiForm.getString("W_INVCOM.IDPRG");
-    	Long chiave2 = datiForm.getLong("W_INVCOM.IDCOM");
+        Long chiave2 = datiForm.getLong("W_INVCOM.IDCOM");
+        
+        try {
+        Long countDestinatari=(Long) sqlManager.getObject("select count(1) from w_invcomdes where idprg=? and idcom=?", new Object[] {chiave1,chiave2});
+        if(countDestinatari>0)
+          throw new GestoreException("Non è possibile cambiare tipo di comunicazione se sono presenti dei destinatari: "+countDestinatari +" trovati", "comunicazioni.destinatariPresenti");
+        }catch(SQLException s) {
+          throw new GestoreException("Errore nella lettura della lista dei destinatari", null);
+        }
 
-    	double dimMaxTotaleFileByte=0;
-    	String dimMaxTotaleFileStringa= null;
-    	long dimTotaleAllegati = 0;
-    	String idcfg = datiForm.getString("W_INVCOM.IDCFG");
-    	if(idcfg==null || "".equals(idcfg))
-    		idcfg = CostantiGenerali.PROP_CONFIGURAZIONE_MAIL_STANDARD;
-    	dimMaxTotaleFileStringa = validatorManager.getDimensioneMassimaFile(idcfg);
-
-    	//Si deve determinare la dimensione massima dei file già allegati e di quello che si sta allegando
-    	if(dimMaxTotaleFileStringa!= null && !"".equals(dimMaxTotaleFileStringa)){
-    		dimMaxTotaleFileStringa = dimMaxTotaleFileStringa.trim();
-    		dimMaxTotaleFileByte = Math.pow(2, 20) * Double.parseDouble(dimMaxTotaleFileStringa);
-
-
-    		try {
-
-    			List listaW_DOCDIG = sqlManager.getListVector("select IDDOCDIG,IDPRG  from W_DOCDIG where W_DOCDIG.DIGENT = ? AND W_DOCDIG.DIGKEY1 = ? AND W_DOCDIG.DIGKEY2 = ? "
-    					, new Object[]{entita, chiave1, chiave2});
-    			if(listaW_DOCDIG!=null && listaW_DOCDIG.size()>0){
-
-    				FileAllegatoManager fileAllegatoManager = (FileAllegatoManager) UtilitySpring.getBean(
-    						"fileAllegatoManager", this.getServletContext(), FileAllegatoManager.class);
-
-    				for(int i=0;i<listaW_DOCDIG.size();i++){
-    					Long iddocdig = (Long)SqlManager.getValueFromVectorParam(listaW_DOCDIG.get(i), 0).getValue();
-    					String idprg = (String)SqlManager.getValueFromVectorParam(listaW_DOCDIG.get(i), 1).getValue();
-    					BlobFile fileAllegatoBlob = fileAllegatoManager.getFileAllegato(idprg, iddocdig);
-
-    					if(fileAllegatoBlob!=null)
-    						dimTotaleAllegati += fileAllegatoBlob.getStream().length;
-
-    				}
-    			}
-    		} catch (SQLException e) {
-    			throw new GestoreException("Errore nella lettura degli allegati della comunicazione(W_DOCDIG.DIGOGG)", null);
-    		} catch (IOException e) {
-    			throw new GestoreException("Errore nella lettura degli allegati della comunicazione(W_DOCDIG.DIGOGG)", null);
-    		}
-    	}
-
-
-    	if(dimTotaleAllegati> dimMaxTotaleFileByte){  //Controllo sulla dimensione totale massima di tutti gli allegati
-            throw new GestoreException("La dimensione totale dei file da allegare supera il limite consentito dal server di posta "
-                + "di " + dimMaxTotaleFileStringa + " MB" , "upload.overflowMultiplo", new String[] { dimMaxTotaleFileStringa },null);
-          }
+        if(new Long (2).equals(COMPUB)) {
+      	double dimMaxTotaleFileByte=0;
+      	String dimMaxTotaleFileStringa= null;
+      	long dimTotaleAllegati = 0;
+      	String idcfg = datiForm.getString("W_INVCOM.IDCFG");
+      	if(idcfg==null || "".equals(idcfg))
+      		idcfg = CostantiGenerali.PROP_CONFIGURAZIONE_MAIL_STANDARD;
+      	dimMaxTotaleFileStringa = validatorManager.getDimensioneMassimaFile(idcfg);
+  
+      	//Si deve determinare la dimensione massima dei file già allegati e di quello che si sta allegando
+      	if(dimMaxTotaleFileStringa!= null && !"".equals(dimMaxTotaleFileStringa)){
+      		dimMaxTotaleFileStringa = dimMaxTotaleFileStringa.trim();
+      		dimMaxTotaleFileByte = Math.pow(2, 20) * Double.parseDouble(dimMaxTotaleFileStringa);
+  
+  
+      		try {
+  
+      			List listaW_DOCDIG = sqlManager.getListVector("select IDDOCDIG,IDPRG  from W_DOCDIG where W_DOCDIG.DIGENT = ? AND W_DOCDIG.DIGKEY1 = ? AND W_DOCDIG.DIGKEY2 = ? "
+      					, new Object[]{entita, chiave1, chiave2.toString()});
+      			if(listaW_DOCDIG!=null && listaW_DOCDIG.size()>0){
+  
+      				FileAllegatoManager fileAllegatoManager = (FileAllegatoManager) UtilitySpring.getBean(
+      						"fileAllegatoManager", this.getServletContext(), FileAllegatoManager.class);
+  
+      				for(int i=0;i<listaW_DOCDIG.size();i++){
+      					Long iddocdig = (Long)SqlManager.getValueFromVectorParam(listaW_DOCDIG.get(i), 0).getValue();
+      					String idprg = (String)SqlManager.getValueFromVectorParam(listaW_DOCDIG.get(i), 1).getValue();
+      					BlobFile fileAllegatoBlob = fileAllegatoManager.getFileAllegato(idprg, iddocdig);
+  
+      					if(fileAllegatoBlob!=null)
+      						dimTotaleAllegati += fileAllegatoBlob.getStream().length;
+  
+      				}
+      			}
+      		} catch (SQLException e) {
+      			throw new GestoreException("Errore nella lettura degli allegati della comunicazione(W_DOCDIG.DIGOGG)", null);
+      		} catch (IOException e) {
+      			throw new GestoreException("Errore nella lettura degli allegati della comunicazione(W_DOCDIG.DIGOGG)", null);
+      		}
+      	}
+  
+  
+      	if(dimTotaleAllegati> dimMaxTotaleFileByte){  //Controllo sulla dimensione totale massima di tutti gli allegati
+              throw new GestoreException("La dimensione totale dei file da allegare supera il limite consentito dal server di posta "
+                  + "di " + dimMaxTotaleFileStringa + " MB" , "upload.overflowMultiplo", new String[] { dimMaxTotaleFileStringa },null);
+            }
+        }
     }
 
   }

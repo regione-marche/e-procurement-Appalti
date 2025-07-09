@@ -54,7 +54,7 @@
 		}
 		listaNuovo.jspPathTo.value = "/WEB-INF/geneweb/w_invcom/w_invcom-scheda.jsp"
 		listaNuovo.entita.value = "W_INVCOM";
-		var parametri="&numModello=" + numModello + "&keyAdd=" + keyAdd + "&keyParent=" + keyParent;
+		var parametri="?numModello=" + numModello + "&keyAdd=" + keyAdd + "&keyParent=" + keyParent;
 		parametri+="&entitaWSDM=" + entitaWSDM + "&chiaveWSDM=" + chiaveWSDM + "&idconfi=" + idconfi;
 		if(ditta!="" && ditta!=null)
 			parametri+="&ditta=" + ditta;

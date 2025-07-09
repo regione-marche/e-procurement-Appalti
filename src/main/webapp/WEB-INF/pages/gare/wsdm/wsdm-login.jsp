@@ -13,7 +13,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 
 
-<tr>
+<tr id="rigaTitoloLogin">
 	<td colspan="2">
 		<c:if test="${param.gestioneVisualizzazioneContratta eq '1' }">
 			<a class="left" href="javascript:showParametriUtente()"><img id="onParametriUtente" src="${param.contextPath}/img/TreeExpand.png" alt="Apri dettaglio" title="Apri dettaglio" ><img id="offParametriUtente" src="${param.contextPath}/img/TreeCollapse.png" alt="Chiudi dettaglio" title="Chiudi dettaglio" style="display: none" ></a>
@@ -24,11 +24,11 @@
 </tr>
 <tr id="rigaUtente">
 	<td class="etichetta-dato">Utente (*)</td>
-	<td class="valore-dato"><input id="username" name="username" title="Utente" class="testo" type="text" size="24" value="" maxlength="100"/></td>
+	<td class="valore-dato"><input id="username" name="username" title="Utente" class="testo" type="text" size="24" value="" maxlength="100" autocomplete='new-password'/></td>
 </tr>
 <tr id="rigaPassword">
 	<td class="etichetta-dato">Password (*)</td>
-	<td class="valore-dato"><input id="password" name="password" title="Password" class="testo" type="password" size="24" value="" maxlength="100"/></td>
+	<td class="valore-dato"><input id="password" name="password" title="Password" class="testo" type="password" size="24" value="" maxlength="100" autocomplete='new-password'/></td>
 </tr>
 <tr id="rigaRuolo">
 	<td class="etichetta-dato">Ruolo (*)</td>

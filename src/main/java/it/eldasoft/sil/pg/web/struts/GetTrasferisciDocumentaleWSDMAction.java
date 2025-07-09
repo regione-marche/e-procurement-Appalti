@@ -6,7 +6,7 @@ import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
-import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.sil.pg.bl.tasks.ArchiviazioneDocumentiManager;
 
 import java.io.PrintWriter;
 import java.sql.SQLException;
@@ -26,6 +26,7 @@ public class GetTrasferisciDocumentaleWSDMAction extends Action {
   private SqlManager sqlManager;
   private GeneManager geneManager;
   private GestioneWSDMManager gestioneWSDMManager;
+  private ArchiviazioneDocumentiManager archiviazioneDocumentiManager;
   
   public void setGeneManager(GeneManager geneManager) {
     this.geneManager = geneManager;
@@ -35,6 +36,9 @@ public class GetTrasferisciDocumentaleWSDMAction extends Action {
   }
   public void setGestioneWSDMManager(GestioneWSDMManager gestioneWSDMManager) {
     this.gestioneWSDMManager = gestioneWSDMManager;
+  }
+  public void setArchiviazioneDocumentiManager(ArchiviazioneDocumentiManager archiviazioneDocumentiManager) {
+    this.archiviazioneDocumentiManager = archiviazioneDocumentiManager;
   }
   @Override
   public final ActionForward execute(final ActionMapping mapping, final ActionForm form, final HttpServletRequest request,
@@ -52,8 +56,9 @@ public class GetTrasferisciDocumentaleWSDMAction extends Action {
 
     String integrazioneWSDM="0";
     String trasferisciDocumentaleWSDM="0";    
-    String integrazioneCOS="0";
-    String trasferisciCOS="0";    
+    String integrazioneConservazione="0";
+    String trasferisciCOS="0";
+    String trasferisciDigiP="0";
 
 
     try {
@@ -64,10 +69,7 @@ public class GetTrasferisciDocumentaleWSDMAction extends Action {
       throw new GestoreException("Errore nella verifica dell'integrazione WSDM Protocollo per la gara " + codiceGara, null, e);
     }
 
-    String val = ConfigManager.getValore("cos.sftp.url");
-    if(!"".equals(val)){
-      integrazioneCOS = "1";
-    }
+    integrazioneConservazione = archiviazioneDocumentiManager.getSistemaConservazione(codiceGara);
     
     if("1".equals(integrazioneWSDM)){
       //Verifico se la funzione risulta abilitata da profilo
@@ -82,22 +84,16 @@ public class GetTrasferisciDocumentaleWSDMAction extends Action {
       trasferisciDocumentaleWSDM = "0";
     }
 
-    if("1".equals(integrazioneCOS)){
-      //Verifico se la funzione risulta abilitata da profilo
-      if (this.geneManager.getProfili().checkProtec((String) request.getSession().getAttribute(
-          CostantiGenerali.PROFILO_ATTIVO), "FUNZ", "VIS", "ALT.GARE.TrasferisciCos")){
-        trasferisciCOS = "1";
-      }else{
-        trasferisciCOS = "0";
-      }
-
-    }else{
-      trasferisciCOS = "0";
+    if("1".equals(integrazioneConservazione) && this.geneManager.getProfili().checkProtec((String) request.getSession().getAttribute(CostantiGenerali.PROFILO_ATTIVO), "FUNZ", "VIS", "ALT.GARE.TrasferisciCos")){
+      trasferisciCOS = "1";
+    }
+    if("2".equals(integrazioneConservazione) && this.geneManager.getProfili().checkProtec((String) request.getSession().getAttribute(CostantiGenerali.PROFILO_ATTIVO), "FUNZ", "VIS", "ALT.GARE.TrasferisciDigiP")){
+      trasferisciDigiP = "1";
     }
     
     JSONArray jsonArray = new JSONArray();
 
-    jsonArray.add(new Object[] { trasferisciDocumentaleWSDM, trasferisciCOS });
+    jsonArray.add(new Object[] { trasferisciDocumentaleWSDM, trasferisciCOS, trasferisciDigiP});
 
     out.println(jsonArray);
     out.flush();

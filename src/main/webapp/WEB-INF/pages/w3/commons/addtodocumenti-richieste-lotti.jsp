@@ -23,4 +23,22 @@
 			</c:choose>
 		</tr>
 	</c:if>
+	<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.W3.W3GARA-scheda.W3LOTT.aggiornamentoMassivo")}'>
+		<tr>
+			<c:choose>
+		        <c:when test='${isNavigazioneDisattiva ne "1"}'>
+		          <td class="vocemenulaterale">
+					<a href="javascript:listaModificaSelezione();" title="Aggiornamento massivo lotti selezionati" tabindex="1514">
+						Aggiornamento massivo lotti selezionati
+					</a>
+				  </td>
+		        </c:when>
+			    <c:otherwise>
+			       <td>
+					 Aggiornamento massivo lotti selezionati
+				   </td>
+			    </c:otherwise>
+			</c:choose>
+		</tr>
+	</c:if>
 </c:if>

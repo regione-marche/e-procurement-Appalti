@@ -20,9 +20,13 @@
 
 <gene:redefineInsert name="head">
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>		
+	<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/jquery/modaleAcquisizioniPortale/modale.acquisizioni.css" >
 </gene:redefineInsert>
 
 <gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.GestioneFasiRicezioneFunction" parametro="${key}" />
+
+<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.IsElencoElPremFunction" />
+<c:set var="delpremcont" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.GetDelpremcontFromNgaraFunction", pageContext, not empty gene:getValCampo(key,"NGARA") ? gene:getValCampo(key,"NGARA") : gene:getValCampo(key,"CODGAR"))}' />
 
 <c:set var="listaOpzioniDisponibili" value="${fn:join(opzDisponibili,'#')}#"/>
 
@@ -228,6 +232,18 @@
 </c:if>
 
 
+<c:if test="${isProceduraTelematica eq 'true' }">
+	<c:choose>
+		<c:when test='${isGaraLottiConOffertaUnica ne "true"}'>
+			<c:set var="valoreChiave" value="${gene:getValCampo(key,'NGARA') }"/>
+		</c:when >
+		<c:otherwise>
+			<c:set var="valoreChiave" value='${gene:getValCampo(key, "TORN.CODGAR")}'/>
+		</c:otherwise>
+	</c:choose>
+	
+</c:if>
+
 <c:if test="${isProceduraTelematica eq 'true' && paginaAttivaWizard eq step2Wizard }">
 	<c:choose>
 		<c:when test='${isGaraLottiConOffertaUnica ne "true"}'>
@@ -351,11 +367,11 @@
 									</tr>
 								</c:if>
 								
-								<c:if test='${isGaraUsoAlbo and autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) and bloccoAggiudicazione ne 1
+								<c:if test='${isGaraUsoAlbo and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) and bloccoAggiudicazione ne 1
 										and (isProceduraTelematica ne "true" or isInserimentoTelematica eq "true") }'>
 									<c:set var="tipoalgo" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTIPOALGOFunction", pageContext, codiceElenco)}'/>
-									<c:if test="${modalitaSelezioneDitteElenco eq 'MAN' or  modalitaSelezioneDitteElenco eq 'MISTA'}">	
-										<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selUltimaAggiudicataria")}'>
+									<c:if test="${modalitaSelezioneDitteElenco eq 'MAN' or  modalitaSelezioneDitteElenco eq 'MISTA' or (modalitaSelezioneDitteElenco eq 'AUTO' and isElencoElPrem eq 'true')}">
+										<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selUltimaAggiudicataria")}'>
 											<tr>
 												<td class="vocemenulaterale">
 													<a href="javascript:SelUltimaAgg();" title='Sel. da elenco ultima aggiudicataria' tabindex="1501">
@@ -364,19 +380,29 @@
 												</td>
 											</tr>
 										</c:if>
-										
-										<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selDaElenco")}'>
+
+										<c:if test='${isElencoElPrem eq "true" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selElPrem")}'>
+											<tr>
+												<td class="vocemenulaterale">
+													<a href="javascript:selezioneElementiPremiali();" title='Sel. da elenco elementi premiali (1)' tabindex="1501">
+														Sel. da elenco elementi premiali (1)
+													</a>
+												</td>
+											</tr>
+										</c:if>
+
+										<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selDaElenco")}'>
 											<c:set var="aggnumord" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetAGGNUMORDFunction", pageContext, codiceElenco)}'/>
 											<tr>
 												<td class="vocemenulaterale">
-													<a href="javascript:SelEleOpEco(0);" title='Sel. da elenco mediante rotazione' tabindex="1501">
-														Sel. da elenco mediante rotazione
+													<a href="javascript:SelEleOpEco(0);" title='Sel. da elenco mediante rotazione${isElencoElPrem eq "true" ? " (2)" : ""}' tabindex="1501">
+														Sel. da elenco mediante rotazione${isElencoElPrem eq "true" ? " (2)" : ""}
 													</a>
 												</td>
 											</tr>
 										</c:if>
 									</c:if>
-									<c:if test="${(modalitaSelezioneDitteElenco eq 'AUTO' or  modalitaSelezioneDitteElenco eq 'MISTA') and  gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selDaElenco')}">
+									<c:if test="${autorizzatoModifiche ne 2 and (modalitaSelezioneDitteElenco eq 'AUTO' or  modalitaSelezioneDitteElenco eq 'MISTA') and !(isElencoElPrem eq 'true') and  gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selDaElenco')}">
 										<tr>
 											<td class="vocemenulaterale">
 												<a href="javascript:SelEleOpEco(1);" title='Sel. autom. da elenco mediante rotazione' tabindex="1501">
@@ -386,7 +412,7 @@
 										</tr>
 									</c:if>
 								</c:if>
-								
+
 								<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.EsportaDitteInGara")  and garaLottoUnico and visualizzareExportDitte eq "1"}'>
 									<tr>
 										<td class="vocemenulaterale">
@@ -441,9 +467,19 @@
 										</td>
 									</tr>
 								</c:if>
+								<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) and !empty ngarapa
+										and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selDitteConcorso") and isInserimentoTelematica eq "true" and !(datiRiga.rowCount>0)}'>
+									<tr>
+										<td class="vocemenulaterale">
+											<a href="javascript:SelDitteConcorso();" title='Selezione ditte da 1° grado' tabindex="1502">
+												Selezione ditte da 1° grado
+											</a>
+										</td>
+									</tr>
+								</c:if>
 								
 								<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) and gene:checkProtFunz(pageContext,"DEL","LISTADELSEL") and bloccoAggiudicazione ne 1
-										and (isProceduraTelematica ne "true" or isInserimentoTelematica eq "true") and  (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA")}'>
+										and (isProceduraTelematica ne "true" or isInserimentoTelematica eq "true") and  (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA" or (modalitaSelezioneDitteElenco eq "AUTO" and isElencoElPrem eq "true"))}'>
 									<tr>
 										<td class="vocemenulaterale">
 											<a href="javascript:listaEliminaSelezione();" title="Elimina selezionati" tabindex="1503">
@@ -490,9 +526,13 @@
 							<c:if test='${paginaAttivaWizard eq step5Wizard and fn:contains(listaOpzioniDisponibili, "OP114#")
 								and bloccoAggiudicazione ne 1 and autorizzatoModifiche ne 2 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.AcquisisciOfferteDaPortale") and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione)}'>
 								<c:if test="${isProceduraTelematica eq 'true' and faseGara eq '1'}">
+									
+									<c:if test="${isSuperataDataTerminePresentazione ne 'false' }">
+										<c:set var="numDitteGaraCorso" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.ConteggioDitteFunction", pageContext, valoreChiave,"ACQUISIZIONE = 9 AND AMMGAR = \'2\'")}' />
+									</c:if>
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:AcquisisciOfferteDaPortale();" title='Acquisisci offerte da portale Appalti' tabindex="1505">
+											<a href="javascript:apriModaleAcquisizioneOfferte();" title='Acquisisci offerte da portale Appalti' tabindex="1505">
 												Acquisisci offerte da portale Appalti
 											</a>
 										</td>
@@ -505,7 +545,7 @@
 								<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.AcquisisciDomandePartecipazioneDaPortale")}'>
 									<tr>
 										<td class="vocemenulaterale">
-											<a href="javascript:AcquisisciDomandeDaPortale();" title='Acquisisci domande partecipazione da portale Appalti' tabindex="1506">
+											<a href="javascript:apriModaleAcquisizioneDomande();" title='Acquisisci domande partecipazione da portale Appalti' tabindex="1506">
 												Acquisisci dom.partec. da portale Appalti
 											</a>
 										</td>
@@ -585,7 +625,7 @@
 									</td>
 								</tr>
 							</c:if>
-							<c:if test="${autorizzatoModifiche ne '2' and paginaAttivaWizard eq step2Wizard and gene:checkProt(pageContext, 'COLS.VIS.GARE.DITG.STATODGUEPREQ') and isDGUEAbilitato eq '1'}">
+							<c:if test="${autorizzatoModifiche ne '2' and paginaAttivaWizard eq step2Wizard and gene:checkProt(pageContext, 'COLS.VIS.GARE.DITG.STATODGUEPREQ') and isDGUEAbilitato eq '1' and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIGARA.AnalizzaDGUE')}">
 								<tr>
 									<td class="vocemenulaterale">
 										<a href="javascript:analisiDocumentiDGUE('');" title='Analizza DGUE' tabindex="1512">
@@ -594,19 +634,39 @@
 									</td>
 								</tr>
 							</c:if>
-							<c:if test="${paginaAttivaWizard eq step2Wizard and gene:checkProt(pageContext, 'COLS.VIS.GARE.DITG.STATODGUEAMM') and isDGUEAbilitato eq '1'}">
+							<c:if test="${paginaAttivaWizard eq step2Wizard and gene:checkProt(pageContext, 'COLS.VIS.GARE.DITG.STATODGUEAMM') and isDGUEAbilitato eq '1' and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIGARA.ExportDGUE')}">
 									<tr id="dgue_export">
 										<td class="vocemenulaterale">
-											<a href="javascript:exportExcelDGUE('');" title='Esporta in excel analisi DGUE' tabindex="1513">
-												Esporta in excel analisi DGUE
+											<a href="javascript:exportExcelDGUE('');" title='Esporta analisi DGUE in excel' tabindex="1513">
+												Esporta analisi DGUE in excel
 											</a>
 										</td>
 									</tr>
 								</c:if>
-							<c:if test='${gene:checkProt(pageContext, strProtVisualizzaFasiRicezione)}'>
+							<c:if test="${autorizzatoModifiche ne '2' and  paginaAttivaWizard eq step2Wizard and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIRICEZIONE.ConcludiIndagineMercato') and itergaMacro eq '7'}">
+									
+									<tr >
+										<td class="vocemenulaterale">
+											<c:choose>
+												<c:when test="${isriconclusa ne '1' }">
+													<a href="javascript:apriModaleIndagineMercato(1);" title='Concludi indagine di mercato' tabindex="1514">
+														Concludi indagine di mercato
+													</a>	
+												</c:when>
+												<c:otherwise>
+													<a href="javascript:apriModaleIndagineMercato(2);" title='Annulla conclusione indagine di mercato' tabindex="1514">
+														Annulla conclusione indagine di mercato
+													</a>
+												</c:otherwise>
+											</c:choose>
+											
+										</td>
+									</tr>
+							</c:if>
+							<c:if test='${gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIGARA.impostaFiltro") and ((iterga ne "9" and iterga ne "10") or isfineconc eq "1")}'>
 								<tr>
 									<td class="vocemenulaterale">
-										<a href="javascript:impostaFiltro();" title='Imposta filtro' tabindex="1514">
+										<a href="javascript:impostaFiltro();" title='Imposta filtro' tabindex="1515">
 											Imposta filtro
 										</a>
 									</td>
@@ -616,7 +676,7 @@
                             <c:if test='${(paginaAttivaWizard > step1Wizard and not (isProceduraAggiudicazioneAperta or isProceduraNegoziata)) or (paginaAttivaWizard > step3Wizard and isProceduraNegoziata) or (paginaAttivaWizard > step5Wizard and isProceduraAggiudicazioneAperta)}'>
 								<tr>
 									<td class="vocemenulaterale">
-										<a href="javascript:indietro();" title='Fase precedente' tabindex="1515">
+										<a href="javascript:indietro();" title='Fase precedente' tabindex="1516">
 											< Fase precedente
 										</a>
 									</td>
@@ -628,7 +688,7 @@
 									or (paginaAttivaWizard == step1Wizard and isIndagineMercato and !(isProceduraTelematica eq "true" and (faseGara <-4 or empty faseGara)))}'>
 								<tr>
 									<td class="vocemenulaterale">
-										<a href="javascript:avanti();" title='Fase seguente' tabindex="1516">
+										<a href="javascript:avanti();" title='Fase seguente' tabindex="1517">
 											Fase seguente >
 										</a>
 									</td>
@@ -663,13 +723,13 @@
 				</gene:set>
 				<gene:campoLista title="Opzioni<center>${titoloMenu}</center>" width="50" >
 					<c:choose>
-						<c:when test='${empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA"}'>
+						<c:when test='${empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA" or (modalitaSelezioneDitteElenco eq "AUTO" and isElencoElPrem eq "true")}'>
 							<gene:PopUp variableJs="rigaPopUpMenu${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'" >
 									<c:if test="${(isProceduraTelematica ne 'true' or isInserimentoTelematica eq 'true' ) and datiRiga.DITG_ACQAUTO ne '1'}">
 										<gene:PopUpItem title="Elimina ditta" href="listaElimina()" />
 									</c:if>
 									<c:if test='${gene:checkProtFunz(pageContext, "ALT","Copia-ditta") and garaLottoUnico eq "false" and isGaraLottiConOffertaUnica eq "false" 
-									and (isProceduraTelematica ne "true" or isInserimentoTelematica eq "true")}'>
+									and (isProceduraTelematica ne "true" or isInserimentoTelematica eq "true") and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA")}'>
 										<gene:PopUpItem title="Copia ditta in altri lotti" href="copiaDitta('${chiaveRigaJava}')" />
 									</c:if>
 									<c:if test="${gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.InvioComunicazione')}">
@@ -692,7 +752,7 @@
 					</c:choose>
 					
 
-					<c:if test="${(isProceduraTelematica ne 'true' or isInserimentoTelematica eq 'true') and(empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq 'MAN' or (modalitaSelezioneDitteElenco eq 'MISTA' and datiRiga.DITG_ACQAUTO ne '1')) }">
+					<c:if test="${(isProceduraTelematica ne 'true' or isInserimentoTelematica eq 'true') and(empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq 'MAN' or (modalitaSelezioneDitteElenco eq 'MISTA' and datiRiga.DITG_ACQAUTO ne '1') or (modalitaSelezioneDitteElenco eq 'AUTO' and isElencoElPrem eq 'true')) }">
 						<input type="checkbox" name="keys" value="${chiaveRiga}"  />
 					</c:if>
 				</gene:campoLista>
@@ -727,7 +787,7 @@
 						<c:if test="${gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.RichiestaSoccorsoIstruttorio') && paginaAttivaWizard == step2Wizard && autorizzatoModifiche ne 2}">
 							<c:set var="statoSoccIstr" value="${datiRiga.V_DITGAMMIS_AMMGAR}"/>
 							<c:if test="${statoSoccIstr ne 10 and isGaraLottiConOffertaUnica eq 'true'}">
-								<c:set var="whereSoccorso" value="CODGAR='${codiceGara }' and DITTAO='${datiRiga.DITG_DITTAO}' and CODGAR!=NGARA and FASGAR=${varTmp} and AMMGAR='10'"/>
+								<c:set var="whereSoccorso" value="CODGAR='${codiceGara }' and DITTAO='${datiRiga.DITG_DITTAO}' and CODGAR!=NGARA and FASGAR=${varTmp} and AMMGAR=10"/>
 								<c:set var="numLottiSoccorso" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "count(CODGAR)","V_DITGAMMIS", whereSoccorso)}'/>
 								<c:if test="${not empty numLottiSoccorso and numLottiSoccorso ne 0 }">
 									<c:set var="statoSoccIstr" value="10"/>
@@ -737,7 +797,7 @@
 								<gene:PopUpItem title="Richiedi soccorso istruttorio" href="richiestaSoccorsoIstruttorio('${chiaveRigaJava}','${modelloSoccoroIstruttorioConfigurato }','${idconfi}','${numeroModello }','${varTmp}')" />
 							</c:if>
 						</c:if>
-						<c:if test='${paginaAttivaWizard eq step2Wizard and gene:checkProt(pageContext, "COLS.VIS.GARE.DITG.STATODGUEPREQ") and isDGUEAbilitato eq "1"}'>
+						<c:if test='${paginaAttivaWizard eq step2Wizard and gene:checkProt(pageContext, "COLS.VIS.GARE.DITG.STATODGUEPREQ") and isDGUEAbilitato eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIGARA.AnalizzaDGUE")}'>
 							<gene:PopUpItem title="Analizza DGUE" href="analisiDocumentiDGUE('${datiRiga.DITG_DITTAO}')" />
 						</c:if>
 					</gene:PopUp>
@@ -771,7 +831,7 @@
 				<gene:campoLista title="N.invito" campo="NUMORDINV" headerClass="sortable" width="50" visibile="${sortinv eq 1 && (paginaAttivaWizard eq step2Wizard || paginaAttivaWizard eq step3Wizard)}" />
 				<gene:campoLista title="N.pl" campo="NUMORDPL" headerClass="sortable" width="32" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoNumeroProgressivoDITG" visibile="${paginaAttivaWizard eq step5Wizard}"/>
 				<c:set var="link" value='javascript:archivioImpresa("${datiRiga.DITG_DITTAO}");' />
-				<gene:campoLista campo="NOMIMO" headerClass="sortable" href='${gene:if(gene:checkProt(pageContext, "MASC.VIS.GENE.ImprScheda"), link, "")}' />
+				<gene:campoLista campo="NOMIMO" headerClass="sortable" href='${gene:if(gene:checkProt(pageContext, "MASC.VIS.GENE.ImprScheda") && !((iterga eq "9" || iterga eq "10") and isfineconc ne "1") , link, "")}' />
 				<gene:campoLista campo="DRICIND" title="Data pres. dom.part." headerClass="sortable" visibile="${paginaAttivaWizard eq step1Wizard && ((isProceduraTelematica && updateLista ne 1) || !isProceduraTelematica)}" edit="${updateLista eq 1 }" />
 				<gene:campoLista campo="ORADOM" title="Ora" visibile="${paginaAttivaWizard eq step1Wizard && ((isProceduraTelematica && updateLista ne 1) || !isProceduraTelematica)}" edit="${updateLista eq 1 }" />
 				<c:if test='${paginaAttivaWizard eq step1Wizard and isProceduraTelematica && updateLista eq 1}' >
@@ -818,7 +878,7 @@
 				<c:set var="linkAbilitato" value='true'/>
 				<c:if test="${condizioniGestioneBuste}">
 					<c:set var="isBustaElaborata" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.IsBustaElaborataFunction", pageContext,datiRiga.DITG_NGARA5,datiRiga.DITG_DITTAO, "FS10A")}' />
-					<c:if test="${isBustaElaborata eq 'No' }">
+					<c:if test="${isBustaElaborata eq 'No' or isBustaElaborata eq 'Ritirata'}">
 						<c:set var="estensioneDisabilitata" value='-disabilitato'/>
 						<c:set var="linkAbilitato" value='false'/>
 					</c:if>
@@ -914,9 +974,9 @@
 								</c:otherwise>
 							</c:choose>	
 						</c:if>
-						<c:if test="${linkAbilitato}"><a href="javascript:chiaveRiga='${chiaveRigaJava}';ulterioriCampi(${currentRow+1}, '${chiaveRigaJava}');" title="Ulteriori dettagli" ></c:if>
-							<img width="16" height="16" title="${iconaTooltip}" alt="Ulteriori dettagli" src="${pageContext.request.contextPath}/img/opzioni${note}${estensioneDisabilitata}.png"/>
-						<c:if test="${linkAbilitato}"></a></c:if>
+						<c:if test="${linkAbilitato or isBustaElaborata eq 'Ritirata'}"><a href="javascript:chiaveRiga='${chiaveRigaJava}';ulterioriCampi(${currentRow+1}, '${chiaveRigaJava}');" title="Ulteriori dettagli" ></c:if>
+							<img width="16" height="16" title="${iconaTooltip}" alt="Ulteriori dettagli" src="${pageContext.request.contextPath}/img/opzioni${note}${isBustaElaborata ne 'Ritirata' ? estensioneDisabilitata : ''}.png"/>
+						<c:if test="${linkAbilitato or isBustaElaborata eq 'Ritirata'}"></a></c:if>
 					</gene:campoLista>
 				</c:if>
 				
@@ -924,12 +984,15 @@
 					<gene:campoLista title="&nbsp;" width="20">
 						<c:choose>
 							<c:when test="${isBustaElaborata eq 'No' }">
-								<c:if test="${autorizzatoModifiche ne 2}"><a href="javascript:chiaveRiga='${chiaveRigaJava}';aperturaBuste('${chiaveRigaJava}', 'FS10A');" title="Busta prequalifica da acquisire" ></c:if>
+								<c:if test="${autorizzatoModifiche ne 2}"><a href="javascript:chiaveRiga='${chiaveRigaJava}';aperturaBusteFS10A('${chiaveRigaJava}',${currentRow});" title="Busta prequalifica da acquisire" ></c:if>
 									<img width="16" height="16" title="Busta prequalifica da acquisire" alt="Busta prequalifica da acquisire" src="${pageContext.request.contextPath}/img/bustaChiusa.png"/>
 								<c:if test="${autorizzatoModifiche ne 2}"></a></c:if>
 							</c:when>
 							<c:when test="${isBustaElaborata eq 'NonEsiste' }">
 								<img width="16" height="16" title="Busta prequalifica non presentata" alt="Busta prequalifica non presentata" src="${pageContext.request.contextPath}/img/bustaApertaVuota.png"/>
+							</c:when>
+							<c:when test="${isBustaElaborata eq 'Ritirata' }">
+								<img width="16" height="16" title="Offerta ritirata" alt="Offerta ritirata" src="${pageContext.request.contextPath}/img/bustaRitirata.png"/>
 							</c:when>
 							<c:otherwise>
 								<img width="16" height="16" title="Busta prequalifica acquisita" alt="Busta prequalifica acquisita" src="${pageContext.request.contextPath}/img/bustaAperta.png"/>
@@ -1181,7 +1244,7 @@
 						and bloccoAggiudicazione ne 1 and autorizzatoModifiche ne 2 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.AcquisisciOfferteDaPortale") and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione)}'>
 						<c:if test="${isProceduraTelematica eq 'true' and faseGara eq '1'}">
 							<br><br>
-							<INPUT type="button"  class="bottone-azione" value='Acquisisci offerte da portale Appalti' title='Acquisisci offerte da portale Appalti' onclick="javascript:AcquisisciOfferteDaPortale();">&nbsp;
+							<INPUT type="button"  class="bottone-azione" value='Acquisisci offerte da portale Appalti' title='Acquisisci offerte da portale Appalti' onclick="javascript:apriModaleAcquisizioneOfferte();">&nbsp;
 						</c:if>
 					</c:if>
 					
@@ -1189,7 +1252,7 @@
 						and bloccoAggiudicazione ne 1 and autorizzatoModifiche ne 2  and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione)}'>
 						<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.AcquisisciDomandePartecipazioneDaPortale") }'>
 							<br><br>
-							<INPUT type="button"  class="bottone-azione" value='Acquisisci domande partecipazione da portale Appalti' title='Acquisisci domande partecipazione da portale Appalti' onclick="javascript:AcquisisciDomandeDaPortale();">&nbsp;
+							<INPUT type="button"  class="bottone-azione" value='Acquisisci domande partecipazione da portale Appalti' title='Acquisisci domande partecipazione da portale Appalti' onclick="javascript:apriModaleAcquisizioneDomande();">&nbsp;
 						</c:if>
 						<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.AttivaAperturaDomandePart") }'>
 							<br><br>
@@ -1229,24 +1292,29 @@
 						</c:if>
 					</c:if>
 
+					<c:if test="${autorizzatoModifiche ne 2 and paginaAttivaWizard eq step2Wizard and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIRICEZIONE.ConcludiIndagineMercato') and itergaMacro eq '7' and isriconclusa ne '1'}">
+						<br><br>
+						<INPUT type="button"  class="bottone-azione" value='Concludi indagine di mercato' title='Concludi indagine di mercato' onclick="javascript:apriModaleIndagineMercato(1);">
+					</c:if>
+
 					<c:if test='${((paginaAttivaWizard eq step1Wizard and not isProceduraAggiudicazioneAperta) or (paginaAttivaWizard eq step5Wizard and isProceduraAggiudicazioneAperta) or (paginaAttivaWizard eq step3Wizard and isProceduraNegoziata)) and bloccoAggiudicazione ne 1}'>
 						<c:if test='${integrazioneAUR eq "1" and autorizzatoModifiche ne 2 and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE-scheda.FASIRICEZIONE.acquisizioneAUR") and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) and gene:checkProtFunz(pageContext, "INS", "INS")}'>
 							<br><br>
 							<INPUT type="button"  class="bottone-azione" value='Acquisisci da AUR' title='Acquisisci da AUR' onclick="javascript:acquisisciDaAUR();">&nbsp;&nbsp;&nbsp;
 						</c:if>
 						<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) 
-								and (isProceduraTelematica ne "true" or isInserimentoTelematica eq "true") and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA")}'>
+								and (isProceduraTelematica ne "true" or isInserimentoTelematica eq "true") and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA" or (modalitaSelezioneDitteElenco eq "AUTO" and isElencoElPrem eq "true"))}'>
 							<br><br>
-							<c:if test='${integrazioneWSERP eq "1" && isProceduraNegoziata}'>
+							<c:if test='${integrazioneWSERP eq "1" && isProceduraNegoziata and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA")}'>
 								<c:choose>
-									<c:when test='${tipoWSERP eq "RAI"}'>
+									<c:when test='${tipoWSERP eq "RAI" || (tipoWSERP eq "RAIWAY" && gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.selezionaOperatoreAlboErp"))}'>
 										<INPUT type="button"  class="bottone-azione" value='Seleziona operatori da Albo Fornitori SAP' title='Seleziona operatori da Albo Fornitori SAP' onclick="javascript:selAlboFornitori();">
 									</c:when>
 									<c:otherwise>
 									</c:otherwise>
 								</c:choose>
 							</c:if>
-							<c:if test='${gene:checkProtFunz(pageContext, "INS", "INS") and empty ngaraaq}'>
+							<c:if test='${gene:checkProtFunz(pageContext, "INS", "INS") and empty ngaraaq and (empty modalitaSelezioneDitteElenco or modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA")}'>
 								<INPUT type="button"  class="bottone-azione" value='Aggiungi ditta da anagrafica' title='Aggiungi ditta da anagrafica' onclick="javascript:aggiungiDitta();">&nbsp;&nbsp;&nbsp;
 							</c:if>
 							<c:if test='${gene:checkProtFunz(pageContext, "DEL", "LISTADELSEL")}'>
@@ -1259,9 +1327,17 @@
 							<br><br>
 							<INPUT type="button"  class="bottone-azione" value='Selezione ditte per rilancio' title='Selezione ditte per rilancio' onclick="javascript:SelDitteRilancio();">
 						</c:if>
-						<c:if test='${isGaraUsoAlbo and autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione)
+						<c:if test='${autorizzatoModifiche ne 2 and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione) and !empty ngarapa
+										and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selDitteConcorso") and isProceduraNegoziata and isInserimentoTelematica eq "true" and !(datiRiga.rowCount>0)}'>
+							<br><br>
+							<INPUT type="button"  class="bottone-azione" value='Selezione ditte da 1° grado' title='Selezione ditte da 1° grado' onclick="javascript:SelDitteConcorso();">
+						</c:if>
+						<c:if test='${isGaraUsoAlbo and gene:checkProt(pageContext, strProtVisualizzaFasiRicezione)
 							and (isProceduraTelematica ne "true" or isInserimentoTelematica eq "true")}'>
 							<br><br>
+							<c:if test='${isElencoElPrem eq "true" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selElPrem")}'>
+								<INPUT type="button"  class="bottone-azione" value='Sel. da elenco elementi premiali (1)' title='Sel. da elenco elementi premiali (1)' onclick="javascript:selezioneElementiPremiali();">
+							</c:if>
 							<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FASIRICEZIONE.selDaElenco")}'>
 								<c:set var="aggnumord" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetAGGNUMORDFunction", pageContext, codiceElenco)}'/>
 								<c:choose>
@@ -1275,11 +1351,10 @@
 								 	</c:otherwise>
 								</c:choose>
 								<c:set var="stazioneAppaltante" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetStazioneAppaltanteFunction", pageContext, chiave, ent)}'/>
-								
-								<c:if test='${modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA"}'>
-										<INPUT type="button"  class="bottone-azione" value='Sel. da elenco mediante rotazione' title='Sel. da elenco mediante rotazione' onclick="javascript:SelEleOpEco(0);">
+								<c:if test='${(modalitaSelezioneDitteElenco eq "MAN" or  modalitaSelezioneDitteElenco eq "MISTA" or (modalitaSelezioneDitteElenco eq "AUTO" and isElencoElPrem eq "true")) and autorizzatoModifiche ne 2}'>
+										<INPUT type="button"  class="bottone-azione" value='Sel. da elenco mediante rotazione${isElencoElPrem eq "true" ? " (2)" : ""}' title='Sel. da elenco mediante rotazione${isElencoElPrem eq "true" ? " (2)" : ""}' onclick="javascript:SelEleOpEco(0);">
 								</c:if>
-								<c:if test='${modalitaSelezioneDitteElenco eq "AUTO" or  modalitaSelezioneDitteElenco eq "MISTA"}'>
+								<c:if test='${(modalitaSelezioneDitteElenco eq "AUTO" or  modalitaSelezioneDitteElenco eq "MISTA") and !(isElencoElPrem eq "true") and autorizzatoModifiche ne 2}'>
 										<INPUT type="button"  class="bottone-azione" value='Sel. autom. da elenco mediante rotazione' title='Sel. autom. da elenco mediante rotazione' onclick="javascript:SelEleOpEco(1);">
 								</c:if>
 							</c:if>
@@ -1294,6 +1369,7 @@
 							<INPUT type="button"  class="bottone-azione" value='Importa da formato M-Appalti' title='Importa da formato M-Appalti' onclick="javascript:importDitte();">
 						</c:if>
 					</c:if>
+					
 					
 				</c:otherwise>
 			</c:choose>
@@ -1324,7 +1400,7 @@ var idconfi = '${idconfi}';
 			<c:if test="${tipoDoc eq 6 }">
 				$('[id^="DOCUMGARA_ALLMAIL_"]').attr('disabled',false);
 			</c:if>
-			document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+			document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 			document.forms[0].encoding="multipart/form-data";
 			document.forms[0].updateLista.value = "0";
 			schedaConferma();
@@ -1486,7 +1562,7 @@ var idconfi = '${idconfi}';
 			document.getElementById("V_DITGAMMIS_MOTIVESCL_" + numeroRiga).value = "";
 			document.getElementById("V_DITGAMMIS_DETMOTESCL_" + numeroRiga).value = "";
 			//alert("objId = '" + objId + "', numeroRiga = '" + numeroRiga + "', getValue(objId) = '" + getValue(objId) + "'");
-			if(document.getElementById(objId).value != "2" && document.getElementById(objId).value != "6"){
+			if(document.getElementById(objId).value != "2" && document.getElementById(objId).value != "6" && document.getElementById(objId).value != "9" && document.getElementById(objId).value != "11"){
 //				setValue("V_DITGAMMIS_FASGAR_" + numeroRiga, "");
 		<c:choose>
 			<c:when test='${paginaAttivaWizard < step5Wizard}'>
@@ -1866,7 +1942,7 @@ var idconfi = '${idconfi}';
 			
 			
 			if(document.forms[0].action.indexOf("Scheda.do") >= 0){
-				document.forms[0].action = "${pageContext.request.contextPath}/Lista.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/Lista.do";
 				document.forms[0].keyParent.value = document.forms[0].key.value;
 			} else {
 				document.forms[0].pgSort.value = "";
@@ -1924,7 +2000,7 @@ var idconfi = '${idconfi}';
 	<c:if test='${paginaAttivaWizard > step1Wizard}'>
 		function indietro(){
 			if(document.forms[0].action.indexOf("Scheda.do") >= 0){
-				document.forms[0].action = "${pageContext.request.contextPath}/Lista.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/Lista.do";
 				document.forms[0].keyParent.value = document.forms[0].key.value;
 			} else {
 				document.forms[0].pgSort.value = "";
@@ -1985,7 +2061,7 @@ var idconfi = '${idconfi}';
 	</c:when>
 	<c:otherwise>
 		var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
+		document.location.href = contextPath + "/ApriPagina.do?" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
 	</c:otherwise>
 </c:choose>
 	}
@@ -1993,9 +2069,10 @@ var idconfi = '${idconfi}';
 	
 
 <c:if test='${not empty RISULTATO and RISULTATO eq "FASI_GARA_ATTIVATE"}'>
-	bloccaRichiesteServer();
-	document.pagineForm.action += "?"+csrfToken;
-	selezionaPagina(eval(document.pagineForm.activePage.value)+1);
+	$(document).ready(function() {
+		bloccaRichiesteServer();
+		selezionaPagina(eval(document.pagineForm.activePage.value)+1);
+	});
 </c:if>
 
 		
@@ -2039,7 +2116,7 @@ var idconfi = '${idconfi}';
 				faseGara = 0;
 			if(bloccoAggiudicazione=="1" || (isProceduraTelematica=="true" && faseGara>=5))
 				bloccoPagina=true;
-			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gene/ragdet/ragdet-lista.jsp";
+			var href = contextPath + "/ApriPagina.do?href=gene/ragdet/ragdet-lista.jsp";
 			href += "&key=" + chiaveRiga + "&bloccoPagina=" + bloccoPagina;
 			document.location.href = href;
 		}
@@ -2067,7 +2144,11 @@ var idconfi = '${idconfi}';
 				documentiElenco = "true";
 			verificaDocumentiRichiesti(chiaveRiga,tipo,1,documentiElenco,"${autorizzatoModifiche }");
 		}
-		
+
+	function selezioneElementiPremiali(){
+		formSelezioneElementiPremiali.submit();
+	}
+
 		function SelEleOpEco(modalita){
 			var selezioneAutomaticaDitte = false;
 			if(modalita == 1)
@@ -2111,11 +2192,29 @@ var idconfi = '${idconfi}';
 				var msg="Non è possibile procedere con la selezione da elenco perchè non è stata specificata la stazione appaltante della gara";
 				alert(msg);
 				return;
+			} else if(${isElencoElPrem eq "true"}) {
+				if (${isElencoElPremOB eq "true" or inseritiElementiPremiali eq "true"}) {
+					let msg = "Non è possibile procedere con la selezione da elenco perchè ";
+					if (${empty delpremcont}) {
+						msg += "non è stato eseguito il calcolo punteggi degli operatori in elenco.";
+						msg += '\r\nAccedere a "Sel.da elenco elementi premiali(1)" per eseguire il calcolo.';
+						alert(msg);
+						return;
+					} else if (${ditteSenzaPunteggio eq "true"}) {
+						msg += "non è stato eseguito il calcolo punteggi per tutti gli operatori economici dell'elenco.";
+						msg += "\r\nAccedere a 'Sel.da elenco elementi premiali(1)' per annullare e rieseguire il calcolo.";
+						alert(msg);
+						return;
+					}
+				} else {
+					if (!(confirm("Non è stato definito nessun elemento premiale per la gara. \r\nProcedere comunque alla selezione da elenco degli operatori?"))) {
+						return;
+					}
+				}
 			}
 			
 				
 			href = "href=gare/gare/gare-popup-selOpEconomici.jsp";
-			href += "&" + csrfToken;
 			href += "&categoriaPrev=" + categoriaPrev;
 			href += "&classifica=${classifica}";
 			href += "&garaElenco=${codiceElenco}";
@@ -2133,7 +2232,7 @@ var idconfi = '${idconfi}';
 			</c:if>
 			href += "&selezioneAutomaticaDitte=" + selezioneAutomaticaDitte;
 			href += "&modalitaSelezioneMista=" + modalitaSelezioneMista;
-			openPopUpCustom(href, "elencoOperatoriEconomici", 900, 600, "yes", "yes");
+			openPopUpCustom(href, "elencoOperatoriEconomici", 1100, 650, "yes", "yes");
 		
 		}
 		
@@ -2265,19 +2364,20 @@ var idconfi = '${idconfi}';
 	 }
 	 
 	 function inviaComunicazione(chiaveRiga,inviaComunicazioneAbilitato,idconfi){
-			if(inviaComunicazioneAbilitato=="NoPec"){
+	 		var skipControlli = ('${iterga}'=='9' || '${iterga}'=='10') && '${isfineconc}' != '1';
+			if(inviaComunicazioneAbilitato=="NoPec" && !skipControlli){
 				alert("Non è possibile procedere.\nLa ditta selezionata non ha un indirizzo PEC specificato in anagrafica");
 				return;
-			}else if(inviaComunicazioneAbilitato=="NoPecRTI"){
+			}else if(inviaComunicazioneAbilitato=="NoPecRTI" && !skipControlli){
 				alert("Non è possibile procedere.\nLa mandataria del raggruppamento selezionato non ha un indirizzo PEC specificato in anagrafica");
 				return;
-			}else if(inviaComunicazioneAbilitato=="NoMail"){
+			}else if(inviaComunicazioneAbilitato=="NoMail" && !skipControlli){
 				alert("Non è possibile procedere.\nLa ditta selezionata non ha un indirizzo PEC o E-mail specificato in anagrafica");
 				return;
-			}else if(inviaComunicazioneAbilitato=="NoMailRTI"){
+			}else if(inviaComunicazioneAbilitato=="NoMailRTI" && !skipControlli){
 				alert("Non è possibile procedere.\nLa mandataria del raggruppamento selezionato non ha un indirizzo PEC o E-mail specificato in anagrafica");
 				return;
-			}else if(inviaComunicazioneAbilitato=="NoMandatariaRTI"){
+			}else if(inviaComunicazioneAbilitato=="NoMandatariaRTI" && !skipControlli){
 				alert("Non è possibile procedere.\nNell'anagrafica del raggruppamento selezionato non è specificata la mandataria");
 				return;
 			}else{
@@ -2298,7 +2398,7 @@ var idconfi = '${idconfi}';
 					</c:choose>
 					href += "&ditta=" + codiceDitta + "&stepWizard=${varTmp}";
 				}else{
-					var href = contextPath + "/Lista.do?"+csrfToken+"&numModello=0&keyAdd=W_INVCOM.COMKEY1=T:" + numeroGara ;
+					var href = contextPath + "/Lista.do?numModello=0&keyAdd=W_INVCOM.COMKEY1=T:" + numeroGara ;
 					<c:choose>
 						 <c:when test='${isGaraLottiConOffertaUnica ne "true"}'>
 							href += "&keyParent=GARE.NGARA=T:" + numeroGara;
@@ -2391,7 +2491,7 @@ var idconfi = '${idconfi}';
 		
 	function ricaricaPagina(){
 		bloccaRichiesteServer();
-		window.location=contextPath+'/History.do?'+csrfToken+'&metodo=reload&numeroPopUp='+getNumeroPopUp();
+		window.location=contextPath+'/History.do?metodo=reload&numeroPopUp='+getNumeroPopUp();
 	}	
 	
 	function SelDitteRilancio(){
@@ -2405,6 +2505,17 @@ var idconfi = '${idconfi}';
 		openPopUpCustom(href, "elencoOperatoriEconomici", 900, 600, "yes", "yes");
 		
 		}
+		
+	function SelDitteConcorso(){
+		var chiave="${key }";
+		chiave= chiave.substr(chiave.lastIndexOf(":") + 1);
+		href = "href=gare/gare/gare-popup-selDitteConcorso.jsp";
+		href += "&ngara=" + chiave;
+		href += "&ngarapa=${ngarapa}";
+		href += "&risultatiPerPagina=${requestScope.risultatiPerPagina}";
+		href += "&WIZARD_PAGINA_ATTIVA=${paginaAttivaWizard}";
+		openPopUpCustom(href, "elencoOperatoriEconomici", 900, 600, "yes", "yes");
+	}
 		
 	function exportDitte() {
 		var codgar="${codiceGara}";
@@ -2441,6 +2552,7 @@ var idconfi = '${idconfi}';
 	
 	function selAlboFornitori(){
 		var codgar="${codiceGara}";
+		var tipoWSERP="${tipoWSERP}";
 		var chiave="${key}";
 		var numeroFaseAttiva="${paginaAttivaWizard}";
 		var ngara = chiave.substr(chiave.lastIndexOf(":") + 1);
@@ -2457,6 +2569,7 @@ var idconfi = '${idconfi}';
 		  </c:otherwise>
 		</c:choose>
 		href += "&garaLottiConOffertaUnica=" + garaLottiConOffertaUnica;
+		href += "&tipoWSERP=" + tipoWSERP;
 		openPopUpCustom(href, "richiestaAlbo", 800, 450, "yes", "yes");
 	}
 	
@@ -2475,7 +2588,7 @@ var idconfi = '${idconfi}';
 		var numeroGara = chiaveVet[2].substring(chiaveVet[1].indexOf(":")+1);
 		var codiceGara = chiaveVet[0].substring(chiaveVet[1].indexOf(":")+2);
 		
-		var href = contextPath + "/Lista.do?"+csrfToken+"&numModello=" + numeroModello + "&keyAdd=W_INVCOM.COMKEY1=T:" + numeroGara ;
+		var href = contextPath + "/Lista.do?numModello=" + numeroModello + "&keyAdd=W_INVCOM.COMKEY1=T:" + numeroGara ;
 		<c:choose>
 			 <c:when test='${isGaraLottiConOffertaUnica ne "true"}'>
 				href += "&keyParent=GARE.NGARA=T:" + numeroGara;
@@ -2563,5 +2676,904 @@ var idconfi = '${idconfi}';
 				$('#dgue_export').hide();
 			}
 	})
+	
+	function apriModaleIndagineMercato(operazione){ 
+		var titolo="Concludi indagine di mercato";
+		if(operazione==2)
+			titolo="Annulla conclusione dell'indagine di mercato";
 		
+		var widthM= 500;
+		var	heightM= 300;
+		
+		var opt = {
+			open: function(event, ui) { 
+				$(this).parent().children().children('.ui-dialog-titlebar-close').hide();
+				$(this).parent().css("border-color","#C0C0C0");
+				var _divtitlebar = $(this).parent().find("div.ui-dialog-titlebar");
+				_divtitlebar.css("border","0px");
+				_divtitlebar.css("background","#FFFFFF");
+				var _dialog_title = $(this).parent().find("span.ui-dialog-title");
+				_dialog_title.css("font-size","13px");
+				_dialog_title.css("font-weight","bold");
+				_dialog_title.css("color","#002856");
+				$(this).parent().find("div.ui-dialog-buttonpane").css("background","#FFFFFF");
+			},
+			position: { using: function( pos ) {
+                $( this ).css({
+					top:'50%',
+					left: '50%',
+					marginRight: '50%',
+					transform: 'translate(-50%, -50%)'
+					
+				});
+          }},
+			autoOpen: false,
+			modal: true,
+			width: widthM,
+			height:heightM,
+			title: titolo,
+			buttons: {
+				"Conferma": {
+					id:"botConferma",
+					text:"Conferma",
+					click: function() {
+						concludiIndagine(operazione);
+					}
+				 },
+				"Annulla": {
+					id:"botAnnulla",
+					text:"Annulla",
+					click:function() {
+						$( this ).dialog( "close" );
+						$("#spanConclusione").hide();
+						$("#spanAnnullaConclusione").hide();
+					}
+				 }
+			 }
+		};
+		
+		$("#mascheraConcludiIndagineMercato").dialog(opt).dialog("open");
+		if(operazione==1)
+			$("#spanConclusione").show();
+		else
+			$("#spanAnnullaConclusione").show();
+		
+	}
+	
+	function concludiIndagine(operazione){
+					
+		var chiave="${key}";
+		var ngara = chiave.substr(chiave.lastIndexOf(":") + 1);
+		
+		_wait();
+		$.ajax({
+			type: "GET",
+			dataType: "json",
+			async: false,
+			beforeSend: function(x) {
+				if (x && x.overrideMimeType) {
+					x.overrideMimeType("application/json;charset=UTF-8");
+				}
+			},
+			url: "pg/ConcludiIndagineMercato.do",
+			data: {
+				ngara: ngara,
+				operazione: operazione
+			},
+			success: function (data) {
+				ricaricaPagina();
+			},
+			error: function (e) {
+				alert("Errore durante la modifica dello stato");
+			},
+			complete: function () {
+				_nowait();
+			}
+		});
+	
+		 
+	}
+	
+	function _wait() {
+		document.getElementById('bloccaScreen').style.visibility = 'visible';
+		$('#bloccaScreen').css("width", $(document).width());
+		$('#bloccaScreen').css("height", $(document).height());
+		document.getElementById('wait').style.visibility = 'visible';
+		$("#wait").offset({ top: $(window).height() / 2, left: ($(window).width() / 2) - 200 });
+	}
+	
+	function _nowait() {
+		document.getElementById('bloccaScreen').style.visibility = 'hidden';
+		document.getElementById('wait').style.visibility = 'hidden';
+	}
+	
+	function apriModaleAcquisizioneDomande(){ 
+
+		pingSessioneAttiva();
+
+		var titolo="Acquisisci domande di partecipazione da portale Appalti";
+				
+		var widthM= 500;
+		var	heightM= 300;
+		
+		var isSuperataDataTerminePresentazioneDomande;
+		var dataScadenza;
+		var oraScadenza;
+					
+		$.ajax({
+			type: "POST",
+			dataType: "json",
+			async: false,
+			beforeSend: function(x) {
+				if(x && x.overrideMimeType) {
+					x.overrideMimeType("application/json;charset=UTF-8");
+				}
+			},
+			url: "pg/IsSuperataDataTerminePresentazione.do?ngara=${valoreChiave}&tipo=2",
+			success: function(res){
+				isSuperataDataTerminePresentazioneDomande= res.isSuperataDataTerminePresentazione;
+				if(isSuperataDataTerminePresentazioneDomande == "false"){
+					dataScadenza = res.dataScadenza;
+					oraScadenza = res.oraScadenza;
+				}
+			}
+		});
+				
+		var statoGara;
+		$.ajax({
+			type: "POST",
+			dataType: "json",
+			async: false,
+			beforeSend: function(x) {
+				if(x && x.overrideMimeType) {
+					x.overrideMimeType("application/json;charset=UTF-8");
+				}
+			},
+			url: "pg/GetStatoGara.do?codgar=${codiceGara}",
+			success: function(res){
+				statoGara= res.statoGara;
+			}
+		});
+		
+		var opt = {
+			open: function(event, ui) { 
+				$(this).parent().children().children('.ui-dialog-titlebar-close').hide();
+				$(this).parent().css("border-color","#C0C0C0");
+				var _divtitlebar = $(this).parent().find("div.ui-dialog-titlebar");
+				_divtitlebar.css("border","0px");
+				_divtitlebar.css("background","#FFFFFF");
+				var _dialog_title = $(this).parent().find("span.ui-dialog-title");
+				_dialog_title.css("font-size","13px");
+				_dialog_title.css("font-weight","bold");
+				_dialog_title.css("color","#002856");
+				$(this).parent().find("div.ui-dialog-buttonpane").css("background","#FFFFFF");
+			},
+			position: { using: function( pos ) {
+                $( this ).css({
+					top:'50%',
+					left: '50%',
+					marginRight: '50%',
+					transform: 'translate(-50%, -50%)'
+					
+				});
+          }},
+			autoOpen: false,
+			modal: true,
+			width: widthM,
+			height:heightM,
+			title: titolo,
+			buttons: {
+				"Conferma": {
+					id:"botConferma",
+					text:"Conferma",
+					click: function() {
+						if(statoGara != 4 && isSuperataDataTerminePresentazioneDomande != "false"){
+							acquisisciAJAXDomande();
+						}
+					}
+				 },
+				"Annulla": {
+					id:"botAnnulla",
+					text:"Annulla",
+					click:function() {
+						$( this ).dialog( "close" );
+						$("#sezioneIniziale").hide();
+						$("#divGaraSospesa").hide();
+						$("#divTerminiGara").hide();
+						$("#divInvitoDitte").hide();
+						$("#divConferma").hide();
+						$("#sezioneAvanzamento").hide();
+						$("#sezioneFinale").hide();
+						$("#sezioneErrore").hide();
+					}
+				 },
+				 "Chiudi": {
+					id:"botChiudi",
+					text:"Chiudi",
+					click:function() {
+						$( this ).dialog( "close" );
+						$("#sezioneIniziale").hide();
+						$("#sezioneAvanzamento").hide();
+						$("#sezioneFinale").hide();
+						$("#sezioneErrore").hide();
+						faseNext();
+					}
+				 }
+			 }
+		};
+		
+		var blocco=true;
+		
+		$("#mascheraAcquisizioneDomandePortale").dialog(opt).dialog("open");
+		
+		$("#botChiudi").hide();
+		
+		$("#sezioneIniziale").show();
+		if(statoGara == 4){
+			$("#divGaraSospesa").show();
+		}else if(isSuperataDataTerminePresentazioneDomande == "false"){
+			$("#divTerminiGara").show();
+			$("#dataScadenza").text(dataScadenza);
+			$("#oraScadenza").text(oraScadenza);
+		}else{
+			$("#divConferma").show();
+			$("#divAnnulla").show();
+			blocco=false;
+		}
+		if(blocco) {
+			$('#botConferma').hide();
+			$("#botAnnulla").hide();
+			$("#botChiudi").show();
+		}
+		
+		$("#avanzamento").progressbar({
+			value: false,
+			disabled: true
+		});
+            
+		
+		
+		
+	}
+	
+	function apriModaleAcquisizioneOfferte(){ 
+
+		pingSessioneAttiva();
+
+		var titolo="Acquisisci offerte da portale Appalti";
+				
+		var widthM= 500;
+		var	heightM= 300;
+		
+		var isSuperataDataTerminePresentazione;
+		var dataScadenza;
+		var oraScadenza;
+					
+		$.ajax({
+			type: "POST",
+			dataType: "json",
+			async: false,
+			beforeSend: function(x) {
+				if(x && x.overrideMimeType) {
+					x.overrideMimeType("application/json;charset=UTF-8");
+				}
+			},
+			url: "pg/IsSuperataDataTerminePresentazione.do?ngara=${valoreChiave}&tipo=1",
+			success: function(res){
+				isSuperataDataTerminePresentazione= res.isSuperataDataTerminePresentazione;
+				if(isSuperataDataTerminePresentazione == "false"){
+					dataScadenza = res.dataScadenza;
+					oraScadenza = res.oraScadenza;
+				}
+			}
+		});
+				
+		var statoGara;
+		$.ajax({
+			type: "POST",
+			dataType: "json",
+			async: false,
+			beforeSend: function(x) {
+				if(x && x.overrideMimeType) {
+					x.overrideMimeType("application/json;charset=UTF-8");
+				}
+			},
+			url: "pg/GetStatoGara.do?codgar=${codiceGara}",
+			success: function(res){
+				statoGara= res.statoGara;
+			}
+		});
+		
+		var numDitteGaraCorso;
+		if(isSuperataDataTerminePresentazione != 'false'){
+			$.ajax({
+				type: "POST",
+				dataType: "json",
+				async: false,
+				beforeSend: function(x) {
+					if(x && x.overrideMimeType) {
+						x.overrideMimeType("application/json;charset=UTF-8");
+					}
+				},
+				url: "pg/ConteggioDitte.do?ngara=${valoreChiave}&filtro=ACQUISIZIONE = 9 AND AMMGAR = \'2\'",
+				success: function(res){
+					numDitteGaraCorso= res.conteggio;
+				}
+			});
+		}
+		
+		var opt = {
+			open: function(event, ui) { 
+				$(this).parent().children().children('.ui-dialog-titlebar-close').hide();
+				$(this).parent().css("border-color","#C0C0C0");
+				var _divtitlebar = $(this).parent().find("div.ui-dialog-titlebar");
+				_divtitlebar.css("border","0px");
+				_divtitlebar.css("background","#FFFFFF");
+				var _dialog_title = $(this).parent().find("span.ui-dialog-title");
+				_dialog_title.css("font-size","13px");
+				_dialog_title.css("font-weight","bold");
+				_dialog_title.css("color","#002856");
+				$(this).parent().find("div.ui-dialog-buttonpane").css("background","#FFFFFF");
+			},
+			position: { using: function( pos ) {
+                $( this ).css({
+					top:'50%',
+					left: '50%',
+					marginRight: '50%',
+					transform: 'translate(-50%, -50%)'
+					
+				});
+          }},
+			autoOpen: false,
+			modal: true,
+			width: widthM,
+			height:heightM,
+			title: titolo,
+			buttons: {
+				"Conferma": {
+					id:"botConferma",
+					text:"Conferma",
+					click: function() {
+						if(statoGara != 4 && isSuperataDataTerminePresentazione != "false"){
+							acquisisciAJAX();
+						}
+					}
+				 },
+				"Annulla": {
+					id:"botAnnulla",
+					text:"Annulla",
+					click:function() {
+						$( this ).dialog( "close" );
+						$("#sezioneIniziale").hide();
+						$("#divGaraSospesa").hide();
+						$("#divTerminiGara").hide();
+						$("#divInvitoDitte").hide();
+						$("#divConferma").hide();
+						$("#sezioneAvanzamento").hide();
+						$("#sezioneFinale").hide();
+						$("#sezioneErrore").hide();
+					}
+				 },
+				 "Chiudi": {
+					id:"botChiudi",
+					text:"Chiudi",
+					click:function() {
+						$( this ).dialog( "close" );
+						$("#sezioneIniziale").hide();
+						$("#sezioneAvanzamento").hide();
+						$("#sezioneFinale").hide();
+						$("#sezioneErrore").hide();
+						faseNext();
+					}
+				 }
+			 }
+		};
+		
+		var blocco=true;
+		$("#mascheraAcquisizioneOffertePortale").dialog(opt).dialog("open");
+		$("#botChiudi").hide();
+		$("#sezioneIniziale").show();
+		if(statoGara == 4){
+			$("#divGaraSospesa").show();
+		}else if(isSuperataDataTerminePresentazione == "false"){
+			$("#divTerminiGara").show();
+			$("#dataScadenza").text(dataScadenza);
+			$("#oraScadenza").text(oraScadenza);
+		}else if(numDitteGaraCorso!=null && numDitteGaraCorso >0){
+			$("#divInvitoDitte").show();
+		}else{
+			$("#divConferma").show();
+			blocco=false;
+		}
+		if(blocco) {
+			$('#botConferma').hide();
+			$("#botAnnulla").hide();
+			$("#botChiudi").show();
+		}
+		$("#avanzamento").progressbar({
+			value: false,
+			disabled: true
+		});
+            
+		
+		
+		
+	}
+	
+	function inizializzaAvanzamento(ngara) {
+		$(".ui-progressbar").css("position","relative");
+		$("#avanzamento-label").css("position","absolute");
+		$("#avanzamento-label").css("left","45%");
+		$("#avanzamento-label").css("padding-top","4px");
+		$("#avanzamento-label").css("font-weight","bold");
+		$("#avanzamento-label").css("font","10px Verdana, Arial, Helvetica, sans-serif");
+		$("#avanzamento-label").css("text-shadow","1px 1px 0 #fff");	
+		
+		$("#avanzamento").progressbar({
+                value: true,
+                disabled: false
+            });
+	
+		$("#sezioneAvanzamento").show();
+		$("#botConferma").prop('disabled', true);
+		$("#botConferma").css('opacity',0.2);
+		$("#botAnnulla").prop('disabled', true);
+		$("#botAnnulla").css('opacity',0.2);
+		$("#botChiudi").hide();
+		
+		$.ajax({
+			type: "POST",
+			dataType: "json",
+			async: false,
+			beforeSend: function(x) {
+				if(x && x.overrideMimeType) {
+					x.overrideMimeType("application/json;charset=UTF-8");
+				}
+			},
+			url: "pg/AvanzamentoAcqOfferteDaPortaleAJAX.do?ngara=" + ngara,
+			success: function(res){
+				var max= res.cnt;
+				if(isNaN(max))
+					max=0;
+				$("#avanzamento").progressbar("option", "max", max);
+	    		$("#avanzamento-label").text("0 %");
+			}
+		});
+		
+	}
+	
+	function avanzamento(ngara) {
+		$.ajax({
+			type: "POST",
+			dataType: "json",
+			async: false,
+			beforeSend: function(x) {
+				if(x && x.overrideMimeType) {
+					x.overrideMimeType("application/json;charset=UTF-8");
+				}
+			},
+			url: "pg/AvanzamentoAcqOfferteDaPortaleAJAX.do?ngara=" + ngara,
+			success: function(res){
+				var curr = res.cnt;
+				if(isNaN(curr))
+					curr=0;
+				var max = $("#avanzamento").progressbar( "option", "max" );
+				$("#avanzamento").progressbar( "option", "value", max - curr );
+				var perc = Math.round(((max - curr)/max)*100);
+				$("#avanzamento-label").text(perc + " %");
+			}
+		});
+	}
+	
+	function inizializzaAvanzamentoDomande(ngara) {
+		$(".ui-progressbar").css("position","relative");
+		$("#avanzamento-label").css("position","absolute");
+		$("#avanzamento-label").css("left","45%");
+		$("#avanzamento-label").css("padding-top","4px");
+		$("#avanzamento-label").css("font-weight","bold");
+		$("#avanzamento-label").css("font","10px Verdana, Arial, Helvetica, sans-serif");
+		$("#avanzamento-label").css("text-shadow","1px 1px 0 #fff");	
+		
+		$("#avanzamento").progressbar({
+                value: true,
+                disabled: false
+            });
+	
+		$("#sezioneAvanzamento").show();
+		$("#botConferma").prop('disabled', true);
+		$("#botConferma").css('opacity',0.2);
+		$("#botAnnulla").prop('disabled', true);
+		$("#botAnnulla").css('opacity',0.2);
+		$("#botChiudi").hide();
+		
+		$.ajax({
+			type: "POST",
+			dataType: "json",
+			async: false,
+			beforeSend: function(x) {
+				if(x && x.overrideMimeType) {
+					x.overrideMimeType("application/json;charset=UTF-8");
+				}
+			},
+			url: "pg/AvanzamentoAcqDomandePartecipazioneDaPortaleAJAX.do?ngara=" + ngara,
+			success: function(res){
+				var max= res.cnt;
+				if(isNaN(max))
+					max=0;
+				$("#avanzamento").progressbar("option", "max", max);
+	    		$("#avanzamento-label").text("0 %");
+			}
+		});
+		
+	}
+	
+	function avanzamentoDomande(ngara) {
+		$.ajax({
+			type: "POST",
+			dataType: "json",
+			async: false,
+			beforeSend: function(x) {
+				if(x && x.overrideMimeType) {
+					x.overrideMimeType("application/json;charset=UTF-8");
+				}
+			},
+			url: "pg/AvanzamentoAcqDomandePartecipazioneDaPortaleAJAX.do?ngara=" + ngara,
+			success: function(res){
+				var curr = res.cnt;
+				if(isNaN(curr))
+					curr=0;
+				var max = $("#avanzamento").progressbar( "option", "max" );
+				$("#avanzamento").progressbar( "option", "value", max - curr );
+				var perc = Math.round(((max - curr)/max)*100);
+				$("#avanzamento-label").text(perc + " %");
+			}
+		});
+	}
+	
+	function acquisisciAJAXDomande(){
+		var ngara = document.forms[0].keyParent.value;
+		ngara=ngara.substring(ngara.indexOf(":")+1);
+		var idconfi = "${idconfi}";
+		inizializzaAvanzamentoDomande(ngara);
+			
+		$("#sezioneIniziale").hide();
+		$("#sezioneComandiIniziali").hide();
+			
+		$.ajax({
+			type: "POST",
+			dataType: "json",
+			async: true,
+			beforeSend: function(x) {
+				if(x && x.overrideMimeType) {
+					x.overrideMimeType("application/json;charset=UTF-8");
+				}
+			},
+			url: "pg/AcquisisciDomandePartecipazioneDaPortale.do?ngara=" + ngara + "&idconfi=" +idconfi,
+			success: function(res){
+				esito= res.Esito;
+				msgEsito = res.MsgErrore;
+						
+				$("#numeroAcquisizioni").text(res.numeroAcquisizioni);
+				$("#numeroAcquisizioniErrore").text(res.numeroAcquisizioniErrore);
+				if (res.sezioneAcquisizioniScartate > 0) {
+					$("#sezioneAcquisizioniScartate").show();
+					$("#numeroAcquisizioniScartate").text(res.numeroAcquisizioniScartate);
+				}
+				if(esito!="Errore"){
+					faseNext();
+				}
+
+			},
+			error: function(e){
+				alert("Errore generico durante l'operazione");
+				$("#botConferma").hide();
+				$("#botAnnulla").hide();
+				$("#botChiudi").show();
+			},
+				complete: function(jqXHR, textStatus) {
+					clearInterval(avanzamentoInterval);
+					var max = $("#avanzamento").progressbar( "option", "max" );
+					$("#avanzamento").progressbar( "option", "value", max );
+					$("#avanzamento-label").text("100 %");
+					
+					$("#sezioneAvanzamento").hide();
+					if(esito=="Errore"){
+						$("#msgEsitoErrore").html(msgEsito);
+						$("#sezioneComandiFinali").show();
+                       	$("#sezioneErrore").show();	
+					}else{
+							
+						$("#sezioneFinale").show();
+						$("#sezioneComandiFinali").show();
+					}
+					$("#botConferma").hide();
+					$("#botAnnulla").hide();
+					$("#botChiudi").show();
+				}
+		});
+				
+		var avanzamentoInterval = setInterval(function() {avanzamentoDomande(ngara)}, 200);
+				
+	}
+	
+	function acquisisciAJAX(){
+		var ngara = document.forms[0].keyParent.value;
+		ngara=ngara.substring(ngara.indexOf(":")+1);
+		inizializzaAvanzamento(ngara);
+	
+		$("#sezioneIniziale").hide();
+		$("#sezioneComandiIniziali").hide();
+		$("#divGaraSospesa").hide();
+		$("#divTerminiGara").hide();
+		$("#divInvitoDitte").hide();
+		$("#divConferma").hide();
+		var esito;
+		var msgEsito;
+		$.ajax({
+			type: "POST",
+			dataType: "json",
+			async: true,
+			beforeSend: function(x) {
+				if(x && x.overrideMimeType) {
+					x.overrideMimeType("application/json;charset=UTF-8");
+				}
+			},
+			url: "pg/AcquisisciOfferteDaPortale.do?ngara=" + ngara,
+			success: function(res){
+				esito=res.Esito;
+				msgEsito = res.MsgErrore;
+				$("#numeroAcquisizioni").text(res.numeroAcquisizioni);
+				$("#numeroAcquisizioniErrore").text(res.numeroAcquisizioniErrore);
+				if (res.numeroRinunce > 0 || res.numeroRinunceErrore > 0) {
+					$("#numeroRinunce").text(res.numeroRinunce);
+					$("#numeroRinunceErrore").text(res.numeroRinunceErrore);
+					$("#Rinunce").show();
+				}
+				if (res.sezioneAcquisizioniScartate > 0) {
+					$("#sezioneAcquisizioniScartate").show();
+					$("#numeroAcquisizioniScartate").text(res.numeroAcquisizioniScartate);
+				}
+				
+
+			},
+			error: function(e){
+				alert("Errore generico durante l'operazione");
+				$("#botConferma").hide();
+				$("#botAnnulla").hide();
+				$("#botChiudi").show();
+			},
+			complete: function(jqXHR, textStatus) {
+				clearInterval(avanzamentoInterval);
+				var max = $("#avanzamento").progressbar( "option", "max" );
+				$("#avanzamento").progressbar( "option", "value", max );
+				$("#avanzamento-label").text("100 %");
+				$("#sezioneAvanzamento").hide();
+				if(esito=="Errore"){
+					$("#msgEsitoErrore").html(msgEsito);
+					$("#sezioneComandiFinali").show();
+                    $("#sezioneErrore").show();	
+				}else{
+					$("#sezioneFinale").show();
+					$("#sezioneComandiFinali").show();
+					
+				}
+				$("#botConferma").hide();
+				$("#botAnnulla").hide();
+				$("#botChiudi").show();
+			}
+		});
+		
+		var avanzamentoInterval = setInterval(function() {avanzamento(ngara)}, 200);
+		
+	}
+
+	
+	function faseNext() {
+		document.forms[0].pgSort.value = "";
+		document.forms[0].pgLastSort.value = "";
+		document.forms[0].pgLastValori.value = "";
+		bloccaRichiesteServer();
+		listaVaiAPagina(0);
+	}
+
+	function exportExcelPartecipanti(){
+		var codgar ="${codiceGara}"
+		var act = "${pageContext.request.contextPath}/pg/InitExportLottiPartecipanti.do";
+		var par = "codgar=" + codgar +"&check=${controlloInvoffLotti}&fasgar=1";
+		openPopUpActionCustom(act, par, 'exportLottiGara', 700, 500, "yes", "yes");
+	}
 </gene:javaScript>
+
+<div id="mascheraConcludiIndagineMercato"  style="display:none;">
+	<table style="font: 11px Verdana, Arial, Helvetica, sans-serif;">
+		<tr> 
+			<td colspan="2" >
+				<span id="spanConclusione" style="display:none;">Confermi di volere concludere l'indagine di mercato?</span>
+				<span id="spanAnnullaConclusione" style="display:none;">Confermi di volere annullare la conclusione dell'indagine di mercato?</span>
+			</td>				
+		</tr>
+	</table>
+</div>
+
+<c:if test='${paginaAttivaWizard eq step5Wizard}'>
+
+<c:set var="isSuperataDataTerminePresentazione" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.IsSuperataDataTerminePresentazioneFunction", pageContext, ngara, "1")}' />
+<c:set var="codStatoGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetStatoGaraFunction", pageContext, codiceGara)}' />
+
+<div id="mascheraAcquisizioneOffertePortale"  style="display:none; font:11px Verdana, Arial, Helvetica, sans-serif;">
+	<table class="modale">
+		<tr id="sezioneIniziale">
+			<td class="valore-dato" colspan="2">
+				
+				<div id="divGaraSospesa" style="display: none;">
+					<br>
+					Non &egrave; possibile procedere con l'acquisizione delle offerte da portale Appalti perch&egrave; la gara risulta sospesa.
+					<br>
+					<br>
+				</div>
+				<div id="divTerminiGara" style="display: none;">
+					<br>
+					Non &egrave; possibile procedere con l'acquisizione delle offerte da portale Appalti perch&egrave; non &egrave; ancora scaduto il termine di presentazione delle offerte.
+					<br>
+					<br>
+					Il termine per la presentazione delle offerte scade il giorno <b><span id="dataScadenza"></span></b> alle ore <b><span id="oraScadenza"></span></b>.
+					<br>
+					<br>
+				</div>
+				<div id="divInvitoDitte" style="display: none;">
+					<br>
+					Non &egrave; possibile procedere con l'acquisizione delle offerte da portale Appalti perch&egrave; ci sono ditte in gara, inserite dopo la pubblicazione in area riservata, per cui non è stato fatto l'invio dell'invito.
+					<br>Completare l'invito per queste ditte oppure eliminarle dalla gara.
+					<br>
+					<br>
+					<br>
+				</div>
+				<div id="divConferma" style="display: none;">
+					<br>
+					Mediante questa funzione &egrave; possibile procedere all'acquisizione delle offerte da portale Appalti.
+					<br>
+					<br>
+					Confermi l'operazione ?
+					<br>
+					<br>
+				</div>
+			</td>
+		</tr>
+			
+		<tr id="sezioneAvanzamento" style="display: none;">
+			<td colspan="2" >
+				<br>
+				Attendere il completamento dell'operazione
+				<br>
+				<br>
+				<div id="avanzamento"><div id="avanzamento-label"></div></div>
+				<br>
+			</td>
+		</tr>
+		
+		<tr id="sezioneFinale" style="display: none;">
+			<td colspan="2" >
+				<br>
+				L'operazione &egrave; stata eseguita con successo.
+				<br>
+				<br>
+				Numero acquisizioni offerte: <span id="numeroAcquisizioni"></span>
+				<br>
+				Numero acquisizioni offerte non processate o con errori: <span id="numeroAcquisizioniErrore"></span>
+				<br>
+				<div id="Rinunce" style="display: none;">
+					Numero acquisizioni rinunce: <span id="numeroRinunce"></span>
+					<br>
+					Numero acquisizioni rinunce non processate o con errori: <span id="numeroRinunceErrore"></span>
+					<br>
+				</div>
+				<br>								
+			</td>
+		</tr>
+		
+		<tr id="sezioneErrore" style="display: none;" >
+			<td colspan="2" >
+				<br>
+				<span id="msgEsitoErrore"></span>
+				<br>
+				<br>
+			</td>
+		</tr>
+			
+	</table>
+</div>
+</c:if>
+<c:if test='${paginaAttivaWizard eq step1Wizard}'>
+
+<c:set var="isSuperataDataTerminePresentazioneDomande" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.IsSuperataDataTerminePresentazioneFunction", pageContext, ngara, "2")}' />
+<c:set var="codStatoGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetStatoGaraFunction", pageContext, codiceGara)}' />
+
+<div id="mascheraAcquisizioneDomandePortale"  style="display:none; font:11px Verdana, Arial, Helvetica, sans-serif;">
+	<table class="modale">
+		<tr id="sezioneIniziale">
+			<td class="valore-dato" colspan="2">
+				<div id="divGaraSospesa" style="display: none;">
+					<br>
+					Non &egrave; possibile procedere con l'acquisizione delle domande di partecipazione da portale Appalti perch&egrave; la gara risulta sospesa.
+					<br>
+					<br>
+				</div>
+				<div id="divTerminiGara" style="display: none;">
+					<br>
+					Non &egrave; possibile procedere con l'acquisizione delle domande di partecipazione da portale Appalti perch&egrave; non &egrave; ancora scaduto il termine di presentazione.
+					<br>
+					<br>
+					Il termine per la presentazione delle domande di partecipazione scade il giorno <b><span id="dataScadenza"></span></b> alle ore <b><span id="oraScadenza"></span></b>.
+					<br>
+					<br>
+				</div>
+				<div id="divConferma" style="display: none;">
+					<br>
+					Mediante questa funzione &egrave; possibile procedere all'acquisizione delle domande di partecipazione da portale Appalti.
+					<br>
+					<br>
+					Confermi l'operazione ?
+					<br>
+					<br>
+				</div>
+			</td>
+		</tr>
+				
+		<tr id="sezioneAvanzamento" style="display: none;">
+			<td colspan="2">
+				<br>
+				Attendere il completamento dell'operazione
+				<br>
+				<br>
+				<div id="avanzamento"><div id="avanzamento-label"></div></div>
+				<br>
+			</td>
+		</tr>
+		
+		<tr id="sezioneFinale" style="display: none;">
+			<td colspan="2">
+				<br>
+				L'operazione &egrave; stata eseguita con successo.
+				<br>
+				<br>
+				Numero acquisizioni: <span id="numeroAcquisizioni"></span>
+				<br>
+				Numero acquisizioni non processate o con errori: <span id="numeroAcquisizioniErrore"></span>
+				<br>
+				<br>							
+			</td>
+		</tr>
+		
+		<tr id="sezioneErrore" style="display: none;">
+			<td colspan="2">
+				<br>
+				<span id="msgEsitoErrore"></span>
+				<br>
+				<br>
+			</td>
+		</tr>
+				
+			
+	</table>
+</div>
+</c:if>
+
+<c:if test="${condizioniGestioneBuste}">
+	<c:choose>
+		<c:when test='${fn:contains(key, "NGARA")}'>
+			<c:set var="ngaraBuste" value="${gene:getValCampo(key,'NGARA')}" />
+		</c:when>
+		<c:otherwise>
+			<c:set var="ngaraBuste" value="${gene:getValCampo(key,'CODGAR')}" />
+		</c:otherwise>
+	</c:choose>	
+	<c:set var="cifraturaBuste" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteBustaCifrataFunction", pageContext, ngaraBuste, "FS10A")}'/>
+	<jsp:include page="/WEB-INF/pages/gare/commons/modalePopupAcquisizioneBusteFS10A.jsp" >
+		<jsp:param name="cifraturaBuste" value="${cifraturaBuste}" />
+	</jsp:include>
+</c:if>
+
+<form name="formSelezioneElementiPremiali" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+	<input type="hidden" name="href" value="gare/elpremgare/elpremgare-lista.jsp" />
+	<input type="hidden" name="key" value="${key}" />
+</form>

@@ -27,6 +27,8 @@ public class ComponiWhereGAREFunction extends AbstractComponiWhereFunction {
       "gare.codgar1 = ? AND gare.codgar1 != gare.ngara";
   private static final String ADDITIONAL_WHERE =
       "EXISTS (SELECT gare1.ngara FROM gare1 WHERE gare.ngara = gare1.ngara AND (gare1.valtec = '1' OR gare.modlicg = 6))";
+  private static final String ADDITIONAL_WHERE_NOOEPVCOSTOFISSO =
+      "GARE.NGARA NOT IN (SELECT GARE.NGARA FROM GARE1, GARE WHERE GARE.NGARA=GARE1.NGARA AND GARE1.COSTOFISSO = '1' AND GARE.MODLICG=6)";
   private static final String DITTA_NOT_NULL_WHERE =
       "gare.ditta IS NOT NULL";
   private static final String G1CRIMOD_WHERE =
@@ -96,6 +98,8 @@ public class ComponiWhereGAREFunction extends AbstractComponiWhereFunction {
 
         if (functionId.equals(DEFAULT_ID) && busta == 2) {
           where += " AND " + ADDITIONAL_WHERE;
+        } else if (functionId.equals(DEFAULT_ID) && busta == 3) {
+          where += " AND " + ADDITIONAL_WHERE_NOOEPVCOSTOFISSO; 
         } else if (functionId.equals(DITTA_NOT_NULL_ID)) {
           where += " AND " + DITTA_NOT_NULL_WHERE;
         }
@@ -123,6 +127,8 @@ public class ComponiWhereGAREFunction extends AbstractComponiWhereFunction {
 
         if (functionId.equals(DEFAULT_ID) && busta == 2) {
           where += " AND " + ADDITIONAL_WHERE;
+        } else if (functionId.equals(DEFAULT_ID) && busta == 3) {
+          where += " AND " + ADDITIONAL_WHERE_NOOEPVCOSTOFISSO; 
         } else if (functionId.equals(DITTA_NOT_NULL_ID)) {
           where += " AND " + DITTA_NOT_NULL_WHERE;
         }

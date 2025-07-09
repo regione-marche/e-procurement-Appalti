@@ -99,7 +99,6 @@
 			var href = contextPath + "/ApriPagina.do?href=gare/gare/gare-scheda-attoContrattuale.jsp";
 			href += "&key=" + chiave + "&tipo=" + tipocontratto + "&codimp=" + codimp;
 		}
-		href += "&" + csrfToken;
 		document.location.href = href;
 	}
 		

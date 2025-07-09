@@ -49,7 +49,7 @@ public class EsisteBloccoAmmgarFunction extends AbstractFunzioneTag {
       if(step!=null && !"".equals(step))
         stepAttivo = new Long(step).longValue()/10;
       Long ammgar = (Long)sqlManager.getObject(select,new Object[]{ngara,ngara,dittao,new Long(stepAttivo)});
-      if(ammgar!= null && (ammgar.longValue() == 2 || ammgar.longValue() == 6))
+      if(ammgar!= null && (ammgar.longValue() == 2 || ammgar.longValue() == 6 || ammgar.longValue() == 11))
         bloccoAmmgar = new  Boolean(true);
       pageContext.setAttribute("bloccoAmmgar", bloccoAmmgar,
           PageContext.REQUEST_SCOPE);

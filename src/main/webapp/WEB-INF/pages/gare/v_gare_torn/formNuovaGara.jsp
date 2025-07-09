@@ -60,7 +60,7 @@
 					<b>Impostare la modalità di espletamento della procedura:</b>		 			
 		 			<br>
 		 			<c:choose>
-		 				<c:when test="${defaultProceduraTelematica eq '1'}">
+		 				<c:when test="${defaultProceduraTelematica eq '1' or (not gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.procedureNonTelematiche') and gene:checkProt(pageContext, 'COLS.VIS.GARE.TORN.GARTEL'))}">
 		 					<c:set var="lottidistintinascoto" value='style="display:none;"' />
 		 					&nbsp;<input type="radio" name="proceduraTelematica" value="1" checked="checked" onclick="javascript:aggiornaTelematica(1);" ${proceduraTelematicadisabled}/>&nbsp;Telematica nella piattaforma 
 							<br>
@@ -82,8 +82,10 @@
 							</c:if>
 							<br>
 							</div>
-							&nbsp;<input type="radio" name="proceduraTelematica" value="2" onclick="javascript:aggiornaTelematica(2);" ${proceduraTelematicadisabled}/>&nbsp;Telematica in altre piattaforme o cartacea
-							<br>
+							<c:if test="${gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.procedureNonTelematiche')}">
+								&nbsp;<input type="radio" name="proceduraTelematica" value="2" onclick="javascript:aggiornaTelematica(2);" ${proceduraTelematicadisabled}/>&nbsp;Telematica in altre piattaforme o cartacea
+								<br>
+							</c:if>
 		 				</c:when>
 		 				<c:when test="${defaultProceduraTelematica eq '2'}">
 		 					&nbsp;<input type="radio" name="proceduraTelematica" value="1" onclick="javascript:aggiornaTelematica(1);" ${proceduraTelematicadisabled}/>&nbsp;Telematica nella piattaforma
@@ -192,13 +194,33 @@
 				 	    	<c:set var='checkLavori' value='checked="checked"'/>
 							<c:set var="displayLavori" value=''/>
 				 	    	<c:set var='checkForniture' value=''/>
+							<c:set var='checkServizi' value=''/>
 						</c:when>
 						<c:otherwise>
 							<c:set var="checkLavori" value=''/>
 							<c:set var="displayLavori" value='style="display:none;"'/>
 				 	    	<c:set var='checkForniture' value='checked="checked"'/>
+							<c:set var='checkServizi' value=''/>
 						</c:otherwise>
 					</c:choose>
+				<c:choose>
+					<c:when test="${param.tipoAppalto eq '1'}">
+						<c:set var='checkLavori' value='checked="checked"'/>
+						<c:set var="displayLavori" value=''/>
+						<c:set var='checkForniture' value=''/>
+						<c:set var='checkServizi' value=''/>
+					</c:when>
+					<c:when test="${param.tipoAppalto eq '2'}">
+						<c:set var='checkLavori' value=''/>
+						<c:set var='checkForniture' value='checked="checked"'/>
+						<c:set var='checkServizi' value=''/>
+					</c:when>
+					<c:when test="${param.tipoAppalto eq '3'}">
+						<c:set var='checkLavori' value=''/>
+						<c:set var='checkForniture' value=''/>
+						<c:set var='checkServizi' value='checked="checked"'/>
+					</c:when>
+				</c:choose>
 			 		<span ${displayLavori}>
 				 		<br>
 						&nbsp;<input type="radio" name="appalto" value="1" ${checkLavori}/>&nbsp;Lavori
@@ -206,7 +228,7 @@
 					<br>
 					&nbsp;<input type="radio" name="appalto" value="2" ${checkForniture}/>&nbsp;Forniture
 					<br>
-					&nbsp;<input type="radio" name="appalto" value="3" />&nbsp;Servizi
+					&nbsp;<input type="radio" name="appalto" value="3" ${checkServizi}/>&nbsp;Servizi
 			 	<br>
 			 	<br>
 			</td>

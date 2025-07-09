@@ -20,6 +20,7 @@ import it.eldasoft.utils.sicurezza.ICriptazioneByte;
 public class JwtTokenUtilities {
 
   public static final String PROP_JWTKEY                                    = "it.maggioli.eldasoft.wslogin.jwtKey";
+  public static final String PROP_JWTKEY_ESEC                               = "apiEsecuzione.ws.passphrase";
 
 	/**
 	 * Viene generato il token mettendo il claim "data"
@@ -99,4 +100,32 @@ public class JwtTokenUtilities {
 
 	  return chiaveSegretaJwtChiaro;
 	}
+	
+	
+	/**
+     * Il metodo decifra la chiave segreta per la generazione del token JWT.
+     * La chiave privata cifrata è salvata in db
+     * @return String
+     * @throws GestoreException
+     */
+    public static String getChiaveSegretaJwtChiaroEsec() throws GestoreException {
+      String chiaveSegretaJwt = ConfigManager.getValore(PROP_JWTKEY_ESEC);
+
+      String chiaveSegretaJwtChiaro = null;
+      if (chiaveSegretaJwt != null && chiaveSegretaJwt.trim().length() > 0) {
+        ICriptazioneByte passwordICriptazioneByte = null;
+        try {
+          passwordICriptazioneByte = FactoryCriptazioneByte.getInstance(
+              ConfigManager.getValore(CostantiGenerali.PROP_TIPOLOGIA_CIFRATURA_DATI), chiaveSegretaJwt.getBytes(),
+              ICriptazioneByte.FORMATO_DATO_CIFRATO);
+        } catch (CriptazioneException e) {
+          throw new GestoreException("Errore nella decifrazione della chiave privata per la generazione del token JWT",null,e);
+        }
+        chiaveSegretaJwtChiaro = new String(passwordICriptazioneByte.getDatoNonCifrato());
+      }else{
+        chiaveSegretaJwtChiaro = "";
+      }
+
+      return chiaveSegretaJwtChiaro;
+    }
 }

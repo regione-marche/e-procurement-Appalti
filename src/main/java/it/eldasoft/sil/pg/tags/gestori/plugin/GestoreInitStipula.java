@@ -24,9 +24,13 @@ import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.tags.BodyTagSupportGene;
 import it.eldasoft.gene.tags.utils.UtilityTags;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestorePreload;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.GestioneWSERPManager;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityStringhe;
+import it.maggioli.eldasoft.ws.conf.WSERPConfigurazioneOutType;
 
 /**
  * Gestore che inizializza una stipula
@@ -34,11 +38,11 @@ import it.eldasoft.utils.utility.UtilityStringhe;
  * @author Cristian Febas
  */
 public class GestoreInitStipula extends AbstractGestorePreload {
-
+  
   SqlManager sqlManager = null;
 
-
-
+  private GestioneWSERPManager gestioneWSERPManager;
+  
   public GestoreInitStipula(BodyTagSupportGene tag) {
     super(tag);
   }
@@ -53,7 +57,8 @@ public class GestoreInitStipula extends AbstractGestorePreload {
     sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",
         page, SqlManager.class);
 
-
+    gestioneWSERPManager = (GestioneWSERPManager) UtilitySpring.getBean("gestioneWSERPManager",
+        page, GestioneWSERPManager.class);
 
   }
 
@@ -100,6 +105,16 @@ public class GestoreInitStipula extends AbstractGestorePreload {
     HashMap key = null;
 
     try {
+  
+        String tipoWSERP = null;
+        String urlWSERP = ConfigManager.getValore("wserp.erp.url");
+        if(urlWSERP != null && !"".equals(urlWSERP)){
+          WSERPConfigurazioneOutType configurazione = this.gestioneWSERPManager.wserpConfigurazioneLeggi("WSERP");
+          if(configurazione.isEsito()){
+            tipoWSERP = configurazione.getRemotewserp();
+          }
+        }
+    
 
 	    if (!UtilityTags.SCHEDA_MODO_INSERIMENTO.equals(modo)) {
 	        // carico la chiave dell'occorrenza
@@ -243,7 +258,7 @@ public class GestoreInitStipula extends AbstractGestorePreload {
 	        				page.setAttribute("initISTCRE", istcre, PageContext.REQUEST_SCOPE);
 	        				page.setAttribute("initINDIST", indist, PageContext.REQUEST_SCOPE);
 	        			}
-
+	        			
 	        			Vector<?> datiGarecontStipula= this.sqlManager.getVector("select dscapo from garecont where ngara =? and ncont=?",
 	        					new Object[]{ngara,ncont});
 	        			if(datiGarecontStipula!=null && datiGarecontStipula.size()>0){
@@ -298,6 +313,10 @@ public class GestoreInitStipula extends AbstractGestorePreload {
 	      	    	page.setAttribute("initNOMTECRUP", nomerup, PageContext.REQUEST_SCOPE);
 	      	    }
 
+	      	    if(tipoWSERP != null && "RAI".equals(tipoWSERP)) {
+	      	        String nrepat = (String) this.sqlManager.getObject("select nrepat from gare where ngara = ?",new Object[]{codiceLotto});
+	      	        page.setAttribute("initNREPAT", nrepat, PageContext.REQUEST_SCOPE);
+	      	    }
 
 	        }
 
@@ -330,8 +349,8 @@ public class GestoreInitStipula extends AbstractGestorePreload {
         if(new Long(3).equals(genere))
           dattoaMod = false;
         page.setAttribute("dattoaMod", new Boolean(dattoaMod), PageContext.REQUEST_SCOPE);
-
-    } catch (SQLException e) {
+        
+    } catch (SQLException | GestoreException e) {
         throw new JspException("Errore durante la lettura dei dati della gara/lotto associata alla stipula ", e);
     }
 

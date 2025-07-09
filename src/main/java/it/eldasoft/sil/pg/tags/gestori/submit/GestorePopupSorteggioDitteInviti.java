@@ -159,10 +159,10 @@ public class GestorePopupSorteggioDitteInviti extends
 
             Object[] sqlParam = new Object[13];
 
-            sqlParam[0] = new Long(2); // INVGAR
+            sqlParam[0] = "2"; // INVGAR
             sqlParam[1] = new Long(2); // SORTINV
             sqlParam[2] = new Long(-3); // FASGAR
-            sqlParam[3] = new Long(2); // AMMGAR
+            sqlParam[3] = "2"; // AMMGAR
             sqlParam[4] = null; // RIBAUO
             sqlParam[5] = null; // MOTIES
             sqlParam[6] = null; // IMPOFF

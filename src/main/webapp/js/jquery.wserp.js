@@ -55,8 +55,17 @@ $(window).on("load", function (){
 	$('#rdamessaggio').hide();
 
 	$(".contenitore-dettaglio").width("980");
+	
+	// TODO:ROS: togliere questa parte => usata per debugging...
+	console.log("punto 1");
 
-	if(_tipoWSERP == 'SMEUP' || _tipoWSERP == 'UGOVPA' || _tipoWSERP == 'FNM' || _tipoWSERP == 'RAIWAY'){
+	if(    _tipoWSERP == 'SMEUP' 
+	    || _tipoWSERP == 'UGOVPA' 
+	    || _tipoWSERP == 'FNM' 
+	    || _tipoWSERP == 'RAIWAY'
+	    || _tipoWSERP == 'INARCASSA'
+	    || _tipoWSERP == 'CONI'
+	){
 		_creaTabellaRda();
 		_popolaRda();
 	}
@@ -112,7 +121,12 @@ $(window).on("load", function (){
 
 	$("body").delegate('[id^="ck_rda_"]', "click", function() {
 		checkedState = $(this).prop('checked');
-		if (_tipoWSERP == 'SMEUP' || _tipoWSERP == 'UGOVPA' || (_tipoWSERP == 'FNM' && !_multiSelezione) || _tipoWSERP == 'RAIWAY') {
+		if (    _tipoWSERP == 'SMEUP' 
+		     || _tipoWSERP == 'UGOVPA' 
+		     || (_tipoWSERP == 'FNM' && !_multiSelezione) 
+		     || _tipoWSERP == 'RAIWAY'
+		   //|| _tipoWSERP == 'INARCASSA'
+		){
 			$( 'input[id^="ck_rda_"]' ).each( function( index ) {
 				$(this).prop('checked', false);
 			});
@@ -362,6 +376,10 @@ $(window).on("load", function (){
 				_ck_id = $(this).attr("id");
 				if (_ck_id.substring(0,7) == 'ck_rda_'){
 					_ck_key = _ck_id.substring(7);
+					
+					//in ogni caso
+					arrmultikey  = arrmultikey + _ck_key + ';';
+					
 					if(_tipoWSERP == 'FNM'){
 						var arrkey = _ck_key.split('_');
 						var numRda =  arrkey[0];
@@ -376,7 +394,7 @@ $(window).on("load", function (){
 						document.listaNuovo.jspPathTo.value="/WEB-INF/pages/gare/gare/gare-scheda.jsp";
 
 
-						document.listaNuovo.action = document.listaNuovo.action + "&tipoGara=garaLottoUnico&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione+"&numeroRda="+numRda+"&divisione="+divisione;
+						document.listaNuovo.action = document.listaNuovo.action + "?tipoGara=garaLottoUnico&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione+"&numeroRda="+numRda+"&divisione="+divisione;
 
 						bloccaRichiesteServer();
 						document.listaNuovo.submit();
@@ -387,7 +405,7 @@ $(window).on("load", function (){
 						var arrkey = _ck_key.split('_');
 						var numRda =  arrkey[0];
 						var divisione =  arrkey[1];
-						var tipoAppalto = '2';
+						var tipoAppalto = $("#tipoAppalto").val();
 						var proceduraTelematica = $("#proceduraTelematica").val();
 						var modalitaPresentazione = $("#modalitaPresentazione").val();
 						var tipoGara = $("#tipoGara").val();
@@ -404,28 +422,70 @@ $(window).on("load", function (){
 							document.listaNuovo.jspPathTo.value="/WEB-INF/pages/gare/torn/torn-scheda.jsp";
 						}
 
-						document.listaNuovo.action = document.listaNuovo.action + "&tipoGara="+tipoGara+"&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione+"&numeroRda="+numRda+"&divisione="+divisione;
+						document.listaNuovo.action = document.listaNuovo.action + "?tipoGara="+tipoGara+"&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione+"&numeroRda="+numRda+"&divisione="+divisione;
 
 						bloccaRichiesteServer();
 						document.listaNuovo.submit();
 
 					}
+					
+					
+					
+					if(_tipoWSERP == 'INARCASSA' || _tipoWSERP == 'CONI'){
+						
+						var arrkey = _ck_key.split('_');
+						var numRda =  arrkey[0];
+						var divisione =  arrkey[1];
+						var tipoAppalto = $("#tipoAppalto").val();
+						var proceduraTelematica = $("#proceduraTelematica").val();
+						var modalitaPresentazione = $("#modalitaPresentazione").val();
+						var tipoGara = $("#tipoGara").val();
+						
 
-					//in ogni caso
-					arrmultikey  = arrmultikey + _ck_key + ';';
+						if(tipoGara == "garaLottoUnico"){
+							document.listaNuovo.entita.value = "GARE";
+							document.listaNuovo.activePage.value = 0;
+							document.listaNuovo.jspPath.value="/WEB-INF/pages/gare/gare/gare-scheda.jsp";
+							document.listaNuovo.jspPathTo.value="/WEB-INF/pages/gare/gare/gare-scheda.jsp";
+						} else{
+							
+							document.listaNuovo.entita.value = "GARE";
+							document.listaNuovo.activePage.value = 0;
+							document.listaNuovo.jspPath.value="/WEB-INF/pages/gare/gare/gare-scheda.jsp";
+							document.listaNuovo.jspPathTo.value="/WEB-INF/pages/gare/gare/gare-scheda.jsp";
+						    //document.listaNuovo.keyParent= ${param.chiavePadre};					
+							
+						}
+						
+						document.listaNuovo.action = document.listaNuovo.action + "?tipoGara="+tipoGara+"&tipoAppalto="+tipoAppalto+"&proceduraTelematica="+proceduraTelematica+"&modalitaPresentazione="+modalitaPresentazione+"&numeroRda="+numRda+"&divisione="+divisione;
+                        document.listaNuovo.elements['listaRdaSelezionate'].value = arrmultikey;
+                        
+						bloccaRichiesteServer();
+						document.listaNuovo.submit();
 
-
+					}					
+					
+					
 				}
-
-
 			}
 		});
 
+        if (_tipoWSERP == 'INARCASSA'){
+        	//alert("info: "+arrmultikey); // TODO:ROS: da togliere, usato per debugging
+        	// $('#listaRdaSelezionate').val(arrmultikey);
+        }
+        
 		if(!(nSelected > 0)){
 			if(_tipoWSERP == 'FNM'){
 				alert("Selezionare un procedimento");
 			}
 			if(_tipoWSERP == 'RAIWAY'){
+				alert("Selezionare una RdA");
+			}
+			if(_tipoWSERP == 'INARCASSA'){
+				alert("Selezionare una RdA");
+			}
+			if(_tipoWSERP == 'CONI'){
 				alert("Selezionare una RdA");
 			}
 		}else{
@@ -516,7 +576,7 @@ function _trovaRda() {
 			_tableRda.destroy(true);
 		}
 
-		_creaTabellaRda();
+		_creaTabellaRda();		
 		_popolaRda();
 		$("#finestraselrda").dialog("close");
 
@@ -796,14 +856,34 @@ function _popolaRda() {
 		visPosRda = false;
 		visDescrizione = false;
 		titCodRda = 'Numero RdA';
-		visGrpAcq = true;
-		visOggetto = true;
+		visDivisione = true;
+		titDivisione = 'Struttura'
+		visOggetto = true;		
 		visTotale = true;
 		visNrPos = true;
 		visNrLotti = true;
 		visRDP = true;
 		var rangesel = [[20, 50, 100], ["20 RdA", "50 RdA", "100 RdA"]];
 	}
+	
+	//Integrazione tabella INARCASSA
+	
+	console.log("punto 3: _tipoWSERP"+_tipoWSERP); // TODO:ROS: da cancellare utilizzato per debug...
+	
+	if(_tipoWSERP == 'INARCASSA'){
+		visPosRda = false;
+		visDescrizione = false;
+		titCodRda = 'Numero RdA';
+		visDivisione = false;
+		// titDivisione = 'Struttura'
+		visOggetto = true;
+		visValStimato = false; // TODO:ROS: prova
+		visTotale = true;
+		visNrPos = true;
+		visNrLotti = false;
+		visRDP = false;
+		var rangesel = [[20, 50, 100], ["20 RdA", "50 RdA", "100 RdA"]];
+	}	
 
 	if(_tipoWSERP == 'AVM'){
 		var _codrda = $("#search_cod_rda").val();
@@ -813,45 +893,26 @@ function _popolaRda() {
 		var _codmat = $("#search_cod_mat").val();
 		var _oggetto = $("#search_descr_rda").val();
 	}
+	
+	//Integrazione tabella CONI
+	if(_tipoWSERP == 'CONI'){
+		visPosRda = false;
+		visGrpAcq = true;
+		visDescrizione = false;
+		titCodRda = 'Numero RdA';
+		visDivisione = true;
+		titDivisione = 'Divisione';
+		visOggetto = true;
+		visTotale = true;
+		visValStimato = false;
+		
+		var rangesel = [[20, 50, 100], ["20 RdA", "50 RdA", "100 RdA"]];
+	}
+	
 
 	_waitgperm();
-
-	_tableRda = $('#listarda').removeAttr('width').DataTable( {
-		"ajax": {
-			"url": "pg/GetWSERPListaRda.do",
-			"data" : function (n) {
-				return {
-					operation: $("#operation").val(),
-					codgar: $("#codgar").val(),
-					genere: $("#genere").val(),
-					tipoAppalto: $("#tipoAppalto").val(),
-					tipoGara: $("#tipoGara").val(),
-					uffint: $("#uffint").val(),
-					scProfilo: $("#scProfilo").val(),
-					codicerda: _codrda,
-					gruppoacq: _gruppoacq,
-					divisione: _divisione,
-					codicemateriale: _codmat,
-					dataconsegna: _datacons,
-					oggetto: _oggetto
-				};
-			},
-			error: function(e){
-				var messaggio = "Errore durante la lettura delle rda";
-				$('#rdamessaggio').text(messaggio);
-				$('#rdamessaggio').show(300);
-			},
-			"complete": function() {
-				_nowaitgperm();
-				if(_tipoWSERP == 'SMEUP' || _tipoWSERP == 'UGOVPA'){
-					_getCarrelloAssociato();
-				}
-			}
-		},
-
-		"bAutoWidth": false,
-
-		"columnDefs": [
+	
+	var columnDefsArray = [
 			{
 				"data": "idLotto",
 				"visible": visIdLotto,
@@ -975,6 +1036,7 @@ function _popolaRda() {
 				"visible": visTotale,
 				"render": $.fn.dataTable.render.number('.', ',', 2, '',' \u20ac') ,
 				"sTitle": "Totale",
+				"className": "dt-body-right",
 				"searchable": false,
 				"sWidth": "100px",
 				"targets": [ 14 ]
@@ -992,7 +1054,6 @@ function _popolaRda() {
 				"data": "nrLotti",
 				"visible": visNrLotti,
 				"sTitle": "Nr. Lotti",
-				"className": "dt-body-center",
 				"searchable": false,
 				"sWidth": "70px",
 				"targets": [ 16 ]
@@ -1024,7 +1085,10 @@ function _popolaRda() {
 								var _check = $("<input/>",{"type":"checkbox", "id": "ck_rda_" + full.codiceRda + "_" + full.divisione});
 								_div.append(_check);
 							}
-						} else if(_tipoWSERP == 'RAIWAY'){
+						} else if(_tipoWSERP == 'RAIWAY' || _tipoWSERP == 'CONI'){
+							var _check = $("<input/>",{"type":"checkbox", "id": "ck_rda_" + full.codiceRda});
+							_div.append(_check);
+						} else if(_tipoWSERP == 'INARCASSA'){
 							var _check = $("<input/>",{"type":"checkbox", "id": "ck_rda_" + full.codiceRda});
 							_div.append(_check);
 						} else{
@@ -1038,7 +1102,54 @@ function _popolaRda() {
 					return _div.html();
 				}
 			}
-		],
+	];
+		
+	// Cerca l'elemento con "data": "totale" e aggiungi "className" se _tipoWSERP == 'INARCASSA'
+	if (_tipoWSERP === 'INARCASSA') {
+		for (var i = 0; i < columnDefsArray.length; i++) {
+		    if (columnDefsArray[i].data === "totale") {		        
+		        columnDefsArray[i].className = "dt-body-right";		        
+		        break; // Esce dal ciclo una volta trovato l'elemento "totale"
+		    }
+		}		
+	}
+
+	_tableRda = $('#listarda').removeAttr('width').DataTable( {
+		"ajax": {
+			"url": "pg/GetWSERPListaRda.do",
+			"data" : function (n) {
+				return {
+					operation: $("#operation").val(),
+					codgar: $("#codgar").val(),
+					genere: $("#genere").val(),
+					tipoAppalto: $("#tipoAppalto").val(),
+					tipoGara: $("#tipoGara").val(),
+					uffint: $("#uffint").val(),
+					scProfilo: $("#scProfilo").val(),
+					codicerda: _codrda,
+					gruppoacq: _gruppoacq,
+					divisione: _divisione,
+					codicemateriale: _codmat,
+					dataconsegna: _datacons,
+					oggetto: _oggetto
+				};
+			},
+			error: function(e){
+				var messaggio = "Errore durante la lettura delle rda";
+				$('#rdamessaggio').text(messaggio);
+				$('#rdamessaggio').show(300);
+			},
+			"complete": function() {
+				_nowaitgperm();
+				if(_tipoWSERP == 'SMEUP' || _tipoWSERP == 'UGOVPA'){
+					_getCarrelloAssociato();
+				}
+			}
+		},
+
+		"bAutoWidth": false,
+
+		"columnDefs": columnDefsArray,
 
 		//group corrisponde a idLotto per SmeUp
 		"drawCallback": function ( settings ) {
@@ -1161,8 +1272,29 @@ function _popolaRda() {
 		});
 
 	}
+	
+	
+	if(_tipoWSERP == 'INARCASSA'){
+        // qui impostiamo le barre di ricerca 
+        
+		$('#listarda tfoot td').eq(0).html( '<input class="search" size="20" type="text" placeholder="Ric.Rda."/>' );
+		$('#listarda tfoot td').eq(1).html( '<input class="search" size="20" type="text" placeholder="Ric.oggetto "/>' );
 
-	if(!(_tipoWSERP == 'RAIWAY' || _tipoWSERP == 'SMEUP' || _tipoWSERP == 'UGOVPA' || (_tipoWSERP == 'FNM' && !_multiSelezione))){
+		_tableRda.columns().eq(0).each( function (colIdx) {
+			$('input', _tableRda.column(colIdx).footer()).on( 'keyup change', function () {
+				_tableRda.column(colIdx).search(this.value).draw();
+			});
+		});
+
+	}	
+
+	if (!(     _tipoWSERP == 'RAIWAY' 
+	        || _tipoWSERP == 'SMEUP'
+	        || _tipoWSERP == 'UGOVPA' 
+	        || (_tipoWSERP == 'FNM' && !_multiSelezione)
+	        || _tipoWSERP == 'INARCASSA' 
+	     )
+	){
 		var _center = $("<center/>");
 		var _href = "<a href='javascript:_selezionaTutti();' Title='Seleziona tutti'> <img src='"+_contextPath+"/img/ico_check.gif' height='15' width='15' alt='Seleziona tutti'></a>";
 		var _href = _href + "&nbsp;";
@@ -1174,6 +1306,6 @@ function _popolaRda() {
 	$("#listarda_filter").hide();
 
 }
-  
+    
 
   

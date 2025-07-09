@@ -21,7 +21,6 @@
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 
 	<c:set var="idconfi" value="${param.idconfi}"/>
-	<c:set var="wsdmconfi_descri" value="${param.descri}"/>
 	<c:set var="wsdmProtocollo" value="${param.wsdmProtocollo}"/>
 	<c:set var="key" value='WSDMCONFI.ID=N:${idconfi}' scope="request" />
 	<c:set var="keyParent" value='WSDMCONFI.ID=N:${idconfi}' scope="request" />
@@ -127,6 +126,7 @@
 	//49		""		protocollazione.wsdm.stipule.registro
 	//50		""		protocollazione.wsdm.stipule.indice
 	//51		""		protocollazione.wsdm.stipule.titolazione
+	//52		""		protocollazione.wsdm.divisione
 	
 	arrayProprieta = [[idconfi,"protocollazione.wsdm.url"],[idconfi,"protocollazione.wsdm.username"],[idconfi,"protocollazione.wsdm.password"],[idconfi,"protocollazione.wsdm.nome"],
 		[idconfi,"protocollazione.wsdm.cognome"],[idconfi,"protocollazione.wsdm.ruolo"],[idconfi,"protocollazione.wsdm.codiceUO"],[idconfi,"protocollazione.wsdm.idUtente"],
@@ -143,9 +143,9 @@
 		[idconfi,"protocollazione.wsdm.supporto"],[idconfi,"protocollazione.wsdm.tipoAssegnazione"],[idconfi,"protocollazione.wsdm.sottotipoGara"],[idconfi,"protocollazione.wsdm.sottotipoComunicazione"],
 		[idconfi,"protocollazione.wsdm.posizioneAllegatoComunicazione"],[idconfi,"protocollazione.wsdm.descUnitaOperativaDestinataria"],[idconfi,"protocollazione.wsdm.tipoFirma"],
 		[idconfi,"protocollazione.wsdm.stipule.classifica"],[idconfi,"protocollazione.wsdm.stipule.tipoDocumento"],[idconfi,"protocollazione.wsdm.stipule.registro"],[idconfi,"protocollazione.wsdm.stipule.indice"],
-		[idconfi,"protocollazione.wsdm.stipule.titolazione"]];
+		[idconfi,"protocollazione.wsdm.stipule.titolazione"],[idconfi,"protocollazione.wsdm.divisione"]];
 	                                                                                                                                                                    											
-	tipoProprieta = [ "url","","psw","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","-b","","","","","","","","","","-bPos","","","","","","",""];	
+	tipoProprieta = [ "url","","psw","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","-b","","","","","","","","","","-bPos","","","","","","","",""];
 
 	var tabAbilitati = false;
 	
@@ -355,7 +355,7 @@
 		<span id="prop2"></span>
 	</td>
 </tr>
-<c:if test="${wsdmProtocollo ne 'IRIDE' and wsdmProtocollo ne 'JIRIDE' and wsdmProtocollo ne 'INFOR' and wsdmProtocollo ne 'PROTSERVICE' and wsdmProtocollo ne 'JPROTOCOL'}">
+<c:if test="${wsdmProtocollo ne 'IRIDE' and wsdmProtocollo ne 'JIRIDE' and wsdmProtocollo ne 'INFOR' and wsdmProtocollo ne 'PROTSERVICE' and wsdmProtocollo ne 'JPROTOCOL' and wsdmProtocollo ne 'HALLEY'}">
 <tr id="sez3">
 	<td class="etichetta-dato">
 		<span id="titleProp3" >Password</span>
@@ -422,7 +422,7 @@
 		<b><br>Parametri specifici per procedure di Gara</b>
 	</td>
 </tr>
-<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT'}">
+<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT' or wsdmProtocollo eq 'HALLEY'}">
 <tr id="sez9">
 	<td class="etichetta-dato">
 		<span id="titleProp9" >Classifica</span>
@@ -516,7 +516,7 @@
 		<b><br>Parametri specifici per Elenco operatori</b>
 	</td>
 </tr>
-<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT'}">
+<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT' or wsdmProtocollo eq 'HALLEY'}">
 <tr id="sez17">
 	<td class="etichetta-dato">
 		<span id="titleProp17" >Classifica</span>
@@ -526,7 +526,7 @@
 	</td>
 </tr>
 </c:if>
-<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'TITULUS' or wsdmProtocollo eq 'ARCHIFLOW' or wsdmProtocollo eq 'URBI' or wsdmProtocollo eq 'DOCER' or wsdmProtocollo eq 'JDOC' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'ITALPROT'}">
+<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'TITULUS' or wsdmProtocollo eq 'ARCHIFLOW' or wsdmProtocollo eq 'URBI' or wsdmProtocollo eq 'DOCER' or wsdmProtocollo eq 'JDOC' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'ITALPROT' or wsdmProtocollo eq 'ARCHIFLOWFA'}">
 <tr id="sez18">
 	<td class="etichetta-dato">
 		<span id="titleProp18" >Tipo documento</span>
@@ -571,7 +571,7 @@
 		<b><br>Parametri specifici per Catalogo elettronico</b>
 	</td>
 </tr>
-<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT'}">
+<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT' or wsdmProtocollo eq 'HALLEY'}">
 <tr id="sez22">
 	<td class="etichetta-dato">
 		<span id="titleProp22" >Classifica</span>
@@ -581,7 +581,7 @@
 	</td>
 </tr>
 </c:if>
-<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'TITULUS' or wsdmProtocollo eq 'ARCHIFLOW' or wsdmProtocollo eq 'URBI' or wsdmProtocollo eq 'DOCER' or wsdmProtocollo eq 'JDOC' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'ITALPROT'}">
+<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'TITULUS' or wsdmProtocollo eq 'ARCHIFLOW' or wsdmProtocollo eq 'URBI' or wsdmProtocollo eq 'DOCER' or wsdmProtocollo eq 'JDOC' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'ITALPROT' or wsdmProtocollo eq 'ARCHIFLOWFA'}">
 <tr id="sez23">
 	<td class="etichetta-dato">
 		<span id="titleProp23" >Tipo documento</span>
@@ -625,7 +625,7 @@
 		<b><br>Parametri specifici per Avvisi</b>
 	</td>
 </tr>
-<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT'}">
+<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'EASYDOC' or wsdmProtocollo eq 'NUMIX' or wsdmProtocollo eq 'ITALPROT' or wsdmProtocollo eq 'HALLEY'}">
 <tr id="sez27">
 	<td class="etichetta-dato">
 		<span id="titleProp27" >Classifica</span>
@@ -635,7 +635,7 @@
 	</td>
 </tr>
 </c:if>
-<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'TITULUS' or wsdmProtocollo eq 'ARCHIFLOW' or wsdmProtocollo eq 'URBI' or wsdmProtocollo eq 'JDOC' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'ITALPROT'}">
+<c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'TITULUS' or wsdmProtocollo eq 'ARCHIFLOW' or wsdmProtocollo eq 'URBI' or wsdmProtocollo eq 'JDOC' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'ITALPROT' or wsdmProtocollo eq 'ARCHIFLOWFA'}">
 <tr id="sez28">
 	<td class="etichetta-dato">
 		<span id="titleProp28" >Tipo documento</span>
@@ -729,7 +729,7 @@
 		<b><br>Altri parametri</b>
 	</td>
 </tr>
-<c:if test="${wsdmProtocollo eq 'PRISMA'}">
+<c:if test="${wsdmProtocollo eq 'PRISMA' or wsdmProtocollo eq 'ARCHIFLOW'}">
 <tr id="sez32">
 	<td class="etichetta-dato">
 		<span id="titleProp32" >Struttura</span>
@@ -738,6 +738,16 @@
 		<span id="prop32"></span>
 	</td>
 </tr>
+</c:if>
+<c:if test="${wsdmProtocollo eq 'ARCHIFLOW'}">
+	<tr id="sez52">
+		<td class="etichetta-dato">
+			<span id="titleProp52" >Divisione</span>
+		</td>
+		<td class="valore-dato">
+			<span id="prop52"></span>
+		</td>
+	</tr>
 </c:if>
 <c:if test="${wsdmProtocollo eq 'JIRIDE' or wsdmProtocollo eq 'ARCHIFLOWFA'}">
 <tr id="sez33">
@@ -789,7 +799,7 @@
 	</td>
 </tr>
 </c:if>
-<c:if test="${wsdmProtocollo eq 'ENGINEERING' or wsdmProtocollo eq 'ENGINEERINGDOC' or wsdmProtocollo eq 'PRISMA' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'DOCER'}">
+<c:if test="${wsdmProtocollo eq 'ENGINEERING' or wsdmProtocollo eq 'ENGINEERINGDOC' or wsdmProtocollo eq 'PRISMA' or wsdmProtocollo eq 'INFOR' or wsdmProtocollo eq 'DOCER' or wsdmProtocollo eq 'HALLEY'}">
 <tr id="sez38">
 	<td class="etichetta-dato">
 		<span id="titleProp38" >Id unità operativa destinataria</span>

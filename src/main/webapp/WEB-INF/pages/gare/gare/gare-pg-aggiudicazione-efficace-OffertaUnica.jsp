@@ -122,7 +122,8 @@
 	var ridisoPrec = getValue("GARE_RIDISO");
 	
 	//La funzione aggiorna il valore dell'importo cauzione in funzione di RIDISO
-	//Se ridiso=1 si dimezza l'importo cauzione, altrimenti si raddoppia
+	//Se RIDISO = 1 si riduce del 30% il valore di IMPGAR
+	//Se RIDISO = 2 si ripristina il valore di IMPGAR
 	function aggiornaImportoCauzione(){
 		var newRidiso = getValue("GARE_RIDISO");
 		var oldRidiso = ridisoPrec;
@@ -141,9 +142,9 @@
 		
 		if (newRidiso != oldRidiso) {
 			if (newRidiso==1) {
-				importoCauzione = importoCauzione / 2;
+				importoCauzione = importoCauzione * (1-0.3);//riduzione del 30%  (prima 50%) - DLgs 36-2023 
 			}else{ 
-				importoCauzione = importoCauzione * 2;
+				importoCauzione = importoCauzione / (1-0.3); 
 			}
 			setValue(nomeCampoImporto,  round(eval(importoCauzione), 5));
 		}
@@ -159,13 +160,13 @@
 		var ncont="${ncont }";
 		var ngaral="${ngaral }";
 		var codimp="${codimp }";
-		document.pagineForm.action += "&modcont=" + modcont + "&isAccordoQuadro=" + isAccordoQuadro + "&codcont=" + codcont + "&ncont=" + ncont + "&ngaral=" + ngaral + "&codimp=" + codimp;
+		document.pagineForm.action += "?modcont=" + modcont + "&isAccordoQuadro=" + isAccordoQuadro + "&codcont=" + codcont + "&ncont=" + ncont + "&ngaral=" + ngaral + "&codimp=" + codimp;
 		selezionaPaginaDefault(pageNumber);
 	}
 	
 	function documentiAssociatiGarecont(){
 		var keys = "GARECONT.NGARA=T:"+getValue("GARECONT_NGARA")+";GARECONT.NCONT=N:"+${ncont};
-		var href = contextPath+'/ListaDocumentiAssociati.do?'+csrfToken+'&metodo=visualizza&entita=GARECONT&valori='+keys;
+		var href = contextPath+'/ListaDocumentiAssociati.do?metodo=visualizza&entita=GARECONT&valori='+keys;
 		document.location.href = href;
 	}
 	

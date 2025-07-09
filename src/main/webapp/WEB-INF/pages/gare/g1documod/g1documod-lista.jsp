@@ -16,6 +16,9 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<%-- test per consentire utilizzo della pagina solo agli amministratori di sistema --%>
+<c:set var="nonusato" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.CheckOpzioniUtenteFunction", pageContext, "ou89")}' />
+
 <c:set var="idDocumod" value='${gene:getValCampo(key, "G1DOCUMOD.ID")}' />
 <c:set var="tmp" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetDatiG1documodFunction", pageContext, idDocumod)}'/>
 <c:set var="visualizzaLink" value='true' />
@@ -142,7 +145,7 @@
 	</gene:redefineInsert>
 <gene:javaScript>
 function listaNuovoCustom() {
-	document.forms[0].action=document.forms[0].action+"&gruppo=${gruppo}"+"&busta=${busta}";
+	document.forms[0].action=document.forms[0].action+"?gruppo=${gruppo}"+"&busta=${busta}";
 	listaNuovoDefault();
 }
 

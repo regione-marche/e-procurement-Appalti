@@ -4,6 +4,7 @@
 	<property name="ireport.zoom" value="1.4641000000000008"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="149"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="appalti_pos"/>
 	<subDataset name="punto_istruttore" uuid="c873dff3-488c-4626-a75c-3ed2ab7ccfd3">
 		<parameter name="NUMERO_GARA" class="java.lang.String"/>
 		<queryString>
@@ -54,6 +55,7 @@ TORN.GARTEL AS telematica,
 GARE.CRITLICG AS cod_criterio_aggiudicazione,
 T3.TAB1DESC AS criterio_aggiudicazione,
 GARE.DETLICG AS codice_determinato_mediante,
+GARE.CALCSOANG AS calcolo_soglia,
 T4.TAB1DESC AS determinato_mediante,
 GARE.IMPAPP AS importo_base_gara,
 GARE.IMPNRL AS importo_no_ribasso,
@@ -87,6 +89,7 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 	<field name="TELEMATICA" class="java.lang.Integer"/>
 	<field name="COD_CRITERIO_AGGIUDICAZIONE" class="java.lang.Integer"/>
 	<field name="CRITERIO_AGGIUDICAZIONE" class="java.lang.String"/>
+	<field name="CALCOLO_SOGLIA" class="java.lang.Integer"/>
 	<field name="CODICE_DETERMINATO_MEDIANTE" class="java.lang.Integer"/>
 	<field name="DETERMINATO_MEDIANTE" class="java.lang.String"/>
 	<field name="IMPORTO_BASE_GARA" class="java.lang.Double"/>
@@ -508,6 +511,43 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<textFieldExpression><![CDATA[$F{DETERMINATO_MEDIANTE}]]></textFieldExpression>
 				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true" uuid="f966098d-1dbb-4780-863f-e7d5c78536e9">
+					<printWhenExpression><![CDATA[$F{CALCOLO_SOGLIA} != null && $F{CALCOLO_SOGLIA} == 1]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="f624345d-7a03-41f4-a161-4c5492d10571"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman"/>
+					</textElement>
+					<text><![CDATA[Metodo calcolo soglia anomalia]]></text>
+				</staticText>
+				<staticText>
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="203ef9ef-9cad-49aa-a48d-486b0200f9b2">
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman"/>
+					</textElement>
+					<text><![CDATA[Metodo A]]></text>
+				</staticText>
 			</frame>
 		</band>
 		<band height="20" splitType="Prevent">

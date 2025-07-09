@@ -10,6 +10,8 @@ import it.eldasoft.gene.db.domain.BlobFile;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
+import it.eldasoft.gene.ws.objectstorage.UploadInfo;
 import it.eldasoft.sil.pg.bl.ValidatorManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 
@@ -64,7 +66,8 @@ public class GestoreW_DOCDIG extends AbstractGestoreChiaveNumerica {
   @Override
   public void preDelete(TransactionStatus status, DataColumnContainer datiForm)
       throws GestoreException {
-
+    UploadInfo oldBucketInfo = ObjectStorageUtils.getUploadInfo("select bucket_ref, bucket_uuid from w_docdig where idprg=? and iddocdig=?",new Object[] {datiForm.getColumn("W_DOCDIG.IDPRG").getValue().getStringValue(), datiForm.getColumn("W_DOCDIG.IDDOCDIG").getValue().longValue()});
+    ObjectStorageUtils.deleteFile(oldBucketInfo.bucket_ref(),oldBucketInfo.uuid());
   }
 
   @Override
@@ -193,12 +196,19 @@ public class GestoreW_DOCDIG extends AbstractGestoreChiaveNumerica {
         }else if (!FileAllegatoManager.isEstensioneFileAmmessa(this.getForm().getSelezioneFile().getFileName())) { //Controllo sulle estensioni ammesse al nome del file
           throw new GestoreException("Il file selezionato da caricare ha un'estensione non accettata",
               "upload.estensioneNonAmmessa", new String[]{this.getForm().getSelezioneFile().getFileName()}, null);
+        }else if(!FileAllegatoManager.checkFileContent(this.getForm().getSelezioneFile().getFileData(),this.getForm().getSelezioneFile().getFileName())){
+          throw new GestoreException("Il file selezionato da caricare viene scartato in quanto ha un contenuto in formato non valido secondo le verifiche mediante la libreria Apache Tika",
+              "upload.erroreVerificaContenuto", new String[]{this.getForm().getSelezioneFile().getFileName()}, null);
+        } else if(this.getForm().getSelezioneFile().getFileName().toLowerCase().endsWith(".pdf") && FileAllegatoManager.isMaliciousPdf(this.getForm().getSelezioneFile().getFileData(), this.getForm().getSelezioneFile().getFileName())) {
+          throw new GestoreException("Il file selezionato da caricare viene scartato in quanto sembra codificare dei contenuti non sicuri (malware)",
+                  "upload.erroreContenutoMalevolo", new String[]{this.getForm().getSelezioneFile().getFileName()}, null);
         } else {
 
           baos = new ByteArrayOutputStream();
           baos.write(this.getForm().getSelezioneFile().getFileData());
           datiForm.addColumn("W_DOCDIG.DIGOGG", JdbcParametro.TIPO_BINARIO,
               baos);
+          ObjectStorageUtils.addFile(datiForm.getColumn("W_DOCDIG.IDPRG").getValue().getStringValue(), datiForm.getColumn("W_DOCDIG.IDDOCDIG").getValue().longValue());
         }
 
       } catch (FileNotFoundException e) {

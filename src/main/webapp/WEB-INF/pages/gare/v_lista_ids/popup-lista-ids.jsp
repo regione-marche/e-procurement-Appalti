@@ -116,7 +116,7 @@
 		document.getElementById("numeroIds").value = ${currentRow}+1;
 		
 		function conferma() {
-	      		document.forms[0].action="${pageContext.request.contextPath}/pg/AggiornaGaraIds.do?"+csrfToken;
+	      		document.forms[0].action="${pageContext.request.contextPath}/pg/AggiornaGaraIds.do";
  				bloccaRichiesteServer();
 				document.forms[0].submit();
 		}

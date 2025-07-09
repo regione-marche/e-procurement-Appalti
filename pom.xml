@@ -3,12 +3,12 @@
   <parent>
     <groupId>it.maggioli.eldasoft</groupId>
     <artifactId>webapp-base</artifactId>
-    <version>8.0</version>
+    <version>8.1</version>
     <relativePath />
   </parent>
   <groupId>it.maggioli.eldasoft.sil</groupId>
   <artifactId>pg-webapp</artifactId>
-  <version>9.15.5-regmarche</version>
+  <version>10.13.0-reg-marche</version>
   <packaging>war</packaging>
   <name>Appalti e Affidamenti</name>
   <dependencies>
@@ -22,11 +22,6 @@
       <groupId>jakarta.xml.bind</groupId>
       <artifactId>jakarta.xml.bind-api</artifactId>
       <version>2.3.3</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>3.9</version>
     </dependency>
     <!-- fine dipendenze forzate-->
     <dependency>
@@ -42,12 +37,12 @@
     <dependency>
       <groupId>it.maggioli.eldasoft.wsdm</groupId>
       <artifactId>wsdm-client</artifactId>
-      <version>1.33.0</version>
+      <version>1.43.0</version>
     </dependency>
     <dependency>
       <groupId>it.maggioli.eldasoft.sil</groupId>
       <artifactId>wssimap-datatypes</artifactId>
-      <version>4.0.2</version>
+      <version>4.0.8</version>
     </dependency>
     <dependency>
       <groupId>it.maggioli.eldasoft.sil</groupId>
@@ -57,12 +52,28 @@
     <dependency>
       <groupId>it.maggioli.eldasoft.sil.pg</groupId>
       <artifactId>pgvigilanza</artifactId>
-      <version>1.0.29</version>
+      <version>1.0.36</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-io</groupId>
+          <artifactId>commons-io</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>it.maggioli.eldasoft.portal</groupId>
       <artifactId>eldasoft-portgare-datatypes</artifactId>
-      <version>3.24.0</version>
+      <version>4.8.0</version>
+    </dependency>
+    <dependency>
+      <groupId>it.appaltiecontratti.agid</groupId>
+      <artifactId>archivia-documenti-datatypes</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>it.appaltiecontratti.digip</groupId>
+      <artifactId>archiviazione-digip-datatypes</artifactId>
+      <version>1.0.0</version>
     </dependency>
     <dependency>
       <groupId>it.maggioli.eldasoft.commons</groupId>
@@ -72,12 +83,13 @@
     <dependency>
       <groupId>it.maggioli.eldasoft.portal</groupId>
       <artifactId>eldasoft-encryption-utils</artifactId>
-      <version>1.3.0</version>
-    </dependency>
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>1.2.14</version>
+      <version>1.4.0</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-io</groupId>
+          <artifactId>commons-io</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <!-- si forza la dipendenza in modo da usare .a 2.5.0 come in geneweb, 
 			altrimenti ci sono piu' versioni -->
@@ -106,6 +118,10 @@
         <exclusion>
           <groupId>javax.inject</groupId>
           <artifactId>javax.inject</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-lang3</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -188,6 +204,10 @@
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-api</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcpkix-jdk15on</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -269,7 +289,7 @@
     <dependency>
       <groupId>it.maggioli.eldasoft.simog-avcp</groupId>
       <artifactId>simog-wspdd-client</artifactId>
-      <version>3.04.8</version>
+      <version>3.04.9</version>
       <scope>compile</scope>
       <optional>false</optional>
       <exclusions>
@@ -283,11 +303,23 @@
       <groupId>it.maggioli.eldasoft.simog-avcp</groupId>
       <artifactId>simog-smartCig-client</artifactId>
       <version>1.0.0</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.geronimo.specs</groupId>
+          <artifactId>geronimo-javamail_1.4_spec</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.axis2</groupId>
       <artifactId>axis2</artifactId>
       <version>${version.axis2}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.geronimo.specs</groupId>
+          <artifactId>geronimo-javamail_1.4_spec</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.axis2</groupId>
@@ -310,6 +342,10 @@
         <exclusion>
           <groupId>jaxen</groupId>
           <artifactId>jaxen</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.geronimo.specs</groupId>
+          <artifactId>geronimo-javamail_1.4_spec</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -343,9 +379,15 @@
       <artifactId>appalti-cg-ms-client</artifactId>
       <version>1.0.0</version>
     </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>4.0.1</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
   <properties>
-    <geneweb.version>2.34.1-regmarche</geneweb.version>
+    <geneweb.version>2.52.0-reg-marche</geneweb.version>
     <codapp>pg</codapp>
     <version.axis2>1.6.2</version.axis2>
     <version.jersey>2.29.1</version.jersey>

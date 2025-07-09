@@ -99,14 +99,14 @@
 
 	function procediNuovaStipula(){
 		if($("#radiomodstip1").prop('checked')){
-			document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1stipula/g1stipula_assAggiud.jsp&modo=NUOVO";
+			document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1stipula/g1stipula_assAggiud.jsp&modo=NUOVO";
 		}else{
 			if($("#radiomodstip2").prop('checked')){
-				document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1stipula/g1stipula_creaAggiud.jsp&modo=NUOVO";
+				document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1stipula/g1stipula_creaAggiud.jsp&modo=NUOVO";
 			}
 			else{
 			   if($("#radiomodstip3").prop('checked')){
-				document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1stipula/g1stipula_collAggiud.jsp&modo=NUOVO";
+				document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1stipula/g1stipula_collAggiud.jsp&modo=NUOVO";
 			}
 		}
 				

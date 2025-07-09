@@ -71,6 +71,7 @@
 			</c:otherwise>
 		</c:choose>
 		
+		<c:if test='${not empty tmpStepWizard and gene:matches(tmpStepWizard, "^-?[\\\\.0-9]+$", true)}' />
 				
 		<gene:formScheda entita="DITG" gestisciProtezioni="true" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestorePopupFasiGara" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupFasiRicezione_Gara">
 			<gene:campoScheda campo="CODGAR5" visibile="false" />

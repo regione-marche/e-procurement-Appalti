@@ -91,7 +91,7 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 	</c:when>
 	
 </c:choose>
-${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunction", pageContext, "GARE", where, parametri)}
+${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "GARE", where, parametri)}
 
 <gene:redefineInsert name="corpo">
 
@@ -139,7 +139,7 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunctio
 	function dettaglioOffertaPerLotto(ngara){
 		var codgar="${codiceGara }";
 		var chiave="DITG.CODGAR5=T:" + codgar + ";DITG.NGARA5=T:"+ngara+";DITG.DITTAO=T:AAA";
-		var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/ditg/dettaglioOfferteDitta-OffertaUnicaLotti.jsp";
+		var href = contextPath + "/ApriPagina.do?href=gare/ditg/dettaglioOfferteDitta-OffertaUnicaLotti.jsp";
 		href += "&key=" + chiave + "&paginaAttivaWizard=${paginaAttivaWizard}&isOffertaPerLotto=true";
 		document.location.href = href;
 		

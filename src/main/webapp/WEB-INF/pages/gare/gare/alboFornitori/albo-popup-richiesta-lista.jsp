@@ -50,6 +50,25 @@
 		<c:set var="garaLottiConOffertaUnica" value="${garaLottiConOffertaUnica}" />
 	</c:otherwise>
 </c:choose>
+<c:choose>
+	<c:when test='${!empty param.tipoWSERP}'>
+		<c:set var="tipoWSERP" value="${param.tipoWSERP}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="tipoWSERP" value="${tipoWSERP}" />
+	</c:otherwise>
+</c:choose>
+
+<c:choose>
+	<c:when test='${tipoWSERP eq "RAIWAY"}'>
+		<c:set var="campi" value="V_CAIS_TIT.CAISIM;V_CAIS_TIT.TIPLAVG" />
+		<c:set var="campiObbligatori" value="false" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="campi" value="V_CAIS_TIT.CAISIM;V_CAIS_TIT.DESCAT;V_CAIS_TIT.TIPLAVG" />
+		<c:set var="campiObbligatori" value="true" />
+	</c:otherwise>
+</c:choose>
 
 <gene:template file="popup-message-template.jsp">
 <gene:setString name="titoloMaschera" value="Seleziona categoria per albo fornitori"/>
@@ -79,33 +98,52 @@ L'estrazione e la selezione degli operatori economici resta responsabilit&agrave
 					<c:set var="parametriWhere" value="N:${datiRiga.CAIS_TIPLAVG}" />
 				</c:otherwise>
 			</c:choose>
-			<gene:archivio titolo="Categorie d'iscrizione"
-			lista="gene/cais/lista-categorie-iscrizione-popup.jsp"
-			scheda=""
-			schedaPopUp=""
-			campi="V_CAIS_TIT.CAISIM;V_CAIS_TIT.DESCAT;V_CAIS_TIT.TIPLAVG"
-			functionId="default"
-			parametriWhere="${parametriWhere}"
-			chiave=""
-			formName="formCategoriaPrevalenteGare"
-			inseribile="false">
-			<c:set var="categoriaUtilizzata" value="${gene:callFunction3('it.eldasoft.sil.pg.tags.funzioni.CheckCategoriaPresenteLottiFunction', pageContext, datiRiga.CATG_CATIGA, codgar)}" />
-			<gene:campoScheda campo="CATIGA" title="Codice categoria" entita="CATG" where="CATG.CATIGA=CAIS.CAISIM" obbligatorio="true" defaultValue="${requestScope.initCatiga}" />		
-			<gene:campoScheda campo="DESCAT" entita="CAIS" from="CATG" where="CATG.NGARA='${ngara}' and CATG.CATIGA=CAIS.CAISIM" modificabile="false" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.CATG.CATIGA")}' defaultValue="${requestScope.initDescat}" />
-			<gene:campoScheda campo="TIPLAVG" entita="CAIS" visibile="false" defaultValue="${requestScope.initTiplavg}" />
-		</gene:archivio>
+			<c:choose>
+				<c:when test='${tipoWSERP eq "RAIWAY"}'>
+					<table class="dettaglio-notab">
+					<tr>
+					<gene:campoScheda campo="CODCAT" title="Categorie" speciale="true" visibile='true' modificabile="true" campoFittizio="true" definizione="T2000;0;;;;" value="${categorie}">
+						<gene:popupCampo titolo="Seleziona le categorie" href="javascript:getcategorie()" />
+					</gene:campoScheda>
+					</tr>
+					<tr>
+					<gene:campoScheda campo="RAGIONESOCIALE" title="Ragione sociale" visibile='true' modificabile="true" campoFittizio="true" definizione="T2000;0;;;;" value="">
+					</gene:campoScheda>
+					</tr>
+				</table>
+				
+				</c:when>
+				<c:otherwise>
+					<gene:archivio titolo="Categorie d'iscrizione"
+						lista="gene/cais/lista-categorie-iscrizione-popup.jsp"
+						scheda=""
+						schedaPopUp=""
+						campi="${campi}"
+						functionId="default"
+						parametriWhere="${parametriWhere}"
+						chiave=""
+						formName="formCategoriaPrevalenteGare"
+						inseribile="false">
+						<c:set var="categoriaUtilizzata" value="${gene:callFunction3('it.eldasoft.sil.pg.tags.funzioni.CheckCategoriaPresenteLottiFunction', pageContext, datiRiga.CATG_CATIGA, codgar)}" />
+						<gene:campoScheda campo="CATIGA" title="Codice categoria" entita="CATG" where="CATG.CATIGA=CAIS.CAISIM" obbligatorio="${campiObbligatori}" defaultValue="${requestScope.initCatiga}" />
+						<gene:campoScheda campo="DESCAT" entita="CAIS" from="CATG" where="CATG.NGARA='${ngara}' and CATG.CATIGA=CAIS.CAISIM" modificabile="false" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.CATG.CATIGA")}' defaultValue="${requestScope.initDescat}" />
+						<gene:campoScheda campo="TIPLAVG" entita="CAIS" visibile="false" defaultValue="${requestScope.initTiplavg}" />
+					</gene:archivio>
+				</c:otherwise>
+			</c:choose>
+		
 		</gene:gruppoCampi>
 		
-		
-				<gene:campoScheda addTr="false" visibile="false">
-								<tr>
-									<td class="etichetta-dato">Estrai:</td>
-									<td class="valore-dato">
-										<select id="qStatuslist" name="qStatuslist"></select>
-									</td>						
-								</tr>
-				</gene:campoScheda>
-		
+
+		<gene:campoScheda addTr="false" visibile="false">
+						<tr>
+							<td class="etichetta-dato">Estrai:</td>
+							<td class="valore-dato">
+								<select id="qStatuslist" name="qStatuslist"></select>
+							</td>						
+						</tr>
+		</gene:campoScheda>
+
 		
 		
 		
@@ -135,22 +173,42 @@ L'estrazione e la selezione degli operatori economici resta responsabilit&agrave
 	}
 
 	function conferma() {
-		var cat = getValue("CATG_CATIGA");
-		var descat = getValue("CAIS_DESCAT");
-		var qualificationStatusList = $("#qStatuslist").val();
-		if(cat!=null && cat!=''){
-			document.formRichiestaAlboFornitori.categoria.value=cat;
-			document.formRichiestaAlboFornitori.descat.value=descat;
-			document.formRichiestaAlboFornitori.qsl.value=qualificationStatusList;
-			document.formRichiestaAlboFornitori.codgar.value="${codgar}";
-			document.formRichiestaAlboFornitori.ngara.value="${ngara}";
+		var tipoWSERP="${tipoWSERP}";
+		if(tipoWSERP == "RAIWAY"){
+			var categorie = $('#CODCAT').val();
+			var ragSociale = $('#RAGIONESOCIALE').val();
+			document.formRichiestaAlboFornitori.categoria.value = categorie;
+			document.formRichiestaAlboFornitori.ragionesociale.value = ragSociale;
+			document.formRichiestaAlboFornitori.descat.value = descat;
+			document.formRichiestaAlboFornitori.qsl.value = qualificationStatusList;
+			document.formRichiestaAlboFornitori.codgar.value = "${codgar}";
+			document.formRichiestaAlboFornitori.ngara.value = "${ngara}";
 			
-			document.formRichiestaAlboFornitori.numeroFaseAttiva.value="${numeroFaseAttiva}";
-			document.formRichiestaAlboFornitori.garaLottiConOffertaUnica.value="${garaLottiConOffertaUnica}";
+			document.formRichiestaAlboFornitori.numeroFaseAttiva.value = "${numeroFaseAttiva}";
+			document.formRichiestaAlboFornitori.garaLottiConOffertaUnica.value = "${garaLottiConOffertaUnica}";
+			
+			document.formRichiestaAlboFornitori.tipoWSERP.value = tipoWSERP;
+			
 			document.formRichiestaAlboFornitori.submit();
 			bloccaRichiesteServer();
-		}else{
-			alert('Specificare la categoria!');
+		} else {
+			var cat = getValue("CATG_CATIGA");
+			var descat = getValue("CAIS_DESCAT");
+			var qualificationStatusList = $("#qStatuslist").val();
+			if(cat!=null && cat!=''){
+				document.formRichiestaAlboFornitori.categoria.value=cat;
+				document.formRichiestaAlboFornitori.descat.value=descat;
+				document.formRichiestaAlboFornitori.qsl.value=qualificationStatusList;
+				document.formRichiestaAlboFornitori.codgar.value="${codgar}";
+				document.formRichiestaAlboFornitori.ngara.value="${ngara}";
+				
+				document.formRichiestaAlboFornitori.numeroFaseAttiva.value="${numeroFaseAttiva}";
+				document.formRichiestaAlboFornitori.garaLottiConOffertaUnica.value="${garaLottiConOffertaUnica}";
+				document.formRichiestaAlboFornitori.submit();
+				bloccaRichiesteServer();
+			}else{
+				alert('Specificare la categoria!');
+			}
 		}
 	}
 	
@@ -164,17 +222,21 @@ L'estrazione e la selezione degli operatori economici resta responsabilit&agrave
 	// Funzione per cambiare la condizione di where nell'apertura
 	// dell'archivio delle categorie dell'appalto per la categoria prevalente
 	function setTipoCategoriaPrevalentePerArchivio(tipoCategoria){
+		var tipoWSERP="${tipoWSERP}";
+		if(tipoWSERP != "RAIWAY"){
 			if(getValue("CATG_CATIGA") == "" || getValue("CAIS_TIPLAVG") == ""){
 				document.formCategoriaPrevalenteGare.archWhereLista.value = "V_CAIS_TIT.TIPLAVG=" + tipoCategoria + document.formCategoriaPrevalenteGare.archWhereLista.value;
 				setValue("CAIS_TIPLAVG", "" + tipoCategoria);
 			} else {
 				document.formCategoriaPrevalenteGare.archWhereLista.value = "V_CAIS_TIT.TIPLAVG=" + getValue("CAIS_TIPLAVG") + document.formCategoriaPrevalenteGare.archWhereLista.value; 
 			}
+		}
 	}
 	
-	
-	
-	
+	function getcategorie(){
+		var href = "href=gare/commons/popup-lista-categorie.jsp";
+		openPopUpCustom(href, "getcategoria", 850, 600, "yes", "yes");
+	}
 
 </gene:javaScript>
 
@@ -186,8 +248,9 @@ L'estrazione e la selezione degli operatori economici resta responsabilit&agrave
 	<input type="hidden" name="qsl" id="qsl" value="" />
 	<input type="hidden" name="numeroFaseAttiva" id="numeroFaseAttiva" value="" />
 	<input type="hidden" name="garaLottiConOffertaUnica" id="garaLottiConOffertaUnica" value="" />
+	<input type="hidden" name="tipoWSERP" id="tipoWSERP" value="" />
+	<input type="hidden" name="ragionesociale" id="ragionesociale" value="" />
 </form> 
-
 
 
 </gene:template>

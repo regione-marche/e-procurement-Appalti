@@ -70,12 +70,14 @@ public class GestioneLogAperturaFaseRicezioneFunction extends AbstractFunzioneTa
 
 		switch (iterga.intValue()) {
 		case 1:
+		case 9:
 			descr += "Ricezione offerte";
 			break;
         case 3:
         case 5:
         case 6:
         case 8:
+        case 10:
             descr += "Inviti e ricezione offerte";
             break;
         default:

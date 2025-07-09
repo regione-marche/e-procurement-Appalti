@@ -85,8 +85,12 @@
 									Scegliere i lotti in cui copiare i criteri di valutazione.
 									<br><br>
 									<b>Attenzione: la lista originale dei criteri di valutazione dei lotti selezionati verr&agrave; cancellata</b>
-									<br><br>			
-									<gene:formLista entita="GARE" sortColumn="3" where="GARE.CODGAR1 = '${codiceGara}' AND (GARE.FASGAR IS NULL or GARE.FASGAR <=1) AND GARE.MODLICG=6 AND GARE.NGARA NOT IN ('${lottoSorgente}') AND GARE.CODGAR1 <> GARE.NGARA"
+									<br><br>	
+									<c:set var="where" value="GARE.CODGAR1 = ? AND (GARE.FASGAR IS NULL or GARE.FASGAR <=1) AND GARE.MODLICG=6 AND GARE.NGARA <> ? AND GARE.CODGAR1 <> GARE.NGARA"/>
+									<c:set var="parametri" value="T:${codiceGara};T:${lottoSorgente}"/>
+									${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "GARE", where, parametri)}
+											
+									<gene:formLista entita="GARE" sortColumn="3"
 										gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupCopiaCriteriValutazione" >
 										<gene:campoLista title="Opzioni <br><center>${titoloMenu}</center>"	width="50">
 											<c:if test="${currentRow >= 0}">

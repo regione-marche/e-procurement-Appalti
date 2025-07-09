@@ -73,7 +73,7 @@
 	<gene:javaScript>
 	
 	function annulla(){
-		document.location.href = '${pageContext.request.contextPath}/Home.do?' + csrfToken;
+		document.location.href = '${pageContext.request.contextPath}/Home.do';
 	}
 	
 	function apriW3GARA() {

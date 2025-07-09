@@ -114,7 +114,7 @@
 		var bloccoModifica=true;
 		if(paginaAppalti =="1")
 			bloccoModifica=false
-		document.forms[0].action += "&tipo="+tipo+ "&bloccoModifica=" + bloccoModifica;
+		document.forms[0].action += "?tipo="+tipo+ "&bloccoModifica=" + bloccoModifica;
 		document.forms[0].keyParent.value=chiaveRiga;
 		document.forms[0].key.value=chiaveRiga;
 		document.forms[0].metodo.value="apri";
@@ -125,7 +125,7 @@
 	}
 	
 	function modificaPartecipante(chiaveRiga,tipo){
-		document.forms[0].action += "&tipo="+tipo;
+		document.forms[0].action += "?tipo="+tipo;
 		document.forms[0].keyParent.value=chiaveRiga;
 		document.forms[0].key.value=chiaveRiga;
 		document.forms[0].metodo.value="modifica";
@@ -137,7 +137,7 @@
 		var selezionaPagina = selezionaPaginaCustom;
 		function selezionaPaginaCustom(pageNumber){
 			var paginaAppalti="${paginaAppalti }"
-			document.pagineForm.action += "&paginaAppalti=" + paginaAppalti;
+			document.pagineForm.action += "?paginaAppalti=" + paginaAppalti;
 			selezionaPaginaDefault(pageNumber);
 		}
 

@@ -27,7 +27,7 @@
 	<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/jquery/wsdm/jquery.wsdm.css" >
 	<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/jquery/dataTable/dataTable/jquery.dataTables.css" >
 	<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/jquery/wsdm/jquery.wsd.trasmettiOperatori.css" >
-	
+
 </gene:redefineInsert>
 
 <c:choose>
@@ -83,14 +83,16 @@
 <c:set var="integrazioneWSDM" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNFunction", pageContext, codgar, idconfi)}'/>
 <c:set var="abilitatoInvioMailDocumentale" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.AbilitatoInvioMailDocumentaleFunction", pageContext, idconfi)}'/>
 <c:set var="invioDesCC" value='${!(abilitatoInvioMailDocumentale && integrazioneWSDM eq "1")}'/>
+<c:set var="itergaTORN" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select iterga from torn where codgar=?", codgar)}'/>
 
 <c:if test="${integrazioneWSDM eq 1 }" >
 	<c:set var="tipoWSDM" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetTipoWSDMFunction", pageContext, "FASCICOLOPROTOCOLLO", "NO",idconfi)}' />
 </c:if>
 <c:if test="${integrazioneWSDM eq 1 and modo ne 'MODIFICA' and modo ne 'NUOVO' }" >
 	<c:set var="mailDocumentale" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.GetPropertyWsdmFunction", mailCaricoDocumentale, idconfi)}'/>
+	<c:set var="esitoControlli" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ControlliInvioComunicazioniFunction",pageContext,idprg,idcom,commodello)}' />
 	<c:if test="${mailDocumentale eq '1' }">
-		
+
 		<c:if test="${tipoWSDM eq 'JIRIDE' or  tipoWSDM eq 'PALEO' or tipoWSDM eq 'ARCHIFLOW' or tipoWSDM eq 'ARCHIFLOWFA' or tipoWSDM eq 'PRISMA' or tipoWSDM eq 'JPROTOCOL' or tipoWSDM eq 'ITALPROT'}">
 			<c:set var="wsdmMailDocumentale" value='true'/>
 		</c:if>
@@ -134,19 +136,25 @@
 		<c:set var="autorizzatoModificaComunicazione" value='true' />
 	</c:when>
 	<c:otherwise>
-		<c:set var="comstato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetCOMSTATOFunction",pageContext,idprg,idcom)}' />	
+		<c:set var="comstato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetCOMSTATOFunction",pageContext,idprg,idcom)}' />
 		<c:set var="autorizzatoModificaComunicazione" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.AutorizzatoModificaComunicazioneFunction",pageContext,idprg,idcom,"true")}' />
-		 
+
 	</c:otherwise>
 </c:choose>
 
 <gene:formScheda entita="W_INVCOM" gestisciProtezioni="true"
-	gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreW_INVCOM" 
+	gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreW_INVCOM"
 	plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreInizializzazioniW_INVCOM">
 
+	<c:set var="uffint" value="${sessionScope.uffint}" />
+	<c:if test="${empty uffint}" >
+		<c:if test='${not empty param.idcfg}'>
+			<c:set var="uffint" value="${param.idcfg}"  />
+		</c:if>
+	</c:if>
 	<gene:campoScheda campo="IDPRG" visibile="false" defaultValue='${sessionScope.moduloAttivo}'/>
-	<gene:campoScheda campo="IDCFG" visibile="false" value='${sessionScope.uffint}'/>
-	
+	<gene:campoScheda campo="IDCFG" visibile="false" value='${uffint}'/>
+
 	<gene:campoScheda campo="IDCOM" visibile="false" />
 	<gene:campoScheda campo="COMENT" visibile="false" defaultValue="${entitaParent}" />
 	<gene:campoScheda campo="COMKEY1" visibile="false" defaultValue='${gene:getValCampo(keyAdd, "COMKEY1")}'/>
@@ -158,7 +166,7 @@
 	<c:set var="listaOpzioniDisponibili" value="${fn:join(opzDisponibili,'#')}#"/>
 	<c:choose>
 		<c:when test='${fn:contains(listaOpzioniDisponibili, "OP114#")}' >
-			<gene:campoScheda campo="COMPUB" defaultValue="2" visibile="true" obbligatorio="true" modificabile="${(empty requestScope.initCOMMODELLO and empty datiRiga.W_INVCOM_COMMODELLO) and entitaParent ne 'G1STIPULA' }"/>
+			<gene:campoScheda campo="COMPUB" defaultValue="${((itergaTORN eq '9' || itergaTORN eq '10') and empty param.idprgino ) ? '3':'2'}" visibile="true" obbligatorio="true" modificabile="${(empty requestScope.initCOMMODELLO and empty datiRiga.W_INVCOM_COMMODELLO) and entitaParent ne 'G1STIPULA' and datiRiga.W_INVCOM_COMENT ne 'HOMEPG' and empty param.idprgino and empty datiRiga.W_INVCOM_IDPRGINO}" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoCOMPUB"/>
 		</c:when>
 		<c:otherwise>
 			<gene:campoScheda campo="COMPUB" defaultValue="" visibile="false"/>
@@ -166,25 +174,25 @@
 	</c:choose>
 	<gene:campoScheda campo="COMMODELLO" defaultValue="${requestScope.initCOMMODELLO}" visibile="${not empty requestScope.initCOMMODELLO or  !empty datiRiga.W_INVCOM_COMMODELLO}" modificabile="false" />
 	<gene:campoScheda campo="COMSTATO" defaultValue="1" modificabile="false">
-	</gene:campoScheda>	
+	</gene:campoScheda>
 	<gene:campoScheda campo="COMDATINS" definizione="D;0;;TIMESTAMP;COMDATINS" visibile='${modo ne "NUOVO"}' modificabile="false"/>
 	<gene:campoScheda campo="COMDATAPUB" definizione="D;0;;TIMESTAMP;COMDATPUB" visibile="${compub eq '1' and (comstato eq '3' or comstato eq '12')}" modificabile="false"/>
 	<gene:campoScheda campo="COMMSGOGG" obbligatorio="true" defaultValue="${requestScope.initCOMMSGOGG}"/>
-	<gene:campoScheda campo="COMINTEST" defaultValue='${gene:if(requestScope.initCOMINTEST ne "", requestScope.initCOMINTEST, "2")}'/>
-	<gene:campoScheda> 
+	<gene:campoScheda campo="COMINTEST" defaultValue='${gene:if(requestScope.initCOMINTEST ne "", requestScope.initCOMINTEST, "2")}${ requestScope.initCOMMSGTES }'/>
+	<gene:campoScheda>
 		<td class="etichetta-dato">Intestazione variabile</td>
 		<td class="valore-dato">Spett.le <i>Ragione Sociale</i></td>
 	</gene:campoScheda>
 	<gene:campoScheda campo="COMMSGTIP" defaultValue="2" modificabile='${modo eq "NUOVO" && tipoWSDM ne "TITULUS"}' visibile='${htmlSupport eq "1"}' />
 	<gene:campoScheda campo="COMMSGTES" defaultValue="${requestScope.initCOMMSGTES}" gestore="it.eldasoft.gene.tags.gestori.decoratori.GestoreCampoTestoComunicazioneHTML" />
-	<gene:campoScheda campo="COMDATSCA"  obbligatorio='true' visibile="${requestScope.initCOMMODELLO eq '1' or datiRiga.W_INVCOM_COMMODELLO eq '1'}"/>
-	<gene:campoScheda campo="COMORASCA"  obbligatorio='true' visibile="${requestScope.initCOMMODELLO eq '1' or datiRiga.W_INVCOM_COMMODELLO eq '1'}"/>
+	<gene:campoScheda campo="COMDATSCA"  obbligatorio='true' visibile="${requestScope.initCOMMODELLO eq '1' or datiRiga.W_INVCOM_COMMODELLO eq '1' or datiRiga.W_INVCOM_COMMODELLO eq '11' or datiRiga.W_INVCOM_COMMODELLO eq '16'}"/>
+	<gene:campoScheda campo="COMORASCA"  obbligatorio='true' visibile="${requestScope.initCOMMODELLO eq '1' or datiRiga.W_INVCOM_COMMODELLO eq '1' or datiRiga.W_INVCOM_COMMODELLO eq '11' or datiRiga.W_INVCOM_COMMODELLO eq '16'}"/>
 	<gene:campoScheda campo="COMMITT" defaultValue="${inizializzazioneMittente}"/>
-	<gene:campoScheda campo="COMCODOPE" visibile="false" />	
+	<gene:campoScheda campo="COMCODOPE" visibile="false" />
 	<gene:campoScheda campo="SYSUTE" entita="USRSYS" title="Operatore" definizione="T" where="USRSYS.SYSCON = W_INVCOM.COMCODOPE" modificabile="false" defaultValue="${requestScope.inizializzazioneOperatore}"/>
 	<gene:campoScheda campo="COMNUMPROT" visibile='${integrazioneWSDM =="1" and !empty datiRiga.W_INVCOM_COMNUMPROT}' modificabile="false"/>
   	<gene:campoScheda campo="COMDATPROT" visibile='${integrazioneWSDM =="1" and !empty datiRiga.W_INVCOM_COMDATPROT}' modificabile="false"/>
-  	<c:if test="${modo ne 'NUOVO' and modo ne 'MODIFICA' and (comstato eq '10' or comstato eq '11') and integrazioneWSDM =='1'}">
+  	<c:if test="${modo ne 'NUOVO' and modo ne 'MODIFICA' and (comstato eq '10' or comstato eq '11' or comstato eq '21') and integrazioneWSDM =='1'}">
 	  	<gene:campoScheda campo="NUMRICEVUTE"  title="Numero ricevute" value="${requestScope.initNUMRICEVUTE}" definizione="T200" campoFittizio="true" visibile="true" />
   	</c:if>
   	<c:if test="${modo ne 'NUOVO' and modo ne 'MODIFICA' and (comstato eq '3' or comstato eq '4')}">
@@ -199,37 +207,44 @@
 	        </c:if>
 	    </gene:campoScheda>
     </c:if>
-  	<c:if test="${modo eq 'NUOVO' and (! empty param.rispondi)}">
+  	<c:if test="${modo eq 'NUOVO' and (! empty param.rispondi) and (param.inoltra ne '1')}">
   		<gene:campoScheda campo="DESCODSOG" entita="W_INVCOMDES" where="W_INVCOM.IDPRG = W_INVCOMDES.IDPRG AND W_INVCOM.IDCOM = W_INVCOMDES.IDCOM" defaultValue="${requestScope.initDESCODSOG}" visibile="false"/>
   	</c:if>
   	<c:choose>
-  		<c:when test="${entitaParent eq 'NSO_ORDINI'}">  		
+  		<c:when test="${entitaParent eq 'NSO_ORDINI'}">
+  			<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ID from NSO_ORDINI where ID=?", ngara)}'/>
 			<gene:campoScheda campo="CODEIN" entita="NSO_ORDINI" where="ID = '${ngara}'" visibile="false" />
   		</c:when>
-  		<c:when test="${entitaParent eq 'G1STIPULA'}">  		
+  		<c:when test="${entitaParent eq 'G1STIPULA'}">
+  			<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select CODSTIPULA from V_GARE_STIPULA where CODSTIPULA=?", ngara)}'/>
 			<gene:campoScheda campo="CENINT" entita="TORN" from = "V_GARE_STIPULA" where="CODSTIPULA = '${ngara}' and TORN.CODGAR=V_GARE_STIPULA.CODGAR"  visibile="false"/>
   		</c:when>
   		<c:otherwise>
 			<gene:campoScheda campo="CENINT" entita="TORN" where="CODGAR = '${codgar}'" visibile="false" />
   		</c:otherwise>
   	</c:choose>
-	<gene:campoScheda campo="IDCOMRIS" visibile="false" defaultValue="${param.idcomris}"/>	
-	<gene:campoScheda campo="IDPRGRIS" visibile="false" defaultValue="${param.idprgris}"/>	
+	<gene:campoScheda campo="IDCOMRIS" visibile="false" defaultValue="${param.idcomris}"/>
+	<gene:campoScheda campo="IDPRGRIS" visibile="false" defaultValue="${param.idprgris}"/>
+	<gene:campoScheda campo="IDCOMINO" visibile="false" defaultValue="${param.idcomino}"/>
+	<gene:campoScheda campo="IDPRGINO" visibile="false" defaultValue="${param.idprgino}"/>
 	<gene:campoScheda campo="COMTIPMA" defaultValue="${requestScope.initCOMTIPMA}" visibile="false"/>
-	
+	<gene:campoScheda campo="COMETICH" visibile="${!empty datiRiga.W_INVCOM_COMETICH}" modificabile="false"/>
+
 	<gene:campoScheda addTr="false">
-	<c:if test="${(not empty datiRiga.W_INVCOM_IDCOMRIS and not empty datiRiga.W_INVCOM_IDPRGRIS) or (not empty param.idcomris and not empty datiRiga.W_INVCOM)}">
+	<c:if test="${(not empty datiRiga.W_INVCOM_IDCOMRIS and not empty datiRiga.W_INVCOM_IDPRGRIS) or (not empty param.idcomris and not empty datiRiga.W_INVCOM) or
+	(not empty datiRiga.W_INVCOM_IDCOMINO and not empty datiRiga.W_INVCOM_IDPRGINO) or (not empty param.idcomino and not empty datiRiga.W_INVINO)}">
 		<tr>
-			<td></td> 
+			<td></td>
 			<td class="valore-dato">
 			<span style="float:right"><a id="aLinkVisualizzaDettaglioComunicazioneProvenienza" href="javascript:showDettCom();" class="link-generico">Nascondi dati comunicazione di origine</a></span>
 			</td>
 		</tr>
 	</c:if>
 	</gene:campoScheda>
-	
+
 	<c:set var="comRisposta" value="${(not empty datiRiga.W_INVCOM_IDCOMRIS and not empty datiRiga.W_INVCOM_IDPRGRIS) or (not empty param.idcomris and not empty  param.idprgris)}"/>
-	<gene:campoScheda addTr="false" visibile="${comRisposta}">
+	<c:set var="comInoltrata" value="${(not empty datiRiga.W_INVCOM_IDCOMINO and not empty datiRiga.W_INVCOM_IDPRGINO) or (not empty param.idcomino and not empty  param.idprgino)}"/>
+	<gene:campoScheda addTr="false" visibile="${comRisposta or comInoltrata}">
 		<c:choose>
 			<c:when test='${not empty param.idprgris}'>
 				<c:set var="idprgris" value="${param.idprgris}"  />
@@ -244,6 +259,22 @@
 			</c:when>
 			<c:otherwise>
 				<c:set var="idcomris" value="${datiRiga.W_INVCOM_IDCOMRIS}" />
+			</c:otherwise>
+		</c:choose>
+		<c:choose>
+			<c:when test='${not empty param.idprgino}'>
+				<c:set var="idprgino" value="${param.idprgino}"  />
+			</c:when>
+			<c:otherwise>
+				<c:set var="idprgino" value="${datiRiga.W_INVCOM_IDPRGINO}" />
+			</c:otherwise>
+		</c:choose>
+		<c:choose>
+			<c:when test='${not empty param.idcomino}'>
+				<c:set var="idcomino" value="${param.idcomino}"  />
+			</c:when>
+			<c:otherwise>
+				<c:set var="idcomino" value="${datiRiga.W_INVCOM_IDCOMINO}" />
 			</c:otherwise>
 		</c:choose>
 		<c:if test="${comRisposta}">
@@ -263,7 +294,24 @@
 			</td>
 			</tr>
 		</c:if>
-	</gene:campoScheda>	
+		<c:if test="${comInoltrata}">
+			<c:set var="comuniczioneOriginale" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetDatiComunicazioneOriginaleFunction",pageContext,idprgino,idcomino)}' />
+			<tr id="rigaTabellaComunicazioneOriginale" class="commOriginale">
+			<td colspan="2">
+			<table id="tabellaComunicazioneOriginale" class="griglia" >
+			<tr style="BACKGROUND-COLOR: #EFEFEF;">
+				<td class="titolo-valore-dato">Oggetto comunicazione di origine</td>
+				<td class="titolo-valore-dato">Testo</td>
+			</tr>
+			<tr>
+				<td class="valore-dato">${commsgoggOrigin}</td>
+				<td class="valore-dato" style="width:70%">${commsgtesOrigin}</td>
+			</tr>
+			</table>
+			</td>
+			</tr>
+		</c:if>
+	</gene:campoScheda>
 
 	<c:if test="${(comstato eq '10' or comstato eq '11') and modo eq 'VISUALIZZA' and tipoWSDM  eq 'PALEO'}">
 	<gene:campoScheda>
@@ -287,13 +335,13 @@
 		<input id="servizio" type="hidden" value="FASCICOLOPROTOCOLLO" />
 		<input id="idprg" type="hidden" value="${sessionScope.moduloAttivo}" />
 	</c:if>
-	
+
 	<gene:fnJavaScriptScheda funzione="gestioneCOMINTEST('#W_INVCOM_COMPUB#','#W_INVCOM_COMINTEST#')" elencocampi="W_INVCOM_COMPUB;W_INVCOM_COMINTEST" esegui="true" />
-	<gene:fnJavaScriptScheda funzione="modifyCOMPUB('#W_INVCOM_COMPUB#')" elencocampi="W_INVCOM_COMPUB" esegui="true" />
+	<gene:fnJavaScriptScheda funzione="modifyCOMPUB('#W_INVCOM_COMPUB#')" elencocampi="W_INVCOM_COMPUB" esegui="false" />
 	<c:if test='${modo eq "NUOVO"}'>
 		<gene:fnJavaScriptScheda funzione="modifyHTMLEditor('#W_INVCOM_COMMSGTIP#')" elencocampi="W_INVCOM_COMMSGTIP" esegui="false" />
 	</c:if>
-	
+
 	<gene:campoScheda>
 		<td class="comandi-dettaglio" colSpan="2">
 			<gene:insert name="addPulsanti"/>
@@ -305,7 +353,7 @@
 				<gene:insert name="pulsanteAnnulla">
 					<INPUT type="button" class="bottone-azione" value="Annulla" title="Annulla modifiche" onclick="javascript:schedaAnnulla()">
 				</gene:insert>
-		
+
 			</c:when>
 			<c:otherwise>
 				<c:if test="${comstato eq '1' and autorizzatoModificaComunicazione eq 'true'}">
@@ -323,7 +371,7 @@
 						<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' onclick="javascript:schedaModifica()">
 					</c:if>
 				</gene:insert>
-				
+
 			</c:otherwise>
 			</c:choose>
 			&nbsp;
@@ -343,7 +391,7 @@
 							<a href="javascript:protocollacomunicazione('${idprg}','${idcom}');" title="Protocolla ed invia comunicazione" tabindex="1503">Protocolla ed invia comunicazione</a>
 						</td>
 					</tr>
-					
+
 					<tr>
 						<td class="vocemenulaterale" >
 							<a href="javascript:inviacomunicazione('${idprg}','${idcom}');" title="Invia comunicazione" tabindex="1504">Invia comunicazione</a>
@@ -367,7 +415,9 @@
 						</td>
 					</tr>
 				</c:if>
-				<c:if test="${tipoWSDM eq 'PALEO' and (comstato eq '11' or comstato eq '10') and not empty datiRiga.W_INVCOM_COMNUMPROT and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.TrasmettiAOperatoriInterni')}">
+				<c:if test="${tipoWSDM eq 'PALEO'  and not empty datiRiga.W_INVCOM_COMNUMPROT and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.TrasmettiAOperatoriInterni')}">
+					<input type="hidden" id="_isRupOrDRP" value="${gene:callFunction2('it.eldasoft.sil.pg.tags.funzioni.CheckUserIsRupOrDRPFunction', pageContext , codgar )}"/>
+					<input type="hidden" id="_superataFaseRicezione" value="${gene:callFunction2('it.eldasoft.sil.pg.tags.funzioni.CheckSuperataFaseRicezioneFunction', pageContext , codgar )}"/>
 					<c:set var="abilitataFunzTrasmettiOpIntereni" value="true"/>
 					<tr>
 						<td class="vocemenulaterale" >
@@ -378,7 +428,7 @@
 			</c:if>
 		</gene:redefineInsert>
 	</c:if>
-	
+
 	<c:if test="${comstato ne '1' or autorizzatoModificaComunicazione eq 'false' }">
 		<gene:redefineInsert name="pulsanteModifica" />
 		<gene:redefineInsert name="schedaModifica" />
@@ -396,11 +446,11 @@
 <div id="mascheraParametriWSDM" title='Trasmetti su documentale a operatori interni' style="display:none">
 	<form id="richiestawslogin">
 		<table class="dettaglio-notab">
-			<input id="syscon" type="hidden" value="${profiloUtente.id}" /> 
+			<input id="syscon" type="hidden" value="${profiloUtente.id}" />
 			<input id="servizio" type="hidden" value="FASCICOLOPROTOCOLLO" />
 			<input id="tiposistemaremoto" type="hidden" value="${tipoWSDM}" />
 			<input id="tabellatiInDB" type="hidden" value="${tabellatiInDB}" />
-			<input id="modoapertura" type="hidden" value="MODIFICA" /> 
+			<input id="modoapertura" type="hidden" value="MODIFICA" />
 			<tr id=sezioneMessaggi style="display: none;">
 				<td colspan="2">
 					<div  id="messagiTrasmissione"></div>
@@ -414,7 +464,7 @@
 			<jsp:include page="/WEB-INF/pages/gare/wsdm/wsdm-login.jsp">
 				<jsp:param name="gestioneVisualizzazioneContratta" value="0"/>
 				<jsp:param name="contextPath" value="${pageContext.request.contextPath}"/>
-			</jsp:include>		
+			</jsp:include>
 		</table>
 	</form>
 	<br>
@@ -422,14 +472,14 @@
 		<table class="dettaglio-notab">
 			<jsp:include page="/WEB-INF/pages/gare/wsdm/wsdm-datiTrasmissioneOperatori.jsp">
 				<jsp:param name="tipoPagina" value="COM"/>
-			</jsp:include>	
+			</jsp:include>
 		</table>
 	</form>
 </div>
 </c:if>
 
 <gene:javaScript>
-	
+
 	var cenint = "${datiRiga.TORN_CENINT}";
 	<c:set var="cenint" value="${datiRiga.TORN_CENINT}"/>
 	<c:choose>
@@ -437,9 +487,13 @@
 			cenint = "${datiRiga.NSO_ORDINI_CODEIN}";
 			<c:set var="cenint" value="${datiRiga.NSO_ORDINI_CODEIN}"/>
 		</c:when>
-		
+		<c:when test="${datiRiga.W_INVCOM_COMENT eq 'HOMEPG'}">
+			cenint = "${datiRiga.W_INVCOM_IDCFG}";
+			<c:set var="cenint" value="${datiRiga.W_INVCOM_IDCFG}"/>
+		</c:when>
+
 	</c:choose>
-	
+
 	$(document).ready(function() {
 		if ((getValue('W_INVCOM_COMMSGTIP')==1 && ${modo ne 'VISUALIZZA'})||${modo eq "NUOVO"}) {
 			$('#W_INVCOM_COMMSGTES').htmlarea({
@@ -452,7 +506,7 @@
 					["link", "unlink"],
 					["cut", "copy", "paste"]
 				],
-			
+
 				toolbarText: $.extend({}, jHtmlArea.defaultOptions.toolbarText, {
 					"bold": "Grassetto",
 					"italic": "Corsivo",
@@ -488,7 +542,7 @@
 	}
 
 	function gestioneCOMINTEST(compub,comintest){
-		if (compub == '1') {
+		if (compub == '1' || compub =='3') {
 			document.getElementById("rowW_INVCOM_COMINTEST").style.display = 'none';
 			document.forms[0].W_INVCOM_COMINTEST.value = '';
 			document.getElementById("rowCAMPO_GENERICO17").style.display = ('none');
@@ -499,11 +553,12 @@
 			}
 		}
 	}
-	
+
 	//Gestione campi non visibili se comunicazione 'Pubblica'
 	function modifyCOMPUB(valore){
-		var vis = (valore!=1);
+		var vis = !(valore==1 || valore==3);
 		showObj("rowW_INVCOM_COMMITT",vis);
+		setValue("W_INVCOM_COMMITT", "${inizializzazioneMittente}");
 		if (!vis) {
 			setValue("W_INVCOM_COMMITT", "");
 		}
@@ -525,6 +580,10 @@
 							alert("Non e' possibile procedere.\nVi sono degli allegati in attesa di firma");
 							return;
 						</c:when>
+						<c:when test="${esitoControlli eq 'NO-TERMINISCA'}">
+							alert("Non è possibile inviare la comunicazione in quanto la data termine presentazione documentazione è precedente alla data corrente");
+							return;
+						</c:when>
 					<c:otherwise>
 						document.formprotocollacomunicazione.idprg.value = idprg;
 						document.formprotocollacomunicazione.idcom.value = idcom;
@@ -532,23 +591,27 @@
 						//var chiaveOriginale = keyAdd.substring(keyAdd.indexOf(":")+1);
 						var chiaveOriginale = getValue("W_INVCOM_COMKEY1");
 						document.formprotocollacomunicazione.chiaveOriginale.value = chiaveOriginale;
-						document.formprotocollacomunicazione.submit();	
+						document.formprotocollacomunicazione.submit();
 					</c:otherwise>
 				</c:choose>
 			</c:otherwise>
 		</c:choose>
-		
+
 	}
-	
+
 	function inviacomunicazione(idprg,idcom){
 		<c:choose>
 			<c:when test="${comstato eq '1' and autorizzatoTelematiche eq 'false'}">
 				alert("Non e' possibile procedere.\nLa funzione e' disponibile solo al Punto ordinante");
 				return;
 			</c:when>
+			<c:when test="${bloccoInvioComunicazioniGeneriche eq 'true'}">
+				alert("Non e' possibile procedere.\nL'utente non risulta abilitato all'invio di comunicazioni generiche");
+				return;
+			</c:when>
 			<c:otherwise>
 				<c:choose>
-						<c:when test="${empty cenint}">
+						<c:when test="${empty cenint and coment ne 'HOMEPG'}">
 							alert("Non e' possibile procedere.\nDeve essere specificata la stazione appaltante");
 							return;
 						</c:when>
@@ -572,7 +635,7 @@
 		var idconfi="${idconfi }";
 		var comdatins = getValue("W_INVCOM_COMDATINS");
 		var comtipo = getValue("W_INVCOM_COMTIPO");
-		document.pagineForm.action += "&keyAdd=" + keyAdd + "&chiaveWSDM=" + chiaveWSDM + "&entitaWSDM=" + entitaWSDM + "&comdatins=" + comdatins + "&comtipo=" + comtipo + "&cenint=" + cenint+ "&idconfi=" + idconfi;
+		document.pagineForm.action += "?keyAdd=" + keyAdd + "&chiaveWSDM=" + chiaveWSDM + "&entitaWSDM=" + entitaWSDM + "&comdatins=" + comdatins + "&comtipo=" + comtipo + "&cenint=" + cenint+ "&idconfi=" + idconfi;
 		selezionaPaginaDefault(pageNumber);
 	}
 	
@@ -599,7 +662,7 @@
 					showObj("rowCAMPO_GENERICO17",false);
 					showObj("rowW_INVCOM_COMINTEST",false);
 					setValue("W_INVCOM_COMMITT","");
-					if(_tipoWSDM != "JIRIDE" && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA"){
+					if(_tipoWSDM != "JIRIDE" && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "HALLEY"){
 						showObj("rowW_INVCOM_COMMITT", false);
 					}else{
 						$('#W_INVCOM_COMMITT').hide();
@@ -617,7 +680,7 @@
 			</c:when>
 			<c:otherwise>
 				if(_delegaInvioMailDocumentaleAbilitata == 1){
-					if(_tipoWSDM != "JIRIDE" && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA"){
+					if(_tipoWSDM != "JIRIDE" && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "HALLEY"){
 						showObj("rowW_INVCOM_COMMITT", false);
 					}
 					showObj("rowW_INVCOM_COMINTEST",false);
@@ -637,7 +700,7 @@
 				</c:when>
 				<c:otherwise>
 					<c:choose>
-						<c:when test="${empty cenint}">
+						<c:when test="${empty cenint and coment ne 'HOMEPG'}">
 							alert("Non e' possibile procedere.\nDeve essere specificata la stazione appaltante");
 							return;
 						</c:when>

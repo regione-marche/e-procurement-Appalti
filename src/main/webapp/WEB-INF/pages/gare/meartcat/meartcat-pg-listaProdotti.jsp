@@ -33,7 +33,8 @@
 	</c:otherwise>
 </c:choose>
 
-<c:set var="where" value="V_CATAPROD.IDARTICOLO = #MEARTCAT.ID# and V_CATAPROD.NGARA = '${ngara }'"/>
+<c:set var="where" value="V_CATAPROD.IDARTICOLO = ? and V_CATAPROD.NGARA = ?"/>
+<c:set var="parametri" value="N:${gene:getValCampo(key,'ID')};T:${ngara}"/>
 
 <c:if test="${isRicercaMercato eq 'true'}">
 	<c:set var="dbms" value="${gene:callFunction('it.eldasoft.gene.tags.utils.functions.GetTipoDBFunction', pageContext)}" />
@@ -53,11 +54,11 @@
 	</c:choose>
 	<c:set var="where" value="${where } and V_CATAPROD.STATO = 4 and exists (select codgar5 from ditg where ngara5=V_CATAPROD.NGARA and dittao=V_CATAPROD.CODIMP and abilitaz=1)"/>
 </c:if>
-	
+	${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "V_CATAPROD", where, parametri)}
 		<table class="dettaglio-tab-lista">
 			<tr>
 				<td>
-					<gene:formLista entita="V_CATAPROD" where="${where }" tableclass="datilista" sortColumn='1;2;3' 
+					<gene:formLista entita="V_CATAPROD"  tableclass="datilista" sortColumn='1;2;3' 
 							gestisciProtezioni="true"   pagesize="25" >
 														
 						<gene:redefineInsert name="listaNuovo"></gene:redefineInsert>
@@ -86,7 +87,7 @@
 <gene:javaScript>
 	function visualizzaProdotto(idProdotto){
 		var chiave = "MEISCRIZPROD.ID=N:"+idProdotto;
-		var href = "${pageContext.request.contextPath }/ApriPagina.do?"+csrfToken+"&href=gare/meiscrizprod/meiscrizprod-scheda.jsp&key=" + chiave + "&daListaProdotti=1";
+		var href = "${pageContext.request.contextPath }/ApriPagina.do?href=gare/meiscrizprod/meiscrizprod-scheda.jsp&key=" + chiave + "&daListaProdotti=1";
 		document.location.href = href;
 	}
 </gene:javaScript>

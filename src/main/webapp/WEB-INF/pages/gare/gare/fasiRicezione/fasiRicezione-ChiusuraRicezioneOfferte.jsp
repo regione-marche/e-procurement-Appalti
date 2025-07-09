@@ -100,6 +100,15 @@
 											</td>
 										</tr>
 									</c:if>
+									<c:if test="${garaLottoUnico eq 'false' and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIGARA.exportPartecipantiLotti')}">
+										<tr>
+											<td class="vocemenulaterale">
+												<a href="javascript:exportExcelPartecipanti();" title='Esporta dettaglio partecipazione in excel' tabindex="1505">
+													Esporta dettaglio partecipazione in excel
+												</a>
+											</td>
+										</tr>
+									</c:if>
 																									
 									<tr>
 										<td class="vocemenulaterale">

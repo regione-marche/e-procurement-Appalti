@@ -1,5 +1,6 @@
 package it.eldasoft.sil.pg.web.struts;
 
+import java.io.ByteArrayInputStream;
 import java.io.PrintWriter;
 import java.sql.Date;
 import java.sql.SQLException;
@@ -18,13 +19,22 @@ import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 
+import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
+import it.eldasoft.gene.db.domain.BlobFile;
+import it.eldasoft.gene.web.struts.VerificaFirmaServizioEsterno;
+import it.eldasoft.gene.web.struts.model.FirmaCheck;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.utility.UtilityDate;
+import it.maggioli.eldasoft.digital.signature.DigitalSignatureCheckClient;
+import it.maggioli.eldasoft.digital.signature.ProviderEnum;
+import it.maggioli.eldasoft.digital.signature.model.ResponseCheckSignature;
+import it.maggioli.eldasoft.digital.signature.providers.Provider;
+import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
 import net.sf.json.JSONObject;
 
 public class GetW_INVCOMAction extends Action {
@@ -53,6 +63,11 @@ public class GetW_INVCOMAction extends Action {
   public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
     this.pgManagerEst1 = pgManagerEst1;
   }
+  
+  private FileAllegatoManager fileAllegatoManager;
+  public void setFileAllegatoManager(FileAllegatoManager fileAllegatoManager) {
+    this.fileAllegatoManager = fileAllegatoManager;
+  }
 
   @Override
   public final ActionForward execute(final ActionMapping mapping, final ActionForm form, final HttpServletRequest request,
@@ -76,7 +91,6 @@ public class GetW_INVCOMAction extends Action {
     List<HashMap<String, Object>> hMapW_INVCOMDES = new ArrayList<HashMap<String, Object>>();
     List<HashMap<String, Object>> hMapW_DOCDIG = new ArrayList<HashMap<String, Object>>();
     boolean tuttiAllegatiFormatoValido=true;
-    boolean primoAllegatoFirmato=false;
 
     try {
       String idprg = request.getParameter("idprg");
@@ -108,7 +122,7 @@ public class GetW_INVCOMAction extends Action {
 
         // Lettura dei destinatari. Deve essere controllato anche il codice fiscale poiche' per l'invio
         // al sistema remoto e' obbligatorio.
-        String selectW_INVCOMDES = "select desintest, desmail, descodent, descodsog, comtipma from w_invcomdes where idprg = ? and idcom = ?  and (descc is null or descc <>1)";
+        String selectW_INVCOMDES = "select desintest, desmail, descodent, descodsog, comtipma from w_invcomdes where idprg = ? and idcom = ?  and (descc is null or descc <>'1')";
         List<?> datiW_INVCOMDES = sqlManager.getListVector(selectW_INVCOMDES, new Object[] { idprg, idcom });
         if (datiW_INVCOMDES != null && datiW_INVCOMDES.size() > 0) {
           totalW_INVCOMDES = datiW_INVCOMDES.size();
@@ -172,7 +186,7 @@ public class GetW_INVCOMAction extends Action {
         // Lettura degli allegati
         String richiestaFirma = ConfigManager.getValore("documentiDb.richiestaFirma");
         String formatoAllegati = ConfigManager.getValore(CostantiAppalti.FORMATO_ALLEGATI);
-        String selectW_DOCDIG = "select digdesdoc, dignomdoc, digfirma from w_docdig where digent = ? and digkey1 = ? and digkey2 = ? order by IDDOCDIG ";
+        String selectW_DOCDIG = "select digdesdoc, dignomdoc, digfirma, iddocdig from w_docdig where digent = ? and digkey1 = ? and digkey2 = ? order by IDDOCDIG ";
         List<?> datiW_DOCDIG = sqlManager.getListVector(selectW_DOCDIG, new Object[] { "W_INVCOM", idprg, idcom.toString() });
         if (datiW_DOCDIG != null && datiW_DOCDIG.size() > 0) {
           totalW_DOCDIG = datiW_DOCDIG.size();
@@ -195,13 +209,13 @@ public class GetW_INVCOMAction extends Action {
             if(!pgManagerEst1.controlloAllegatiFormatoValido(datiW_DOCDIG,1,formatoAllegati))
               tuttiAllegatiFormatoValido=false;
           }
-          //Si controlla se il primo file allegato è un file firmato
-          String nomeFile=SqlManager.getValueFromVectorParam(datiW_DOCDIG.get(0), 1).getStringValue();
-          if(nomeFile!=null && !"".equals(nomeFile)){
-            nomeFile=nomeFile.toUpperCase();
-            if(nomeFile.endsWith(CostantiAppalti.FORMATO_ALLEGATI_FIRMATI))
-              primoAllegatoFirmato=true;
-          }
+          
+          String idconfi = request.getParameter("idconfi");
+          Long iddocdig=SqlManager.getValueFromVectorParam(datiW_DOCDIG.get(0), 3).longValue();
+          CheckPrimoDocumentoFirmatoAction action = new CheckPrimoDocumentoFirmatoAction();
+          //Si controlla se il primo file allegato è un file firmato (ha effetto solo per LAPISWEB): 
+          //setta i parameti del json "primoAllegatoFirmato" e "messaggioLapis"
+          action.check(result,gestioneWSDMManager,fileAllegatoManager, idprg, iddocdig, idconfi,null);
         }
       }
 
@@ -219,7 +233,6 @@ public class GetW_INVCOMAction extends Action {
       result.put("dataW_INVCOMDES", hMapW_INVCOMDES);
       result.put("dataW_DOCDIG", hMapW_DOCDIG);
       result.put("tuttiAllegatiFormatoValido", tuttiAllegatiFormatoValido);
-      result.put("primoAllegatoFirmato", primoAllegatoFirmato);
 
     } catch (SQLException e) {
       throw new JspException("Errore durante la lettura della comunicazione", e);

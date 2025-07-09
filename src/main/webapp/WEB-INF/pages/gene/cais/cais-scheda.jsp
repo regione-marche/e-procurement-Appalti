@@ -17,6 +17,9 @@ Scheda categorie d'iscrizione
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<%-- test per consentire utilizzo della pagina solo agli amministratori di sistema --%>
+<c:set var="nonusato" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.CheckOpzioniUtenteFunction", pageContext, "ou89")}' />
+
 <c:set var="opzioniUtenteAbilitate" value="${fn:join(profiloUtente.funzioniUtenteAbilitate,'#')}#" scope="request"/>
 <c:set var="id" value='${gene:getValCampo(key, "CAISIM")}'/>
 
@@ -225,7 +228,7 @@ Scheda categorie d'iscrizione
 	                $.ajax({
 	                    type: "GET",
 	                    dataType: "json",
-	                    /*async: false,*/
+	                    async: false,
 	                    beforeSend: function(x) {
 	        			if(x && x.overrideMimeType) {
 	            			x.overrideMimeType("application/json;charset=UTF-8");
@@ -303,7 +306,7 @@ Scheda categorie d'iscrizione
 		                $.ajax({
 		                    type: "GET",
 		                    dataType: "json",
-		                    /*async: false,*/
+		                    async: false,
 		                    beforeSend: function(x) {
 		        			if(x && x.overrideMimeType) {
 		            			x.overrideMimeType("application/json;charset=UTF-8");
@@ -341,7 +344,7 @@ Scheda categorie d'iscrizione
 		                $.ajax({
 		                    type: "GET",
 		                    dataType: "json",
-		                    /*async: false,*/
+		                    async: false,
 		                    beforeSend: function(x) {
 		        			if(x && x.overrideMimeType) {
 		            			x.overrideMimeType("application/json;charset=UTF-8");
@@ -388,7 +391,7 @@ Scheda categorie d'iscrizione
 		                $.ajax({
 		                    type: "GET",
 		                    dataType: "json",
-		                    /*async: false,*/
+		                    async: false,
 		                    beforeSend: function(x) {
 		        			if(x && x.overrideMimeType) {
 		            			x.overrideMimeType("application/json;charset=UTF-8");

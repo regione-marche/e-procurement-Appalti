@@ -109,7 +109,7 @@
 			
 			function evadi(codiceGara){
 				bloccaRichiesteServer();
-				var action = "${pageContext.request.contextPath}/pg/EvadiIdsAssociati.do?"+csrfToken+"&codiceGara=" + codiceGara;
+				var action = "${pageContext.request.contextPath}/pg/EvadiIdsAssociati.do?codiceGara=" + codiceGara;
 				document.location.href=action;
 			}
 		

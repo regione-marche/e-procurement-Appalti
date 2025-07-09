@@ -55,10 +55,12 @@
 
 <c:set var="gestioneUrl" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsGestioneUrlDocumentazioneFunction", pageContext)}' scope="request"/>
 <c:set var="richiestaFirma" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "documentiDb.richiestaFirma")}'/>
-
 <c:set var="bloccoPubblicazionePortale13" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteBloccoPubblicazionePortaleFunction", pageContext, codgar1,"BANDO13","false")}' />
 <c:if test="${bloccoPubblicazionePortale13 eq 'TRUE'}">
-	<c:set var="numDitteGaraCorso" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.ConteggioDitteFunction", pageContext, codgar1,"ACQUISIZIONE = 9 AND AMMGAR = 2")}' scope="request"/>
+	<c:set var="numDitteGaraCorso" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.ConteggioDitteFunction", pageContext, codgar1,"ACQUISIZIONE = 9 AND AMMGAR = \'2\'")}' scope="request"/>
+</c:if>
+<c:if test='${modo ne "NUOVO"}'>
+	<c:set var="bloccoModificaPCP" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.npa.GetBloccoModificaPCP", pageContext, codgar1, "true")}'/>
 </c:if>
 
 <c:set var="isNavigazioneDisattiva" value="${isNavigazioneDisabilitata}" />
@@ -159,9 +161,11 @@
 									</tr>
 								</c:if>	
 								
-								
+								<c:if test='${not empty vernpa}'>
+									<c:set var="schedePubblicateANAC" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsisteSchedaANACPubblicataFunction", pageContext,datiRiga.TORN_CODGAR)}'/>
+								</c:if>
 								<c:if test='${autorizzatoModifiche ne "2" and modo eq "VISUALIZZA" and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.RettificaTermini" ) 
-									and tipoDoc eq 1 and (datiRiga.TORN_GARTEL ne 1 or (datiRiga.TORN_GARTEL eq 1 and bloccoPubblicazionePortale eq "SI"))}'>
+									and tipoDoc eq 1 and (bloccoPubblicazionePortale eq "SI" or schedePubblicateANAC eq "true" || ((iterga eq "5" || iterga eq "6") && bloccoModificaPCP))}'>
 								  	<c:set var="esisteFunzioneRettificaTermini" value="true" scope="request"/>
 								  	<tr>    
 								    	  <td class="vocemenulaterale">
@@ -207,6 +211,13 @@
 							</gene:redefineInsert>
 						</c:otherwise>
 					</c:choose>
+					<gene:campoScheda visibile="${(iterga eq '5' || iterga eq '6') and bloccoModificaPCP eq 'true' and modo eq 'MODIFICA'}">
+						<td colspan="2" style="color:#0000FF">
+							<br><b>ATTENZIONE:</b>&nbsp;
+							Parte dei dati sono in sola consultazione perché sono state inviate delle schede ad ANAC.
+							<br>&nbsp;
+						</td>
+					</gene:campoScheda>
 						<gene:campoScheda campo="WIZARD_PAGINA_ATTIVA" visibile="false" campoFittizio="true" definizione="N1" value="${paginaAttivaWizard}" />
 						
 						<gene:campoScheda campo="NGARA" entita="GARE" where="TORN.CODGAR=GARE.NGARA" visibile="false" />
@@ -297,11 +308,33 @@
 							<c:set var="esisteRettificaOfferta" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsistonoDatiRettificaTerminiFunction",  pageContext, codgar1, "2")}'/>
 							<c:set var="esisteRettificaApertura" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsistonoDatiRettificaTerminiFunction",  pageContext, codgar1, "3")}'/>
 						</c:if>
+						<c:set var="schedaInRettifica" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select g1npascheda.id from g1npascheda, g1npaform where g1npascheda.idform=g1npaform.id and g1npascheda.idschedanparet is not null and g1npascheda.statonpa>=1 and g1npascheda.statonpa not in (34,50,60) and g1npaform.codgar=?", codgar1)}'/>
+						<c:if test='${not empty schedaInRettifica}'>
+							<c:set var="esisteRettificaOffertaPCP" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select count(1) from g1nparet where dteoff is not null and idnpascheda=?", schedaInRettifica)>0}'/>
+							<c:set var="esisteRettificaAperturaPCP" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select count(1) from g1nparet where desoff is not null and idnpascheda=?", schedaInRettifica)>0}'/>
+						</c:if>
 						
 						<gene:gruppoCampi idProtezioni="PRESOFF" visibile="${isVisibileSezTerminiPresOfferta}">
 							<gene:campoScheda>
 								<td colspan="2"><b>Termini per la presentazione dell'offerta</b><c:if test="${esisteRettificaOfferta eq 'true' }"> <span style="float:right"><a id="aLinkVisualizzaDettaglioRettificaTerminiOfferta" href="javascript:showDettRetifica(2);" class="link-generico">Visualizza termini di gara precedenti alla rettifica</a></span></c:if></td>
 							</gene:campoScheda>
+							<c:if test="${esisteRettificaOffertaPCP}">
+							<gene:campoScheda>
+								<td colspan="2">
+									 <span style="float:right"><div style="color: blue;display: contents;"><b>ATTENZIONE</b>: Rettifica dei termini in corso. <a id="aLinkVisualizzaDettaglioRettificaTerminiOffertaPCP" href="javascript:showDettRettificaPCP(2);" class="link-generico" style="margin-left: 10px">Visualizza nuovi termini</a></div></span>
+								</td>
+							</gene:campoScheda>
+						</c:if>
+						<gene:campoScheda addTr="false" visibile="${esisteRettificaOffertaPCP}">
+								<tr id="rigaTabellaRettificaTerminiOffertaPCP">
+									<td colspan="2">
+										<table id="tabellaRettificaTerminiOffertaPCP" class="griglia" >		
+						</gene:campoScheda>
+						<gene:campoScheda addTr="false" visibile="${esisteRettificaOffertaPCP}">
+										</table>
+									<td>
+								<tr>
+						</gene:campoScheda>	
 							<c:choose>
 								<c:when test='${garaLottoUnico or isGaraLottiConOffertaUnica eq "true"}'>
 									<gene:campoScheda campo="DTEOFF" speciale='${gene:checkProtFunz(pageContext, "ALT","CalcoloTermineMinimo")}'>
@@ -360,6 +393,23 @@
 							<gene:campoScheda>
 								<td colspan="2"><b>Apertura plichi</b><c:if test="${esisteRettificaApertura eq 'true' }"> <span style="float:right"><a id="aLinkVisualizzaDettaglioRettificaTerminiApertura" href="javascript:showDettRetifica(3);" class="link-generico">Visualizza termini di gara precedenti alla rettifica</a></span></c:if></td>
 							</gene:campoScheda>
+							<c:if test="${esisteRettificaAperturaPCP}">
+							<gene:campoScheda>
+								<td colspan="2">
+									 <span style="float:right"><div style="color: blue;display: contents;"><b>ATTENZIONE</b>: Rettifica dei termini in corso. <a id="aLinkVisualizzaDettaglioRettificaTerminiAperturaPCP" href="javascript:showDettRettificaPCP(3);" class="link-generico" style="margin-left: 10px">Visualizza nuovi termini</a></div></span>
+								</td>
+							</gene:campoScheda>
+						</c:if>
+						<gene:campoScheda addTr="false" visibile="${esisteRettificaAperturaPCP}">
+								<tr id="rigaTabellaRettificaTerminiAperturaPCP">
+									<td colspan="2">
+										<table id="tabellaRettificaTerminiAperturaPCP" class="griglia" >		
+						</gene:campoScheda>
+						<gene:campoScheda addTr="false" visibile="${esisteRettificaAperturaPCP}">
+										</table>
+									<td>
+								<tr>
+						</gene:campoScheda>
 							<c:choose>
 								<c:when test='${garaLottoUnico or isGaraLottiConOffertaUnica eq "true"}'>
 									<gene:campoScheda title="Data" campo="DESOFF" />
@@ -831,7 +881,7 @@ function calcolaTermineMinimo(campo){
 	
 	function popupRettificaTermini(iterga,codgar,gartel){
 		var comando = "href=gare/commons/popup-rettificaTermini.jsp&codgar=" + codgar + "&ngara=" + codgar + "&iterga=" + iterga +"&pagina=Invito" + "&tipoGara=3" + "&gartel="+gartel;
-	 	openPopUpCustom(comando, "rettificaTermini", 700, 350, "yes", "yes");
+	 	openPopUpCustom(comando, "rettificaTermini", 700, 450, "yes", "yes");
 	}
 	
 	$("#rigaTabellaRettificaTerminiOfferta").hide();
@@ -839,6 +889,12 @@ function calcolaTermineMinimo(campo){
 	
 	$("#rigaTabellaRettificaTerminiApertura").hide();
 	$("#tabellaRettificaTerminiApertura").hide();
+	
+	$("#rigaTabellaRettificaTerminiOffertaPCP").hide();
+	$("#tabellaRettificaTerminiOffertaPCP").hide();
+	
+	$("#rigaTabellaRettificaTerminiAperturaPCP").hide();
+	$("#tabellaRettificaTerminiAperturaPCP").hide();
 	
 	storicoOffertaCreato = false;
 	storicoAperturaPartecipazioneCreato = false;
@@ -879,6 +935,47 @@ function calcolaTermineMinimo(campo){
 		}
 		
 		
+	}
+	
+	var pcpOffertaCreato = false;
+	var pcpAperturaPartecipazioneCreato = false;
+	
+	function showDettRettificaPCP(tipo){
+		var codgar=getValue("TORN_CODGAR");
+		if(codgar==null || codgar=="")
+			codgar=getValue("GARE_CODGAR1");
+		var contextPath = "${contextPath}";
+		if(tipo==2 && pcpOffertaCreato==false){
+			var visualizzaDataChiarimenti = "${gene:checkProt(pageContext, 'COLS.VIS.GARE.TORN.DTERMRICHCPO') }";
+			var visualizzaRispostaChiarimenti = "${gene:checkProt(pageContext, 'COLS.VIS.GARE.TORN.DTERMRISPCPO') }";
+			caricamentoStoricoRettificaTerminiPCP(codgar, tipo, contextPath,visualizzaDataChiarimenti,visualizzaRispostaChiarimenti);
+			pcpOffertaCreato=true;
+		}else if(tipo==3 && pcpAperturaPartecipazioneCreato==false){
+			caricamentoStoricoRettificaTerminiPCP(codgar, tipo, contextPath,"false","false");
+			pcpAperturaPartecipazioneCreato=true;
+		}
+				
+		if(tipo==2){
+			if ($('#tabellaRettificaTerminiOffertaPCP').is(':visible')) {  
+				$('#tabellaRettificaTerminiOffertaPCP').hide();
+				$("#rigaTabellaRettificaTerminiOffertaPCP").hide();
+				$('#aLinkVisualizzaDettaglioRettificaTerminiOffertaPCP').text('Visualizza nuovi termini');
+			}else{
+				$('#aLinkVisualizzaDettaglioRettificaTerminiOffertaPCP').text('Nascondi nuovi termini');
+				$('#tabellaRettificaTerminiOffertaPCP').show();
+				$("#rigaTabellaRettificaTerminiOffertaPCP").show();
+		   }
+		}else if(tipo==3){
+			if ($('#tabellaRettificaTerminiAperturaPCP').is(':visible')) {  
+				$('#tabellaRettificaTerminiAperturaPCP').hide();
+				$("#rigaTabellaRettificaTerminiAperturaPCP").hide();
+				$('#aLinkVisualizzaDettaglioRettificaTerminiAperturaPCP').text('Visualizza nuovi termini');
+			}else{
+				$('#aLinkVisualizzaDettaglioRettificaTerminiAperturaPCP').text('Nascondi nuovi termini');
+				$('#tabellaRettificaTerminiAperturaPCP').show();
+				$("#rigaTabellaRettificaTerminiAperturaPCP").show();
+		   }
+		}
 	}
 	
 	<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.PersonalizzazioneAutovie")}'>
@@ -957,7 +1054,7 @@ function calcolaTermineMinimo(campo){
 		document.forms[0].metodo.value="apri";
 		document.forms[0].jspPathTo.value=document.forms[0].jspPath.value;
 		bloccaRichiesteServer();
-		document.forms[0].action += "&tipoDoc=" + tipoDoc;
+		document.forms[0].action += "?tipoDoc=" + tipoDoc;
 		document.forms[0].submit();
 	}
 
@@ -1023,6 +1120,23 @@ function calcolaTermineMinimo(campo){
 			formVisualizzaDocumenti.submit();
 		}
 	}						
+	</c:if>
+	<c:if test="${(iterga eq '5' || iterga eq '6') and bloccoModificaPCP eq 'true' and modo eq 'MODIFICA'}">
+		var campi = "#TORN_DTEOFF,#TORN_OTEOFF";
+		<c:if test="${bloccoPubblicazionePortale13 eq 'TRUE'}">
+			campi = "#TORN_DINVIT,#TORN_NPROTI,"+campi;
+		</c:if>
+		$(campi).each(function() {
+			$(this).attr('readonly','readonly');
+			$(this).attr('tabindex','-1');
+			$(this).css('border-color','#A3A6FF');
+			$(this).css('border-width','1px');
+			$(this).css('background-color','#E0E0E0');
+			$(this).bind('mousedown', function(e) {
+				e.preventDefault();
+			})
+			$("[id^='jsPopUp"+this.id+"']").hide();
+		})
 	</c:if>
 	
 </gene:javaScript>

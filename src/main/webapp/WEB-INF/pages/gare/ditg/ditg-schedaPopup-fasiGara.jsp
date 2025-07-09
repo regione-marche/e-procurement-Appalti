@@ -117,6 +117,8 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 				<c:set var="tmpStepWizard" value="${stepWizard}" />
 			</c:otherwise>
 		</c:choose>
+		
+		<c:if test='${not empty tmpStepWizard and gene:matches(tmpStepWizard, "^-?[\\\\.0-9]+$", true)}' />
 
 		<c:choose>
 			<c:when test='${not empty param.paginaAttivaWizard}'>
@@ -268,13 +270,16 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 			<gene:campoScheda campo="DATFS11B" title="${titoloDatfs11b}" entita='DITGEVENTI' where="DITGEVENTI.NGARA=DITG.NGARA5 and DITGEVENTI.DITTAO=DITG.DITTAO and DITGEVENTI.CODGAR=DITG.CODGAR5" visibile="${tmpPaginaAttivaWizard eq step6Wizard and isProceduraTelematica eq 'true'}" modificabile="false"/>
 			<gene:campoScheda campo="DATFS11C" title="Data apertura busta economica" entita='DITGEVENTI' where="DITGEVENTI.NGARA=DITG.NGARA5 and DITGEVENTI.DITTAO=DITG.DITTAO and DITGEVENTI.CODGAR=DITG.CODGAR5" visibile="${tmpPaginaAttivaWizard eq step7Wizard and isProceduraTelematica eq 'true'}" modificabile="false"/>
 
+			<c:set var="condizioneLottiFaseTecnica" value='${tmpPaginaAttivaWizard eq step6Wizard and (empty tmpIsGaraLottiConOffertaUnica or (not empty tmpIsGaraLottiConOffertaUnica and tmpIsGaraLottiConOffertaUnica eq "true" and datiRiga.DITG_CODGAR5 ne datiRiga.DITG_NGARA5))}'/>
+			<c:set var="condizioneLottiFaseEcnomica" value='${(tmpPaginaAttivaWizard eq step7Wizard or tmpPaginaAttivaWizard eq step7_5Wizard) and (empty tmpIsGaraLottiConOffertaUnica or (not empty tmpIsGaraLottiConOffertaUnica and tmpIsGaraLottiConOffertaUnica eq "true" and datiRiga.DITG_CODGAR5 ne datiRiga.DITG_NGARA5))}'/>
+			
 			<gene:campoScheda campo="CONGRUO" modificabile="false" visibile="${tmpPaginaAttivaWizard eq step8Wizard}"/>
 			<gene:campoScheda campo="CONGMOT" visibile="${tmpPaginaAttivaWizard eq step8Wizard}"/>
 			<gene:campoScheda campo="CONGALT" visibile="${tmpPaginaAttivaWizard eq step8Wizard}"/>
 			<gene:campoScheda campo="ALTNOT" />
+			<gene:campoScheda campo="CODCNEL" visibile="${condizioneLottiFaseEcnomica or condizioneLottiFaseTecnica}" modificabile="${ offtel ne 1 }"/>
 			<gene:campoScheda campo="RICSUB" visibile='${empty tmpIsGaraLottiConOffertaUnica or (not empty tmpIsGaraLottiConOffertaUnica and tmpIsGaraLottiConOffertaUnica eq "true" and datiRiga.DITG_CODGAR5 ne datiRiga.DITG_NGARA5)}'/>
 			
-			<c:set var="condizioneLottiFaseEcnomica" value='${(tmpPaginaAttivaWizard eq step7Wizard or tmpPaginaAttivaWizard eq step7_5Wizard) and (empty tmpIsGaraLottiConOffertaUnica or (not empty tmpIsGaraLottiConOffertaUnica and tmpIsGaraLottiConOffertaUnica eq "true" and datiRiga.DITG_CODGAR5 ne datiRiga.DITG_NGARA5))}'/>
 			<gene:campoScheda campo="IMPSICAZI" visibile='${condizioneLottiFaseEcnomica and datiRiga.TORN_RICMANO eq "1"}' modificabile="${ offtel ne 1 }"/>
 			<gene:campoScheda campo="IMPMANO" visibile='${condizioneLottiFaseEcnomica and datiRiga.TORN_RICMANO eq "1" and datiRiga.TORN_MODMANO eq "1"}' modificabile="${ offtel ne 1 }"/>
 			<gene:campoScheda campo="PERCMANO" visibile='${condizioneLottiFaseEcnomica and datiRiga.TORN_RICMANO eq "1" and datiRiga.TORN_MODMANO eq "2"}' modificabile="${ offtel ne 1 }"/>
@@ -467,6 +472,9 @@ TABLE.grigliaDataProt TD.valore-dato A:hover {
 		</c:if>
 		<c:if test='${not empty requestScope.valoreDITG_RICSUB}'>
 			setValue("DITG_RICSUB",  "${requestScope.valoreDITG_RICSUB}");
+		</c:if>
+		<c:if test='${not empty requestScope.valoreDITG_CODCNEL}'>
+			setValue("DITG_CODCNEL",  "${requestScope.valoreDITG_CODCNEL}");
 		</c:if>
 		<c:if test='${not empty requestScope.valoreDITG_CONGALT}'>
 			setValue("DITG_CONGALT", ${gene:string4Js(requestScope.valoreDITG_CONGALT)});

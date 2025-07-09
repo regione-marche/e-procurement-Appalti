@@ -191,7 +191,13 @@
 						</table>
 					</c:when>
 					<c:otherwise>
-						<gene:formScheda entita="GARECONT" where= "GARECONT.NGARA = '${ngara}' AND GARECONT.NCONT = ${ncont}" gestisciProtezioni="false" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupTrasmettiOrdine">
+						<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from GARECONT where ngara=? AND ncont=?", ngara, ncont)}'/>
+							<c:set var="whereValidated" value="1=2" />
+						<c:if test="${not empty ngara }">
+							<c:set var="whereValidated" value="GARECONT.NGARA = '${ngara}' AND GARECONT.NCONT = ${ncont}" />
+						</c:if>
+						
+						<gene:formScheda entita="GARECONT" where="${whereValidated}"  gestisciProtezioni="false" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupTrasmettiOrdine">
 								<gene:gruppoCampi>
 									<gene:campoScheda nome="Destinatario">
 										<td colspan="2"><b>Destinatario</b></td>
@@ -347,11 +353,12 @@
 									//Controlli sulla valorizzazione dei campi obbligatori
 									var errori = controlloCampiObbligatori();
 									if(!errori && "LAPISOPERA" == $("#tiposistemaremoto").val() ){
-										var nomePrimoAllegato = getValue("FDIGNOMDOC");
-										var esito=controlloFormatoAllegato(nomePrimoAllegato);
-										if(!esito){
-											var msg="ATTENZIONE:  il sistema di protocollo accetta solo comunicazioni che abbiano un allegato firmato digitalmente  nel formato '.pdf.p7m'.\r\nPer procedere alla trasmissione dell'ordine, occorre selezionare un file valido.";
-											alert(msg);
+										var file = document.getElementById("selezioneFile").files[0];
+										var idconfi = $("#idconfi").val();
+										var esito=controlloFormatoAllegatoDaForm(file,idconfi);
+										if(!esito[0]){
+											var msg="ATTENZIONE:  il sistema di protocollo accetta solo comunicazioni che abbiano un allegato firmato digitalmente.\r\nPer procedere alla trasmissione dell'ordine, occorre selezionare un file valido.";
+											alert(esito[1]? esito[1] : msg);
 											errori=true;
 										}
 									}
@@ -375,6 +382,9 @@
 							if("JDOC" == $("#tiposistemaremoto").val()){
 								$("#nomeR").val($("#nomeRup").text());
 								$("#acronimoR").val($("#acronimoRup").text());
+							}
+							if ($("#tiposistemaremoto").val() == "ARCHIFLOW" ){
+								$("#nomeR").val($("#nomeRup").text());
 							}
 							</c:if>	
 							bloccaRichiesteServer();
@@ -556,8 +566,8 @@
 								$("#indirizzomittente").closest('tr').hide();
 							}
 							
-							if ((_tipoWSDM != "JIRIDE"  && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA") || (_tipoWSDM == "JIRIDE" && _delegaInvioMailDocumentaleAbilitata != 1) || (_tipoWSDM == "ARCHIFLOW" && _delegaInvioMailDocumentaleAbilitata != 1)
-								|| (_tipoWSDM == "ARCHIFLOWFA" && _delegaInvioMailDocumentaleAbilitata != 1)) {
+							if ((_tipoWSDM != "JIRIDE"  && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "HALLEY") || (_tipoWSDM == "JIRIDE" && _delegaInvioMailDocumentaleAbilitata != 1) || (_tipoWSDM == "ARCHIFLOW" && _delegaInvioMailDocumentaleAbilitata != 1)
+								|| (_tipoWSDM == "ARCHIFLOWFA" && _delegaInvioMailDocumentaleAbilitata != 1) || (_tipoWSDM == "HALLEY" && _delegaInvioMailDocumentaleAbilitata != 1)) {
 								$("#indirizzomittente").hide();
 								$("#indirizzomittente").closest('tr').hide();
 								$('#indirizzomittente option').eq(0).prop('selected', true);

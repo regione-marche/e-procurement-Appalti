@@ -18,6 +18,7 @@
 <%//Popup per visualizzare i metadati di una rda%>
 
 
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wserp.scheda.rda.js"></script>
 
 <div style="width:97%;">
 
@@ -362,7 +363,7 @@
 		/*
 	     * Gestione utente ed attributi per il collegamento remoto
 	     */
-	     if(${tipoWSERP eq "FNM" || tipoWSERP eq "CAV" || tipoWSERP eq "AMIU" || tipoWSERP eq "RAIWAY"}){
+	     if(${tipoWSERP eq "FNM" || tipoWSERP eq "CAV" || tipoWSERP eq "AMIU" || tipoWSERP eq "RAIWAY" || tipoWSERP eq "INARCASSA" || tipoWSERP eq "CONI"}){
 	      if(${tipoWSERP eq "FNM"}){
 	     	_getWSERPRda('${numeroRda}','${esercizio}');
 	      }
@@ -377,6 +378,14 @@
 
 	      if(${tipoWSERP eq "RAIWAY"}){
 				_creaPopolaRdaRaiway('${numeroRda}');
+	      }
+		  
+		  if(${tipoWSERP eq "INARCASSA"}){
+				_creaPopolaRdaInarcassa('${numeroRda}');
+	      }
+		  
+		  if(${tipoWSERP eq "CONI"}){
+				_creaPopolaRdaConi('${numeroRda}');
 	      }
 	     	
 	     }else{

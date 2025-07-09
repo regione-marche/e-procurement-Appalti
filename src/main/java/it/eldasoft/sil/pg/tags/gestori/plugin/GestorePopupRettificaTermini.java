@@ -67,6 +67,8 @@ public class GestorePopupRettificaTermini extends AbstractGestorePreload {
     String tipoGara = page.getRequest().getParameter("tipoGara");
     String gartel = page.getRequest().getParameter("gartel");
     String ngara = page.getRequest().getParameter("ngara");
+    String esisteSchedaRettificaAperta = (String) page.getRequest().getAttribute("esisteSchedaRettificaAperta");//questo attributo arriva dal gestore di submit
+    String modalitaAmministratore = page.getRequest().getParameter("modalitaAmministratore");
     Vector<?> datiTorn=null;
     Date datadioggi = UtilityDate.getDataOdiernaAsDate();
     String controlloBusteSuperato = "NO";
@@ -209,14 +211,14 @@ public class GestorePopupRettificaTermini extends AbstractGestorePreload {
           chiaveComunicazione=ngara;
         else
           chiaveComunicazione=codgar;
-        Long conteggio=(Long)this.sqlManager.getObject("select count(idcom) from w_invcom where idprg='PA' and comkey2=? and comtipo=? and (comstato=6 or comstato=7)", new Object[]{chiaveComunicazione,tipoComunicazione});
+        Long conteggio=(Long)this.sqlManager.getObject("select count(idcom) from w_invcom where idprg='PA' and comkey2=? and comtipo=? and (comstato='6' or comstato='7')", new Object[]{chiaveComunicazione,tipoComunicazione});
         if(conteggio!=null && conteggio.longValue()>0){
           controlloSuperato="NO";
           msg = "Non è possibile procedere alla rettifica dei termini " + tipoRettifica + " perchè si è già proceduto all'acquisizione delle " +  msgTipoRettifica;
           page.setAttribute("msg", msg, PageContext.REQUEST_SCOPE);
 
           if("FS11".equals(tipoComunicazione))  {
-          Long conteggioBusteAperte=(Long)this.sqlManager.getObject("select count(idcom) from w_invcom where idprg='PA' and comkey2=? and comtipo like ? and (comstato=6 or comstato=7)", new Object[]{chiaveComunicazione,"FS11_%"});
+          Long conteggioBusteAperte=(Long)this.sqlManager.getObject("select count(idcom) from w_invcom where idprg='PA' and comkey2=? and comtipo like ? and (comstato='6' or comstato='7')", new Object[]{chiaveComunicazione,"FS11_%"});
           if(conteggioBusteAperte==null || conteggioBusteAperte.longValue()<= 0){
             controlloBusteSuperato = "SI";
             }
@@ -236,6 +238,31 @@ public class GestorePopupRettificaTermini extends AbstractGestorePreload {
       }
     }catch (SQLException e) {
       throw new JspException("Errore durante la lettura delle comunicazioni " + tipoComunicazione + " della gara " + ngara, e);
+    }
+    
+    try {
+      //se c'è e non è ancora stata pubblicata una scheda che prevede la rettifica su ANAC (caso in cui ho forzato la pubb su portale), blocco
+      Long countSchedeRettificabiliSuANACInPubb = (Long) sqlManager.getObject("select count(1) from g1npascheda, g1npaform, g1cf_npa where g1npascheda.idform=g1npaform.id and g1npascheda.idschedanparet is null "
+          + "and g1npascheda.statonpa=40 and g1npaform.codgar=? and g1cf_npa.retterm is not null", new Object[] {codgar});
+      if(countSchedeRettificabiliSuANACInPubb>0) {
+        controlloSuperato="NO";
+        controlloBusteSuperato = "NO";
+        page.setAttribute("msg", "Non risulta ancora pubblicata la scheda ANAC relativa al bando. Pertanto non è possibile procedere alla rettifica dei termini."
+        , PageContext.REQUEST_SCOPE);
+      }
+      
+      if("true".equals(esisteSchedaRettificaAperta) && !"true".equals(modalitaAmministratore)) {
+        Long countSchedeRettificaInCorso = (Long) sqlManager.getObject("select count(1) from g1npascheda, g1npaform where g1npascheda.idform=g1npaform.id and g1npascheda.idschedanparet is not null "
+            + "and g1npascheda.statonpa>1 and g1npascheda.statonpa not in (34,50,60) and g1npaform.codgar=?", new Object[] {codgar});
+        if(countSchedeRettificaInCorso>0) {
+          controlloSuperato="NO";
+          controlloBusteSuperato = "NO";
+          page.setAttribute("msg", "Risulta già in corso la rettifica dei termini " + tipoRettifica + ", che prevede l'invio della scheda di rettifica ad ANAC. <br>La scheda è stata presa in carico da ANAC ma non è ancora pubblicata. Pertanto non è possibile procedere."
+          , PageContext.REQUEST_SCOPE);
+        }
+      }
+    } catch (SQLException e) {
+      throw new JspException("Errore durante la lettura delle schede ANAC associate alla gara", e);
     }
     page.setAttribute("controlloSuperato", controlloSuperato, PageContext.REQUEST_SCOPE);
     page.setAttribute("controlloBusteSuperato", controlloBusteSuperato, PageContext.REQUEST_SCOPE);

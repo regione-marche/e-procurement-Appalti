@@ -22,24 +22,24 @@
 <c:choose>
 
 	<c:when test="${param.tipoDettaglio eq 1}">
-		<gene:campoScheda title="Numero gara" entita="W3COND" campo="NUMGARA_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3COND_NUMGARA" value="${item[0]}"/>
-		<gene:campoScheda title="Numero lotto" entita="W3COND" campo="NUMLOTT_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3COND_NUMLOTT" value="${item[1]}"/>
-		<gene:campoScheda title="Numero condizione" entita="W3COND" campo="NUM_COND_${param.contatore}" campoFittizio="true" visibile="false" definizione="N3;1;;;W3COND_NUM_COND" value="${item[2]}"/>
-		<gene:campoScheda title="Ulteriore condizione" entita="W3COND" campo="ID_CONDIZIONE_${param.contatore}" campoFittizio="true" definizione="N7;0;W3006;;W3COND_ID_CONDIZIONE" value="${item[3]}"/>
+		<gene:campoScheda title="Numero gara" entita="W3COND" campo="NUMGARA_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3CONDGARA" value="${item[0]}"/>
+		<gene:campoScheda title="Numero lotto" entita="W3COND" campo="NUMLOTT_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3CONDLOTT" value="${item[1]}"/>
+		<gene:campoScheda title="Numero condizione" entita="W3COND" campo="NUM_COND_${param.contatore}" campoFittizio="true" visibile="false" definizione="N3;1;;;W3CONDNUM" value="${item[2]}"/>
+		<gene:campoScheda entita="W3COND" campo="ID_CONDIZIONE_${param.contatore}" campoFittizio="true" definizione="N7;0;W3006;;W3CONDID" value="${item[3]}"/>
 	</c:when>
 
 	<c:when test="${param.tipoDettaglio eq 2}">
-		<gene:campoScheda title="Numero gara" entita="W3COND" campo="NUMGARA_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3COND_NUMGARA" value="${numgara}"/>
-		<gene:campoScheda title="Numero lotto" entita="W3COND" campo="NUMLOTT_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3COND_NUMLOTT" value="${numlott}"/>
-		<gene:campoScheda title="Numero condizione" entita="W3COND" campo="NUM_COND_${param.contatore}" campoFittizio="true" visibile="false" definizione="N3;1;;;W3COND_NUM_COND" />
-		<gene:campoScheda title="Ulteriore condizione" entita="W3COND" campo="ID_CONDIZIONE_${param.contatore}" campoFittizio="true" definizione="N7;0;W3006;;W3COND_ID_CONDIZIONE" />
+		<gene:campoScheda title="Numero gara" entita="W3COND" campo="NUMGARA_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3CONDGARA" value="${numgara}"/>
+		<gene:campoScheda title="Numero lotto" entita="W3COND" campo="NUMLOTT_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3CONDLOTT" value="${numlott}"/>
+		<gene:campoScheda title="Numero condizione" entita="W3COND" campo="NUM_COND_${param.contatore}" campoFittizio="true" visibile="false" definizione="N3;1;;;W3CONDNUM" />
+		<gene:campoScheda entita="W3COND" campo="ID_CONDIZIONE_${param.contatore}" campoFittizio="true" definizione="N7;0;W3006;;W3CONDID" />
 	</c:when>
 
 	<c:when test="${param.tipoDettaglio eq 3}">
-		<gene:campoScheda title="Numero gara" entita="W3COND" campo="NUMGARA_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3COND_NUMGARA" value="${numgara}"/>
-		<gene:campoScheda title="Numero lotto" entita="W3COND" campo="NUMLOTT_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3COND_NUMLOTT" value="${numlott}"/>
-		<gene:campoScheda title="Numero condizione" entita="W3COND" campo="NUM_COND_${param.contatore}" campoFittizio="true" visibile="false" definizione="N3;1;;;W3COND_NUM_COND" />
-		<gene:campoScheda title="Ulteriore condizione" entita="W3COND" campo="ID_CONDIZIONE_${param.contatore}" campoFittizio="true" definizione="N7;0;W3006;;W3COND_ID_CONDIZIONE" />
+		<gene:campoScheda title="Numero gara" entita="W3COND" campo="NUMGARA_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3CONDGARA" value="${numgara}"/>
+		<gene:campoScheda title="Numero lotto" entita="W3COND" campo="NUMLOTT_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3CONDLOTT" value="${numlott}"/>
+		<gene:campoScheda title="Numero condizione" entita="W3COND" campo="NUM_COND_${param.contatore}" campoFittizio="true" visibile="false" definizione="N3;1;;;W3CONDNUM" />
+		<gene:campoScheda entita="W3COND" campo="ID_CONDIZIONE_${param.contatore}" campoFittizio="true" definizione="N7;0;W3006;;W3CONDID" />
 	</c:when>
 
 </c:choose>

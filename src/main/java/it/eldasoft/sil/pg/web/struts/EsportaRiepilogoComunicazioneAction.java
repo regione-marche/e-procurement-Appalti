@@ -11,8 +11,6 @@
 package it.eldasoft.sil.pg.web.struts;
 
 import it.eldasoft.gene.bl.FileManager;
-import it.eldasoft.gene.bl.FileManagerException;
-import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.TempFileUtilities;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
@@ -20,15 +18,11 @@ import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
 import it.eldasoft.gene.commons.web.struts.CostantiGeneraliStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
-import it.eldasoft.utils.properties.ConfigManager;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.sql.SQLException;
-import java.util.Vector;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -79,14 +73,11 @@ public class EsportaRiepilogoComunicazioneAction extends
         String idcom= request.getParameter("idcom");
         
        ProfiloUtente profilo = (ProfiloUtente) request.getSession().getAttribute(CostantiGenerali.PROFILO_UTENTE_SESSIONE);
-       
-        
-        InputStream iccInputStream = new FileInputStream(request.getSession(true).getServletContext().getRealPath("/WEB-INF/jrReport/sRGB_v4_ICC_preference.icc"));
-        
+
         if(idprg!= null && idcom != null) {
           try {
             Long idcomm = Long.parseLong(idcom);
-            byte[] pdf = this.gestioneWSDMManager.esportaRiepilogoComunicazione(idprg, idcomm, profilo.getNome(), iccInputStream);
+            byte[] pdf = this.gestioneWSDMManager.esportaRiepilogoComunicazione(idprg, idcomm, profilo.getNome());
             //this.fileManager.download("PG"+idcom+"_reportComunicazione.pdf", pdf ,response);
             File tempFile = TempFileUtilities.getTempFileSenzaNumeoRandom("PG"+idcom+"_reportComunicazione.pdf",
                 request.getSession());

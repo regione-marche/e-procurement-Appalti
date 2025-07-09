@@ -116,6 +116,8 @@
 
 <c:set var="tipgarOriginale" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTIPGARGFunction", pageContext, codiceSorgenteVisual)}'/>
 
+<c:set var="bloccoCopiaDocumentazione" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.npa.ControlloVernpaPerBloccoCopiaDocumenti", pageContext, codiceSorgente) eq "true"}'/>
+
 <c:if test='${bloccoOliamm eq "true" }'>
 	<gene:redefineInsert name="buttons">
 		<INPUT type="button" class="bottone-azione" value="Chiudi" title="Chiudi" onclick="javascript:annulla();">&nbsp;
@@ -374,9 +376,10 @@
 				</c:when>
 			</c:choose>
 						
-			<gene:campoScheda campo="COPIA_DOCUMENTAZIONE"   title="Copia documentazione di gara?"   defaultValue="0" definizione="N1;0;;SN" campoFittizio="true" gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoSiNoSenzaNull" visibile='${not(genereDiGara eq "3" and copiaDa eq "listaLotti")}'/>
+			<gene:campoScheda campo="COPIA_DOCUMENTAZIONE"   title="Copia documentazione di gara?"   defaultValue="0" definizione="N1;0;;SN" campoFittizio="true" modificabile="${not bloccoCopiaDocumentazione}"
+			 gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoSiNoSenzaNull" visibile='${not(genereDiGara eq "3" and copiaDa eq "listaLotti")}'/>
 			<c:choose>
-				<c:when test='${(gene:checkProt(pageContext, "PAGE.VIS.GARE.TORN-scheda.PUBBANDO") || gene:checkProt(pageContext, "PAGE.VIS.GARE.GARE-scheda.PUBBANDO")) && gene:checkProt(pageContext, "PAGE.VIS.GARE.GARE-scheda.PUBESITO")}'>
+				<c:when test='${false and (gene:checkProt(pageContext, "PAGE.VIS.GARE.TORN-scheda.PUBBANDO") || gene:checkProt(pageContext, "PAGE.VIS.GARE.GARE-scheda.PUBBANDO")) && gene:checkProt(pageContext, "PAGE.VIS.GARE.GARE-scheda.PUBESITO")}'>
 					<c:set var="titoloTemini" value="Copia termini di gara e pubblicazioni?"/>
 				</c:when>
 				<c:otherwise>
@@ -648,9 +651,45 @@
 		if(copiaOfferte==1){
 			setValue("COPIA_DOCUMENTAZIONE", copiaOfferte);
 			setValue("COPIA_TERMINI", copiaOfferte);
+			<c:if test='${bloccoCopiaDocumentazione}'>
+				if ($('#COPIA_DOCUMENTAZIONEview').text() === '2') {
+					$('#COPIA_DOCUMENTAZIONEview').text('No');
+				} else if ($('#COPIA_DOCUMENTAZIONEview').text() === '1') {
+					$('#COPIA_DOCUMENTAZIONEview').text('Si');
+				}
+			</c:if>
 		}
 	}
 	
+	function controlloCODIGA() {
+		var codiga = Number($('#CODICE_LOTTO').val());
+		if ($('#CODICE_LOTTO').val() === '') {
+			return;
+		}
+		if (!Number.isInteger(codiga) || codiga < 1) {
+			alert('Il campo \"Lotto\" deve essere un numero intero positivo');
+			$('#CODICE_LOTTO').val('');
+		}
+	}
+
+<c:if test='${fn:containsIgnoreCase(chiave, "CODGAR")}'>
+	function controlloBloccoCopiaDocumenti() {
+		// Se vernpa non valorizzato sulla gara di partenza ma attivo sulla gara di destinazione, non si copiano i documenti
+		if ( ${bloccoCopiaDocumentazione} ) {
+			$("#COPIA_DOCUMENTAZIONE").val(0);
+		}
+	}
+</c:if>
+
+	$(document).ready(function(){
+		$('#CODICE_LOTTO').change(function(){
+			controlloCODIGA();
+		});
+		<c:if test='${fn:containsIgnoreCase(chiave, "CODGAR")}'>
+			controlloBloccoCopiaDocumenti();
+		</c:if>
+	});
+
 	</gene:javaScript>
 </gene:template>
 </div>

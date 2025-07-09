@@ -16,6 +16,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<c:set var="isVerificaPDFA" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "uploadFile.verifica.pdfA")}'/>
 <c:set var="digitalSignatureUrlCheck" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-check-url")}'/>
 <c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
 <c:choose>
@@ -43,6 +44,10 @@
 <c:set var="where" value="W_DOCDIG.DIGENT = 'W_INVCOM' AND W_DOCDIG.DIGKEY1 = '${idprg}' AND W_DOCDIG.DIGKEY2 = '${idcom}'"/>
 
 <c:set var="richiestaFirma" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "documentiDb.richiestaFirma")}'/>
+
+<c:if test="${integrazioneWSDM eq '1'}">
+	<c:set var="esitoControlli" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ControlliInvioComunicazioniFunction",pageContext,idprg,idcom,commodello)}' />
+</c:if>
 <c:if test="${integrazioneWSDM eq '1' && richiestaFirma ne '1'}">
 	<c:set var="tipoWSDM" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetTipoWSDMFunction", pageContext, "FASCICOLOPROTOCOLLO", "NO",idconfi)}' />
 	<c:if test="${tipoWSDM eq 'ITALPROT'}">
@@ -53,6 +58,12 @@
 			<c:set var="oggettoComunic" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "COMMSGOGG", "W_INVCOM", whereW_INVCOM)}'/>
 		</c:if>
 	</c:if>
+</c:if>
+
+<c:set var="integrazioneWSERP" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSERPFunction", pageContext)}' />
+<c:set var="tipoWSERP" value='${requestScope.tipoWSERP}' />
+<c:if test='${integrazioneWSERP eq "1" and tipoWSERP eq "CONI"}'>
+	<c:set var="presenzaRda" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetWSERPPresenzaRdaFunction", pageContext, codgar, null, requestScope.tipoWSERP)}' scope="request" />
 </c:if>
 
 <c:choose>
@@ -125,7 +136,7 @@
 	<tr>
 		<td><gene:formLista entita="W_DOCDIG" pagesize="0" sortColumn="${gene:if(comstato eq '1' and autorizzatoModificaComunicazione eq 'true',3,2)}"
 			where="${where}" tableclass="datilista"
-			gestisciProtezioni="true" gestore="">
+			gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreW_DOCDIG">
 			<c:if test="${comstato eq '1' and autorizzatoModificaComunicazione eq 'true'}">
 				<gene:campoLista title="Opzioni <br><center>${titoloMenu}</center>"
 					width="50">
@@ -163,7 +174,12 @@
 					<gene:campoLista campo="DIGDESDOC" />
 				</c:otherwise>
 			</c:choose>
-			<gene:campoLista campo="DIGNOMDOC" />
+			<gene:campoLista campo="DIGNOMDOC" >
+				<c:if test="${isVerificaPDFA eq '1' && datiRiga.W_DOCDIG_DIGTIPDOC eq 'pdf/a'}">
+					&nbsp;<img id="imgCheckPDFaDocMessage" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
+				</c:if>
+			</gene:campoLista>
+			<gene:campoLista campo="DIGTIPDOC" visibile="false" />
 			<c:if test="${richiestaFirma eq '1'}">
 				<gene:campoLista campo="DIGFIRMA" visibile="false"/>
 				<gene:campoLista title="&nbsp;" width="20" >
@@ -223,6 +239,13 @@
 							<a href="javascript:listaNuovo();" title="Aggiungi allegato" tabindex="1501">
 								Aggiungi allegato</a></td>
 					</tr>
+					<c:if test='${tipoWSERP eq "CONI" and presenzaRda eq "1"}'>
+						<tr>
+							<td class="vocemenulaterale">
+								<a href="javascript:apriPopupSelezionaOda();" title="Aggiungi allegato oda" tabindex="1501">
+									Aggiungi allegato oda</a></td>
+						</tr>
+					</c:if>
 				</c:if>
 			</gene:redefineInsert>
 
@@ -269,6 +292,9 @@
 					</c:if>
 					<c:if test='${gene:checkProtFunz(pageContext,"INS","LISTANUOVO")}'>
 						<INPUT type="button"  class="bottone-azione" value='Aggiungi allegato' title='Aggiungi allegato' onclick="javascript:listaNuovo()">
+						<c:if test='${tipoWSERP eq "CONI" and presenzaRda eq "1"}'>
+							<INPUT type="button"  class="bottone-azione" value='Aggiungi allegato oda' title='Aggiungi allegato oda' onclick="javascript:apriPopupSelezionaOda()">
+						</c:if>
 					</c:if>
 					<c:if test='${gene:checkProtFunz(pageContext,"DEL","LISTADELSEL")}'>
 						<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.lista.listaEliminaSelezione")}' title='${gene:resource("label.tags.template.lista.listaEliminaSelezione")}' onclick="javascript:listaEliminaSelezione()">
@@ -332,8 +358,9 @@
 <gene:javaScript>
 
 	var cenint = "${cenint}";
-	
+	var coment ="${coment}";
 	var autorizzatoTelematiche ="${autorizzatoTelematiche }";
+	var bloccoInvioComunicazioniGeneriche ="${bloccoInvioComunicazioniGeneriche}";
 	
 		
 	function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
@@ -348,7 +375,7 @@
 					document.formVisFirmaDigitale.submit();
 				}else{
 					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+					document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 				}
 			</c:when>
 			<c:otherwise>
@@ -358,7 +385,7 @@
 					document.formVisFirmaDigitale.submit();
 				}else{
 					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+					document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 				}
 			</c:otherwise>
 		</c:choose>
@@ -368,8 +395,11 @@
 		if(autorizzatoTelematiche == "false"){
 			alert("Non e' possibile procedere.\nLa funzione e' disponibile solo al Punto ordinante");
 			return;
+		}if(bloccoInvioComunicazioniGeneriche == "true"){
+			alert("Non e' possibile procedere.\nL'utente non risulta abilitato all'invio di comunicazioni generiche");
+				return;
 		}else{
-			if(cenint == ""){
+			if(cenint == "" && coment != "HOMEPG"){
 				alert("Non e' possibile procedere.\nDeve essere specificata la stazione appaltante");
 				return;
 			}else{
@@ -383,7 +413,7 @@
 	function protocollacomunicazione(idprg,idcom) {
 		var firmaDocumento="${firmaDocumento }";
 		var numDocAttesaFirma="${numDocAttesaFirma}";
-		 
+		var esitoControlli = "${esitoControlli}";
 		  
 		if(autorizzatoTelematiche == "false"){
 			alert("Non e' possibile procedere.\nLa funzione e' disponibile solo al Punto ordinante");
@@ -394,6 +424,9 @@
 				return;
 			} else if(numDocAttesaFirma!=null && numDocAttesaFirma!="" && numDocAttesaFirma != "0"){
 				alert("Non e' possibile procedere.\nVi sono degli allegati in attesa di firma");
+				return;
+			}else if(esitoControlli == 'NO-TERMINISCA'){
+				alert("Non è possibile inviare la comunicazione in quanto la data termine presentazione documentazione è precedente alla data corrente");
 				return;
 			}else{
 				document.formprotocollacomunicazione.idprg.value = idprg;
@@ -421,7 +454,7 @@
 		var entitaWSDM="${entitaWSDM }";
 		var idconfi="${idconfi }";
 		var comdatins ="${comdatins }";
-		document.pagineForm.action += "&keyAdd=" + keyAdd + "&chiaveWSDM=" + chiaveWSDM + "&entitaWSDM=" + entitaWSDM + "&comdatins=" + comdatins + "&cenint=" + cenint + "&idconfi=" + idconfi;
+		document.pagineForm.action += "?keyAdd=" + keyAdd + "&chiaveWSDM=" + chiaveWSDM + "&entitaWSDM=" + entitaWSDM + "&comdatins=" + comdatins + "&cenint=" + cenint + "&idconfi=" + idconfi;
 		selezionaPaginaDefault(pageNumber);
 	}
 	
@@ -453,6 +486,14 @@
 		$('#oggettoDocumento').val(oggettoComunic + " - " + desc);
 		apriModaleRichiestaFirma(idprg, iddocdig,'');
 	}
+	
+	<c:if test='${tipoWSERP eq "CONI"}'>
+		function apriPopupSelezionaOda() {
+			var href = "href=gare/g1docstipula/g1docstipula-popup-seleziona-da-oda.jsp?id=${codgar}&provenienza=comunicazione&idcomunicazione=${idcom}";
+			openPopUpCustom(href, "aggiungiDocumento", 800, 500, "yes","yes");
+		}
+	</c:if>
+	
 </gene:javaScript>
 
 <form name="formprotocollacomunicazione" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">

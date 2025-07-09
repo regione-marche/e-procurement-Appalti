@@ -34,6 +34,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import net.schmizz.sshj.xfer.FileSystemFile;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -136,7 +137,7 @@ public class GenerazioneInvioIndiceCOSTask {
           + " where j.id_archiviazione = ?  ";
 
       String cos_selDocumentiDaElaborare = "select w.id, w.key1, w.key2, w.provenienza, w.id_archiviazione, w.cos_nome_file"
-          + " from gardoc_wsdm w where (w.stato_archiviazione = ? ) order by w.id";
+          + " from gardoc_wsdm w, gardoc_jobs j where w.id_archiviazione = j.id_archiviazione and j.tipo_archiviazione = ? and w.stato_archiviazione = ? order by w.id";
 
       List cos_listaRichiesteDaElaborare = null;
       List cos_listaDocumentiDaElaborare = null;
@@ -148,12 +149,14 @@ public class GenerazioneInvioIndiceCOSTask {
   
 
       try{
-        sftp.connect();
+        String uffint = (String) sqlManager.getObject("select cenint from torn where codgar=?", new Object[]{codgara});
+        uffint=null;
+        sftp.connect(uffint);
 
         try {
 
           // tutti i documenti in stato 4=caricati su ftp cos
-          cos_listaDocumentiDaElaborare = sqlManager.getListVector(cos_selDocumentiDaElaborare, new Object[] {new Long(4) });
+          cos_listaDocumentiDaElaborare = sqlManager.getListVector(cos_selDocumentiDaElaborare, new Object[] {new Long(3), new Long(4)});
           
           //tengo traccia degli id elaborati per un eventuale rollback
           List<Long> idinseriti = new ArrayList<Long>();
@@ -368,7 +371,7 @@ public class GenerazioneInvioIndiceCOSTask {
                                 tipologia = "Documento dell'invito a presentare offerta";
                                 break;
                               case 10:
-                                tipologia = "Atto o documento art.29 c.1 DLgs.50/2016";
+                                tipologia = "Atto o documento";
                                 break;
                               case 11:
                                 tipologia = "Documento allegato all'ordine di acquisto";
@@ -388,7 +391,7 @@ public class GenerazioneInvioIndiceCOSTask {
                         if(provenienza.equals("2")){
 
                           String select ="select COMMSGOGG, DIGDESDOC, DIGNOMDOC, COMDATAPUB, COMSTATO " +
-                                "from w_invcom i, w_docdig w where w.iddocdig = ? and w.digkey1 = ? and i.idcom=w.digkey2 and i.idprg=w.idprg ";
+                                "from w_invcom i, w_docdig w where w.iddocdig = ? and w.digkey1 = ? and CAST(i.idcom AS VARCHAR(12))=w.digkey2 and i.idprg=w.idprg ";
 
                           List datiDoc = sqlManager.getListVector(select, new Object[] { iddocdig,idprg });
 
@@ -492,7 +495,7 @@ public class GenerazioneInvioIndiceCOSTask {
                         if(provenienza.equals("5")){
 
                           String select ="select COMMSGOGG, DIGDESDOC, DIGNOMDOC, COMDATINS, IDCOM " +
-                                "from w_invcom i, w_docdig w where w.iddocdig = ? and w.digkey1 = ? and i.idcom=w.digkey2 and i.idprg=w.idprg ";
+                                "from w_invcom i, w_docdig w where w.iddocdig = ? and w.digkey1 = ? and CAST(i.idcom AS VARCHAR(12))=w.digkey2 and i.idprg=w.idprg ";
 
                           List datiDoc = sqlManager.getListVector(select, new Object[] { iddocdig,idprg });
 
@@ -543,7 +546,7 @@ public class GenerazioneInvioIndiceCOSTask {
                         if(provenienza.equals("6")){
 
                           String select ="select COMMSGOGG, DIGDESDOC, DIGNOMDOC, COMDATINS, COMKEY1 " +
-                          "from w_invcom i, w_docdig w where w.iddocdig = ? and w.idprg = ? and i.idcom=w.digkey1 and i.idprg=w.idprg";
+                          "from w_invcom i, w_docdig w where w.iddocdig = ? and w.idprg = ? and CAST(i.idcom AS VARCHAR(12))=w.digkey1 and i.idprg=w.idprg";
 
                           List datiDoc = sqlManager.getListVector(select, new Object[] { iddocdig,idprg });
 
@@ -583,6 +586,97 @@ public class GenerazioneInvioIndiceCOSTask {
                               soggettiEsterni = escape(codFiscImpresa + ", "+ nomeImpresa);
                             }
                         }
+
+                      //Riepilogo busta domanda di partecipazione
+                      if(provenienza.equals("8")){
+
+                          String select ="select CASE WHEN COMTIPO='FS10' THEN 'Riepilogo busta domanda di partecipazione' WHEN COMTIPO='FS11' THEN 'Riepilogo busta offerta' ELSE 'Notifica invio rinuncia offerta' END as GRUPPO,w.DIGDESDOC, w.DIGNOMDOC,COMDATINS,COMKEY1"+
+                        " from W_invcom i, w_docdig w " +
+                        " where w.iddocdig = ? and w.idprg = ? and CAST(i.idcom AS VARCHAR(12))=w.digkey1 and i.idprg=w.idprg";
+
+                        List datiDoc = sqlManager.getListVector(select, new Object[] { iddocdig,idprg });
+
+                        String nomeImpresa = "";
+                        String codFiscImpresa = "";
+
+                        if (datiDoc != null && datiDoc.size() > 0) {
+                          argomento = "Documentazione delle ditte";
+                          tipologia = SqlManager.getValueFromVectorParam(datiDoc.get(0), 0).stringValue();
+                          descrizione = SqlManager.getValueFromVectorParam(datiDoc.get(0), 1).stringValue();
+                          nomeFile = SqlManager.getValueFromVectorParam(datiDoc.get(0), 2).stringValue();
+                          java.sql.Date dataTemp = (Date) SqlManager.getValueFromVectorParam(datiDoc.get(0), 3).getValue();
+                          dataDoc = UtilityDate.convertiData(dataTemp, UtilityDate.FORMATO_GG_MM_AAAA);
+
+                          String username = SqlManager.getValueFromVectorParam(datiDoc.get(0), 4).stringValue();
+                          String codimp = (String)this.sqlManager.getObject("select userkey1 from w_puser where usernome = ?", new Object[]{username});
+                          if (StringUtils.isNotEmpty(codimp)) {
+                            // verifico se la ditta è un raggruppamento
+                            String getImpr = "select codimp, tipimp, cfimp, nomest, nomimp from impr where codimp = ?";
+                            List<?> listaImpresa = this.sqlManager.getListVector(getImpr, new Object[]{codimp});
+                            if (listaImpresa != null && listaImpresa.size() > 0) {
+                              String cod = SqlManager.getValueFromVectorParam(listaImpresa.get(0), 0).getStringValue();
+                              Long tipimp = SqlManager.getValueFromVectorParam(listaImpresa.get(0), 1).longValue();
+                              nomeImpresa = SqlManager.getValueFromVectorParam(listaImpresa.get(0), 3).getStringValue();
+                              codFiscImpresa = SqlManager.getValueFromVectorParam(listaImpresa.get(0), 2).getStringValue();
+                              if (tipimp != null && (new Long(3).equals(tipimp) || new Long(10).equals(tipimp))) {
+                                // la ditta è un raggruppamento allora prendo i dati della mandataria
+                                cod = (String) this.sqlManager.getObject("select coddic from ragimp where codime9 = ? and impman='1'",
+                                        new Object[]{cod});
+                                listaImpresa = this.sqlManager.getListVector(getImpr, new Object[]{cod});
+                                if (listaImpresa != null && listaImpresa.size() > 0) {
+                                  nomeImpresa += "(mandataria " + SqlManager.getValueFromVectorParam(listaImpresa.get(0), 3).getStringValue() + ")";
+                                  codFiscImpresa = SqlManager.getValueFromVectorParam(listaImpresa.get(0), 2).getStringValue();
+                                }
+                              }
+                            }
+                            soggettiEsterni = escape(codFiscImpresa + ", " + nomeImpresa);
+                          }
+                        }
+                      }
+
+                      //documentazione pubblicazione atti e offerte (G1DOCUMATTI)
+                      if(provenienza.equals("9")){
+
+                        String select ="select w.DIGDESDOC, w.DIGNOMDOC, g1.dpubatti, da.dittao " +
+                                "from g1documatti da, w_docdig w, gare1 g1 where w.iddocdig = ? and w.idprg = ? and CAST(da.id AS VARCHAR(12))=w.digkey1 and da.idprg=w.idprg and da.iddocdig=w.iddocdig and w.digent='G1DOCUMATTI' and g1.ngara=da.ngara";
+
+                        List datiDoc = sqlManager.getListVector(select, new Object[] { iddocdig,idprg });
+
+                        String nomeImpresa = "";
+                        String codFiscImpresa = "";
+
+                        if (datiDoc != null && datiDoc.size() > 0) {
+                          argomento = "Pubblicazione atti e offerte";
+                          tipologia = "Pubblicazione atti e offerte";
+                          descrizione = SqlManager.getValueFromVectorParam(datiDoc.get(0), 0).stringValue();
+                          nomeFile = SqlManager.getValueFromVectorParam(datiDoc.get(0), 1).stringValue();
+                          java.sql.Date dataTemp = (Date) SqlManager.getValueFromVectorParam(datiDoc.get(0), 2).getValue();
+                          dataDoc = UtilityDate.convertiData(dataTemp, UtilityDate.FORMATO_GG_MM_AAAA);
+                          String dittao = SqlManager.getValueFromVectorParam(datiDoc.get(0), 3).stringValue();
+                          if (StringUtils.isNotEmpty(dittao)) {
+                            // verifico se la ditta è un raggruppamento
+                            String getImpr = "select codimp, tipimp, cfimp, nomest, nomimp from impr where codimp = ?";
+                            List<?> listaImpresa = this.sqlManager.getListVector(getImpr, new Object[]{dittao});
+                            if (listaImpresa != null && listaImpresa.size() > 0) {
+                              String cod = SqlManager.getValueFromVectorParam(listaImpresa.get(0), 0).getStringValue();
+                              Long tipimp = SqlManager.getValueFromVectorParam(listaImpresa.get(0), 1).longValue();
+                              nomeImpresa = SqlManager.getValueFromVectorParam(listaImpresa.get(0), 3).getStringValue();
+                              codFiscImpresa = SqlManager.getValueFromVectorParam(listaImpresa.get(0), 2).getStringValue();
+                              if (tipimp != null && (new Long(3).equals(tipimp) || new Long(10).equals(tipimp))) {
+                                // la ditta è un raggruppamento allora prendo i dati della mandataria
+                                cod = (String) this.sqlManager.getObject("select coddic from ragimp where codime9 = ? and impman='1'",
+                                        new Object[]{cod});
+                                listaImpresa = this.sqlManager.getListVector(getImpr, new Object[]{cod});
+                                if (listaImpresa != null && listaImpresa.size() > 0) {
+                                  nomeImpresa += "(mandataria " + SqlManager.getValueFromVectorParam(listaImpresa.get(0), 3).getStringValue() + ")";
+                                  codFiscImpresa = SqlManager.getValueFromVectorParam(listaImpresa.get(0), 2).getStringValue();
+                                }
+                              }
+                            }
+                            soggettiEsterni = escape(codFiscImpresa + ", " + nomeImpresa);
+                          }
+                        }
+                      }
 
                         String dataRegistrazione = escape(dataDoc).substring(0, 10);
 
@@ -783,7 +877,7 @@ public class GenerazioneInvioIndiceCOSTask {
           logger.debug("Fine generazione ed invio file di indice COS");
 
         sftp = new SFTPManager();
-        sftp.connect();
+        sftp.connect(uffint);
         if (logger.isDebugEnabled())
           logger.debug("Avvio controllo esiti COS");
         
@@ -794,7 +888,7 @@ public class GenerazioneInvioIndiceCOSTask {
         try {
           List<String> files = sftp.GetFiles(base);
           if (logger.isDebugEnabled()) logger.debug("Lettura della directory ftp avvenuta con successo.");
-          List listaIndiciNonTrasferiti = sqlManager.getListVector("select distinct(cos_indice) from gardoc_wsdm where stato_archiviazione = ?",new Object[] {new Long(5)});
+          List listaIndiciNonTrasferiti = sqlManager.getListVector("select distinct(cos_indice) from gardoc_wsdm w, gardoc_jobs j where w.id_archiviazione = j.id_archiviazione and j.tipo_archiviazione = ?  and stato_archiviazione = ?",new Object[] {new Long(3), new Long(5)});
          
           if (listaIndiciNonTrasferiti != null && listaIndiciNonTrasferiti.size() > 0) {
             for (int n = 0; n < listaIndiciNonTrasferiti.size(); n++) {

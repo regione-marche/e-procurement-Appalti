@@ -1,16 +1,5 @@
 package it.eldasoft.sil.w3.bl;
  
-import it.avlp.simog.massload.xmlbeans.FlagSNQType;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.w3.utils.UtilitySITAT;
-import it.eldasoft.utils.metadata.cache.DizionarioCampi;
-import it.eldasoft.utils.metadata.domain.Campo;
-import it.eldasoft.utils.properties.ConfigManager;
-import it.eldasoft.utils.utility.UtilityFiscali;
-import it.eldasoft.utils.utility.UtilityStringhe;
-
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -24,11 +13,28 @@ import javax.servlet.jsp.JspException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.bl.TabellatiManager;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.PgManager;
+import it.eldasoft.sil.w3.utils.UtilitySITAT;
+import it.eldasoft.utils.metadata.cache.DizionarioCampi;
+import it.eldasoft.utils.metadata.domain.Campo;
+import it.eldasoft.utils.utility.UtilityDate;
+import it.eldasoft.utils.utility.UtilityFiscali;
+import it.eldasoft.utils.utility.UtilityNumeri;
+import it.eldasoft.utils.utility.UtilityStringhe;
+
 public class ValidazioneIDGARACIGManager {
 
   static Logger      logger = Logger.getLogger(ValidazioneIDGARACIGManager.class);
 
   private SqlManager sqlManager;
+  
+  private TabellatiManager tabellatiManager;
+  
+  private PgManager pgManager;
 
   /**
    *
@@ -37,13 +43,25 @@ public class ValidazioneIDGARACIGManager {
   public SqlManager getSqlManager() {
     return this.sqlManager;
   }
+  
+  public TabellatiManager getTabellatiManager() {
+    return this.tabellatiManager;
+  }
 
   /**
    * @param sqlManager
    *        sqlManager da settare internamente alla classe.
    */
+  
   public void setSqlManager(SqlManager sqlManager) {
     this.sqlManager = sqlManager;
+  }
+  public void setTabellatiManager(TabellatiManager tabellatiManager) {
+    this.tabellatiManager = tabellatiManager;
+  }
+  
+  public void setPgManager(PgManager pgManager) {
+    this.pgManager = pgManager;
   }
 
   /**
@@ -263,8 +281,6 @@ public class ValidazioneIDGARACIGManager {
       logger.debug("validazioneW3GARA-PUBBLICA: inizio metodo");
 
     String pagina = "Pubblicazione";
-    
-    boolean v3_04_8_Attiva = UtilitySITAT.isVerAttiva(sqlManager, 5L); //W9023, tap1tip=5
 
     try {
       String selectW3GARA = "select data_perfezionamento_bando, " // 0
@@ -435,13 +451,12 @@ public class ValidazioneIDGARACIGManager {
         	}*/
         }
         
-        if(v3_04_8_Attiva) {  //dopo la data di attivazione si può togliere il"if(v3_04_8_Attiva)"
-          Long estremaUrgenza = (Long) SqlManager.getValueFromVectorParam(datiW3GARA, 16).getValue();
-          String linkAffidamentoDiretto = (String) SqlManager.getValueFromVectorParam(datiW3GARA, 17).getValue();
-          if(new Long(2).equals(estremaUrgenza) && linkAffidamentoDiretto == null) {
-            this.addAvviso(listaControlli, "W3GARA", "Link ai documenti relativi all'affidamento diretto", "E", pagina,
-                "Il campo è obbligatorio per il motivo della somma urgenza selezionato" , "");
-          }
+        
+        Long estremaUrgenza = (Long) SqlManager.getValueFromVectorParam(datiW3GARA, 16).getValue();
+        String linkAffidamentoDiretto = (String) SqlManager.getValueFromVectorParam(datiW3GARA, 17).getValue();
+        if(new Long(2).equals(estremaUrgenza) && linkAffidamentoDiretto == null) {
+          this.addAvviso(listaControlli, "W3GARA", "Link ai documenti relativi all'affidamento diretto", "E", pagina,
+              "Il campo è obbligatorio per il motivo della somma urgenza selezionato" , "");
         }
       }
 
@@ -514,7 +529,7 @@ public class ValidazioneIDGARACIGManager {
         String rup_codtec = (String) SqlManager.getValueFromVectorParam(
             datiW3GARA, 4).getValue();
         if (!isStringaValorizzata(rup_codtec)) {
-          String descrizione = "Responsabile unico del procedimento";
+          String descrizione = "RUP";
           String messaggio = "E' obbligatorio indicare il RUP.";
           listaControlli.add(((new Object[] { "E", pagina,
               descrizione, messaggio })));
@@ -639,12 +654,6 @@ public class ValidazioneIDGARACIGManager {
         				!modo_realizzazione.equals(8L) && !modo_realizzazione.equals(12L) && !modo_realizzazione.equals(17L) && !modo_realizzazione.equals(18L)) {
         			listaControlli.add(((new Object[] { "E", pagina,
                             "Strumenti per lo svolgimento delle procedure", "e' possibile selezionare 'Accordo quadro' solo in caso di modalita' di realizzazione equivalente in concessioni, scelta del socio privato nella societa' mista, accordo quadro o convenzione" })));
-        		}
-        	} else {
-        		//Se non valorizzato a 6 e S01.13=17 o 18
-        		if(modo_realizzazione.equals(17L) || modo_realizzazione.equals(18L)) {
-        			listaControlli.add(((new Object[] { "E", pagina,
-                            "Strumenti per lo svolgimento delle procedure", "in caso di accordo quadro o convenzione, il valore di ' Strumenti per lo svolgimento delle procedure ' deve essere 'Accordo quadro'" })));
         		}
         	}
         }
@@ -795,9 +804,10 @@ public class ValidazioneIDGARACIGManager {
 
     if (logger.isDebugEnabled())
       logger.debug("validazioneW3LOTT: inizio metodo");
+    
+    boolean v3_04_9_Attiva = UtilitySITAT.isVerAttiva(sqlManager, 7L); //W9023, tap1tip=7
 
     String pagina = "Sezione I: dati del lotto";
-    boolean v3_04_8_Attiva = false;
     try {
 
       String selectW3LOTT = "select oggetto, " // 0
@@ -830,7 +840,11 @@ public class ValidazioneIDGARACIGManager {
           + "FLAG_PREVISIONE_QUOTA, " //27
           + "QUOTA_FEMMINILE, " //28
           + "QUOTA_GIOVANILE, " //29
-          + "FLAG_MISURE_PREMIALI " //30 TODO
+          + "FLAG_MISURE_PREMIALI, " //30
+          + "FLAG_DEROGA_ADESIONE, " //31
+          + "FLAG_USO_METODI_EDILIZIA, " //32
+          + "DATA_CREAZIONE_LOTTO, " //33
+          + "DEROGA_QUALIFICAZIONE_SA " //34
           + "from w3lott where numgara = ? and numlott = ?";
 
       List<?> datiW3LOTT = sqlManager.getVector(selectW3LOTT, new Object[] {
@@ -839,10 +853,7 @@ public class ValidazioneIDGARACIGManager {
       if (datiW3LOTT != null && datiW3LOTT.size() > 0) {
     	 //this.validateRUP(numgara, syscon, listaControlli, pagina);
 
-    	  Long versioneSimog = (Long) this.sqlManager.getObject("select VER_SIMOG from W3GARA where NUMGARA = ?", new Object[] { numgara });
-    	  
-    	  v3_04_8_Attiva = UtilitySITAT.isVerAttiva(sqlManager, 5L); //W9023, tap1tip=4
-    	  
+    	  Long versioneSimog = (Long) this.sqlManager.getObject("select VER_SIMOG from W3GARA where NUMGARA = ?", new Object[] { numgara });	  
     	  
     	  Long estremaUrgenza = (Long)sqlManager.getObject("SELECT ESTREMA_URGENZA FROM W3GARA WHERE NUMGARA = ?", new Object[] {numgara });
     	  
@@ -851,6 +862,14 @@ public class ValidazioneIDGARACIGManager {
         if (!isStringaValorizzata(oggetto)) {
           this.addCampoObbligatorio(listaControlli, "W3LOTT", "OGGETTO", pagina);
         }
+        
+        String flagDerogaAdesione = (String) SqlManager.getValueFromVectorParam(datiW3LOTT, 31).getValue();
+        String cig_acc_quadro = (String)sqlManager.getObject("SELECT CIG_ACC_QUADRO FROM W3GARA WHERE NUMGARA = ?", new Object[] {numgara });
+        if(StringUtils.stripToNull(cig_acc_quadro)!=null && isStringaValorizzata(flagDerogaAdesione)) {
+          listaControlli.add(((new Object[] { "W", pagina,
+              "Deroga per adesione ad AQ", "Il campo deve essere valorizzato solo in caso di adesione ad accordo quadro antecedente il 30/12/2021" })));
+        }
+      
 
         // Somma urgenza ?
         /*String somma_urgenza = (String) SqlManager.getValueFromVectorParam(
@@ -892,6 +911,12 @@ public class ValidazioneIDGARACIGManager {
         		  this.addAvviso(listaControlli, "W3LOTTTIPI", "Dettaglio tipologia contratto", "W", pagina,
       	                "E' necessario indicare almeno un valore per la tipologia "+tipologia, "");
         	  }
+          }
+        }
+        if(v3_04_9_Attiva) { //si può rimuovere il controllo dopo 01/07/2023
+          Long derogaQualificazioneSA = (Long) SqlManager.getValueFromVectorParam(datiW3LOTT, 34).getValue();
+          if (derogaQualificazioneSA==null) {
+            this.addCampoObbligatorio(listaControlli, "W3LOTT", "DEROGA_QUALIFICAZIONE_SA", pagina);
           }
         }
 
@@ -1017,10 +1042,9 @@ public class ValidazioneIDGARACIGManager {
                 this.addAvviso(listaControlli, "W3COND", "Condizioni che giustificano il ricorso alla procedura negoziata", "E", pagina, "Campo non previsto", "");
             }
         }
-        if(v3_04_8_Attiva) //dopo la data di attivazione si può togliere il controllo "if(v3_04_8_Attiva)"
-          if(new Long(2).equals(estremaUrgenza) && !new Long(15).equals(sceltaContraente)) {
-            this.addAvviso(listaControlli, "W3LOTT", "Scelta contraente", "W", pagina, "Verificare la coerenza tra la procedura di scelta del contraente e il motivo della somma urgenza", "");
-         }
+        if(new Long(2).equals(estremaUrgenza) && !new Long(15).equals(sceltaContraente)) {
+          this.addAvviso(listaControlli, "W3LOTT", "Scelta contraente", "W", pagina, "Verificare la coerenza tra la procedura di scelta del contraente e il motivo della somma urgenza", "");
+        }
         
         //Tipo appalto riservato
         Long affidamentoRiservato = (Long)SqlManager.getValueFromVectorParam(datiW3LOTT, 13).getValue();
@@ -1038,6 +1062,7 @@ public class ValidazioneIDGARACIGManager {
         }
         // Importo del lotto
         Double importo = (Double)SqlManager.getValueFromVectorParam(datiW3LOTT, 6).getValue();
+        String flagUsoMetodiEdizilia = (String) SqlManager.getValueFromVectorParam(datiW3LOTT, 32).getValue();
         
         if (importo == null) {
         	this.addCampoObbligatorio(listaControlli, "W3LOTT", "IMPORTO_LOTTO", pagina);
@@ -1048,6 +1073,18 @@ public class ValidazioneIDGARACIGManager {
         		this.addAvviso(listaControlli, "W3LOTT", "Importo lotto", "W", pagina,
                         "l'importo del lotto è superiore a quello normativamente utilizzabile per la procedura selezionata", "");
         	}
+        	double sogliaLavori = 5538000;
+        	String sogliaLavoriString = "5.538.000,00";
+        	try {
+        	  sogliaLavori = Double.parseDouble(PgManager.getNumeroFromInizioDescrizione(tabellatiManager.getDescrTabellato("A1125", "1")));
+        	  sogliaLavoriString = UtilityNumeri.convertiImporto(sogliaLavori, 2);
+        	}catch(Exception e) {
+        	  logger.error("Impossibile convertire la soglia del tabellato A1125,1");
+        	}
+        	if("L".equals(tipo_contratto) && importo >= sogliaLavori && !isStringaValorizzata(flagUsoMetodiEdizilia)) {
+        	  this.addAvviso(listaControlli, "W3LOTT", "Uso di metodi e strumenti elettronici di modellazione per l'edilizia e le infrastrutture?", "E", pagina,
+                  "Il campo è obbligatorio per lavori con importi maggiori o uguali a "+sogliaLavoriString+" euro", "");
+            }
         }
         
         // Categoria prevalente
@@ -1136,8 +1173,8 @@ public class ValidazioneIDGARACIGManager {
           	    			this.getDescrizioneCampo("W3LOTT", "IMPORTO_OPZIONI"), "Non è stato valorizzato il campo 'di cui per opzioni/ripetizioni'" })));
                 }
         	} else {
-        		if (importoOpzioni != null && !importoOpzioni.equals(0)) { //dopo la data di attivazione si può impostare "W" sempre
-        			listaControlli.add(((new Object[] { v3_04_8_Attiva? "W" : "E", pagina,
+        		if (importoOpzioni != null && !importoOpzioni.equals(0)) {
+        			listaControlli.add(((new Object[] {"W", pagina,
           	    			this.getDescrizioneCampo("W3LOTT", "IMPORTO_OPZIONI"), "E' stato indicato un importo per le ripetizioni ma il campo 'L'appalto prevede ripetizioni o altre opzioni?' e' stato valorizzato a NO" })));
         		}
         	}
@@ -1181,8 +1218,7 @@ public class ValidazioneIDGARACIGManager {
         
       	Long durataAffidamento = (Long)SqlManager.getValueFromVectorParam(datiW3LOTT, 24).getValue();
           if (durataAffidamento == null) {
-            //dopo la data di attivazione si può togliere ' !v3_04_8_Attiva || '
-            if(!v3_04_8_Attiva || !(new Long(18).equals(id_esclusione) || new Long(32).equals(id_esclusione) || new Long(12).equals(modoRealizzazione))) {
+            if(!(new Long(18).equals(id_esclusione) || new Long(32).equals(id_esclusione) || new Long(12).equals(modoRealizzazione))) {
               String tmp = "L'indicazione della durata dell'affidamento è obbligatoria per la modalità di realizzazione scelta";
               if(id_esclusione != null)
                 tmp += " e per l'esclusione scelta";
@@ -1208,7 +1244,7 @@ public class ValidazioneIDGARACIGManager {
         	if (new Long(10).equals(motivoCollegamento)) {
         		listaControlli.add(((new Object[] { "E", pagina,
       	    			this.getDescrizioneCampo("W3LOTT", "CIG_ORIGINE_RIP"), "Il campo CIG collegato non deve essere valorizzato" })));
-        	} else if (!UtilitySITAT.isCigValido(cigOriginario)) {
+        	} else if (!pgManager.controlloCodiceCIG(cigOriginario) || !cigOriginario.substring(0,1).toUpperCase().matches("[0-9A-U]")) {
         		listaControlli.add(((new Object[] { "E", pagina,
       	    			this.getDescrizioneCampo("W3LOTT", "CIG_ORIGINE_RIP"), "CIG non valido" })));
         	} else if (new Long(9).equals(motivoCollegamento) && (new Long(2).equals(modoRealizzazione) || new Long(11).equals(modoRealizzazione))) {
@@ -1235,6 +1271,8 @@ public class ValidazioneIDGARACIGManager {
         		}
         	}
         }
+        Long strumentoSvolgimento = (Long) sqlManager.getObject("select strumento_svolgimento from w3gara where numgara = ?" , new Object [] {numgara});
+        
         // Flag CUP
         String flag_cup = (String) SqlManager.getValueFromVectorParam(datiW3LOTT, 11).getValue();
         //Long estremaUrgenza = (Long)sqlManager.getObject("SELECT ESTREMA_URGENZA FROM W3GARA WHERE NUMGARA = ?", new Object[] {numgara });
@@ -1245,7 +1283,7 @@ public class ValidazioneIDGARACIGManager {
         } else if ("2".equals(flag_cup)) {
           //non obbligatorio se si verifica una di queste condizioni:
         	// se la gara è un accordo quadro o convenzione (S01.13= 9, 17 o 18)
-        	if ((modoRealizzazione.equals(9L) || modoRealizzazione.equals(17L) || new Long(18).equals(modoRealizzazione)) ||
+        	if ((modoRealizzazione.equals(9L) || modoRealizzazione.equals(17L) || new Long(18).equals(modoRealizzazione)) || new Long(6).equals(strumentoSvolgimento) ||
         	    // se S02.07="Servizi" o "Forniture"
         	    ("F".equals(tipo_contratto) || "S".equals(tipo_contratto)) || 
         	    //se S02.07="Lavori" e  S02.18.3 è assegnata la "Manutenzione Ordinaria"
@@ -1264,13 +1302,31 @@ public class ValidazioneIDGARACIGManager {
         	
         	
         } else if ("1".equals(flag_cup)) {
+           boolean analizzaCup = true;
+            Date data_creazione_lotto = new Date();
+            Date data_simog = (Date) SqlManager.getValueFromVectorParam(datiW3LOTT, 33).getValue();
+            Date dataAttuazioneSimogV3_04_8_1=UtilityDate.convertiData("17/05/2023", 
+                UtilityDate.FORMATO_GG_MM_AAAA);
+            if(data_simog!=null)
+              data_creazione_lotto = data_simog;
+            if(UtilitySITAT.getDataAttuazioneSimog(sqlManager,6L)!=null)
+              dataAttuazioneSimogV3_04_8_1=UtilitySITAT.getDataAttuazioneSimog(sqlManager,6L);
+            if(data_creazione_lotto.compareTo(dataAttuazioneSimogV3_04_8_1)>=0) {
+              if(new Long(9).equals(modoRealizzazione) || new Long(17).equals(modoRealizzazione) || new Long(18).equals(modoRealizzazione)
+                  || new Long(6).equals(strumentoSvolgimento)) {
+               listaControlli.add(((new Object[] { "E", pagina,
+                   this.getDescrizioneCampo("W3LOTT", "FLAG_CUP"), "CUP non previsto per accordi quadro e convenzioni"})));
+               analizzaCup=false;
+                 }
+            }
             String selectW3LOTTCUP = "select count(cup) from w3lottcup" + " where numgara = ? and numlott = ? ";
             Long countCup = (Long) this.sqlManager.getObject(selectW3LOTTCUP, new Object[] {numgara, numlott });
-            if (!(countCup > 0)) {
+            if (!(countCup > 0) && analizzaCup) {
               // Controllo presenza almeno cup
               this.addAvviso(listaControlli, "W3LOTTCUP", "Indicazione cup obbligatoria", "E", pagina, "E' necessario indicare almeno un cup", "");
             }
         }
+        
           String flag_pnrr=  (String) SqlManager.getValueFromVectorParam(datiW3LOTT, 26).getValue();
           //Flag pnrr pnc
           if (!isStringaValorizzata(flag_pnrr) ) {
@@ -1278,24 +1334,23 @@ public class ValidazioneIDGARACIGManager {
           }else {
             
             //se flag pnrr = si obbligatori anche cup, flag previsione quote e misure premiali
-            if("1".equals(flag_pnrr)) {
+            if("1".equals(flag_pnrr) || "2".equals(flagDerogaAdesione)) {
               //gestione cup
-              Long strumentoSvolgimento = (Long) sqlManager.getObject("select strumento_svolgimento from w3gara where numgara = ?" , new Object [] {numgara});
-             // Se ((MODO_REALIZZAZIONE  diverso da 4,9,17,18) o se (MODO_REALIZZAZIONE = 4 e STRUMENTO_SVOLGIMENTO <> 6)) e se FLAG_PNRR_PNC = SI e se FLAG_CUP = NO
-              if ("2".equals(flag_cup)) { //dopo la data di attivazione si può togliere ' !v3_04_8_Attiva || '
-               if(!v3_04_8_Attiva || !(new Long(4).equals(modoRealizzazione) || new Long(9).equals(modoRealizzazione) || new Long(17).equals(modoRealizzazione) || new Long(18).equals(modoRealizzazione)) 
-                 || (new Long(4).equals(modoRealizzazione) && !new Long(6).equals(strumentoSvolgimento))) {
+               // Se ((MODO_REALIZZAZIONE  diverso da 4,9,17,18) o se (MODO_REALIZZAZIONE = 4 e STRUMENTO_SVOLGIMENTO <> 6)) e se FLAG_PNRR_PNC = SI e se FLAG_CUP = NO
+              if ("2".equals(flag_cup) && "1".equals(flag_pnrr) ) {  
+               if(!(new Long(9).equals(modoRealizzazione) || new Long(17).equals(modoRealizzazione) || new Long(18).equals(modoRealizzazione) || new Long(6).equals(strumentoSvolgimento))){
                 listaControlli.add(((new Object[] { "E", pagina,
                     this.getDescrizioneCampo("W3LOTT", "FLAG_CUP"), "L'indicazione del CUP è obbligatoria se finanziati con risorse del PNRR/PNC" })));
                   }
               }
+              
               //gestione quote
               String flag_previsione_quota = (String) SqlManager.getValueFromVectorParam(datiW3LOTT, 27).getValue();            
-              if(flag_previsione_quota==null) {
+              if(flag_previsione_quota==null && !"1".equals(flagDerogaAdesione)) {
                 listaControlli.add(((new Object[] { "E", pagina,
-                    this.getDescrizioneCampo("W3LOTT", "FLAG_PREVISIONE_QUOTA"), "L'indicazione del campo \"Previsione per occupazione giovanile/femminile\" è obbligatoria se finanziati con risorse del PNRR/PNC" })));
+                    this.getDescrizioneCampo("W3LOTT", "FLAG_PREVISIONE_QUOTA"), "L'indicazione del campo \"Previsione per occupazione giovanile/femminile\" è obbligatoria" })));
               }
-              if("N".equals(flag_previsione_quota) || "Q".equals(flag_previsione_quota)) {
+              if(("N".equals(flag_previsione_quota) || "Q".equals(flag_previsione_quota)) && !"1".equals(flagDerogaAdesione)) {
                   //gestione motivi deroga
                   String selectW3LOTTDEROGHE = "select count(idderoga) from w3lottderoghe" + " where numgara = ? and numlott = ? ";
                   Long countCup = (Long) this.sqlManager.getObject(selectW3LOTTDEROGHE, new Object[] {numgara, numlott });
@@ -1304,7 +1359,7 @@ public class ValidazioneIDGARACIGManager {
                     this.addAvviso(listaControlli, "W3LOTTDEROGHE", "Motivo deroga obbligatorio", "E", pagina, "Indicare almeno un motivo deroga", "");
                   }
               }
-              if("Q".equals(flag_previsione_quota)) {
+              if("Q".equals(flag_previsione_quota) && !"1".equals(flagDerogaAdesione)) {
                 Double quota_femminile = (Double) SqlManager.getValueFromVectorParam(datiW3LOTT, 28).getValue();
                 Double quota_giovanile = (Double) SqlManager.getValueFromVectorParam(datiW3LOTT, 29).getValue();
                 
@@ -1315,24 +1370,20 @@ public class ValidazioneIDGARACIGManager {
                   boolean almeno1quota0_30 = false;
                   if(quota_femminile!=null) {
                     if(quota_femminile<0 || quota_femminile>30) {
-                      if(!v3_04_8_Attiva) //dopo la data di attivazione si può commentare l'istruzione contenuta in if(!v3_04_8_Attiva)"
-                      listaControlli.add(((new Object[] { "E", pagina,
-                          this.getDescrizioneCampo("W3LOTT", "QUOTA_FEMMINILE"), "La quota femminile deve essere compresa tra 0 e 30" })));
+                      //codice rimosso
                     }else {
                       almeno1quota0_30 = true;
                     }
                   }
                   if(quota_giovanile!=null) {
                     if(quota_giovanile<0 || quota_giovanile>30) {
-                      if(!v3_04_8_Attiva) //dopo la data di attivazione si può commentare l'istruzione contenuta in if(!v3_04_8_Attiva)"
-                      listaControlli.add(((new Object[] { "E", pagina,
-                          this.getDescrizioneCampo("W3LOTT", "QUOTA_GIOVANILE"), "La quota giovanile deve essere compresa tra 0 e 30" })));
+                     //codice rimosso
                     }
                     else {
                       almeno1quota0_30 = true;
                     }
                   }
-                  if(v3_04_8_Attiva && !almeno1quota0_30) { //dopo la data di attivazione si può togliere il controllo" if(v3_04_8_Attiva &&)"
+                  if(!almeno1quota0_30) {
                     listaControlli.add(((new Object[] { "E", pagina,
                         "Valore quota femminile e/o giovanile", "Almeno una quota, tra occupazione femminile e occupazione giovanile, deve essere inferiore al 30%" })));
                   }
@@ -1340,11 +1391,11 @@ public class ValidazioneIDGARACIGManager {
               } 
             //gestione misure premiali
             String flag_misure_premiali = (String) SqlManager.getValueFromVectorParam(datiW3LOTT, 30).getValue();  
-            if(flag_misure_premiali==null) {
+            if(flag_misure_premiali==null && !"1".equals(flagDerogaAdesione)) {
               listaControlli.add(((new Object[] { "E", pagina,
-                  this.getDescrizioneCampo("W3LOTT", "FLAG_MISURE_PREMIALI"), "L'indicazione del campo \"Previsione di ulteriori misure premiali\" è obbligatoria se finanziati con risorse del PNRR/PNC" })));
+                  this.getDescrizioneCampo("W3LOTT", "FLAG_MISURE_PREMIALI"), "L'indicazione del campo \"Previsione di ulteriori misure premiali\" è obbligatoria" })));
             }
-            if("1".equals(flag_misure_premiali)) {
+            if("1".equals(flag_misure_premiali) && !"1".equals(flagDerogaAdesione)) {
               //gestione misure premiali
               String selectW3MISPREMIALI = "select count(idmisura) from w3mispremiali" + " where numgara = ? and numlott = ? ";
               Long countCup = (Long) this.sqlManager.getObject(selectW3MISPREMIALI, new Object[] {numgara, numlott });
@@ -1434,7 +1485,7 @@ public class ValidazioneIDGARACIGManager {
 	    //verifico che ci sia solo un'utenza con il codice fiscale del RUP
         Long numeroUtenti = (Long) sqlManager.getObject("select count(*) from USRSYS where syscf in (select cftec from tecni where codtec = ?)", new Object[] {rup_codtec});
         if (numeroUtenti>1) {
-        String descrizione = "Responsabile unico del procedimento";
+        String descrizione = "RUP";
         String messaggio = "Il RUP della gara ha più di un'utenza nel sistema";
         listaControlli.add(((new Object[] { "E", pagina,
             descrizione, messaggio })));
@@ -1442,7 +1493,7 @@ public class ValidazioneIDGARACIGManager {
         //verifico che il rup sia effettivamente abbia un record nella w9loader_appalto_usr
           Long esisteAssociazione = (Long) sqlManager.getObject("select count(*) from w9loader_appalto_usr where syscon in (select syscon from usrsys where syscf in (select cftec from tecni where codtec = ?))", new Object[] {rup_codtec});
           if (esisteAssociazione.equals(0L)) {
-            String descrizione = "Responsabile unico del procedimento";
+            String descrizione = "RUP";
             String messaggio = "Il RUP della gara non ha indicato le proprie credenziali per i servizi SIMOG";
               listaControlli.add(((new Object[] { "E", pagina,
                   descrizione, messaggio })));
@@ -1496,7 +1547,7 @@ public class ValidazioneIDGARACIGManager {
         // Codice fiscale del responsabile unico del procedimento
         String rup_codtec = (String) SqlManager.getValueFromVectorParam(datiW3SMARTCIG, 5).getValue();
         if (!isStringaValorizzata(rup_codtec)) {
-          String descrizione = "Responsabile unico del procedimento";
+          String descrizione = "RUP";
           String messaggio = "E' obbligatorio indicare il RUP.";
           listaControlli.add(((new Object[] { "E", pagina,
               descrizione, messaggio })));

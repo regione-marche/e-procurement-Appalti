@@ -216,7 +216,9 @@
 		
 		<gene:javaScript>
 
+			<c:if test='${modo eq "MODIFICA" or modo eq "NUOVO"}'>
 			document.forms[0].encoding="multipart/form-data";
+			</c:if>
 		
 			<c:if test="${modo eq 'NUOVO'}">
 				if ($("#MEARTCAT_COD").val() == null || $("#MEARTCAT_COD").val() == "") {
@@ -235,7 +237,7 @@
 			</c:if>
 		
 			function schedaConfermaUploadMultiplo(){
-				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 				var QMINUNIMIS = getValue("MEARTCAT_QMINUNIMIS");
 				var QMAXUNIMIS = getValue("MEARTCAT_QMAXUNIMIS");
 				if(!confrontoValori(QMINUNIMIS,QMAXUNIMIS)){
@@ -248,7 +250,7 @@
 			}
 			
 			function schedaAnnullaUploadMultiplo(){
-				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 				schedaAnnulla();
 			}
 
@@ -390,7 +392,7 @@
 
 			function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 			}
             
             function confrontoValori(valore1,valore2){
@@ -410,7 +412,7 @@
 				var isRicercaMercato = "false";
 				if(listachiamante=="meric-pg-articoli-albero.jsp" || listachiamante=="meric-pg-articoli-carrello.jsp")
 					isRicercaMercato = "true";
-				document.pagineForm.action += "&ngara=" + ngara + "&isRicercaMercato=" + isRicercaMercato;
+				document.pagineForm.action += "?ngara=" + ngara + "&isRicercaMercato=" + isRicercaMercato;
 				selezionaPaginaDefault(pageNumber);
 			}
 		</gene:javaScript>

@@ -62,7 +62,7 @@
 	var selezionaPagina = selezionaPaginaCustom;
 	function selezionaPaginaCustom(pageNumber){
 		var id="${id }"
-		document.pagineForm.action += "&id=" + id;
+		document.pagineForm.action += "?id=" + id;
 		selezionaPaginaDefault(pageNumber);
 	}
 </gene:javaScript>

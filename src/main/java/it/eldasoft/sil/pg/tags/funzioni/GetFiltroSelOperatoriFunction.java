@@ -10,20 +10,21 @@
  */
 package it.eldasoft.sil.pg.tags.funzioni;
 
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Vector;
-
-import javax.servlet.http.HttpSession;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
-
 import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.tags.functions.EsisteClassificaCategoriaFunction;
 import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityStringhe;
+import org.apache.commons.lang3.StringUtils;
+
+import javax.servlet.http.HttpSession;
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.PageContext;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Vector;
 
 /**
  * Funzione che costruisce il filtro per la pagina gare-popup-selOpEconomici.jsp.
@@ -97,6 +98,8 @@ public class GetFiltroSelOperatoriFunction extends AbstractFunzioneTag {
     Boolean applicatoFiltroInOr = (Boolean)sessione.getAttribute("applicatoFiltroInOr");
     if(applicatoFiltroInOr==null)
       applicatoFiltroInOr = new Boolean(false);
+
+    String filtroElPremFasce = (String)sessione.getAttribute("filtroElPremFasce");
 
     //Controlli per Sql injection
     // classifica deve essere un numero
@@ -431,6 +434,33 @@ public class GetFiltroSelOperatoriFunction extends AbstractFunzioneTag {
         ae_html.append("<br>\n");
         filtriAffidatariEsclusi+=""+codAffEscl + " - " + descrizioneImpresa;
       }
+    }
+
+    try {
+        String isElencoElPrem = (String) sqlManager.getObject("select iselprem from garealbo where ngara=(select elencoe from gare where ngara=?)", new Object[]{ngara});
+        Long countElementiPremiali = (Long) sqlManager.getObject("select count(*) from elpremgare where ngara=?", new Object[]{ngara});
+        boolean inseritiElementiPremiali = countElementiPremiali != null && countElementiPremiali > 0;
+        if ("1".equals(isElencoElPrem) && inseritiElementiPremiali) {
+          where += " and ELPREMPUN.ngarag='" + ngara + "'";
+          Vector<JdbcParametro> datiFasce = sqlManager.getVector("select elpremsinf, elpremsint from gare1 where ngara=?", new Object[]{ngara});
+          Double elpremsinf = datiFasce.get(0).getValue() != null ? ((Number) datiFasce.get(0).getValue()).doubleValue() : null;
+          Double elpremsint = datiFasce.get(1).getValue() != null ? ((Number) datiFasce.get(1).getValue()).doubleValue() : null;
+          if (StringUtils.isNotEmpty(filtroElPremFasce) && elpremsinf != null && elpremsint != null) {
+              switch (filtroElPremFasce) {
+                  case "3":
+                      where += " and puntot>" + elpremsint;
+                      break;
+                  case "2":
+                      where += " and puntot>" + elpremsinf + " and puntot<=" + elpremsint;
+                      break;
+                  case "1":
+                      where += " and puntot<=" + elpremsinf;
+                      break;
+              }
+          }
+        }
+    } catch (SQLException e) {
+        throw new JspException( "Errore durante la lettura dei dati della gara", e);
     }
 
     pageContext.setAttribute("entita", entita, PageContext.REQUEST_SCOPE);

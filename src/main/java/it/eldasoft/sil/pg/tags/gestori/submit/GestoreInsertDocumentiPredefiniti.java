@@ -20,6 +20,7 @@ import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.utils.spring.UtilitySpring;
@@ -267,11 +268,12 @@ public class GestoreInsertDocumentiPredefiniti extends
                 campiDaCopiareW_DOCDIG.getColumn("IDPRG").setChiave(true);
                 campiDaCopiareW_DOCDIG.getColumn("IDDOCDIG").setChiave(true);
                 // Si deve calcolare il valore di IDDOCDIG
-                Long maxIDDOCDIG = (Long) this.geneManager.getSql().getObject( "select max(IDDOCDIG) from W_DOCDIG where IDPRG= ?", new Object[] { idprg });
+                Long maxIDDOCDIG = (Long) this.geneManager.getSql().getObject( "select max(IDDOCDIG) from W_DOCDIG where IDPRG= ?", new Object[] { "PG" });
                 long newIDDOCDIG = 1;
                 if (maxIDDOCDIG != null && maxIDDOCDIG.longValue() > 0){
                   newIDDOCDIG = maxIDDOCDIG.longValue() + 1;
                 }
+                campiDaCopiareW_DOCDIG.setValue("IDPRG", "PG");
                 campiDaCopiareW_DOCDIG.setValue("IDDOCDIG", new Long( newIDDOCDIG));
                 campiDaCopiareW_DOCDIG.setValue("DIGENT", entitaInserimento);
                 campiDaCopiareW_DOCDIG.setValue("DIGKEY1", codgar);
@@ -287,9 +289,10 @@ public class GestoreInsertDocumentiPredefiniti extends
                 campiDaCopiareW_DOCDIG.addColumn("W_DOCDIG.DIGOGG", JdbcParametro.TIPO_BINARIO, baos);
                 // Inserimento del nuovo record su w_docdig
                 campiDaCopiareW_DOCDIG.insert("W_DOCDIG", this.geneManager.getSql());
+                ObjectStorageUtils.addFile("PG", newIDDOCDIG);
                 // Aggiornamento dei campi IDPRG e IDDOCDG di documgara
                 this.sqlManager.update( "update DOCUMGARA set IDPRG=?,IDDOCDG = ? where CODGAR=? and NORDDOCG=?",
-                    new Object[] { idprg, new Long(newIDDOCDIG),  codgar, norddocg });
+                    new Object[] { "PG", new Long(newIDDOCDIG),  codgar, norddocg });
               }
 
             } catch (IOException e) {

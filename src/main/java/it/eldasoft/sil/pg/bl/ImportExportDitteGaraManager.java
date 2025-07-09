@@ -223,6 +223,7 @@ public class ImportExportDitteGaraManager {
           String ruoloRT = (String) valoriCampiRigaExcel.get(8);
           Long tipimp = new Long(1);
           Long codNazione = null;
+          String codcnel = null;
 
           rigaImportabile = this.controlloValoriRiga(listaCampiImportExcel,
               indiceRiga, valoriCampiRigaExcel, valoriCodiga, tmpListaMsg, ngara);
@@ -283,11 +284,12 @@ public class ImportExportDitteGaraManager {
             		loggerImport.incrementanumeroAnagraficaDitteInserite();
                 }else {
          		    Vector<?> vTipimp = this.sqlDao.getVectorQuery(
-                            "select tipimp,nomimp from impr where codimp=?",
+                            "select tipimp,nomimp,codcnel from impr where codimp=?",
                             new Object[] { codimp });
 
          		   tipimp = (Long) SqlManager.getValueFromVectorParam(vTipimp, 0).getValue();
          		  insertNomimp = (String)SqlManager.getValueFromVectorParam(vTipimp, 1).getValue();
+                  codcnel = (String)SqlManager.getValueFromVectorParam(vTipimp, 2).getValue();
                 }
 
             	if("MANDATARIA".equals(ruoloRT)) {
@@ -346,6 +348,8 @@ public class ImportExportDitteGaraManager {
                     new JdbcParametro(JdbcParametro.TIPO_NUMERICO, new Long(7))));
                 elencoCampi.add(new DataColumn("DITG.NGARAEXP",
                     new JdbcParametro(JdbcParametro.TIPO_TESTO, codgarOrigine)));*/
+                elencoCampi.add(new DataColumn("DITG.CODCNEL",
+                        new JdbcParametro(JdbcParametro.TIPO_TESTO, codcnel)));
 
                 DataColumnContainer containerDITG = new DataColumnContainer(elencoCampi);
 
@@ -896,7 +900,7 @@ public class ImportExportDitteGaraManager {
        }
        //Se id fiscale estero valorizzato, non può essere più lungo di 16 caratteri
        if (IDEstero != null && !"".equals(IDEstero)) {
-    	   if(IDEstero.length()>16) {
+    	   if(IDEstero.length()>30) {
         	   tmpListaMsg.add("- L'id fiscale estero non può essere più lungo di 16 caratteri");
                rigaImportabile = false;
     	   }

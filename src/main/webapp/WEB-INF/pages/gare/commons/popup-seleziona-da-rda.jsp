@@ -63,6 +63,7 @@
      */
 	 var numeroRda = '${numeroRda}';
 	 var codiceGara = "${param.codiceGara}";
+	 var genere = "${param.genere}";
 	 var _tableAllegati = null;
 	
 	_getWSERPAllegati(codiceGara);
@@ -107,7 +108,8 @@ function _getWSERPAllegati(codiceGara,callback) {
 		},
 		"url": "pg/GetWSERPListaAllegatiRda.do",
 		"data" : {
-			codice:codiceGara
+			codice:codiceGara,
+			genere:genere
 		},
 		success: callbackFunction,
 		error: function(e){

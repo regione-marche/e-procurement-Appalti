@@ -147,7 +147,7 @@
 			if (dittaEsclusa==null || dittaEsclusa=="") {
 	      		alert("Selezionare almeno una ditta dalla lista");
 	      	} else {
-	      		document.forms[0].action="${pageContext.request.contextPath}/pg/EscludiAggiudicatarioUscente.do?"+csrfToken+"&creaRigeneraFiltro=true"
+	      		document.forms[0].action="${pageContext.request.contextPath}/pg/EscludiAggiudicatarioUscente.do?creaRigeneraFiltro=true"
  				bloccaRichiesteServer();
 				document.forms[0].submit();
  			}
@@ -170,7 +170,7 @@
 	      		if(sceltaRipetuta == "true"){
 	      			alert("La ditta risulta già selezionata");
 	      		}else{
-		      		document.forms[0].action="${pageContext.request.contextPath}/pg/EscludiAggiudicatarioUscente.do?"+csrfToken+"&creaRigeneraFiltro=false"
+		      		document.forms[0].action="${pageContext.request.contextPath}/pg/EscludiAggiudicatarioUscente.do?creaRigeneraFiltro=false"
 	 				bloccaRichiesteServer();
 					document.forms[0].submit();
 	      		}

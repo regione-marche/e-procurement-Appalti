@@ -4,12 +4,16 @@ import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.bl.GenChiaviManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.TabellatiManager;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.commons.web.struts.UploadFileForm;
-import it.eldasoft.gene.db.dao.FileAllegatoDao;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.domain.BlobFile;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
+import it.eldasoft.gene.ws.objectstorage.UploadInfo;
+import it.maggioli.eldasoft.ws.erp.WSERPAllegatoType;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
@@ -40,8 +44,10 @@ public class StipuleManager {
   private TabellatiManager    tabellatiManager;
   
   private GenChiaviManager    genChiaviManager;
-  
+
   private FileAllegatoManager fileAllegatoManager;
+  
+  private GestioneWSERPManager gestioneWSERPManager;
 
 
   public void setSqlManager(SqlManager sqlManager) {
@@ -59,6 +65,10 @@ public class StipuleManager {
   public void setFileAllegatoManager(FileAllegatoManager fileAllegatoManager) {
 	    this.fileAllegatoManager = fileAllegatoManager;
   }
+  
+  public void setGestioneWSERPManager(GestioneWSERPManager gestioneWSERPManager) {
+    this.gestioneWSERPManager = gestioneWSERPManager;
+  }
 
   /*
    *  Metodo per la gestione del file allegato in inserimento e aggiornamento
@@ -68,8 +78,28 @@ public class StipuleManager {
         Long iddocdg, DataColumnContainer impl, UploadFileForm uploadFileForm)
     throws GestoreException {
 
-      if (impl.isColumn("FILEDAALLEGARE") && impl.getString("FILEDAALLEGARE") != null
-          && !impl.getString("FILEDAALLEGARE").trim().equals("")) {
+      boolean isFileDaAllegare = (impl.isColumn("FILEDAALLEGARE") && impl.getString("FILEDAALLEGARE") != null && !impl.getString("FILEDAALLEGARE").trim().equals(""));
+      boolean isRichiestaFirma = impl.isModifiedColumn("W_DOCDIG.DIGFIRMA");
+      
+      boolean isFileCancellato = (iddocdg!=null && impl.isColumn("FILECANCELLATO") && impl.getString("FILECANCELLATO") != null && !impl.getString("FILECANCELLATO").trim().equals(""));
+      
+      if(isFileCancellato && !isFileDaAllegare) {
+          try {
+                  //Caso da cancellare
+                  impl.addColumn("W_DOCDIG.IDPRG", JdbcParametro.TIPO_TESTO,"PG");
+                  impl.addColumn("W_DOCDIG.IDDOCDIG", JdbcParametro.TIPO_NUMERICO,iddocdg);
+                  impl.getColumn("W_DOCDIG.IDPRG").setChiave(true);
+                  impl.getColumn("W_DOCDIG.IDDOCDIG").setChiave(true);
+                  UploadInfo oldBucketInfo = ObjectStorageUtils.getUploadInfo("select bucket_ref, bucket_uuid from w_docdig where idprg=? and iddocdig=?",new Object[] {"PG", iddocdg});
+                  ObjectStorageUtils.deleteFile(oldBucketInfo.bucket_ref(),oldBucketInfo.uuid());
+                  impl.delete("W_DOCDIG", sqlManager);
+                  //iddocdg = null;
+          }catch (SQLException e) {
+              throw new GestoreException("Errore eliminazione record W_DOCDIG", null, e);
+          }
+      }
+      
+      if (isFileDaAllegare || (isRichiestaFirma && !isFileCancellato)) {
 
           ByteArrayOutputStream baos = null;
           Cipher cipher = null;
@@ -90,64 +120,108 @@ public class StipuleManager {
             dimMassimaTabellatoStringa = dimMassimaTabellatoStringa.trim();
             double dimMassimaTabellatoByte = Math.pow(2, 20) * Double.parseDouble(dimMassimaTabellatoStringa);
 
+            boolean estensioneAmmessa = FileAllegatoManager.isEstensioneFileAmmessa(uploadFileForm.getSelezioneFile().getFileName());
+            boolean checkFileContent = FileAllegatoManager.checkFileContent(uploadFileForm.getSelezioneFile().getFileData(),uploadFileForm.getSelezioneFile().getFileName());
+            boolean isMaliciousPDF = uploadFileForm.getSelezioneFile().getFileName().toLowerCase().endsWith(".pdf") && FileAllegatoManager.isMaliciousPdf(uploadFileForm.getSelezioneFile().getFileData(), uploadFileForm.getSelezioneFile().getFileName());
 
-            if(uploadFileForm.getSelezioneFile().getFileSize() == 0 ){
-              throw new GestoreException("Il file specificato è vuoto. Per continuare specificare un altro file",
-                  "upload.fileVuoto", null, null);
-            }else if(uploadFileForm.getSelezioneFile().getFileSize()> dimMassimaTabellatoByte){
-              throw new GestoreException("Il file selezionato ha una dimensione "
-                  + "superiore al massimo consentito (" + dimMassimaTabellatoStringa + " MB)" , "upload.overflow", new String[] { dimMassimaTabellatoStringa + " MB" },null);
-            }else {
-              String fileName = uploadFileForm.getSelezioneFile().getFileName();
-              if(!FileAllegatoManager.isEstensioneFileAmmessa(fileName)){
-                throw new GestoreException("Il file selezionato da caricare ha un'estensione non accettata",
-                    "upload.estensioneNonAmmessa", new String[]{fileName}, null);
-              }else{
-                  HttpSession session = request.getSession();
-                  if ( session != null) {
-                      baos = new ByteArrayOutputStream();
-                      byte[] ff = uploadFileForm.getSelezioneFile().getFileData();
-                      baos.write(ff);
-                      //solo nel best case memorizzo in fb
-                      String nomeFile="";
-                      int len = impl.getString("FILEDAALLEGARE").length();
-                      int posizioneBarra = impl.getString("FILEDAALLEGARE").lastIndexOf("\\");
-                      nomeFile=impl.getString("FILEDAALLEGARE").substring(posizioneBarra+1,len).toUpperCase();
-                      if(iddocdg!=null){
-                        operazione = "UPDATE";
-                        impl.addColumn("W_DOCDIG.IDPRG", JdbcParametro.TIPO_TESTO,"PG");
-                        impl.addColumn("W_DOCDIG.IDDOCDIG", JdbcParametro.TIPO_NUMERICO,iddocdg);
-                        impl.getColumn("W_DOCDIG.IDPRG").setObjectOriginalValue("PG");
-                        impl.getColumn("W_DOCDIG.IDDOCDIG").setObjectOriginalValue(iddocdg);
-                      }else{
-                        operazione = "INSERT";
-                        //Si deve calcolare il valore di IDDOCDIG
-                        Long maxIDDOCDIG = (Long) this.sqlManager.getObject(
-                                  "select max(IDDOCDIG) from W_DOCDIG where IDPRG= ?",
-                                  new Object[] {"PG"} );
-                        if (maxIDDOCDIG != null && maxIDDOCDIG.longValue()>0){
-                          iddocdg  = maxIDDOCDIG.longValue() + 1;
-                        }
-                        impl.addColumn("W_DOCDIG.IDPRG", JdbcParametro.TIPO_TESTO,"PG");
-                        impl.addColumn("W_DOCDIG.IDDOCDIG", JdbcParametro.TIPO_NUMERICO,iddocdg);
-                      }
-                      impl.getColumn("W_DOCDIG.IDPRG").setChiave(true);
-                      impl.getColumn("W_DOCDIG.IDDOCDIG").setChiave(true);
-                      impl.addColumn("W_DOCDIG.DIGENT", JdbcParametro.TIPO_TESTO,"G1DOCSTIPULA");
-                      impl.addColumn("W_DOCDIG.DIGKEY1", JdbcParametro.TIPO_TESTO, String.valueOf(idDocStipula));
-                      impl.addColumn("W_DOCDIG.DIGNOMDOC", JdbcParametro.TIPO_TESTO,nomeFile);
-                      impl.addColumn("W_DOCDIG.DIGOGG", JdbcParametro.TIPO_BINARIO,baos);
+            boolean isPresenteFile = (uploadFileForm.getSelezioneFile().getFileSize() != 0 
+                                      && uploadFileForm.getSelezioneFile().getFileSize() <= dimMassimaTabellatoByte
+                                      && estensioneAmmessa && checkFileContent && !isMaliciousPDF);
+            
+            String nomeallegatoWSERP = request.getParameter("getdocumentoallegatoWSERP_nomeallegato");
+            //String codiceOda = request.getParameter("getdocumentoallegatoWSERP_nomeallegato");
+            boolean isAllegatoWSERP = nomeallegatoWSERP != null && nomeallegatoWSERP.length()>0;
+            
+            if(isPresenteFile || isRichiestaFirma || isAllegatoWSERP){
+              HttpSession session = request.getSession();
+              if (session != null) {
+                if(isPresenteFile) {
+                  baos = new ByteArrayOutputStream();
+                  byte[] ff = uploadFileForm.getSelezioneFile().getFileData();
+                  baos.write(ff);
+                  //solo nel best case memorizzo in fb
+                  String nomeFile="";
+                  int len = impl.getString("FILEDAALLEGARE").length();
+                  int posizioneBarra = impl.getString("FILEDAALLEGARE").lastIndexOf("\\");
+                  nomeFile=impl.getString("FILEDAALLEGARE").substring(posizioneBarra+1,len).toUpperCase();
+                  
+                  impl.addColumn("W_DOCDIG.DIGNOMDOC", JdbcParametro.TIPO_TESTO,nomeFile);
+                  impl.addColumn("W_DOCDIG.DIGOGG", JdbcParametro.TIPO_BINARIO,baos);
+                } else if(isAllegatoWSERP) {
+                  baos = new ByteArrayOutputStream();
+                  String servizioWSERP ="WSERP";
+                  ProfiloUtente profilo = (ProfiloUtente) request.getSession().getAttribute(
+                          CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+                      Long syscon = new Long(profilo.getId());
+                      String[] credenziali = this.gestioneWSERPManager.wserpGetLogin(syscon, servizioWSERP);
 
-                      if("INSERT".equals(operazione)){
-                        impl.insert("W_DOCDIG", sqlManager);
-                      }else{
-                        if("UPDATE".equals(operazione)){
-                          impl.update("W_DOCDIG", sqlManager);
-                        }
-                      }
+                      String usernameWSERP = credenziali[0];
+                      String passwordWSERP = credenziali[1];
+
+                  String codiceOda = request.getParameter("getdocumentoallegatoWSERP_codiceOda");
+                  String idAllegatoWSERP = request.getParameter("getdocumentoallegatoWSERP_idFile");
+                  
+                  WSERPAllegatoType allegato = gestioneWSERPManager.wserpLeggiAllegato(usernameWSERP, passwordWSERP, nomeallegatoWSERP, servizioWSERP, codiceOda+"-"+idAllegatoWSERP, "ODA");
+                  
+                  baos.write(allegato.getContenuto());
+                  impl.addColumn("W_DOCDIG.DIGNOMDOC", JdbcParametro.TIPO_TESTO,allegato.getNome());
+                  impl.addColumn("W_DOCDIG.DIGOGG", JdbcParametro.TIPO_BINARIO,baos);
+                  
+                }
+                if(iddocdg!=null){
+                  operazione = "UPDATE";
+                  impl.addColumn("W_DOCDIG.IDPRG", JdbcParametro.TIPO_TESTO,"PG");
+                  impl.addColumn("W_DOCDIG.IDDOCDIG", JdbcParametro.TIPO_NUMERICO,iddocdg);
+                  impl.getColumn("W_DOCDIG.IDPRG").setObjectOriginalValue("PG");
+                  impl.getColumn("W_DOCDIG.IDDOCDIG").setObjectOriginalValue(iddocdg);
+                }else{
+                  operazione = "INSERT";
+                  //Si deve calcolare il valore di IDDOCDIG
+                  Long maxIDDOCDIG = (Long) this.sqlManager.getObject(
+                            "select max(IDDOCDIG) from W_DOCDIG where IDPRG= ?",
+                            new Object[] {"PG"} );
+                  if (maxIDDOCDIG != null && maxIDDOCDIG.longValue()>0){
+                    iddocdg  = maxIDDOCDIG.longValue() + 1;
                   }
+                  impl.addColumn("W_DOCDIG.IDPRG", JdbcParametro.TIPO_TESTO,"PG");
+                  impl.addColumn("W_DOCDIG.IDDOCDIG", JdbcParametro.TIPO_NUMERICO,iddocdg);
+                }
+                impl.getColumn("W_DOCDIG.IDPRG").setChiave(true);
+                impl.getColumn("W_DOCDIG.IDDOCDIG").setChiave(true);
+                impl.addColumn("W_DOCDIG.DIGENT", JdbcParametro.TIPO_TESTO,"G1DOCSTIPULA");
+                impl.addColumn("W_DOCDIG.DIGKEY1", JdbcParametro.TIPO_TESTO, String.valueOf(idDocStipula));
+                
+                
+                if("INSERT".equals(operazione)){
+                  impl.insert("W_DOCDIG", sqlManager);
+                }else{
+                  if("UPDATE".equals(operazione)){
+                    impl.update("W_DOCDIG", sqlManager);
+                  }
+                }
+                ObjectStorageUtils.addFile(impl.getColumn("W_DOCDIG.IDPRG").getValue().getStringValue(), impl.getColumn("W_DOCDIG.IDDOCDIG").getValue().longValue());
               }
-
+              
+            } else {
+              if(uploadFileForm.getSelezioneFile().getFileSize() == 0 ){
+                throw new GestoreException("Il file specificato è vuoto. Per continuare specificare un altro file",
+                    "upload.fileVuoto", null, null);
+              }else if(uploadFileForm.getSelezioneFile().getFileSize()> dimMassimaTabellatoByte){
+                throw new GestoreException("Il file selezionato ha una dimensione "
+                    + "superiore al massimo consentito (" + dimMassimaTabellatoStringa + " MB)" , "upload.overflow", new String[] { dimMassimaTabellatoStringa + " MB" },null);
+              }else {
+                String fileName = uploadFileForm.getSelezioneFile().getFileName();
+                if(!estensioneAmmessa){
+                  throw new GestoreException("Il file selezionato da caricare ha un'estensione non accettata",
+                      "upload.estensioneNonAmmessa", new String[]{fileName}, null);
+                }else if(!checkFileContent){
+                throw new GestoreException("Il file selezionato da caricare viene scartato in quanto ha un contenuto in formato non valido secondo le verifiche mediante la libreria Apache Tika",
+                    "upload.erroreVerificaContenuto", new String[]{fileName}, null);
+                } else if(isMaliciousPDF) {
+                  throw new GestoreException("Il file selezionato da caricare viene scartato in quanto sembra codificare dei contenuti non sicuri (malware)",
+                          "upload.erroreContenutoMalevolo", new String[]{fileName}, null);
+                }
+              }
             }
 
           } catch (SQLException e) {
@@ -158,24 +232,7 @@ public class StipuleManager {
             throw new GestoreException("Si è verificato un problema durante il caricamento del file", null, e);
           }
       }//file da allegare
-      else {
-    	  if(iddocdg!=null) {
-    		  if (impl.isColumn("FILECANCELLATO") && impl.getString("FILECANCELLATO") != null
-                      && !impl.getString("FILECANCELLATO").trim().equals("")) {
-    	  try {
-    		      //Caso da cancellare
-    			  impl.addColumn("W_DOCDIG.IDPRG", JdbcParametro.TIPO_TESTO,"PG");
-    			  impl.addColumn("W_DOCDIG.IDDOCDIG", JdbcParametro.TIPO_NUMERICO,iddocdg);
-    			  impl.getColumn("W_DOCDIG.IDPRG").setChiave(true);
-    			  impl.getColumn("W_DOCDIG.IDDOCDIG").setChiave(true);
-    			  impl.delete("W_DOCDIG", sqlManager);
-    	  }catch (SQLException e) {
-              throw new GestoreException("Errore eliminazione record W_DOCDIG", null, e);
-          }
-    		  }
-    	  }
-      }    
-
+      
       return 0;
 
     }
@@ -265,11 +322,12 @@ public class StipuleManager {
 	                        campiDaCopiareW_DOCDIG.getColumn("IDPRG").setChiave(true);
 	                        campiDaCopiareW_DOCDIG.getColumn("IDDOCDIG").setChiave(true);
 	                        // Si deve calcolare il valore di IDDOCDIG
-	                        Long maxIDDOCDIG = (Long) this.sqlManager.getObject( "select max(IDDOCDIG) from W_DOCDIG where IDPRG= ?", new Object[] { idprg });
+	                        Long maxIDDOCDIG = (Long) this.sqlManager.getObject( "select max(IDDOCDIG) from W_DOCDIG where IDPRG= ?", new Object[] { "PG" });
 	                        long newIDDOCDIG = 1;
 	                        if (maxIDDOCDIG != null && maxIDDOCDIG.longValue() > 0){
 	                          newIDDOCDIG = maxIDDOCDIG.longValue() + 1;
 	                        }
+                            campiDaCopiareW_DOCDIG.setValue("IDPRG", "PG");
 	                        campiDaCopiareW_DOCDIG.setValue("IDDOCDIG", Long.valueOf( newIDDOCDIG));
 	                        campiDaCopiareW_DOCDIG.setValue("DIGENT", "G1DOCSTIPULA");
 	                        Long idDocStipula =Long.valueOf(nextId);
@@ -287,6 +345,7 @@ public class StipuleManager {
 	                        campiDaCopiareW_DOCDIG.addColumn("W_DOCDIG.DIGOGG", JdbcParametro.TIPO_BINARIO, baos);
 	                        // Inserimento del nuovo record su w_docdig
 	                        campiDaCopiareW_DOCDIG.insert("W_DOCDIG", this.sqlManager);
+                            ObjectStorageUtils.addFile("PG", newIDDOCDIG);
 	                    	
 	                    }
 	                } catch (IOException e) {

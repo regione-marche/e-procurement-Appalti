@@ -20,7 +20,10 @@ import javax.servlet.jsp.PageContext;
 
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.utils.spring.UtilitySpring;
+import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
 
 public class ControlliCreaFascicoloFunction extends AbstractFunzioneTag {
 
@@ -34,6 +37,9 @@ public class ControlliCreaFascicoloFunction extends AbstractFunzioneTag {
 
 	    SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",
 	            pageContext, SqlManager.class);
+	    
+	    GestioneWSDMManager gestioneWSDMManager = (GestioneWSDMManager) UtilitySpring.getBean("gestioneWSDMManager",
+            pageContext, GestioneWSDMManager.class);
 
 		String controlloSuperato = "SI";
 		String msgErrori="<b>Non è possibile procedere con <span id='tipoOp'>la creazione</span> del fascicolo documentale.</b><br>";
@@ -50,7 +56,20 @@ public class ControlliCreaFascicoloFunction extends AbstractFunzioneTag {
 		String cogtei = null;
 		String nometei = null;
 		String oggetto = null;
+        
 		try {
+		  
+		  Long idconfi = null;
+	         if("G1STIPULA".equals(entita)) {
+	           idconfi = gestioneWSDMManager.getWsdmConfigurazioneFromIdStipula(new Long(chiave1), "PG");
+	           }else {
+	           idconfi = gestioneWSDMManager.getWsdmConfigurazioneFromCodgar(chiave2, "PG");
+	         }
+	        
+	        String tipoWSDM =null;
+	        WSDMConfigurazioneOutType configurazione = gestioneWSDMManager.wsdmConfigurazioneLeggi("DOCUMENTALE",idconfi.toString());
+	        if(configurazione.isEsito())
+	          tipoWSDM = configurazione.getRemotewsdm();
 
 		  Vector datiTorn = sqlManager.getVector(select, new Object[]{chiave2});
 
@@ -85,43 +104,44 @@ public class ControlliCreaFascicoloFunction extends AbstractFunzioneTag {
 		  if( !"1".equals(genere) && !"3".equals(genere))
 		    oggetto = (String)sqlManager.getObject(select, par);
 
-
-		  if(cenint == null || "".equals(cenint)){
-		    controlloSuperato = "NO";
-		    msgErrori+="<br>Non è stata inserita la stazione appaltante.";
-		  } else {
-    		  if(nomein == null || "".equals(nomein)){
+		  if(! ("LAPISOPERA".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM))) {
+    		  if(cenint == null || "".equals(cenint)){
     		    controlloSuperato = "NO";
-                msgErrori+="<br>La denominazione della stazione appaltante non e' valorizzata.";
+    		    msgErrori+="<br>Non è stata inserita la stazione appaltante.";
+    		  } else {
+        		  if(nomein == null || "".equals(nomein)){
+        		    controlloSuperato = "NO";
+                    msgErrori+="<br>La denominazione della stazione appaltante non e' valorizzata.";
+                  }
+    		  }
+    		  if (codrup == null || "".equals(codrup)) {
+    		    controlloSuperato = "NO";
+                if ( "10".equals(genere))
+                  msgErrori += "<br>Non è stato inserito il responsabile dell'elenco.";
+                else if ("20".equals(genere))
+                  msgErrori += "<br>Non è stato inserito il responsabile del catalogo.";
+                else
+                  msgErrori += "<br>Non è stato inserito il RUP.";
+              }else if("JDOC".equals(tipoWSDM)){
+                if(cogtei == null || "".equals(cogtei)){
+                  controlloSuperato = "NO";
+                  msgErrori+="<br>Il cognome del RUP non e' valorizzato.";
+                }
+                if(nometei == null || "".equals(nometei)){
+                  controlloSuperato = "NO";
+                  msgErrori+="<br>Il nome del RUP non e' valorizzato.";
+                }
+              }
+    		  if(oggetto == null || "".equals(oggetto.trim())){
+    		    controlloSuperato = "NO";
+                msgErrori+="<br>Non è stata inserito l'oggetto " + messaggioDet;
               }
 		  }
-		  if (codrup == null || "".equals(codrup)) {
-		    controlloSuperato = "NO";
-            if ( "10".equals(genere))
-              msgErrori += "<br>Non è stato inserito il responsabile dell'elenco.";
-            else if ("20".equals(genere))
-              msgErrori += "<br>Non è stato inserito il responsabile del catalogo.";
-            else
-              msgErrori += "<br>Non è stato inserito il responsabile unico procedimento.";
-          }else{
-            if(cogtei == null || "".equals(cogtei)){
-  		    controlloSuperato = "NO";
-              msgErrori+="<br>Il cognome del responsabile unico procedimento non e' valorizzato.";
-            }
-  		  if(nometei == null || "".equals(nometei)){
-  		    controlloSuperato = "NO";
-              msgErrori+="<br>Il nome del responsabile unico procedimento non e' valorizzato.";
-            }
-          }
-		  if(oggetto == null || "".equals(oggetto.trim())){
-		    controlloSuperato = "NO";
-            msgErrori+="<br>Non è stata inserito l'oggetto " + messaggioDet;
-          }
 
 		  if("NO".equals(controlloSuperato))
 		    pageContext.setAttribute("msg", msgErrori, PageContext.REQUEST_SCOPE);
 
-		} catch (SQLException e) {
+		} catch (SQLException | GestoreException e) {
 			throw new JspException("Errore nei controlli preliminari della funzione Crea fascicolo",e);
 		}
 

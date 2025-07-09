@@ -89,6 +89,11 @@ function schedaConfermaCustom(){
 			onOffMsg();
 			return;
 		}
+		if(tipologia==6){
+			outMsg("Il q-form di tipo 'Automazione documenti richiesti con elementi premiali' puo' essere associato solo al formulario per 'Elenchi operatori'", "ERR");
+			onOffMsg();
+			return;
+		}
 	}else{
 		if(tipologia==5 ){
 			outMsg("Il q-form di tipo 'Automazione documenti richiesti con integrazione M-DGUE' puo' essere associato solo al formulario per 'Gare'", "ERR");
@@ -120,6 +125,6 @@ var schedaConfermaDefault = schedaConferma;
 var schedaConferma = schedaConfermaCustom;	
 
 function listaGare(id){
- 	var href = contextPath + "/ApriPagina.do?"+csrfToken + "&href=geneweb/qformlib/listaGare.jsp&id=" + id;
+ 	var href = contextPath + "/ApriPagina.do?href=geneweb/qformlib/listaGare.jsp&id=" + id;
  	document.location.href = href;
 }

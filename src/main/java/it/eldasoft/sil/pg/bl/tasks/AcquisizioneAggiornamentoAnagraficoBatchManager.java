@@ -256,7 +256,7 @@ public class AcquisizioneAggiornamentoAnagraficoBatchManager {
    try {
      sqlManager.update(
          "update W_INVCOM set COMSTATO = ?, COMDATASTATO = ? where IDPRG=? and IDCOM=?",
-         new Object[] { stato,new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()),"PA",idcom.toString()});
+         new Object[] { stato,new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()),"PA",idcom});
    } catch (SQLException e) {
      throw new GestoreException("Errore nell'aggiornamento dell'entità W_INVCOM", null, e);
    }

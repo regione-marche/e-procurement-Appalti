@@ -87,6 +87,7 @@
 		<input type="hidden" id="riceviComunicazioni" name="riceviComunicazioni" value="${riceviComunicazioni}" />
 		<input type="hidden" name="comunicazioniVis" id="comunicazioniVis" value="${comunicazioniVis }" />
 		<input type="hidden" name="soccorsoIstruttorio" id="soccorsoIstruttorio" value="0" />
+		<input type="hidden" name="comunicazioniRettifica" id="comunicazioniRettifica" value="0" />
 		<input type="hidden" name="stepWizard" id="stepWizard" value="${stepWizard }" />
 		<input type="hidden" id="digitalSignatureWsCheck" name="digitalSignatureWsCheck" value="${digitalSignatureWsCheck}" />
 		
@@ -135,7 +136,7 @@
 			var tipo="${tipo }";
 			var comunicazioniVis = "${comunicazioniVis }";
 			var aut="${aut}";
-			document.pagineForm.action += "&stepWizard=" + stepWizard + "&genereGara=" + genereGara + "&tipo=" + tipo + "&comunicazioniVis=" + comunicazioniVis + "&aut=" + aut;
+			document.pagineForm.action += "?stepWizard=" + stepWizard + "&genereGara=" + genereGara + "&tipo=" + tipo + "&comunicazioniVis=" + comunicazioniVis + "&aut=" + aut;
 		}
 		selezionaPaginaDefault(pageNumber);
 	}

@@ -48,10 +48,25 @@
 	<jsp:param name="updateLista" value="${updateLista}" />
 </jsp:include>
 
+<c:set var="verNPA" value="${gene:callFunctionN('it.eldasoft.gene.tags.functions.GetSafeDataFromDB', pageContext, 'select vernpa from torn where codgar=?', codiceGara)}"/>
+<c:set var="ricordarsiSchedeANAC" value='${not gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.npa.GetSeInviatoSchedePerLottiConclusiFunction", pageContext, "", gene:getValCampo(key,"CODGAR"))}'/>
+
 <table class="dettaglio-tab-lista">
+
+	<c:if test="${ricordarsiSchedeANAC and not empty verNPA and paginaAttivaWizard == 2 and gene:callFunctionN('it.eldasoft.sil.pg.tags.funzioni.GetSeAttivoModuloANACFormFunction', pageContext, codiceGara) eq 'true'}">
+		<tr>
+			<td>&nbsp;</td>
+		</tr>
+		<tr>
+			<td style="color: #0000FF;"><b>ATTENZIONE:</b> ricordarsi di inviare ad ANAC la scheda
+				relativa alla fase di aggiudicazione.</td>
+		</tr>
+	</c:if>
+
 	<tr>
 		<td>&nbsp;</td>
 	</tr>
+
 	<tr>
 		<td style="background-color:#EEEEEE; border: 1px dotted #999999; padding: 2px 0px 2px 2px; display: block;" >
 			<c:set var="strPagineVisitate" value=""/>
@@ -500,7 +515,7 @@ ${gene:callFunction3("it.eldasoft.gene.tags.functions.GetListaValoriTabellatoFun
 
 	function aggiudicazioneLotto(){
 		var bustalotti="${ bustalotti}";
-		document.location.href=contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/gare/gare-pg-aggiudLotto.jsp&key="+chiaveRiga + "&bustalotti=" + bustalotti;
+		document.location.href=contextPath + "/ApriPagina.do?href=gare/gare/gare-pg-aggiudLotto.jsp&key="+chiaveRiga + "&bustalotti=" + bustalotti;
 		
 	}
 
@@ -508,7 +523,7 @@ ${gene:callFunction3("it.eldasoft.gene.tags.functions.GetListaValoriTabellatoFun
 	
 		function avanti(){
 			if(document.forms[0].action.indexOf("Scheda.do") >= 0){
-				document.forms[0].action = "${pageContext.request.contextPath}/Lista.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/Lista.do";
 				document.forms[0].keyParent.value = document.forms[0].key.value;
 			} else {
 				document.forms[0].pgSort.value = "";
@@ -525,7 +540,7 @@ ${gene:callFunction3("it.eldasoft.gene.tags.functions.GetListaValoriTabellatoFun
 	
 		function indietro(){
 			if(document.forms[0].action.indexOf("Scheda.do") >= 0){
-				document.forms[0].action = "${pageContext.request.contextPath}/Lista.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/Lista.do";
 				document.forms[0].keyParent.value = document.forms[0].key.value;
 			} else {
 				document.forms[0].pgSort.value = "";

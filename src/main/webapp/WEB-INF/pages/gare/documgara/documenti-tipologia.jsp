@@ -89,8 +89,7 @@
 
 <c:if test='${(gruppo eq 1 or gruppo eq 15) and (genereGara eq 1 or genereGara eq 2 or genereGara eq 3)}'>
 		<c:set var="insDocDaProtocollo" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.GetPropertyWsdmFunction", inserimentoDocDaProtocollo,idconfi)}'/>
-		<c:set var="ssoProtocollo" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "sso.protocollo")}'/>
-		<c:if test="${not empty ssoProtocollo and ssoProtocollo ne '0'}">
+		<c:if test="${not empty accountSSO}">
 			<c:set var="sso" value='true'/>
 		</c:if>
 		
@@ -107,6 +106,25 @@
 
 
 	<gene:redefineInsert name="corpo">
+	<c:if test="${modo ne 'MODIFICA' and (gruppo eq 1 || gruppo eq 6)}">
+		<c:set var="isPubbli" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GaraPubblicataSuPortaleFunction",  pageContext, codiceGara )}'/>
+		<c:set var="IsMODLICG_13_14" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.IsMODLICG_13_14Function", pageContext, codiceGara, "true")}' />
+		<c:if test="${gruppo eq 1}">
+			<c:set var="pubblicataGara" value="${isPubbli eq 'SI'}"/> 	
+		</c:if>
+		<c:if test="${gruppo eq 6}">
+			<c:set var="isPubbl13or23" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.IsInvitoPubblicatoFunction", pageContext,codiceGara)}'/>
+			<c:set var="pubblicataGara" value="${isPubbl13or23 eq 'true' || tipoPubblicazione eq '2'}"/> 	
+		</c:if>
+		<c:if test="${pubblicataGara eq 'false' && IsMODLICG_13_14 eq 'true'}">
+			<p style="color: blue; margin: 10px">
+				<b>ATTENZIONE:</b> la Stazione Appaltante che intende calcolare automaticamente la soglia di anomalia è tenuta ad indicare nel bando/lettera di invito che applicherà il <b>metodo A</b>: questo è l'unico metodo attualmente supportato dal sistema. 
+				<c:if test="${isPubbli ne 'SI'}" >
+					</br>In alternativa disattivare il calcolo automatico della soglia di anomalia (nei "Dati generali") e procedere manualmente.
+				</c:if>
+			</p>
+		</c:if>
+	</c:if>	
 
 	<c:choose>
 		<c:when test="${(genereGara eq 3 or genereGara eq 1 and not lottoFaseInvito)}">
@@ -267,8 +285,7 @@
 	
 	
 	
-	<c:set var="ssoProtocollo" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "sso.protocollo")}'/>
-	<c:if test="${not empty ssoProtocollo and ssoProtocollo ne '0' }">
+	<c:if test="${not empty accountSSO}">
 		<c:set var="sso" value='true'/>
 	</c:if>
 	

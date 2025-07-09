@@ -22,6 +22,10 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
+import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.sil.pg.bl.MEPAManager;
+import it.eldasoft.utils.sicurezza.CriptazioneException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
 
@@ -74,6 +78,8 @@ public class GestoreFasiRicezione extends GestoreDITG {
 
   private AbstractGestoreEntita gestoreDITG;
 
+  private GestioneWSDMManager gestioneWSDMManager;
+
 
   /** Logger */
   static Logger            logger           = Logger.getLogger(GestoreFasiRicezione.class);
@@ -105,6 +111,8 @@ public class GestoreFasiRicezione extends GestoreDITG {
         this.getServletContext(), ElencoOperatoriManager.class);
     this.tabellatiManager = (TabellatiManager) UtilitySpring.getBean("tabellatiManager",
         this.getServletContext(), TabellatiManager.class);
+    this.gestioneWSDMManager = (GestioneWSDMManager) UtilitySpring.getBean("gestioneWSDMManager",
+        this.getServletContext(), GestioneWSDMManager.class);
   }
 
   @Override
@@ -175,6 +183,14 @@ public class GestoreFasiRicezione extends GestoreDITG {
     if(this.getRequest()!=null)
       numeroFaseAttiva = new Long(UtilityStruts.getParametroString(this.getRequest(), GestioneFasiGaraFunction.PARAM_WIZARD_PAGINA_ATTIVA));
 
+    if(StringUtils.isNotBlank(dataColumnContainer.getString("DITG.DITTAO"))) {
+      try {
+        String codcnel = (String) sqlManager.getObject("select codcnel from impr where codimp=?", new Object[] {dataColumnContainer.getString("DITG.DITTAO")});
+        dataColumnContainer.addColumn("DITG.CODCNEL", JdbcParametro.TIPO_TESTO,codcnel);
+      } catch (SQLException e) {
+        throw new RuntimeException(e);
+      }
+    }
 
     if(dataColumnContainer.isColumn("DPRDOM_FIT_NASCOSTO") && dataColumnContainer.getColumn("DPRDOM_FIT_NASCOSTO").isModified()){
       String dprdomFit = dataColumnContainer.getString("DPRDOM_FIT_NASCOSTO");
@@ -229,7 +245,6 @@ public class GestoreFasiRicezione extends GestoreDITG {
       dittainv = dataColumnContainer.getString("DITG.DITTAINV");
     }
 
-
     super.preInsert(status, dataColumnContainer);
 
 
@@ -245,11 +260,17 @@ public class GestoreFasiRicezione extends GestoreDITG {
       //Personalizzazione iter semplificato di gara
       //Se TIPGARG.GARE = 1 si deve valorizzare INVOFF a 1
       if(iterga!= null && iterga.longValue()==1)
-        dataColumnContainer.addColumn("DITG.INVOFF", JdbcParametro.TIPO_NUMERICO, new Long(1));
+        dataColumnContainer.addColumn("DITG.INVOFF", JdbcParametro.TIPO_TESTO, "1");
     }
 
     String codiceGara =  dataColumnContainer.getString("DITG.CODGAR5");
     String ditta =  dataColumnContainer.getString("DITG.DITTAO");
+
+    //Nella preInsert sono state inserite le occorrenze in DPRE e nella EDIT
+    //e sono stati popolati i campi per la DITG.
+    //Si effettua qui l'inserimento che prima veniva effettuato nella preInsert
+    //di modo che GestoreDITG sia standard
+    gestoreDITG.inserisci(status, dataColumnContainer);
 
     int livEvento = 1;
     String codEvento = "GA_AGGIUNGI_DITTA";
@@ -265,6 +286,11 @@ public class GestoreFasiRicezione extends GestoreDITG {
       codEvento = "GA_AGGIUNGI_DITTA_RIL";
       descrEvento = "Inserimento ditta in gara mediante selezione per rilancio (cod. "+ ditta +").";
     }
+
+    if(dataColumnContainer.isColumn("GARACONCORSO")){
+      codEvento = "GA_SELEZIONE_DA_CONCORSO";
+      descrEvento = "Inserimento ditte in gara mediante selezione da concorso di primo grado  (n. ditte inserite "+dataColumnContainer.getString("GARACONCORSO")+")";
+      }
     try{
 
     //Il controllo sulla duplicazione della ditta viene fatto in GestoreDITG
@@ -297,11 +323,6 @@ public class GestoreFasiRicezione extends GestoreDITG {
 
 
 
-    //Nella preInsert sono state inserite le occorrenze in DPRE e nella EDIT
-    //e sono stati popolati i campi per la DITG.
-    //Si effettua qui l'inserimento che prima veniva effettuato nella preInsert
-    //di modo che GestoreDITG sia standard
-     gestoreDITG.inserisci(status, dataColumnContainer);
 
 	//Quando si inserisce una ditta in gara si deve in automatico popolare IMPRDOCG
 	//a partire dalle occorrenze di DOCUMGARA, impostando SITUAZDOCI a 2 e PROVENI a 1
@@ -737,6 +758,26 @@ public class GestoreFasiRicezione extends GestoreDITG {
               tabellatoAmmgar = tabellatiManager.getDescrTabellato("A1054", ammgar.toString());
             }
             String descFase = tabellatiManager.getDescrTabellato("A1011",  faseGaraLong.toString());
+
+            MEPAManager mepaManager = (MEPAManager) UtilitySpring.getBean("mepaManager", this.getServletContext(), MEPAManager.class);
+            String dicitura = "";
+            try {
+                Long iterga = (Long) this.sqlManager.getObject("select iterga from torn where codgar = ?", new Object[] {codiceTornata});
+                String codiceDittaBusta = codiceDitta;
+                if (iterga != null && (iterga == 9 || iterga == 10))
+                    codiceDittaBusta = GestoreFasiGara.getCodimpDecodificato(codiceDitta, pgManager, sqlManager);
+                codiceDittaBusta = GestoreFasiGara.getCodiceMandatariaSeRT(codiceDittaBusta,sqlManager);
+                if (((Long) 11L).equals(ammgar)) {
+                    dicitura = " la modifica in stato scartato";
+                    mepaManager.impostaComunicazioniAScartate(codiceLotto,"PREQ",codiceDittaBusta);
+                } else {
+                    dicitura = " il ripristino";
+                    mepaManager.impostaComunicazioneDaRiaquisire(codiceLotto,"PREQ",codiceDittaBusta);
+                }
+            } catch (SQLException e) {
+                throw new GestoreException("Errore durante" + dicitura + " della comunicazione per la ditta: " + codiceDitta, null);
+            }
+
             LogEvento logevento = LogEventiUtils.createLogEvento(this.getRequest());
             logevento.setLivEvento(1);
             logevento.setOggEvento(codiceLotto);
@@ -1005,10 +1046,23 @@ public class GestoreFasiRicezione extends GestoreDITG {
         datiWSDM.put("descrizionefascicolo",this.getRequest().getParameter("descrizionefascicolo"));
         datiWSDM.put("annofascicolo",this.getRequest().getParameter("annofascicolo"));
         datiWSDM.put("numerofascicolo",this.getRequest().getParameter("numerofascicolo"));
-        datiWSDM.put("username",this.getRequest().getParameter("username"));
+        String username=this.getRequest().getParameter("username");
         String password = this.getRequest().getParameter("password");
+        String idconfi = this.getRequest().getParameter("idconfi");
+
+        String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+        if("1".equals(wsdmLoginComune)){
+            try{
+                String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO,idconfi);
+                username = credenziali[0];
+                password = credenziali[1];
+            } catch (CriptazioneException | SQLException e) {
+                throw new GestoreException("Errore nella procedura di abilitazione degli operatori",null,e);
+            }
+        }
         if(password==null)
           password="";
+        datiWSDM.put("username",username);
         datiWSDM.put("password",password);
         datiWSDM.put("ruolo",this.getRequest().getParameter("ruolo"));
         datiWSDM.put("nome",this.getRequest().getParameter("nome"));
@@ -1030,7 +1084,7 @@ public class GestoreFasiRicezione extends GestoreDITG {
         datiWSDM.put("voce",this.getRequest().getParameter("voce"));
         datiWSDM.put("codiceaoodes",this.getRequest().getParameter("codiceaoodes"));
         datiWSDM.put("codiceufficiodes",this.getRequest().getParameter("codiceufficiodes"));
-        datiWSDM.put("idconfi",this.getRequest().getParameter("idconfi"));
+        datiWSDM.put("idconfi",idconfi);
         datiWSDM.put("RUP",this.getRequest().getParameter("RUP"));
         datiWSDM.put("nomeRup",this.getRequest().getParameter("nomeRup"));
         datiWSDM.put("acronimoRup",this.getRequest().getParameter("acronimoRup"));
@@ -1047,11 +1101,7 @@ public class GestoreFasiRicezione extends GestoreDITG {
         int res = elencoOperatoriManager.inviaComunicazioneAbilitazione(profilo,codiceGara,listaOperatoriAbilitati, numeroOperatoriAbilitati,
             flagMailPec, oggettoMail, testoMail, mittenteMail,idcfg,isOp114, integrazioneWSDM, datiWSDM,  this.getRequest());
 
-      } catch (SQLException e) {
-        throw new GestoreException("Errore nella procedura di abilitazione degli operatori",null,e);
-      }catch (DocumentException e) {
-        throw new GestoreException("Errore nella procedura di abilitazione degli operatori",null,e);
-      } catch (IOException e) {
+      } catch (SQLException | DocumentException | IOException e) {
         throw new GestoreException("Errore nella procedura di abilitazione degli operatori",null,e);
       }
     }

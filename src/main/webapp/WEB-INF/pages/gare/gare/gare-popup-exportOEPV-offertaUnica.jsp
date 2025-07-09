@@ -39,6 +39,7 @@
 			<c:set var="archiviaXLS" value="" />
 		</c:otherwise>
 	</c:choose>
+	<c:set var="codgar" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select codgar from TORN where codgar=?", codgar)}'/>
 	
 	<c:choose>
 		<c:when test='${!empty param.step}'>
@@ -109,7 +110,7 @@
 					
 					<c:set var="where" value="GARE.CODGAR1 = ? AND MODLICG = 6 AND (GARE.GENERE is null) "/>
 					<c:set var="parametri" value="T:${codgar}"/>
-					${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunction", pageContext, "GARE", where, parametri)}
+					${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "GARE", where, parametri)}
 									
 					<gene:formLista entita="GARE" sortColumn="3" >
 						<gene:campoLista title="&nbsp;" width="20">

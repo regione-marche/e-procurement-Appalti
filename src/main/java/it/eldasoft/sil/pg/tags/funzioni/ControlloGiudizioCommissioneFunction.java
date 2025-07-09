@@ -11,12 +11,14 @@
 package it.eldasoft.sil.pg.tags.funzioni;
 
 import java.sql.SQLException;
+import java.util.List;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.utils.spring.UtilitySpring;
 
 public class ControlloGiudizioCommissioneFunction extends AbstractFunzioneTag {
@@ -65,9 +67,14 @@ public class ControlloGiudizioCommissioneFunction extends AbstractFunzioneTag {
         selectValidita += " and g.seztec = 1 ";
       selectValidita += "and exists (select * from g1crivalcom g1 where g1.idgfof  = f.id and g1.idcrival = l.id and g1.idcridef = c.id and (coeffi > 1 or coeffi < 0) )";
 
+      String selectCoeffiSettatiInModoOmogeneo = "select g1cridef.id, goev.despar, g1crivalcom.coeffi from g1cridef join goev on (goev.ngara=g1cridef.ngara and goev.necvan=g1cridef.necvan) join ditg on ditg.ngara5=g1cridef.ngara cross join gfof"
+          +" left join g1crival on (g1crival.ngara=g1cridef.ngara and g1crival.necvan=g1cridef.necvan and g1crival.dittao=ditg.dittao) left join g1crivalcom on (gfof.id=g1crivalcom.idgfof and g1crivalcom.idcrival=g1crival.id)"
+          +" where g1cridef.ngara=? and gfof.ngara2=? and goev.tippar=? and (ditg.fasgar is null or ditg.fasgar > ?) and gfof.espgiu='1'  and (g1cridef.modpunti = 1 or g1cridef.modpunti = 3) and g1cridef.maxpun>0";
+      if (!"".equals(sezTec))
+        selectCoeffiSettatiInModoOmogeneo += " and goev.seztec = 1 ";
 
       try {
-        String dittaGiudizioNonEspresso =  (String) sqlManager.getObject(selectDitte, new Object[] {ngara, tipoCriterio, fasgar});
+        String dittaGiudizioNonEspresso =  (String) sqlManager.getObject(selectDitte, new Object[] {ngara, tipoCriterio, fasgar}); //mai inserito il coefficiente
         if (dittaGiudizioNonEspresso != null && !"".equals(dittaGiudizioNonEspresso)) {
           esitoControllo = "ko";
           ditta = dittaGiudizioNonEspresso;
@@ -77,22 +84,49 @@ public class ControlloGiudizioCommissioneFunction extends AbstractFunzioneTag {
           if (genere != null && genere.intValue() == 3) {
             codice = codgar;
           }
-          //Si controlla che nel caso di dettaglio manuale devono essere valorizzati coefficente e punteggio(basta controllare il punteggio)
-          dittaGiudizioNonEspresso = (String) sqlManager.getObject(select, new Object[] {ngara, codice, tipoCriterio, fasgar});
-          if (dittaGiudizioNonEspresso != null && !"".equals(dittaGiudizioNonEspresso)) {
-            esitoControllo = "ko";
-            String dittao = dittaGiudizioNonEspresso;
-            ditta = getNomeDitta(sqlManager, dittao);
-          } else {
-            String dittaGiudizioNonValido = (String) sqlManager.getObject(selectValidita, new Object[] {ngara, codice, tipoCriterio, fasgar});
-            if(dittaGiudizioNonValido != null && !"".equals(dittaGiudizioNonValido)){
-              esitoControllo = "ko-nonvalido";
-              String dittao = dittaGiudizioNonValido;
+        //APP-1441
+          List<?> listaCriteriCommissari = sqlManager.getListVector(selectCoeffiSettatiInModoOmogeneo, new Object[] {ngara, codice, tipoCriterio, fasgar});
+          if (listaCriteriCommissari != null && listaCriteriCommissari.size() > 0) {
+            boolean hasNulls=false;
+            boolean hasValues=false;
+            Long idCridefAnalizzato=0L;
+            for (int i = 0; i < listaCriteriCommissari.size(); i++) {
+              Long idcridef = SqlManager.getValueFromVectorParam(listaCriteriCommissari.get(i), 0).longValue();
+              if(!idCridefAnalizzato.equals(idcridef)) {
+                idCridefAnalizzato=idcridef;
+                hasNulls=false;
+                hasValues=false;
+              }
+              if(SqlManager.getValueFromVectorParam(listaCriteriCommissari.get(i), 2).getValue()==null)
+                hasNulls=true;
+              else
+                hasValues=true;
+              if(hasNulls&&hasValues) {
+                esitoControllo = "ko-nonomogeneo";
+                pageContext.setAttribute("criterioGiudizioCommissione", SqlManager.getValueFromVectorParam(listaCriteriCommissari.get(i), 1).getStringValue());
+                break;
+              }
+            }
+          }
+          
+          if(!"ko-nonomogeneo".equals(esitoControllo)) {
+            //Si controlla che nel caso di dettaglio manuale devono essere valorizzati coefficente e punteggio(basta controllare il punteggio)
+            dittaGiudizioNonEspresso = (String) sqlManager.getObject(select, new Object[] {ngara, codice, tipoCriterio, fasgar}); //coeff. nullo e coff. commissione nullo
+            if (dittaGiudizioNonEspresso != null && !"".equals(dittaGiudizioNonEspresso)) {
+              esitoControllo = "ko";
+              String dittao = dittaGiudizioNonEspresso;
               ditta = getNomeDitta(sqlManager, dittao);
+            } else {
+              String dittaGiudizioNonValido = (String) sqlManager.getObject(selectValidita, new Object[] {ngara, codice, tipoCriterio, fasgar});
+              if(dittaGiudizioNonValido != null && !"".equals(dittaGiudizioNonValido)){
+                esitoControllo = "ko-nonvalido";
+                String dittao = dittaGiudizioNonValido;
+                ditta = getNomeDitta(sqlManager, dittao);
+              }
             }
           }
         }
-      } catch (SQLException e) {
+      } catch (SQLException | GestoreException e) {
         throw new JspException("Errore durante il controllo dei coefficienti in G1CRIVALCOM associate a GFOF e G1CRIVAL", e);
       }
     }

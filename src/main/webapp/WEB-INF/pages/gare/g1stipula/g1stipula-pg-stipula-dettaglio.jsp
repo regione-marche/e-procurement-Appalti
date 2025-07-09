@@ -32,13 +32,16 @@
 	value="${item[1]}" visibile="${!empty item[1] && (item[1] ne '')}" />
 <gene:campoScheda campo="NUMAVCP_${param.contatore}" entita="TORN"
 	campoFittizio="true" definizione="T20;;;;G1NUMAVCP"
-	value="${item[2]}" visibile="${tipoSimog ne 'S'}"/>
+	value="${item[2]}" visibile="${empty param.verNPA and tipoSimog ne 'S'}"/>
+<gene:campoScheda campo="IDAPPALTONPA_${param.contatore}" entita="TORN"
+	campoFittizio="true" definizione="T100;;;;G1IDAPPALTONPA"
+	value="${item[9]}" visibile="${not empty param.verNPA}"/>
 <gene:campoScheda campo="CODCIG_${param.contatore}" entita="GARE"
 	campoFittizio="true" definizione="T10;;;;G1CODCIG"
 	value="${item[3]}" />
 <gene:campoScheda campo="ESENTE_CIG_${param.contatore}" title="Esente CIG?" computed="true"
 	campoFittizio="true" definizione="T10;;;SN;"
-	value="2" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.CODCIG") }'/>
+	value="2" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.CODCIG")}'/>
 <gene:campoScheda campo="STATO_SIMOG" title="Effettuata richiesta CIG?"
 	campoFittizio="true" definizione="T30;"
 	value="${tipoSimogDesc} - ${statoSimog }" visibile="${esisteAnagraficaSimog eq 'true'}"/>
@@ -81,11 +84,11 @@
 		
 	$('#rowGARE1_IMPALTRO_${param.contatore}').after(html);
 	
-	initEsenteCIG_CODCIG();
+	initEsenteCIG_CODCIG_${param.contatore}();
 	
-	initSMARTCIG();
+	initSMARTCIG_${param.contatore}();
 
-	function initEsenteCIG_CODCIG() {
+	function initEsenteCIG_CODCIG_${param.contatore}() {
 		var esenteCig = getValue("ESENTE_CIG_${param.contatore}");
 		var codcig = getValue("GARE_CODCIG_${param.contatore}");
 		//alert("esente CIG = " + esenteCig);
@@ -94,17 +97,20 @@
 			if (codcig.indexOf("#") == 0 || codcig.indexOf("$") == 0 || codcig.indexOf("NOCIG") == 0) {
 				setValue("ESENTE_CIG_${param.contatore}", "Si", false);
 				showObj("rowTORN_NUMAVCP_${param.contatore}", false);
+				showObj("rowTORN_IDAPPALTONPA_${param.contatore}", false);
 			} else {
 				setValue("ESENTE_CIG_${param.contatore}", "No", false);
 				showObj("rowTORN_NUMAVCP_${param.contatore}", true);
+				showObj("rowESENTE_CIG_${param.contatore}", false);
 			}
 		} else {
 			setValue("ESENTE_CIG_${param.contatore}", "No", false);
 			showObj("rowTORN_NUMAVCP_${param.contatore}", true);
+			showObj("rowESENTE_CIG_${param.contatore}", false);
 		}
 	}
 	
-	function initSMARTCIG() {
+	function initSMARTCIG_${param.contatore}() {
 		var codcig = getValue("GARE_CODCIG_${param.contatore}");
 		if ("" != codcig) {
 			if (codcig.indexOf("X") == 0 || codcig.indexOf("Y") == 0 || codcig.indexOf("Z") == 0) {

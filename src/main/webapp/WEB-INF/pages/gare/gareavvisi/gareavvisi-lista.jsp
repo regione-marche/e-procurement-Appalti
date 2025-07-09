@@ -11,16 +11,19 @@
 %>
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 
 <c:set var="abilitazioneGare" value="${sessionScope.profiloUtente.abilitazioneGare}" />
 <c:set var="filtroLivelloUtente" value='${gene:callFunction2("it.eldasoft.gene.tags.utils.functions.FiltroLivelloUtenteFunction", pageContext, "GAREAVVISI")}' />
 
+<c:set var="filtroTipogen" value=" gareavvisi.tipogen is null"/>
+<c:if test="${gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.GAREAVVISI.filtroAvvisiGenerali')}">
+	<c:set var="filtroTipogen" value=" gareavvisi.tipogen is not null"/>
+</c:if>
 <c:set var="filtroUffint" value=""/> 
 <c:if test="${! empty sessionScope.uffint}">
-	<c:set var="filtroUffint" value=" exists (select codgar from torn where codgar = gareavvisi.codgar and CENINT = '${sessionScope.uffint}')"/>
+	<c:set var="filtroUffint" value=" and exists (select codgar from torn where codgar = gareavvisi.codgar and CENINT = '${sessionScope.uffint}')"/>
 </c:if>
-
-<c:set var="isPersonalizzazioneGenovaAttiva" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsPersonalizzazioneGenovaAttivaFunction",pageContext)}' scope="request" />
 
 <c:set var="esistonoGarePubblicate"
 	value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsistonoGarePubblicateFunction", pageContext,"GAREAVVISI")}' />
@@ -40,32 +43,29 @@
 			<tr>
 				<td>
   	<gene:formLista entita="GAREAVVISI" gestisciProtezioni="true" pagesize="20" tableclass="datilista" sortColumn="-2" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreAvvisi"
-  		where="${filtroUffint}">
+  		where="${filtroTipogen}${filtroUffint}">
   	
 
   	<c:set var='visualizzaPopUp' value='${visualizzaLink || gene:checkProtFunz(pageContext, "MOD","MOD") || gene:checkProtFunz(pageContext, "DEL","DEL")}'/>
-  	
+  		<c:set var="bloccoPubblicazioneANAC" value='false'/>
 			<gene:campoLista title="Opzioni" width="50">
 				<c:if test='${visualizzaPopUp}'>
 					<gene:PopUp variableJs="rigaPopUpMenu${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'">
+						 <c:set var="ngaraRiga" value='${fn:substring(chiaveRiga, fn:indexOf(chiaveRiga, ":")+1, fn:length(chiaveRiga))}'/>
+						 <c:set var="codgarRiga" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select codgar1 from gare where ngara=?", ngaraRiga)}'/>
+						<c:set var="bloccoPubblicazioneANAC" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.npa.GetBloccoModificaPCP", pageContext, codgarRiga, "false")}'/>
+					
 						<c:if test='${gene:checkProtObj(pageContext, "MASC.VIS", "GARE.GAREAVVISI-scheda")}' >
 							<gene:PopUpItemResource variableJs="rigaPopUpMenu${currentRow}" resource="popupmenu.tags.lista.visualizza" title="Visualizza avviso"/>
 						</c:if>
 						<c:if test='${(datiRiga.G_PERMESSI_AUTORI ne "2") && gene:checkProtObj(pageContext, "MASC.VIS", "GARE.GAREAVVISI-scheda") and gene:checkProtFunz(pageContext, "MOD", "MOD")}' >
 							<gene:PopUpItemResource variableJs="rigaPopUpMenu${currentRow}" resource="popupmenu.tags.lista.modifica" title="Modifica avviso" />
 						</c:if>
-						<c:if test='${(datiRiga.G_PERMESSI_AUTORI ne "2") && gene:checkProtFunz(pageContext, "DEL", "DEL")}' >
+						<c:if test='${(datiRiga.G_PERMESSI_AUTORI ne "2") && gene:checkProtFunz(pageContext, "DEL", "DEL") && bloccoPubblicazioneANAC ne "true"}' >
 							<gene:PopUpItem title="Elimina avviso" href="eliminaAvviso()" />
 						</c:if>
-						<c:if test='${gene:checkProtFunz(pageContext, "ALT","GAREAVVISI.Condividi-avviso")}'> 
-							<c:choose>
-								<c:when test='${isPersonalizzazioneGenovaAttiva eq "1"}'>
-									<gene:PopUpItem title="Condividi e proteggi avviso" href="javascript:apriGestionePermessi('${datiRiga.GAREAVVISI_CODGAR}',11,${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})"/>
-								</c:when>
-								<c:otherwise>
-									<gene:PopUpItem title="Condividi e proteggi avviso" href="javascript:apriGestionePermessiStandard('${datiRiga.GAREAVVISI_CODGAR}',11,${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})"/>
-								</c:otherwise>
-							</c:choose>
+						<c:if test='${gene:checkProtFunz(pageContext, "ALT","GAREAVVISI.Condividi-avviso")}'>
+							<gene:PopUpItem title="Condividi e proteggi avviso" href="javascript:apriGestionePermessiStandard('${datiRiga.GAREAVVISI_CODGAR}',11,${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})"/>
 						</c:if>
 						<c:if test='${gene:checkProtFunz(pageContext, "ALT","Archivia-avviso")}'>
 							<c:if test='${(datiRiga.G_PERMESSI_AUTORI ne "2") && (datiRiga.GAREAVVISI_ISARCHI ne "1") && gene:checkProtFunz(pageContext, "MOD","MOD")}' >
@@ -82,6 +82,7 @@
 			<gene:campoLista campo="NGARA" headerClass="sortable" href="${gene:if(visualizzaLink, link, '')}"/>
 			<gene:campoLista campo="TIPOAVV"  headerClass="sortable"  />
 			<gene:campoLista campo="TIPOAPP" headerClass="sortable" />
+			<gene:campoLista campo="TIPOGEN"  headerClass="sortable" />
 			<gene:campoLista campo="OGGETTO" headerClass="sortable" />
 			<gene:campoLista campo="DATSCA" />
 			<gene:campoLista campo="CODGAR" visibile="false"/>

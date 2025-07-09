@@ -235,7 +235,7 @@ public class ImportExportLottiGaraManager {
   private void importLotti(Sheet foglio, String codgar,
       List<CampoImportExcel> listaCampiImportExcel, boolean isGaraLottiOffDist,
       HttpSession session, LoggerImportOffertaPrezzi loggerImport,
-      boolean isCodificaAutomaticaAttiva)
+      boolean isCodificaAutomaticaAttiva, String pgarof)
                 throws SQLException, SqlComposerException, GestoreException {
 
     if (logger.isDebugEnabled())
@@ -268,20 +268,23 @@ public class ImportExportLottiGaraManager {
     Vector<?> datiTornata = this.sqlDao.getVectorQuery(
         "select TIPGEN, DPUBAV, DFPUBA, NAVVIG, DAVVIG, DIBAND, TATTOT, "
              + "DATTOT, NATTOT, NPROAT, TIPGAR, MODLIC, CRITLIC, DETLIC, "
-             + "CALCSOAN, VALTEC, CONTOECO, ULTDETLIC, AQOPER, AQNUMOPE from TORN where CODGAR = ? ",
+             + "CALCSOAN, VALTEC, CONTOECO, ULTDETLIC, AQOPER, AQNUMOPE, ISPNRR, METOEPV, LIMOEPV from TORN where CODGAR = ? ",
              new Object[] { codgar });
 
     // Il campo TORN.TIPGEN dice se la gara e' per forniture (TIPGEN = 2)
     // o servizi (TIPGEN = 3)
-    Long campoTORN_TIPGEN = (Long) SqlManager.getValueFromVectorParam(datiTornata, 0).getValue();
-    String fdfs = PgManager.getTabellatoPercCauzioneProvvisoria(campoTORN_TIPGEN.intValue());
-
-    String tmpPerCauzProvv = this.tabellatiManager.getDescrTabellato(fdfs, "1");
+    String tmpPerCauzProvv = null; //APPALTI-1377
+    if(pgarof!=null && !"".equals(pgarof)) {
+      tmpPerCauzProvv=pgarof;
+    }/*else {
+      Long campoTORN_TIPGEN = (Long) SqlManager.getValueFromVectorParam(datiTornata, 0).getValue();
+      String fdfs = PgManager.getTabellatoPercCauzioneProvvisoria(campoTORN_TIPGEN.intValue());
+      tmpPerCauzProvv = this.tabellatiManager.getDescrTabellato(fdfs, "1");
+    }*/
     Double percentualeCauzProvv = UtilityNumeri.convertiDouble(
         tmpPerCauzProvv, UtilityNumeri.FORMATO_DOUBLE_CON_PUNTO_DECIMALE);
     valoriCampi.put("PGAROF", percentualeCauzProvv);
 
-    int numeroDecimali = this.pgManager.getArrotondamentoCauzioneProvvisoria(campoTORN_TIPGEN.intValue());
 
     Double percentualeCauzioneProvv = null;
     if (tmpPerCauzProvv != null && !"".equals(tmpPerCauzProvv))
@@ -322,6 +325,9 @@ public class ImportExportLottiGaraManager {
     Long ultdetlic = null;
     Long aqoper = null;
     Long aqnumope = null;
+    boolean isPnrr=false;
+    String metoepv = null;
+    Long limoepv = null;
     if (SqlManager.getValueFromVectorParam(datiTornata, 15) != null) {
       valtec = (String) SqlManager.getValueFromVectorParam(datiTornata, 15).getValue();
     }
@@ -336,6 +342,16 @@ public class ImportExportLottiGaraManager {
     }
     if (SqlManager.getValueFromVectorParam(datiTornata, 19) != null) {
       aqnumope = (Long) SqlManager.getValueFromVectorParam(datiTornata, 19).getValue();
+    }
+    if (SqlManager.getValueFromVectorParam(datiTornata, 20) != null) {
+      isPnrr = "1".equals((String) SqlManager.getValueFromVectorParam(datiTornata, 20).getValue());
+    }
+
+    if (SqlManager.getValueFromVectorParam(datiTornata, 21) != null) {
+      metoepv = (String) SqlManager.getValueFromVectorParam(datiTornata, 21).getValue();
+    }
+    if (SqlManager.getValueFromVectorParam(datiTornata, 22) != null) {
+      limoepv = (Long) SqlManager.getValueFromVectorParam(datiTornata, 22).getValue();
     }
 
     List<String> valoriCodiga = new ArrayList<String>();
@@ -380,76 +396,15 @@ public class ImportExportLottiGaraManager {
                   + (indiceRiga + 1)
                   + " sono nel formato previsto");
 
-                double impapp = 0;
                 if (isCodificaAutomaticaAttiva) {
                   codiga = (String) valoriCampiRigaExcel.get(0);
                   //codiceCIG = (String) valoriCampiRigaExcel.get(1);
                   HashMap<String, String> mappa = this.pgManager.calcolaCodificaAutomatica("GARE",
                       Boolean.FALSE, codgar, new Long(codiga));
                   codiceLotto = mappa.get("numeroGara");
-                  if(valoriCampiRigaExcel.get(3) != null){
-                    impapp = (Double) valoriCampiRigaExcel.get(3);
-                  }
                 } else {
                   codiceLotto = (String) valoriCampiRigaExcel.get(0);
                   codiga = (String) valoriCampiRigaExcel.get(1);
-                  if(valoriCampiRigaExcel.get(4)!=null){
-                    impapp = (Double) valoriCampiRigaExcel.get(4);
-                  }
-              }
-              // Determinazione del campo GARE.GAROFF (Importo cauzione provvisoria)
-              // come prodotto tra GARE.IMPAPP e GARE.PGAROF, con arrotondamento al
-              // numero di decimali indicato dal
-              if (percentualeCauzioneProvv != null)
-                valoriCampi.put("GAROFF", new Double(UtilityMath.round(impapp
-                    * percentualeCauzioneProvv.doubleValue()
-                    / 100, numeroDecimali)));
-              else
-                valoriCampi.put("GAROFF", null);
-
-              // Determinazione del campo GARE.IDIAUT (Contributo della ditta alla
-              // Autorita' Vigilanza Contratti Pub.), a partire da GARE.IMPAPP:
-              // bisogna confrontare tale campo con il tabellato A1z01 che contiene
-              // i range di importo del lotto il valore del campo
-              Double idiaut = null;
-              List<Tabellato> listaImporti = this.tabellatiManager.getTabellato("A1z01");
-
-              if (listaImporti != null && listaImporti.size() > 0) {
-                String descImportoMassimoGara = null;
-                int posizioneSpazio = -1;
-                Double importoMassimo = null;
-                Double importoMinimo = new Double(0);
-                for (int i = 0; i < listaImporti.size() && idiaut == null; i++) {
-                  Tabellato singoloScaglione = listaImporti.get(i);
-                  descImportoMassimoGara = singoloScaglione.getDescTabellato();
-                  posizioneSpazio = descImportoMassimoGara.indexOf(' ');
-                  importoMassimo = null;
-                  if (posizioneSpazio > 0) {
-                    importoMassimo = UtilityNumeri.convertiDouble(
-                        StringUtils.replace(descImportoMassimoGara.substring(0,
-                            posizioneSpazio), ",", "."),
-                        UtilityNumeri.FORMATO_DOUBLE_CON_PUNTO_DECIMALE);
-                  }
-                  // l'ultima riga non indica il limite massimo, perchè non esiste,
-                  // per cui si fissa un limite massimo più alto possibile in modo
-                  // da essere sempre sotto
-                  if (importoMassimo == null)
-                    importoMassimo = new Double(Double.MAX_VALUE);
-
-                  if (impapp >= importoMinimo.doubleValue()
-                      && impapp < importoMassimo.doubleValue())
-                    if (singoloScaglione.getDatoSupplementare() != null)
-                      idiaut = new Double(singoloScaglione.getDatoSupplementare());
-                    else {
-                      importoMinimo = importoMassimo;
-                      importoMassimo = null;
-                    }
-                }
-              }
-              if (idiaut != null){
-                valoriCampi.put("IDIAUT", idiaut);
-              } else{
-                valoriCampi.put("IDIAUT", null);
               }
           }
 
@@ -497,6 +452,7 @@ public class ImportExportLottiGaraManager {
             //e quindi va gestito separatamente.
             //Analoga gestione per i campi relativi a GARE1
             String codcpv = (String)valoriCampiRigaExcel.get(this.indicePosizioneColonnaCodcpv);
+            String codcpvComplementare = (String)valoriCampiRigaExcel.get(this.indicePosizioneColonnaCodcpv+1);
             List<Object> listaValoriRigaGare1 = new ArrayList<Object>();
             Object valore = null;
             boolean ammrinDaSettare=false;
@@ -515,11 +471,12 @@ public class ImportExportLottiGaraManager {
                 listaValoriRigaGare1.add(valore);
               */
               //Per stabilire se inizializzare i campi AMMRIN e AMMOPZ si assume che i campi nel file excel siano esattamente nell'ordine:
-              //CODCUI,ANNINT,IMPRIN,DESRIN,IMPSERV,IMPPROR,IMPALTRO,DESOPZ
+              //CODCUI,ANNINT,CODCNEL,IMPRIN,DESRIN,NUMRIN,IMPSERV,IMPPROR,IMPALTRO,DESOPZ,IMPSOMME
               if(valore!=null){
-                if(indice > (this.indicePosizioneColonnaInizioCampiGARE1 + 1) && indice < (this.indicePosizioneColonnaInizioCampiGARE1 + 4))
+                if(indice > (this.indicePosizioneColonnaInizioCampiGARE1 + 2) && indice < (this.indicePosizioneColonnaInizioCampiGARE1 + 6)) //campi Importo rinnovi  e Descrizione rinnovi
+
                   ammrinDaSettare=true;
-                else if(indice >= this.indicePosizioneColonnaInizioCampiGARE1 + 4)
+                else if(indice >= (this.indicePosizioneColonnaInizioCampiGARE1 + 6) && indice <= (this.indicePosizioneColonnaInizioCampiGARE1 + 8)) //da importo opzione servizi analoghi a descrizione opzioni
                   ammopzDaSettare=true;
               }
               listaValoriRigaGare1.add(valore);
@@ -531,9 +488,9 @@ public class ImportExportLottiGaraManager {
               valoriCampiRigaExcel.remove(this.indicePosizioneColonnaInizioCampiGARE1);
             }
 
-            //Rimozione valore CODCPV
+            //Rimozione valore CODCPV (e anche il complementare)
+            valoriCampiRigaExcel.remove(indicePosizioneColonnaCodcpv+1);
             valoriCampiRigaExcel.remove(indicePosizioneColonnaCodcpv);
-
 
             listaValoriRiga.addAll(valoriCampiRigaExcel);
 
@@ -541,11 +498,11 @@ public class ImportExportLottiGaraManager {
             if(ammrinDaSettare)
               listaValoriRigaGare1.add("1");
             else
-              listaValoriRigaGare1.add(null);
+              listaValoriRigaGare1.add("2");
             if(ammopzDaSettare)
               listaValoriRigaGare1.add("1");
             else
-              listaValoriRigaGare1.add(null);
+              listaValoriRigaGare1.add("2");
 
             Iterator<?> iterator1 = valoriCampi.keySet().iterator();
             Object[] valori = new Object[valoriCampi.size() + listaValoriRiga.size()];
@@ -581,7 +538,7 @@ public class ImportExportLottiGaraManager {
               this.sqlDao.update(sqlInsertGARE, valori);
 
               //Inserimento dell'occorrenza in GARE1
-              Object[] valoriGare1 = new Object[7 + listaValoriRigaGare1.size()];
+              Object[] valoriGare1 = new Object[14 + listaValoriRigaGare1.size()];
               valoriGare1[0]=codiceLotto;
               valoriGare1[1]=codgar;
               valoriGare1[2]=valtec;
@@ -589,15 +546,83 @@ public class ImportExportLottiGaraManager {
               valoriGare1[4]=ultdetlic;
               valoriGare1[5]=aqoper;
               valoriGare1[6]=aqnumope;
+              valoriGare1[7]=isPnrr? 2L : null; //prevquota
+              valoriGare1[8]=1L;                //dispospart
+              valoriGare1[9]=10L;               //motcoll
+              valoriGare1[10]="3";              //affiris
+              valoriGare1[11]=metoepv;          //metoepv
+              valoriGare1[12]=limoepv;          //limoepv
+              valoriGare1[13]="2";          //esecris
               for(int z=0; z < listaValoriRigaGare1.size(); z++)
-                valoriGare1[z+7]=listaValoriRigaGare1.get(z);
+                valoriGare1[z+14]=listaValoriRigaGare1.get(z);
 
-              this.sqlDao.update("insert into GARE1(NGARA,CODGAR1,VALTEC,CONTOECO,ULTDETLIC,AQOPER,AQNUMOPE,CODCUI,ANNINT,IMPRIN,DESRIN,IMPSERV,IMPPROR,IMPALTRO,DESOPZ,AMMRIN,AMMOPZ) "
-                  + "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",valoriGare1 );
+              this.sqlDao.update("insert into GARE1(NGARA,CODGAR1,VALTEC,CONTOECO,ULTDETLIC,AQOPER,AQNUMOPE,PREVQUOTA,DISPOPART,MOTCOLL,AFFIRIS,METOEPV,LIMOEPV,ESECRIS,CODCUI,ANNINT,CODCNEL,IMPRIN,DESRIN,NUMRIN,IMPSERV,IMPPROR,IMPALTRO,DESOPZ,IMPSOMME,AMMRIN,AMMOPZ) "
+                  + "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",valoriGare1 );
 
               if(codcpv!=null && !"".equals(codcpv))
                 this.sqlDao.update("insert into garcpv(ngara,numcpv,codcpv,tipcpv) values (?,?,?,?)", new Object[]{codiceLotto, new Long(1),codcpv, "1"});
-
+              if(codcpvComplementare!=null && !"".equals(codcpvComplementare))
+                this.sqlDao.update("insert into garcpv(ngara,numcpv,codcpv,tipcpv) values (?,?,?,?)", new Object[]{codiceLotto, new Long(2),codcpvComplementare, "2"});
+              if(isPnrr) {
+                Long idMisuraPremiale = new Long(this.genChiaviManager.getNextId("G1MISPREMIALI"));
+                this.sqlDao.update("insert into g1mispremiali(id,ngara,misura) values (?,?,?)", new Object[]{idMisuraPremiale, codiceLotto,13L});
+                
+              }
+                
+              //SPOSTATO IL CALCOLO DI GAROFF e IDIAUT
+              Vector<?> rowVGAREIMPORTI = this.sqlDao.getVectorQuery("select valmax from v_gare_importi where ngara=? and codgar=?", new Object[] {codiceLotto,codgar});
+              if (rowVGAREIMPORTI != null && rowVGAREIMPORTI.size() > 0) {
+                Double valMax = (Double) SqlManager.getValueFromVectorParam(rowVGAREIMPORTI, 0).getValue();
+                if(valMax != null && valMax>0){
+                  // Determinazione del campo GARE.GAROFF (Importo cauzione provvisoria)
+                  // come prodotto tra V_GARE_IMPORTI.VALMAX e GARE.PGAROF, con arrotondamento al
+                  // numero di decimali indicato dal
+                  Double garoff=null;
+                  if (percentualeCauzioneProvv != null)
+                    garoff = new Double(UtilityMath.round(valMax* percentualeCauzioneProvv.doubleValue()/ 100, 2));
+                  
+                  // Determinazione del campo GARE.IDIAUT (Contributo della ditta alla
+                  // Autorita' Vigilanza Contratti Pub.), a partire da GARE.IMPAPP:
+                  // bisogna confrontare tale campo con il tabellato A1z01 che contiene
+                  // i range di importo del lotto il valore del campo
+                  Double idiaut = null;
+                  List<Tabellato> listaImporti = this.tabellatiManager.getTabellato("A1z01");
+  
+                  if (listaImporti != null && listaImporti.size() > 0) {
+                    String descImportoMassimoGara = null;
+                    int posizioneSpazio = -1;
+                    Double importoMassimo = null;
+                    Double importoMinimo = new Double(0);
+                    for (int i = 0; i < listaImporti.size() && idiaut == null; i++) {
+                      Tabellato singoloScaglione = listaImporti.get(i);
+                      descImportoMassimoGara = singoloScaglione.getDescTabellato();
+                      posizioneSpazio = descImportoMassimoGara.indexOf(' ');
+                      importoMassimo = null;
+                      if (posizioneSpazio > 0) {
+                        importoMassimo = UtilityNumeri.convertiDouble(
+                            StringUtils.replace(descImportoMassimoGara.substring(0,
+                                posizioneSpazio), ",", "."),
+                            UtilityNumeri.FORMATO_DOUBLE_CON_PUNTO_DECIMALE);
+                      }
+                      // l'ultima riga non indica il limite massimo, perchè non esiste,
+                      // per cui si fissa un limite massimo più alto possibile in modo
+                      // da essere sempre sotto
+                      if (importoMassimo == null)
+                        importoMassimo = new Double(Double.MAX_VALUE);
+      
+                      if (valMax >= importoMinimo.doubleValue()
+                          && valMax < importoMassimo.doubleValue())
+                        if (singoloScaglione.getDatoSupplementare() != null)
+                          idiaut = new Double(singoloScaglione.getDatoSupplementare());
+                        else {
+                          importoMinimo = importoMassimo;
+                          importoMassimo = null;
+                        }
+                    }
+                  }
+                  this.sqlDao.update("update gare set garoff=?, idiaut=? where ngara=? and codgar1=?", new Object[] {garoff,idiaut,codiceLotto,codgar});
+                }
+              }
               loggerImport.incrementaRecordImportati();
 
               if (logger.isDebugEnabled())
@@ -609,6 +634,8 @@ public class ImportExportLottiGaraManager {
               logger.error("Errore nell'inserimento nella tabella GCAP ", s);
               throw s;
             }
+            
+
           } else {
             loggerImport.incrementaRecordNonImportati();
           }
@@ -632,9 +659,10 @@ public class ImportExportLottiGaraManager {
     //AGGIORNAMENTI VARI
 
     Double importoTotaleImpapp = new Double(0);
+    Double importoTotaleValMax = new Double(0);
     List<?> listaImpapp = this.sqlDao.getVectorQueryForList(
-        "select NGARA, CODIGA, IMPAPP from GARE where codgar1 = ? and "
-                + "(GARE.GENERE is null or GARE.GENERE <> 3)", new Object[] { codgar });
+        "select g.NGARA, g.CODIGA, g.impapp, v.VALMAX from GARE g join V_GARE_IMPORTI v on g.ngara=v.ngara where g.codgar1 = ? and "
+                + "(g.GENERE is null or g.GENERE <> 3)", new Object[] { codgar });
     if (listaImpapp != null && listaImpapp.size() > 0) {
       for (int re = 0; re < listaImpapp.size(); re++) {
         Vector<?> tmpVec = (Vector<?>) listaImpapp.get(re);
@@ -643,7 +671,12 @@ public class ImportExportLottiGaraManager {
         if(impapp == null){
           impapp = new Double(0);
         }
+        Double valMax = (Double) SqlManager.getValueFromVectorParam(tmpVec, 3).getValue();
+        if(valMax == null){
+          valMax = new Double(0);
+        }
         importoTotaleImpapp = importoTotaleImpapp + impapp;
+        importoTotaleValMax = importoTotaleValMax + valMax;
         this.pgManager.inizializzaDitteLottiOffertaUnica(codgar, ngara, true);
         //IMPRDOCG
         this.inizializzaDocumentazioneDitte(codgar, ngara,pgManager);
@@ -651,7 +684,7 @@ public class ImportExportLottiGaraManager {
       }
     }
 
-    Double importoContributo = this.pgManager.getContributoAutoritaStAppaltante(importoTotaleImpapp, "A1z02");
+    Double importoContributo = this.pgManager.getContributoAutoritaStAppaltante(importoTotaleValMax, "A1z02");
 
     try {
       this.sqlDao.update("update torn set imptor=?,istaut=? where codgar=?",new Object[]{importoTotaleImpapp,importoContributo,codgar});
@@ -676,7 +709,7 @@ public class ImportExportLottiGaraManager {
   * @throws IOException
   */
  public LoggerImportOffertaPrezzi importLottiGara(
-     UploadFileForm fileExcel, String codgar, boolean isGaraLotti, HttpSession session)
+     UploadFileForm fileExcel, String codgar, boolean isGaraLotti, HttpSession session, String pgarof)
    throws FileNotFoundException, IOException, GestoreException, Exception {
 
    if (logger.isDebugEnabled())
@@ -751,7 +784,7 @@ public class ImportExportLottiGaraManager {
 
           /*  IMPORT EFFETTIVO*/
           this.importLotti(foglioLottiGara, codgar, listaCampiImportExcel, isGaraLotti,
-             session, loggerImport, isCodificaAutomaticaAttiva);
+             session, loggerImport, isCodificaAutomaticaAttiva, pgarof);
 
         } else {
 
@@ -811,7 +844,7 @@ public class ImportExportLottiGaraManager {
 
    if (true) {
 
-       int numeroTotaleCampi = 17;
+       int numeroTotaleCampi = 21;
        int cnt = 0;
 
        arrayCampi = new String[numeroTotaleCampi];
@@ -894,21 +927,37 @@ public class ImportExportLottiGaraManager {
 
        // 9
        cnt++;
+       arrayCampi[cnt] = "GARE.GARCPV.CODCPV";
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
+       arrayTitoloColonne[cnt] = "Codice CPV complementare";
+       arrayLarghezzaColonne[cnt] = 12;
+       arrayCampiVisibili[cnt] = true;
+
+       // 10
+       cnt++;
        arrayCampi[cnt] = "GARE.GARE1.CODCUI";
        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
        arrayTitoloColonne[cnt] = "Codice CUI";
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
 
-       // 10
+       // 11
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.ANNINT";
        arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_CENTER;
        arrayTitoloColonne[cnt] = "Anno programmazione";
        arrayLarghezzaColonne[cnt] = 6;
        arrayCampiVisibili[cnt] = true;
+       
+       // 12
+       cnt++;
+       arrayCampi[cnt] = "GARE.GARE1.CODCNEL";
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
+       arrayTitoloColonne[cnt] = "Codice CNEL";
+       arrayLarghezzaColonne[cnt] = 6;
+       arrayCampiVisibili[cnt] = true;
 
-       // 11
+       // 13
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.IMPRIN";
        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT;
@@ -916,7 +965,7 @@ public class ImportExportLottiGaraManager {
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
 
-       // 12
+       // 14
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.DESRIN";
        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
@@ -924,7 +973,15 @@ public class ImportExportLottiGaraManager {
        arrayLarghezzaColonne[cnt] = 80;
        arrayCampiVisibili[cnt] = true;
 
-       // 13
+       // 15
+       cnt++;
+       arrayCampi[cnt] = "GARE.GARE1.NUMRIN";
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.INTERO_ALIGN_CENTER;
+       arrayTitoloColonne[cnt] = "Numero rinnovi";
+       arrayLarghezzaColonne[cnt] = 12;
+       arrayCampiVisibili[cnt] = true;
+
+       // 16
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.IMPSERV";
        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT;
@@ -932,7 +989,7 @@ public class ImportExportLottiGaraManager {
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
 
-       // 14
+       // 17
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.IMPPROR";
        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT;
@@ -940,7 +997,7 @@ public class ImportExportLottiGaraManager {
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
 
-       // 15
+       // 18
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.IMPALTRO";
        arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT;
@@ -948,12 +1005,20 @@ public class ImportExportLottiGaraManager {
        arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
 
-       // 16
+       // 19
        cnt++;
        arrayCampi[cnt] = "GARE.GARE1.DESOPZ";
        arrayStiliCampi[cnt] = DizionarioStiliExcelX.STRINGA_ALIGN_LEFT;
-       arrayTitoloColonne[cnt] = "descrizione opzioni";
+       arrayTitoloColonne[cnt] = "Descrizione opzioni";
        arrayLarghezzaColonne[cnt] = 80;
+       arrayCampiVisibili[cnt] = true;
+       
+       // 20
+       cnt++;
+       arrayCampi[cnt] = "GARE.GARE1.IMPSOMME";
+       arrayStiliCampi[cnt] = DizionarioStiliExcelX.DECIMALE2_ALIGN_RIGHT;
+       arrayTitoloColonne[cnt] = "Somme a disposizione";
+       arrayLarghezzaColonne[cnt] = 11;
        arrayCampiVisibili[cnt] = true;
      }
 
@@ -961,7 +1026,7 @@ public class ImportExportLottiGaraManager {
        arrayIndiceColonnaCampi[i] = i + 1;
      }
 
-     numCampiGARE1Consecutivi=8;
+     numCampiGARE1Consecutivi=11;
    }
 
 
@@ -1554,7 +1619,8 @@ public class ImportExportLottiGaraManager {
             " from GARE where NGARA = ? and (GARE.GENERE is null or GARE.GENERE <> 3) order by NGARA asc";
 
      String selectGarcpvLotto = "select codcpv from garcpv where ngara =? and tipcpv='1'";
-     String selectGare1Lotto = "select CODCUI, ANNINT, IMPRIN, DESRIN, IMPSERV, IMPPROR, IMPALTRO, DESOPZ  from GARE1 where NGARA = ?";
+     String selectGarcpv2Lotto = "select codcpv from garcpv where ngara =? and tipcpv='2'";
+     String selectGare1Lotto = "select CODCUI, ANNINT, IMPRIN, DESRIN, IMPSERV, IMPPROR, IMPALTRO, DESOPZ, CODCNEL, IMPSOMME, NUMRIN  from GARE1 where NGARA = ?";
 
      List<String> listaLottiDiGara = new ArrayList<String>();
 
@@ -1603,6 +1669,26 @@ public class ImportExportLottiGaraManager {
              DataValidationConstraint.ValidationType.TEXT_LENGTH, DataValidationConstraint.OperatorType.EQUAL, "10",null);
          DataValidation dataValidation = dvHelper.createValidation(
              validazioneCODCIG, addressList);
+           dataValidation.setSuppressDropDownArrow(true);
+           dataValidation.setShowErrorBox(true);
+
+           foglioListaLotti.addValidationData(dataValidation);
+        }
+       
+       // Convalida dati per CODCNEL
+       if (arrayCampiVisibili[12]) {
+         CellRangeAddressList addressList = new CellRangeAddressList(
+               FOGLIO_LISTA_LOTTI__RIGA_INIZIALE - 1,
+               FOGLIO_LISTA_LOTTI__RIGA_INIZIALE
+                   + numeroRigheDaFormattare - 1, arrayIndiceColonnaCampi[12] - 1,
+               arrayIndiceColonnaCampi[12] - 1);
+
+
+         DataValidationHelper dvHelper = foglioListaLotti.getDataValidationHelper();
+         DataValidationConstraint validazioneCODCNEL = dvHelper.createNumericConstraint(
+             DataValidationConstraint.ValidationType.TEXT_LENGTH, DataValidationConstraint.OperatorType.LESS_OR_EQUAL, "4",null);
+         DataValidation dataValidation = dvHelper.createValidation(
+             validazioneCODCNEL, addressList);
            dataValidation.setSuppressDropDownArrow(true);
            dataValidation.setShowErrorBox(true);
 
@@ -1792,12 +1878,25 @@ public class ImportExportLottiGaraManager {
                    }else
                       indiceColonna++;
                  }
+                 
+              // Campo CODCPV complementare
+                 if (arrayCampiVisibili[9]) {
+                   Vector codcpvVet = this.sqlDao.getVectorQuery(selectGarcpv2Lotto, new Object[]{tmpNgara});
+                   if(codcpvVet!=null){
+                     String codcpv = SqlManager.getValueFromVectorParam( codcpvVet, 0).stringValue();
+                     if (codcpv != null)
+                        UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, codcpv,stili.get(indiceColonna - 1));
+                     else
+                       indiceColonna++;
+                   }else
+                      indiceColonna++;
+                 }
 
                  //Lettura campi di GARE1
                  Vector datiGare1 = this.sqlDao.getVectorQuery(selectGare1Lotto, new Object[]{tmpNgara});
                  if(datiGare1!=null && datiGare1.size()>0){
                    // Campo CODCUI
-                   if (arrayCampiVisibili[9]) {
+                   if (arrayCampiVisibili[10]) {
                      String codcui = SqlManager.getValueFromVectorParam( datiGare1, 0).stringValue();
                      if (codcui != null)
                         UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, codcui, stili.get(indiceColonna - 1));
@@ -1807,7 +1906,7 @@ public class ImportExportLottiGaraManager {
                       indiceColonna++;
 
                    // Campo ANNINT
-                   if (arrayCampiVisibili[10]) {
+                   if (arrayCampiVisibili[11]) {
                      Long annint = SqlManager.getValueFromVectorParam( datiGare1, 1).longValue();
                      if (annint != null)
                         UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, annint, stili.get(indiceColonna - 1));
@@ -1815,9 +1914,19 @@ public class ImportExportLottiGaraManager {
                        indiceColonna++;
                    }else
                       indiceColonna++;
+                   
+                   // Campo CODCNEL
+                   if (arrayCampiVisibili[12]) {
+                     String codcnel = SqlManager.getValueFromVectorParam( datiGare1, 8).getStringValue();
+                     codcnel = UtilityStringhe.convertiNullInStringaVuota(codcnel);
+                     if (!"".equals(codcnel))
+                        UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, codcnel, stili.get(indiceColonna -1));
+                     else
+                        indiceColonna++;
+                   }
 
                    // Campo IMPRIN
-                   if (arrayCampiVisibili[11]) {
+                   if (arrayCampiVisibili[13]) {
                      Double imprin = SqlManager.getValueFromVectorParam( datiGare1, 2).doubleValue();
                      if (imprin != null)
                         UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, imprin, stili.get(indiceColonna - 1));
@@ -1827,7 +1936,7 @@ public class ImportExportLottiGaraManager {
                       indiceColonna++;
 
                    // Campo DESRIN
-                   if (arrayCampiVisibili[12]) {
+                   if (arrayCampiVisibili[14]) {
                      String desrin = SqlManager.getValueFromVectorParam( datiGare1, 3).stringValue();
                      if (desrin != null)
                         UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, desrin, stili.get(indiceColonna - 1));
@@ -1836,8 +1945,18 @@ public class ImportExportLottiGaraManager {
                    }else
                       indiceColonna++;
 
+                    // Campo NUMRIN
+                   if (arrayCampiVisibili[15]) {
+                     Long impserv = SqlManager.getValueFromVectorParam( datiGare1, 10).longValue();
+                     if (impserv != null)
+                       UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, impserv, stili.get(indiceColonna - 1));
+                     else
+                       indiceColonna++;
+                   }else
+                     indiceColonna++;
+
                    // Campo IMPSERV
-                   if (arrayCampiVisibili[13]) {
+                   if (arrayCampiVisibili[16]) {
                      Double impserv = SqlManager.getValueFromVectorParam( datiGare1, 4).doubleValue();
                      if (impserv != null)
                         UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, impserv, stili.get(indiceColonna - 1));
@@ -1847,7 +1966,7 @@ public class ImportExportLottiGaraManager {
                       indiceColonna++;
 
                    // Campo IMPPROR
-                   if (arrayCampiVisibili[14]) {
+                   if (arrayCampiVisibili[17]) {
                      Double imppror = SqlManager.getValueFromVectorParam( datiGare1, 5).doubleValue();
                      if (imppror != null)
                         UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, imppror, stili.get(indiceColonna - 1));
@@ -1857,7 +1976,7 @@ public class ImportExportLottiGaraManager {
                       indiceColonna++;
 
                    // Campo IMPALTRO
-                   if (arrayCampiVisibili[15]) {
+                   if (arrayCampiVisibili[18]) {
                      Double impaltro = SqlManager.getValueFromVectorParam( datiGare1, 6).doubleValue();
                      if (impaltro != null)
                         UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, impaltro, stili.get(indiceColonna - 1));
@@ -1867,11 +1986,21 @@ public class ImportExportLottiGaraManager {
                       indiceColonna++;
 
                    // Campo DESOPZ
-                   if (arrayCampiVisibili[16]) {
+                   if (arrayCampiVisibili[19]) {
                      String desopz = SqlManager.getValueFromVectorParam( datiGare1, 7).stringValue();
                      if (desopz != null) {
                        UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, desopz, stili.get(indiceColonna -1));
                      }else
+                       indiceColonna++;
+                   }else
+                      indiceColonna++;
+                   
+                   // Campo IMPSOMME
+                   if (arrayCampiVisibili[20]) {
+                     Double impsomme = SqlManager.getValueFromVectorParam( datiGare1, 9).doubleValue();
+                     if (impsomme != null)
+                        UtilityExcelX.scriviCella(foglioListaLotti,indiceColonna++, indiceRiga + i, impsomme, stili.get(indiceColonna - 1));
+                     else
                        indiceColonna++;
                    }else
                       indiceColonna++;
@@ -1953,11 +2082,11 @@ public class ImportExportLottiGaraManager {
        Object valore = valoriCampiRigaExcel.get(colonna);
 
        //Si individua la posizione della colonna CODCPV
-       if(arrayCampi[8].equalsIgnoreCase(SCHEMA_CAMPI.concat(".").concat(tmpCampo.getNomeFisicoCampo())))
+       if(arrayCampi[8].equalsIgnoreCase(SCHEMA_CAMPI.concat(".").concat(tmpCampo.getNomeFisicoCampo())) && indicePosizioneColonnaCodcpv==0)
          indicePosizioneColonnaCodcpv = colonna;
 
        //Si individua la posizione della colonna da cui cominciano i campi di GARE1
-       if(arrayCampi[9].equalsIgnoreCase(SCHEMA_CAMPI.concat(".").concat(tmpCampo.getNomeFisicoCampo())))
+       if(arrayCampi[10].equalsIgnoreCase(SCHEMA_CAMPI.concat(".").concat(tmpCampo.getNomeFisicoCampo())))
          indicePosizioneColonnaInizioCampiGARE1 = colonna;
 
        if (valore == null) {
@@ -2084,7 +2213,7 @@ public class ImportExportLottiGaraManager {
                    + " presenta un valore non ammesso: il codice CUP deve avere una lunghezza di 15 caratteri.");
                rigaImportabile = false;
              }
-           } else if(arrayCampi[8].equalsIgnoreCase(SCHEMA_CAMPI.concat(".").concat(tmpCampo.getNomeFisicoCampo()))) {
+           } else if(arrayCampi[8].equalsIgnoreCase(SCHEMA_CAMPI.concat(".").concat(tmpCampo.getNomeFisicoCampo())) || arrayCampi[9].equalsIgnoreCase(SCHEMA_CAMPI.concat(".").concat(tmpCampo.getNomeFisicoCampo()))) {
              String tmpValore = ((String) valore).toUpperCase();
              valoriCampiRigaExcel.set(colonna, tmpValore.toUpperCase());
 
@@ -2102,7 +2231,7 @@ public class ImportExportLottiGaraManager {
                  }
                }
              }
-           } else if(arrayCampi[9].equalsIgnoreCase(SCHEMA_CAMPI.concat(".").concat(tmpCampo.getNomeFisicoCampo()))) {
+           } else if(arrayCampi[10].equalsIgnoreCase(SCHEMA_CAMPI.concat(".").concat(tmpCampo.getNomeFisicoCampo()))) {
              String tmpValore = null;
              if (valore instanceof Double) {
                  Double tmpDoubleValore =  (Double) valore;
@@ -2124,6 +2253,29 @@ public class ImportExportLottiGaraManager {
                tmpListaMsg.add(" - la cella "
                    + strCellaExcel
                    + " presenta un valore non ammesso: il codice CUI deve avere una lunghezza compresa fra i 20 ed i 22 caratteri.");
+               rigaImportabile = false;
+             }
+           } else if(arrayCampi[12].equalsIgnoreCase(SCHEMA_CAMPI.concat(".").concat(tmpCampo.getNomeFisicoCampo()))) {//CODCNEL
+             String tmpValore = null;
+             if (valore instanceof Double) {
+                 Double tmpDoubleValore =  (Double) valore;
+                 Long tmpLongValore =  tmpDoubleValore.longValue();
+                 tmpValore = tmpLongValore.toString();
+                 valoriCampiRigaExcel.set(colonna, "" + ((Double) valore).longValue());
+             }
+             if (valore instanceof Long) {
+                 Long tmpLongValore =  (Long) valore;
+                 tmpValore = tmpLongValore.toString();
+                 valoriCampiRigaExcel.set(colonna, "" + ((Long) valore).longValue());
+             }
+             if (valore instanceof String) {
+                 valoriCampiRigaExcel.set(colonna, valore);
+             }
+
+             if (tmpValore != null && tmpValore.length() > 4) {
+               tmpListaMsg.add(" - la cella "
+                   + strCellaExcel
+                   + " presenta un valore non ammesso: il codice CNEL deve avere una lunghezza massima di 4 caratteri.");
                rigaImportabile = false;
              }
            } else {
@@ -2232,9 +2384,6 @@ public class ImportExportLottiGaraManager {
      Double impappXls = new Double(0);
      Double impnrlXls = new Double(0);
      Double impsicXls = new Double(0);
-
-     List<Object> valoriCampiRigaExcelGARE1 = new ArrayList<Object>();
-     List<Object> valoriCampiRigaExcelGARCPV = new ArrayList<Object>();
 
      for (int colonna = 0; colonna < listaCampiImportExcel.size(); colonna++) {
        CampoImportExcel tmpCampo = listaCampiImportExcel.get(colonna);

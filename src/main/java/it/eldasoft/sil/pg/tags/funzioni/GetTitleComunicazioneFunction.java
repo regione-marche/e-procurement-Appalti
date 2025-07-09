@@ -28,7 +28,7 @@ public class GetTitleComunicazioneFunction extends AbstractGetTitleFunction {
         "W_DOCDIG|Nuovo allegato|Allegato della comunicazione del {0}" + 
             "||select comdatins, iddocdig from w_invcom, w_docdig " +
             " where w_docdig.idprg = #W_DOCDIG.IDPRG# and w_docdig.iddocdig = #W_DOCDIG.IDDOCDIG# and " +
-            " w_invcom.idprg = w_docdig.digkey1 and w_invcom.idcom = w_docdig.digkey2 and w_docdig.digent = 'W_INVCOM'",
+            " w_invcom.idprg = w_docdig.digkey1 and CAST(w_invcom.idcom AS VARCHAR(12)) = w_docdig.digkey2 and w_docdig.digent = 'W_INVCOM'",
     };
   }
 

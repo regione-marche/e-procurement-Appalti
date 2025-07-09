@@ -10,67 +10,29 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-import javax.servlet.jsp.PageContext;
-
-import org.apache.commons.lang.time.DateUtils;
 import org.apache.log4j.Logger;
-import org.springframework.jdbc.core.support.SqlLobValue;
-import org.springframework.jdbc.support.lob.DefaultLobHandler;
-import org.springframework.jdbc.support.lob.LobHandler;
 import org.springframework.transaction.TransactionStatus;
 
-import com.lowagie.text.DocumentException;
-
-import intra.regionemarche.ResultClass;
-import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.bl.GenChiaviManager;
-import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.bl.system.MailManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
-import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
-import it.eldasoft.gene.db.datautils.DataColumn;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
-import it.eldasoft.gene.db.domain.BlobFile;
-import it.eldasoft.gene.db.domain.LogEvento;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.utils.MailUtils;
-import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
-import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.ControlliOepvManager;
-import it.eldasoft.sil.pg.bl.GestioneATCManager;
-import it.eldasoft.sil.pg.bl.GestioneRegioneMarcheManager;
-import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
-import it.eldasoft.sil.pg.bl.cifrabuste.CifraturaBusteManager;
-import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.utils.mail.IMailSender;
 import it.eldasoft.utils.mail.MailSenderException;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityStringhe;
-import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
-import it.maggioli.eldasoft.ws.dm.WSDMFascicoloResType;
-import it.maggioli.eldasoft.ws.dm.WSDMInviaMailType;
-import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
-import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAnagraficaType;
-import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoInType;
-import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoResType;
 
 
 /**

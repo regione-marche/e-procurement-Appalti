@@ -73,7 +73,8 @@ public class GetAllegatiComunicazioniDitteAction extends Action {
           + "IDDOCDIG,"
           + "IDPRG,"
           + "FIRMACHECK,"
-          + desdatinvString
+          + desdatinvString +","
+          + "DIGTIPDOC"
           + " from W_DOCDIG where DIGENT = ? ";
 
       Object par[] = null;
@@ -97,6 +98,7 @@ public class GetAllegatiComunicazioniDitteAction extends Action {
           hMapAllegati.put("idprg", SqlManager.getValueFromVectorParam(allegati.get(i), 3).getValue());
           hMapAllegati.put("firmacheck", SqlManager.getValueFromVectorParam(allegati.get(i), 4).getValue());
           hMapAllegati.put("firmacheckts", SqlManager.getValueFromVectorParam(allegati.get(i), 5).getStringValue());
+          hMapAllegati.put("digtipdoc", SqlManager.getValueFromVectorParam(allegati.get(i), 6).getStringValue());
           hMap.add(hMapAllegati);
         }
       }

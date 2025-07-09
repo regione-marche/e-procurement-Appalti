@@ -14,22 +14,6 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <%@ taglib uri="http://www.eldasoft.it/tags" prefix="elda" %>
 
-<c:set var="filtroLivelloUtente" value='${gene:callFunction2("it.eldasoft.gene.tags.utils.functions.FiltroLivelloUtenteFunction", pageContext, "PERI")}' />
-<c:if test="${not empty filtroLivelloUtente}" >
-	<c:set var="filtroLivelloUtente" value="and ${fn:replace(filtroLivelloUtente, 'PERI.CODLAV', 'APPA.CODLAV')}" />
-</c:if>
-
-<c:set var="filtroUffint" value=""/> 
-<c:if test="${! empty sessionScope.uffint}">
-	<c:set var="filtroAbilitato" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "integrazioneLFS.filtroUffint")}'/>
-	<c:if test="${filtroAbilitato eq '1' }">
-		<c:set var="iscus" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetIscucFunction", pageContext, sessionScope.uffint)}' />
-		<c:if test="${iscus ne '1' }">
-			<c:set var="filtroUffint" value=" and exists (select codlav from peri where codlav = appa.codlav and CENINT = '${sessionScope.uffint}')"/>
-		</c:if>
-	</c:if>
-</c:if>
-
 <c:set var="integrazioneERPvsWSDM" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneERPvsWSDMFunction", pageContext, idconfi)}'/>
 
 <gene:template file="scheda-template.jsp">
@@ -83,9 +67,9 @@
 				lista='gare/gare/trovaAppalto/popup-lista-appalti.jsp'
 				scheda=""
 				schedaPopUp=""
-				campi="APPA.CODLAV;APPA.NAPPAL;APPA.CODCUA;APPA.NOTAPP;APPA.CODCIG;PERI.CUPPRG"
+				campi="APPA.CODLAV;APPA.NAPPAL;APPA.CODCUA;APPA.NOTAPP;PERI.CUPPRG"
                 functionId="associaAppalto_${!empty datRiga.PERI_CUPPRG}"
-				parametriWhere="T:${param.tipoAppalto}"
+				parametriWhere="N:${param.tipoAppalto}"
 				chiave=""
 				inseribile="false"
 				formName="formArchivioAppalti" >
@@ -93,7 +77,6 @@
 				<gene:campoScheda campo="NAPPAL" />
 				<gene:campoScheda campo="CODCUA" />
 				<gene:campoScheda campo="NOTAPP" gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote" />
-				<gene:campoScheda campo="CODCIG" />
 				<gene:campoScheda campo="CUPPRG" entita="PERI" where="APPA.CODLAV = PERI.CODLAV" visibile="false"  />
 			</gene:archivio>
 			<c:if test='${gene:checkProt(pageContext, "COLS.VIS.LAVO.PERI.CUPPRG")}'>
@@ -152,7 +135,7 @@
 
 		function indietro(){
 			bloccaRichiesteServer();
-			document.location.href = "${pageContext.request.contextPath}/pg/InitNuovaGara.do?" + csrfToken;
+			document.location.href = "${pageContext.request.contextPath}/pg/InitNuovaGara.do";
 		}
 
 		function creaNuovaGara(){
@@ -161,18 +144,18 @@
 				bloccaRichiesteServer();
   			    var chiaveRiga = getValue("APPA_CODLAV") + ";" + getValue("APPA_NAPPAL");
 				if(chiaveRiga.length > 1){
-					document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/garerda/associaRda.jsp&tipoGara=garaLottoUnico&modo=NUOVO&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&tipoAppalto="+${param.tipoAppalto} + "&chiaveRiga=" + chiaveRiga;
+					document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/garerda/associaRda.jsp&tipoGara=garaLottoUnico&modo=NUOVO&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&tipoAppalto="+${param.tipoAppalto} + "&chiaveRiga=" + chiaveRiga;
 				}else{
-					document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/garerda/associaRda.jsp&tipoGara=garaLottoUnico&modo=NUOVO&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&tipoAppalto="+${param.tipoAppalto};
+					document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/garerda/associaRda.jsp&tipoGara=garaLottoUnico&modo=NUOVO&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&tipoAppalto="+${param.tipoAppalto};
 				}
 			</c:when>
 			<c:when test='${integrazioneERPvsWSDM eq "1" && not empty param.tipoGara}'>
 				bloccaRichiesteServer();
   			    var chiaveRiga = getValue("APPA_CODLAV") + ";" + getValue("APPA_NAPPAL");
 				if(chiaveRiga.length > 1){
-					document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/garerda/associa-rda-wsdm.jsp&tipoGara=garaLottoUnico&modo=NUOVO&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&tipoAppalto="+${param.tipoAppalto} + "&chiaveRiga=" + chiaveRiga+ "&idconfi=${idconfi}";;
+					document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/garerda/associa-rda-wsdm.jsp&tipoGara=garaLottoUnico&modo=NUOVO&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&tipoAppalto="+${param.tipoAppalto} + "&chiaveRiga=" + chiaveRiga+ "&idconfi=${idconfi}";
 				}else{
-					document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/garerda/associa-rda-wsdm.jsp&tipoGara=garaLottoUnico&modo=NUOVO&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&tipoAppalto="+${param.tipoAppalto} + "&idconfi=${idconfi}";
+					document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/garerda/associa-rda-wsdm.jsp&tipoGara=garaLottoUnico&modo=NUOVO&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&tipoAppalto="+${param.tipoAppalto} + "&idconfi=${idconfi}";
 				}
 			</c:when>
 			<c:otherwise>
@@ -181,9 +164,9 @@
 				document.forms[0].jspPathTo.value="/WEB-INF/pages/gare/gare/gare-scheda.jsp";
 				var chiaveRiga = getValue("APPA_CODLAV") + ";" + getValue("APPA_NAPPAL");
 				if(chiaveRiga.length > 1)
-					document.forms[0].action = document.forms[0].action + "&tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&chiaveRiga=" + getValue("APPA_CODLAV") + ";" + getValue("APPA_NAPPAL");
+					document.forms[0].action = document.forms[0].action + "?tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&chiaveRiga=" + getValue("APPA_CODLAV") + ";" + getValue("APPA_NAPPAL");
 				else
-					document.forms[0].action = document.forms[0].action + "&tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}";
+					document.forms[0].action = document.forms[0].action + "?tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}";
 				bloccaRichiesteServer();
 				document.forms[0].submit();
 			</c:otherwise>

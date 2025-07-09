@@ -84,8 +84,8 @@
 				<gene:campoScheda campo="NOMIMO" visibile="false" defaultValue="${nomimo}"/>
 				<gene:campoScheda title="Codice ditta" campo="DITTAO" modificabile="false" campoFittizio="true" definizione="T10" defaultValue="${dittao}"/>
 				<gene:campoScheda title="Ragione sociale" campo="NOMIMO" modificabile="false" campoFittizio="true" definizione="T61" defaultValue="${nomimo}"/>
-				<gene:campoScheda title="Codice fiscale" campo="CFIMP" modificabile="false" campoFittizio="true" definizione="T16" defaultValue="${cfFornitore}"/>
-				<gene:campoScheda title="Partita I.V.A." campo="PIVIMP" modificabile="false" campoFittizio="true" definizione="T16" defaultValue="${pivaFornitore}"/>
+				<gene:campoScheda title="Codice fiscale" campo="CFIMP" modificabile="false" campoFittizio="true" definizione="T30" defaultValue="${cfFornitore}"/>
+				<gene:campoScheda title="Partita I.V.A." campo="PIVIMP" modificabile="false" campoFittizio="true" definizione="T30" defaultValue="${pivaFornitore}"/>
 				
 				<gene:campoScheda campo="ACQUISIZIONE" defaultValue="" visibile="false"/>
 				

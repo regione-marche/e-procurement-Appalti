@@ -133,11 +133,18 @@ public class AmiuWSERPManager {
                }
 
         	   
-               List listaRdaGara = null;   
-             
-               listaRdaGara  = this.sqlManager.getListVector(
-                       "select r.CODGAR,r.NUMRDA,r.POSRDA from GARERDA r where r.CODGAR = ?" +
-                       " order by r.numrda,r.posrda", new Object[] { codgar });
+               List listaRdaGara = null;
+               Long genere = (Long) sqlManager.getObject("select genere from v_gare_genere where codgar = ? " +
+                       "and codice = ?  ", new Object[] { codgar,ngara });
+               if(Long.valueOf(300).equals(genere) || Long.valueOf(100).equals(genere)) {
+                   listaRdaGara  = this.sqlManager.getListVector(
+                           "select r.CODGAR,r.NUMRDA,r.POSRDA from GARERDA r where r.CODGAR = ? and r.NGARA = ?" +
+                           " order by r.numrda,r.posrda", new Object[] { codgar,ngara });
+               }else {
+                   listaRdaGara  = this.sqlManager.getListVector(
+                           "select r.CODGAR,r.NUMRDA,r.POSRDA from GARERDA r where r.CODGAR = ?" +
+                           " order by r.numrda,r.posrda", new Object[] { codgar });
+               }
 
                if(listaRdaGara != null && listaRdaGara.size() > 0){
                  linkrda = "1";

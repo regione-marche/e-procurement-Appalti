@@ -47,7 +47,7 @@ public class EsisteIntegrazioneWSDNFunction extends AbstractFunzioneTag {
         pageContext, GestioneWSDMManager.class);
 
     try {
-      boolean isIntegrazioneWSDMAttivaValida = gestioneWSDMManager.isIntegrazioneWSDMAttivaValida(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO,idconfi);
+      boolean isIntegrazioneWSDMAttivaValida = gestioneWSDMManager.isConfigurazioneWSDMAttivaValida(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO,idconfi);
       if(isIntegrazioneWSDMAttivaValida)
         integrazioneWSDM="1";
     } catch (GestoreException e) {

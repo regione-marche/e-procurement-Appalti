@@ -16,6 +16,8 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.transaction.TransactionStatus;
 
 import it.eldasoft.gene.bl.GeneManager;
@@ -32,6 +34,14 @@ import it.eldasoft.gene.web.struts.tags.gestori.GestoreRAGIMPMultiplo;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.SmatManager;
 import it.eldasoft.utils.spring.UtilitySpring;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.transaction.TransactionStatus;
+
+import javax.servlet.http.HttpServletRequest;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Vector;
 /**
  * Gestore salvataggio entita' DITG
  *
@@ -44,6 +54,8 @@ public class GestoreDITG extends AbstractGestoreEntita {
   /** Manager di SMAT */
   private SmatManager  smatManager ;
 
+	public static List<Long> ditgAmmisValoriAmmissione = Arrays.asList(1L,3L,4L,5L,8L,10L);
+	public static List<Long> ditgAmmisValoriNonAmmissione = Arrays.asList(2L,6L,7L,9L,11L);
 
 	@Override
   public String getEntita() {
@@ -229,6 +241,10 @@ public class GestoreDITG extends AbstractGestoreEntita {
 	      }
 
 	      String nomest = dataColumnContainer.getString("NOMEST");
+	      if(StringUtils.isBlank(nomest)) {
+			  throw new GestoreException("Errore nell'inserimento del raggruppamento temporaneo. " + "Specificare la ragione sociale del raggruppamento",
+					  "aggiungiRaggruppamento.componenteMancante", new Object[]{"Specificare la ragione sociale del raggruppamento"}, null);
+	      }
 	      String nomimp = nomest;
 	      Long tipimp = new Long(3);
 	      if(tipoRTI!= null && "10".equals(tipoRTI))
@@ -268,7 +284,10 @@ public class GestoreDITG extends AbstractGestoreEntita {
 	          throw new GestoreException("Errore nell'inserimento della mandataria del raggruppamento temporaneo di concorrenti " + codimp,
 	              "aggiungiRaggruppamento.mandataria", new Object[] {codimp},e);
 	        }
-	      }
+	      }else{
+			  throw new GestoreException("Errore nell'inserimento del raggruppamento temporaneo. " + "Specificare la mandataria",
+					  "aggiungiRaggruppamento.componenteMancante", new Object[] {"Specificare la mandataria"},null);
+		  }
 	      //Inserimento in IMPR delle mandanti provenienti da SMAT
 	      if ("SI".equals(inserimentoDitteSMAT)){
 	        this.insertMandantiInIMPR(dataColumnContainer);
@@ -276,6 +295,19 @@ public class GestoreDITG extends AbstractGestoreEntita {
 
 
 	      //Inserimento delle componenti del raggruppamento
+			boolean almenoUnaMandante = false;//APPALTI-1842
+			for(int i =1;i<=dataColumnContainer.getLong("NUMERO_RAGIMP").intValue();i++){
+				DataColumn[] campiImprese = dataColumnContainer.getColumnsBySuffix("_" + i, false);
+				DataColumnContainer newImpl = new DataColumnContainer(campiImprese);
+				if(newImpl.isColumn("MOD_RAGIMP") && "1".equals(newImpl.getString("MOD_RAGIMP")) && !(newImpl.isColumn("DEL_RAGIMP") && "1".equals(newImpl.getString("DEL_RAGIMP")))){
+					if(newImpl.getString("RAGIMP.CODIME9")==null)
+						almenoUnaMandante=true;
+				}
+			}
+			if(!almenoUnaMandante){
+				throw new GestoreException("Errore nell'inserimento del raggruppamento temporaneo. " + "Specificare almeno una mandante",
+						"aggiungiRaggruppamento.componenteMancante", new Object[] {"Specificare almeno una mandante"},null);
+			}
 	      GestoreRAGIMPMultiplo sezioniRaggruppamento = new GestoreRAGIMPMultiplo();
 	      sezioniRaggruppamento.setRequest(this.getRequest());
 	      try{
@@ -292,6 +324,7 @@ public class GestoreDITG extends AbstractGestoreEntita {
 
 	    String codiceDitta = dataColumnContainer.getString("DITG.DITTAO");
 	    String sortinv = null;
+	    Long iterga=null;
 		try {
 			List<?> datiGara = this.getSqlManager().getListVector(
 					"select CODGAR1, ITERGA, IMPAPP, GENERE, GARTEL, sortinv from GARE,TORN where NGARA = ? and codgar1=codgar",
@@ -312,10 +345,10 @@ public class GestoreDITG extends AbstractGestoreEntita {
 
 			 sortinv = (String)((JdbcParametro) dati.get(5)).getValue();
 
-			//Il controllo seguente va fatto solo per gare telematiche e vanno escluse le gare aperte e ristrette
+			//Il controllo seguente va fatto solo per gare telematiche, negoziate, sia lotto unico che a lotti, e altre procedure ma solo a lotto unico (le ditte per aperte e ristrette a lotti possono essere inserite solo da portale)
 			String gartel = (String) ((JdbcParametro) dati.get(4)).getValue();
-			Long iterga = (Long) ((JdbcParametro) dati.get(1)).getValue();
-			if("1".equals(gartel) && !new Long(1).equals(iterga) && !new Long(2).equals(iterga)  && !new Long(4).equals(iterga)){
+			iterga = (Long) ((JdbcParametro) dati.get(1)).getValue();
+			if("1".equals(gartel) && (new Long(5).equals(iterga) || new Long(6).equals(iterga) || !new Long(3).equals(genere))){
     			String dittaDaControllare=null;
     			String chiaveMsg=null;
     			String msgLog=null;
@@ -607,7 +640,7 @@ public class GestoreDITG extends AbstractGestoreEntita {
 			throws GestoreException {
 	}
 
-	private void insertEDIT(TransactionStatus status, String codiceTornata,
+	public void insertEDIT(TransactionStatus status, String codiceTornata,
 			String numeroGara, String codiceDitta, String ragioneSociale,
 			Long nProgressivo, HttpServletRequest request)
 			throws GestoreException {
@@ -682,7 +715,7 @@ public class GestoreDITG extends AbstractGestoreEntita {
                   //partgar='2'
                   sql += " and (PARTGAR is null or PARTGAR = '1')";
 
-                  this.sqlManager.update(sql, new Object[] { new Long(2), faseGara,
+                  this.sqlManager.update(sql, new Object[] { "2", faseGara,
     						codiceDitta, codiceTornata });
                 }
 			}
@@ -906,30 +939,26 @@ public class GestoreDITG extends AbstractGestoreEntita {
   	  	// Conversione dei valori del campo DITGAMMIS.AMMGAR nei valori che puo'
   	  	// assumere il campo DITG.AMMGAR, secondo la quanto di seguito indicato:
   	  	// - se DITGAMMIS.AMMGAR = 1, 3, 4, 5, 8, 10 DITG.AMMGAR = 1 (Si);
-  	  	// - se DITGAMMIS.AMMGAR = 2, 6 , 7, 9 DITG.AMMGAR = 2 (No);
+  	  	// - se DITGAMMIS.AMMGAR = 2, 6, 7, 9, 11 DITG.AMMGAR = 2 (No);
   	  	// - se DITGAMMIS.AMMGAR = null,  DITG.AMMGAR = null.
   	  	// Viene eseguita la conversione sia del valore che del valore originale
   	  	// del campo DITGAMMIS.AMMGAR
   	  	Long valoreDITGAMMIS_AMMGAR = (Long) ammgar.getValue().getValue();
   	  	Long valoreConvertitoDITGAMMIS_AMMGAR = null;
 
-  	  	if(valoreDITGAMMIS_AMMGAR != null){
-  	  		if("1345810".indexOf(valoreDITGAMMIS_AMMGAR.toString()) >= 0)
-  	  			valoreConvertitoDITGAMMIS_AMMGAR = new Long(1);
-  	  		else if("2679".indexOf(valoreDITGAMMIS_AMMGAR.toString()) >= 0)
-  	  			valoreConvertitoDITGAMMIS_AMMGAR = new Long(2);
-  	  	}
+		if(ditgAmmisValoriAmmissione.contains(valoreDITGAMMIS_AMMGAR))
+			valoreConvertitoDITGAMMIS_AMMGAR = new Long(1);
+		else if(ditgAmmisValoriNonAmmissione.contains(valoreDITGAMMIS_AMMGAR))
+			valoreConvertitoDITGAMMIS_AMMGAR = new Long(2);
 
-  	  	//Long valoreConvertitoDITGAMMIS_AMMGARorig = (Long) ammgar.getOriginalValue().getValue();
   	  	Long valoreConvertitoDITGAMMIS_AMMGARorig = null;
   	  	if( ammgar.getOriginalValue()!=null)
   	  	  valoreConvertitoDITGAMMIS_AMMGARorig = (Long) ammgar.getOriginalValue().getValue();
-  	  	if(valoreConvertitoDITGAMMIS_AMMGARorig != null){
-  	  		if("1345810".indexOf(valoreConvertitoDITGAMMIS_AMMGARorig.toString()) >= 0)
-  	  			valoreConvertitoDITGAMMIS_AMMGARorig = new Long(1);
-  	  		else if("2679".indexOf(valoreConvertitoDITGAMMIS_AMMGARorig.toString()) >= 0)
-  	  			valoreConvertitoDITGAMMIS_AMMGARorig = new Long(2);
-  	  	}
+
+		if(ditgAmmisValoriAmmissione.contains(valoreConvertitoDITGAMMIS_AMMGARorig))
+			valoreConvertitoDITGAMMIS_AMMGARorig = new Long(1);
+		else if(ditgAmmisValoriNonAmmissione.contains(valoreConvertitoDITGAMMIS_AMMGARorig))
+			valoreConvertitoDITGAMMIS_AMMGARorig = new Long(2);
 
 
   	  	if(valoreDITG_FASGAR != null && numeroFaseAttiva.longValue() > valoreDITG_FASGAR.longValue()){
@@ -969,36 +998,19 @@ public class GestoreDITG extends AbstractGestoreEntita {
             }
   	  	}else if(valoreConvertitoDITGAMMIS_AMMGAR == null && valoreConvertitoDITGAMMIS_AMMGARorig != null
   	  	    && ( valoreDITG_FASGAR == null || ( valoreDITG_FASGAR != null && numeroFaseAttiva.longValue() == valoreDITG_FASGAR.longValue()) )){
-      	  	//Viene sbiancato l'ammgar
-  	  	    /*
-  	  	    dataColumnContainer.addColumn("DITG.AMMGAR", JdbcParametro.TIPO_TESTO); // DITG.AMMGAR e' un campo VARCHAR2(1)
-              dataColumnContainer.getColumn("DITG.AMMGAR").setObjectValue(null);
-              dataColumnContainer.getColumn("DITG.AMMGAR").setObjectOriginalValue("1");
-              dataColumnContainer.addColumn("DITG.FASGAR", JdbcParametro.TIPO_NUMERICO);
-              dataColumnContainer.getColumn("DITG.FASGAR").setObjectValue(null);
-              dataColumnContainer.getColumn("DITG.FASGAR").setObjectOriginalValue(valoreDITG_FASGAR);
-              dataColumnContainer.addColumn("DITG.MOTIES", JdbcParametro.TIPO_NUMERICO);
-              dataColumnContainer.getColumn("DITG.MOTIES").setObjectValue(null);//...
-              dataColumnContainer.getColumn("DITG.MOTIES").setObjectOriginalValue(new Long(0));
-              dataColumnContainer.addColumn("DITG.ANNOFF", JdbcParametro.TIPO_TESTO);
-              dataColumnContainer.getColumn("DITG.ANNOFF").setObjectValue("");//...
-              dataColumnContainer.getColumn("DITG.ANNOFF").setObjectOriginalValue(" ");
-              */
   	  	    //Non si deve sbiancare AMMGAR ma si deve allineare il valore di ammgar con quello di ditgammis
   	  	    //della fase precedente se presenti
   	  	    String ammgarDITG = null;
   	  	    try {
   	  	      Long ammgarDITGAMMIS = (Long)this.sqlManager.getObject("select ammgar from ditgammis where codgar=? and ngara=? and" +
                 		" dittao=? and fasgar < ? order by fasgar", new Object[]{codiceTornata, codiceLotto, codiceDitta, numeroFaseAttiva });
-                if(ammgarDITGAMMIS!=null ){
-                  if(ammgarDITGAMMIS.longValue()==1 || ammgarDITGAMMIS.longValue()==3 || ammgarDITGAMMIS.longValue()==4 || ammgarDITGAMMIS.longValue()==5 || ammgarDITGAMMIS.longValue()==8 || ammgarDITGAMMIS.longValue()==10)
-                    ammgarDITG = "1";
-                  else if(ammgarDITGAMMIS.longValue()==2 || ammgarDITGAMMIS.longValue()==6 || ammgarDITGAMMIS.longValue()==7 || ammgarDITGAMMIS.longValue()==9)
-                    ammgarDITG = "2";
-                }
+			  if(ditgAmmisValoriAmmissione.contains(ammgarDITGAMMIS))
+				ammgarDITG = "1";
+			  else if(ditgAmmisValoriNonAmmissione.contains(ammgarDITGAMMIS))
+				ammgarDITG = "2";
               } catch (SQLException e) {
                 throw new GestoreException("Errore nella determinazione i valori di DITGAMMIS delle fasi precedenti",null,e);
-              }
+            }
               dataColumnContainer.addColumn("DITG.AMMGAR", JdbcParametro.TIPO_TESTO); // DITG.AMMGAR e' un campo VARCHAR2(1)
               dataColumnContainer.getColumn("DITG.AMMGAR").setObjectValue(ammgarDITG);
               dataColumnContainer.getColumn("DITG.AMMGAR").setObjectOriginalValue("-1");
@@ -1011,7 +1023,7 @@ public class GestoreDITG extends AbstractGestoreEntita {
               dataColumnContainer.addColumn("DITG.ANNOFF", JdbcParametro.TIPO_TESTO);
               dataColumnContainer.getColumn("DITG.ANNOFF").setObjectValue("");//...
               dataColumnContainer.getColumn("DITG.ANNOFF").setObjectOriginalValue(" ");
-          }else if(valoreConvertitoDITGAMMIS_AMMGAR != null ){
+        }else if(valoreConvertitoDITGAMMIS_AMMGAR != null ){
   	  	  //Viene valorizzato ammgar e viene impostato ad ad uno dei valori 1,3,4,5 e FASGAR.DITG = fase corrente o nullo
   	  	  if(new Long(1).equals(valoreConvertitoDITGAMMIS_AMMGAR) && (valoreDITG_FASGAR == null || (valoreDITG_FASGAR!= null && numeroFaseAttiva.longValue() == valoreDITG_FASGAR.longValue()))){
     	  	    dataColumnContainer.addColumn("DITG.AMMGAR", JdbcParametro.TIPO_TESTO); // DITG.AMMGAR e' un campo VARCHAR2(1)
@@ -1102,17 +1114,7 @@ public class GestoreDITG extends AbstractGestoreEntita {
     				if(listaCodiceLotti != null && listaCodiceLotti.size() > 0){
     				  for(int i=0; i < listaCodiceLotti.size(); i++){
     					    String ngaraLotto = SqlManager.getValueFromVectorParam(listaCodiceLotti.get(i), 0).stringValue();
-    						if(valoreDITGAMMIS_AMMGAR!= null && (valoreDITGAMMIS_AMMGAR.longValue()==2 || valoreDITGAMMIS_AMMGAR.longValue()==6 || valoreDITGAMMIS_AMMGAR.longValue()==7 || valoreDITGAMMIS_AMMGAR.longValue()==9)){
-    						  /*
-    						  Long fasgarDitta = (Long)this.sqlManager.getObject("select fasgar from ditg where codgar5=? and ngara5=? and dittao=?",
-    						    new Object[]{codiceTornata,ngaraLotto,codiceDitta});
-    						  String update = "update ditg set ammgar = '2' ";
-    						  if(fasgarDitta== null || (fasgarDitta!= null && fasgarDitta.longValue() > numeroFaseAttiva.longValue()))
-    						    update+=", fasgar = " + numeroFaseAttiva.toString();
-    						  update+=" where codgar5=? and ngara5=? and dittao=?";
-    						  this.sqlManager.update(update, new Object[]{codiceTornata,ngaraLotto,codiceDitta});
-    						  */
-    						  //String update = "update ditg set ammgar = ?, fasgar = ? where codgar5=? and ngara5=? and dittao=?  and (ammgar is null or ammgar <> '2')";
+    						if(ditgAmmisValoriNonAmmissione.contains(valoreDITGAMMIS_AMMGAR)){
     						  Long fasgarDitta = (Long)this.sqlManager.getObject("select fasgar from ditg where codgar5=? and ngara5=? and dittao=?",
                                   new Object[]{codiceTornata,ngaraLotto,codiceDitta});
     						  String update = "update ditg set ammgar = ? ";
@@ -1127,32 +1129,12 @@ public class GestoreDITG extends AbstractGestoreEntita {
     						  update += " where codgar5=? and ngara5=? and dittao=?  and (ammgar is null or ammgar <> '2')";
     						  this.sqlManager.update(update, new Object[]{"2",codiceTornata,ngaraLotto,codiceDitta});
     						}else{
-    						  /*
-    						  String update = "update ditg set ammgar = ?, fasgar =? where codgar5=? and ngara5=? and dittao=?  ";
-    						  Long fasgarV_ditgammis = (Long)this.sqlManager.getObject("select fasgar from v_ditgammis where codgar=? and ngara=? and dittao=?  " +
-    						  		"and (ammgar = 2 or ammgar = 6) and fasgar >= ?",
-                                new Object[]{codiceTornata,ngaraLotto,codiceDitta, numeroFaseAttiva});
-
-    						  String valoreAmmgarLotto = "2";
-    						  if(fasgarV_ditgammis==null){
-    						    valoreAmmgarLotto = "1";
-    						  }
-    						  */
-    						  /*
-    						  Long numOccorrenzeV_ditgammis = (Long)this.sqlManager.getObject("select count(codgar) from v_ditgammis where codgar=? and ngara=? and dittao=?  " +
-                                  "and (ammgar = '2' or ammgar = '6')",
-                                new Object[]{codiceTornata,ngaraLotto,codiceDitta});
-    						  if(numOccorrenzeV_ditgammis == null || (numOccorrenzeV_ditgammis!=null && numOccorrenzeV_ditgammis.longValue()==0)){ //aggiungere and con partgar=2 del lotto
-        						  String update = "update ditg set ammgar = ?, fasgar =? where codgar5=? and ngara5=? and dittao=?  ";
-                                  this.sqlManager.update(update, new Object[]{null,null,codiceTornata,ngaraLotto,codiceDitta});
-      						  }
-      						  */
     						  String update = "update ditg set ammgar = ?, fasgar =?";
     						  if(numeroFaseAttiva.longValue() <= -3)
                                 update += ", invgar = '1' ";
     						  update += " where codgar5=? and ngara5=? and dittao=?";
     						  List<?> listaFasgarV_ditgammis = this.sqlManager.getListVector("select fasgar from v_ditgammis where codgar=? and ngara=? and dittao=?  " +
-                                  "and (ammgar = '2' or ammgar = '6') order by fasgar",
+                                  "and (ammgar = 2 or ammgar = 6) order by fasgar",
                                 new Object[]{codiceTornata,ngaraLotto,codiceDitta});
     						  String partgar = (String)this.sqlManager.getObject("select partgar from ditg where ngara5=? and codgar5=? and dittao=?", new Object[]{ngaraLotto, codiceTornata, codiceDitta});
     						  if((listaFasgarV_ditgammis==null || (listaFasgarV_ditgammis!=null && listaFasgarV_ditgammis.size()==0)) && !"2".equals(partgar)){
@@ -1397,8 +1379,15 @@ public class GestoreDITG extends AbstractGestoreEntita {
       } else {
 
           //cancellazione di W_DOCDIG
-          String delete="delete from w_docdig where IDPRG in(select IMPRDOCG.IDPRG from IMPRDOCG where CODGAR = ? and NGARA=? and CODIMP = ?) and IDDOCDIG in (select IMPRDOCG.IDDOCDG from IMPRDOCG where CODGAR = ? and NGARA=? and CODIMP = ?)";
+		  String where = " where IDPRG in(select IMPRDOCG.IDPRG from IMPRDOCG where CODGAR = ? and NGARA=? and CODIMP = ?) and IDDOCDIG in (select IMPRDOCG.IDDOCDG from IMPRDOCG where CODGAR = ? and NGARA=? and CODIMP = ?)";
+          String delete="delete from w_docdig "+where;
           try {
+			  List<Vector> bucketRefs = this.sqlManager.getListVector("select bucket_ref, bucket_uuid from W_DOCDIG " + where + " and bucket_ref is not null and bucket_uuid is not null", new Object[] { codiceTornata, codiceLotto, codiceDitta,codiceTornata,codiceLotto,codiceDitta});
+			  if (bucketRefs != null && !bucketRefs.isEmpty()) {
+				  for (Vector v : bucketRefs) {
+					  ObjectStorageUtils.deleteFile((String) SqlManager.getValueFromVectorParam(v, 0).getValue(), (String) SqlManager.getValueFromVectorParam(v, 1).getValue());
+				  }
+			  }
             this.sqlManager.update(delete, new Object[] { codiceTornata, codiceLotto, codiceDitta,codiceTornata,codiceLotto,codiceDitta});
           } catch (SQLException e) {
             throw new GestoreException(

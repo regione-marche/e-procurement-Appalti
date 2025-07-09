@@ -2,6 +2,7 @@ package it.eldasoft.sil.pg.web.struts;
 
 import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.maggioli.eldasoft.ws.dm.WSDMClassificaType;
 import it.maggioli.eldasoft.ws.dm.WSDMListaClassificheResType;
 
@@ -48,6 +49,13 @@ public class GetWSDMListaClassificheAction extends Action {
     String tipoGara = request.getParameter("tipoGara");
     String idconfi = request.getParameter("idconfi");
     String voce = null;
+
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+      username = credenziali[0];
+      password = credenziali[1];
+    }
 
     if(username!=null && !"".equals(username)){
       if("1".equals(tipoGara))

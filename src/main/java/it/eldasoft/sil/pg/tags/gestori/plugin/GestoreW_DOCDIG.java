@@ -33,7 +33,7 @@ public class GestoreW_DOCDIG extends AbstractGestorePreload {
 
     if (!UtilityTags.SCHEDA_MODO_INSERIMENTO.equals(modoAperturaScheda)) {
 
-      String selectW_DOCDIG = "select count(*) from W_DOCDIG where IDPRG = ? and IDDOCDIG = ? and DIGOGG is not null";
+      String selectW_DOCDIG = "select count(*) from W_DOCDIG where IDPRG = ? and IDDOCDIG = ? and (DIGOGG is not null or (bucket_ref is not null and bucket_uuid is not null))";
       
       try {
         

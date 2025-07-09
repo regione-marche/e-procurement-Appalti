@@ -249,6 +249,13 @@ public class GetDettaglioValutazioneAction extends Action {
         Long seztec = null;
         String seztecstring = null;
         Double esponente = null;
+        
+        //APPALTI-1448
+        String sezionitec = (String) sqlManager.getObject("select sezionitec from gare1 where ngara=?", new Object[] {ngara}); 
+        String comstato = null;
+        if("1".equals(sezionitec))
+            comstato = (String) sqlManager.getObject("select comstato from w_invcom where comkey1 in (select usernome from w_puser where userkey1 = ?) and comkey2 = ? and comtipo='FS11B'", new Object[] {ditta,ngara}); 
+        
         for (int i = 0; i < datiCriteri.size(); i++) {
           HashMap<String, Object> hMapCriterio = new HashMap<String, Object>();
           hMapCriterio.put("norpar", SqlManager.getValueFromVectorParam(datiCriteri.get(i), 0).getValue());
@@ -278,14 +285,11 @@ public class GetDettaglioValutazioneAction extends Action {
           note = null;
           seztecstring = "";
           esponente = null;
-          if ((new Long(1)).equals(livpar) || (new Long(3)).equals(livpar)) {
-            seztec=(Long)SqlManager.getValueFromVectorParam(datiCriteri.get(i), 9).getValue();
-            if (seztec != null) {
+          seztec=(Long)SqlManager.getValueFromVectorParam(datiCriteri.get(i), 9).getValue();
+          boolean hideBtnAssegnaCoeff=("16".equals(comstato) || "17".equals(comstato)) && new Long(2).equals(seztec);//APP-1448
+            
+          if (((new Long(1)).equals(livpar) || (new Long(3)).equals(livpar)) && seztec != null)
               seztecstring = tabellatiManager.getDescrTabellato("A1168", seztec.toString());
-            } else {
-              seztecstring = "";
-            }
-          }
           hMapCriterio.put("seztec", seztecstring);
           if((new Long(1)).equals(livpar) || (new Long(2)).equals(livpar)){
             necvan=(Long)SqlManager.getValueFromVectorParam(datiCriteri.get(i), 8).getValue();
@@ -373,8 +377,8 @@ public class GetDettaglioValutazioneAction extends Action {
           hMapCriterio.put("descModpunti",descModpunti );
           hMapCriterio.put("coeffi",coeffi );
           hMapCriterio.put("punteg",punteg );
-          hMapCriterio.put("assegnazioneCoeffAbilitata",new Boolean(assegnazioneCoeffAbilitata) );
-          hMapCriterio.put("assegnazioneCoeffAbilitataCommissione",new Boolean(assegnazioneCoeffAbilitataCommissione) );
+          hMapCriterio.put("assegnazioneCoeffAbilitata",new Boolean(assegnazioneCoeffAbilitata && !hideBtnAssegnaCoeff) ); //APP-1448
+          hMapCriterio.put("assegnazioneCoeffAbilitataCommissione",new Boolean(assegnazioneCoeffAbilitataCommissione && !hideBtnAssegnaCoeff) ); //APP-1448
           hMapCriterio.put("profiloCommissione",new Boolean(attivaCommissione) );
           hMapCriterio.put("commissarioAttivo",commissarioAttivo );
           hMapCriterio.put("idCridef",id );

@@ -50,6 +50,8 @@
 
 <c:set var="bloccoModificatiDati" value='${(isProceduraTelematica || applicareBloccoPubblicazioneGareNonTelematiche eq "1") && (bloccoPubblicazionePortaleEsito eq "TRUE" || bloccoPubblicazionePortaleBando eq "TRUE")}' />
 
+<c:set var="bloccoPubblicazioneANAC" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.npa.GetBloccoModificaPCP", pageContext, gene:getValCampo(key, "TORN.CODGAR"), "true")}'/>
+
 <c:set var="isCodificaAutomatica" value='${gene:callFunction3("it.eldasoft.gene.tags.functions.IsCodificaAutomaticaFunction", pageContext, "TORN", "CODGAR")}'/>
 
 <%/*Imposto il menu nel titolo*/%>
@@ -60,7 +62,7 @@
 		<gene:redefineInsert name="listaEliminaSelezione"></gene:redefineInsert>
 		<gene:redefineInsert name="pulsanteListaEliminaSelezione"></gene:redefineInsert>
 		<gene:redefineInsert name="listaNuovo">
-		<c:if test='${gene:checkProtFunz(pageContext,"INS","LISTANUOVO") && bloccoOliamm ne "true" && !bloccoModificatiDati}'>
+		<c:if test='${gene:checkProtFunz(pageContext,"INS","LISTANUOVO") && bloccoOliamm ne "true" && !bloccoModificatiDati and bloccoPubblicazioneANAC ne "true"}'>
 			<tr>
 				<td class="vocemenulaterale">
 					<c:if test='${isNavigazioneDisattiva ne "1"}'><a href="javascript:listaNuovaGaraLotto();" title="Inserisci" tabindex="1501"></c:if>
@@ -77,7 +79,7 @@
 					</td>
 				</tr>
 			</c:if>
-			<c:if test='${autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TORN-lista.LISTALOTTI.ImportXLSLotti") and bustalotti eq "1"}'>
+			<c:if test='${autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TORN-lista.LISTALOTTI.ImportXLSLotti") and bustalotti eq "1" and bloccoPubblicazioneANAC ne "true"}'>
 				<tr>
 					<td class="vocemenulaterale">
 						<a href="javascript:importaDaExcel();" title='Importa da Excel' tabindex="1504">
@@ -110,7 +112,7 @@
 		</gene:redefineInsert>
 
 		<gene:redefineInsert name="pulsanteListaInserisci">
-		<c:if test='${gene:checkProtFunz(pageContext,"INS","LISTANUOVO") && bloccoOliamm ne "true" && !bloccoModificatiDati}'>
+		<c:if test='${gene:checkProtFunz(pageContext,"INS","LISTANUOVO") && bloccoOliamm ne "true" && !bloccoModificatiDati and bloccoPubblicazioneANAC ne "true"}'>
 			<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.lista.listaPageNuovo")}' title='${gene:resource("label.tags.template.lista.listaPageNuovo")}' onclick="listaNuovaGaraLotto();">
 		</c:if>
 		</gene:redefineInsert>
@@ -153,10 +155,10 @@
 						<c:if test='${(autorizzatoModifiche ne "2") && gene:checkProt(pageContext, "MASC.VIS.GARE.GARE-scheda") && gene:checkProtFunz(pageContext, "MOD","MOD") && !bloccoModificatiDati}' >
 							<gene:PopUpItem title="Modifica lotto" href="javascript:listaModifica()" />
 						</c:if>
-						<c:if test='${(autorizzatoModifiche ne "2") && bloccoOliamm ne "true" && gene:checkProtFunz(pageContext, "DEL","DEL") && !bloccoModificatiDati}' >
+						<c:if test='${(autorizzatoModifiche ne "2") && bloccoOliamm ne "true" && gene:checkProtFunz(pageContext, "DEL","DEL") && !bloccoModificatiDati  and bloccoPubblicazioneANAC ne "true"}' >
 							<gene:PopUpItem title="Elimina lotto" href="javascript:eliminaLotto()" />
 						</c:if>
-						<c:if test='${bloccoOliamm ne "true" && gene:checkProtFunz(pageContext, "ALT","Copia-lotto") && !(tipologiaGara == "3" && autorizzatoModifiche eq "2")  && !bloccoModificatiDati}'>
+						<c:if test='${bloccoOliamm ne "true" && gene:checkProtFunz(pageContext, "ALT","Copia-lotto") && !(tipologiaGara == "3" && autorizzatoModifiche eq "2")  && !bloccoModificatiDati and bloccoPubblicazioneANAC ne "true"}'>
 							<gene:PopUpItem title="Copia lotto" href="javascript:copiaLotto('${chiaveRigaJava}', '${datiRiga.GARE_CODGAR1}', ${datiRiga.V_GARE_TORN_TIPGEN},${tipologiaGara})"/>
 						</c:if>
 					</gene:PopUp>
@@ -217,7 +219,7 @@
 	function listaNuovaGaraLotto() {
 		<c:choose>
 			<c:when test='${tipoWSERP eq "AMIU"}'>
-				document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/garerda/associa-rda-wsdm.jsp&modo=NUOVO&tipoAppalto=${tipoAppalto}&chiavePadre='"+getValue("keyParent")+"'";
+				document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/garerda/associa-rda-wsdm.jsp&modo=NUOVO&tipoAppalto=${tipoAppalto}&chiavePadre='"+getValue("keyParent")+"'";
 				<c:choose>
 					<c:when test="${tipologiaGara eq '1' }">
 						href += "&lottoOfferteDistinte=1";
@@ -228,8 +230,22 @@
 				</c:choose>
 				document.location.href = href;
 			</c:when>
+			
+			<c:when test='${(tipoWSERP eq "INARCASSA" || tipoWSERP eq "CONI") and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GestioneUnicaERP") }'>
+			    document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/commons/lista-rda-scheda.jsp&modo=NUOVO&uffint=${sessionScope.uffint}&tipoAppalto=${tipoAppalto}&chiavePadre='"+getValue("keyParent")+"'";
+				<c:choose>
+					<c:when test="${tipologiaGara eq '1' }">
+						href += "&lottoOfferteDistinte=1";
+					</c:when>
+					<c:otherwise>
+						href += "&lottoOffertaUnica=SI";
+					</c:otherwise>
+				</c:choose>
+				document.location.href = href;			    				       
+			</c:when>	
+
 			<c:when test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE.AssociaGaraAppalto") and (tipologiaGara eq "1" || (tipologiaGara eq "3" and modcont eq "1")) and esisteIntegrazioneLavori eq "TRUE"}' >
-				var href="${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&"+csrfToken+"&href=gare/gare/trovaAppalto/associaAppalto.jsp&modo=NUOVO&tipoAppalto=${tipoAppalto}&chiavePadre='"+getValue("keyParent")+"'";
+				var href="${pageContext.request.contextPath}/ApriPagina.do?href=gare/gare/trovaAppalto/associaAppalto.jsp&modo=NUOVO&tipoAppalto=${tipoAppalto}&chiavePadre='"+getValue("keyParent")+"'";
 				if(idconfi){
 					href = href + "&idconfi="+idconfi;
 				}
@@ -243,8 +259,9 @@
 				</c:choose>
 				document.location.href = href;
 			</c:when>
+			
 			<c:otherwise>
-				document.forms[0].action += "&tipoAppalto=${tipoAppalto}";
+				document.forms[0].action += "?tipoAppalto=${tipoAppalto}";
 				listaNuovo();
 			</c:otherwise>
 		</c:choose>
@@ -276,6 +293,7 @@
 	
 	<c:if test='${integrazioneWSERP eq "1" && tipoWSERP eq "FNM"}'>
 		function creaLotti(){
+			<c:set var="scProfilo" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetSceltaContraenteProfiloFunction", pageContext)}' />
 		 	var kp = document.forms[0].keyParent.value;
 			var codgar = kp.substring(kp.indexOf(":")+1);
 			bloccaRichiesteServer();
@@ -286,6 +304,7 @@
 			formListaRda.tipoAppalto.value = "${tipoAppalto}";
 			formListaRda.tipoProcedura.value = "${tipgarTornata}";
 			formListaRda.bustalotti.value = "${bustalotti}";
+			formListaRda.scProfilo.value = "${scProfilo}";
 			formListaRda.linkrda.value = "1";
 			formListaRda.submit();
 		}
@@ -302,6 +321,7 @@
 			<input type="hidden" name="tipoAppalto" id="tipoAppalto" value="" />
 			<input type="hidden" name="tipoProcedura" id="tipoProcedura" value="" />
 			<input type="hidden" name="bustalotti" id="bustalotti" value="" />
+			<input type="hidden" name="scProfilo" id="scProfilo" value="" />
 			<input type="hidden" name="linkrda" id="linkrda" value="" />
 			<input type="hidden" name="uffint" id="uffint" value="${sessionScope.uffint}" />
 		</form> 

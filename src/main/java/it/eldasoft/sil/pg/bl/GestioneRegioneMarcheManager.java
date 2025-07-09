@@ -39,7 +39,10 @@ import java.util.Vector;
 import javax.xml.rpc.ServiceException;
 
 import org.apache.axis.client.Stub;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+
+import com.ibatis.sqlmap.engine.mapping.sql.Sql;
 
 /**
  * Manager che si occupa di gestire tutte le operazioni di business logic sulla
@@ -54,6 +57,9 @@ public class GestioneRegioneMarcheManager {
 
   private SqlManager            sqlManager;
   private PgManagerEst1         pgManagerEst1;
+
+  private static String PROP_URL_DELIBERE = "invioScp.urlDeliberaPortaleAppalti";
+  private static String PROP_URL_PUBBLICA = "portaleAppalti.urlPubblica";
 
   public void setSqlManager(SqlManager sqlManager) {
     this.sqlManager = sqlManager;
@@ -223,7 +229,7 @@ public class GestioneRegioneMarcheManager {
     cal.setTime(dataPubblicazione);
     bando.setDataPubblicazione(cal);
 
-    String select="select iterga, dtepar, otepar, dteoff, oteoff, codrup, altrisog,sommaur from torn where codgar=?";
+    String select="select iterga, dtepar, otepar, dteoff, oteoff, codrup, altrisog,sommaur,sezlavpub from torn where codgar=?";
     Vector<?> datiTorn = this.sqlManager.getVector(select, new Object[]{codiceGara});
     Long iterga=null;
     Timestamp dtepar=null;
@@ -235,6 +241,7 @@ public class GestioneRegioneMarcheManager {
     String minutiScadenza="";
     Long altrisog = null;
     String sommaur = "";
+    String lavoriPubblici = null;
     if(datiTorn!=null && datiTorn.size()>0){
       iterga= SqlManager.getValueFromVectorParam(datiTorn, 0).longValue();
       dtepar=SqlManager.getValueFromVectorParam(datiTorn, 1).dataValue();
@@ -244,11 +251,18 @@ public class GestioneRegioneMarcheManager {
       codrup=SqlManager.getValueFromVectorParam(datiTorn, 5).getStringValue();
       altrisog = SqlManager.getValueFromVectorParam(datiTorn, 6).longValue();
       sommaur=SqlManager.getValueFromVectorParam(datiTorn, 7).getStringValue();
+      lavoriPubblici = SqlManager.getValueFromVectorParam(datiTorn, 8).getStringValue();
     }
 
     //Tipo profilo committente
     if(altrisog==null)
       altrisog=new Long(1);
+    else if (((Long) 4L).equals(altrisog)) {
+    	altrisog = 1L;
+    }
+    
+    if ("1".equals(lavoriPubblici))
+    	altrisog = 4L;
     bando.setTipoProfiloCommittente(new Integer(altrisog.intValue()));
 
     //Somma urgenza
@@ -344,15 +358,7 @@ public class GestioneRegioneMarcheManager {
     //Email RUP
     bando.setEmailRup(ematec);
 
-    String urlAnagrafica="";
-    if("BANDO".equals(tipoBando)){
-      if(new Long(10).equals(genereGara) || new Long(20).equals(genereGara) || new Long(11).equals(genereGara))
-        urlAnagrafica=ConfigManager.getValore(CostantiAppalti.PROP_WS_PORTALEAPPALTI_AVVISI_URL);
-      else
-        urlAnagrafica=ConfigManager.getValore(CostantiAppalti.PROP_WS_PORTALEAPPALTI_BANDI_URL);
-    }else
-      urlAnagrafica=ConfigManager.getValore(CostantiAppalti.PROP_WS_PORTALEAPPALTI_ESITI_URL);
-    urlAnagrafica+=codGara;
+    String urlAnagrafica= InviaBandoAvvisoSimapManager.getUrlDocumentiGara(codGara);
     bando.setUrlAnagraficaGara(urlAnagrafica);
   }
 
@@ -392,6 +398,56 @@ public class GestioneRegioneMarcheManager {
     }
     return risposta;
   }
+
+	public ResultClass insertDelibera(String ngara, String codiceGara,Long genereGara, Timestamp dataPub, Long strutturaReg, Long temaReg, Long tipologiaBando, String tipoBando) throws GestoreException{
+		ResultClass risposta = null;
+		WsBandiSoap wsBandi = this.getWSBandi();
+		BandoClass bando= new BandoClass();
+
+		try {
+		  this.setDatiBando(ngara, codiceGara, genereGara, dataPub, strutturaReg, temaReg, tipologiaBando, tipoBando, bando);
+		  if (StringUtils.isEmpty(ConfigManager.getValore(PROP_URL_DELIBERE))) {
+			  throw new GestoreException("La property " + PROP_URL_DELIBERE + " non risulta valorizzata","erroreConfigurazioneProperties.urlScpVuota");
+		  }
+			String urlDelibere = ConfigManager.getValore(PROP_URL_PUBBLICA) + ConfigManager.getValore(PROP_URL_DELIBERE);
+			if (genereGara.longValue() == 1 || genereGara.longValue() == 3) {
+				urlDelibere += codiceGara;
+			} else {
+				urlDelibere += ngara;
+			}
+			bando.setUrlAnagraficaGara(urlDelibere);
+		  risposta=wsBandi.addBando(bando);
+		} catch (SQLException | RemoteException | ParseException e) {
+		  throw new GestoreException("Si e' verificato un errore nella chiamata al servizio remoto di pubblicazione bandi della Regione Marche per l'inserimento della delibera della gara: " + bando.getCodiceGara() + " " + e.getMessage(),
+		      "ws.bandiRegioneMarche.addBando.error", e);
+		}
+		return risposta;
+	}
+
+	public ResultClass updateDelibera(String ngara, String codiceGara,Long genereGara, Timestamp dataPub, Long strutturaReg, Long temaReg, Long tipologiaBando, String tipoBando, Long idBando) throws GestoreException{
+	    ResultClass risposta=null;
+		WsBandiSoap wsBandi = this.getWSBandi();
+		BandoClass bando= new BandoClass();
+
+		try {
+		  this.setDatiBando(ngara, codiceGara, genereGara, dataPub, strutturaReg, temaReg, tipologiaBando, tipoBando, bando);
+		  if (StringUtils.isEmpty(ConfigManager.getValore(PROP_URL_DELIBERE))) {
+			  throw new GestoreException("La property " + PROP_URL_DELIBERE + " non risulta valorizzata","erroreConfigurazioneProperties.urlScpVuota");
+		  }
+			String urlDelibere = ConfigManager.getValore(PROP_URL_PUBBLICA) + ConfigManager.getValore(PROP_URL_DELIBERE);
+			if (genereGara.longValue() == 1 || genereGara.longValue() == 3) {
+				urlDelibere += codiceGara;
+			} else {
+				urlDelibere += ngara;
+			}
+			bando.setUrlAnagraficaGara(urlDelibere);
+		  risposta=wsBandi.updateBando(bando);
+		} catch (SQLException | RemoteException | ParseException e) {
+		      throw new GestoreException("Si e' verificato un errore nella chiamata al servizio remoto di pubblicazione bandi della Regione Marche per l'aggiornamento della delibera:" + idBando.toString() + " della gara: " + bando.getCodiceGara() + " " + e.getMessage(),
+		              "ws.bandiRegioneMarche.updateBando.error", e);
+		}
+		return risposta;
+	}
 
   /**
    * Metodo che aggiorna un bando ricavando tutti i dati dalla gara
@@ -469,5 +525,10 @@ public class GestioneRegioneMarcheManager {
 
     return parsed;
 
+  }
+
+  public static Boolean isConfiguratoPerRM() {
+	  return "1".equals(ConfigManager.getValore(CostantiAppalti.PROP_WSBANDI_TIPO))
+				&& StringUtils.isNotEmpty(ConfigManager.getValore(CostantiAppalti.PROP_WSBANDI_URL));
   }
 }

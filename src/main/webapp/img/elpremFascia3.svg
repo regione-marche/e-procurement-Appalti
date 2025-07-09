@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="86.410675mm"
+   height="86.410675mm"
+   viewBox="0 0 86.410675 86.410675"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4 (86a8ad7, 2024-10-11)"
+   sodipodi:docname="elpremFascia3.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#111111"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showguides="true"
+     inkscape:zoom="1.9477379"
+     inkscape:cx="55.192231"
+     inkscape:cy="97.805767"
+     inkscape:window-width="2400"
+     inkscape:window-height="1261"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <rect
+       x="171.99438"
+       y="35.425713"
+       width="406.62555"
+       height="365.55225"
+       id="rect4" />
+    <rect
+       x="155.05167"
+       y="93.955147"
+       width="463.10132"
+       height="253.62755"
+       id="rect3" />
+  </defs>
+  <g
+     inkscape:label="Livello 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-58.554017,-13.576344)">
+    <circle
+       style="fill:#000000;fill-opacity:0;stroke:#0d4375;stroke-width:5.76071;stroke-dasharray:none;stroke-opacity:1"
+       id="path1"
+       cx="101.75935"
+       cy="56.781681"
+       r="40.324982" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:70.7291px;font-family:Calibri;-inkscape-font-specification:'Calibri, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#0d4375;fill-opacity:1;stroke:#0d4375;stroke-width:0;stroke-dasharray:none;stroke-opacity:1"
+       x="83.887131"
+       y="79.126274"
+       id="text1"><tspan
+         sodipodi:role="line"
+         id="tspan1"
+         x="83.887131"
+         y="79.126274">3</tspan></text>
+  </g>
+</svg>

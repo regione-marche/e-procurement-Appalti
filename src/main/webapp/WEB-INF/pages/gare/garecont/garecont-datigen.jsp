@@ -40,6 +40,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 
 <c:set var="listaOpzioniDisponibili" value="${fn:join(opzDisponibili,'#')}#"/>
 
+<c:set var="isVerificaPDFA" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "uploadFile.verifica.pdfA")}'/>
 <c:set var="ngara" value='${gene:getValCampo(key, "GARECONT.NGARA")}' />
 <c:set var="codiceGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetCodiceGaraFunction", pageContext)}' />
 <c:set var="stato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetStatoGarecontFunction",pageContext,ngara,"1")}' />
@@ -64,7 +65,6 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 <c:set var="ruoloUtente" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetMeruoloDaIdmericFunction", pageContext, id, profiloUtente.id)}' />
 
 <c:set var="richiestaFirma" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "documentiDb.richiestaFirma")}'/>
-
 <%/* Dati generali della gara */%>
 <gene:formScheda entita="GARECONT" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreOrdine">
 	
@@ -372,6 +372,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
 		<jsp:param name="ordineNonDefinito" value="${datiRiga.GARECONT_STATO == 2 }"/>
 		<jsp:param name="firmaRemota" value="${firmaRemota}"/>
+		<jsp:param name="isVerificaPDFA" value="${isVerificaPDFA}"/>
 	</jsp:include>
 	
 	<gene:gruppoCampi idProtezioni="DEF" >
@@ -390,12 +391,17 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		<gene:campoScheda campo="IDDOCDG" visibile="false"/>
 		<c:choose>
 			<c:when test="${modo eq 'VISUALIZZA'}">
-				<gene:campoScheda title="Documento d'ordine" campo="DIGNOMDOC" entita="W_DOCDIG" where="W_DOCDIG.IDPRG=GARECONT.IDPRG AND W_DOCDIG.IDDOCDIG=GARECONT.IDDOCDG" modificabile="false" href="javascript:visualizzaFileAllegato('${datiRiga.GARECONT_IDPRG}','${datiRiga.GARECONT_IDDOCDG}','${datiRiga.W_DOCDIG_DIGNOMDOC}');"/>
+				<gene:campoScheda title="Documento d'ordine" campo="DIGNOMDOC" entita="W_DOCDIG" where="W_DOCDIG.IDPRG=GARECONT.IDPRG AND W_DOCDIG.IDDOCDIG=GARECONT.IDDOCDG" modificabile="false" href="javascript:visualizzaFileAllegato('${datiRiga.GARECONT_IDPRG}','${datiRiga.GARECONT_IDDOCDG}','${datiRiga.W_DOCDIG_DIGNOMDOC}');">
+					<c:if test="${isVerificaPDFA eq '1' && datiRiga.W_DOCDIG_DIGTIPDOC eq 'pdf/a'}">
+						&nbsp;<img id="imgCheckPDFaDocOrdineMessage" src="${contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
+					</c:if>
+				</gene:campoScheda>
 			</c:when>
 			<c:otherwise>
 				<gene:campoScheda title="Documento d'ordine" campo="DIGNOMDOC" entita="W_DOCDIG" where="W_DOCDIG.IDPRG=GARECONT.IDPRG AND W_DOCDIG.IDDOCDIG=GARECONT.IDDOCDG" modificabile="false" />
 			</c:otherwise>
 		</c:choose>
+		<gene:campoScheda campo="DIGTIPDOC" entita="W_DOCDIG" visibile="false" where="W_DOCDIG.IDPRG=GARECONT.IDPRG AND W_DOCDIG.IDDOCDIG=GARECONT.IDDOCDG" />
 		<gene:campoScheda campo="DATTRA" visibile="false"/>
 		<gene:campoScheda computed="true" nome="DATTRA_CAL" campo="${gene:getDBFunction(pageContext,'DATETIMETOSTRING','GARECONT.DATTRA')}" modificabile="false" definizione="T20;0;;;G1DATTRA" />
 		<gene:campoScheda campo="DATLET" visibile="false"/>
@@ -478,7 +484,9 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	
 	var idconfi = "${idconfi}";
 	
-	document.forms[0].encoding="multipart/form-data";	
+	<c:if test='${modo eq "MODIFICA" or modo eq "NUOVO"}'>
+		document.forms[0].encoding="multipart/form-data";
+	</c:if>
 	//Inserimento link sul campo GARECONT.IMPIVA
 	<c:choose>
 		<c:when test='${(modo eq "VISUALIZZA")}'>
@@ -532,7 +540,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 
 			clearMsg();
 			var esenteCig = getValue("ESENTE_CIG");
-			if (esenteCig == "2" && getValue("GARE_CODCIG") != "") {
+			if (esenteCig == "2" && getValue("GARE_CODCIG") != "" || esenteCig == "") {
 				if (!controllaCIG("GARE_CODCIG")) {
 					outMsg("Codice CIG non valido", "ERR");
 					onOffMsg();
@@ -574,7 +582,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				$('[id^="GAREIVA_IMPIVA_"]').attr('disabled',false);
 				$('#GARECONT_IMPIVA').attr('disabled',false);
 				$('#GARECONT_IMPTOT').attr('disabled',false);
-				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 				schedaConferma_Default();
 			}
 	 	}
@@ -583,7 +591,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
  		
  		var schedaAnnulla_Default = schedaAnnulla;
 		function schedaAnnulla_Custom(){
-			document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+			document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 			schedaAnnulla_Default();
 	 	}
  		
@@ -733,7 +741,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	var selezionaPagina = selezionaPaginaCustom;
 	function selezionaPaginaCustom(pageNumber){
 		var id="${id }"
-		document.pagineForm.action += "&id=" + id;
+		document.pagineForm.action += "?id=" + id;
 		selezionaPaginaDefault(pageNumber);
 	}
 	
@@ -750,7 +758,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		var ngara = getValue("GARECONT_NGARA");
 		var codimp = getValue("GARE_DITTA");
 		var href = "${pageContext.request.contextPath}/pg/StampaOrdineAcquisto.do";
-		document.location.href=href+"?"+csrfToken+"&ngara=" + ngara + "&codimp=" + codimp;
+		document.location.href=href+"?ngara=" + ngara + "&codimp=" + codimp;
 	}
 	
 	function archivioImpresa(codiceImpresa){
@@ -761,7 +769,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	</c:when>
 	<c:otherwise>
 		var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
+		document.location.href = contextPath + "/ApriPagina.do?" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
 	</c:otherwise>
 </c:choose>
 	}
@@ -794,7 +802,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	function leggiComunicazioni() {
 		var entitaWSDM="GARE";
 		var chiaveWSDM=getValue("GARE_NGARA");
-		var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=geneweb/w_invcom/w_invcom-in-lista.jsp&genere=${datiRiga.GARE_GENERE}&chiave=" + document.forms[0].key.value;
+		var href = contextPath + "/ApriPagina.do?href=geneweb/w_invcom/w_invcom-in-lista.jsp&genere=${datiRiga.GARE_GENERE}&chiave=" + document.forms[0].key.value;
 		href+="&entitaWSDM=" + entitaWSDM + "&chiaveWSDM=" + chiaveWSDM;
 		if(idconfi){
 			href = href + "&idconfi="+idconfi;
@@ -844,24 +852,97 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		if(idconfi){
 			href = href + "&idconfi="+idconfi;
 		}
-		document.location.href = href + "&" + csrfToken;
+		document.location.href = href;
 	}
 	
 	function scegliFile(indice) {
+		var file = document.getElementById("selFile[" + indice + "]").files[0];
 		var selezioneFile = document.getElementById("selFile[" + indice + "]").value;
 		var lunghezza_stringa=selezioneFile.length;
 		var posizione_barra=selezioneFile.lastIndexOf("\\");
 		var nome=selezioneFile.substring(posizione_barra+1,lunghezza_stringa).toUpperCase();
+		var ext = nome.split(".")[1].toLowerCase();
 		if(nome.length>100){
 			alert("Il nome del file non può superare i 100 caratteri!");
 			document.getElementById("selFile[" + indice + "]").value="";
 			setValue("W_DOCDIG_DIGNOMDOC_" + indice,"");
+			$('#checkPDFaDocMessage_'+indice).css("display", "none");
+			$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
 		}else{
 			setValue("W_DOCDIG_DIGNOMDOC_" + indice,nome);
 			$("#spanRichiestaFirma_" + indice).show();
+			setValue("W_DOCDIG_DIGTIPDOC_"+indice,ext);
+			<c:if test="${isVerificaPDFA eq '1'}">
+				if(nome.includes('.PDF')){
+					checkValiditaPDFA(file,indice);
+				} else {
+					$('#checkPDFaDocMessage_'+indice).css("display", "none");
+					$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
+				}
+			</c:if>
 		}
 		
 	}
+	
+	
+	function checkValiditaPDFA(file,indice) {
+		if(file != undefined){
+			var formdata = false;
+			if (window.FormData) {
+				formdata = new FormData();
+			}
+			if (formdata) {
+				formdata.append("file", file);
+			}
+			_wait();
+			$.ajax({
+				url: "CheckFormatoFilePDFa.do",
+				data: formdata,
+				enctype: 'multipart/form-data',
+				type: 'POST',
+				cache: false,
+				contentType: false,
+				processData: false,
+				dataType: "json",
+				success: function(res) {
+					console.log(res);
+					if(res.esito == 'ko'){
+						$('#checkPDFaDocMessage_'+indice).css("display", "contents");
+						$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
+						setValue("W_DOCDIG_DIGTIPDOC_"+indice,"pdf");
+					} else {
+						$('#checkPDFaDocMessage_'+indice).css("display", "none");
+						$('#imgCheckPDFaDocMessage_'+indice).css("display", "unset");
+						setValue("W_DOCDIG_DIGTIPDOC_"+indice,"pdf/a");
+					}
+				},
+				error: function(e) {
+					alert('Errore nella verifica del file!');
+				},
+				complete: function() {
+					_nowait();
+				}
+			});
+		} else {
+			$('#checkPDFaDocMessage_'+indice).css("display", "none");
+			$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
+			setValue("W_DOCDIG_DIGTIPDOC_"+indice,null);
+		}
+	}
+		
+	function _wait() {
+		document.getElementById('bloccaScreen').style.visibility = 'visible';
+		$('#bloccaScreen').css("width", $(document).width());
+		$('#bloccaScreen').css("height", $(document).height());
+		document.getElementById('wait').style.visibility = 'visible';
+		$("#wait").offset({ top: $(window).height() / 2, left: ($(window).width() / 2) - 200 });
+	}
+
+	function _nowait() {
+		document.getElementById('bloccaScreen').style.visibility = 'hidden';
+		document.getElementById('wait').style.visibility = 'hidden';
+	}
+	
 	
 	 function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 		var vet = dignomdoc.split(".");
@@ -875,7 +956,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 					document.formVisFirmaDigitale.submit();
 				}else{
 					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+					document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 				}
 			</c:when>
 			<c:otherwise>
@@ -885,7 +966,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 					document.formVisFirmaDigitale.submit();
 				}else{
 					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+					document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 				}
 			</c:otherwise>
 		</c:choose>

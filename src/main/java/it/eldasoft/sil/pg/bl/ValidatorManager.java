@@ -20,6 +20,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.apache.struts.upload.FormFile;
 
+import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.bl.system.MailManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
@@ -149,6 +150,20 @@ public class ValidatorManager {
 	public void validateFormatoFile(ServletContext context, FormFile file) throws GestoreException {
 	  String nomeFile = file.getFileName();
 	  String estensioneFileAllegatoAccettata = checkExtensionFile(nomeFile);
+
+	  try {
+        if(!FileAllegatoManager.checkFileContent(file.getFileData(), nomeFile)){
+          throw new GestoreException("Il file selezionato da caricare viene scartato in quanto ha un contenuto in formato non valido secondo le verifiche mediante la libreria Apache Tika",
+              "upload.erroreVerificaContenuto", new String[]{nomeFile}, null);
+				} else if(nomeFile.toLowerCase().endsWith(".pdf") && FileAllegatoManager.isMaliciousPdf(file.getFileData(), nomeFile)) {
+					throw new GestoreException("Il file selezionato da caricare viene scartato in quanto sembra codificare dei contenuti non sicuri (malware)",
+									"upload.erroreContenutoMalevolo", new String[]{nomeFile}, null);
+				}
+      }catch (IOException e) {
+        throw new GestoreException("Il file selezionato da caricare viene scartato in quanto non risulta possibile la lettura del suo contenuto",
+            "upload.erroreVerificaContenuto", new String[]{nomeFile}, e);
+      }
+	  
 	  if(estensioneFileAllegatoAccettata == null ) {
           throw new GestoreException("Per poter trasmettere l'ordine occorre allegare un file con estensione .p7m o .pdf", "upload.validate.wrongExtensions", null);
       } else if(ESTENSIONE_FILE_FIRMATO.equals(estensioneFileAllegatoAccettata)) {

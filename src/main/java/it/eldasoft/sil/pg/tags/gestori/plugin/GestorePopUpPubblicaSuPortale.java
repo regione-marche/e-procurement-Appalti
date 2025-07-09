@@ -156,7 +156,7 @@ public class GestorePopUpPubblicaSuPortale extends AbstractGestorePreload {
             "true", PageContext.REQUEST_SCOPE);
       }
       if((new Long(10).equals(genere) || new Long(11).equals(genere) || new Long(20).equals(genere)) || new Long(1).equals(iterga) || new Long(2).equals(iterga)
-          || new Long(4).equals(iterga) || new Long(7).equals(iterga) ){
+          || new Long(4).equals(iterga) || new Long(7).equals(iterga) || new Long(9).equals(iterga)){
         page.setAttribute("bandoVisibile",
             "true", PageContext.REQUEST_SCOPE);
       }
@@ -164,7 +164,7 @@ public class GestorePopUpPubblicaSuPortale extends AbstractGestorePreload {
         page.setAttribute("bandoDisabilitato",
             "true", PageContext.REQUEST_SCOPE);
       }
-      if(!new Long(1).equals(iterga) && !new Long(7).equals(iterga) && !"1".equals(gartel) && !new Long(10).equals(genere) && !new Long(11).equals(genere) && !new Long(20).equals(genere)){
+      if(!new Long(1).equals(iterga) && !new Long(7).equals(iterga) && !new Long(9).equals(iterga) && !"1".equals(gartel) && !new Long(10).equals(genere) && !new Long(11).equals(genere) && !new Long(20).equals(genere)){
         page.setAttribute("invitoVisibile",
             "true", PageContext.REQUEST_SCOPE);
       }
@@ -172,7 +172,7 @@ public class GestorePopUpPubblicaSuPortale extends AbstractGestorePreload {
         page.setAttribute("invitoDisabilitato",
             "true", PageContext.REQUEST_SCOPE);
       }
-      if(!new Long(1).equals(iterga) && "1".equals(gartel) && !new Long(10).equals(genere) && !new Long(11).equals(genere) && !new Long(20).equals(genere)  && !new Long(7).equals(iterga)){
+      if(!new Long(1).equals(iterga) && !new Long(9).equals(iterga) && "1".equals(gartel) && !new Long(10).equals(genere) && !new Long(11).equals(genere) && !new Long(20).equals(genere)  && !new Long(7).equals(iterga)){
         page.setAttribute("invitoComunicazioneVisibile",
             "true", PageContext.REQUEST_SCOPE);
       }

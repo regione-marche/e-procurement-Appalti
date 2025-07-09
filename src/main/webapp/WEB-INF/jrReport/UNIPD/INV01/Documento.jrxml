@@ -5,20 +5,21 @@
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
 	<property name="ireport.callouts" value="##Wed Feb 05 15:49:26 CET 2014"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="appalti_pos"/>
 	<parameter name="SUBREPORT_DIR" class="java.lang.String">
 		<parameterDescription><![CDATA[Cartella contenente i sottoreport]]></parameterDescription>
-		<defaultValueExpression><![CDATA["C:\\Java\\Progetti\\PG\\src\\main\\webapp\\WEB-INF\\jrReport\\subreports\\"]]></defaultValueExpression>
+		<defaultValueExpression><![CDATA["C:\\Sviluppo\\Java\\Progetti\\appalti\\src\\main\\webapp\\WEB-INF\\jrReport\\subreports\\"]]></defaultValueExpression>
 	</parameter>
 	<parameter name="IMAGES_DIR" class="java.lang.String">
 		<parameterDescription><![CDATA[Cartella contenente le immagini]]></parameterDescription>
-		<defaultValueExpression><![CDATA["C:\\Java\\Progetti\\PG\\src\\main\\webapp\\WEB-INF\\jrReport\\images\\"]]></defaultValueExpression>
+		<defaultValueExpression><![CDATA["C:\\Sviluppo\\Java\\Progetti\\appalti\\src\\main\\webapp\\WEB-INF\\jrReport\\images\\"]]></defaultValueExpression>
 	</parameter>
 	<parameter name="CUSTOM_SUBREPORT_DIR" class="java.lang.String">
 		<parameterDescription><![CDATA[Cartella contenente i sottoreport]]></parameterDescription>
-		<defaultValueExpression><![CDATA["C:\\Java\\Progetti\\PG\\src\\main\\webapp\\WEB-INF\\jrReport\\UNIPD\\subreports\\"]]></defaultValueExpression>
+		<defaultValueExpression><![CDATA["C:\\Sviluppo\\Java\\Progetti\\appalti\\src\\main\\webapp\\WEB-INF\\jrReport\\UNIPD\\subreports\\"]]></defaultValueExpression>
 	</parameter>
 	<parameter name="NUMERO_GARA" class="java.lang.String">
-		<defaultValueExpression><![CDATA["G00192"]]></defaultValueExpression>
+		<defaultValueExpression><![CDATA["G02520"]]></defaultValueExpression>
 	</parameter>
 	<parameter name="IDSTAMPA" class="java.lang.String">
 		<defaultValueExpression><![CDATA["UNIPD_INV01"]]></defaultValueExpression>

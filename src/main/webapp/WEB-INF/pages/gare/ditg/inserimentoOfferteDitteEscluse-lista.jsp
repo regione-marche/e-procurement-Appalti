@@ -442,7 +442,7 @@
 	</c:if>
 	
 	function dettaglioOffertaDittaPerSingoliLotti(){
-			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/ditg/dettaglioOfferteDittaEsclusa-OffertaUnicaLotti.jsp";
+			var href = contextPath + "/ApriPagina.do?href=gare/ditg/dettaglioOfferteDittaEsclusa-OffertaUnicaLotti.jsp";
 			href += "&key=" + chiaveRiga;
 			document.location.href = href;
 	}

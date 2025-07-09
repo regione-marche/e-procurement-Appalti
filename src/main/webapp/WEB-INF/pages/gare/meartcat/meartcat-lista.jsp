@@ -23,7 +23,7 @@
 
 <c:set var="where" value="MEARTCAT.NGARA = ? AND MEARTCAT.NOPEGA = ?" />
 <c:set var="parametri" value="T:${param.opes_ngara};T:${param.opes_nopega}"/>
-${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunction", pageContext, "MEARTCAT", where, parametri)}
+${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "MEARTCAT", where, parametri)}
 
 
 <gene:template file="lista-template.jsp" gestisciProtezioni="true" idMaschera="MEARTCAT-lista" schema="GARE">

@@ -77,6 +77,11 @@ public class EseguiImportLavorazioniFornitureAction extends ActionBaseNoOpzioni 
 			codiceDitta = request.getParameter("codiceDitta");
 		else if(request.getAttribute("codiceDitta") != null && ((String) request.getAttribute("codiceDitta")).length() > 0)
 			codiceDitta = (String) request.getAttribute("codiceDitta");
+		
+		// Lettura eventuale pgarof 
+        String pgarof = null;
+        if(request.getParameter("percGarProv") != null)
+          pgarof = request.getParameter("percGarProv");
 
 		// Lettura del flag che abilita l'insert in C0OGGASS del file Excel che si
 		// sta importando
@@ -124,7 +129,7 @@ public class EseguiImportLavorazioniFornitureAction extends ActionBaseNoOpzioni 
 				LoggerImportOffertaPrezzi loggerImport =
 					this.importExportOffertaPrezziManager.importOffertaPrezzi(
 						(UploadFileForm) form, ngara, codiceDitta, archiviaXLSDocAss,
-						isGaraLottiConOffertaUnica,isPrequalifica, request.getSession());
+						isGaraLottiConOffertaUnica,isPrequalifica, request.getSession(),pgarof);
 
 	    	if(loggerImport.getListaMsgVerificaFoglio().size() > 0)
 	    		risultato = "KO";

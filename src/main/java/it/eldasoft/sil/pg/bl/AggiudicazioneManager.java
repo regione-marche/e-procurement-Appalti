@@ -15,12 +15,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Random;
-import java.util.Vector;
+import java.util.*;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 import it.eldasoft.gene.bl.GenChiaviManager;
@@ -45,18 +42,25 @@ public class AggiudicazioneManager {
   private static final Date     DATA_DLgs_50_2016       = UtilityDate.convertiData("20/04/2016", UtilityDate.FORMATO_GG_MM_AAAA);
   private static final Date     DATA_DLgs_56_2017       = UtilityDate.convertiData("20/05/2017", UtilityDate.FORMATO_GG_MM_AAAA);
   private static final Date     DATA_DL_32_2019         = UtilityDate.convertiData("19/04/2019", UtilityDate.FORMATO_GG_MM_AAAA);
+  private static final Date     DATA_DLgs_36_2023       = UtilityDate.convertiData("01/07/2023", UtilityDate.FORMATO_GG_MM_AAAA);
 
   private static final String   stringa_DLgs_50_2016                = "DLGS50_2016";
   private static final String   stringa_DLgs_56_2017                = "DLGS56_2017";
   private static final String   stringa_DL_32_2019                  = "DL32_2019";
+  private static final String   stringa_DLgs_36_2023                = "DLGS36_2023";
+  
   public static final String   stringaSogliaNorma_REG_SIC           = "LR13_2019";
   public static final String   stringaSogliaNorma_DL_32_2019_S      = "DL32_2019_S";
   public static final String   stringaSogliaNorma_DL_32_2019_G      = "DL32_2019_G";
+  
+  public static final String   stringaSogliaNorma_DLgs_36_2023_S      = "DLGS36_2023_S";
+  public static final String   stringaSogliaNorma_DLgs_36_2023_G      = "DLGS36_2023_G";
 
   private static final int      DLgs_163_2006    = 0;
   private static final int      DLgs_50_2016     = 1;
   private static final int      DLgs_56_2017     = 2;
   private static final int      DL_32_2019       = 3;
+  private static final int      DLgs_36_2023     = 4;
 
   /**
    * variabile che indica che nel caso di qform ci sono ditte con ribasso nullo per cui
@@ -241,7 +245,9 @@ public class AggiudicazioneManager {
 
                     //Se nuova modalità vengono inizializzati i parametri per il metodo di calcolo
                     this.inizializzaMetodoCalcoloSogliaAnomalia( hMapParametri,impl);
-
+                    
+                    // Inizializza l'importo della gara (valmax)
+                    this.inizializzaImportoGara(codgar, hMapParametri);
 					this.inizializzaMinimoPerCorrettivo(ngara, codgar, hMapTORN, hMapGARE, hMapParametri);
                     ret = this.inizializzaFlags(hMapTORN, hMapGARE, hMapParametri);
                     this.gestioneCalcoloSogliaAnomalia(ngara, codgar, legRegSic, hMapGARE, hMapTORN, hMapParametri);
@@ -605,6 +611,13 @@ public class AggiudicazioneManager {
 		if (logger.isDebugEnabled())
 			logger.debug("aggiudicazioneDefinitiva(" + codgar + "," + ngara
 					+ "): " + "inizio metodo");
+		
+		String ngaraFit=ngara;
+		String codgarFit=codgar;
+		if(impl.isColumn("GARE.NGARA_SECONDOGRADO")){
+		  ngaraFit = impl.getString("GARE.NGARA_SECONDOGRADO");
+		  codgarFit = "$"+impl.getString("GARE.NGARA_SECONDOGRADO");
+        }
 
 		// Eventuali codici ditta per la prima e la seconda aggiudicataria
 		// Sono valorizzati nel caso in cui si presenti il caso di ditte parimerito
@@ -621,13 +634,13 @@ public class AggiudicazioneManager {
 				primaAggiudicatariaSelezionata);
 
 		// Inizializzazione valori letti da TORN
-		this.inizializzaTORN(codgar, hMapTORN);
+		this.inizializzaTORN(codgarFit, hMapTORN);
 
 		// Inizializzazione valori letti da GARE
-		this.inizializzaGARE(ngara, hMapGARE);
+		this.inizializzaGARE(ngaraFit, hMapGARE);
 
 		// Inizializzazione valori letti da GARE1 estensesione di GARE
-	    this.inizializzaGareDaGare1(ngara, hMapGARE);
+	    this.inizializzaGareDaGare1(ngaraFit, hMapGARE);
 
 		long tipgen = 0;
 		long modlicg = 0;
@@ -647,9 +660,9 @@ public class AggiudicazioneManager {
 		if (hMapTORN.get("accqua") != null)
 		  accqua = (String) hMapTORN.get("accqua");
 
-		this.esclusioneEventualeVincitriceFaseB(codgar, ngara, hMapTORN, hMapGARE,
+		this.esclusioneEventualeVincitriceFaseB(codgarFit, ngaraFit, hMapTORN, hMapGARE,
 				hMapParametri);
-		this.calcolaImportoAggiudicazione(ngara, hMapTORN, hMapGARE, hMapParametri);
+		this.calcolaImportoAggiudicazione(ngaraFit, hMapTORN, hMapGARE, hMapParametri);
 
 		if (hMapParametri.get("iaggiu") != null)
 			iaggiu = ((Double) hMapParametri.get("iaggiu")).doubleValue();
@@ -872,11 +885,11 @@ public class AggiudicazioneManager {
 			   ribcauz = ribauo;
 		   }
 		  impgar = this.calcolaImportoGaranzia(iaggiu, ribcauz, tipgen,
-              ridiso.equals("1"));
+              ridiso.equals("1"),ngara);
           hMapParametri.put("impgar", new Double(impgar));
 		}
 
-		this.aggiornaImplGAREFaseB(ngara, impl, hMapParametri, true, hMapTORN,hMapGARE);
+		this.aggiornaImplGAREFaseB(ngaraFit, impl, hMapParametri, true, hMapTORN,hMapGARE);
 
 		//Nel caso di OEPV senza busta economica si deve gestire l'inserimento in DPRE
 		String costofisso = (String)hMapGARE.get("costofisso");
@@ -1465,7 +1478,7 @@ public class AggiudicazioneManager {
         if (logger.isDebugEnabled())
             logger.debug("inizializzaGareDaGare1(" + ngara + "): inizio metodo");
 
-        String selectGARE1 = "select ultdetlic, costofisso, riptec, ripeco, metpunti, aqoper, aqnumope, escauto  "
+        String selectGARE1 = "select ultdetlic, costofisso, riptec, ripeco, metpunti, aqoper, aqnumope, escauto, limoepv  "
             +   "from gare1 where ngara = ?";
 
         try {
@@ -1506,6 +1519,10 @@ public class AggiudicazioneManager {
               Long escauto = SqlManager.getValueFromVectorParam(
                   datiGARE1.get(0), 7).longValue();
               hMap.put("escauto", escauto);
+
+							Long limoepv = SqlManager.getValueFromVectorParam(
+											datiGARE1.get(0), 8).longValue();
+							hMap.put("limoepv", limoepv);
 
             }
         } catch (SQLException e) {
@@ -1674,7 +1691,8 @@ public class AggiudicazioneManager {
 		boolean modalitaDL2016 = false;
 		boolean modalitaDL2017 = false;
 		boolean modalitaDL2019 = false;
-		double importoGara =0;
+		boolean modalitaDL2023 = false;
+		Double importoGara =new Double(0);
 		boolean modalitaDLCalcoloGraduatoria=false;
 		boolean controlloOPEVNumDitteNormativaSuperato=true;
 		long numMinDitteCalcoloSogliaOEPV = 0;
@@ -1736,6 +1754,8 @@ public class AggiudicazioneManager {
             modalitaDL2017 = ((Boolean) hMapParametri.get("modalitaDL2017")).booleanValue();
           if (hMapParametri.get("modalitaDL2019") != null)
             modalitaDL2019 = ((Boolean) hMapParametri.get("modalitaDL2019")).booleanValue();
+          if (hMapParametri.get("modalitaDL2023") != null)
+            modalitaDL2023 = ((Boolean) hMapParametri.get("modalitaDL2023")).booleanValue();
           if (hMapParametri.get("importoGara") != null)
             importoGara = ((Double) hMapParametri.get("importoGara")).doubleValue();
           String escautoString=null;
@@ -1748,7 +1768,7 @@ public class AggiudicazioneManager {
             ret[0] = "ControlloNumeroDitteNonSuperato";
             ret[1] = new Long(numMinDitteCalcoloSoglia).toString();
             isCalcoloSogliaAnomaliaApplicabile = false;
-          }else if((modlicg == 13 || modlicg == 14) && modastg == 1 && !modalitaDL2016 && !modalitaDL2017 && !modalitaDL2019 && !"1".equals(legRegSic) &&
+          }else if((modlicg == 13 || modlicg == 14) && modastg == 1 && !modalitaDL2016 && !modalitaDL2017 && !modalitaDL2019 && !modalitaDL2023 && !"1".equals(legRegSic) &&
               numeroDitteAmmesse < numMinDitteCalcoloSogliaImporto &&
               ((!isSogliaEstremoEscluso && importoGara<=importoCalcoloSoglia) || (isSogliaEstremoEscluso && importoGara<importoCalcoloSoglia))){
             if (this.getModalitaCalcoloGareSottoSoglia() == 0) {
@@ -1759,13 +1779,13 @@ public class AggiudicazioneManager {
               ret[4] = new Boolean(isSogliaEstremoEscluso).toString();
               isCalcoloSogliaAnomaliaApplicabile = false;
             }
-          }else if((modlicg == 13 || modlicg == 14) && modastg == 1 && (modalitaDL2016 || modalitaDL2017 || modalitaDL2019 || "1".equals(legRegSic)) &&
+          }else if((modlicg == 13 || modlicg == 14) && modastg == 1 && (modalitaDL2016 || modalitaDL2017 || modalitaDL2019 || modalitaDL2023 || "1".equals(legRegSic)) &&
               numeroDitteAmmesse < numMinDitteCalcoloSogliaImporto && importoGara<importoCalcoloSoglia){
               ret[0] = "ControlloNumeroDitteImportoNonSuperatoDL2016";
               ret[1] = new Long(numMinDitteCalcoloSogliaImporto).toString();
               ret[2] = new Long(tipgen).toString();
               ret[3] = new Double(importoCalcoloSoglia).toString();
-          }else if((modlicg == 13 || modlicg == 14) && modastg == 1 && (modalitaDL2016 || modalitaDL2017 || modalitaDL2019 || "1".equals(legRegSic)) &&
+          }else if((modlicg == 13 || modlicg == 14) && modastg == 1 && (modalitaDL2016 || modalitaDL2017 || modalitaDL2019 || modalitaDL2023 || "1".equals(legRegSic)) &&
               importoGara>=importoCalcoloSoglia){
               ret[0] = "ControlloImportoSopraSoglia";
               ret[1] = null;
@@ -1773,11 +1793,11 @@ public class AggiudicazioneManager {
               ret[3] = new Double(importoCalcoloSoglia).toString();
           }
 
-          if (modastg ==1 && !modalitaDL2016 && !modalitaDL2017 && !modalitaDL2019 && !"1".equals(legRegSic) &&
+          if (modastg ==1 && !modalitaDL2016 && !modalitaDL2017 && !modalitaDL2019 && modalitaDL2023 && !"1".equals(legRegSic) &&
                   numeroDitteAmmesse >= numMinDitteCalcoloSogliaImporto &&
                   ((!isSogliaEstremoEscluso && importoGara <= importoCalcoloSoglia) || (isSogliaEstremoEscluso && importoGara < importoCalcoloSoglia))){
     		isEsclusioneAutomaticaApplicabile = true;
-          }else if(modastg ==1 && (modalitaDL2016 || modalitaDL2017 || modalitaDL2019 || "1".equals(legRegSic)) && numeroDitteAmmesse >= numMinDitteCalcoloSogliaImporto &&
+          }else if(modastg ==1 && (modalitaDL2016 || modalitaDL2017 || modalitaDL2019 || modalitaDL2023 || "1".equals(legRegSic)) && numeroDitteAmmesse >= numMinDitteCalcoloSogliaImporto &&
               importoGara < importoCalcoloSoglia){
             isEsclusioneAutomaticaApplicabile = true;
           }
@@ -2269,9 +2289,10 @@ public class AggiudicazioneManager {
         boolean garaDLgs_50_2016 = false;
         boolean garaDLgs_56_2017 = false;
         boolean garaDL_2019 = false;
+        boolean garaDLgs_36_2023 = false;
         double imptor = 0;
         long tipologiaGara =0;
-        double importoGara=0;
+        Double importoGara=new Double(0);
         boolean modalitaDLCalcoloGraduatoria=false;
         String calcsome = null;
 
@@ -2282,8 +2303,6 @@ public class AggiudicazioneManager {
 			corgar = ((Double) hMapParametri.get("corgar")).doubleValue();
         if (hMapGARE.get("modlicg") != null)
           modlicg = ((Long) hMapGARE.get("modlicg")).intValue();
-		if (hMapGARE.get("impapp") != null)
-			impapp = ((Double) hMapGARE.get("impapp")).doubleValue();
         if (hMapGARE.get("dpubavg") != null)
             dpubavg = (Date) hMapGARE.get("dpubavg");
         if (hMapTORN.get("iterga") != null)
@@ -2294,19 +2313,12 @@ public class AggiudicazioneManager {
           dinvit = ((Date) hMapTORN.get("dinvit"));
         if (hMapGARE.get("modastg") != null)
           modastg = ((Long) hMapGARE.get("modastg")).longValue();
-        if (hMapTORN.get("imptor") != null)
-          imptor = ((Double) hMapTORN.get("imptor")).doubleValue();
         if (hMapParametri.get("tipologiaGara") != null)
           tipologiaGara = ((Long) hMapParametri.get("tipologiaGara")).longValue();
         if (hMapTORN.get("calcsome") != null)
       	  calcsome = ((String) hMapTORN.get("calcsome"));
-
-        if(tipologiaGara==1 || tipologiaGara==3)
-          importoGara = imptor;
-        else
-          importoGara = impapp;
-
-        hMapParametri.put("importoGara", new Double(importoGara));
+        if (hMapParametri.get("importoGara") != null)
+          importoGara = ((Double) hMapParametri.get("importoGara"));
 
         String legRegSic = "";
         if (hMapGARE.get("legRegSic") != null)
@@ -2321,23 +2333,26 @@ public class AggiudicazioneManager {
 
 		  if (hMapParametri.get("modalitaDL2019") != null)
             garaDL_2019 = ((Boolean) hMapParametri.get("modalitaDL2019")).booleanValue();
+		  
+		  if (hMapParametri.get("modalitaDL2023") != null)
+		    garaDLgs_36_2023 = ((Boolean) hMapParametri.get("modalitaDL2023")).booleanValue();
 
 		  //Recupera soglie europee: se DL50/2016, parametro A1125, altrimenti A1019
           int modalita=0;
-          if(garaDLgs_50_2016 || garaDLgs_56_2017 || garaDL_2019 || "1".equals(legRegSic)){
+          if(garaDLgs_50_2016 || garaDLgs_56_2017 || garaDL_2019 || garaDLgs_36_2023 || "1".equals(legRegSic)){
             modalita=1;
           }
           Object[] soglia = this.getImportoSogliaPerGara(tipgen,dpubavg,dinvit,iterga,modalita,codgar);
           Double importoSogliaPerGara = (Double) soglia[0];
           Boolean isSogliaEstremoEscluso = false;
-          if(!garaDLgs_50_2016 && !garaDLgs_56_2017 && !garaDL_2019 && !"1".equals(legRegSic)){
+          if(!garaDLgs_50_2016 && !garaDLgs_56_2017 && !garaDL_2019 && !garaDLgs_36_2023 && !"1".equals(legRegSic)){
             isSogliaEstremoEscluso = (Boolean) soglia[1];
           }
 
           String codiceTabellato = "A2063";
           int numeroVoce=1;
 		   //Si verifica se è DLgs.50/2016
-		  if(garaDLgs_50_2016 || garaDLgs_56_2017 || garaDL_2019 || "1".equals(legRegSic)){
+		  if(garaDLgs_50_2016 || garaDLgs_56_2017 || garaDL_2019 || garaDLgs_36_2023 || "1".equals(legRegSic)){
 		    codiceTabellato = "A1135";
 		    if (importoGara < importoSogliaPerGara.doubleValue())
 		      numeroVoce=2;
@@ -2356,7 +2371,7 @@ public class AggiudicazioneManager {
 		    		minimoPerCorrettivo = new Long(descrizioneTabellato);
 		    		//Parametro per gestire il msg di avviso nel calcolo soglia anomalia
 		    		hMapParametri.put("numMinDitteCalcoloSoglia", minimoPerCorrettivo);
-		    		if(numeroDitteAmmesse < minimoPerCorrettivo.longValue() && (garaDLgs_50_2016 || garaDLgs_56_2017 || garaDL_2019 ||"1".equals(legRegSic) ))
+		    		if(numeroDitteAmmesse < minimoPerCorrettivo.longValue() && (garaDLgs_50_2016 || garaDLgs_56_2017 || garaDL_2019 || garaDLgs_36_2023 || "1".equals(legRegSic) ))
 		    			modalitaDLCalcoloGraduatoria=true;
 		    	} else {
 		    		String message = "Non trovato il parametro (" + codiceTabellato + ") delle offerte ammesse, " +
@@ -2375,11 +2390,17 @@ public class AggiudicazioneManager {
 	            else
 	              hMapParametri.put("sogliaNorma", this.stringaSogliaNorma_DL_32_2019_S);
 			}
+			if(garaDLgs_36_2023){
+              if(modalitaDLCalcoloGraduatoria)
+                hMapParametri.put("sogliaNorma", this.stringaSogliaNorma_DLgs_36_2023_G);
+              else
+                hMapParametri.put("sogliaNorma", this.stringaSogliaNorma_DLgs_36_2023_S);
+          }
 
 			if(!modalitaDLCalcoloGraduatoria){
     			// Adeguamento DLgs 153/2008
     			if (modastg == 1){
-                  if(!garaDLgs_50_2016 && !garaDLgs_56_2017 && !garaDL_2019 && !"1".equals(legRegSic)){
+                  if(!garaDLgs_50_2016 && !garaDLgs_56_2017 && !garaDL_2019 && !garaDLgs_36_2023 && !"1".equals(legRegSic)){
                     if (this.getModalitaCalcoloGareSottoSoglia() == 0) {
                       //Se si applicano le soglie europee, il confronto è con il < e non con il <=
                       if (importoSogliaPerGara != null && numeroDitteAmmesse < 10
@@ -2410,25 +2431,29 @@ public class AggiudicazioneManager {
 			}
 		}else if(modlicg == 6){
 		  boolean isGaraDL_2019 = this.isDL2019(hMapTORN, hMapGARE, hMapParametri);
+		  boolean isGaraDL_2023 = this.isDL2023(hMapTORN, hMapGARE, hMapParametri);
 		  boolean controlloOPEVNumDitteNormativaSuperato=true;
-		  if(isGaraDL_2019){
-		    Object[] soglia = this.getImportoSogliaPerGara(tipgen,dpubavg,dinvit,iterga,1,codgar);
-		    Double importoSogliaPerGara = (Double) soglia[0];
-		    int numeroVoce=1;
-		    if (importoGara < importoSogliaPerGara.doubleValue())
-              numeroVoce=2;
-		    String descrizioneTabellato = this.leggiDescrizioneDaTab1("A1156", new Long(numeroVoce));
-            if (descrizioneTabellato != null) {
-              descrizioneTabellato = descrizioneTabellato.substring(0, 1);
-              Long numDitteNormativa = new Long(descrizioneTabellato);
-               if(numeroDitteAmmesse < numDitteNormativa.longValue()){
-                 controlloOPEVNumDitteNormativaSuperato=false;
-                 hMapParametri.put("numMinDitteCalcoloSogliaOEPV", numDitteNormativa);
-               }
-            } else {
-                String message = "Non trovato il parametro (A1156) del numero minimo per procedure sopra/sotto soglia";
-                throw new GestoreException(message, "inizializzaParametri.A1156");
-            }
+		  if(isGaraDL_2019 || isGaraDL_2023){
+		    /*Object[] soglia = this.getImportoSogliaPerGara(tipgen,dpubavg,dinvit,iterga,1,codgar);
+		    Double importoSogliaPerGara = (Double) soglia[0];*/
+		    int numeroVoce=1; //APPALTI-2132 - si usa solo il valore 1
+		    /*if (importoGara < importoSogliaPerGara.doubleValue())
+              numeroVoce=2;*/
+				Long numeroDitteMinimo = (Long) hMapGARE.get("limoepv");
+				if(numeroDitteMinimo==null) {
+					String descrizioneTabellato = this.leggiDescrizioneDaTab1("A1156", new Long(numeroVoce));
+					if (descrizioneTabellato != null) {
+						descrizioneTabellato = descrizioneTabellato.trim();
+						numeroDitteMinimo = new Long(descrizioneTabellato);
+					} else {
+						String message = "Non trovato il parametro (A1156) del numero minimo per procedure sopra/sotto soglia";
+						throw new GestoreException(message, "inizializzaParametri.A1156");
+					}
+				}
+				if (numeroDitteAmmesse < numeroDitteMinimo.longValue()) {
+					controlloOPEVNumDitteNormativaSuperato = false;
+					hMapParametri.put("numMinDitteCalcoloSogliaOEPV", numeroDitteMinimo);
+				}
 		  }
 		  hMapParametri.put("controlloOPEVNumDitteNormativaSuperato", controlloOPEVNumDitteNormativaSuperato);
 
@@ -2736,7 +2761,7 @@ public class AggiudicazioneManager {
 	 * @return
 	 * @throws GestoreException
 	 */
-	private String leggiDescrizioneDaTab1(String tab1cod, Long tab1tip)
+  public String leggiDescrizioneDaTab1(String tab1cod, Long tab1tip)
 			throws GestoreException {
 
 		if (logger.isDebugEnabled())
@@ -2801,6 +2826,10 @@ public class AggiudicazioneManager {
         boolean modalitaDL2019 = false;
         if (hMapParametri.get("modalitaDL2019") != null)
           modalitaDL2019 = ((Boolean) hMapParametri.get("modalitaDL2019")).booleanValue();
+        
+        boolean modalitaDL2023 = false;
+        if (hMapParametri.get("modalitaDL2023") != null)
+          modalitaDL2023 = ((Boolean) hMapParametri.get("modalitaDL2023")).booleanValue();
 
         boolean modalitaDLCalcoloGraduatoria=false;
         if (hMapParametri.get("modalitaDLCalcoloGraduatoria") != null)
@@ -2937,7 +2966,7 @@ public class AggiudicazioneManager {
                           ribauoInferiore = new Double(0);
 
                       String descTab=null;
-                      if(modalitaDL2019 && !"1".equals(legRegSic)){
+                      if((modalitaDL2019 || modalitaDL2023) && !"1".equals(legRegSic)){
                         descTab = "0";
                       } else{
                         String codTabellato = "A1107";
@@ -2957,7 +2986,7 @@ public class AggiudicazioneManager {
                         }
                       }
 
-  					  if(modalitaDL2016 || modalitaDL2017 || modalitaDL2019 || "1".equals(legRegSic)){
+  					  if(modalitaDL2016 || modalitaDL2017 || modalitaDL2019 || modalitaDL2023 || "1".equals(legRegSic)){
   					    if(!"0".equals(descTab) && !"1".equals(descTab) && !"2".equals(descTab))
   					      descTab= "0";
   					    hMapParametri.put("tabellatoA1134", descTab);
@@ -3576,6 +3605,18 @@ public class AggiudicazioneManager {
 
 		if (numeroDitte > 0) {
 			try {
+				//APPALTI-2062
+				double numerator = 4;
+				double denominator = 5;
+				if(modlicg == 6 && "1".equals(calcsoang) && controlloOPEVNumDitteNormativaSuperato) {
+					String tabA1z35 = (String) sqlManager.getObject("select tab2d1 from tab2 join gare1 on gare1.metoepv=tab2.tab2tip where tab2cod='A1z35' and ngara=?", new Object[]{ngara});
+					if (StringUtils.isNotBlank(tabA1z35) && tabA1z35.indexOf("/") > 0) {
+						String[] parts = tabA1z35.split("/");
+						numerator = Double.parseDouble(parts[0]);
+						denominator = Double.parseDouble(parts[1]);
+					}
+				}
+
 				List datiDITG = this.sqlManager.getListVector(selectDITG,
 						new Object[] { ngara });
 				if (datiDITG != null && datiDITG.size() > 0) {
@@ -3648,8 +3689,8 @@ public class AggiudicazioneManager {
 															datiDITG.get(i), 4).doubleValue().doubleValue();
 										}
 
-										if (puntec >= (sommaPunteggioMassimoTecnico * ((double) 4 / (double) 5))
-												&& puneco >= (sommaPunteggioMassimoEconomico * ((double) 4 / (double) 5))) {
+										if (puntec >= (sommaPunteggioMassimoTecnico * (numerator / denominator))
+												&& puneco >= (sommaPunteggioMassimoEconomico * (numerator / denominator))) {
 											condizione = false;
 										} else {
 											condizione = true;
@@ -3666,7 +3707,12 @@ public class AggiudicazioneManager {
 								      //Se taglioAliEffettivo= true (A1163) non si devono considerare le ali
 									  if(taglioAliEffettivo && (new Long(2).equals(staggiali) || new Long(7).equals(staggiali)))
 									    esclusioneAli= true;
-									  if (((ribauo > limiteAnomalia && !"1".equals(legRegSic)) || (ribauo >= limiteAnomalia && "1".equals(legRegSic))) && !esclusioneAli)
+									  
+									  boolean offertaPariASogliaIsAnomala=false;
+									  String descTabA1199 = this.leggiDescrizioneDaTab1("A1199",1L);
+				                      offertaPariASogliaIsAnomala=StringUtils.isNotEmpty(descTabA1199) && "1".equals(descTabA1199.substring(0, 1)); 
+				                        
+									  if (((ribauo > limiteAnomalia && !"1".equals(legRegSic)) || (ribauo >= limiteAnomalia && ("1".equals(legRegSic) || !offertaPariASogliaIsAnomala))) && !esclusioneAli)
 										condizione = true;
 									}else{
 									  //Si applica la stessa condizione per modlicg=1 o modlicg=5
@@ -4147,6 +4193,10 @@ public class AggiudicazioneManager {
         boolean modalitaDL2019 = false;
         if (hMapParametri.get("modalitaDL2019") != null)
           modalitaDL2019 = ((Boolean) hMapParametri.get("modalitaDL2019")).booleanValue();
+        
+        boolean modalitaDL2023 = false;
+        if (hMapParametri.get("modalitaDL2023") != null)
+          modalitaDL2023 = ((Boolean) hMapParametri.get("modalitaDL2023")).booleanValue();
 
         boolean modalitaDLCalcoloGraduatoria=false;
         if (hMapParametri.get("modalitaDLCalcoloGraduatoria") != null)
@@ -4176,7 +4226,7 @@ public class AggiudicazioneManager {
 	          impl.setValue("GARE1.METCOEFF",null);
 	          impl.getColumn("GARE1.METCOEFF").setObjectOriginalValue(-1000.00);
 	        }
-		}else if (modalitaDL2019){
+		}else if (modalitaDL2019 || modalitaDL2023){
 		  if(!modalitaDLCalcoloGraduatoria){
     		  impl.setValue("GARE1.SOMMARIB", hMapParametri.get("sommaRib"));
     		  long numDitteAmmesse = 0;
@@ -5069,7 +5119,7 @@ public class AggiudicazioneManager {
 		double impcal = 0;
 		double impperm = 0;
 		double impcano = 0;
-		double riboepv = 0;
+		Double riboepv = new Double(0);
 		String codgar = null;
 		boolean riboepvNullo = false;
 
@@ -5144,8 +5194,10 @@ public class AggiudicazioneManager {
             	 riboepv = this.calcolaRIBAUO(impapp, onprge, impsic, impnrl, sicinc,impoff,onsogrib);
                  String cifreRibasso=pgManagerEst1.getNumeroDecimaliRibasso(codgar);
                  if(cifreRibasso!=null && !"".equals(cifreRibasso)){
-                   riboepv = (Double)UtilityNumeri.arrotondaNumero(riboepv, new Integer(cifreRibasso));
+                   Number ribassoNumber = UtilityNumeri.arrotondaNumero(riboepv, new Integer(cifreRibasso));
+                   riboepv = new Double(ribassoNumber.doubleValue());
                  }
+                 riboepvNullo = false;                 
               }
           }else if(modlicg==1 || modlicg== 13 || modlicg == 17 || (modlicg==6 && oepvCalcolo==2)){
     		  if("1".equals(onsogrib))
@@ -5157,6 +5209,7 @@ public class AggiudicazioneManager {
     		  iaggiu = UtilityMath.round(impcal, 2);
     		  if(modlicg==6){
     			  riboepv = ribauo;
+                  riboepvNullo = false;                 
     		  }
           }
         }catch (SQLException e) {
@@ -5194,19 +5247,50 @@ public class AggiudicazioneManager {
 	 * @throws GestoreException
 	 */
 	public double calcolaImportoGaranzia(double iaggiu, double ribauo,
-			long tipgen, boolean ridiso) throws GestoreException {
-
-		if (logger.isDebugEnabled())
-			logger.debug("calcolaImportoGaranzia: inizio metodo");
-		double importoGaranzia = 0;
-
-		if (iaggiu > 0) {
-			double percauz = calcoloPercentualeCauzione(ribauo);
-			importoGaranzia = UtilityMath.round((iaggiu * percauz) / 100, 2);
-		}
-
+			long tipgen, boolean ridiso, String ngara) throws GestoreException {
+	  
+  	    if (logger.isDebugEnabled())
+          logger.debug("calcolaImportoGaranzia: inizio metodo");
+        double importoGaranzia = 0;
+        
+        try {
+        Vector datiGara = sqlManager.getVector("select t.iterga, t.dpubav, t.dinvit, g.codgar1," +
+            " t.calcsome, t.accqua from gare g, torn t" +
+            " where g.ngara=? and g.codgar1=t.codgar", new Object[] {ngara});
+  
+        if (datiGara != null && datiGara.size() > 0) {
+          Long iterga =  SqlManager.getValueFromVectorParam(datiGara, 0).longValue();
+          Timestamp dpubavg = SqlManager.getValueFromVectorParam(datiGara, 1).dataValue();
+          Timestamp dinvit = SqlManager.getValueFromVectorParam(datiGara, 2).dataValue();
+          String codgar = SqlManager.getValueFromVectorParam(datiGara, 3).stringValue();
+          String calcsome = SqlManager.getValueFromVectorParam(datiGara, 4).stringValue();
+          String accqua = SqlManager.getValueFromVectorParam(datiGara, 5).stringValue();
+          
+          Date datpub = (Date)sqlManager.getObject("select datpub from pubbli where codgar9=? and tippub=?", new Object[]{codgar, new Long(11)});
+          
+          int esitoControllo = getLeggeCalcoloSoglia(iterga, dinvit, dpubavg, datpub, calcsome);
+          if (iaggiu > 0) {
+              if(esitoControllo>=4 && "1".equals(accqua)) {
+                  importoGaranzia = UtilityMath.round((iaggiu * 2) / 100, 2);
+              }else {
+                  //se gara non accordo quadro sottosoglia, si applica il 5% all’importo contrattuale (IAGGIU.GARE), qualsiasi sia il valore del ribasso di aggiudicazione
+                  if(esitoControllo>=4 && isSottoSoglia(codgar)) {
+                    importoGaranzia = UtilityMath.round((iaggiu * 5) / 100, 2);
+                  }else {
+                    double percauz = calcoloPercentualeCauzione(ribauo);
+                    importoGaranzia = UtilityMath.round((iaggiu * percauz) / 100, 2);
+                  } 
+                }
+              
+            }
+          }
+        } catch (SQLException e) {
+          throw new GestoreException(
+              "Errore nel calcolo dell'importo di garanzia definitivo",
+              "calcolaImportiAggiudicazioneGaranzia", e);
+        }
 		if (ridiso)
-			importoGaranzia = UtilityMath.round(importoGaranzia / 2, 2);
+			importoGaranzia = UtilityMath.round(importoGaranzia * (1-0.3), 2); //riduzione del 30%  (prima 50%) APPALTI-1377 - DLgs 36-2023 
 
 		if (logger.isDebugEnabled())
 			logger.debug("calcolaImportoGaranzia: fine metodo");
@@ -5233,6 +5317,42 @@ public class AggiudicazioneManager {
 		}
 		return percauz;
 	}
+	
+	public Double getValMax(String codgar) throws GestoreException{
+	  String toAppend=" and v.ngara is null";
+      if(codgar.charAt(0) == '$')
+        toAppend = "";
+      Double valmax=0.0;
+	  Long tipgen=null;
+      Vector datiGara;
+      try {
+        datiGara = this.sqlManager.getVector("select v.valmax from v_gare_importi v where v.codgar=?"+toAppend, new Object[] {codgar});
+        if(datiGara!=null && datiGara.size()>0){
+          valmax = SqlManager.getValueFromVectorParam(datiGara, 0).doubleValue();
+        }
+  	} catch (SQLException e) {
+        throw new GestoreException("Errore nella determinazione del valmax per la gara" +codgar, "getValMax",e);
+      }
+      return valmax;
+	}
+	
+	public boolean isSottoSoglia(String codgar) throws GestoreException {
+      Double importoSogliaPerGara=0.0;
+      Double valmax= getValMax(codgar);
+      Long tipgen=null;
+      try {
+        Vector datiGara = this.sqlManager.getVector("select tipgen from torn where codgar=?", new Object[] {codgar});
+        if(datiGara!=null && datiGara.size()>0){
+          tipgen = SqlManager.getValueFromVectorParam(datiGara, 0).longValue();
+        }
+      } catch (SQLException e) {
+        throw new GestoreException("Errore nella determinazione del tipgen per la gara" +codgar, "isSottoSoglia",e);
+      }
+  	  Object[] soglia = this.getImportoSogliaPerGara(tipgen,null,null,0,1,codgar);
+      importoSogliaPerGara = (Double) soglia[0];
+     
+      return valmax<importoSogliaPerGara.doubleValue();
+      }
 
 	/**
 	 * Funzione per sbiancare il campo MOTIES della ditta vincitrice. Richiamata
@@ -5410,6 +5530,8 @@ public class AggiudicazioneManager {
           hMapParametri.put("limiteAnomalia", limmax);
           hMapParametri.put("numeroDitteAmmesse", nofval);
           hMapParametri.put("numeroDitte", this.conteggioDitte(ngara, "staggi > 1"));
+          // Inizializza l'importo della gara (valmax)
+          this.inizializzaImportoGara(codgar, hMapParametri);
           this.inizializzaMinimoPerCorrettivo(ngara,codgar, hMapTORN, hMapGARE,
                   hMapParametri);
 
@@ -5442,6 +5564,7 @@ public class AggiudicazioneManager {
      *         1 per DLgs.50/2016
      *         2 per DLgs.56/2017
      *         3 per DL 32/2019
+     *         4 per DLgs 36/2023
      */
     public int getLeggeCalcoloSoglia(Long iterga, Date dinvit, Date dpubavg,Date datpub, String calcsome){
       int ret=this.DLgs_163_2006;
@@ -5458,7 +5581,7 @@ public class AggiudicazioneManager {
     	  ret = this.DLgs_56_2017;
       }
       else if(dataControllo == null)
-        ret = this.DL_32_2019;
+        ret = this.DLgs_36_2023;
       else{
         dataControllo = UtilityDate.convertiData(UtilityDate.convertiData(dataControllo, UtilityDate.FORMATO_GG_MM_AAAA), UtilityDate.FORMATO_GG_MM_AAAA);
         boolean usateDateDb=true;
@@ -5466,7 +5589,7 @@ public class AggiudicazioneManager {
         try {
           List listavalori = this.sqlManager.getListVector("select tab2d1, tab2d2 from tab2 where tab2cod=? order by tab2nord,tab2tip", new Object[]{"A1z10"});
           if(listavalori!=null && listavalori.size()>0){
-            //Si assume che se presenti i valori di tab2d1 per il tabellato A1z10 assumano i valori: DLGS50_2016, DLGS56_2017 e DL32_2019
+            //Si assume che se presenti i valori di tab2d1 per il tabellato A1z10 assumano i valori: DLGS50_2016, DLGS56_2017 e DL32_2019, DLGS36_2023
             String normativaDaTabInizio = null;
             String normativaDaTabFine = null;
             String dataDaTab = null;
@@ -5543,8 +5666,10 @@ public class AggiudicazioneManager {
             ret = this.DLgs_50_2016;
           else if((dataControllo.after(this.DATA_DLgs_56_2017) && dataControllo.before(DATA_DL_32_2019)) || dataControllo.equals(this.DATA_DLgs_56_2017))
             ret = this.DLgs_56_2017;
-          else if(dataControllo.after(this.DATA_DL_32_2019) || dataControllo.equals(this.DATA_DL_32_2019))
+          else if(dataControllo.after(this.DATA_DL_32_2019) && dataControllo.before(this.DATA_DLgs_36_2023) || dataControllo.equals(this.DATA_DL_32_2019))
             ret = this.DL_32_2019;
+          else if(dataControllo.after(this.DATA_DLgs_36_2023) || dataControllo.equals(this.DATA_DLgs_36_2023))
+            ret = this.DLgs_36_2023;
         }
       }
 
@@ -5561,7 +5686,7 @@ public class AggiudicazioneManager {
      */
     private boolean controlloStringaNormativa(String valore){
       boolean esito=false;
-      if(this.stringa_DLgs_50_2016.equals(valore) || this.stringa_DLgs_56_2017.equals(valore) || this.stringa_DL_32_2019.equals(valore))
+      if(this.stringa_DLgs_50_2016.equals(valore) || this.stringa_DLgs_56_2017.equals(valore) || this.stringa_DL_32_2019.equals(valore) || this.stringa_DLgs_36_2023.equals(valore))
         esito=true;
       return esito;
     }
@@ -5581,6 +5706,8 @@ public class AggiudicazioneManager {
         ret=this.DLgs_56_2017;
       else if(this.stringa_DL_32_2019.equals(valore))
         ret=this.DL_32_2019;
+      else if(this.stringa_DLgs_36_2023.equals(valore))
+        ret=this.DLgs_36_2023;
 
       return ret;
     }
@@ -5608,6 +5735,7 @@ public class AggiudicazioneManager {
       boolean modalitaDL2016 = false;
       boolean modalitaDL2017 = false;
       boolean modalitaDL2019 = false;
+      boolean modalitaDL2023 = false;
       boolean modalitaDLCalcoloGraduatoria=false;
 
       int modlicg = 0;
@@ -5623,6 +5751,9 @@ public class AggiudicazioneManager {
            }
           if (hMapParametri.get("modalitaDL2019") != null){
             modalitaDL2019 = ((Boolean) hMapParametri.get("modalitaDL2019")).booleanValue();
+           }
+          if (hMapParametri.get("modalitaDL2023") != null){
+            modalitaDL2023 = ((Boolean) hMapParametri.get("modalitaDL2023")).booleanValue();
            }
           if (hMapParametri.get("modalitaDLCalcoloGraduatoria") != null){
             modalitaDLCalcoloGraduatoria = ((Boolean) hMapParametri.get("modalitaDLCalcoloGraduatoria")).booleanValue();
@@ -5642,7 +5773,7 @@ public class AggiudicazioneManager {
 
 
         this.calcoloSogliaRegSicilia(ngara, hMapTORN, hMapGARE, hMapParametri);
-      }else if((!modalitaDL2016 && !modalitaDL2017 && !modalitaDL2019) || modalitaDLCalcoloGraduatoria){
+      }else if((!modalitaDL2016 && !modalitaDL2017 && !modalitaDL2019 && !modalitaDL2023) || modalitaDLCalcoloGraduatoria){
         //Gestione vecchia modalità
         this.calcoloSogliaAnomalia(ngara, codgar, hMapTORN, hMapGARE, hMapParametri);
         this.calcolaMedia(ngara, hMapTORN, hMapGARE, hMapParametri, true);
@@ -5716,7 +5847,7 @@ public class AggiudicazioneManager {
             this.calcoloMediaCorretta(ngara, hMapTORN, hMapGARE, hMapParametri);
             break;
         }
-      }else if(modalitaDL2019){
+      }else if(modalitaDL2019 || modalitaDL2023){
         this.aggiornaImplGAREannullaCalcolo(ngara, codgar, null, false, true);
 
         //esclusione ali (10% per normativa DLGS2016 e precedente, tabellato A2065 per DLGS2017): stesso criterio della normativa precedente
@@ -5953,6 +6084,26 @@ public class AggiudicazioneManager {
         if (logger.isDebugEnabled())
             logger.debug("inizializzaTipologiaGara(" + codgar + "): fine metodo");
     }
+    
+    /**
+     * Viene individuato il valmax della gara da v_gare_importi
+     *
+     * @param codgar
+     * @param hMap
+     * @throws GestoreException
+     */
+    private void inizializzaImportoGara(String codgar, HashMap hMap)
+            throws GestoreException {
+
+        if (logger.isDebugEnabled())
+            logger.debug("inizializzaImportoGara(" + codgar + "): inizio metodo");
+
+          Double valmax =  getValMax(codgar);
+          hMap.put("importoGara", valmax);
+          
+        if (logger.isDebugEnabled())
+            logger.debug("inizializzaImportoGara(" + codgar + "): fine metodo");
+    }
 
     private void inizializzaNormativa(HashMap hMapTORN, HashMap hMapGARE, HashMap hMapParametri) throws GestoreException
     {
@@ -5965,6 +6116,7 @@ public class AggiudicazioneManager {
       boolean modalitaDL2016 = false;
       boolean modalitaDL2017 = false;
       boolean modalitaDL2019 = false;
+      boolean modalitaDL2023 = false;
       boolean modalitaManuale = true;
       int modlicg = 0;
       String legRegSic = "";
@@ -5995,6 +6147,8 @@ public class AggiudicazioneManager {
           modalitaDL2017= true;
         else if(ret==3)
           modalitaDL2019= true;
+        else if(ret==4)
+          modalitaDL2023= true;
       }
       if(modalitaDL2016 || modalitaDL2017){
         String modalita=this.isModalitaManuale();
@@ -6005,6 +6159,7 @@ public class AggiudicazioneManager {
       hMapParametri.put("modalitaDL2016", new Boolean(modalitaDL2016));
       hMapParametri.put("modalitaDL2017", new Boolean(modalitaDL2017));
       hMapParametri.put("modalitaDL2019", new Boolean(modalitaDL2019));
+      hMapParametri.put("modalitaDL2023", new Boolean(modalitaDL2023));
       hMapParametri.put("modalitaManuale", new Boolean(modalitaManuale));
     }
 
@@ -6483,15 +6638,25 @@ public class AggiudicazioneManager {
            numcla = (Long)((JdbcParametro) datiCatg.get(1)).getValue();
          }
 
-         String codiceDitta = this.pgManager.getDittaSelezionataDaElenco(ditta,chiaveGara);
-         String stazioneAppaltante = (String)this.sqlManager.getObject("select cenint from torn where codgar=?", new Object[]{codgar});
-         if(codiceDitta!=null){
-           this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, elenco, codiceDitta, catiga, tipoGara, numcla, stazioneAppaltante, tipoalgo, modo);
-         }
-         if(aqoper!=null && aqoper.longValue()==2){
-           //Gestione decremento per le occorrenze in DITGAQ
-           this.pgManager.aggiornaNumAggiudicazioniDITGAQ(codiceElenco, elenco, chiaveGara, ngara, ditta, catiga, tipoGara, numcla, stazioneAppaltante, tipoalgo, modo,1);
-         }
+		   String stazioneAppaltante = (String)this.sqlManager.getObject("select cenint from torn where codgar=?", new Object[]{codgar});
+			String aggrtcomp = (String) sqlManager.getObject("select aggrtcomp from garealbo where ngara=? and codgar= ?", new Object[]{elenco, codiceElenco});
+			Long tipimp = (Long) sqlManager.getObject("select tipimp from impr where codimp=?", new Object[] {ditta});
+			if ("1".equals(aggrtcomp) && Arrays.asList(3L,10L).contains(tipimp)) {
+			   List<Vector<?>> listaDitteDelRT = sqlManager.getListVector("select coddic from ragimp where codime9=?", new Object[] {ditta});
+			   for (Vector<?> dittaDelRT : listaDitteDelRT) {
+				   String coddic = ((JdbcParametro) dittaDelRT.get(0)).getStringValue();
+				   this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, elenco, coddic, catiga, tipoGara, numcla, stazioneAppaltante, tipoalgo, modo);
+			   }
+			} else {
+				String codiceDitta = this.pgManager.getDittaSelezionataDaElenco(ditta,chiaveGara);
+				if(codiceDitta!=null){
+				this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, elenco, codiceDitta, catiga, tipoGara, numcla, stazioneAppaltante, tipoalgo, modo);
+				}
+			}
+			if(aqoper!=null && aqoper.longValue()==2){
+			   //Gestione decremento per le occorrenze in DITGAQ
+			   this.pgManager.aggiornaNumAggiudicazioniDITGAQ(codiceElenco, elenco, chiaveGara, ngara, ditta, catiga, tipoGara, numcla, stazioneAppaltante, tipoalgo, modo,1);
+			}
        }
      }
 
@@ -6535,6 +6700,13 @@ public class AggiudicazioneManager {
                + "): fine metodo");
 }
 
+	public void controlloDitteNonInElenco(String ditta, String codiceElenco, String ngaraElenco) throws SQLException,GestoreException{
+		Long countDitteNonInElenco = (Long) sqlManager.getObject("select count(coddic) from ragimp where codime9=? and coddic not in " +
+						"(select dittao from ditg where codgar5=? and ngara5=? and ditg.abilitaz=1 and ditg.dabilitaz is not null)",
+				new Object[]{ditta, codiceElenco, ngaraElenco});
+		if (countDitteNonInElenco != null && countDitteNonInElenco > 0)
+			throw new GestoreException("Alcune componenti dell'RT selezionata non sono iscritte all'elenco operatori della gara", "aggiudicazioneDefinitva.ditteNonInElenco");
+	}
 
    /**
     * Funzione per eseguire il calcolo dell'iva per popolare GAREIVA e aggiornare IMPTOT e IMPIVA di GARECONT
@@ -6690,29 +6862,34 @@ public class AggiudicazioneManager {
     *
     *@throws SQLException,GestoreException
     */
-   public Object[] controlloNumDitteAmmesseSopraSoglia(String ngara,String tabellato, int numeroVoce, String calcsome) throws SQLException, GestoreException{
+   public Object[] controlloNumDitteAmmesseSopraSoglia(String ngara,String tabellato, int numeroVoce, String calcsome, Long numeroDitteConfronto) throws SQLException, GestoreException{
      boolean esitoControlloNumDitte= true;
      Long numDitteGara = (Long)sqlManager.getObject("select count(dittao) from ditg where ngara5=? and " +
          "(AMMGAR <> '2' or AMMGAR is null) and (MOTIES < 99 or MOTIES is null)", new Object[]{ngara});
      if(numDitteGara==null)
        numDitteGara = new Long(0);
 
-     String descTabellatoValoreConfronto = this.leggiDescrizioneDaTab1(tabellato, new Long(numeroVoce));
-     Long valoreConfronto = new Long(0);
-
-     if("1".equals(calcsome)) {
-    	 descTabellatoValoreConfronto = "2";
-    	 valoreConfronto = new Long(2);
-     }else {
-     	if(descTabellatoValoreConfronto!=null && !"".equals(descTabellatoValoreConfronto)){
-     		int pos = descTabellatoValoreConfronto.indexOf("-");
-     		if(pos<0)
-     			pos=1;
-     		descTabellatoValoreConfronto = descTabellatoValoreConfronto.substring(0, pos);
-     		descTabellatoValoreConfronto=descTabellatoValoreConfronto.trim();
-     		valoreConfronto = new Long(descTabellatoValoreConfronto);
-     	}
-     }
+		 Long valoreConfronto = new Long(0);
+		 String descTabellatoValoreConfronto = "";
+		 if(numeroDitteConfronto!=null) {
+			 valoreConfronto = numeroDitteConfronto;
+			 descTabellatoValoreConfronto = String.valueOf(numeroDitteConfronto);
+		 } else {
+			 descTabellatoValoreConfronto = this.leggiDescrizioneDaTab1(tabellato, new Long(numeroVoce));
+			 if ("1".equals(calcsome)) {
+				 descTabellatoValoreConfronto = "2";
+				 valoreConfronto = new Long(2);
+			 } else {
+				 if (descTabellatoValoreConfronto != null && !"".equals(descTabellatoValoreConfronto)) {
+					 int pos = descTabellatoValoreConfronto.indexOf("-");
+					 if (pos < 0)
+						 pos = 1;
+					 descTabellatoValoreConfronto = descTabellatoValoreConfronto.substring(0, pos);
+					 descTabellatoValoreConfronto = descTabellatoValoreConfronto.trim();
+					 valoreConfronto = new Long(descTabellatoValoreConfronto);
+				 }
+			 }
+		 }
 
      if(numDitteGara.longValue() < valoreConfronto.longValue())
        esitoControlloNumDitte = false;
@@ -7092,6 +7269,41 @@ public class AggiudicazioneManager {
 
      int ret=this.getLeggeCalcoloSoglia(new Long(iterga), dinvit, dpubavg, datpub, calcsome);
      if(ret==3)
+       result=true;
+
+     return result;
+   }
+   
+   /**
+    * Il metodo controlla se per la gara si deve applicare la normativa DLgs.36/2023
+    * @param hMapTORN
+    * @param hMapGARE
+    * @param hMapParametri
+    * @return boolean
+    * @throws GestoreException
+    */
+   private boolean isDL2023(HashMap hMapTORN, HashMap hMapGARE, HashMap hMapParametri) throws GestoreException
+   {
+     boolean result=false;
+     int iterga = 0;
+     Date dpubavg = null;
+     Date dinvit = null;
+     Date datpub = null;
+     String calcsome = null;
+
+     if (hMapGARE.get("dpubavg") != null)
+       dpubavg = (Date) hMapGARE.get("dpubavg");
+     if (hMapTORN.get("iterga") != null)
+       iterga = ((Long) hMapTORN.get("iterga")).intValue();
+     if (hMapTORN.get("dinvit") != null)
+       dinvit = ((Date) hMapTORN.get("dinvit"));
+     if (hMapParametri.get("datpub") != null)
+       datpub = ((Date) hMapParametri.get("datpub"));
+     if (hMapTORN.get("calcsome") != null)
+      calcsome = ((String) hMapTORN.get("calcsome"));
+
+     int ret=this.getLeggeCalcoloSoglia(new Long(iterga), dinvit, dpubavg, datpub, calcsome);
+     if(ret==4)
        result=true;
 
      return result;

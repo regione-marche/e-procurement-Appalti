@@ -178,7 +178,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
     try {
       Vector<?> obj = sqlManager.getVector(
           "select TORN.TIPTOR, TORN.TIPGEN, GARE.TIPGARG, GARE.GENERE, GARE.ELENCOE, GARE.IMPAPP, TORN.IMPTOR, GARE.CARRELLO, " +
-           "TORN.DTEPAR, TORN.OTEPAR, TORN.ITERGA, GARE.BUSTALOTTI, GARE.PRECED, TORN.CALCSOME from TORN, GARE " +
+           "TORN.DTEPAR, TORN.OTEPAR, TORN.ITERGA, GARE.BUSTALOTTI, GARE.PRECED, TORN.CALCSOME, GARE.NGARAPA, GARE.ISRICONCLUSA from TORN, GARE " +
            "where TORN.CODGAR = GARE.CODGAR1 " +
              "and GARE.NGARA = ?", new Object[]{codiceGara});
       if(obj.get(0) != null){
@@ -218,12 +218,14 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
 
           switch(gareIterga){
           case 1:
+          case 9:
             isProceduraAggiudicazioneAperta = true;
               break;
           case 3:
           case 5:
           case 6:
           case 8:
+          case 10:
               isProceduraNegoziata = true;
               break;
           case 7:
@@ -272,6 +274,20 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
 
       	pageContext.setAttribute("isGaraLottiConOffertaUnica",
       			"" + isGaraLottiConOffertaUnica, PageContext.REQUEST_SCOPE);
+
+        if("true".equals(isProceduraTelematica) && isGaraLottiConOffertaUnica) {
+          boolean controlloInvoffLotti = true;
+          try {
+            Long conteggio = (Long) sqlManager.getObject("select count(ngara5) from ditg where codgar5=? and ngara5!= codgar5 and (invoff is null or invoff ='') and (fasgar is null or fasgar =0)", new Object[]{codiceGara});
+            if (conteggio != null && conteggio.longValue() > 0)
+              controlloInvoffLotti = false;
+            pageContext.setAttribute("controlloInvoffLotti",
+                    "" + controlloInvoffLotti, PageContext.REQUEST_SCOPE);
+          } catch (SQLException e) {
+            throw new JspException(
+                    "Errore durante la lettura del campo INVOFF dei lotti ", e);
+          }
+        }
       }
 
       if(obj.get(4) != null){
@@ -375,7 +391,16 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
             pageContext.setAttribute("calcoloSogliaAnomaliaExDLgs2017",calcsome);
 
         }
-
+      
+      if(obj.get(14) != null){
+        String ngarapa = (String) ((JdbcParametro) obj.get(14)).getValue();
+        pageContext.setAttribute("ngarapa",ngarapa);
+      } 
+      
+      if(obj.get(15) != null){
+        String isriconclusa = (String) ((JdbcParametro) obj.get(15)).getValue();
+        pageContext.setAttribute("isriconclusa",isriconclusa);
+      }
     } catch(SQLException s){
       throw new JspException("Errore durante la lettura del tipo di tornata della gara ", s);
     } catch (GestoreException e) {
@@ -533,7 +558,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
       if (wizardPaginaAttiva == GestioneFasiRicezioneFunction.FASE_APERTURA_DOMANDE_DI_ISCRIZIONE)
         filtro=" and (DITG.FASGAR > -5 or DITG.FASGAR = 0 or DITG.FASGAR is null)";
       else if(wizardPaginaAttiva == GestioneFasiRicezioneFunction.FASE_ELENCO_CONCORRENTI_ABILITATI)
-        filtro=" and (DITG.AMMGAR = 1 or DITG.AMMGAR is NULL) and DITG.ABILITAZ = 1";
+        filtro=" and (DITG.AMMGAR = '1' or DITG.AMMGAR is NULL) and DITG.ABILITAZ = 1";
       pageContext.setAttribute("filtroFaseRicezione", filtro,PageContext.REQUEST_SCOPE);
     } else {
       pageContext.setAttribute("filtroFaseRicezione",
@@ -872,6 +897,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
     sessione.setAttribute("elencoIdFiltriSpecifici", null);
     sessione.setAttribute("elencoIdZoneAttivita", null);
     sessione.setAttribute("elencoAffidatariEsclusi", null);
+    sessione.setAttribute("filtroElPremFasce", null);
 
     return null;
   }
@@ -992,7 +1018,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
              "and (INVGAR IS NULL OR INVGAR <> ?) " +
              "and (FASGAR IS NULL OR FASGAR >= ?)" +
              "and (ACQUISIZIONE IS NULL OR ACQUISIZIONE <> 5)",
-            new Object[]{codiceGara, new Long(2),
+            new Object[]{codiceGara, "2",
           	new Long(FASE_ELENCO_DITTE_INVITATE/10)});
 
       Long numeroDitteConOfferta = null;
@@ -1002,7 +1028,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
           "select count(*) from DITG " +
            "where NGARA5 = ? " +
              "and (INVOFF = ?) ",
-            new Object[]{codiceGara, new Long(1)});
+            new Object[]{codiceGara, "1"});
         if(numeroDitteConOfferta!=null && numeroDitteConOfferta.longValue()==0){
           //Si deve distinguere fra il caso in cui non ci sia nessuna ditta con INVOFF
           //valorizzato ed il caso invece in cui siano tutti 2, nel primo caso numeroDitteConOfferta=null
@@ -1011,7 +1037,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
               "select count(*) from DITG " +
               "where NGARA5 = ? " +
                 "and (INVOFF = ?) ",
-               new Object[]{codiceGara, new Long(2)});
+               new Object[]{codiceGara, "2"});
           if(numDitteSenzaOfferta!=null && numDitteSenzaOfferta.longValue()>0)
             numeroDitteConOfferta= new Long(0);
           else
@@ -1025,7 +1051,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
              "where NGARA5 = ? " +
              "and (INVOFF IS NULL OR INVOFF <> ?) " +
                "and (FASGAR IS NULL OR FASGAR > ?)",
-              new Object[]{codiceGara, new Long(2),
+              new Object[]{codiceGara, "2",
               new Long(FASE_ELENCO_DITTE_INVITATE/10)});
       }
       Long numeroDitteAmmesse = (Long) sqlManager.getObject(
@@ -1033,7 +1059,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
            "where NGARA5 = ? " +
              "and (INVOFF IS NULL OR INVOFF <> ?) " +
              "and (FASGAR IS NULL OR FASGAR > 1)",
-             new Object[]{codiceGara, new Long(2)});
+             new Object[]{codiceGara, "2"});
 
       pageContext.setAttribute("numeroDittePartecipanti", numeroDittePartecipanti, PageContext.REQUEST_SCOPE);
       pageContext.setAttribute("numeroDitteInvitate", numeroDitteInvitate, PageContext.REQUEST_SCOPE);
@@ -1058,7 +1084,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
       		"select count(*) from DITG where NGARA5 = ? and AMMGAR = ? " +
       		"and (FASGAR is not null and FASGAR <= ?)" +
       		  "and rtofferta is null",
-      		new Object[]{codiceGara, new Long(2),
+      		new Object[]{codiceGara, "2",
       		    new Long(FASE_ELENCO_DITTE_INVITATE/10)});
 
       // Numero ditte da invitare
@@ -1068,7 +1094,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
              "and (INVGAR <> ? OR INVGAR is NULL) " +
              "and (FASGAR IS NULL OR FASGAR > ?) " +
              "and (acquisizione is null or acquisizione <>5)",
-          new Object[]{codiceGara, new Long(2),
+          new Object[]{codiceGara, "2",
             	new Long(FASE_ELENCO_DITTE_INVITATE/10)});
 
       // Di cui numero ditte ammesse con riserva
@@ -1077,7 +1103,7 @@ public class GestioneFasiRicezioneFunction extends AbstractFunzioneTag {
                " and (dg.INVGAR <> ? or dg.INVGAR is NULL) and da.ammgar = ?" +
                " and (dg.acquisizione is null or dg.acquisizione <>5) and da.fasgar<=?";
       Long numeroDiCuiDitteAmmesseConRiserva =(Long) sqlManager.getObject(selectNumDitteAmmConRiserva,
-          new Object[]{codiceGara, new Long(2), new Long(3), new Long(-3)});
+          new Object[]{codiceGara, "2", new Long(3), new Long(-3)});
 
       Long numeroDitteInvito = null;
       if("true".equals(isProceduraTelematica) && isProceduraRistretta){

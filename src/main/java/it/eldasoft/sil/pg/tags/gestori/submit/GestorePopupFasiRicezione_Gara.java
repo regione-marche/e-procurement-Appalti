@@ -154,7 +154,7 @@ public class GestorePopupFasiRicezione_Gara extends AbstractGestoreEntita {
 						"DITG.DRICEZGIU;DITG.OGGRICEZGIU;DITG.RICAVVAL;DITG.NOTAVVAL;" +
 						"DITG.REQMIN;DITG.ESTIMP;DITG.INOSSERV;DITG.COORDSIC;DITG.REQTORRE;" +
 						"DITG.NVCOMMTECN;DITG.DVCOMMTECN;DITG.NVCONTRADD;DITG.DVCONTRADD;"+
-						"DITG.NPROFF;DITG.PERCMANO;DITG.DSORTEV";
+						"DITG.NPROFF;DITG.PERCMANO;DITG.DSORTEV;DITG.CODCNEL";
 				HashMap colonneDITG = dataColumnContainerDITG.getColonne();
 				Iterator iter = colonneDITG.keySet().iterator();
 

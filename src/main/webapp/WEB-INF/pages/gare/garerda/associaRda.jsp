@@ -136,7 +136,7 @@
 
 		function indietro(){
 			bloccaRichiesteServer();
-			document.location.href = "${pageContext.request.contextPath}/pg/InitNuovaGara.do?" + csrfToken;
+			document.location.href = "${pageContext.request.contextPath}/pg/InitNuovaGara.do";
 		}
 
 		function creaNuovaGara(){
@@ -159,9 +159,9 @@
 			</c:choose>
 
 			if(tipoAppalto == '1'){
-				document.forms[0].action+="&tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&chiaveRiga=${param.chiaveRiga}&livpro=${param.livpro}&numeroRda=" + getValue("V_SMAT_RDA_NUMERO_RDA");
+				document.forms[0].action+="?tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&chiaveRiga=${param.chiaveRiga}&livpro=${param.livpro}&numeroRda=" + getValue("V_SMAT_RDA_NUMERO_RDA");
 			}else
-				document.forms[0].action+="&tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&numeroRda=" + getValue("V_SMAT_RDA_NUMERO_RDA");
+				document.forms[0].action+="?tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&numeroRda=" + getValue("V_SMAT_RDA_NUMERO_RDA");
 
 			bloccaRichiesteServer();
 			document.forms[0].submit();

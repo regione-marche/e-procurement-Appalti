@@ -51,8 +51,8 @@
 					<gene:campoScheda title="Codice ditta" entita="RAGIMP" campo="CODDIC_${param.contatore}" campoFittizio="true" definizione="T10;1;;;CODDIC" value="${item[1]}" obbligatorio="true" />
 					<gene:campoScheda title="Ragione sociale" entita="RAGIMP" campo="NOMDIC_${param.contatore}" campoFittizio="true" definizione="T61;0;;;NOMDIC" value="${item[2]}" />
 					<gene:campoScheda title="Codice dell'Anagrafico Generale" entita="IMPR" campo="CGENIMP_${param.contatore}" campoFittizio="true" definizione="T20;;;;CGENIMP" value="${item[5]}" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CGENIMP") && fn:contains(listaOpzioniDisponibili, "OP127#")}'/>
-					<gene:campoScheda title="Codice fiscale" entita="IMPR" campo="CFIMP_${param.contatore}" campoFittizio="true" definizione="T16;;;;" value="${item[6]}" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CFIMP")}'/>
-					<gene:campoScheda title="Partita I.V.A." entita="IMPR" campo="PIVIMP_${param.contatore}" campoFittizio="true" definizione="T14;;;;" value="${item[7]}" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.PIVIMP")}'/>
+					<gene:campoScheda title="Codice fiscale" entita="IMPR" campo="CFIMP_${param.contatore}" campoFittizio="true" definizione="T30;;;;" value="${item[6]}" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CFIMP")}'/>
+					<gene:campoScheda title="Partita I.V.A." entita="IMPR" campo="PIVIMP_${param.contatore}" campoFittizio="true" definizione="T30;;;;" value="${item[7]}" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.PIVIMP")}'/>
 				</gene:archivio>
 				<gene:campoScheda title="Quota di partecipazione"  entita="RAGIMP" campo="QUODIC_${param.contatore}" campoFittizio="true" definizione="F9.5;;;PRC;QUODIC" value="${item[3]}" visibile="${isGaraElenco ne '1' }"/>
 			</c:when>
@@ -62,8 +62,8 @@
 					<c:when test='${modo eq "NUOVO"}'>
 						<gene:campoScheda title="Codice ditta" entita="RAGIMP" campo="CODDIC_${param.contatore}" campoFittizio="true" definizione="T10;1;;;CODDIC" value="${item[1]}" obbligatorio="true" modificabile="false"/>
 						<gene:campoScheda title="Ragione sociale" entita="RAGIMP" campo="NOMDIC_${param.contatore}" campoFittizio="true" definizione="T61;0;;;NOMDIC" value="${item[2]}" modificabile="false"/>
-						<gene:campoScheda title="Codice fiscale" entita="IMPR" campo="CFIMP_${param.contatore}" campoFittizio="true" definizione="T16;;;;" value="${item[6]}" modificabile="false" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CFIMP")}'/>
-						<gene:campoScheda title="Partita I.V.A." entita="IMPR" campo="PIVIMP_${param.contatore}" campoFittizio="true" definizione="T14;;;;" value="${item[7]}" modificabile="false" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.PIVIMP")}'/>
+						<gene:campoScheda title="Codice fiscale" entita="IMPR" campo="CFIMP_${param.contatore}" campoFittizio="true" definizione="T30;;;;" value="${item[6]}" modificabile="false" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CFIMP")}'/>
+						<gene:campoScheda title="Partita I.V.A." entita="IMPR" campo="PIVIMP_${param.contatore}" campoFittizio="true" definizione="T30;;;;" value="${item[7]}" modificabile="false" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.PIVIMP")}'/>
 						<gene:campoScheda title="Quota di partecipazione"  entita="RAGIMP" campo="QUODIC_${param.contatore}" campoFittizio="true" definizione="F9.5;;;PRC;QUODIC" value="${item[3]}" modificabile="false" visibile="${isGaraElenco ne '1' }"/>
 					</c:when>
 					<c:otherwise>

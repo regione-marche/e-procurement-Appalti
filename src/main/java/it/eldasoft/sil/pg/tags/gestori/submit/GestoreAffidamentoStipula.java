@@ -11,10 +11,13 @@
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
 import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Vector;
 
 import javax.servlet.http.HttpSession;
+import javax.servlet.jsp.PageContext;
 
 import org.apache.commons.lang.StringUtils;
 import org.springframework.transaction.TransactionStatus;
@@ -30,6 +33,7 @@ import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityNumeri;
 import it.eldasoft.utils.utility.UtilityStringhe;
 
@@ -44,7 +48,7 @@ public class GestoreAffidamentoStipula extends AbstractGestoreEntita {
     " fasgar, stepgar, modastg, ribagg, sicinc, temesi, ribcal, precut, pgarof, garoff, idiaut, calcsoang, onsogrib) " +
     " values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
-  private static final String insertTorn = "insert into torn(codgar, cenint, tipgen, offaum, compreq, istaut, iterga, codrup, numavcp, settore, modrea, accqua, isadesione, altrisog, prerib, cliv2) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+  private static final String insertTorn = "insert into torn(codgar, cenint, tipgen, offaum, compreq, istaut, iterga, codrup, numavcp, settore, modrea, accqua, isadesione, altrisog, prerib, cliv2, vernpa) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
   private static final String insertGarecont = "insert into garecont(ngara, ncont, codimp) values(?,?,?)";
 
@@ -140,16 +144,17 @@ public class GestoreAffidamentoStipula extends AbstractGestoreEntita {
             this.getServletContext(), GenChiaviManager.class);
 
 
-        if(geneManager.isCodificaAutomatica("TORN", "CODGAR")){
-          HashMap hm = pgManager.calcolaCodificaAutomatica("GARE", Boolean.TRUE, null,
-              null);
-          ngara =  (String) hm.get("numeroGara");
-          this.getRequest().setAttribute("ngara", ngara);
-        }else{
-          GenChiaviManager genChiaviManager = (GenChiaviManager) UtilitySpring.getBean("genChiaviManager",
-              this.getServletContext(), GenChiaviManager.class);
-
-        }
+    if(geneManager.isCodificaAutomatica("TORN", "CODGAR")){
+      HashMap hm = pgManager.calcolaCodificaAutomatica("GARE", Boolean.TRUE, null,
+          null);
+      ngara =  (String) hm.get("numeroGara");
+    }else{
+      ngara=datiForm.getString("GARE.NGARA");
+      ngara = ngara.trim();
+      pgManager.verificaPreliminareDatiCopiaGara(null, ngara,
+              null, ngara, false);
+    }
+    this.getRequest().setAttribute("ngara", ngara);
 
     Long tipgen = datiForm.getLong("TORN.TIPGEN");
     if(tipgen==null)
@@ -302,7 +307,7 @@ public class GestoreAffidamentoStipula extends AbstractGestoreEntita {
       this.sqlManager.update(insertGare1, parametriGare1);
 
       //Inserimento TORN
-      Object parametriTorn[] = new Object[16];
+      Object parametriTorn[] = new Object[17];
       //codgar
       parametriTorn[0] = "$" + ngara;
       //cenint
@@ -336,6 +341,11 @@ public class GestoreAffidamentoStipula extends AbstractGestoreEntita {
       parametriTorn[14] = datiForm.getLong("TORN.PRERIB");
       //cliv2
       parametriTorn[15] = datiForm.getLong("TORN.CLIV2");
+
+		String verNPA = pgManager.getVersioneNpaCorrente();
+		if (StringUtils.isNotBlank(verNPA)) {
+			parametriTorn[16] = verNPA;
+		}
 
       this.sqlManager.update(insertTorn, parametriTorn);
 

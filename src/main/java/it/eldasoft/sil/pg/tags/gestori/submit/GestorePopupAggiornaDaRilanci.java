@@ -116,7 +116,7 @@ public class GestorePopupAggiornaDaRilanci extends GestoreFasiRicezione {
       }
 
       //Verifica che non vi siano buste dell'offerta economica ancora da elaborare
-      select="select count(idcom) from w_invcom where idprg='PA' and comkey2=? and comtipo='FS11C' and comstato in (5,7)";
+      select="select count(idcom) from w_invcom where idprg='PA' and comkey2=? and comtipo='FS11C' and comstato in ('5','7')";
       Long numeroBusteEconomiche=(Long)this.sqlManager.getObject(select, new Object[]{ngaraRilancio});
       if(numeroBusteEconomiche!=null && numeroBusteEconomiche.longValue()>0){
         errMsgEvento = "Nella gara di rilancio selezionata deve essere completata l'acquisizione delle buste economiche.";

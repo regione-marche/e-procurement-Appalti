@@ -54,15 +54,18 @@
 	
 	<c:choose>
 	<c:when test='${entitaParent eq "GARE" or entitaParent eq "TORN"}'>
-		<c:set var="wherekey" value="G_PERMESSI.CODGAR = '${disckey1}' OR G_PERMESSI.CODGAR = '$${disckey1}'" />
+		<c:set var="wherekey" value="G_PERMESSI.CODGAR = ? OR G_PERMESSI.CODGAR = ?" />
+		<c:set var="parametri" value="T:${disckey1};T:$${disckey1}"/>
 	</c:when>
 	<c:otherwise>
-		<c:set var="wherekey" value="G_PERMESSI.IDSTIPULA = '${disckey1}'" />
+		<c:set var="wherekey" value="G_PERMESSI.IDSTIPULA = ?" />
+		<c:set var="parametri" value="N:${disckey1}"/>
 	</c:otherwise>
 	</c:choose>
 	
 	<c:set var="where" value="(${wherekey})
-	AND NOT EXISTS (SELECT * FROM W_DISCDEST WHERE G_PERMESSI.SYSCON=W_DISCDEST.DESTID AND W_DISCDEST.DISCID_P=${discid_p} AND W_DISCDEST.DISCID=-1)"/>
+	AND NOT EXISTS (SELECT * FROM W_DISCDEST WHERE G_PERMESSI.SYSCON=W_DISCDEST.DESTID AND W_DISCDEST.DISCID_P=? AND W_DISCDEST.DISCID=-1)"/>
+	<c:set var="parametri" value="${parametri};N:${discid_p}"/>
 
 	<gene:setString name="titoloMaschera" value='Selezione dei destinatari delle notifiche' />
 		
@@ -83,8 +86,8 @@
 		Selezionare dalla lista sottostante gli utenti destinatari delle notifiche.
 		<br>
 		<br>	
-	
-		<gene:formLista entita="G_PERMESSI" pagesize="20" where="${where}" sortColumn="4" tableclass="datilista" gestisciProtezioni="true">
+		${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "G_PERMESSI", where, parametri)}
+		<gene:formLista entita="G_PERMESSI" pagesize="20" sortColumn="4" tableclass="datilista" gestisciProtezioni="true">
 			
 			<c:set var="destid" value="${fn:escapeXml(datiRiga.G_PERMESSI_SYSCON)}"/>
 			<c:set var="destname" value="${fn:escapeXml(datiRiga.USRSYS_SYSUTE)}"/>
@@ -120,7 +123,7 @@
 			if (numeroOggettiEmail == 0) {
 	      		alert("Selezionare almeno un destinatario dalla lista");
 	      	} else {
-	      		document.forms[0].action="${pageContext.request.contextPath}/pg/AggiungiDestinatariNotifiche.do?"+csrfToken;
+	      		document.forms[0].action="${pageContext.request.contextPath}/pg/AggiungiDestinatariNotifiche.do";
  				bloccaRichiesteServer();
 				document.forms[0].submit();
  			}

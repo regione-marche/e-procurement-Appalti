@@ -140,8 +140,7 @@
 	<c:set var="temp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.InizializzaPopupInviaVigilanzaFunction", pageContext, param.codgar, param.genereGara)}'/>
 	<c:set var="temp" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetStatoInviiVigilanzaFunction", pageContext, param.codgar)}'/>
 	<c:set var="logincomune" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.sil.pl.vigilanza.ws.login.comune")}'/>
-	<c:set var="ssoprotocollo" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "sso.protocollo")}'/>
-	
+
 	<gene:redefineInsert name="corpo">
 	
 		<form action="${contextPath}/pg/InviaVigilanza.do" method="post" name="formInviaVigilanza" >
@@ -192,7 +191,6 @@
 					</td>
 				</tr>
 				
-				<c:if test="${empty ssoprotocollo || ssoprotocollo eq '0'}">
 					<tr>
 						<td colspan="2">
 							<input class="opzione" id="altre" type="radio" name="credenziali" value="ALTRE" onchange="javascipt:gestioneCredenziali()">Altre credenziali
@@ -211,7 +209,6 @@
 							<input type="password" name="password" size="15" disabled/>
 						</td>
 					</tr>
-				</c:if>
 				
 				<c:choose>
 					<c:when test="${isadesione eq '1' && corrispondenzaAnac eq 'true' }">
@@ -230,6 +227,8 @@
 						<c:set var="labelMetodo4" value="Inizio contratto"/>
 					</c:otherwise>
 				</c:choose>
+				
+				<c:set var="labelMetodo5" value="Partecipanti"/>
 				
 				<tr>
 					<td colspan="2">
@@ -295,6 +294,22 @@
 								</c:forEach>
 							</c:if>
 							
+							<c:if test="${ inviaPartecipanti eq 'true' }">
+							<c:forEach items="${fasePartecipanti}" step="1" var="riga" varStatus="statusRiga" >
+								<tr>
+									<c:if test="${statusRiga.first}"><td colspan="2" class="fase" rowspan="${fn:length(fasePartecipanti)}">${labelMetodo5 }</td></c:if>
+									<td class="data" data-numero-relativo="${statusRiga.index}">${riga[0]}</td>
+									<td class="esito"  data-numero-relativo="${statusRiga.index}" data-esito="${riga[1]}">${riga[2]}</td>
+									<td class="messaggio" data-numero-relativo="${statusRiga.index}" >${riga[3]}</td>
+									<c:if test="${statusRiga.first}">
+										<td class="invia" rowspan="${fn:length(fasePartecipanti)}">
+											<a class="link-generico" href="javascript:inviaDati('metodo5');"><img alt="Invia dati" src="${pageContext.request.contextPath}/img/Communication-47.png" width="20" height="20"></a>
+										</td>
+									</c:if>
+								</tr>
+							</c:forEach>
+							</c:if>
+							
 							<c:if test="${faseInizioContrattoDisponibile ne 'false' }">
 								<c:forEach items="${faseContratto}" step="1" var="riga" varStatus="statusRiga" >
 									<tr>
@@ -335,7 +350,6 @@
 		
 			var invia = "true";
 			
-			<c:if test="${empty ssoprotocollo || ssoprotocollo eq '0'}">
 			var altre = document.formInviaVigilanza.altre;
 			if (altre.checked) {
 				var username = document.formInviaVigilanza.username;
@@ -350,8 +364,8 @@
 					alert("Inserire la password");
 					invia = "false";
 				}
-			}			
-			</c:if>
+			}		
+			
 			$("#metodo").val(metodo);	
 			if (invia == "true") {
 				document.formInviaVigilanza.submit();

@@ -71,7 +71,7 @@
 		
 		function annullaValutazioneProdotti(id){
 			bloccaRichiesteServer();
-			var action = "${pageContext.request.contextPath}/pg/AnnullaValutazioneProdotti.do?"+csrfToken+"&id=" + id;
+			var action = "${pageContext.request.contextPath}/pg/AnnullaValutazioneProdotti.do?id=" + id;
 			document.location.href=action;
 		}
 	

@@ -28,8 +28,8 @@
 		</c:otherwise>
 	</c:choose>
 	
-	
-	
+	<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from GARE where ngara=?", ngara)}'/>
+		
 	<gene:setString name="titoloMaschera"
 				value="Calcolo aggiudicazione su tutti i lotti della gara" />
 	
@@ -138,6 +138,7 @@
 				<gene:campoScheda campo="ISGARADLGS2016" definizione="T10" campoFittizio="true" visibile="false"  value="${ isGaraDLGS2016 eq 'true'}"/>
 				<gene:campoScheda campo="ISGARADLGS2017" definizione="T10" campoFittizio="true" visibile="false"  value="${ isGaraDLGS2017 eq 'true'}"/>
 				<gene:campoScheda campo="ISGARADL2019" definizione="T10" campoFittizio="true" visibile="false"  value="${ isGaraDL2019 eq 'true'}"/>
+				<gene:campoScheda campo="ISGARADLGS2023" definizione="T10" campoFittizio="true" visibile="false"  value="${ isGaraDLGS2023 eq 'true'}"/>
 								
 				<gene:campoScheda>
 					<td class="comandi-dettaglio" colSpan="2">

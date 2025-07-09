@@ -16,6 +16,8 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 
+import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.sicurezza.CriptazioneException;
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
 
@@ -177,6 +179,8 @@ public class GestorePopupTrasmettiOrdine extends AbstractGestoreEntita {
 
 			HashMap<String,String> datiWSDM = null;
 			if("1".equals(integrazioneWSDM)){
+				GestioneWSDMManager gestioneWSDMManager = (GestioneWSDMManager) UtilitySpring.getBean("gestioneWSDMManager",
+						this.getServletContext(), GestioneWSDMManager.class);
 		        //Popolamento contenitore dati per  WSDM
 		        datiWSDM = new  HashMap<String, String>();
 		        datiWSDM.put("classificadocumento",this.getRequest().getParameter("classificadocumento"));
@@ -196,10 +200,19 @@ public class GestorePopupTrasmettiOrdine extends AbstractGestoreEntita {
 		        datiWSDM.put("descrizionefascicolo",this.getRequest().getParameter("descrizionefascicolonuovo"));
 		        datiWSDM.put("annofascicolo",this.getRequest().getParameter("annofascicolo"));
 		        datiWSDM.put("numerofascicolo",this.getRequest().getParameter("numerofascicolo"));
-		        datiWSDM.put("username",this.getRequest().getParameter("username"));
+				String username=this.getRequest().getParameter("username");
 		        String password = this.getRequest().getParameter("password");
+				String idconfi= this.getRequest().getParameter("idconfi");
+				String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+				if("1".equals(wsdmLoginComune)){
+					String[] credenziali = gestioneWSDMManager.recuperaCredenzialiComuni(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO,idconfi);
+					username = credenziali[0];
+					password = credenziali[1];
+				}
 		        if(password==null)
 		          password="";
+
+				datiWSDM.put("username",username);
 		        datiWSDM.put("password",password);
 		        datiWSDM.put("ruolo",this.getRequest().getParameter("ruolo"));
 		        datiWSDM.put("nome",this.getRequest().getParameter("nome"));
@@ -219,7 +232,7 @@ public class GestorePopupTrasmettiOrdine extends AbstractGestoreEntita {
 		        datiWSDM.put("supporto",this.getRequest().getParameter("supporto"));
 		        datiWSDM.put("struttura",this.getRequest().getParameter("strutturaonuovo"));
 		        datiWSDM.put("tipofascicolo",this.getRequest().getParameter("tipofascicolonuovo"));
-		        datiWSDM.put("idconfi",this.getRequest().getParameter("idconfi"));
+		        datiWSDM.put("idconfi",idconfi);
 		        datiWSDM.put("servizio","FASCICOLOPROTOCOLLO");
 		        datiWSDM.put("classificadescrizione",this.getRequest().getParameter("classificadescrizione"));
 		        datiWSDM.put("voce",this.getRequest().getParameter("voce"));
@@ -246,15 +259,12 @@ public class GestorePopupTrasmettiOrdine extends AbstractGestoreEntita {
 		  this.getRequest().setAttribute("ordineTrasmesso", "Errori");
           throw new GestoreException("Impossibile trovare il file " + this.getForm().getSelezioneFile().getFileName(),
               "upload.validate.fileNotFound", new String[]{this.getForm().getSelezioneFile().getFileName()}, ex);
-		} catch (IOException ex) {
+		} catch (IOException | DocumentException | CriptazioneException ex) {
 		  this.getRequest().setAttribute("ordineTrasmesso", "Errori");
 		  throw new GestoreException("Si è verificato un errore durante la scrittura del buffer", "upload.bufferError", ex);
 		}catch (GestoreException e){
 		  this.getRequest().setAttribute("ordineTrasmesso", "Errori");
 		  throw e;
-		}catch (DocumentException ex) {
-          this.getRequest().setAttribute("ordineTrasmesso", "Errori");
-          throw new GestoreException("Si è verificato un errore durante la scrittura del buffer", "upload.bufferError", ex);
-        }
+		}
 	}
 }

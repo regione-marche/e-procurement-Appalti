@@ -18,6 +18,9 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
+import it.eldasoft.sil.pg.bl.*;
+import it.eldasoft.utils.sicurezza.CriptazioneException;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.transaction.TransactionStatus;
 
 import it.eldasoft.gene.bl.SqlManager;
@@ -31,9 +34,6 @@ import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.AggiudicazioneManager;
-import it.eldasoft.sil.pg.bl.AurManager;
-import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiGaraFunction;
 import it.eldasoft.sil.pg.tags.gestori.plugin.GestorePopupFasiGara;
 import it.eldasoft.utils.properties.ConfigManager;
@@ -235,10 +235,14 @@ public class GestoreFasiGara extends GestoreDITG {
           }
         }
 
-    if(isDITGModificata || isDITGAMMISModificata || isDITGSTATIModificata || isDITGModificataPopup) {
+      if(isDITGModificata || isDITGAMMISModificata || isDITGSTATIModificata || isDITGModificataPopup) {
         isListaModificata = true;
 
-      	if(isDITGAMMISModificata){
+
+        DataColumn campoV_DITGAMMIS_AMMGAR = null;
+        if (dataColumnContainerDiRiga.isColumn("V_DITGAMMIS.AMMGAR"))
+          campoV_DITGAMMIS_AMMGAR = dataColumnContainerDiRiga.getColumn("V_DITGAMMIS.AMMGAR");
+      	if(isDITGAMMISModificata && campoV_DITGAMMIS_AMMGAR != null){
       		// Nel caso i campi della vista V_DITGAMMIS siano stati modificati,
       		// allora, oltre a salvarli nella tabella DITGAMMIS, bisogna allineare
       		// alcuni campi della DITG. In particolare i campi da allineare sono:
@@ -252,6 +256,44 @@ public class GestoreFasiGara extends GestoreDITG {
       		this.aggiornaStatoAmmissioneDITG(codiceTornata, codiceLotto, codiceDitta,
       				faseGaraLong, dataColumnContainerDiRiga.getColumns(
       						"V_DITGAMMIS", 2), status);
+
+            MEPAManager mepaManager = (MEPAManager) UtilitySpring.getBean("mepaManager", this.getServletContext(), MEPAManager.class);
+            String valoreAMMGAR = campoV_DITGAMMIS_AMMGAR.getValue().getStringValue();
+            String dicitura = "";
+            String tipo = "";
+            try {
+              Long bustalotti = (Long) sqlManager.getObject("select bustalotti from gare where ngara=?", new Object[] {codiceTornata.startsWith("$") ? codiceLotto : codiceTornata});
+              Long genere = (Long) sqlManager.getObject("select genere from v_gare_genere where codgar=? and genere < 100", new Object[] {codiceTornata});
+              if (((Long) 50L).equals(numeroStepAttivo.longValue()) || ((Long) 60L).equals(numeroStepAttivo.longValue())) {
+                tipo = "OFFERTE";
+                if (((Long) 3L).equals(genere) && ((Long) 1L).equals(bustalotti))
+                  tipo = "OFFERTE_ECO_LOTTI_DISTINTI";
+              } else if (((Long) 20L).equals(numeroStepAttivo.longValue())) {
+                tipo = "DOC_AMM";
+              }
+              Vector<JdbcParametro> datiTorn = sqlManager.getVector("select iterga,isconcprog from torn where codgar=?", new Object[] {codiceTornata});
+              Long iterga = (Long) datiTorn.get(0).getValue();
+              String isconcprog = (String) datiTorn.get(1).getValue();
+              String codiceDittaBusta = codiceDitta;
+              if (iterga != null && (iterga == 9 || iterga == 10))
+                codiceDittaBusta = GestoreFasiGara.getCodimpDecodificato(codiceDitta, pgManager, sqlManager);
+              codiceDittaBusta = GestoreFasiGara.getCodiceMandatariaSeRT(codiceDittaBusta,sqlManager);
+              if ("11".equals(valoreAMMGAR)) {
+                dicitura = " la modifica in stato scartato";
+                  if ("1".equals(isconcprog))
+                    mepaManager.impostaComunicazioniAnonimeAScartate(codiceLotto, tipo, codiceDittaBusta);
+                  else
+                    mepaManager.impostaComunicazioniAScartate(codiceLotto,tipo,codiceDittaBusta);
+              } else {
+                  dicitura = " il ripristino";
+                  if ("1".equals(isconcprog))
+                    mepaManager.impostaComunicazioniAnonimeDaRiaquisire(codiceLotto, codiceDittaBusta);
+                  else
+                    mepaManager.impostaComunicazioneDaRiaquisire(codiceLotto,tipo,codiceDittaBusta);
+              }
+            } catch (SQLException e) {
+              throw new GestoreException("Errore durante" + dicitura + " della comunicazione per la ditta: " + codiceDitta, null);
+            }
       	}
 
       	if(isDITGSTATIModificata){
@@ -284,11 +326,11 @@ public class GestoreFasiGara extends GestoreDITG {
       		// Allineamento dello stato di ammissione dal campo DITG.AMMGAR nel
       		// caso in cui il campo DITG.PARTGAR sia stato modificato:
       		DataColumn campoDITG_PARTGAR = dataColumnContainerDiRiga.getColumn("DITG.PARTGAR");
-      		DataColumn campoV_DITGAMMIS_AMMGAR = dataColumnContainerDiRiga.getColumn("V_DITGAMMIS.AMMGAR");
       		if("2".equals(campoDITG_PARTGAR.getValue().getStringValue()) ||
                 "2".equals(campoV_DITGAMMIS_AMMGAR.getValue().getStringValue()) ||
                 "6".equals(campoV_DITGAMMIS_AMMGAR.getValue().getStringValue()) ||
-                "9".equals(campoV_DITGAMMIS_AMMGAR.getValue().getStringValue())){
+                "9".equals(campoV_DITGAMMIS_AMMGAR.getValue().getStringValue()) ||
+                "11".equals(campoV_DITGAMMIS_AMMGAR.getValue().getStringValue())){
       		    dataColumnContainerDiRiga.addColumn("DITG.AMMGAR", JdbcParametro.TIPO_TESTO);
       			dataColumnContainerDiRiga.getColumn("DITG.AMMGAR").setObjectValue("2");
       			dataColumnContainerDiRiga.getColumn("DITG.AMMGAR").setObjectOriginalValue(null);
@@ -563,6 +605,35 @@ public class GestoreFasiGara extends GestoreDITG {
     }
 
 
+  }
+
+  public static String getCodimpDecodificato(String codiceDitta, PgManager pgManager, SqlManager sqlManager) throws GestoreException {
+    String iddecodificato= null;
+    String codimpDecodificato = null;
+    try {
+        String codimpCodificato = (String) sqlManager.getObject("select idanonimo from ditg where dittao=?", new Object[] {codiceDitta});
+        iddecodificato = pgManager.decodifica(codimpCodificato);
+    } catch (SQLException | CriptazioneException e) {
+        throw new GestoreException("Errore durante la decriptazione",null,e);
+    }
+    if(iddecodificato.indexOf("#")>-1) {
+      String[] token = iddecodificato.split("#");
+      codimpDecodificato =token[token.length-1];
+    }
+    return codimpDecodificato;
+  }
+
+  public static String getCodiceMandatariaSeRT(String codiceDitta, SqlManager sqlManager) throws GestoreException {
+    String codice = codiceDitta;
+      try {
+          Long tipimp = (Long) sqlManager.getObject("select tipimp from impr where codimp = ? ", new Object[] { codice });
+          if (Long.valueOf(3).equals(tipimp) || Long.valueOf(10).equals(tipimp)) {
+            codice = (String) sqlManager.getObject( "select coddic from ragimp where codime9 = ? and impman = '1'", new Object[] { codice });
+          }
+      } catch (SQLException e) {
+        throw new GestoreException("Errore durante la decriptazione",null,e);
+      }
+      return codice;
   }
 
   @Override

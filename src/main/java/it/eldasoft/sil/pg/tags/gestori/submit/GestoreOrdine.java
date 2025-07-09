@@ -96,9 +96,11 @@ public class GestoreOrdine extends GestoreDocumentazioneGara {
 							&& !"".equals(datiForm.getColumn("GARE.CODCIG").getValue().stringValue()) && datiForm.getColumn("GARE.CODCIG").getValue().stringValue().length() != 10) {
 				throw new GestoreException("Il codice CIG specificato non è valido", "controlloCodiceCIG");
 			}
+			
+			 String regex = "^[a-zA-Z0-9]+$";
 
 			if(datiForm.isColumn("GARE.CUPPRG") && datiForm.isModifiedColumn("GARE.CUPPRG") && datiForm.getColumn("GARE.CUPPRG").getValue().stringValue()!=null
-		        && !"".equals(datiForm.getColumn("GARE.CUPPRG").getValue().stringValue()) && datiForm.getColumn("GARE.CUPPRG").getValue().stringValue().length()!= 15){
+		        && !"".equals(datiForm.getColumn("GARE.CUPPRG").getValue().stringValue()) && (datiForm.getColumn("GARE.CUPPRG").getValue().stringValue().length()!= 15 || !datiForm.getColumn("GARE.CUPPRG").getValue().stringValue().matches(regex))){
 		      throw new GestoreException("Il codice CUP specificato non è valido","controlloCodiceCUP");
 			}
 

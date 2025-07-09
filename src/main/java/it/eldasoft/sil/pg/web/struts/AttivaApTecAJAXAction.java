@@ -90,6 +90,7 @@ public class AttivaApTecAJAXAction extends Action {
     Long numeroAcquisizioni = new Long(0);
     Long numeroAcquisizioniErrore = new Long(0);
     Long numeroAcquisizioniScartate = new Long(0);
+    Long numeroAcquisizioniSaltatePerFS12RettificaInCorso = new Long(0);
     boolean autorizzatoModifica = true;
     String sez = request.getParameter("sez");
 
@@ -172,6 +173,7 @@ public class AttivaApTecAJAXAction extends Action {
           numeroAcquisizioni = (Long) hMap.get("numeroAcquisizioni");
           numeroAcquisizioniErrore = (Long) hMap.get("numeroAcquisizioniErrore");
           numeroAcquisizioniScartate = (Long) hMap.get("numeroAcquisizioniScartate");
+          numeroAcquisizioniSaltatePerFS12RettificaInCorso = (Long) hMap.get("numeroAcquisizioniSaltatePerFS12RettificaInCorso");
           request.getSession().setAttribute("passBusteB", password);
 
 
@@ -206,6 +208,7 @@ public class AttivaApTecAJAXAction extends Action {
         descrFine += numeroAcquisizioni + " buste aperte, "
             + numeroAcquisizioniErrore + " buste con errore, "
             + numeroAcquisizioniScartate + " buste non aperte perché appartenenti a ditte escluse dalla gara, "
+            + numeroAcquisizioniSaltatePerFS12RettificaInCorso + " buste non aperte perché rettifica busta tecnica in corso, "
             + "utente con diritto sulla modifica della gara:" + (new Boolean(autorizzatoModifica)).toString();
 
         LogEvento logEvento = LogEventiUtils.createLogEvento(request);
@@ -222,12 +225,14 @@ public class AttivaApTecAJAXAction extends Action {
       logger.info("Apertura busta tecnica (gara "+ngara+"): numero acquisizioni " + numeroAcquisizioni);
       logger.info("Apertura busta tecnica (gara "+ngara+"): numero acquisizioni con errore " + numeroAcquisizioniErrore);
       logger.info("Apertura busta tecnica (gara "+ngara+"): non acquisite perchè escluse dalla gara " + numeroAcquisizioniScartate);
+      logger.info("Apertura busta tecnica (gara "+ngara+"): non acquisite perché rettifica busta tecnica in corso " + numeroAcquisizioniSaltatePerFS12RettificaInCorso);
 
       result.put("ngara", ngara);
       result.put("dittao", dittao);
       result.put("numeroAcquisizioni", numeroAcquisizioni);
       result.put("numeroAcquisizioniErrore", numeroAcquisizioniErrore);
       result.put("numeroAcquisizioniScartate", numeroAcquisizioniScartate);
+      result.put("numeroAcquisizioniSaltatePerFS12RettificaInCorso", numeroAcquisizioniSaltatePerFS12RettificaInCorso);
       result.put("autorizzatoModifica", (new Boolean(autorizzatoModifica)).toString());
     }
 

@@ -72,17 +72,20 @@
 						</c:otherwise>
 					</c:choose>
 					Mediante questa funzione viene effettuato il sorteggio degli operatori in ${msgGenere } per la verifica dei documenti.<br>
-					Il sorteggio riguarda gli operatori in stato 'Abilitato' che non sono mai stati sorteggiati oppure sono stati sorteggiati prima della data specificata sotto (indicare una data successiva a quella odierna per non impostare alcun limite).<br><br>
+					Il sorteggio riguarda gli operatori in stato 'Abilitato' che non sono mai stati sorteggiati oppure sono stati sorteggiati prima della data specificata sotto (indicare una data successiva a quella odierna per non impostare alcun limite).<br>
+					Inoltre, è possibile considerare gli operatori che hanno presentato domanda di iscrizione, richiesta di aggiornamento o rinnovo in un determinato periodo, specificando le date di inizio e fine.<br><br>
 					Confermi l'operazione?
 					<br><br>
 				</c:otherwise>
 			</c:choose>
 			</td>
 			</gene:campoScheda>
-			<gene:campoScheda campo="PERCENTUALE" title="Percentuale operatori da sorteggiare" campoFittizio="true" definizione="N3;0;;PRC" obbligatorio="true" visibile="${empty sorteggioEseguito }" defaultValue="10">
+			<gene:campoScheda campo="PERCENTUALE" title="Percentuale operatori da sorteggiare" campoFittizio="true" definizione="N3;0;;PRC" obbligatorio="true" visibile="${empty sorteggioEseguito }" defaultValue='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1203","1","false")}'>
 				<gene:checkCampoScheda funzione='controlloPercentuale(##)' obbligatorio="true" messaggio="I valori consentiti sono compresi fra 0 e 100" onsubmit="false"/>
 			</gene:campoScheda>
 			<gene:campoScheda campo="DATA" title="Data da cui escludere gli operatori dal sorteggio" campoFittizio="true" definizione="D;0;;DATA_ELDA " visibile="${empty sorteggioEseguito }" obbligatorio="true"/>
+			<gene:campoScheda campo="DATAFILTROINIZIO" title="Considera iscr./agg./rinn." campoFittizio="true" definizione="D;0;;DATA_ELDA" visibile="${empty sorteggioEseguito }" />
+			<gene:campoScheda campo="DATAFILTROFINE" campoFittizio="true" definizione="D;0;;DATA_ELDA" addTr="false" visibile="${empty sorteggioEseguito }" />
 			<input type="hidden" name="ngara" id="ngara" value="${ngara }"/>
 			<input type="hidden" name="genere" id="genere" value="${genere }"/>
 		</gene:formScheda>
@@ -94,6 +97,14 @@
 </c:if>	
 	<gene:javaScript>
 
+		<c:if test="${empty sorteggioEseguito}">
+		$(document).ready(function(){
+			$('#DATAFILTROFINE').parent().parent().hide();
+			$('#rowDATAFILTROINIZIO').children().last().prepend($('<span />').text('da '));
+			$('#rowDATAFILTROINIZIO').children().last().append($('<span />').text(' a '));
+			$('#rowDATAFILTROINIZIO').children().last().append($('#DATAFILTROFINE'));
+		});
+		</c:if>
 		
 		function annulla(){
 			window.close();
@@ -101,8 +112,12 @@
 		
 		
 		function conferma() {
-			document.forms[0].jspPathTo.value="gare/gare/popupSorteggioVerificaDoc.jsp";
-			schedaConferma();
+			if ($('#DATAFILTROINIZIO').val() != '' && $('#DATAFILTROFINE').val() != '' && $('#DATAFILTROINIZIO').val() > $('#DATAFILTROFINE').val()) {
+				alert('La data di inizio deve essere precedente o uguale alla data di fine');
+			} else {
+				document.forms[0].jspPathTo.value="gare/gare/popupSorteggioVerificaDoc.jsp";
+				schedaConferma();
+			}
 		}
 		
 		function controlloPercentuale(percentuale){

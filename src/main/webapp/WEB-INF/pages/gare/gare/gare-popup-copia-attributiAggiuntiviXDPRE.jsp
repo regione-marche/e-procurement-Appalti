@@ -96,10 +96,13 @@
 									<b>Attenzione: la lista originale degli attributi aggiuntivi dei lotti selezionati verr&agrave; cancellata</b>
 									<br>
 									
+									<c:set var="codiceGara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select codgar1 from gare where codgar1=?", codiceGara)}'/>
+									<c:set var="lottoSorgente" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from gare where ngara=?", lottoSorgente)}'/>
+														
 									<c:set var="where" value="GARE.CODGAR1 = '${codiceGara}' AND (GARE.FASGAR IS NULL or GARE.FASGAR <=1) AND (GARE.MODLICG=5 or GARE.MODLICG=14 or (GARE.MODLICG=6 and GARE.NGARA IN (select G1CRIDEF.NGARA from G1CRIDEF where G1CRIDEF.NGARA=GARE.NGARA and G1CRIDEF.FORMATO=52)))  AND GARE.NGARA NOT IN ('${lottoSorgente}') AND GARE.CODGAR1 <> GARE.NGARA"/>
 													
 									<gene:formLista entita="GARE" sortColumn="3" where="${where }" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupCopiaAttributiAggiuntiviXDPRE" >
-										<c:if test="${bloccoModifica ne 'true' }">
+									<c:if test="${bloccoModifica ne 'true' }">
 										<gene:campoLista title="Opzioni <br><center>${titoloMenu}</center>"	width="50">
 											<c:if test="${currentRow >= 0 }">
 												<input type="checkbox" name="keys" value="${chiaveRiga}" />

@@ -267,8 +267,8 @@
 							<c:if test="${ autorizzatoModifiche ne 2 and not empty urlWsArt80 and urlWsArt80 ne '' and updateLista ne 1 and paginaAttivaWizard eq step2Wizard and gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.GARE-scheda.FASIISCRIZIONE.VerificaOpertoriArt80')}">
 								<tr>
 									<td class="vocemenulaterale">
-										<a href="javascript:verificaOperatoriArt80();" title='Richiedi verifica operatori art.80' tabindex="1505">
-											Richiedi verifica operatori art.80
+										<a href="javascript:verificaOperatoriArt80();" title='Richiedi verifica requisiti operatori' tabindex="1505">
+											Richiedi verifica requisiti operatori
 										</a>
 									</td>
 								</tr>
@@ -399,7 +399,9 @@
 				</c:if>
 				
 				<!-- il campo AMMGAR viene gestito nel gestore di submit -- gene-:-campoLista campo="AMMGAR" width="80" headerClass="sortable" visibile="${paginaAttivaWizard eq -5 or paginaAttivaWizard eq -4 or paginaAttivaWizard eq 1}" edit="${updateLista eq 1}" /-->
-				<gene:campoLista campo="AMMGAR" entita="V_DITGAMMIS" where="V_DITGAMMIS.CODGAR=DITG.CODGAR5 and V_DITGAMMIS.NGARA=DITG.NGARA5 and V_DITGAMMIS.DITTAO=DITG.DITTAO and V_DITGAMMIS.FASGAR=${varTmp}" width="80" headerClass="sortable" ordinabile ="true" visibile="${paginaAttivaWizard eq step1Wizard or paginaAttivaWizard eq step2Wizard}" edit="${updateLista eq 1}" />
+				<gene:campoLista campo="AMMGAR" entita="V_DITGAMMIS" where="V_DITGAMMIS.CODGAR=DITG.CODGAR5 and V_DITGAMMIS.NGARA=DITG.NGARA5 and V_DITGAMMIS.DITTAO=DITG.DITTAO and V_DITGAMMIS.FASGAR=${varTmp}"
+								width="80" headerClass="sortable" ordinabile ="true" visibile="${paginaAttivaWizard eq step1Wizard or paginaAttivaWizard eq step2Wizard}" edit="${updateLista eq 1}"
+								 gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoAMMGAR"/>
 				<gene:campoLista campo="ABILITAZ" headerClass="sortable" visibile="${paginaAttivaWizard eq step2Wizard}" edit="${updateLista eq 1}" />
 				<gene:campoLista campo="DABILITAZ" headerClass="sortable" visibile="${paginaAttivaWizard eq step2Wizard}" edit="${updateLista eq 1}" />
 
@@ -936,7 +938,7 @@
 	<c:if test='${paginaAttivaWizard < step3Wizard}'>
 		function avanti(){
 			if(document.forms[0].action.indexOf("Scheda.do") >= 0){
-				document.forms[0].action = "${pageContext.request.contextPath}/Lista.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/Lista.do";
 				document.forms[0].keyParent.value = document.forms[0].key.value;
 			} else {
 				document.forms[0].pgSort.value = "";
@@ -984,7 +986,7 @@
 	<c:if test='${paginaAttivaWizard > step1Wizard}'>
 		function indietro(){
 			if(document.forms[0].action.indexOf("Scheda.do") >= 0){
-				document.forms[0].action = "${pageContext.request.contextPath}/Lista.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/Lista.do";
 				document.forms[0].keyParent.value = document.forms[0].key.value;
 			} else {
 				document.forms[0].pgSort.value = "";
@@ -1014,7 +1016,7 @@
 	</c:when>
 	<c:otherwise>
 		var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
+		document.location.href = contextPath + "/ApriPagina.do?" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
 	</c:otherwise>
 </c:choose>
 	}
@@ -1057,9 +1059,9 @@
 				var isAbilitatoNow = getValue("DITG_ABILITAZ_"+t);
 				 if(isAbilitatoNow == '1'){
 				 	if(inclause == ""){
-				 		inclause = "'"+getValue("DITG_DITTAO_"+t)+"'";
+				 		inclause = getValue("DITG_DITTAO_"+t);
 				 	}else{
-				 		inclause = inclause+",'"+getValue("DITG_DITTAO_"+t)+"'";
+				 		inclause = inclause+","+getValue("DITG_DITTAO_"+t);
 				 	}
 					numeroDitteAbilitate=numeroDitteAbilitate + 1;
 				 }
@@ -1123,7 +1125,7 @@
 			</c:choose>
 			href += "&paginaAttivaWizard=" + paginaAttivaWizard;
 			href += "&aggCategorie=" + aggCategorie;
-			document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href;
+			document.location.href = contextPath + "/ApriPagina.do?" + href;
 		}
 		
 		function apriElencoIvrDaCodDitta(chiaveRiga){
@@ -1362,7 +1364,7 @@
 				}
 				var entitaWSDM="GARE";
 				var chiaveWSDM=numeroGara;
-				href+="&entitaWSDM=" + entitaWSDM + "&chiaveWSDM=" + chiaveWSDM + "&" + csrfToken;
+				href+="&entitaWSDM=" + entitaWSDM + "&chiaveWSDM=" + chiaveWSDM;
 				if(idconfi){href+="&idconfi=" + idconfi;}
 				document.location.href = href;
 			}
@@ -1385,7 +1387,7 @@
 		
 		function listaDitteConsorziate(chiaveRiga){
 						
-			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gene/ragdet/ragdet-lista.jsp";
+			var href = contextPath + "/ApriPagina.do?href=gene/ragdet/ragdet-lista.jsp";
 			href += "&key=" + chiaveRiga;
 			document.location.href = href;
 		}
@@ -1406,7 +1408,7 @@
 			var ngara = "${numeroGara }";
 			var codgar = "$" + ngara;
 			var genereGara = "${genereGara }";			
-			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/ditg/lista-ImportoAggiudicatoOperatori.jsp";
+			var href = contextPath + "/ApriPagina.do?href=gare/ditg/lista-ImportoAggiudicatoOperatori.jsp";
 			href += "&ngara=" + ngara;
 			href += "&codgar=" + codgar;
 			href += "&genereGara=" + genereGara;

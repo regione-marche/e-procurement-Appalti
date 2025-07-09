@@ -14,6 +14,7 @@ import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.db.datautils.DataColumn;
 import it.eldasoft.gene.tags.decorators.campi.AbstractGestoreCampo;
 import it.eldasoft.gene.tags.utils.UtilityTags;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Vector;
 /**
@@ -45,7 +46,7 @@ public class GestoreCampoDesmailListaComunicazioni extends AbstractGestoreCampo 
   public String getHTML(boolean visualizzazione, boolean abilitato) {
 
 	  String ret=null;
-	  if(campo.getValue()!=null && campo.getValue().indexOf(",")>0){
+	  if(StringUtils.isNotEmpty(campo.getValue()) && (campo.getValue().indexOf(",")>0 || campo.getCampo().indexOf("DESMAILCC")==0)){
     	  StringBuffer buf = new StringBuffer("");
           buf.append("<span class='tooltipDesmail' ");
           String listaDes = campo.getValue().replace(",", ",<br>");

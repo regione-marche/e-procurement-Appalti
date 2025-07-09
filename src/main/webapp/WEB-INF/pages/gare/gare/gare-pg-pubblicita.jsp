@@ -59,7 +59,7 @@
 		document.forms[0].metodo.value="apri";
 		document.forms[0].jspPathTo.value=document.forms[0].jspPath.value;
 		bloccaRichiesteServer();
-		document.forms[0].action += "&tipoPub=" + tipoPub;
+		document.forms[0].action += "?tipoPub=" + tipoPub;
 		document.forms[0].submit();
 	}
 </gene:javaScript>

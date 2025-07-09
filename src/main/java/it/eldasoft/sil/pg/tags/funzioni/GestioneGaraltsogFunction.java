@@ -41,7 +41,7 @@ public class GestioneGaraltsogFunction extends AbstractFunzioneTag {
         pageContext, SqlManager.class);
 
     //String select="select cenint,nomein,codrup from garaltsog, uffint where ngara=? and cenint=codein";
-    String select="select cenint,codrup from garaltsog where ngara=? ";
+    String select="select cenint,codrup,codcentro,nomcentro from garaltsog where ngara=? ";
 
     try {
       Vector datiGaraltsog = sqlManager.getVector(select, new Object[]{chiave});
@@ -49,10 +49,16 @@ public class GestioneGaraltsogFunction extends AbstractFunzioneTag {
       if (datiGaraltsog != null && datiGaraltsog.size() > 0){
         String cenint = SqlManager.getValueFromVectorParam(datiGaraltsog, 0).stringValue();
         String codrup = SqlManager.getValueFromVectorParam(datiGaraltsog, 1).stringValue();
+        String codcentro = SqlManager.getValueFromVectorParam(datiGaraltsog, 2).stringValue();
+        String nomcentro = SqlManager.getValueFromVectorParam(datiGaraltsog, 3).stringValue();
 
         pageContext.setAttribute("initCenintGaraltsog", cenint,
             PageContext.REQUEST_SCOPE);
         pageContext.setAttribute("initCodrupGaraltsog", codrup,
+            PageContext.REQUEST_SCOPE);
+        pageContext.setAttribute("initCodcentroGaraltsog", codcentro,
+            PageContext.REQUEST_SCOPE);
+        pageContext.setAttribute("initNomcentroGaraltsog", nomcentro,
             PageContext.REQUEST_SCOPE);
 
         if(cenint!=null && !"".equals(cenint)){

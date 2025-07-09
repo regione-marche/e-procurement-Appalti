@@ -10,8 +10,11 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.plugin;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +25,8 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 
+import it.eldasoft.sil.pg.bl.*;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.springframework.transaction.TransactionStatus;
 
@@ -39,10 +44,6 @@ import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestorePreload;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
-import it.eldasoft.sil.pg.bl.GestioneWSERPManager;
-import it.eldasoft.sil.pg.bl.PgManager;
-import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
@@ -59,6 +60,8 @@ import it.maggioli.eldasoft.ws.erp.WSERPAnagraficaType;
 import it.maggioli.eldasoft.ws.erp.WSERPPosizioneRdaType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaResType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaType;
+
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Gestore di plugin dei dati generali di GARE
@@ -80,6 +83,8 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
   private GestioneWSDMManager gestioneWSDMManager = null;
 
   private GestioneWSERPManager gestioneWSERPManager = null;
+
+  private GestioneProgrammazioneManager gestioneProgrammazioneManager;
 
   public GestoreDatiGenerali(BodyTagSupportGene tag) {
     super(tag);
@@ -115,6 +120,9 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
 
     gestioneWSERPManager = (GestioneWSERPManager) UtilitySpring.getBean("gestioneWSERPManager",
         page, GestioneWSERPManager.class);
+
+    gestioneProgrammazioneManager = (GestioneProgrammazioneManager) UtilitySpring.getBean("gestioneProgrammazioneManager",
+        page, GestioneProgrammazioneManager.class);
 
     HashMap key = null;
     String oggettoEvento = null;
@@ -174,11 +182,20 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
 
         }
 
+        if (UtilityTags.SCHEDA_MODO_VISUALIZZA.equals(modo) || UtilityTags.SCHEDA_MODO_MODIFICA.equals(modo)) {
+			key = UtilityTags.stringParamsToHashMap((String) page.getAttribute(UtilityTags.DEFAULT_HIDDEN_KEY_TABELLA, PageContext.REQUEST_SCOPE),null);
+			String verNPA = (String) sqlManager.getObject("select vernpa from torn where codgar=?", new Object[] {codgar});
+			page.setAttribute("verNPA", verNPA, PageContext.REQUEST_SCOPE);
+			String nomeDRP = (String) sqlManager.getObject("select nomtec from tecni where codtec=(select coddrp from torn where codgar=?)", new Object[] {codgar});
+			page.setAttribute("initNOMDRP", nomeDRP, PageContext.REQUEST_SCOPE);
+		}
+
       } else {
         // Stringa valorizzata con la concatenazione del codice del lavoro e del
         // numero appalto relativi all'appalto selezionato, al quale l'utente
         // ha scelta di associare la nuova gara a lotto unico o il nuovo lotto
         // di gara
+
         String chiaveAppalto = page.getRequest().getParameter("chiaveRiga");
         String tipoAppalto = page.getRequest().getParameter("tipoAppalto");
 
@@ -187,7 +204,11 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
 
         String divisione = page.getRequest().getParameter("divisione");
         divisione = UtilityStringhe.convertiNullInStringaVuota(divisione);
-
+        
+        String listaRdaSelezionate = page.getRequest().getParameter("listaRdaSelezionate");
+        listaRdaSelezionate = UtilityStringhe.convertiNullInStringaVuota(listaRdaSelezionate);
+        		
+        		
         String integrazioneERPvsWSDM = page.getRequest().getParameter("integrazioneERPvsWSDM");
         integrazioneERPvsWSDM = UtilityStringhe.convertiNullInStringaVuota(integrazioneERPvsWSDM);
         String integrazioneWSERP="0";
@@ -209,10 +230,24 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
         }
 
         String preced = page.getRequest().getParameter("preced");
+        String ngarapa= page.getRequest().getParameter("ngarapa");
+
+		String verNPA = pgManager.getVersioneNpaCorrente();
+
+		if (StringUtils.isNotEmpty(preced) || StringUtils.isNotEmpty(ngarapa)) {
+			String ngaraPrecedente = StringUtils.isNotEmpty(preced) ? preced : ngarapa;
+			verNPA = (String) sqlManager.getObject("select vernpa from torn,gare where ngara=? and codgar1=codgar", new Object[] { ngaraPrecedente });
+			if (StringUtils.isNotEmpty(verNPA)) {
+				page.setAttribute("initVERNPA", verNPA, PageContext.REQUEST_SCOPE);
+			}
+		} else if (StringUtils.isNotBlank(verNPA)) {
+			page.setAttribute("initVERNPA", verNPA, PageContext.REQUEST_SCOPE);
+		}
 
         if(preced!=null && !"".equals(preced)){
            this.setDatiInitPerRilancio(page, sqlManager, chiaveAppalto, preced, tipoAppalto);
-
+        }else if(ngarapa!=null && !"".equals(ngarapa)){
+          this.setDatiInitPerConcorso(page, sqlManager, ngarapa, tipoAppalto);
         }else if ("false".equals(page.getAttribute("garaLottoUnico",
             PageContext.REQUEST_SCOPE))) {
           // predisposizione dei dati di inizializzazione letti da TORN
@@ -232,11 +267,20 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
 	          }
 
 	          if(!"".equals(numeroRda)){
-                  if("1".equals(integrazioneWSERP) && ("AMIU".equals(tipoWSERP))){
+                  if("1".equals(integrazioneWSERP) && ("AMIU".equals(tipoWSERP) || "ARCHIFLOW".equals(tipoWSERP))){
                 	  this.setDatiInitDaWSERP(page, sqlManager, tipoWSERP, numeroRda, divisione);
                   }
-	          }	          
+	          }
 	          
+	          // se siamo in INARCASSA e abbiamo selezionato delle rda 
+        	  // i codici delle rda li passo a setDatiInitDaWSERP usando numeroRda
+        	  if ("INARCASSA".equals(tipoWSERP) || "CONI".equals(tipoWSERP)) {
+        		if (!listaRdaSelezionate.isEmpty()) {
+        			numeroRda = listaRdaSelezionate;
+        			this.setDatiInitDaWSERP(page, sqlManager, tipoWSERP, numeroRda, divisione);
+        		}//if
+        	  }//if
+        	  
           }else if ("true".equals(page.getAttribute("lottoOffertaUnica",
                   PageContext.REQUEST_SCOPE))) {
         	  // Inizializzazione della percentuale della cauzione provvisoria
@@ -254,10 +298,19 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
                 this.setDatiInitDaAppa(page, sqlManager, chiaveAppalto, tipoAppalto,"lottoOffertaUnica", integrazioneWSERP);
               }
               if(!"".equals(numeroRda)){
-                  if("1".equals(integrazioneWSERP) && ("AMIU".equals(tipoWSERP))){
+                  if("1".equals(integrazioneWSERP) && ("AMIU".equals(tipoWSERP) || "ARCHIFLOW".equals(tipoWSERP))){
                 	  this.setDatiInitDaWSERP(page, sqlManager, tipoWSERP, numeroRda, divisione);
                   }
               }
+              
+              if(!"".equals(numeroRda)){
+                  if("1".equals(integrazioneWSERP) && ("INARCASSA".equals(tipoWSERP) || "CONI".equals(tipoWSERP))){
+	          		  if (!listaRdaSelezionate.isEmpty()) {
+	        		  	 numeroRda = listaRdaSelezionate;	
+	        		  }//if                	  
+                	  this.setDatiInitDaWSERP(page, sqlManager, tipoWSERP, numeroRda, divisione);
+                  }
+              }              
           }
         } else if ("true".equals(page.getAttribute("garaLottoUnico",
             PageContext.REQUEST_SCOPE))) {
@@ -278,7 +331,22 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
             if("1".equals(integrazioneERPvsWSDM)){
               this.setDatiInitDaERPvsWSDM(page, sqlManager, numeroRda, idconfi);
             }else{
-              if("1".equals(integrazioneWSERP) && ("FNM".equals(tipoWSERP) || "AMIU".equals(tipoWSERP) || "RAIWAY".equals(tipoWSERP))){
+              if(    "1".equals(integrazioneWSERP) 
+                  && (    "FNM".equals(tipoWSERP) 
+                	   || "AMIU".equals(tipoWSERP) 
+                	   || "RAIWAY".equals(tipoWSERP)
+                	   || "INARCASSA".equals(tipoWSERP)
+                	   || "ARCHIFLOW".equals(tipoWSERP)
+                	   || "CONI".equals(tipoWSERP)
+                	 )
+              ){
+            	  // se siamo in INARCASSA e abbiamo selezionato delle rda 
+            	  // i codici delle rda li passo a setDatiInitDaWSERP usando numeroRda
+            	  if ("INARCASSA".equals(tipoWSERP) || "CONI".equals(tipoWSERP)) {
+            		if (!listaRdaSelezionate.isEmpty()) {
+            			numeroRda = listaRdaSelezionate;	
+            		}//if
+            	  }//if
             	  this.setDatiInitDaWSERP(page, sqlManager, tipoWSERP, numeroRda, divisione);
               }else{
                 this.setDatiInitDaRda(page, sqlManager, numeroRda);
@@ -287,6 +355,34 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
 
 
           }
+            if(gestioneProgrammazioneManager.isAttivaIntegrazioneProgrammazione()){
+                try{
+                    String arrRda = page.getRequest().getParameter("arrRda");
+                    arrRda = UtilityStringhe.convertiNullInStringaVuota(arrRda);
+                    String[] rda = null;
+                    if(!"".equals(arrRda)) {
+                        arrRda = arrRda.substring(0, arrRda.length() - 1);
+                        rda = arrRda.split(";");
+
+                        if (rda.length == 1) {
+                            ProfiloUtente profilo = (ProfiloUtente) page.getSession().getAttribute(
+                                    CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+                            Long syscon = new Long(profilo.getId());
+                            String uffintGara = (String) page.getSession().getAttribute(CostantiGenerali.UFFICIO_INTESTATARIO_ATTIVO);
+
+                            JSONObject obj = gestioneProgrammazioneManager.consultaRda(syscon, uffintGara, "codiceApplicativoNonCollegato", rda[0], null, null, null);
+
+                            JSONObject rdaObj = obj.getJSONArray("listaRdA").getJSONObject(0);
+                            if(rdaObj.get("descrizione")!=null)
+                                page.setAttribute("initNOT_GAR", rdaObj.getString("descrizione"), PageContext.REQUEST_SCOPE);
+                            if(rdaObj.get("importo")!=null)
+                                page.setAttribute("initIMPAPP", rdaObj.getDouble("importo"), PageContext.REQUEST_SCOPE);
+                        }
+                    }
+                } catch (Exception e) {
+                    throw new GestoreException("Errore nel recupero del codice della gara",null, e);
+                }
+            }
         }
 
         //Visualizzazione sul Portale dell'espletamento di gara telematica
@@ -334,8 +430,7 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
     	        tipoAppalto = tipgen.intValue();
     	  }
     	  oggettoEvento = codgar;
-    	  int numeroDecimali = pgManager.getArrotondamentoCauzioneProvvisoria(tipoAppalto);
-    	  page.setAttribute("numeroDecimali", new Long(numeroDecimali), PageContext.REQUEST_SCOPE);
+    	  page.setAttribute("numeroDecimali", new Long(2), PageContext.REQUEST_SCOPE);
 
     	  //Carico i valori per l'inizializzazione del campo IDIAUT
     	  //this.getScaglioni(page, sqlManager,"A1z01");
@@ -368,7 +463,7 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
     	throw new JspException(
     	  "Errore in fase di esecuzione delle select per determinare il numero di decimali per il calcolo della garanzia", e);
 	}
-  }
+  }//doBeforeBodyProcessing
 
   /**
    * Estrazione dei dati per inizializzare la scheda dei dati generali di una
@@ -405,12 +500,14 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
     if (codiceCliente == "1153") {
       setDatiAppa="select NOTAPP, IMPLAV, IMPLAS, IMPLAT1, IMPLASE, IMPLASC, IMPLAC, " +
       " IMPLAM, IMPLAE, IMPNRL, IMPNRM,  IMPNRE,  IMPNRC,  ONPRGE, " +
-      " IVALAV, TUTULT, NURICH, ONSOGRIB, TUTULTUM, CODCIG, DACQCIG, FLAG_ACQ, IDGARA, ALTCAT, SOMMEURG " +
+      " IVALAV, TUTULT, NURICH, ONSOGRIB, TUTULTUM, CODCIG, DACQCIG, FLAG_ACQ, IDGARA, ALTCAT, SOMMEURG, "
+      + "APALTSOM" + // 25
  " from APPA where CODLAV = ?  and NAPPAL = ?";
     } else {
       setDatiAppa="select NOTAPP, IMPLAV, IMPLAS, IMPLAT1, IMPLASE, IMPLASC, IMPLAC, " +
       " IMPLAM, IMPLAE, IMPNRL, IMPNRM,  IMPNRE,  IMPNRC,  ONPRGE, " +
-      " IVALAV, TUTULT, CODCUA, ONSOGRIB, TUTULTUM, CODCIG, DACQCIG, FLAG_ACQ, IDGARA, ALTCAT, SOMMEURG " +
+      " IVALAV, TUTULT, CODCUA, ONSOGRIB, TUTULTUM, CODCIG, DACQCIG, FLAG_ACQ, IDGARA, ALTCAT, SOMMEURG, "
+      + "APALTSOM" + // 25
  " from APPA where CODLAV = ?  and NAPPAL = ?";
     }
 
@@ -548,21 +645,24 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
       page.setAttribute("initONSOGRIBDaAppa", "true", PageContext.REQUEST_SCOPE);
 
       // Inizializzazione del campo CODCIG uguale a CODCIG
-      obj1 = ((JdbcParametro) datiAppa.get(19)).getValue();
-      page.setAttribute("initCODCIG", obj1, PageContext.REQUEST_SCOPE);
+//      APP-1590 Rimossa inizializzazione
+//      obj1 = ((JdbcParametro) datiAppa.get(19)).getValue();
+//      page.setAttribute("initCODCIG", obj1, PageContext.REQUEST_SCOPE);
 
       // Inizializzazione del campo DACQCIG uguale a DACQCIG
-      String data = null;
-      obj1 = ((JdbcParametro) datiAppa.get(20)).getValue();
-      if(obj1!=null)
-        data = UtilityDate.convertiData((Date)obj1, UtilityDate.FORMATO_GG_MM_AAAA);
-      page.setAttribute("initDACQCIG", data, PageContext.REQUEST_SCOPE);
+//    	APP-1590 Rimossa inizializzazione
+//      String data = null;
+//      obj1 = ((JdbcParametro) datiAppa.get(20)).getValue();
+//      if(obj1!=null)
+//        data = UtilityDate.convertiData((Date)obj1, UtilityDate.FORMATO_GG_MM_AAAA);
+//      page.setAttribute("initDACQCIG", data, PageContext.REQUEST_SCOPE);
 
 
 
       // Inizializzazione del campo NUMAVCP con IDGARA
-      obj1 = ((JdbcParametro) datiAppa.get(22)).getValue();
-      page.setAttribute("initNUMAVCP", obj1, PageContext.REQUEST_SCOPE);
+//    	APP-1590 Rimossa inizializzazione
+//      obj1 = ((JdbcParametro) datiAppa.get(22)).getValue();
+//      page.setAttribute("initNUMAVCP", obj1, PageContext.REQUEST_SCOPE);
 
       // Inizializzazione del campo CODCPV di GARCPV  con ALTCAT di APPA
       obj1 = ((JdbcParametro) datiAppa.get(23)).getValue();
@@ -573,6 +673,10 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
       // Inizializzazione del campo SOMMAUR di TORN  con SOMMEURG di APPA
       obj1 = ((JdbcParametro) datiAppa.get(24)).getValue();
       page.setAttribute("initSOMMAUR", obj1, PageContext.REQUEST_SCOPE);
+
+      // Inizializzazione del campo IMPSOMME di GARE1 con APALTSOM di APPA
+      obj1 = ((JdbcParametro) datiAppa.get(25)).getValue();
+      page.setAttribute("initIMPSOMME", obj1, PageContext.REQUEST_SCOPE);
 
     }
 
@@ -655,8 +759,10 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
             page.setAttribute("initALTRISOG", "2", PageContext.REQUEST_SCOPE);
             page.setAttribute("initCenintGaraltsog", cenint, PageContext.REQUEST_SCOPE);
             page.setAttribute("initNomeinGaraltsog",nomein,PageContext.REQUEST_SCOPE);
+            /* APPALTI-1758
             page.setAttribute("initCodrupGaraltsog", codiceTecnico,PageContext.REQUEST_SCOPE);
             page.setAttribute("initNomtecGaraltsog", nomeTecnico,PageContext.REQUEST_SCOPE);
+            */
           }else if(cenint.equals(uffint) && "1".equals(iscuc)){
             page.setAttribute("initALTRISOG", "1", PageContext.REQUEST_SCOPE);
             altrisog = new Long(1);
@@ -704,8 +810,10 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
             if(!cenint.equals(uffint)){
               page.setAttribute("initCenintGaraltsog", cenint, PageContext.REQUEST_SCOPE);
               page.setAttribute("initNomeinGaraltsog",nomein,PageContext.REQUEST_SCOPE);
+              /* APPALTI-1758
               page.setAttribute("initCodrupGaraltsog", codiceTecnico,PageContext.REQUEST_SCOPE);
               page.setAttribute("initNomtecGaraltsog", nomeTecnico,PageContext.REQUEST_SCOPE);
+              */
             }
           }
 
@@ -716,12 +824,12 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
     }
 
     // Estrazione dati da G2TECN
-    if(altrisog == null || altrisog.longValue()!=2){
+    //if(altrisog == null || altrisog.longValue()!=2){APPALTI-1758
       if(codiceTecnico != null && nomeTecnico != null){
         page.setAttribute("initCODRUP", codiceTecnico, PageContext.REQUEST_SCOPE);
         page.setAttribute("initNOMTEC1", nomeTecnico, PageContext.REQUEST_SCOPE);
       }
-    }
+    //}
 
     if(!"lottoOffertaUnica".equals(tipoLotto)){
       //Estrazione dei dati da CATAPP per inizializzare i campi di CATG
@@ -808,7 +916,7 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
         + "DAVVIG, DPUBAV, DFPUBA, DIBAND, CORGAR, DTEOFF, OTEOFF, "
         + "DINDOC, DESDOC, DESOFF, OESOFF, OGGCONT, CRITLIC, DETLIC, CALCSOAN, "
         + "DTERMRICHCDP, DTERMRISPCDP,DTERMRICHCPO,DTERMRISPCPO,APPLEGREG, ITERGA, "
-        + "CONTOECO, VALTEC, ULTDETLIC, ALTRISOG, AQOPER, AQNUMOPE, ACCQUA, TIPLAV, MODMANO FROM TORN WHERE CODGAR = ?";
+        + "CONTOECO, VALTEC, ULTDETLIC, ALTRISOG, AQOPER, AQNUMOPE, ACCQUA, TIPLAV, MODMANO, METOEPV, LIMOEPV FROM TORN WHERE CODGAR = ?";
     HashMap keyParent = UtilityTags.stringParamsToHashMap(
         (String) page.getAttribute(
             UtilityTags.DEFAULT_HIDDEN_KEY_TABELLA_PARENT,
@@ -912,6 +1020,10 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
         ((JdbcParametro) datiTorn.get(40)).getValue(), PageContext.REQUEST_SCOPE);
     page.setAttribute("initMODMANO",
         ((JdbcParametro) datiTorn.get(41)).getValue(), PageContext.REQUEST_SCOPE);
+    page.setAttribute("initMETOEPV",
+        ((JdbcParametro) datiTorn.get(42)).getValue(), PageContext.REQUEST_SCOPE);
+    page.setAttribute("initLIMOEPV",
+        ((JdbcParametro) datiTorn.get(43)).getValue(), PageContext.REQUEST_SCOPE);
   }
 
   /**
@@ -1458,15 +1570,42 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
         erpSearch.setCodiceRda(numeroRda);
         erpSearch.setEsercizio(esercizio);
         WSERPRdaResType wserpRdaRes = null;
-        if("FNM".equals(tipoWSERP) || "RAIWAY".equals(tipoWSERP)) {
-        	wserpRdaRes = this.gestioneWSERPManager.wserpListaRda(username, password, servizio, erpSearch );
+        List<WSERPRdaType> listWserpRdaRes = new ArrayList<WSERPRdaType>();
+        		
+        if(    "FNM".equals(tipoWSERP) 
+        	|| "RAIWAY".equals(tipoWSERP)
+        	|| "INARCASSA".equals(tipoWSERP)
+        	|| "CONI".equals(tipoWSERP)
+        ) {
+        	if ( "INARCASSA".equals(tipoWSERP) || "CONI".equals(tipoWSERP)) {
+        		String[] codiciRda = numeroRda.split(";");
+        		
+        		if ("CONI".equals(tipoWSERP)) {
+        		  codiciRda = ordinaCodiciRda(codiciRda);
+        		}
+        		for (int i = 0; i < codiciRda.length; i++) {
+        			erpSearch.setCodiceRda(codiciRda[i]);
+        			WSERPRdaResType wserpRdaResAux = this.gestioneWSERPManager.wserpListaRda(username, password, servizio, erpSearch );
+        			WSERPRdaType[] rdaArrayAux = wserpRdaResAux.getRdaArray();
+        			listWserpRdaRes.add( rdaArrayAux[0] );
+				}//for
+        		
+        	} else {        	
+        	   wserpRdaRes = this.gestioneWSERPManager.wserpListaRda(username, password, servizio, erpSearch );
+        	}//if
         }else {
-        	if("AMIU".equals(tipoWSERP)) {
+        	if("AMIU".equals(tipoWSERP) || "ARCHIFLOW".equals(tipoWSERP)) {
         		wserpRdaRes = this.gestioneWSERPManager.wserpDettaglioRda(username, password, servizio, erpSearch);
-        	}
-        }
+        	}//if
+        }//if
 
-        WSERPRdaType[] rdaArray = wserpRdaRes.getRdaArray();
+        WSERPRdaType[] rdaArray;        
+        if (listWserpRdaRes.isEmpty()) {
+           rdaArray = wserpRdaRes.getRdaArray();
+        } else {
+           // caso INARCASSA e CONI
+           rdaArray = listWserpRdaRes.toArray(new WSERPRdaType[0]);
+        }//if
 
         if(rdaArray!= null){
           WSERPRdaType rda = rdaArray[0];
@@ -1549,7 +1688,7 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
 
               String codCpv = rda.getCodCpv();
               page.setAttribute("initCODCPV", codCpv, PageContext.REQUEST_SCOPE);
-
+              
               String durataContratto = rda.getCodiceArticolo();
               durataContratto = UtilityStringhe.convertiNullInStringaVuota(durataContratto);
               durataContratto = durataContratto.trim();
@@ -1661,28 +1800,150 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
                 }
               }
             }
-          }else if ("RAIWAY".equals(tipoWSERP)) {
-            String codiceRda = rda.getCodiceRda();
-            codiceRda = UtilityStringhe.convertiNullInStringaVuota(codiceRda);
+          }else if("ARCHIFLOW".equals(tipoWSERP)) {
+            
+            String numRda = rda.getCodiceRda();
+            String descrizione = rda.getDescrizione();
+            numRda = UtilityStringhe.convertiNullInStringaVuota(numRda);
             String oggetto = rda.getOggetto();
             page.setAttribute("initNOT_GAR", oggetto, PageContext.REQUEST_SCOPE);
-            page.setAttribute("initNUMRDA",codiceRda, PageContext.REQUEST_SCOPE);
-            Date dataConsegna = null;
-            if(rda.getDataConsegna() != null){
-              rda.getDataConsegna().getTime();
-              page.setAttribute("initDATRIL",  UtilityDate.convertiData(
-                      dataConsegna, UtilityDate.FORMATO_GG_MM_AAAA), PageContext.REQUEST_SCOPE);
-            }
-            Date dataCreazione = null;
-            if(rda.getDataCreazioneRda() != null){
-              rda.getDataCreazioneRda().getTime();
-              page.setAttribute("initDATCRE", UtilityDate.convertiData(
-                      dataCreazione, UtilityDate.FORMATO_GG_MM_AAAA), PageContext.REQUEST_SCOPE);
-            }
+            page.setAttribute("initVOCE", descrizione, PageContext.REQUEST_SCOPE);
+            page.setAttribute("initNUMRDA",numRda, PageContext.REQUEST_SCOPE);
+            page.setAttribute("initGarerda", Boolean.TRUE,PageContext.REQUEST_SCOPE);
             String divisione = rda.getDivisione();
             page.setAttribute("initSTRUTTURA", divisione, PageContext.REQUEST_SCOPE);
-            boolean inserimentoGarerda= true;
-            page.setAttribute("initGarerda", new Boolean(inserimentoGarerda),PageContext.REQUEST_SCOPE);
+            Double impapp = rda.getValoreStimato();
+            page.setAttribute("initIMPAPP",impapp, PageContext.REQUEST_SCOPE);
+            
+          } else if("CONI".equals(tipoWSERP)) {
+            
+            page.setAttribute("initGarerda", Boolean.TRUE,PageContext.REQUEST_SCOPE);
+            page.setAttribute("rdaMultiple", Boolean.TRUE,PageContext.REQUEST_SCOPE);
+            
+            String elencoNumRda     = "";
+            String elencoVoceRda    = "";
+            String elencoImportoRda = "";
+            Double totaleImporto = Double.valueOf(0);
+            for(int i=0; i < rdaArray.length; i++){
+              String codiceRda = rdaArray[i].getCodiceRda();
+              codiceRda = UtilityStringhe.convertiNullInStringaVuota(codiceRda);
+              String oggetto = rdaArray[i].getOggetto();
+              oggetto = UtilityStringhe.convertiNullInStringaVuota(oggetto);
+              oggetto = StringEscapeUtils.escapeJavaScript(oggetto);
+
+              String divisione = rdaArray[i].getDivisione();
+              page.setAttribute("initSTRUTTURA", divisione, PageContext.REQUEST_SCOPE);
+              String gruppoAcquisti = rdaArray[i].getGruppoAcquisti();
+              page.setAttribute("initGRUPPOACQUISTI", gruppoAcquisti, PageContext.REQUEST_SCOPE);
+              
+              Double importo = rdaArray[i].getValoreStimato();  
+              totaleImporto += importo;
+              BigDecimal bd = BigDecimal.valueOf(importo);
+              bd = bd.setScale(5, RoundingMode.HALF_UP);
+              String importoFormattato = bd.toString();
+              
+              if(i==0){
+                elencoNumRda     = codiceRda;
+                elencoVoceRda    = oggetto;
+                page.setAttribute("initNOT_GAR", oggetto, PageContext.REQUEST_SCOPE);
+                elencoImportoRda = importoFormattato;
+              }else{
+                elencoNumRda      += ";"+codiceRda;
+                elencoVoceRda     += ";"+oggetto;
+                elencoImportoRda  += ";"+importoFormattato;
+              }//if
+            }//for 
+            
+            page.setAttribute("initNUMRDA"     ,elencoNumRda    , PageContext.REQUEST_SCOPE);
+            page.setAttribute("initVOCE"       ,elencoVoceRda   , PageContext.REQUEST_SCOPE);
+            page.setAttribute("initIMPORTORDA" ,elencoImportoRda, PageContext.REQUEST_SCOPE);
+            page.setAttribute("initIMPAPP",totaleImporto, PageContext.REQUEST_SCOPE);
+
+          }else if (   "RAIWAY".equals(tipoWSERP)
+        		     ||"INARCASSA".equals(tipoWSERP)
+          ){
+            //TODO:ROS: da vedere se separe in un ramo specifico per INARCASSA
+            if ( "INARCASSA".equals(tipoWSERP) ) {
+            	boolean inserimentoGarerda= true;
+                page.setAttribute("initGarerda", new Boolean(inserimentoGarerda),PageContext.REQUEST_SCOPE);
+                page.setAttribute("rdaMultiple", new Boolean(true),PageContext.REQUEST_SCOPE);  
+                
+                String elencoNumRda     = "";
+                String elencoVoceRda    = "";
+                String elencoTipoRda    = "";
+                String elencoImportoRda = "";
+                Double totaleImporto = new Double(0.0);
+                Double totaleImportoNoRibasso = new Double(0.0);
+                for(int i=0; i < rdaArray.length; i++){
+                  String codiceRda = rdaArray[i].getCodiceRda();
+                  codiceRda = UtilityStringhe.convertiNullInStringaVuota(codiceRda);
+                  String oggetto = rdaArray[i].getOggetto();
+                  oggetto = UtilityStringhe.convertiNullInStringaVuota(oggetto);
+                  oggetto = StringEscapeUtils.escapeJavaScript(oggetto);
+                  //String tipoRda = rdaArray[i].getTipoRdaErp();
+                  //tipoRda = UtilityStringhe.convertiNullInStringaVuota(tipoRda);
+                  
+                  Double importo = rdaArray[i].getValoreStimato();  
+                  totaleImporto += importo;
+                  Double importoNoRibasso = rdaArray[i].getImportoOpzioni();  
+                  totaleImportoNoRibasso += importoNoRibasso;
+                  //DecimalFormat decimalFormat = new DecimalFormat("#.00000"); //TODO:ROS: da controllare la formattazione che esce...
+                  //String importoFormattato = decimalFormat.format(importo);
+                  BigDecimal bd = new BigDecimal(importo);
+                  bd = bd.setScale(5, RoundingMode.HALF_UP);
+                  String importoFormattato = bd.toString();
+                  
+                  if(i==0){
+                    elencoNumRda     = codiceRda;
+                    elencoVoceRda    = oggetto;
+                    page.setAttribute("initNOT_GAR", oggetto, PageContext.REQUEST_SCOPE);
+                    elencoImportoRda = importoFormattato;
+                  }else{
+                    elencoNumRda      += ";"+codiceRda;
+                    elencoVoceRda     += ";"+oggetto;
+                    elencoImportoRda  += ";"+importoFormattato;
+                  }//if
+                }//for 
+                
+                page.setAttribute("initNUMRDA"     ,elencoNumRda    , PageContext.REQUEST_SCOPE);
+                page.setAttribute("initVOCE"       ,elencoVoceRda   , PageContext.REQUEST_SCOPE);
+                page.setAttribute("initIMPORTORDA" ,elencoImportoRda, PageContext.REQUEST_SCOPE);
+                page.setAttribute("initIMPAPP",totaleImporto, PageContext.REQUEST_SCOPE);
+                page.setAttribute("initIMPNRL",totaleImportoNoRibasso, PageContext.REQUEST_SCOPE);
+                              	
+            }else {
+            	
+                String codiceRda = rda.getCodiceRda();
+                codiceRda = UtilityStringhe.convertiNullInStringaVuota(codiceRda);
+                String oggetto = rda.getOggetto();
+                page.setAttribute("initNOT_GAR", oggetto, PageContext.REQUEST_SCOPE);
+                page.setAttribute("initNUMRDA",codiceRda, PageContext.REQUEST_SCOPE);
+                String note = rda.getNoteDecorrenzaDurata();
+                if (note != null) {
+                  if (note.length() > 2000)
+                    note = note.substring(0, 2000);
+                  page.setAttribute("initALTNEG", note, PageContext.REQUEST_SCOPE);
+                }
+                Date dataConsegna = null;
+                if(rda.getDataConsegna() != null){
+                  dataConsegna = rda.getDataConsegna().getTime();
+                  page.setAttribute("initDATRIL",  UtilityDate.convertiData(
+                          dataConsegna, UtilityDate.FORMATO_GG_MM_AAAA), PageContext.REQUEST_SCOPE);
+                }
+                Date dataCreazione = null;
+                if(rda.getDataCreazioneRda() != null){
+                  dataCreazione = rda.getDataCreazioneRda().getTime();
+                  page.setAttribute("initDATCRE", UtilityDate.convertiData(
+                          dataCreazione, UtilityDate.FORMATO_GG_MM_AAAA), PageContext.REQUEST_SCOPE);
+                }
+                String divisione = rda.getDivisione();
+                page.setAttribute("initSTRUTTURA", divisione, PageContext.REQUEST_SCOPE);
+                
+                boolean inserimentoGarerda= true;
+                page.setAttribute("initGarerda", new Boolean(inserimentoGarerda),PageContext.REQUEST_SCOPE);            	
+            	        	  
+            }//if
+        	                          
             String sceltaContraente = rda.getSceltaContraente();
             sceltaContraente = UtilityStringhe.convertiNullInStringaVuota(sceltaContraente);
             if(!"".equals(sceltaContraente)){
@@ -1690,12 +1951,16 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
               Long iterga = this.pgManager.getITERGA(Long.valueOf(sceltaContraente));
               page.setAttribute("initITERGAG", iterga, PageContext.REQUEST_SCOPE);
             }
-            //String codCpv = rda.getCodCpv();
+            String codCpv = rda.getCodCpv();
             //String codCpv = rda.getLottoArray(0).getCodCpv();
-            //page.setAttribute("initCODCPV", codCpv, PageContext.REQUEST_SCOPE);
+            page.setAttribute("initCODCPV", codCpv, PageContext.REQUEST_SCOPE);
+            String codCpvComplementari = rda.getCodCpvComplementari();
+            page.setAttribute("initCODCPVCOMPL", codCpvComplementari, PageContext.REQUEST_SCOPE);
 
             Double impapp = rda.getValoreStimato();
-            page.setAttribute("initIMPAPP",impapp, PageContext.REQUEST_SCOPE);
+            if ( "RAIWAY".equals(tipoWSERP) ) {
+            	page.setAttribute("initIMPAPP",impapp, PageContext.REQUEST_SCOPE);
+            }//if
 
             //Double impAltro = rda.getImportoOpzioni();
             //Double impAltro = rda.getLottoArray(0).getImportoOpzioni();
@@ -1757,16 +2022,28 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
             String umDurata = rda.getUmDurata();
 
             Boolean accqua = rda.getAccqua();
-            if(accqua){
+            if(accqua!=null && accqua){  
               page.setAttribute("initACCQUA", "1", PageContext.REQUEST_SCOPE);
               page.setAttribute("initAQDURATA",durata, PageContext.REQUEST_SCOPE);
-              page.setAttribute("TORNAQTEMPO","3", PageContext.REQUEST_SCOPE);
+              page.setAttribute("initAQTEMPO","3", PageContext.REQUEST_SCOPE);
             } else {
               page.setAttribute("initACCQUA", "2", PageContext.REQUEST_SCOPE);
               page.setAttribute("initTEUTIL",durata, PageContext.REQUEST_SCOPE);
               page.setAttribute("TEMESI","1", PageContext.REQUEST_SCOPE);
             }
 
+            String criterio = rda.getTipoGestione();
+            if(criterio != null) {
+	            if(criterio.contains("minor") && criterio.contains("prezzo")) {
+	            	page.setAttribute("initCRITLICG","1", PageContext.REQUEST_SCOPE);
+	            }
+	            if(criterio.contains("economicamente") && criterio.contains("vantaggiosa")) {
+	            	page.setAttribute("initCRITLICG","2", PageContext.REQUEST_SCOPE);
+	            }
+	            if(criterio.contains("Miglior") && criterio.contains("rapporto") && criterio.contains("prezzo")) {
+	            	page.setAttribute("initCRITLICG","2", PageContext.REQUEST_SCOPE);
+	            }
+            }
 
             page.setAttribute("initGestioneUnicaERP", "1", PageContext.REQUEST_SCOPE);
           }
@@ -2046,16 +2323,18 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
           chiaveCategorie=SqlManager.getValueFromVectorParam(datiV_GARE_GENERE, 1).getStringValue();
       }
       String codgar = SqlManager.getValueFromVectorParam(datiV_GARE_GENERE, 1).getStringValue();
-      Vector<?> datiTorn = this.sqlManager.getVector("select settore,prerib, cenint, nomein from torn left join uffint on codein=cenint where codgar=?", new Object[]{codgar});
+      Vector<?> datiTorn = this.sqlManager.getVector("select settore,prerib, cenint, nomein, codrup from torn left join uffint on codein=cenint where codgar=?", new Object[]{codgar});
       String settore = null;
       Long prerib = null;
       String cenint = null;
       String nomein = null;
+      String codrup = null;
       if(datiTorn!=null && datiTorn.size()>0){
         settore = SqlManager.getValueFromVectorParam(datiTorn, 0).getStringValue();
         prerib = SqlManager.getValueFromVectorParam(datiTorn, 1).longValue();
         cenint = SqlManager.getValueFromVectorParam(datiTorn, 2).getStringValue();
         nomein = SqlManager.getValueFromVectorParam(datiTorn, 3).getStringValue();
+        codrup = SqlManager.getValueFromVectorParam(datiTorn, 4).getStringValue();
       }
       if(settore != null){
         page.setAttribute("initSETTORE",settore,PageContext.REQUEST_SCOPE);
@@ -2068,6 +2347,11 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
       }
       if(nomein != null && !"".equals(nomein)){
         page.setAttribute("initNOMEIN",nomein,PageContext.REQUEST_SCOPE);
+      }
+      if(StringUtils.isNotEmpty(codrup)){
+        page.setAttribute("initCODRUP",codrup,PageContext.REQUEST_SCOPE);
+        String nomrup = (String) sqlManager.getObject("select nomtec from tecni where codtec=?", new Object[] { codrup });
+        page.setAttribute("initNOMTEC1",nomrup,PageContext.REQUEST_SCOPE);
       }
 
       //Estrazione dei dati da CATG dalla gare padre
@@ -2108,6 +2392,171 @@ public class GestoreDatiGenerali extends AbstractGestorePreload {
         }
         page.setAttribute("initOPES", listaCategorieUlteriori, PageContext.REQUEST_SCOPE);
       }
+    }
+  }
+  
+  private void setDatiInitPerConcorso(PageContext page, SqlManager sqlManager,
+      String ngarapa, String tipoAppalto) throws SQLException, GestoreException {
+    Vector<?> datiGara = sqlManager.getVector("select IMPMIS, IMPNRM, IMPSMI, IMPCOR, IMPNRC,IMPSCO, ONPRGE, IMPAPP, IMPNRL, IMPSIC, ONSOGRIB, NOT_GAR from GARE where NGARA=?", new Object[]{ngarapa});
+    if(datiGara!=null && datiGara.size()>0){
+      Double impmis = SqlManager.getValueFromVectorParam(datiGara, 0).doubleValue();
+      Double impnrm = SqlManager.getValueFromVectorParam(datiGara, 1).doubleValue();
+      Double impsmi = SqlManager.getValueFromVectorParam(datiGara, 2).doubleValue();
+      Double impcor = SqlManager.getValueFromVectorParam(datiGara, 3).doubleValue();
+      Double impnrc = SqlManager.getValueFromVectorParam(datiGara, 4).doubleValue();
+      Double impsco = SqlManager.getValueFromVectorParam(datiGara, 5).doubleValue();
+      Double onprge = SqlManager.getValueFromVectorParam(datiGara, 6).doubleValue();
+      Double impapp = SqlManager.getValueFromVectorParam(datiGara, 7).doubleValue();
+      Double impnrl = SqlManager.getValueFromVectorParam(datiGara, 8).doubleValue();
+      Double impsic = SqlManager.getValueFromVectorParam(datiGara, 9).doubleValue();
+      String onsogrib = SqlManager.getValueFromVectorParam(datiGara, 10).getStringValue();
+      String notgar = SqlManager.getValueFromVectorParam(datiGara, 11).getStringValue();
+
+      //Inizializzazione IMPMIS
+      page.setAttribute("initIMPMIS",impmis,PageContext.REQUEST_SCOPE);
+
+      //Inizializzazione IMPNRM
+      page.setAttribute("initIMPNRM",impnrm,PageContext.REQUEST_SCOPE);
+
+      //Inizializzazione IMPSMI
+      page.setAttribute("initIMPSMI",impsmi,PageContext.REQUEST_SCOPE);
+
+      //Inizializzazione IMPCOR
+      page.setAttribute("initIMPCOR",impcor,PageContext.REQUEST_SCOPE);
+
+      //Inizializzazione IMPNRC
+      page.setAttribute("initIMPNRC",impnrc,PageContext.REQUEST_SCOPE);
+
+      //Inizializzazione IMPSCO
+      page.setAttribute("initIMPSCO",impsco,PageContext.REQUEST_SCOPE);
+
+      //Inizializzazione ONPRGE
+      page.setAttribute("initONPRGE",onprge,PageContext.REQUEST_SCOPE);
+
+      //Inizializzazione IMPAPP
+      page.setAttribute("initIMPAPP",impapp,PageContext.REQUEST_SCOPE);
+
+      //Inizializzazione IMPNRL
+      page.setAttribute("initIMPNRL",impnrl,PageContext.REQUEST_SCOPE);
+
+      //Inizializzazione IMPSIC
+      page.setAttribute("initIMPSIC",impsic,PageContext.REQUEST_SCOPE);
+
+      //Inizializzazione ONSOGRIB
+      page.setAttribute("initONSOGRIB",onsogrib,PageContext.REQUEST_SCOPE);
+
+      //Inizializzazione PRECED
+      page.setAttribute("initNGARAPA",ngarapa,PageContext.REQUEST_SCOPE);
+
+      //Inizializzazione NOT_GAR
+      page.setAttribute("initNOT_GAR",notgar,PageContext.REQUEST_SCOPE);
+      
+      String chiaveCategorie=ngarapa;
+      Vector<?> datiV_GARE_GENERE = this.sqlManager.getVector("select genere,codgar from v_gare_genere where codice=?", new Object[]{ngarapa});
+      if(datiV_GARE_GENERE!=null && datiV_GARE_GENERE.size()>0){
+        Long genere =  SqlManager.getValueFromVectorParam(datiV_GARE_GENERE, 0).longValue();
+        if(genere!=null && genere.longValue()==300)
+          chiaveCategorie=SqlManager.getValueFromVectorParam(datiV_GARE_GENERE, 1).getStringValue();
+      }
+      String codgar = SqlManager.getValueFromVectorParam(datiV_GARE_GENERE, 1).getStringValue();
+      Vector<?> datiTorn = this.sqlManager.getVector("select settore, cenint, nomein, codrup, nomtec, altrisog from torn left join uffint on codein=cenint left join tecni on codrup=codtec where codgar=?", new Object[]{codgar});
+      String settore = null;
+      String cenint = null;
+      String nomein = null;
+      String codrup = null;
+      String nomtec = null;
+      String altrisog = null;
+      if(datiTorn!=null && datiTorn.size()>0){
+        settore = SqlManager.getValueFromVectorParam(datiTorn, 0).getStringValue();
+        cenint = SqlManager.getValueFromVectorParam(datiTorn, 1).getStringValue();
+        nomein = SqlManager.getValueFromVectorParam(datiTorn, 2).getStringValue();
+        codrup = SqlManager.getValueFromVectorParam(datiTorn, 3).getStringValue();
+        nomtec = SqlManager.getValueFromVectorParam(datiTorn, 4).getStringValue();
+        altrisog = SqlManager.getValueFromVectorParam(datiTorn, 5).getStringValue();
+      }
+      if(settore != null){
+        page.setAttribute("initSETTORE",settore,PageContext.REQUEST_SCOPE);
+      }
+      if(cenint != null && !"".equals(cenint)){
+        page.setAttribute("initCENINT",cenint,PageContext.REQUEST_SCOPE);
+      }
+      if(nomein != null && !"".equals(nomein)){
+        page.setAttribute("initNOMEIN",nomein,PageContext.REQUEST_SCOPE);
+      }
+      if(codrup != null && !"".equals(codrup)){
+        page.setAttribute("initCODRUP",codrup, PageContext.REQUEST_SCOPE);
+      }
+      if(nomtec != null && !"".equals(nomtec)){
+        page.setAttribute("initNOMTEC1",nomtec, PageContext.REQUEST_SCOPE);
+      }
+      if(altrisog != null && !"".equals(altrisog)){
+        page.setAttribute("initALTRISOG", altrisog, PageContext.REQUEST_SCOPE);
+      }
+
+      //Estrazione dei dati da CATG dalla gare padre
+      Vector<JdbcParametro> datiCatg = sqlManager.getVector(
+          "select CATG.CATIGA, CAIS.DESCAT, CAIS.ACONTEC, CAIS.QUAOBB," +
+                " CAIS.TIPLAVG, CATG.NGARA, CATG.IMPBASG, CATG.NUMCLA, " +
+                " CATG.IMPIGA, V_CAIS_TIT.ISFOGLIA " +
+            "from CATG, CAIS, V_CAIS_TIT " +
+           "where CATG.NGARA = ? " +
+            " and CAIS.CAISIM = CATG.CATIGA "+
+            " and CAIS.CAISIM = V_CAIS_TIT.CAISIM",
+            new Object[]{chiaveCategorie});
+      if(datiCatg != null && datiCatg.size() > 0){
+        //Si deve sbiancare il valore CATG.NGARA in modo che al salvataggio verrà sostituito con quello della nuova gara
+        datiCatg.set(5, new JdbcParametro(JdbcParametro.TIPO_TESTO,null));
+        page.setAttribute("initCATG", datiCatg, PageContext.REQUEST_SCOPE);
+      }
+
+      //Estrazione dei dati da OPES dalla gare padre
+      List<Vector> listaCategorieUlteriori = sqlManager.getListVector(
+          "select OPES.CATOFF, CAIS.DESCAT, CAIS.ACONTEC, CAIS.QUAOBB, CAIS.TIPLAVG, " +
+                 "OPES.NGARA3, OPES.NOPEGA, OPES.IMPAPO,  OPES.NUMCLU, OPES.ISCOFF, " +
+                 "OPES.ACONTEC, OPES.QUAOBB, OPES.DESCOP, V_CAIS_TIT.ISFOGLIA " +
+            "from OPES, CAIS, V_CAIS_TIT " +
+           "where OPES.NGARA3 = ? " +
+             "and OPES.CATOFF = CAIS.CAISIM " +
+             "and CAIS.CAISIM = V_CAIS_TIT.CAISIM  " +
+           "order by OPES.NOPEGA asc", new Object[]{chiaveCategorie});
+      if(listaCategorieUlteriori != null && listaCategorieUlteriori.size() > 0){
+        if(listaCategorieUlteriori!=null && listaCategorieUlteriori.size()>0){
+          //Si deve sbiancare il valore OPES.NGARA3 in modo che al salvataggio verrà sostituito con quello della nuova gara
+          Vector riga=null;
+          for(int i=0;i<listaCategorieUlteriori.size();i++){
+            riga=listaCategorieUlteriori.get(i);
+            riga.set(5, new JdbcParametro(JdbcParametro.TIPO_TESTO,null));
+            listaCategorieUlteriori.set(i, riga);
+          }
+        }
+        page.setAttribute("initOPES", listaCategorieUlteriori, PageContext.REQUEST_SCOPE);
+      }
+    }
+  }
+  
+  /**
+   * Ordina i codici RDA in ordine crescente Attualmente sono soltanto Stringhe di numeri interi tipo 65,78,82
+   * Se un giorno dovessero cambiare in 065,078,082 dovremmo riadeguare il codice per gestire l'inseriemento degli zeri
+   * @param codiciRda
+   * @return
+   */
+  public static String[] ordinaCodiciRda(String[] codiciRda) {
+    try {
+      // Prova a convertire tutte le stringhe in numeri interi
+      int[] numeri = Arrays.stream(codiciRda)
+          .mapToInt(Integer::parseInt)
+          .toArray();
+
+      // Ordina i numeri
+      Arrays.sort(numeri);
+
+      // Converte i numeri ordinati di nuovo in stringhe
+      return Arrays.stream(numeri)
+          .mapToObj(String::valueOf)
+          .toArray(String[]::new);
+    } catch (NumberFormatException e) {
+      // In caso di errore, restituisci l'array originale
+      return codiciRda;
     }
   }
 }

@@ -51,7 +51,8 @@
 
 <c:choose>
 	<c:when test='${modalita eq "vis"}'>
-		<c:set var="where" value="GARCONFDATI.NGARA='${ngara }' and GARCONFDATI.ENTITA='XDPRE'"/>
+		<c:set var="where" value="GARCONFDATI.NGARA=? and GARCONFDATI.ENTITA='XDPRE'"/>
+		<c:set var="parametri" value="T:${ngara}"/>
 		<c:set var="entita" value="GARCONFDATI"/>
 		<c:set var="ordinamento" value="4"/>
 	</c:when>
@@ -123,7 +124,8 @@
 					
 			<tr>
 				<td ${stileDati}>
-  				<gene:formLista entita="${entita }" where="${where }" pagesize="20" tableclass="datilista" sortColumn="${ordinamento }" gestisciProtezioni="false" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupConfiguraDatiRichiestiDitte">
+				${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, entita, where, parametri)}
+  				<gene:formLista entita="${entita }" pagesize="20" tableclass="datilista" sortColumn="${ordinamento }" gestisciProtezioni="false" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupConfiguraDatiRichiestiDitte">
   					<gene:redefineInsert name="listaNuovo" />
 					<gene:redefineInsert name="listaEliminaSelezione" />
 											
@@ -401,7 +403,7 @@
 	            }
 	           
 	           	bloccaRichiesteServer();
-				var href = '${contextPath }/pg/AggiornaNumOrdineConfigurazione.do?"+csrfToken+"&listaId=' + listaId + '&listaNumord=' + listaNumord + "&ngara=" + ngara + "&bloccoModifica=" + bloccoModifica + "&direzione="  + direzione;
+				var href = '${contextPath }/pg/AggiornaNumOrdineConfigurazione.do?listaId=' + listaId + '&listaNumord=' + listaNumord + "&ngara=" + ngara + "&bloccoModifica=" + bloccoModifica + "&direzione="  + direzione;
 				document.location.href = href;
 			}
     	  });

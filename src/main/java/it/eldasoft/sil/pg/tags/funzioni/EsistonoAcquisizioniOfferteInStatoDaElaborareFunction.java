@@ -48,11 +48,11 @@ public class EsistonoAcquisizioniOfferteInStatoDaElaborareFunction extends Abstr
         status = sqlManager.startTransaction();
 
         //gestione esclusione/riammissione buste in stato 5 e 8
-        mepaManager.impostaComunicazioniAScartate(ngara,"OFFERTE");
-        mepaManager.impostaComunicazioniDaRiaquisire(ngara);
+        mepaManager.impostaComunicazioniAScartate(ngara,"OFFERTE", null);
+        mepaManager.impostaComunicazioniDaRiaquisire(ngara, null);
         //gestione esclusione/riammissione buste in stato 13 e 20
-        mepaManager.impostaComunicazioniAnonimeAScartate(ngara, "OFFERTE");
-        mepaManager.impostaComunicazioniAnonimeDaRiaquisire(ngara);
+        mepaManager.impostaComunicazioniAnonimeAScartate(ngara, "OFFERTE", null);
+        mepaManager.impostaComunicazioniAnonimeDaRiaquisire(ngara, null);
       } catch (SQLException e) {
         commitTransaction = false;
         throw new JspException("Errore durante l'esclusione/riammissione delle buste in stato 5(13) e 8(20)", e);

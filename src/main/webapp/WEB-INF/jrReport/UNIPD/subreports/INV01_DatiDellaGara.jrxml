@@ -4,6 +4,7 @@
 	<property name="ireport.zoom" value="1.4641000000000008"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="160"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="appalti_pos"/>
 	<subDataset name="punto_istruttore" uuid="9d26e2ca-6897-4f6e-8115-ede4d80bac28">
 		<parameter name="NUMERO_GARA" class="java.lang.String"/>
 		<queryString>
@@ -512,6 +513,44 @@ WHERE GARE.NGARA = $P{NUMERO_GARA}]]>
 					</textElement>
 					<textFieldExpression><![CDATA[$F{DETERMINATO_MEDIANTE}]]></textFieldExpression>
 				</textField>
+			</frame>
+		</band>
+		<band height="20">
+			<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.FreeLayout"/>
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<frame>
+				<reportElement positionType="Float" x="0" y="0" width="482" height="20" isRemoveLineWhenBlank="true" uuid="98ad88e2-80a4-4c82-8307-9d09d09dc6b1">
+					<printWhenExpression><![CDATA[$F{CALCOLO_SOGLIA} != null && $F{CALCOLO_SOGLIA} == 1]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<staticText>
+					<reportElement positionType="Float" x="0" y="0" width="241" height="20" uuid="cb8a0d9f-a444-40c2-9e10-38b541f6fa43"/>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman"/>
+					</textElement>
+					<text><![CDATA[Metodo calcolo soglia anomalia]]></text>
+				</staticText>
+				<staticText>
+					<reportElement positionType="Float" x="241" y="0" width="241" height="20" uuid="b4a1bb59-1a35-482a-acdb-53f5640b8ca6">
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<box topPadding="2" leftPadding="5" bottomPadding="2" rightPadding="2">
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement>
+						<font fontName="Times New Roman"/>
+					</textElement>
+					<text><![CDATA[Metodo A]]></text>
+				</staticText>
 			</frame>
 		</band>
 		<band height="20">

@@ -54,6 +54,7 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 <c:set var="entitaPrincipaleModificabile" value="" scope="session" />
 
 <c:set var="nomein" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetNOMEINFunction", pageContext, cenint)}'/>
+<c:set var="documentiAssociatiDB" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.documentiAssociatiDB")}'/>
 
 <gene:template file="lista-template.jsp" gestisciProtezioni="true" schema="GARE" idMaschera="V_GARE_ADESIONI-lista" >
 	<gene:setString name="titoloMaschera" value="Dettaglio impegnato in adesioni e confronti competitivi della stazione appaltante ${nomein }"/>
@@ -93,11 +94,18 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
   <gene:javaScript>
 	
 	function documentiAssociati(chiave){
-		var entita,valori;
+		var entita,valori,action;
 		valori = "GARE.NGARA=T:"+chiave;
 		entita = "GARE";
+	  <c:choose>
+		  <c:when test="${documentiAssociatiDB eq '1'}">
+		  var href = contextPath+'/pg/ListaDocumentiAssociatiGara.do?metodo=visualizza&entita='+entita+'&valori='+valori+'&ngaraaq=${ngaraaq}';
+		  </c:when>
+		  <c:otherwise>
+			  var href = contextPath+'/ListaDocumentiAssociati.do?metodo=visualizza&entita='+entita+'&valori='+valori;
+		  </c:otherwise>
+	  </c:choose>
 	  try {
-		var href = contextPath+'/ListaDocumentiAssociati.do?'+csrfToken+'&metodo=visualizza&entita='+entita+'&valori='+valori;
 		document.location.href = href;
     } catch(e) {
 	  }

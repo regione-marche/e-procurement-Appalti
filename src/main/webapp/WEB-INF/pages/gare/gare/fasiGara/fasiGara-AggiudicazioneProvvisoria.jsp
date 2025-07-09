@@ -158,13 +158,12 @@
 								<c:if test='${modo eq "VISUALIZZA" and gene:checkProtFunz(pageContext, "MOD","MOD") and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ImpostaGaraNonAggiud") and (isGaraLottiConOffertaUnica eq "true" || param.paginaFasiGara eq "aperturaOffAggProvLottoOffUnica")}'>
 								      <td class="vocemenulaterale">
 									      	<c:if test='${isNavigazioneDisattiva ne "1" }'>
-													<a href="javascript:impostaGaraNonAggiudicata('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','${datiRiga.GARE_ESINEG}','${datiRiga.GARE_DATNEG}','${datiRiga.GARE1_NPANNREVAGG}');" title="Imposta lotto non aggiudicato" tabindex="1507">
+													<a href="javascript:impostaGaraNonAggiudicata('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','${datiRiga.GARE_ESINEG}','${datiRiga.GARE_DATNEG}','${datiRiga.GARE1_NPANNREVAGG}','${datiRiga.GARE1_GIUSTNEG}');" title="Imposta lotto non aggiudicato" tabindex="1507">
 											</c:if>
 											  Imposta lotto non aggiudicato
 											<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>			  
 										</td>
 								</c:if>
-								
 								<tr>
 									<td class="vocemenulaterale">
 										<a href="javascript:indietro();" title='Fase precedente' tabindex="1508">
@@ -227,7 +226,7 @@
 						<gene:campoScheda campo="CORGAR1" modificabile="false" visibile="${not empty datiRiga.GARE_CORGAR1 and '0' ne datiRiga.GARE_CORGAR1 and (datiRiga.TORN_TIPGEN eq 2 or datiRiga.TORN_TIPGEN eq 3) and (modalitaAggiudicazioneGara eq 1 or modalitaAggiudicazioneGara eq 5)}" />
 						<gene:campoScheda campo="MEDIASCA" title="Media degli scarti" entita="GARE1" where = "GARE1.NGARA = GARE.NGARA" modificabile="false" visibile="${(modalitaAggiudicazioneGara eq 13 or modalitaAggiudicazioneGara eq 14) and (empty datiRiga.GARE1_METSOGLIA || datiRiga.GARE1_METSOGLIA eq 1 || datiRiga.GARE1_METSOGLIA eq 5) and esitoControlloDitteDLGS2016 and calcoloGradQform ne 'true' and datiRiga.GARE1_SOGLIANORMA ne 'LR13_2019'}"/>
 						<gene:campoScheda campo="SOGLIANORMA" entita="GARE1" where = "GARE1.NGARA = GARE.NGARA" visibile="false"/>
-						<gene:campoScheda campo="SOGLIA1" entita="GARE1" where = "GARE1.NGARA = GARE.NGARA" modificabile="false" visibile="${datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' and datiRiga.GARE_NOFVAL >= 15}"/>
+						<gene:campoScheda campo="SOGLIA1" entita="GARE1" where = "GARE1.NGARA = GARE.NGARA" modificabile="false" visibile="${(datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' or datiRiga.GARE1_SOGLIANORMA eq 'DLGS36_2023_S') and datiRiga.GARE_NOFVAL >= 15}"/>
 						<c:choose>
 							<c:when test="${datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' or datiRiga.GARE1_SOGLIANORMA eq 'LR13_2019'}">
 								<c:set var="titoloSommarib" value="Somma ribassi offerte mediate" />
@@ -239,12 +238,12 @@
 								<c:set var="titoloSommarib" value="Somma ribassi offerte mediate" />
 							</c:otherwise>
 						</c:choose>
-						<gene:campoScheda title="${titoloSommarib }" campo="SOMMARIB" entita="GARE1" where = "GARE1.NGARA = GARE.NGARA" modificabile="false" visibile="${(modalitaAggiudicazioneGara eq 13 or modalitaAggiudicazioneGara eq 14) and calcoloGradQform ne 'true' and ((datiRiga.GARE1_METSOGLIA eq 2 and esitoControlloDitteDLGS2016) || (datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' and datiRiga.GARE_NOFVAL >= 15) || datiRiga.GARE1_SOGLIANORMA eq 'LR13_2019')}"/>
+						<gene:campoScheda title="${titoloSommarib }" campo="SOMMARIB" entita="GARE1" where = "GARE1.NGARA = GARE.NGARA" modificabile="false" visibile="${(modalitaAggiudicazioneGara eq 13 or modalitaAggiudicazioneGara eq 14) and calcoloGradQform ne 'true' and ((datiRiga.GARE1_METSOGLIA eq 2 and esitoControlloDitteDLGS2016) || ((datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S'  or datiRiga.GARE1_SOGLIANORMA eq 'DLGS36_2023_S') and datiRiga.GARE_NOFVAL >= 15) || datiRiga.GARE1_SOGLIANORMA eq 'LR13_2019')}"/>
 						<gene:campoScheda campo="MEDIAIMP" entita="GARE1" where = "GARE1.NGARA = GARE.NGARA" modificabile="false" visibile="${(datiRiga.GARE_MODLICG eq 13 or datiRiga.GARE_MODLICG eq 14) and datiRiga.GARE1_METSOGLIA eq 4 and isGaraDLGS2016 and esitoControlloDitteDLGS2016 and calcoloGradQform ne 'true'}"/>
 						<gene:campoScheda campo="SOGLIAIMP" entita="GARE1" where = "GARE1.NGARA = GARE.NGARA" modificabile="false" visibile="${(datiRiga.GARE_MODLICG eq 13 or datiRiga.GARE_MODLICG eq 14) and datiRiga.GARE1_METSOGLIA eq 4 and isGaraDLGS2016 and esitoControlloDitteDLGS2016 and calcoloGradQform ne 'true'}"/>
 						<gene:campoScheda campo="METCOEFF" entita="GARE1" where = "GARE1.NGARA = GARE.NGARA" modificabile="false" visibile="${datiRiga.GARE1_METSOGLIA eq 5 and esitoControlloDitteDLGS2016 and empty datiRiga.GARE1_SOGLIANORMA and calcoloGradQform ne 'true'}"/>
-						<gene:campoScheda campo="SOGLIAVAR" entita="GARE1" where = "GARE1.NGARA = GARE.NGARA" modificabile="false" visibile="${datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' and datiRiga.GARE_NOFVAL >= 15}"/>
-						<gene:campoScheda campo="MEDIARAP" entita="GARE1" where = "GARE1.NGARA = GARE.NGARA" modificabile="false" visibile="${datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' and datiRiga.GARE_NOFVAL < 15}"/>
+						<gene:campoScheda campo="SOGLIAVAR" entita="GARE1" where = "GARE1.NGARA = GARE.NGARA" modificabile="false" visibile="${(datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' or datiRiga.GARE1_SOGLIANORMA eq 'DLGS36_2023_S') and datiRiga.GARE_NOFVAL >= 15}"/>
+						<gene:campoScheda campo="MEDIARAP" entita="GARE1" where = "GARE1.NGARA = GARE.NGARA" modificabile="false" visibile="${(datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' or datiRiga.GARE1_SOGLIANORMA eq 'DLGS36_2023_S') and datiRiga.GARE_NOFVAL < 15}"/>
 						<gene:campoScheda campo="LIMMAX" modificabile="false" visibile="${(modalitaAggiudicazioneGara eq 13 or modalitaAggiudicazioneGara eq 14) and esitoControlloDitteDLGS2016 and calcoloGradQform ne 'true'}" />
 						<c:if test="${datiRiga.GARE_MODLICG ne 6 and calcsoang eq '1' and esitoControlloDitteDLGS2016 and not empty datiRiga.GARE_MEDIA and calcoloGradQform ne 'true'}">
 							<c:set var="num_max_decimali" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetMaxNumeroCifreDecimaliFunction",pageContext,numeroGara) }'/>
@@ -283,17 +282,25 @@
 								<td colspan="2"><b>Proposta di aggiudicazione</b></td>
 							</tr>
 						</gene:campoScheda>
-						<gene:archivio titolo="Imprese"
-							lista=""
-							scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda.jsp","")}'
-							schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp", "")}'
-							campi="IMPR.CODIMP;IMPR.NOMEST"
-							chiave="GARE_DITTAP"
-							formName="formArchivioImprese"
-							inseribile="false" >
-							<gene:campoScheda campo="DITTAP"  modificabile="false" />
-							<gene:campoScheda campo="NOMEST" entita="IMPR" where="GARE.DITTAP=IMPR.CODIMP" modificabile="false" />
-						</gene:archivio>
+						<c:choose>
+							<c:when test="${(iterga ne '9' && iterga ne '10') || isfineconc eq '1' }">
+								<gene:archivio titolo="Imprese"
+									lista=""
+									scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda.jsp","")}'
+									schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp", "")}'
+									campi="IMPR.CODIMP;IMPR.NOMEST"
+									chiave="GARE_DITTAP"
+									formName="formArchivioImprese"
+									inseribile="false" >
+									<gene:campoScheda campo="DITTAP"  modificabile="false" />
+									<gene:campoScheda campo="NOMEST" entita="IMPR" where="GARE.DITTAP=IMPR.CODIMP" modificabile="false" />
+								</gene:archivio>
+							</c:when>
+							<c:otherwise>
+								<gene:campoScheda campo="DITTAP"  modificabile="false" />
+								<gene:campoScheda campo="NOMIMO" title="Ragione sociale o denominazione" entita="DITG" where="GARE.DITTAP=DITG.DITTAO" modificabile="false" />
+							</c:otherwise>
+						</c:choose>
 						<gene:campoScheda campo="DITTAP_FIT"  campoFittizio="true" value="${datiRiga.GARE_DITTAP}" definizione="T10" visibile="false" />
 				<c:choose>
 					<c:when test='${modalitaAggiudicazioneGara eq 6}'>
@@ -365,6 +372,7 @@
 						
 						<c:if test='${isGaraLottiConOffertaUnica eq "true" || param.paginaFasiGara eq "aperturaOffAggProvLottoOffUnica"}'>
 							<gene:campoScheda campo="ESINEG" visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false" title="Esito lotto non aggiudicato" />
+							<gene:campoScheda campo="GIUSTNEG" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false"/>
 							<gene:campoScheda campo="DATNEG" visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false"/>
 							<gene:campoScheda campo="NPANNREVAGG" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false"/>
 							<gene:campoScheda campo="NOTNEG" entita="GARE1" where="GARE1.NGARA=GARE.NGARA"  visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false"/>
@@ -395,7 +403,7 @@
 		chiave += "DITG.DITTAO=T:" + ditta + ";";
 		chiave += "DITG.NGARA5=T:" + ngara;
 				
-		var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/ditg/inserimentoOfferteDitteEscluse-lista.jsp";
+		var href = contextPath + "/ApriPagina.do?href=gare/ditg/inserimentoOfferteDitteEscluse-lista.jsp";
 		href += "&key=" + chiave;
 		href += "&modalitaGara=" + modlicg;
 		href += "&isGaraLottiConOffertaUnica=false";
@@ -439,10 +447,10 @@
 	</c:if>
 	
 	<c:if test='${isGaraLottiConOffertaUnica eq "true" || param.paginaFasiGara eq "aperturaOffAggProvLottoOffUnica"}'>
-		function impostaGaraNonAggiudicata(ngara,codgar1,esineg,datneg,npannrevagg){
-			var href="href=gare/commons/popup-ImpostaGaraNonAggiudicata.jsp&ngara=" + ngara + "&codgar1=" + codgar1 + "&esineg=" + esineg + "&datneg=" + datneg + "&npannrevagg=" + npannrevagg;
+		function impostaGaraNonAggiudicata(ngara,codgar1,esineg,datneg,npannrevagg,giustneg){
+			var href="href=gare/commons/popup-ImpostaGaraNonAggiudicata.jsp&ngara=" + ngara + "&codgar1=" + codgar1 + "&esineg=" + esineg + "&datneg=" + datneg + "&npannrevagg=" + npannrevagg + "&giustneg=" + giustneg;
 			href+="&isLottoOffUnica=Si";
-			openPopUpCustom(href, "impostaGaraNonAggiudicata", 700, 400, "yes", "yes");
+			openPopUpCustom(href, "impostaGaraNonAggiudicata", 850, 400, "yes", "yes");
 		}
 	</c:if>
 	

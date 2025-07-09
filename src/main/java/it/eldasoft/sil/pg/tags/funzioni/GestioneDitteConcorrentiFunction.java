@@ -282,6 +282,7 @@ public class GestioneDitteConcorrentiFunction extends AbstractFunzioneTag {
     sessione.setAttribute("elencoIdFiltriSpecifici", null);
     sessione.setAttribute("elencoIdZoneAttivita", null);
     sessione.setAttribute("elencoAffidatariEsclusi", null);
+    sessione.setAttribute("filtroElPremFasce", null);
     return null;
   }
 }

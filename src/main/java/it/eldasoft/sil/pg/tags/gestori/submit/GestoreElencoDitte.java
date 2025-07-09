@@ -10,9 +10,23 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
+
 import it.eldasoft.gene.bl.GeneManager;
+import it.eldasoft.gene.bl.GestoreProfili;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.TabellatiManager;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.db.datautils.DataColumn;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.domain.LogEvento;
@@ -24,15 +38,8 @@ import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.PgManager;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.sql.SQLException;
-import java.util.HashMap;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.log4j.Logger;
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore per salvataggio dati generali di una gara per Elenco operatori economici
@@ -179,6 +186,7 @@ public class GestoreElencoDitte extends AbstractGestoreEntita {
 
            } else {
              String numeroGaraDestinazione = datiForm.getString("GAREALBO.NGARA");
+             numeroGaraDestinazione = numeroGaraDestinazione.trim();
              try{
                pgManager.verificaPreliminareDatiCopiaGara(null, numeroGaraDestinazione,
                      null, numeroGaraDestinazione, false);
@@ -213,6 +221,7 @@ public class GestoreElencoDitte extends AbstractGestoreEntita {
 
     	    } else {
     	      String numeroGaraDestinazione = datiForm.getString("GAREALBO.NGARA");
+    	      numeroGaraDestinazione = numeroGaraDestinazione.trim();
     	      try{
         	      pgManager.verificaPreliminareDatiCopiaGara(null, numeroGaraDestinazione,
         	            null, numeroGaraDestinazione, false);
@@ -273,8 +282,11 @@ public class GestoreElencoDitte extends AbstractGestoreEntita {
     		}
 
         try {
+			//Inizializzazione del campo iselprem e iselpremob
+			datiForm.addColumn("GAREALBO.ISELPREM", JdbcParametro.TIPO_TESTO, "1");
+			datiForm.addColumn("GAREALBO.ISELPREMOB", JdbcParametro.TIPO_TESTO, "1");
             //Inizializzazione del campo tipoalgo
-            datiForm.addColumn("GAREALBO.TIPOALGO", JdbcParametro.TIPO_NUMERICO, new Long(6));
+            datiForm.addColumn("GAREALBO.TIPOALGO", JdbcParametro.TIPO_NUMERICO, new Long(10));
             //Inizializzazione del campo ISCRIRT
             datiForm.addColumn("GAREALBO.ISCRIRT", JdbcParametro.TIPO_TESTO, "2");
             datiForm.addColumn("GAREALBO.PUBOPE", JdbcParametro.TIPO_TESTO, "1");
@@ -320,6 +332,38 @@ public class GestoreElencoDitte extends AbstractGestoreEntita {
           livEvento = 3;
           errMsgEvento=e.getMessage();;
         }
+        
+        GestoreProfili gestoreProfili = this.getGeneManager().getProfili();
+        if (StringUtils.isNotBlank(ConfigManager.getValore("comunicazioni.notifiche.idcfg"))
+        		&& gestoreProfili.checkProtec((String) this.getRequest().getSession().getAttribute(CostantiGenerali.PROFILO_ATTIVO), "COLS", "VIS","GARE.TORN.INDNOTIFICHE")
+        		&& gestoreProfili.checkProtec((String) this.getRequest().getSession().getAttribute(CostantiGenerali.PROFILO_ATTIVO), "SEZ", "VIS","GARE.GARE-scheda.CRITERIELEDITTE.NOTIFICHECOMUNICAZIONI")
+        		&& gestoreProfili.checkProtec((String) this.getRequest().getSession().getAttribute(CostantiGenerali.PROFILO_ATTIVO), "PAGE", "VIS","GARE.GARE-scheda.CRITERIELEDITTE")) {
+			String indirizziDefault = ConfigManager.getValore("comunicazioni.notifiche.indirizziDefault");
+			if (StringUtils.isBlank(indirizziDefault)) {
+				ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+				indirizziDefault = profilo.getMail();
+			}
+			if (StringUtils.isNotBlank(indirizziDefault)) {
+				if (!datiForm.isColumn("TORN.INDNOTIFICHE")) {
+					datiForm.addColumn("TORN.INDNOTIFICHE", indirizziDefault);
+				}
+				datiForm.setValue("TORN.INDNOTIFICHE", indirizziDefault);
+			}
+		}
+
+		try {
+			String verNPA = pgManager.getVersioneNpaCorrente();
+			if (StringUtils.isNotBlank(verNPA)) {
+				if (!datiForm.isColumn("TORN.VERNPA")) {
+					datiForm.addColumn("TORN.VERNPA", verNPA);
+				} else {
+					datiForm.setValue("TORN.VERNPA", verNPA);
+				}
+			}
+		} catch (SQLException e) {
+			throw new GestoreException("Errore nella lettura dei dati relativi a NPA", null, e);
+		}
+        
 	} finally{
       //Tracciatura eventi
       try {
@@ -408,6 +452,72 @@ public class GestoreElencoDitte extends AbstractGestoreEntita {
         gestorePUBBTERM, "PUBBLITERMISCR",
         new DataColumn[] {datiForm.getColumn("GARE.CODGAR1"),
     		datiForm.getColumn("GARE.NGARA") }, null);
+
+    GestoreGARE gestoreGARE= new GestoreGARE();
+    gestoreGARE.setRequest(this.getRequest());
+    gestoreGARE.updateGARCPV(status, datiForm);
+
+    String bloccoModificaPCP = UtilityStruts.getParametroString(this.getRequest(), "bloccoModificaPCP");
+    String descrErrMsg = "";
+    if("true".equalsIgnoreCase(bloccoModificaPCP)){
+        HashMap<String, DataColumn> hm = datiForm.getColonne();
+        Iterator<?> it = hm.entrySet().iterator();
+
+        boolean tracciareCampo=true;
+        boolean modificheDaTracciare=false;
+        while (it.hasNext()) {
+            Entry<String, DataColumn> pair = (Entry<String, DataColumn>)it.next();
+            if(pair.getValue().isModified()){
+              //condizioni per non tracciare i campi:
+              //campi fittizZi che contengo nel nome la stringa "FIT"
+              //Campi fittizzi delle sezioni dinamiche che contengono nel nome le stringhe "INDICE_" e "MOD_"
+              //Campi che contengono nei nomi le stringhe: "NGARA","TIPCPV","TIPLAVG","IMPAPP","CIG","NUMCPV"
+              if(pair.getKey().indexOf("FIT")>=0 || pair.getKey().indexOf("INDICE_")>=0 || pair.getKey().indexOf("MOD_")>=0  ||
+                  pair.getKey().indexOf("NGARA")>=0 || pair.getKey().indexOf("CENTROCOSTO")>=0)
+                tracciareCampo=false;
+              else
+                tracciareCampo=true;
+
+              if(tracciareCampo){
+                modificheDaTracciare = true;
+                if(!"".equals(descrErrMsg)){
+                  descrErrMsg+="\n";
+                }
+                if(pair.getKey().indexOf("DEL_CPVCOMP")>0){
+                  //Nel caso di eliminazione di CPV complementari non ho le chiavi della occorrenza eliminata, quindi
+                  //il messaggio sarà generico
+                  descrErrMsg+= "Eliminata una occorrenza di CPVCOMP.";
+                }else{
+                  JdbcParametro paramOrigin = pair.getValue().getOriginalValue();
+                  String valOriginale = "";
+                  if(paramOrigin!=null){
+                    valOriginale = paramOrigin.toString();
+                  }
+                  JdbcParametro paramNuovo = pair.getValue().getValue();
+                  String valNuovo = "";
+                  if(paramNuovo!=null){
+                    valNuovo = paramNuovo.toString();
+                  }
+                  if("".equals(valOriginale)){valOriginale = "NULL";}
+                  if("".equals(valNuovo)){valNuovo = "NULL";}
+                  descrErrMsg+= pair.getKey() + ": ";
+                  descrErrMsg+= "valore vecchio= " + valOriginale + ", ";
+                  descrErrMsg+= "valore nuovo= " + valNuovo;
+                }
+              }
+            }
+        }
+    	if(modificheDaTracciare){
+	        LogEvento logEvento = LogEventiUtils.createLogEvento(this.getRequest());
+	        logEvento.setLivEvento(1);
+	        logEvento.setOggEvento(datiForm.getColumn("GARE.NGARA").getValue().stringValue());
+	        logEvento.setCodEvento("GA_MODIFICA_PROCEDURA_PUB");
+	        String descrizioneEvento = "Modifica dati elenco dopo invio schede ad ANAC.";
+	        logEvento.setErrmsg("Dettaglio modifiche:\n" + descrErrMsg);
+	        logEvento.setDescr(descrizioneEvento);
+	        LogEventiUtils.insertLogEventi(logEvento);
+    	}
+    }
 	}
 
 	@Override

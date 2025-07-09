@@ -10,14 +10,6 @@
  */
 package it.eldasoft.sil.pg.bl;
 
-import it.eldasoft.gene.bl.GenChiaviManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.bl.TabellatiManager;
-import it.eldasoft.gene.db.domain.LogEvento;
-import it.eldasoft.gene.utils.LogEventiUtils;
-import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.utils.properties.ConfigManager;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -29,13 +21,23 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
+
+import it.eldasoft.gene.bl.GenChiaviManager;
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.bl.TabellatiManager;
+import it.eldasoft.gene.db.domain.LogEvento;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.utils.LogEventiUtils;
+import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.utils.properties.ConfigManager;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-
-import org.apache.log4j.Logger;
 
 
 public class LeggiPubblicazioniManager {
@@ -60,7 +62,7 @@ public class LeggiPubblicazioniManager {
     this.tabellatiManager = tabellatiManager;
   }
 
-  public JSONArray leggiPubblicazioni(String codgar, HttpServletRequest request) throws GestoreException, IOException, SQLException, ParseException{
+  public JSONArray leggiPubblicazioni(String codgar, HttpServletRequest request, Long idForm, String isControllatoXML) throws GestoreException, IOException, SQLException, ParseException{
 
 
 	//variabili per tracciatura eventi
@@ -82,20 +84,38 @@ public class LeggiPubblicazioniManager {
           "inviabandoavvisosimap.ws.url");
     }
 
+    if(urlString.endsWith("/"))
+      urlString=urlString.substring(0, urlString.length()-1);
     urlString = urlString + "/leggipubblicazioni";
     if(codgar.indexOf("$") == 0) {
     	oggEvento=codgar.substring(1);
     }
 
-    List codiciUUID = sqlManager.getListVector("select uuid,tipric from garuuid where codgar = ?",
-        new Object[] { codgar });
+    String querySelect;
+    Object[] parametriSelect;
+    Long idschedanparet = null;
+    String uuid_eform = null;
+    if (idForm != null) {
+    	Vector<?> datiScheda = sqlManager.getVector("select uuid_eform,idschedanparet from g1npascheda where idform=?", new Object[] {idForm});
+		uuid_eform = ((JdbcParametro) datiScheda.get(0)).getStringValue();
+		idschedanparet = ((JdbcParametro) datiScheda.get(1)).longValue();
+    	if (idschedanparet != null && StringUtils.isEmpty(uuid_eform)) {
+    		querySelect = "select distinct uuid_eform from g1npascheda where uuid_eform=?";
+        	parametriSelect = new Object[] { request.getParameter("uuid_eform_originale") };
+    	} else {
+    		querySelect = "select uuid_eform from g1npascheda where idform=?";
+        	parametriSelect = new Object[] { idForm };
+    	}
+    } else {
+    	querySelect = "select uuid,tipric from garuuid where codgar=?";
+    	parametriSelect = new Object[] { codgar };
+    }
+    List codiciUUID = sqlManager.getListVector(querySelect, parametriSelect);
     if (codiciUUID != null && codiciUUID.size() > 0) {
       for (int i = 0; i < codiciUUID.size(); i++) {
         String uuid = (String) SqlManager.getValueFromVectorParam(
             codiciUUID.get(i), 0).getValue();
         ja.add(uuid);
-        String tipric = (String) SqlManager.getValueFromVectorParam(
-                codiciUUID.get(i), 1).getValue();
       }
     }
 
@@ -111,6 +131,39 @@ public class LeggiPubblicazioniManager {
     os.write(jsonStrg.getBytes("UTF-8"));
     os.flush();
 
+    Long idScheda = null;
+    String uuidEForm = null;
+	String eForm = null;
+    		
+    if (idForm != null && "true".equals(isControllatoXML)) {
+    	Vector<?> datiScheda = sqlManager.getVector("select g1npascheda.id, g1npascheda.UUID_EFORM, g1cf_npa.eform"
+    			+ " from g1npaform,g1cf_npa,g1npascheda"
+    			+ " where g1npaform.idcfnpa=g1cf_npa.id and g1npaform.id=g1npascheda.idform"
+    			+ " and g1npaform.id=?", new Object[] { idForm });
+
+    	idScheda = ((JdbcParametro) datiScheda.get(0)).longValue();
+    	uuidEForm = ((JdbcParametro) datiScheda.get(1)).getStringValue();
+    	eForm = ((JdbcParametro) datiScheda.get(2)).getStringValue();
+
+    	codEvento = "GA_FEU_REQ_CONSULTA";
+    	descrEvento = "Invio richiesta a FEU - CONSULTA EFORM " + eForm + " (id.avviso " + uuidEForm + " - id.scheda " + idScheda + ")";
+    	errMsgEvento = jsonStrg;
+
+    	LogEvento logEvento=null;
+		if(request==null) {
+			logEvento = new LogEvento();
+		} else {
+			logEvento = LogEventiUtils.createLogEvento((HttpServletRequest) request);
+		}
+		logEvento.setCodApplicazione("PG");
+		logEvento.setLivEvento(livEvento);
+		logEvento.setOggEvento(oggEvento);
+		logEvento.setCodEvento(codEvento);
+		logEvento.setDescr(descrEvento);
+		logEvento.setErrmsg(errMsgEvento);
+		LogEventiUtils.insertLogEventi(logEvento);
+    }
+
     int risposta = conn.getResponseCode();
     System.out.println("response code: " + risposta);
     BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
@@ -119,6 +172,27 @@ public class LeggiPubblicazioniManager {
     System.out.println("Output from Server .... \n");
     while ((output = br.readLine()) != null) {
       res= res + output;
+    }
+
+    if (idForm != null && "true".equals(isControllatoXML)) {
+
+    	descrEvento = "Risposta FEU - CONSULTA EFORM " + eForm + " (id.avviso " + uuidEForm + " - id.scheda " + idScheda + ")";
+    	codEvento = "GA_FEU_RES_CONSULTA";
+    	errMsgEvento = res;
+
+    	LogEvento logEvento=null;
+		if(request==null) {
+			logEvento = new LogEvento();
+		} else {
+			logEvento = LogEventiUtils.createLogEvento((HttpServletRequest) request);
+		}
+		logEvento.setCodApplicazione("PG");
+		logEvento.setLivEvento(livEvento);
+		logEvento.setOggEvento(oggEvento);
+		logEvento.setCodEvento(codEvento);
+		logEvento.setDescr(descrEvento);
+		logEvento.setErrmsg(errMsgEvento);
+		LogEventiUtils.insertLogEventi(logEvento);
     }
 
 	JSONObject jsonResult = JSONObject.fromObject(res);
@@ -137,7 +211,7 @@ public class LeggiPubblicazioniManager {
 			String noticeNumber = (String) pubblicazione.get("notice_number_oj");
 			String uuid = (String) pubblicazione.get("uuid");
 			String form = (String) pubblicazione.get("form");
-			if (noticeNumber != null) {
+			if (noticeNumber != null && idForm == null) {
 				logger.debug(noticeNumber);
 				descr = inserisciPubb(pubblicazione, codgar);
 				if (descr != null) {
@@ -148,6 +222,11 @@ public class LeggiPubblicazioniManager {
 				}
 				String updateGaruuid = "update garuuid set eseguito='1' where uuid=?";
 				this.sqlManager.update(updateGaruuid, new Object[] { uuid });
+			} else if (idForm != null){
+				Boolean isRettifica = pubblicazione.getBoolean("rettifica");
+				if ((isRettifica && idschedanparet != null) || (!isRettifica && idschedanparet == null)) {
+					jaInviati.add(pubblicazione);
+				}
 			}
 		} catch (Exception le) {
 			livEvento = 3;
@@ -174,6 +253,19 @@ public class LeggiPubblicazioniManager {
 				}
 			}
 		}
+	}
+	String uuidUtilizzato = "";
+	if (StringUtils.isNotEmpty(jsonStrg)) {
+		uuidUtilizzato = jsonStrg.substring(2,jsonStrg.length() - 2);
+	}
+	if (idForm != null && (jaInviati == null || jaInviati.size() == 0)) {
+		if (idschedanparet != null) {
+			throw new IOException("Non è stata creata la rettifica per l'eForm con Identificativo avviso " + uuidUtilizzato);
+		} else {
+			throw new IOException("Nessun eForm trovato per l'avviso con identificativo " + uuidUtilizzato);
+		}
+	} else if (idForm != null && idschedanparet != null && StringUtils.isEmpty(uuid_eform) && Integer.parseInt(request.getParameter("numeroRettifiche")) != jaInviati.size()) {
+		throw new IOException("Non è stata creata la rettifica per l'eForm con Identificativo avviso " + uuidUtilizzato);
 	}
     conn.disconnect();
     return jaInviati;

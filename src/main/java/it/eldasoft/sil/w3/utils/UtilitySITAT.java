@@ -37,49 +37,6 @@ public class UtilitySITAT {
 	  }
 	  
 	  /**
-	   * Determina se il codice CIG passato come argomento e' formalmente corretto, cioe' se
-	   * - ha lunghezza di 10 caratteri
-	   * - i primi 7 caratteri sono numerici
-	   * - gli ultimi tre caratteri sono il resto in esadecimale di questa operazione:
-	   *   (primi 7 caratteri del CIG) * 211 /4091 
-	   *   eventualmente completato a tre caratteri con degli zeri.
-	   * 
-	   * @param codiceCIG codice CIG
-	   * @return Ritorna true se il codice CIG passato come argomento e' formalmente corretto.
-	   */
-	  public static boolean isCigValido(final String codiceCIG) {
-	    boolean result = false;
-	    
-	    if (StringUtils.isNotEmpty(codiceCIG)) {
-	      
-	      String codCig = new String(codiceCIG.trim());
-	      if (codCig.length() == 10) {
-	        if (!"0000000000".equals(codCig)) {
-	          String primi7CaratteriCig = StringUtils.substring(codCig.trim(), 0, 7);
-	          String ultimi3CaratteriCig = StringUtils.substring(codCig.trim(), 7);
-	          
-	          if (StringUtils.isNumeric(primi7CaratteriCig)
-	              && StringUtils.isAlphanumeric(ultimi3CaratteriCig)) {
-	            while (primi7CaratteriCig.indexOf('0') == 0) {
-	              primi7CaratteriCig = primi7CaratteriCig.substring(1);
-	            }
-	            Long numeroCIG =  new Long(primi7CaratteriCig);
-	            long oper1 = numeroCIG.longValue();
-	            long resto = (oper1 * 211) % 4091;
-	            
-	            String strResto = StringUtils.leftPad(Long.toHexString(resto), 3, '0').toUpperCase();
-	            
-	            if (ultimi3CaratteriCig.equalsIgnoreCase(strResto)) {
-	              result = true;
-	            }
-	          }
-	        }
-	      }
-	    }
-	    return result;
-	  }
-	  
-	  /**
        * Prelevo la data di attuazione di una versione SIMOG,
        * dal tabellato W9023 in TAB1, in base al TAB1TIP
        * 

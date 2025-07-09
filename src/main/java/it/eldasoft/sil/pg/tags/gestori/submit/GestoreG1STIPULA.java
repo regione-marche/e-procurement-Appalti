@@ -1,15 +1,18 @@
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Vector;
 
 import javax.servlet.http.HttpSession;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
 
 import it.eldasoft.gene.bl.GenChiaviManager;
+import it.eldasoft.gene.bl.GestoreProfili;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
@@ -18,12 +21,18 @@ import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreChiaveIDAutoincrementante;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.GestioneWSERPManager;
 import it.eldasoft.sil.pg.bl.PgManager;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
+import it.maggioli.eldasoft.ws.conf.WSERPConfigurazioneOutType;
 
 public class GestoreG1STIPULA extends AbstractGestoreChiaveIDAutoincrementante {
 
   private static final Logger logger = Logger.getLogger(GestoreG1STIPULA.class);
+  
+  /** Manager Integrazione WSERP */
+  private GestioneWSERPManager gestioneWSERPManager;
 
   GenChiaviManager genChiaviManager = null;
 
@@ -49,7 +58,19 @@ public class GestoreG1STIPULA extends AbstractGestoreChiaveIDAutoincrementante {
       String codStipula = geneManager.calcolaCodificaAutomatica("G1STIPULA", "CODSTIPULA");
       datiForm.setValue("G1STIPULA.CODSTIPULA", codStipula);
     } else {
-      String codStipula = datiForm.getString("G1STIPULA.CODSTIPULA");
+        String codStipula = datiForm.getString("G1STIPULA.CODSTIPULA");
+        codStipula = codStipula.trim();
+        // Verifico la non esistenza del codice stipula impostato
+        try {
+            List<?> ret = this.sqlManager.getVector(
+                    "select 1 from G1STIPULA where CODSTIPULA = ?", new Object[] {
+                            codStipula});
+            if ((ret != null && !ret.isEmpty()))
+                throw new GestoreException("Esiste già una stipula con il codice specificato","verificaStipula.stipulaDestinazioneEsistente",null);
+        } catch (SQLException e) {
+            throw new GestoreException("Errore nella verifica della validità del codice stipula",null,e);
+        }
+
     }
 
     Long idStipula = datiForm.getLong("G1STIPULA.ID");
@@ -90,6 +111,22 @@ public class GestoreG1STIPULA extends AbstractGestoreChiaveIDAutoincrementante {
       String selectG_PERMESSI = "select syscon,autori,propri from g_permessi where codgar = ? union select "+idUtente +",1,'1' from g_permessi ";
       List<?> datiG_PERMESSI = this.sqlManager.getListVector(selectG_PERMESSI, new Object[] { codgar });
 
+		GestoreProfili gestoreProfili = this.getGeneManager().getProfili();
+		if (StringUtils.isNotBlank(ConfigManager.getValore("comunicazioni.notifiche.idcfg"))
+    		  && gestoreProfili.checkProtec((String) this.getRequest().getSession().getAttribute(CostantiGenerali.PROFILO_ATTIVO), "COLS", "VIS","GARE.G1STIPULA.INDNOTIFICHE")
+    		  && gestoreProfili.checkProtec((String) this.getRequest().getSession().getAttribute(CostantiGenerali.PROFILO_ATTIVO), "SEZ", "VIS","GARE.G1STIPULA-scheda.DATIGEN.NOTIFICHECOMUNICAZIONI")) {
+			String indirizziDefault = ConfigManager.getValore("comunicazioni.notifiche.indirizziDefault");
+			if (StringUtils.isBlank(indirizziDefault)) {
+				indirizziDefault = profilo.getMail();
+			}
+			if (StringUtils.isNotBlank(indirizziDefault)) {
+				if (!datiForm.isColumn("G1STIPULE.INDNOTIFICHE")) {
+					datiForm.addColumn("G1STIPULE.INDNOTIFICHE", indirizziDefault);
+				}
+				datiForm.setValue("G1STIPULE.INDNOTIFICHE", indirizziDefault);
+			}
+		}
+
       for (int p = 0; p < datiG_PERMESSI.size(); p++) {
         Long utente  = (Long) SqlManager.getValueFromVectorParam(datiG_PERMESSI.get(p), 0).getValue();
         Long autori  = (Long) SqlManager.getValueFromVectorParam(datiG_PERMESSI.get(p), 1).getValue();
@@ -113,48 +150,67 @@ public class GestoreG1STIPULA extends AbstractGestoreChiaveIDAutoincrementante {
 
     if (idPadre==null) {
 
-    Object[] params = new Object[11];
-    params[0] = datiForm.getLong("GARE.TIATTO");
-    params[1] = datiForm.getString("GARE.NREPAT");
-    params[2] = datiForm.getData("GARE.DAATTO");
-    params[3] = datiForm.getString("GARE.RIDISO");
-    params[4] = datiForm.getString("GARE.NQUIET");
-    params[5] = datiForm.getData("GARE.DQUIET");
-    params[6] = datiForm.getString("GARE.ISTCRE");
-    params[7] = datiForm.getString("GARE.INDIST");
-
-    params[8] = codgar;
-    params[9] = codimp;
-    params[10] = ngara;
-
-    if(Long.valueOf(2).equals(modcont)){
-	    //Aggiorno tutti i lotti tranne il lotto corrente che viene aggiornato dal
-		//gestore
-			this.sqlManager.update(
-			  			"update GARE set TIATTO = ?, NREPAT = ?, DAATTO = ?, RIDISO = ?," +
-			  			                "NQUIET = ?, DQUIET = ?, ISTCRE = ?, INDIST = ? " +
-			  			 "where CODGAR1 = ? and DITTA = ? and NGARA <>? and genere is null",
-			  			params);
-
-		if (datiForm.getColumn("GARE.RIDISO").isModified()) {
-			String ridiso = datiForm.getString("GARE.RIDISO");
-			String oldRidiso = datiForm.getColumn("GARE.RIDISO").getOriginalValue().getStringValue();
-
-			if (ridiso==null || "".equals(ridiso)) ridiso="2";
-			if (oldRidiso==null || "".equals(oldRidiso)) oldRidiso="2";
-
-			String update="";
-			if(!ridiso.equals(oldRidiso)){
-				if ("1".equals(ridiso)) update="update gare set impgar = impgar /2 where CODGAR1 = ? and DITTA = ? and genere is null";
-				else update="update gare set impgar = impgar * 2 where CODGAR1 = ? and DITTA = ? and genere is null";
-
-				this.sqlManager.update(update, new Object[]{params[8],params[9]});
+	    Object[] params = new Object[11];
+	    params[0] = datiForm.getLong("GARE.TIATTO");
+	    
+	    //TODO:ROS: da vedere questa casistica
+	    if (isCasisticaRai()) {
+	    	if (datiForm.getString("GARE.NREPAT")!=null) {
+			    params[1] = datiForm.getString("GARE.NREPAT");
+			    params[2] = datiForm.getData("GARE.DAATTO");	    		
+	    	} else {
+		    	datiForm.setValue("GARE.NREPAT","");
+		    	datiForm.setValue("GARE.DAATTO",null);
+		    	
+			    params[1] = datiForm.getString("GARE.NREPAT");
+			    params[2] = datiForm.getData("GARE.DAATTO");
+	    	}
+	    } else {
+		    params[1] = datiForm.getString("GARE.NREPAT");
+		    params[2] = datiForm.getData("GARE.DAATTO");
+	    }
+	    
+//	    params[1] = datiForm.getString("GARE.NREPAT");
+//	    params[2] = datiForm.getData("GARE.DAATTO");
+	    
+	    params[3] = datiForm.getString("GARE.RIDISO");
+	    params[4] = datiForm.getString("GARE.NQUIET");
+	    params[5] = datiForm.getData("GARE.DQUIET");
+	    params[6] = datiForm.getString("GARE.ISTCRE");
+	    params[7] = datiForm.getString("GARE.INDIST");
+	
+	    params[8] = codgar;
+	    params[9] = codimp;
+	    params[10] = ngara;
+	
+	    if(Long.valueOf(2).equals(modcont)){
+		    //Aggiorno tutti i lotti tranne il lotto corrente che viene aggiornato dal
+			//gestore
+				this.sqlManager.update(
+				  			"update GARE set TIATTO = ?, NREPAT = ?, DAATTO = ?, RIDISO = ?," +
+				  			                "NQUIET = ?, DQUIET = ?, ISTCRE = ?, INDIST = ? " +
+				  			 "where CODGAR1 = ? and DITTA = ? and NGARA <>? and genere is null",
+				  			params);
+	
+			if (datiForm.getColumn("GARE.RIDISO").isModified()) {
+				String ridiso = datiForm.getString("GARE.RIDISO");
+				String oldRidiso = datiForm.getColumn("GARE.RIDISO").getOriginalValue().getStringValue();
+	
+				if (ridiso==null || "".equals(ridiso)) ridiso="2";
+				if (oldRidiso==null || "".equals(oldRidiso)) oldRidiso="2";
+	
+				String update="";
+				if(!ridiso.equals(oldRidiso)){//riduzione del 30%  (prima 50%) APPALTI-1377 - DLgs 36-2023
+					if ("1".equals(ridiso)) update="update gare set impgar = impgar * (1-0.3) where CODGAR1 = ? and DITTA = ? and genere is null";
+					else update="update gare set impgar = impgar / (1-0.3) where CODGAR1 = ? and DITTA = ? and genere is null";
+	
+					this.sqlManager.update(update, new Object[]{params[8],params[9]});
+				}
+	
 			}
-
-		}
+	    }
     }
-    }
-
+    
     } catch (SQLException e) {
     	throw new GestoreException("Errore nell'inserimento della stipula!", null, e);
     }
@@ -172,8 +228,37 @@ public class GestoreG1STIPULA extends AbstractGestoreChiaveIDAutoincrementante {
 
   }
 
-  @Override
-  public void afterInsertEntita(TransactionStatus status, DataColumnContainer datiForm) throws GestoreException {
+  private boolean isCasisticaRai() throws GestoreException {
+	boolean isCasistica = false;
+	
+    //Integrazione con WSERP
+    String urlWSERP = ConfigManager.getValore("wserp.erp.url");
+    
+    if (urlWSERP != null && !"".equals(urlWSERP)){
+        gestioneWSERPManager = (GestioneWSERPManager) UtilitySpring.getBean("gestioneWSERPManager",
+    		  															   this.getServletContext(), 
+    		  															   GestioneWSERPManager.class);
+        
+        WSERPConfigurazioneOutType configurazione = this.gestioneWSERPManager.wserpConfigurazioneLeggi("WSERP");
+        
+        if(configurazione.isEsito()){
+          String tipoWSERP = configurazione.getRemotewserp();
+          
+          isCasistica =    "RAI".equals(tipoWSERP)
+        		        && this.getGeneManager().getProfili().checkProtec(
+        		                (String) this.getRequest().getSession().getAttribute(CostantiGenerali.PROFILO_ATTIVO), "FUNZ", "VIS",
+        		                "ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp");
+        	         	         
+        }
+       
+    }  
+	  
+	return isCasistica;
+	
+  }//isCasisticaRai
+
+@Override
+public void afterInsertEntita(TransactionStatus status, DataColumnContainer datiForm) throws GestoreException {
 
     GenChiaviManager genChiaviManager = (GenChiaviManager) UtilitySpring.getBean("genChiaviManager", this.getServletContext(),
         GenChiaviManager.class);
@@ -185,16 +270,35 @@ public class GestoreG1STIPULA extends AbstractGestoreChiaveIDAutoincrementante {
     String uffint = (String) session.getAttribute("uffint");
 
 	try {
-	//Aggiorno i livelli delle stipule con id_origine in comune
-	Object[] params = new Object[2];
-    params[0] = datiForm.getLong("G1STIPULA.ID_ORIGINARIO");
-    params[1] = datiForm.getLong("G1STIPULA.ID");
-	this.sqlManager.update(
-	  			"update G1STIPULA set LIVELLO = LIVELLO+1" +
-	  			 "where ID_ORIGINARIO = ? and ID <> ?",
-	  			params);
-	}
-	catch (SQLException e) {
+		//Aggiorno i livelli delle stipule con id_origine in comune
+		Object[] params = new Object[2];
+	    params[0] = datiForm.getLong("G1STIPULA.ID_ORIGINARIO");
+	    params[1] = datiForm.getLong("G1STIPULA.ID");
+		this.sqlManager.update(
+		  			"update G1STIPULA set LIVELLO = LIVELLO+1 " +
+		  			 "where ID_ORIGINARIO = ? and ID <> ?",
+		  			params);
+		
+//	    if ( isCasisticaRai() ) {
+//	    	Object[] paramsUpdateStipula = new Object[] {
+//	    											 datiForm.getString("G1STIPULA.NREPAT")
+//	    											,datiForm.getData("G1STIPULA.DAATTO")
+//	    											,datiForm.getLong("G1STIPULA.ID")
+//	    										};
+//		    
+//		    if (   (paramsUpdateStipula[0]!=null && !"".equals(paramsUpdateStipula[0]))
+//		         &&(paramsUpdateStipula[1]!=null )
+//		         &&(paramsUpdateStipula[2]!=null )
+//		    ){	    	
+//				this.sqlManager.update(
+//			  			"update G1STIPULA "+
+//				        "   set NREPAT = ? " +
+//			  		    "      ,DAATTO = ? "+
+//			  			"where ID = ? ", paramsUpdateStipula);
+//		    }
+//	    }
+	    
+	} catch (SQLException e) {
 			throw new GestoreException(
 					"Errore nell'aggiornamento livelli della catena di stipula ", null,e);
 	}
@@ -274,8 +378,15 @@ public class GestoreG1STIPULA extends AbstractGestoreChiaveIDAutoincrementante {
 
             Object[] params = new Object[11];
             params[0] = datiForm.getLong("GARE.TIATTO");
-            params[1] = datiForm.getString("GARE.NREPAT");
-            params[2] = datiForm.getData("GARE.DAATTO");
+            
+            // if ( !isCasisticaRai() ) {
+                params[1] = datiForm.getString("GARE.NREPAT");
+                params[2] = datiForm.getData("GARE.DAATTO");            	            	
+//            } else {
+//                params[1] = datiForm.getString("G1STIPULA.NREPAT");
+//                params[2] = datiForm.getData("G1STIPULA.DAATTO");              	
+//            }
+            
             params[3] = datiForm.getString("GARE.RIDISO");
             params[4] = datiForm.getString("GARE.NQUIET");
             params[5] = datiForm.getData("GARE.DQUIET");
@@ -303,9 +414,9 @@ public class GestoreG1STIPULA extends AbstractGestoreChiaveIDAutoincrementante {
         			if (oldRidiso==null || "".equals(oldRidiso)) oldRidiso="2";
 
         			String update="";
-        			if(!ridiso.equals(oldRidiso)){
-        				if ("1".equals(ridiso)) update="update gare set impgar = impgar /2 where CODGAR1 = ? and DITTA = ? and genere is null";
-        				else update="update gare set impgar = impgar * 2 where CODGAR1 = ? and DITTA = ? and genere is null";
+        			if(!ridiso.equals(oldRidiso)){//riduzione del 30%  (prima 50%) APPALTI-1377 - DLgs 36-2023
+        				if ("1".equals(ridiso)) update="update gare set impgar = impgar * (1-0.3) where CODGAR1 = ? and DITTA = ? and genere is null";
+        				else update="update gare set impgar = impgar / (1-0.3) where CODGAR1 = ? and DITTA = ? and genere is null";
 
         				this.sqlManager.update(update, new Object[]{params[8],params[9]});
         			}
@@ -320,13 +431,24 @@ public class GestoreG1STIPULA extends AbstractGestoreChiaveIDAutoincrementante {
 		throw new GestoreException(
 				"Errore nell'allineamento dei dati dei lotti aggiudicati dalla stipula ", null,e);
 	}
+	Long stato = datiForm.getLong("G1STIPULA.STATO");
+	if(stato!=null && stato.longValue()==6) {
 
-    DefaultGestoreEntita gestoreGARE = new DefaultGestoreEntita("GARE", this.getRequest());
-   	gestoreGARE.update(status, datiForm);
+	  try {
+	      Timestamp dattoa = datiForm.getData("DATTOA_FIT");
+	      this.sqlManager.update("update g1aggisto set dattoa=? where idstipula=?", new Object[] {dattoa, idStipula});
+      } catch (SQLException e) {
+        throw new GestoreException(
+            "Errore nell'aggiornamento di g1aggisto ", null,e);
+      }
 
-    DefaultGestoreEntita gestoreGARECONT = new DefaultGestoreEntita("GARECONT", this.getRequest());
-    gestoreGARECONT.update(status, datiForm);
+	}else {
+      DefaultGestoreEntita gestoreGARE = new DefaultGestoreEntita("GARE", this.getRequest());
+     	gestoreGARE.update(status, datiForm);
 
+      DefaultGestoreEntita gestoreGARECONT = new DefaultGestoreEntita("GARECONT", this.getRequest());
+      gestoreGARECONT.update(status, datiForm);
+	}
   }
 
   @Override

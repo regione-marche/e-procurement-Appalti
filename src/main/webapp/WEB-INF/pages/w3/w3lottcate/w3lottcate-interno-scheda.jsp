@@ -22,24 +22,24 @@
 <c:choose>
 
 	<c:when test="${param.tipoDettaglio eq 1}">
-		<gene:campoScheda title="Numero gara" entita="W3LOTTCATE" campo="NUMGARA_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3LOTTCATE_NUMGARA" value="${item[0]}"/>
-		<gene:campoScheda title="Numero lotto" entita="W3LOTTCATE" campo="NUMLOTT_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3LOTTCATE_NUMLOTT" value="${item[1]}"/>
-		<gene:campoScheda title="Numero categoria" entita="W3LOTTCATE" campo="NUMCATE_${param.contatore}" campoFittizio="true" visibile="false" definizione="N3;1;;;W3LOTTCATE_NUMCATE" value="${item[2]}"/>
-		<gene:campoScheda title="Ulteriore categoria" entita="W3LOTTCATE" campo="CATEGORIA_${param.contatore}" campoFittizio="true" definizione="T5;0;W3z03;;W3LOTTCATE_CATEGORIA" value="${item[3]}"/>
+		<gene:campoScheda title="Numero gara" entita="W3LOTTCATE" campo="NUMGARA_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3_LOTTCATE_NUMLOTT" value="${item[0]}"/>
+		<gene:campoScheda title="Numero lotto" entita="W3LOTTCATE" campo="NUMLOTT_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3_LOTTCATE_NUMLOTT" value="${item[1]}"/>
+		<gene:campoScheda title="Numero categoria" entita="W3LOTTCATE" campo="NUMCATE_${param.contatore}" campoFittizio="true" visibile="false" definizione="N3;1;;;W3_LOTTCATE_NUMCATE" value="${item[2]}"/>
+		<gene:campoScheda title="Ulteriore categoria" entita="W3LOTTCATE" campo="CATEGORIA_${param.contatore}" campoFittizio="true" definizione="T5;0;W3z03;;W3_LOTTCATE_CATEGORIA" value="${item[3]}"/>
 	</c:when>
 
 	<c:when test="${param.tipoDettaglio eq 2}">
-		<gene:campoScheda title="Numero gara" entita="W3LOTTCATE" campo="NUMGARA_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3LOTTCATE_NUMGARA" value="${numgara}"/>
-		<gene:campoScheda title="Numero lotto" entita="W3LOTTCATE" campo="NUMLOTT_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3LOTTCATE_NUMLOTT" value="${numlott}"/>
-		<gene:campoScheda title="Numero categoria" entita="W3LOTTCATE" campo="NUMCATE_${param.contatore}" campoFittizio="true" visibile="false" definizione="N3;1;;;W3LOTTCATE_NUMCATE" />
-		<gene:campoScheda title="Ulteriore categoria" entita="W3LOTTCATE" campo="CATEGORIA_${param.contatore}" campoFittizio="true" definizione="T5;0;W3z03;;W3LOTTCATE_CATEGORIA" />
+		<gene:campoScheda title="Numero gara" entita="W3LOTTCATE" campo="NUMGARA_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3_LOTTCATE_NUMLOTT" value="${numgara}"/>
+		<gene:campoScheda title="Numero lotto" entita="W3LOTTCATE" campo="NUMLOTT_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3_LOTTCATE_NUMLOTT" value="${numlott}"/>
+		<gene:campoScheda title="Numero categoria" entita="W3LOTTCATE" campo="NUMCATE_${param.contatore}" campoFittizio="true" visibile="false" definizione="N3;1;;;W3_LOTTCATE_NUMCATE" />
+		<gene:campoScheda title="Ulteriore categoria" entita="W3LOTTCATE" campo="CATEGORIA_${param.contatore}" campoFittizio="true" definizione="T5;0;W3z03;;W3_LOTTCATE_CATEGORIA" />
 	</c:when>
 
 	<c:when test="${param.tipoDettaglio eq 3}">
-		<gene:campoScheda title="Numero gara" entita="W3LOTTCATE" campo="NUMGARA_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3LOTTCATE_NUMGARA" value="${numgara}"/>
-		<gene:campoScheda title="Numero lotto" entita="W3LOTTCATE" campo="NUMLOTT_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3LOTTCATE_NUMLOTT" value="${numlott}"/>
-		<gene:campoScheda title="Numero categoria" entita="W3LOTTCATE" campo="NUMCATE_${param.contatore}" campoFittizio="true" visibile="false" definizione="N3;1;;;W3LOTTCATE_NUMCATE" />
-		<gene:campoScheda title="Ulteriore categoria" entita="W3LOTTCATE" campo="CATEGORIA_${param.contatore}" campoFittizio="true" definizione="T5;0;W3z03;;W3LOTTCATE_CATEGORIA" />
+		<gene:campoScheda title="Numero gara" entita="W3LOTTCATE" campo="NUMGARA_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3_LOTTCATE_NUMLOTT" value="${numgara}"/>
+		<gene:campoScheda title="Numero lotto" entita="W3LOTTCATE" campo="NUMLOTT_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3_LOTTCATE_NUMLOTT" value="${numlott}"/>
+		<gene:campoScheda title="Numero categoria" entita="W3LOTTCATE" campo="NUMCATE_${param.contatore}" campoFittizio="true" visibile="false" definizione="N3;1;;;W3_LOTTCATE_NUMCATE" />
+		<gene:campoScheda title="Ulteriore categoria" entita="W3LOTTCATE" campo="CATEGORIA_${param.contatore}" campoFittizio="true" definizione="T5;0;W3z03;;W3_LOTTCATE_CATEGORIA" />
 	</c:when>
 
 </c:choose>

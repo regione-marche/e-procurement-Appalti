@@ -34,6 +34,7 @@
 			<c:set var="ngara" value="${ngara}" />
 		</c:otherwise>
 	</c:choose>
+	<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from GARE where ngara=?", ngara)}'/>
 	
 	<c:choose>
 		<c:when test='${not empty param.codgar}'>
@@ -84,7 +85,7 @@
 				
 				<c:when test='${statoCommissione eq "NORUPSA"}'>
 					&nbsp;<br><b>Per procedere all'estrazione dei componenti commissione da elenco specificare
-					 la stazione appaltante e il responsabile unico procedimento della gara.</b> 
+					 la stazione appaltante e il RUP della gara.</b> 
 				</c:when>
 				<c:when test='${statoCommissione eq "NOCONF"}'>
 					&nbsp;<br><b>Non risulta definita la configurazione della commissione per la tipologia di gara corrente. 

@@ -82,11 +82,11 @@
 	<gene:campoScheda>
 		<tr id="rigaUtente">
 			<td class="etichetta-dato">Utente (*)</td>
-			<td class="valore-dato"><input id="username" name="username" title="Utente" class="testo" type="text" size="24" value="" maxlength="100"/></td>
+			<td class="valore-dato"><input id="username" name="username" title="Utente" class="testo" type="text" size="24" value="" maxlength="100" autocomplete='new-password'/></td>
 		</tr>
 		<tr id="rigaPassword">
 			<td class="etichetta-dato">Password (*)</td>
-			<td class="valore-dato"><input id="password" name="password" title="Password" class="testo" type="password" size="24" value="" maxlength="100"/></td>
+			<td class="valore-dato"><input id="password" name="password" title="Password" class="testo" type="password" size="24" value="" maxlength="100" autocomplete='new-password'/></td>
 		</tr>
 		
 	</gene:campoScheda>

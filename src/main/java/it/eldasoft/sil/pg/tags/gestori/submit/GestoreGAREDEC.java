@@ -9,6 +9,7 @@ import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.tags.gestori.submit.npa.GestoreG1NPAFORM;
 import it.eldasoft.sil.pl.struts.gestori.GestoreAPPADEC;
 
 import java.sql.SQLException;
@@ -104,7 +105,10 @@ public class GestoreGAREDEC extends AbstractGestoreEntita {
             new DataColumn("APPA.NOTAPP", new JdbcParametro(JdbcParametro.TIPO_TESTO, impl.getString("APPA_NOTAPP"))),
             new DataColumn("APPA.FASEAPPALTO", new JdbcParametro(JdbcParametro.TIPO_TESTO, "E")),
             new DataColumn("LAVORO_ESISTENTE", new JdbcParametro(JdbcParametro.TIPO_TESTO, impl.getString("LAVORO_ESISTENTE"))),
-            new DataColumn("NCONT", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, ncont))});
+            new DataColumn("PERI.TIPLAV", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, impl.getLong("PERI_TIPLAV"))),
+            new DataColumn("NCONT", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, ncont)),
+            new DataColumn("APPA_AFFIDAMDIR",new JdbcParametro(JdbcParametro.TIPO_TESTO, impl.getString("APPA_AFFIDAMDIR")))
+        });
         dccAPPA.setOriginalValue("GARE.NGARA", new JdbcParametro(JdbcParametro.TIPO_TESTO, null));
         this.inserisci(status, dccAPPA, new GestoreAPPADEC());
         this.getRequest().setAttribute("RISULTATO", "CREAZIONEESEGUITA");
@@ -113,11 +117,19 @@ public class GestoreGAREDEC extends AbstractGestoreEntita {
       } else {
         // Il contratto di GARE è integrato con un contratto DEC. E' necessario
         // aggiornare il contratto DEC
+
+        String codgar1 = (String) this.sqlManager.getObject("select codgar1 from gare where ngara = ?", new Object[] {ngara});
+
+        boolean isAttivoModuloANACForm = "true".equals(impl.getString("ISATTIVOMODULOANACFORM"));
+        String affidamdir = impl.getString("APPA_AFFIDAMDIR");
+
         DataColumnContainer dccAPPA = new DataColumnContainer(new DataColumn[] {
             new DataColumn("GARE.NGARA", new JdbcParametro(JdbcParametro.TIPO_TESTO, ngara)),
             new DataColumn("APPA.CODLAV", new JdbcParametro(JdbcParametro.TIPO_TESTO, clavor)),
             new DataColumn("APPA.NAPPAL", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, numera)),
-            new DataColumn("NCONT", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, ncont))});
+            new DataColumn("NCONT", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, ncont)),
+            new DataColumn("APPA_AFFIDAMDIR",new JdbcParametro(JdbcParametro.TIPO_TESTO, affidamdir))
+        });
         dccAPPA.setOriginalValue("GARE.NGARA", new JdbcParametro(JdbcParametro.TIPO_TESTO, null));
         this.update(status, dccAPPA, new GestoreAPPADEC());
         this.getRequest().setAttribute("RISULTATO", "AGGIORNAMENTOESEGUITO");

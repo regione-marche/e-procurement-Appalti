@@ -66,7 +66,7 @@ public class GestoreCampoTIPGAR extends AbstractGestoreCampoTabellatoArc {
       }
       try {
         if(!"true".equals(garaLottoUnico)){
-          List datiTab2 = sqlManager.getListVector("select tab2d2 from tab2 where tab2cod=? and (tab2tip=? or tab2tip=?) ", new Object[]{"A1z05",new Long(76),new Long(77)});
+          List datiTab2 = sqlManager.getListVector("select tab2d2 from tab2 where tab2cod=? and (tab2tip=? or tab2tip=? or tab2tip=? or tab2tip=?) ", new Object[]{"A1z11","15","16","18","19"});
           if(datiTab2!=null && datiTab2.size()>0){
             for (int i = 0; i < datiTab2.size(); i++) {
               String desc = SqlManager.getValueFromVectorParam(datiTab2.get(i), 0).getStringValue();

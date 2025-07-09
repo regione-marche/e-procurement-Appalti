@@ -122,6 +122,11 @@ function gestioneTIPPUB_${param.contatore}(tippub){
 			document.getElementById("rowPUBBLI_NAVPUB_${param.contatore}").style.display = '';
 			document.getElementById("rowPUBBLI_NAVNUM_${param.contatore}").style.display = '';
 			document.getElementById("rowPUBBLI_URLPUB_${param.contatore}").style.display = '';
+	} else if (tippub == '17') {
+		document.getElementById("rowPUBBLI_NAVPUB_${param.contatore}").style.display = 'none';
+		document.getElementById("rowPUBBLI_NAVNUM_${param.contatore}").style.display = 'none';
+		document.forms[0].PUBBLI_NAVPUB_${param.contatore}.value = '';
+		document.forms[0].PUBBLI_NAVNUM_${param.contatore}.value = '';
 	} else {
 			document.getElementById("rowPUBBLI_TITPUB_${param.contatore}").style.display = 'none';
 			document.getElementById("rowPUBBLI_NAVPUB_${param.contatore}").style.display = 'none';

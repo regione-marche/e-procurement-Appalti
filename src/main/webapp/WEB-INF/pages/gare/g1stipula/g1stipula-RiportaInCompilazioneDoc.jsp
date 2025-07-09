@@ -37,7 +37,9 @@
 		</c:otherwise>
 	</c:choose>
 	
-	<c:set var="where" value="idstipula=${idStipula} and STATODOC = 4 and VISIBILITA = 3"/>
+	<c:set var="where" value="idstipula= ? and STATODOC = 4 and VISIBILITA = 3"/>
+	<c:set var="parametri" value="N:${idStipula}"/>
+	${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "G1DOCSTIPULA", where, parametri)}
 	
 	<% // Ridefinisco il corpo della ricerca %>
 	<gene:redefineInsert name="corpo">
@@ -50,7 +52,7 @@
 					
 			<tr>
 				<td ${stileDati}>
-  				<gene:formLista entita="G1DOCSTIPULA" where="${where}" pagesize="0" tableclass="datilista" sortColumn="4;5" gestisciProtezioni="false" >
+  				<gene:formLista entita="G1DOCSTIPULA" pagesize="0" tableclass="datilista" sortColumn="4;5" gestisciProtezioni="false" >
   					<gene:redefineInsert name="listaNuovo" />
 					<gene:redefineInsert name="listaEliminaSelezione" />
 						
@@ -99,7 +101,7 @@
 	function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 		
 		var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-		document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+		document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 	}
 	
 	function riportaInCompilazione() {
@@ -107,7 +109,7 @@
 	  		if (numeroOggetti == 0) {
 	      		alert("Selezionare almeno un documento");
 	      	} else {
-	      		document.forms[0].action="${pageContext.request.contextPath}/pg/SetStatoDocumentoStipula.do?"+csrfToken;
+	      		document.forms[0].action="${pageContext.request.contextPath}/pg/SetStatoDocumentoStipula.do";
 				bloccaRichiesteServer();
 				document.forms[0].submit();
  			}

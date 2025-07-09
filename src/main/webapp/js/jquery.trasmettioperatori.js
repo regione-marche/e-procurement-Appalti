@@ -14,6 +14,15 @@ $(window).ready(function (){
  */
 
 function apriTrasmettiAOperatoriInterni(){
+
+	if($('#_isRupOrDRP').val() !== 'true') {
+		alert("La funzione \u00E8 disponibile solo al RUP o al soggetto incaricato della trasmissione schede ad ANAC.");
+		return;
+	}
+	if($('#_superataFaseRicezione').val() !== 'true') {
+		alert("La funzione \u00E8 disponibile solo dopo aver attivato la fase di apertura documentazione amministrativa");
+		return;
+	}
 	
 	if(pagina=='ARC'){
 		//Nella colonna IDWSDOC della tabella della pagina di archiviazione è presente un campo hidden, 
@@ -226,8 +235,8 @@ function caricamentoTabellatoOperatori(){
 	var ruolo = $("#ruolo option:selected").val();
 	var codiceuo = $("#codiceuo option:selected").val();
 	var filtro = $("#filtroCognome").val();
-	if(username!=null && password!=null && codiceuo!=null && nome!=null && cognome!=null && ruolo!=null && 
-		username!="" && password!="" && nome!="" && cognome!="" && ruolo!="" && codiceuo!="" && $('#tipiTrasmissione').is(':visible')){
+	if(((username!=null && password!=null && username!="" && password!="") || _logincomune == '1') && codiceuo!=null && nome!=null && cognome!=null && ruolo!=null &&
+		 nome!="" && cognome!="" && ruolo!="" && codiceuo!="" && $('#tipiTrasmissione').is(':visible')){
 		if(filtro == null || filtro == ""){
 			alert("E' necessario impostare un filtro sul cognome operatore");
 		}else {

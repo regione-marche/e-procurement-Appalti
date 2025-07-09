@@ -64,6 +64,13 @@ public class ReinviaMailIcCaricoDocumentaleAction extends Action {
     String tipoWSDM = request.getParameter("tipowsdm");
     String idconfi = request.getParameter("idconfi");
 
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO,idconfi);
+      username = credenziali[0];
+      password = credenziali[1];
+    }
+
     //Dati comunicazione
     String selectW_INVCOM = "select comnumprot, commsgtes, commsgtip, committ from w_invcom where idprg = ? and idcom = ?";
     Vector datiW_INVCOM = this.sqlManager.getVector(selectW_INVCOM, new Object[]{idprg,new Long(idcom) });
@@ -78,7 +85,7 @@ public class ReinviaMailIcCaricoDocumentaleAction extends Action {
       Vector datiWSDOCUMENTO = this.sqlManager.getVector(selectWSDOCUMENTO, new Object[]{entitaWSDM,chiaveWSDM,numeroProtocollo });
 
       // Destinatari
-      String selectW_INVCOMDES = "select desmail, idcomdes from w_invcomdes where idprg = ? and idcom = ? and desstato='5'";
+      String selectW_INVCOMDES = "select desmail, idcomdes from w_invcomdes where idprg = ? and idcom = ? and desstato='5' and (descc is null or descc<>'1')";
       List<?> datiW_INVCOMDES = this.sqlManager.getListVector(selectW_INVCOMDES, new Object[] { idprg, idcom });
 
       if(datiWSDOCUMENTO!=null && datiW_INVCOMDES!=null && datiW_INVCOMDES.size() >0){
@@ -194,7 +201,7 @@ public class ReinviaMailIcCaricoDocumentaleAction extends Action {
           this.sqlManager.update(updateW_INVCOM, new Object[]{statoComunicazione, idprg, idcom });
 
           if("PALEO".equals(tipoWSDM) || "ARCHIFLOW".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM) || "ITALPROT".equals(tipoWSDM)){
-            String updateW_INVCOMDES = "update w_invcomdes set desstato = ?, deserrore =?, desdatinv = ? where idprg = ? and idcom = ?";
+            String updateW_INVCOMDES = "update w_invcomdes set desstato = ?, deserrore =?, desdatinv = ? where idprg = ? and idcom = ? and (descc is null or descc <>'1')";
             this.sqlManager.update(updateW_INVCOMDES, new Object[] {desstato, msgErroreInvioMail,  new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()),idprg, idcom });
           }
           commitTransaction = true;

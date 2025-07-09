@@ -36,6 +36,7 @@
 		</gene:archivio>
 		<gene:campoScheda campo="IAGGIU_${param.contatore}" entita="DITGAQ" campoFittizio="true"  modificabile="false" definizione="F15;0;;MONEY;G1IAGGIUDQ" value="${item[4]}" />
 		<gene:campoScheda campo="RICSUB_${param.contatore}" entita="DITG" campoFittizio="true"  definizione="T2;0;;SN;G1RICSUB" value="${item[5]}" />
+		<gene:campoScheda campo="CODCNEL_${param.contatore}" entita="DITG" campoFittizio="true"  definizione="T4;0;;;G1OCODCNEL" value="${item[17]}" />
 		<gene:campoScheda campo="RIDISO_${param.contatore}" entita="DITGAQ" campoFittizio="true"  definizione="T2;0;;SN;G1RIDISODQ" value="${item[6]}"/>
 		<gene:campoScheda campo="IMPGAR_${param.contatore}" entita="DITGAQ" campoFittizio="true" definizione="F15;0;;MONEY;G1IMPGARDQ" value="${item[7]}">
 			<gene:calcoloCampoScheda funzione='calcolaIMPGAR(${param.contatore})' elencocampi='DITGAQ_RIDISO_${param.contatore}'/>
@@ -57,6 +58,7 @@
 		<gene:campoScheda campo="NOMIMP_${param.contatore}" entita="IMPR" campoFittizio="true"  modificabile="false" definizione="T60;0;;;G_NOMIMP"  />
 		<gene:campoScheda campo="IAGGIU_${param.contatore}" entita="DITGAQ" campoFittizio="true" definizione="F15;0;;MONEY;G1IAGGIUDQ" />				
 		<gene:campoScheda campo="RICSUB_${param.contatore}" entita="DITG" campoFittizio="true"  definizione="T2;0;;SN;G1RICSUB"  />
+		<gene:campoScheda campo="CODCNEL_${param.contatore}" entita="DITG" campoFittizio="true"  definizione="T4;0;;;G1OCODCNEL" />
 		<gene:campoScheda campo="RIDISO_${param.contatore}" entita="DITGAQ" campoFittizio="true"   definizione="T2;0;;SN;G1RIDISODQ"/>
 		<gene:campoScheda campo="IMPGAR_${param.contatore}" entita="DITGAQ" campoFittizio="true" definizione="F15;0;;MONEY;G1IMPGARDQ"/>
 		<gene:campoScheda campo="NQUIET_${param.contatore}" entita="DITGAQ" campoFittizio="true"  definizione="T40;0;;;G1NQUIETDQ" />

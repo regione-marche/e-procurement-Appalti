@@ -214,7 +214,7 @@ public class GestoreAssegnaNumOrdine extends AbstractGestoreEntita {
   public void modalitaCasuale(String ngara, String campoApplicazione,TransactionStatus status) throws GestoreException {
 
     String codgar= "$" + ngara; //Per le gare elenco operatori economici codgar="$"+ngara
-    String select="select dittao,numordpl from ditg where codgar5 = ? and ngara5=? and (((ammgar=1 or ammgar is null) and abilitaz=1)";
+    String select="select dittao,numordpl from ditg where codgar5 = ? and ngara5=? and (((ammgar='1' or ammgar is null) and abilitaz=1)";
 
     int numordplPartenza=0;
 
@@ -224,7 +224,7 @@ public class GestoreAssegnaNumOrdine extends AbstractGestoreEntita {
         //Nel caso di campoApplicazione = 1 la scelta del numero d'ordine deve essere fatta
         //a partire dal max numordpl + 1
         Long maxNumordpl = (Long) sqlManager.getObject(
-            "select max(numordpl) from ditg where codgar5 = ? and ngara5=? and (ammgar=1 or ammgar is null)", new Object[] { codgar, ngara});
+            "select max(numordpl) from ditg where codgar5 = ? and ngara5=? and (ammgar='1' or ammgar is null)", new Object[] { codgar, ngara});
         if (maxNumordpl!=null && maxNumordpl.longValue()>0)
           numordplPartenza = maxNumordpl.intValue();
       }else  if ("2".equals(campoApplicazione)){
@@ -309,7 +309,7 @@ public class GestoreAssegnaNumOrdine extends AbstractGestoreEntita {
   private void modalitaAnnullaNumeroOrdine(String ngara) throws GestoreException {
 
     String codgar= "$" + ngara; //Per le gare elenco operatori economici codgar="$"+ngara
-    String update="update ditg set numordpl = null, dattivaz = null where codgar5 = ? and ngara5=? and (ammgar=1 or ammgar is null) and abilitaz=1";
+    String update="update ditg set numordpl = null, dattivaz = null where codgar5 = ? and ngara5=? and (ammgar='1' or ammgar is null) and abilitaz=1";
 
     //Aggiornamento del campo numordpl
     try {
@@ -446,7 +446,7 @@ public class GestoreAssegnaNumOrdine extends AbstractGestoreEntita {
    */
   private void assegnaNumeroOrdine(String ngara, String campoApplicazione,TransactionStatus status, String ordinamento, String campoNonNull) throws SQLException, GestoreException {
     String codgar= "$" + ngara; //Per le gare elenco operatori economici codgar="$"+ngara
-    String select="select dittao,numordpl from ditg where codgar5 = ? and ngara5=? and (((ammgar=1 or ammgar is null) "+
+    String select="select dittao,numordpl from ditg where codgar5 = ? and ngara5=? and (((ammgar='1' or ammgar is null) "+
           "and abilitaz=1 and " + campoNonNull + " is not null)";
 
     int numordplPartenza=0;
@@ -456,7 +456,7 @@ public class GestoreAssegnaNumOrdine extends AbstractGestoreEntita {
       //Nel caso di campoApplicazione = 1 la scelta del numero d'ordine deve essere fatta
       //a partire dal max numordpl + 1
       Long maxNumordpl = (Long) sqlManager.getObject(
-          "select max(numordpl) from ditg where codgar5 = ? and ngara5=? and (ammgar=1 or ammgar is null) and " + campoNonNull + "  is not null", new Object[] { codgar, ngara});
+          "select max(numordpl) from ditg where codgar5 = ? and ngara5=? and (ammgar='1' or ammgar is null) and " + campoNonNull + "  is not null", new Object[] { codgar, ngara});
       if (maxNumordpl!=null && maxNumordpl.longValue()>0)
         numordplPartenza = maxNumordpl.intValue();
     }else{

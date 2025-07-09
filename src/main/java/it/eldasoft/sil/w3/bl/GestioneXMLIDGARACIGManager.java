@@ -221,8 +221,6 @@ public class GestioneXMLIDGARACIGManager {
 
     if (logger.isDebugEnabled()) logger.debug("getDatiPubblicazione: inizio metodo");
     
-    boolean v3_04_8_Attiva = UtilitySITAT.isVerAttiva(sqlManager, 5L); //W9023, tap1tip=5
-
     DatiPubblicazione datiPubblicazione;
 
     try {
@@ -372,9 +370,9 @@ public class GestioneXMLIDGARACIGManager {
         			pubblicazione.setFLAGBENICULT(FlagSNType.N);
         		}
         		esistonoDatiPubblicazione = true;
-        	} else {
-        		pubblicazione.setFLAGBENICULT(FlagSNType.N);
-        	}
+        	}/* else {
+        		pubblicazione.setFLAGBENICULT(FlagSNType.N); //APP-1490  deprecato dalla 3.04.2 -> da problemi per le pubblicazioni in somma urgenza e protezione civile e affidamento diretto
+        	}*/
 
         	// FLAG_SOSPESO
         	JdbcParametro flag_sospeso = SqlManager.getValueFromVectorParam(datiW3GARA, 15);
@@ -388,13 +386,11 @@ public class GestioneXMLIDGARACIGManager {
         	}
         	
         	// LINK_AFFIDAMENTO_DIRETTO
-        	if(v3_04_8_Attiva) { //dopo la data di attivazione si può togliere il controllo"if(v3_04_8_Attiva)"
-              String link_affidamento_diretto = (String) SqlManager.getValueFromVectorParam(datiW3GARA, 16).getValue();
-              if (link_affidamento_diretto != null) {
-                pubblicazione.setLINKAFFIDAMENTODIRETTO(link_affidamento_diretto);
-                esistonoDatiPubblicazione = true;
-              } 
-        	}
+            String link_affidamento_diretto = (String) SqlManager.getValueFromVectorParam(datiW3GARA, 16).getValue();
+            if (link_affidamento_diretto != null) {
+              pubblicazione.setLINKAFFIDAMENTODIRETTO(link_affidamento_diretto);
+              esistonoDatiPubblicazione = true;
+            } 
 
     	}
 
@@ -1077,6 +1073,9 @@ public class GestioneXMLIDGARACIGManager {
 
     if (logger.isDebugEnabled()) logger.debug("getDatiLotto: inizio metodo");
     LottoType datiLotto = LottoType.Factory.newInstance();
+    
+    boolean v3_04_9_Attiva = UtilitySITAT.isVerAttiva(sqlManager, 7L); //W9023, tap1tip=7
+    
     try {
 
       // Lettura dei dati e composizione del contenuto XML
@@ -1118,7 +1117,10 @@ public class GestioneXMLIDGARACIGManager {
           + "FLAG_PREVISIONE_QUOTA, " //35
           + "QUOTA_FEMMINILE, " //36
           + "QUOTA_GIOVANILE, " //37 
-          + "FLAG_MISURE_PREMIALI " //38 TODO
+          + "FLAG_MISURE_PREMIALI, " //38
+          + "FLAG_DEROGA_ADESIONE, " //39
+          + "FLAG_USO_METODI_EDILIZIA, " //40,
+          + "DEROGA_QUALIFICAZIONE_SA " //41
           + "from w3lott where numgara = ? and numlott = ?";
 
       List<?> datiW3LOTT = this.sqlManager.getVector(selectW3LOTT, new Object[] { numgara, numlott });
@@ -1153,7 +1155,12 @@ public class GestioneXMLIDGARACIGManager {
         // Tipo contratto
         String tipo_contratto = (String) SqlManager.getValueFromVectorParam(datiW3LOTT, 2).getValue();
         if (tipo_contratto != null) datiLotto.setTIPOCONTRATTO(tipo_contratto);
-
+        
+        if(v3_04_9_Attiva) { //si può rimuovere il controllo dopo 01/07/2023
+          Long derogaQualificazioneSA = (Long) SqlManager.getValueFromVectorParam(datiW3LOTT, 41).getValue();
+          if(derogaQualificazioneSA!=null)
+            datiLotto.setDEROGAQUALIFICAZIONESA(derogaQualificazioneSA.toString());
+        }
         // Contratto escluso ?
         String flag_escluso = (String) SqlManager.getValueFromVectorParam(datiW3LOTT, 3).getValue();
         if (flag_escluso != null) {
@@ -1447,8 +1454,22 @@ public class GestioneXMLIDGARACIGManager {
           if (durataRinnovi != null) {
           	datiLotto.setDURATARINNOVI(durataRinnovi.intValue());
           }
-        
-        
+          
+          String flagDerogaAdesione = (String) SqlManager.getValueFromVectorParam(datiW3LOTT, 39).getValue();
+          if ("2".equals(flagDerogaAdesione)) {
+              datiLotto.setFLAGDEROGAADESIONE(FlagSNType.N);
+          }else if ("1".equals(flagDerogaAdesione)) {
+              datiLotto.setFLAGDEROGAADESIONE(FlagSNType.S);
+          }
+          String flagMetodiEdilizia = (String) SqlManager.getValueFromVectorParam(datiW3LOTT, 40).getValue();
+          if (flagMetodiEdilizia != null) {
+            if ("1".equals(flagMetodiEdilizia)) {
+              datiLotto.setFLAGUSOMETODIEDILIZIA(FlagSNType.S);
+            }else if ("2".equals(flagMetodiEdilizia)) {
+              datiLotto.setFLAGUSOMETODIEDILIZIA(FlagSNType.N);
+            }
+          }
+          
         //APPALTI-1091
         //gestione flag pnrr
         String flag_pnrr = (String) SqlManager.getValueFromVectorParam(datiW3LOTT, 34).getValue();
@@ -1460,7 +1481,7 @@ public class GestioneXMLIDGARACIGManager {
           }
         }
         //se f_pnrr = si, gestisco tutti i nuovi campi
-        if (FlagSNType.S.equals(datiLotto.getFLAGPNRRPNC())) {
+        if (FlagSNType.S.equals(datiLotto.getFLAGPNRRPNC()) || FlagSNType.N.equals(datiLotto.getFLAGDEROGAADESIONE())) {
           
           //gestione flag previsione quota
           String flag_previsione_quota = (String) SqlManager.getValueFromVectorParam(datiW3LOTT, 35).getValue();
@@ -1513,7 +1534,7 @@ public class GestioneXMLIDGARACIGManager {
           //se flag misure premiali N, devo gestire le misure premiali
           if(FlagSNType.S.equals(datiLotto.getFLAGMISUREPREMIALI())) { 
             //misure premiali
-            String selectW3MISPREMIALI = "select idmisura from W3MISPREMIALI where numgara = ? and numlott = ? order by idmisura ";
+            String selectW3MISPREMIALI = "select codmisura from W3MISPREMIALI where numgara = ? and numlott = ? order by idmisura ";
             List<?> datiW3MISPREMIALI = this.sqlManager.getListVector(selectW3MISPREMIALI, new Object[] { numgara, numlott });
             if (datiW3MISPREMIALI != null && datiW3MISPREMIALI.size() > 0) {
               for (int j = 0; j < datiW3MISPREMIALI.size(); j++) {
@@ -1738,6 +1759,8 @@ public class GestioneXMLIDGARACIGManager {
 			new Object[] { numgara, numlotto } );
       Long statoSimogLottoBackup = (Long) this.sqlManager.getObject("select STATO_SIMOG from W3LOTT where NUMGARA=? and NUMLOTT=?", 
 			new Object[] { numgara, numlotto } );
+      Long derogaQualificazioneSABackup = (Long) this.sqlManager.getObject("select deroga_qualificazione_sa from w3lott where numgara=? and numlott=?", 
+          new Object[] { numgara, numlotto } );
      	
       // Cancellazione dei dei dati del lotto e delle entita' figlie
       this.sqlManager.update("delete from W3LOTT where NUMGARA=? and NUMLOTT=?", new Object[] { numgara, numlotto });
@@ -1763,6 +1786,26 @@ public class GestioneXMLIDGARACIGManager {
       if (statoSimogLottoBackup != null) {
 	  	this.sqlManager.update("update W3LOTT set STATO_SIMOG=? where NUMGARA=? and NUMLOTT=?", 
 	  		new Object[] { statoSimogLottoBackup, numgara, numlotto });
+      }
+      if (derogaQualificazioneSABackup != null) {
+        this.sqlManager.update("update W3LOTT set DEROGA_QUALIFICAZIONE_SA=? where NUMGARA=? and NUMLOTT=?", 
+            new Object[] {derogaQualificazioneSABackup, numgara, numlotto });
+      }
+      
+      // Importo della gara
+      Object importoObj = sqlManager.getObject("select SUM(" + sqlManager.getDBFunction("isnull", new String[] {"IMPORTO_LOTTO", "0.00" }) + ") from W3LOTT where NUMGARA=? and STATO_SIMOG in (1,2,3,4,7,99)", 
+          new Object[] { numgara });
+
+      Double importo = 0D;
+      if (importoObj != null) {
+            if (!(importoObj instanceof Double)) {
+              importo = Double.parseDouble(importoObj.toString());
+            } else {
+              importo = (Double) importoObj;
+            }
+          } 
+      if (importoObj != null) {
+        sqlManager.update("update W3GARA set importo_gara=? where numgara=?", new Object[] {importo,numgara});
       }
       
     } catch (SQLException e) {
@@ -2162,12 +2205,9 @@ public class GestioneXMLIDGARACIGManager {
 		}
     }
     //APPALTI-1091
-     if (datiLotto.isSetFLAGPNRRPNC()) { 
-        dccW3LOTT.addColumn("W3LOTT.FLAG_PNRR_PNC", JdbcParametro.TIPO_TESTO, FlagSNType.S.equals(datiLotto.getFLAGPNRRPNC()) ? "1" : "2");
-    } else {
-        dccW3LOTT.addColumn("W3LOTT.FLAG_PNRR_PNC", JdbcParametro.TIPO_TESTO, "2");
-    }
-     if (datiLotto.isSetFLAGPNRRPNC()) { 
+     dccW3LOTT.addColumn("W3LOTT.FLAG_PNRR_PNC", JdbcParametro.TIPO_TESTO, FlagSNType.S.equals(datiLotto.getFLAGPNRRPNC()) ? "1" : "2");
+    
+     if (datiLotto.isSetFLAGPREVISIONEQUOTA()) { 
        if(FlagSNQType.Q.equals(datiLotto.getFLAGPREVISIONEQUOTA())) {
          dccW3LOTT.addColumn("W3LOTT.FLAG_PREVISIONE_QUOTA", JdbcParametro.TIPO_TESTO, "Q");
        }
@@ -2213,6 +2253,21 @@ public class GestioneXMLIDGARACIGManager {
           dccW3LOTTDEROGHE.addColumn("W3LOTTDEROGHE.IDDEROGA", JdbcParametro.TIPO_NUMERICO, (long) (i + 1));
           dccW3LOTTDEROGHE.addColumn("W3LOTTDEROGHE.CODDEROGA", JdbcParametro.TIPO_NUMERICO, Long.parseLong(datiDeroghe[i]));
           dccW3LOTTDEROGHE.insert("W3LOTTDEROGHE", this.sqlManager);
+        }
+      }
+      //APPALTI-1346
+      if(datiLotto.isSetFLAGDEROGAADESIONE()) {
+        if(FlagSNType.S.equals(datiLotto.getFLAGDEROGAADESIONE())) {
+          dccW3LOTT.addColumn("W3LOTT.FLAG_DEROGA_ADESIONE", JdbcParametro.TIPO_TESTO, "1");
+        }else {
+          dccW3LOTT.addColumn("W3LOTT.FLAG_DEROGA_ADESIONE", JdbcParametro.TIPO_TESTO, "2");
+        }
+      }
+      if(datiLotto.isSetFLAGUSOMETODIEDILIZIA()) {
+        if(FlagSNType.S.equals(datiLotto.getFLAGUSOMETODIEDILIZIA())) {
+          dccW3LOTT.addColumn("W3LOTT.FLAG_USO_METODI_EDILIZIA", JdbcParametro.TIPO_TESTO, "1");
+        }else {
+          dccW3LOTT.addColumn("W3LOTT.FLAG_USO_METODI_EDILIZIA", JdbcParametro.TIPO_TESTO, "2");
         }
       }
       
@@ -2409,10 +2464,10 @@ public class GestioneXMLIDGARACIGManager {
     if (id_cc != null) {
       dccW3GARA.setValue("W3GARA.IDCC", new JdbcParametro(JdbcParametro.TIPO_DECIMALE, id_cc));
     }
-
-    dccW3GARA.setValue("W3GARA.CODEIN", new JdbcParametro(JdbcParametro.TIPO_TESTO, codUffInt));
+    
+    //dccW3GARA.setValue("W3GARA.CODEIN", new JdbcParametro(JdbcParametro.TIPO_TESTO, codUffInt));
     dccW3GARA.setValue("W3GARA.ID_GARA", new JdbcParametro(JdbcParametro.TIPO_TESTO, "" + datiGara.getIDGARA()));
-    dccW3GARA.setValue("W3GARA.IMPORTO_GARA", new JdbcParametro(JdbcParametro.TIPO_DECIMALE, datiGara.getIMPORTOGARA().doubleValue()));
+    //dccW3GARA.setValue("W3GARA.IMPORTO_GARA", new JdbcParametro(JdbcParametro.TIPO_DECIMALE, datiGara.getIMPORTOGARA().doubleValue()));
 
     dccW3GARA.setValue("W3GARA.IMPORTO_SA_GARA", new JdbcParametro(JdbcParametro.TIPO_DECIMALE, 
    		datiGara.getIMPORTOSAGARA() != null ? datiGara.getIMPORTOSAGARA().doubleValue() : null));

@@ -116,12 +116,12 @@
 			document.forms[0].encoding="multipart/form-data";
 			
 			function schedaConfermaUploadMultiplo(){
-				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 				schedaConferma();
 			}
 			
 			function schedaAnnullaUploadMultiplo(){
-				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 				schedaAnnulla();
 			}
 			
@@ -131,7 +131,7 @@
 				var posizione_barra=selezioneFile.lastIndexOf("\\");
 				var nome=selezioneFile.substring(posizione_barra+1,lunghezza_stringa).toUpperCase();
 				if(nome.length>100){
-					alert("Il nome del file non puÃ² superare i 100 caratteri!");
+					alert("Il nome del file non può superare i 100 caratteri!");
 					document.getElementById("selFile[" + indice + "]").value="";
 					setValue("W_DOCDIG_DIGNOMDOC_" + indice,"");
 				}else{
@@ -142,7 +142,7 @@
 
 			function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 			}
 
 </gene:javaScript>

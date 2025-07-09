@@ -810,12 +810,12 @@ public class ImportExportOEPVManager {
                         if (livpar != null) {
                             if ((new Long(1)).equals(livpar) || (new Long(3)).equals(livpar) ) {
                                 totalePunteggi = new Double(totalePunteggi.doubleValue() + maxpun.doubleValue());
+                                if(new Long(1).equals(tippar))
+                                    totalePunteggiTec = new Double(totalePunteggiTec.doubleValue() + maxpun.doubleValue());
+                                else if(new Long(2).equals(tippar))
+                                    totalePunteggiEco = new Double(totalePunteggiEco.doubleValue() + maxpun.doubleValue());
                             }
                         }
-                        if(tippar!=null && tippar.longValue()==1)
-                          totalePunteggiTec = new Double(totalePunteggiTec.doubleValue() + maxpun.doubleValue());
-                        else if(tippar!=null && tippar.longValue()==2)
-                          totalePunteggiEco = new Double(totalePunteggiEco.doubleValue() + maxpun.doubleValue());
 
                         UtilityExcelX.scriviCella(foglioCriteriValutazione, 5,
                                 rigaInizialeCriterio + i, maxpun,

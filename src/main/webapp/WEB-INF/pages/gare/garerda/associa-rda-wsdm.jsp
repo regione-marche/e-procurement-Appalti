@@ -21,7 +21,7 @@
 <c:set var="integrazioneWSERP" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSERPFunction", pageContext)}' />
 	
 <c:choose>
-	<c:when test='${requestScope.tipoWSERP eq "AMIU"}'>
+	<c:when test='${requestScope.tipoWSERP eq "AMIU" || requestScope.tipoWSERP eq "ARCHIFLOW"}'>
 		<c:set var="integrazioneERPvsWSDM" value="false"/>
 	</c:when>
 	<c:otherwise>
@@ -267,9 +267,16 @@
 			</c:if>
 			<c:if test='${integrazioneERPvsWSDM eq "false"}'>
 				if(tipoWSERP == "AMIU"){
-					_getWSERPDettaglioRda(nrda,function(esito){
-						if(esito==false){
+					_getWSERPDettaglioRda(nrda,function(res){
+						if(res.esito==false){
 						   alert('RdA non trovata!');
+						}
+					});
+				}
+				if(tipoWSERP == "ARCHIFLOW"){
+					_getWSERPDettaglioRda(nrda,function(res){
+						if(res.esito==false){
+						   alert(res.messaggio);
 						}
 					});
 				}
@@ -283,7 +290,7 @@
 
 		function indietro(){
 			bloccaRichiesteServer();
-			document.location.href = "${pageContext.request.contextPath}/pg/InitNuovaGara.do?" + csrfToken;
+			document.location.href = "${pageContext.request.contextPath}/pg/InitNuovaGara.do";
 		}
 
 		function creaNuovaGara(){
@@ -323,7 +330,7 @@
 				var idconfi = ${param.idconfi};
 			</c:if>	
 			<c:choose>
-			<c:when test='${param.tipoGara=="garaDivisaLottiOffUnica"}'>
+			<c:when test='${param.tipoGara=="garaDivisaLottiOffUnica" || param.tipoGara=="garaDivisaLotti"}'>
 				document.forms[0].activePage.value = 0;
 				document.forms[0].jspPath.value="/WEB-INF/pages/gare/torn/torn-scheda.jsp";
 				document.forms[0].jspPathTo.value="/WEB-INF/pages/gare/torn/torn-scheda.jsp";
@@ -336,11 +343,11 @@
 			</c:choose>
 
 			if(tipoAppalto == '1'){
-				document.forms[0].action+="&tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&chiaveRiga=${param.chiaveRiga}&livpro=${param.livpro}&numeroRda=" + getValue("NUMERO_RDA")+"&integrazioneERPvsWSDM="+ERPvsWSDM;
+				document.forms[0].action+="?tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&chiaveRiga=${param.chiaveRiga}&livpro=${param.livpro}&numeroRda=" + getValue("NUMERO_RDA")+"&integrazioneERPvsWSDM="+ERPvsWSDM;
 			}else
-				document.forms[0].action+="&tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&numeroRda=" + getValue("NUMERO_RDA")+"&integrazioneERPvsWSDM="+ERPvsWSDM;
+				document.forms[0].action+="?tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&numeroRda=" + getValue("NUMERO_RDA")+"&integrazioneERPvsWSDM="+ERPvsWSDM;
 			<c:if test='${integrazioneERPvsWSDM eq "true"}'>
-			document.forms[0].action+="&idconfi=" + idconfi;
+			document.forms[0].action+="?idconfi=" + idconfi;
 			</c:if>
 			bloccaRichiesteServer();
 			document.forms[0].submit();

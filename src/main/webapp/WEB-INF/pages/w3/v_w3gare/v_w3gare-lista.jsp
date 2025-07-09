@@ -148,7 +148,7 @@
 		}
 		
 		function listaNuovaGara(){
-			document.location.href = '${pageContext.request.contextPath}/ApriPagina.do?' + csrfToken + '&href=w3/w3gara/w3gara-nuova.jsp';
+			document.location.href = '${pageContext.request.contextPath}/ApriPagina.do?href=w3/w3gara/w3gara-nuova.jsp';
 		}
 		
 	</gene:javaScript>

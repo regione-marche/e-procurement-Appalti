@@ -91,7 +91,7 @@ public class GestioneAlberoNUTSAction extends Action {
 
     case 1:
       // Paese
-      selectTABNUTS = "select paese, area, regione, provincia, codice, descrizione from tabnuts where area is null and regione is null and provincia is null order by codice";
+      selectTABNUTS = "select paese, area, regione, provincia, codice, descrizione from tabnuts where area is null and regione is null and provincia is null order by (CASE WHEN codice = 'IT' then 0 else 1 end), codice";
       this.popolaNUTS(modopagina, livello, textsearch, codsearch, jsonArray, selectTABNUTS, parameters.toArray());
       break;
 

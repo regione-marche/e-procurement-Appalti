@@ -20,27 +20,69 @@
 <gene:set name="titoloMenu">
 	<jsp:include page="/WEB-INF/pages/commons/iconeCheckUncheck.jsp" />
 </gene:set>
-<table class="dettaglio-tab-lista">
+<style type="text/css">
 
+input[type='number'] {
+    -moz-appearance:textfield;
+}
+
+
+
+/* Webkit browsers like Safari and Chrome */
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+</style>
+<table class="dettaglio-tab-lista">
 	<tr>
 		<td>
-			<br>
-			Filtro di visualizzazione sullo stato dei lotti: 
-			<select name="filtroStatoSimog" id="filtroStatoSimog" onChange="javascript:aggiornaLista();">
-				<option value="TUTTI">Visualizza tutti i lotti indipendentemente dallo stato</option>
-				<option value="SIMOG">Visualizza solo i lotti da inviare ad ANAC</option>
-			</select>
+			<table class="lista" style="border: 1px dotted #A0AABA; background-color: #EFEFEF">
+				<tr>
+					<td width="100px">Stato dei lotti:</td>
+					<td>
+						<select name="statoSimog" id="statoSimog">
+							<option value="TUTTI" selected="selected">Visualizza tutti i lotti indipendentemente dallo stato</option>
+							<option value="SIMOG">Visualizza solo i lotti da inviare ad ANAC</option>
+						</select>
+					</td>
+					<td width="100px">Oggetto:</td>
+					<td>
+						<input class="testo" name="oggetto" id="oggetto" title="Oggetto" type="text" size="40">
+					</td>
+				</tr>
+				<tr>
+					<td width="100px">Importo minimo:</td>
+					<td>
+						<input class="testo" name="importo>Inferiore" id="importoInferiore" title="Importo da" type="number" size="40" pattern="[0-9]*">
+					<td width="110px">Importo massimo:</td>
+					<td>
+						<input class="testo" name="importoSuperiore" id="importoSuperiore" title="Importo a" type="number" size="40" pattern="[0-9]*">
+					</td>
+				</tr>
+			</table>
 		</td>
 	</tr>
+	<tr><td>
+	
+	</td></tr>
 	
 	<tr>
 		<td>
-		<gene:formLista entita="W3LOTT" pagesize="20" sortColumn="3"
+		<gene:formLista entita="W3LOTT" pagesize="100" sortColumn="3"
 			where="W3LOTT.NUMGARA = #W3GARA.NUMGARA#" tableclass="datilista"
 			gestisciProtezioni="true" gestore="it.eldasoft.sil.w3.tags.gestori.submit.GestoreW3LOTT"
 			plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreW3GARELotti">
 			
-			<input type="hidden" name="filtroStatoSimog" />	
+			<input type="hidden" name="filtroStatoSimog" value="${param.filtroStatoSimog}" />
+			<input type="hidden" name="filtroOggetto" value="${param.filtroOggetto}" />
+			<input type="hidden" name="filtroImportoMin" value="${param.filtroImportoMin}" />
+			<input type="hidden" name="filtroImportoMax" value="${param.filtroImportoMax}" />
+			<input type="hidden" name="aggiornaMassivo" value="false" />
+			<input type="hidden" name="lottiAggiornamento" value="" />
+			<input type="hidden" name="numeroLotti" value="" />
 					 
 			<gene:campoLista title="Opzioni <br><center>${titoloMenu}</center>"
 				width="50">
@@ -120,25 +162,87 @@
 
 </table>
 
-<gene:javaScript>
+<gene:javaScript>	
+	var sSimog='TUTTI';
+	if('${param.filtroStatoSimog}')
+		sSimog='${param.filtroStatoSimog}';
 	
-	aggiornaFiltroStatoSimog();	
-		
-	function aggiornaFiltroStatoSimog() {
-		document.getElementById("filtroStatoSimog").value = "${param.filtroStatoSimog}";
+	document.forms[0].filtroStatoSimog.value = sSimog;
+	document.forms[0].filtroOggetto.value = '${param.filtroOggetto}';
+	document.forms[0].filtroImportoMin.value = '${param.filtroImportoMin}';
+	document.forms[0].filtroImportoMax.value = '${param.filtroImportoMax}';
+
+	$('#statoSimog').val(sSimog);
+	$('#oggetto').val('${param.filtroOggetto}');
+	$('#importoInferiore').val('${param.filtroImportoMin}');
+	$('#importoSuperiore').val('${param.filtroImportoMax}');
+
+	$('#oggetto, #importoInferiore, #importoSuperiore').keyup(function() {
+		delay(function(){
+				fillFilters();
+				listaVaiAPagina(0);
+			}, 600);
+	});
+
+	$('#statoSimog').change(function() {
+		delay(function(){
+				fillFilters();
+				listaVaiAPagina(0);
+			}, 0);
+	});
 	
-		if (document.getElementById("filtroStatoSimog").value == "") {
-			document.getElementById("filtroStatoSimog").value = "TUTTI";
+	function fillFilters() {
+		document.forms[0].filtroStatoSimog.value = $("#statoSimog").val();
+		document.forms[0].filtroOggetto.value = $("#oggetto").val();
+		document.forms[0].filtroImportoMin.value = $("#importoInferiore").val();
+		document.forms[0].filtroImportoMax.value = $("#importoSuperiore").val();
+	}
+	
+	var delay = (function(){
+		var timer = 0;
+		return function(callback, ms){
+			clearTimeout (timer);
+			timer = setTimeout(callback, ms);
+		};
+	})();
+	
+	function listaModificaSelezione(){
+		var numeroOggetti = contaCheckSelezionati(document.forms[0].keys);
+		if (numeroOggetti == 0) {
+	      alert("Nessun elemento selezionato nella lista");
+		} else {
+			listaApriSchedaModificaMassiva();	
 		}
-		
-		document.forms[0].value = document.getElementById("filtroStatoSimog").value;
 	}
-		
-		
-	function aggiornaLista(){
-		document.forms[0].filtroStatoSimog.value = document.getElementById("filtroStatoSimog").value;
-		listaVaiAPagina(0);
+	
+	function listaApriSchedaModificaMassiva(){
+		bloccaRichiesteServer();
+		document.forms[0].metodo.value="nuovo";
+		document.forms[0].activePage.value="0";
+		document.forms[0].aggiornaMassivo.value="true";
+		var lotti="";
+		var nlotti=0;
+		var arrayLen = "" + document.forms[0].keys.length;
+        if (arrayLen != 'undefined') {
+          for (i = 0; i < document.forms[0].keys.length; i++) {
+			  if (document.forms[0].keys[i].checked){
+				if(lotti)
+					lotti+=";"
+              lotti+=document.forms[0].keys[i].value.split("NUMLOTT=N:")[1];
+			  nlotti++;
+			}
+          }
+		}else{
+			if(document.forms[0].keys.checked){
+    			lotti=document.forms[0].keys.value.split("NUMLOTT=N:")[1];
+    			nlotti=1;
+            }
+		}
+		document.forms[0].lottiAggiornamento.value=lotti;
+		document.forms[0].numeroLotti.value=nlotti;
+		document.forms[0].submit();
 	}
+
 
 </gene:javaScript>	
 

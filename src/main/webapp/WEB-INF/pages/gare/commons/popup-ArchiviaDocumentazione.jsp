@@ -12,7 +12,7 @@
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
 <jsp:include page="/WEB-INF/pages/commons/defCostantiAppalti.jsp" />
 
@@ -184,7 +184,7 @@
 		<c:set var="descTipoDoc" value="Documenti dell'invito"/>
 	</c:when>
 	<c:when test="${tipoDoc eq 10 or tipoDoc eq 15}">
-		<c:set var="descTipoDoc" value="Atti e documenti (art.29 c.1 DLgs 50/2016)"/>
+		<c:set var="descTipoDoc" value="Atti e documenti"/>
 	</c:when>
 </c:choose>
 
@@ -227,9 +227,8 @@
 	<c:set var="bustalotti" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetBustalottiFunction", pageContext, varTemp)}' />
 </c:if>
 
-${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, codgar1, "SC", "21")}
-${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, tipoDoc, "N","")}
-<c:set var="where" value="DOCUMGARA.CODGAR='${codgar1 }' and DOCUMGARA.GRUPPO=${tipoDoc} and DOCUMGARA.STATODOC = 5"/>
+<c:set var="where" value="DOCUMGARA.CODGAR=? and DOCUMGARA.GRUPPO=? and DOCUMGARA.STATODOC = 5"/>
+<c:set var="parametri" value="T:${codgar1};N:${tipoDoc}"/>
 
 <c:choose>
 	<c:when test="${isarchi eq 1 }">
@@ -241,13 +240,13 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 </c:choose>
 
 <c:if test="${not empty tipologia}">
-	${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, tipologia, "N","")}
-	<c:set var="where" value="${where} and DOCUMGARA.TIPOLOGIA=${tipologia}"/>
+	<c:set var="where" value="${where} and DOCUMGARA.TIPOLOGIA=?"/>	
+	<c:set var="parametri" value="${parametri};N:${tipologia}"/>
 </c:if>
 
 <c:if test="${not empty busta}">
-	${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, busta, "N","")}
-	<c:set var="where" value="${where} and DOCUMGARA.BUSTA=${busta}"/>
+	<c:set var="where" value="${where} and DOCUMGARA.BUSTA=?"/>
+	<c:set var="parametri" value="${parametri};N:${busta}"/>
 </c:if>
 
 <c:if test="${fasEle eq iscrizione}">
@@ -367,7 +366,8 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 					
 			<tr>
 				<td ${stileDati}>
-  				<gene:formLista entita="DOCUMGARA" where="${where }" pagesize="20" tableclass="datilista" sortColumn="5;4" gestisciProtezioni="false" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupArchiviaDocumenti">
+				${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "DOCUMGARA", where, parametri)}
+  				<gene:formLista entita="DOCUMGARA"  pagesize="20" tableclass="datilista" sortColumn="5;4" gestisciProtezioni="false" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupArchiviaDocumenti">
   					<gene:redefineInsert name="listaNuovo" />
 					<gene:redefineInsert name="listaEliminaSelezione" />
 											
@@ -387,11 +387,14 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 					<gene:campoLista campo="NGARA"  visibile="false" />
 					<gene:campoLista campo="NORDDOCG"  visibile="false"/>
 					<gene:campoLista campo="NUMORD"  visibile="false"/>
+					<gene:campoLista campo="IDSTAMPA" visibile="false"/>
+					<gene:campoLista campo="LARGEFILEDATA" visibile="false"/>
 					<c:choose>
 						<c:when test="${tipoDoc eq 1 or tipoDoc eq 4 or tipoDoc eq 6 or tipoDoc eq 10 or tipoDoc eq 15}">
 							<gene:campoLista campo="DESCRIZIONE"  />
 							<gene:campoLista campo="DIGNOMDOC"  entita="W_DOCDIG" where="documgara.idprg=w_docdig.idprg and documgara.iddocdg=w_docdig.iddocdig"  href="javascript:visualizzaFileAllegato('${datiRiga.DOCUMGARA_IDPRG}','${datiRiga.DOCUMGARA_IDDOCDG}',${gene:string4Js(datiRiga.W_DOCDIG_DIGNOMDOC)});"/>
-							<gene:campoLista campo="URLDOC"  visibile='${gestioneUrl eq "true"}' />
+							<gene:campoLista campo="URLDOC"  visibile="false"/>
+							<gene:campoLista campo="URLDOCfitt" campoFittizio="true"  definizione="T2000;;;;G1URLDOC" visibile='${gestioneUrl eq "true"}' value="${datiRiga.DOCUMGARA_IDSTAMPA eq 'LARGEFILE'? (not empty datiRiga.DOCUMGARA_LARGEFILEDATA? fn:substringAfter(fn:substringAfter(datiRiga.DOCUMGARA_LARGEFILEDATA, '|'),'|') : '') : datiRiga.DOCUMGARA_URLDOC}" />
 							<gene:campoLista campo="ALLMAIL" title="Allegare a comunicazione?"  visibile='${tipoDoc eq 6}' />
 						</c:when>
 						<c:when test="${tipoDoc eq 5}">
@@ -532,8 +535,8 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 		}
 	
 	function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
-		var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do?"+csrfToken;
-		document.location.href=href+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+		var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+		document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 	}
 
 	</gene:javaScript>

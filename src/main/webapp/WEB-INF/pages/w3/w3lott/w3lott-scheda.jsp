@@ -19,6 +19,7 @@
 <c:set var="entita" value="W3LOTT" />
 <c:set var="numgara" value='${gene:getValCampo(key,"NUMGARA")}' scope="request" />
 <c:set var="numlott" value='${gene:getValCampo(key,"NUMLOTT")}' scope="request" />
+<c:set var="modificaMassiva" value='${param.aggiornaMassivo}' scope="request" />
 
 <gene:template file="scheda-template.jsp" gestisciProtezioni="true" idMaschera="W3LOTT-scheda" schema="W3">
 
@@ -30,28 +31,39 @@
 		<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.jstree.nuts.mod.js"></script>
 	</gene:redefineInsert>
 
-	<c:set var="entita" value="W3LOTT" />
-	
 	<c:choose>
-		<c:when test='${modo eq "NUOVO"}'>
+		<c:when test='${modo eq "NUOVO" && modificaMassiva ne "true"}'>
 			<gene:setString name="titoloMaschera" value="Nuovo lotto" />
+		</c:when>
+		<c:when test='${modificaMassiva eq "true"}'>
+			<gene:setString name="titoloMaschera" value="Aggiornamento massivo dei lotti selezionati" />
+			<c:set var="entita" value="W3LOTTMASSIVA" />
 		</c:when>
 		<c:otherwise>
 			<gene:setString name="titoloMaschera" value='${gene:callFunction("it.eldasoft.sil.w3.tags.funzioni.GetTitleW3LOTTFunction",pageContext)}'/>	
 		</c:otherwise>
 	</c:choose>
 	
-	<gene:redefineInsert name="corpo">
-		<gene:formPagine gestisciProtezioni="true">
-			<gene:pagina title="Dati del lotto" idProtezioni="W3LOTT">
-				<jsp:include page="w3lott-pg-w3lott.jsp" />
-			</gene:pagina>
-		</gene:formPagine>
-	</gene:redefineInsert>
+	<c:choose>
+	<c:when test="${entita eq 'W3LOTTMASSIVA'}">
+		<gene:redefineInsert name="corpo">
+			<jsp:include page="w3lott-pg-w3lott.jsp" />
+		</gene:redefineInsert>
+	</c:when>
+	<c:otherwise>
+		<gene:redefineInsert name="corpo">
+			<gene:formPagine gestisciProtezioni="true">
+				<gene:pagina title="Dati del lotto" idProtezioni="W3LOTT">
+					<jsp:include page="w3lott-pg-w3lott.jsp" />
+				</gene:pagina>
+			</gene:formPagine>
+		</gene:redefineInsert>
+	</c:otherwise>
+	</c:choose>
 	
 	<gene:redefineInsert name="addToAzioni" >
 		<jsp:include page="/WEB-INF/pages/w3/commons/addtodocumenti-idgaracig.jsp" >
-			<jsp:param name="entita" value='W3LOTT'/>
+			<jsp:param name="entita" value='${entita}'/>
 		</jsp:include>
 	</gene:redefineInsert>
 

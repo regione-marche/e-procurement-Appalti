@@ -194,7 +194,7 @@ public class GestorePubblicaSuPortaleATC extends
                 if(risposta.get("msg")!=null && !"".equals(risposta.get("msg"))){
                   String msg= risposta.get("msg");
                   livEvento = 3;
-                  messageKey = "errors.gestoreException.*.ws.ATC.InternetSoluzioni.addOggetto.esitoNOK";
+                  messageKey = "errors.gestoreException.*.ws.PAT.InternetSoluzioni.addOggetto.esitoNOK";
                   errMsgEvento = this.resBundleGenerale.getString(messageKey);
                   errMsgEvento= errMsgEvento.replace("{0}", msg);
                   msgErrori+="Errore nell'inserimento del bando per la gara " + ngara + " : " + errMsgEvento + ".\n";
@@ -296,7 +296,7 @@ public class GestorePubblicaSuPortaleATC extends
                 if(risposta.get("msg")!=null && !"".equals(risposta.get("msg"))){
                   String msg= risposta.get("msg");
                   livEvento = 3;
-                  messageKey = "errors.gestoreException.*.ws.ATC.InternetSoluzioni.addOggetto.esitoNOK";
+                  messageKey = "errors.gestoreException.*.ws.PAT.InternetSoluzioni.addOggetto.esitoNOK";
                   errMsgEvento = this.resBundleGenerale.getString(messageKey);
                   errMsgEvento= errMsgEvento.replace("{0}", msg);
                   msgErrori+="Errore nell'inserimento del bando per la gara " + ngara + " : " + errMsgEvento + ".\n";

@@ -20,6 +20,9 @@
 	<jsp:include page="/WEB-INF/pages/commons/iconeCheckUncheck.jsp" />
 </gene:set>
 
+<c:set var="sql" value="select vernpa from torn where codgar=?"/>
+<c:set var="verNPA" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, sql, codgar)}'/>
+
 <table class="dettaglio-tab-lista">
 	<tr>
 		<td>
@@ -28,7 +31,8 @@
 				<gene:redefineInsert name="listaEliminaSelezione" />
 				<gene:campoLista campo="NGARA" title="Codice lotto" width="100"/>
 				<gene:campoLista campo="CODIGA" title="Numero lotto"/>
-				<gene:campoLista campo="NUMAVCP" entita="TORN" where="TORN.CODGAR=GARE.CODGAR1" />
+				<gene:campoLista campo="NUMAVCP" entita="TORN" where="TORN.CODGAR=GARE.CODGAR1" visibile="${empty verNPA}"/>
+				<gene:campoLista campo="IDAPPALTONPA" entita="TORN" where="TORN.CODGAR=GARE.CODGAR1" visibile="${not empty verNPA}"/>
 				<gene:campoLista campo="CODCIG" />
 				<gene:campoLista campo="IAGGIU" />
 				<gene:campoLista campo="IMPRIN" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" />

@@ -14,6 +14,9 @@
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 
+<%-- test per consentire utilizzo della pagina solo agli amministratori di sistema --%>
+<c:set var="nonusato" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.CheckOpzioniUtenteFunction", pageContext, "ou89")}' />
+
 <gene:template file="scheda-template.jsp" gestisciProtezioni="true" schema="GARE" idMaschera="CATSCA-scheda">
 	<%-- Settaggio delle stringhe utilizzate nel template --%>
 	<gene:setString name="titoloMaschera" value="Dettaglio configurazione scadenze gara" />

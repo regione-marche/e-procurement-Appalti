@@ -194,12 +194,12 @@
 					<gene:campoScheda title="Tipo indirizzo" hideTitle="true" addTr="false" modificabile="false" campo="TIPO_${status.index }" campoFittizio="true" visibile="true" definizione="T10" value="${ldestinatario[2]}"/>
 					<gene:campoScheda title="Ditta" hideTitle="true" addTr="false" modificabile="false" campo="DITTA_${status.index }" campoFittizio="true" visibile="false" definizione="T16" value="${ldestinatario[3]}"/>
 					<c:if test="${integrazioneWSDM =='1'}">
-						<gene:campoScheda title="cod.fisc." hideTitle="true" addTr="false" modificabile="false" campo="CODFISC_${status.index }" campoFittizio="true" definizione="T16" value="${ldestinatario[4]}"/>
+						<gene:campoScheda title="cod.fisc." hideTitle="true" addTr="false" modificabile="false" campo="CODFISC_${status.index }" campoFittizio="true" definizione="T30" value="${ldestinatario[4]}"/>
 						<gene:campoScheda title="indimp" hideTitle="true" addTr="false" visibile="false" campo="INDIMP_${status.index }" campoFittizio="true" definizione="T100" value="${ldestinatario[5]}"/>
 						<gene:campoScheda title="nciimp" hideTitle="true" addTr="false" visibile="false" campo="NCIIMPC_${status.index }" campoFittizio="true" definizione="T100" value="${ldestinatario[6]}"/>
 						<gene:campoScheda title="locimp" hideTitle="true" addTr="false" visibile="false" campo="LOCIMP_${status.index }" campoFittizio="true" definizione="T100" value="${ldestinatario[7]}"/>
 						<gene:campoScheda title="codcit" hideTitle="true" addTr="false" visibile="false" campo="CODICIT_${status.index }" campoFittizio="true" definizione="T100" value="${ldestinatario[8]}"/>
-						<gene:campoScheda title="piva" hideTitle="true" addTr="false" visibile="false" campo="PIVA_${status.index }" campoFittizio="true" definizione="T20" value="${ldestinatario[9]}"/>
+						<gene:campoScheda title="piva" hideTitle="true" addTr="false" visibile="false" campo="PIVA_${status.index }" campoFittizio="true" definizione="T30" value="${ldestinatario[9]}"/>
 						<gene:campoScheda title="mailAgg" hideTitle="true" addTr="false" visibile="false" campo="MAIL_AGGIUNTIVA_${status.index }" campoFittizio="true" definizione="T100" value="${ldestinatario[10]}"/>
 						<gene:campoScheda title="provinciaRes" hideTitle="true" addTr="false" visibile="false" campo="PROVINCIA_RES_${status.index }" campoFittizio="true" definizione="T100" value="${ldestinatario[11]}"/>
 						<gene:campoScheda title="capRes" hideTitle="true" addTr="false" visibile="false" campo="CAP_RES_${status.index }" campoFittizio="true" definizione="T100" value="${ldestinatario[12]}"/>
@@ -237,6 +237,7 @@
 					<gene:campoScheda title="Nome" hideTitle="true" addTr="false" modificabile="false" campo="NOME_${status.index }" campoFittizio="true" visibile="true" definizione="T100" value="${doc[1]}" href="javascript:visualizzaFileAllegato('${doc[2]}','${doc[3]}',${gene:string4Js(doc[1])});"/>
 					<gene:campoScheda title="IDPRG" hideTitle="true" addTr="false" modificabile="false" campo="IDPRG_${status.index }" campoFittizio="true" visibile="false" definizione="T5" value="${doc[2]}" />
 					<gene:campoScheda title="IDDOCDIG" hideTitle="true" addTr="false" modificabile="false" campo="IDDOCDIG_${status.index }" campoFittizio="true" visibile="false" definizione="N7" value="${doc[3]}" />
+					<gene:campoScheda title="DIGTIPDOC" hideTitle="true" addTr="false" modificabile="false" campo="DIGTIPDOC_${status.index }" campoFittizio="true" visibile="false" definizione="T5" value="${doc[4]}" />
 					<gene:campoScheda addTr="false">									
 							</tr>
 					</gene:campoScheda>
@@ -354,6 +355,10 @@
 	
 	
 	<gene:javaScript>
+	
+		<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.obbligoAssociaFascicoloEsistente")}'>
+			_isObbligoAssociazioneFascicolo=true;
+		</c:if>
 		
 		<c:choose>
 			<c:when test="${integrazioneWSDM =='1'}">
@@ -378,11 +383,13 @@
 						var errori = controlloCampiObbligatori();
 						
 						if(!errori && "LAPISOPERA" == $("#tiposistemaremoto").val() ){
-							var nomePrimoAllegato = getValue("NOME_0");
-							var esito=controlloFormatoAllegato(nomePrimoAllegato);
-							if(!esito){
-								var msg="ATTENZIONE:  il sistema di protocollo accetta solo comunicazioni che abbiano un allegato principale (il primo allegato) firmato digitalmente  nel formato '.pdf.p7m'. Per procedere all'invio degli inviti, occore adeguare la documentazione allegata all'invito stesso dalla sezione 'Documenti dell'invito'.";
-								alert(msg);
+							var idprg = $("#IDPRG_0").val();
+							var iddocdig = $("#IDDOCDIG_0").val();
+							var idconfi = $("#idconfi").val();
+							var esito=controlloFormatoAllegato(idprg,iddocdig,idconfi);
+							if(!esito[0]){
+								var msg="ATTENZIONE:  il sistema di protocollo accetta solo comunicazioni che abbiano un allegato principale (il primo allegato) firmato digitalmente. Per procedere all'invio degli inviti, occore adeguare la documentazione allegata all'invito stesso dalla sezione 'Documenti dell'invito'.";
+								alert(esito[1]? esito[1] : msg);
 								errori=true;
 							}
 						}
@@ -401,6 +408,9 @@
 								$("#acronimoR").val($("#acronimoRup").text());
 								$("#nomeR").val($("#nomeRup").text());
 								
+							}
+							if ($("#tiposistemaremoto").val() == "ARCHIFLOW" ){
+								$("#nomeR").val($("#nomeRup").text());
 							}
 							schedaConferma();
 						}
@@ -526,7 +536,7 @@
 			
 			function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 			}
 			
 			<c:if test="${ integrazioneWSDM =='1'}">
@@ -567,7 +577,10 @@
 						$("#rowPWD_B1").hide();
 						$("#rowPWD_C").hide();
 						$("#rowPWD_C1").hide();
-						if(_fascicoliPresenti==0 && "LAPISOPERA" == _tipoWSDM){
+						if("HALLEY" == _tipoWSDM && _fascicolazioneAbilitata == 1)
+							_isObbligoAssociazioneFascicolo=true;
+
+						if(_fascicoliPresenti==0 && ("LAPISOPERA" == _tipoWSDM || _isObbligoAssociazioneFascicolo)){
 							$("#pulsanteConferma").hide();
 						}
 					}
@@ -687,7 +700,7 @@
 							$("#indirizzomittente").closest('tr').hide();
 						}
 						
-						if ((_tipoWSDM != "JIRIDE"  && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA") || ((_tipoWSDM == "JIRIDE" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "ARCHIFLOWFA") && _delegaInvioMailDocumentaleAbilitata != 1)) {
+						if ((_tipoWSDM != "JIRIDE"  && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "HALLEY") || ((_tipoWSDM == "JIRIDE" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "ARCHIFLOWFA" || _tipoWSDM == "HALLEY") && _delegaInvioMailDocumentaleAbilitata != 1)) {
 							$("#indirizzomittente").hide();
 							$("#indirizzomittente").closest('tr').hide();
 							$('#indirizzomittente option').eq(0).prop('selected', true);
@@ -780,7 +793,7 @@
 					showObj("rigaRuolo",false);
 				}else if (tipoWSDM == "PRISMA") {
 					showObj("rigaPassword",vis);
-				}else if (tipoWSDM == "URBI" || tipoWSDM == "PROTSERVICE" || tipoWSDM == "JPROTOCOL" || tipoWSDM == "INFOR") {
+				}else if (tipoWSDM == "URBI" || tipoWSDM == "PROTSERVICE" || tipoWSDM == "JPROTOCOL" || tipoWSDM == "INFOR" || tipoWSDM == "HALLEY") {
 					showObj("rigaRuolo",false);
 				}else if (tipoWSDM == "LAPISOPERA") {
 					showObj("rigaPassword",vis);

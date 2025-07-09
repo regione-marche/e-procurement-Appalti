@@ -13,18 +13,11 @@ package it.eldasoft.sil.pg.bl.cifrabuste;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.sql.SQLException;
 import java.util.UUID;
-
-import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
 
 import org.apache.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -35,7 +28,6 @@ import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.maggioli.eldasoft.security.PGPEncryptionUtils;
 import it.maggioli.eldasoft.security.PGPKeyPairGenerator;
-import it.maggioli.eldasoft.security.SymmetricEncryptionUtils;
 
 
 public class CifraturaBusteManager {
@@ -185,63 +177,35 @@ public class CifraturaBusteManager {
    * Viene decripata la chiave privata memorizzata nel campo CHIAVIBUSTE.CHIAVEPRI tramite il pin, e tale chiave viene adoperata per
    * decifrare la chiave di sessione ed ottenere così il decifratore per le buste
    *
-   * @param pin
-   *          pin per decifrare la chiave privata in CHIAVIBUSTE.CHIAVEPRI
+   * @param pin              pin per decifrare la chiave privata in CHIAVIBUSTE.CHIAVEPRI
    * @param gara
-   * @param tipoBusta
-   *        FS11A , FS11B e FS11C
-   * @param chiaveSessione
-   *        W_INVCOM.COMKEYSESS
-   * @param chiaveProtezione
-   *        W_INVCOM.COMKEY1
+   * @param tipoBusta        FS11A , FS11B e FS11C
+   * @param chiaveSessione   W_INVCOM.COMKEYSESS
    * @return Cipher
-   *
    * @throws GestoreException
    */
-  public Cipher getDecifratoreBuste(String pin, String gara, String tipoBusta, String chiaveSessione, String chiaveProtezione) throws GestoreException{
-    Cipher decoder = null;
+  public byte[] decodeSessionKey(String pin, String gara, String tipoBusta, String chiaveSessione) throws GestoreException{
+    byte[] decodedSessionKey = null;
     try {
-
       String chiavepriv = (String)sqlManager.getObject("select chiavepriv from chiavibuste where ngara=? and busta=?", new Object[]{gara,tipoBusta});
       if(chiavepriv!=null && !"".equals(chiavepriv)){
         ByteArrayInputStream in=new ByteArrayInputStream(chiavepriv.getBytes());
-        byte[] decodedSessionKey = PGPEncryptionUtils.decrypt(in, pin, chiaveSessione.getBytes());
-
-        if (decodedSessionKey != null){
-          try {
-            decoder = SymmetricEncryptionUtils.getDecoder(decodedSessionKey,
-                chiaveProtezione);
-          } catch (InvalidKeyException e) {
-            throw new GestoreException("Errore nella decifrazione della chiave di sessione", null, e);
-          } catch (UnsupportedEncodingException e) {
-            throw new GestoreException("Errore nella decifrazione della chiave di sessione", null, e);
-          } catch (NoSuchAlgorithmException e) {
-            throw new GestoreException("Errore nella decifrazione della chiave di sessione", null, e);
-          } catch (NoSuchProviderException e) {
-            throw new GestoreException("Errore nella decifrazione della chiave di sessione", null, e);
-          } catch (NoSuchPaddingException e) {
-            throw new GestoreException("Errore nella decifrazione della chiave di sessione", null, e);
-          } catch (InvalidAlgorithmParameterException e) {
-            throw new GestoreException("Errore nella decifrazione della chiave di sessione", null, e);
-          }
-        }
+        decodedSessionKey = PGPEncryptionUtils.decrypt(in, pin, chiaveSessione.getBytes());
       }else{
         //Si deve controllare se esiste l'occorrenza, se esiste allora è un errore altrimenti non è attiva la cifratura
         Long conteggio = (Long)sqlManager.getObject("select count(id) from chiavibuste where ngara=? and busta=?", new Object[]{gara,tipoBusta});
-        if(conteggio!= null && conteggio.longValue()>0)
+        if(conteggio!= null && conteggio >0)
           throw new GestoreException("Non è stata trovata la chiave privata criptata in CHIAVIBUSTE per la gara " + gara , null, new Exception());
       }
 
     } catch (SQLException e) {
       throw new GestoreException("Errore nella lettura di CHIAVIBUSTE.CHIAVEPRIV per la gara " + gara, null, e);
-    } catch (GeneralSecurityException e1) {
-      throw new GestoreException("Errore nella decifrazione della chiave privata per la busta di tipo " + tipoBusta + " della gara " + gara, null, e1);
-    } catch (IOException e1) {
+    } catch (GeneralSecurityException | IOException e1) {
       throw new GestoreException("Errore nella decifrazione della chiave privata per la busta di tipo " + tipoBusta + " della gara " + gara, null, e1);
     } catch (PGPException e1) {
       String errore = e1.getMessage();
       //tracciatura nel caso di password errata
-      if(errore.indexOf("checksum mismatch")>=0){
+      if(errore.contains("checksum mismatch")){
         errore="Password inserita non corretta per decifrare la busta di tipo " + tipoBusta + " della gara " + gara;
       }else{
         errore="Errore nella decifrazione della chiave privata per la busta di tipo " + tipoBusta + " della gara " + gara;
@@ -249,7 +213,7 @@ public class CifraturaBusteManager {
       throw new GestoreException(errore, null, e1);
     }
 
-    return decoder;
+    return decodedSessionKey;
   }
 
   /**

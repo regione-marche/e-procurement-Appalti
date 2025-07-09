@@ -15,6 +15,7 @@ $(window).ready(function (){
 	var _comorasca = null;
 	var _commsgtes = null;
 	var primoAllegatoFirmato = null;
+	var messaggioLapis = null;
 		
     /*
      * Gestione utente ed attributi per il collegamento remoto
@@ -191,7 +192,7 @@ $(window).ready(function (){
 			$( "#mittenteinterno" ).rules( "remove" );
 			
 		}
-		if (_tipoWSDM != "JIRIDE" && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA") {
+		if (_tipoWSDM != "JIRIDE" && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "HALLEY") {
 			$( "#indirizzomittente" ).rules( "remove" );
 		}
 		
@@ -445,7 +446,7 @@ $(window).ready(function (){
 		}
 		
 		
-		if ((_tipoWSDM != "JIRIDE"  && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA") || ((_tipoWSDM == "JIRIDE" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "ARCHIFLOWFA") && _delegaInvioMailDocumentaleAbilitata != 1)) {
+		if ((_tipoWSDM != "JIRIDE"  && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "HALLEY") || ((_tipoWSDM == "JIRIDE" || _tipoWSDM == "ARCHIFLOW" || _tipoWSDM == "ARCHIFLOWFA" || _tipoWSDM == "HALLEY") && _delegaInvioMailDocumentaleAbilitata != 1)) {
 			$("#indirizzomittente").hide();
 			$("#indirizzomittente").closest('tr').hide();
 			$('#indirizzomittente option').eq(0).prop('selected', true);
@@ -469,7 +470,7 @@ $(window).ready(function (){
 				}
 			},
 			url: "pg/GetW_INVCOM.do",
-			data: "idprg=" + $("#idprg").val() + "&idcom=" + $("#idcom").val(), 
+			data: "idprg=" + $("#idprg").val() + "&idcom=" + $("#idcom").val()+ "&idconfi=" +$("#idconfi").val(), 
 			success: function(json){
 				$.map( json.dataW_INVCOM, function( item ) {
 					$("#oggettodocumento").val(item.commsgogg);
@@ -515,6 +516,7 @@ $(window).ready(function (){
 				}
 				tuttiAllegatiFormatoValido=json.tuttiAllegatiFormatoValido;
 				primoAllegatoFirmato = json.primoAllegatoFirmato;
+				messaggioLapis = json.messaggioLapis;
 				
 			},
 			error: function(e){
@@ -800,7 +802,7 @@ $(window).ready(function (){
 			}
 			
 		}
-		if(_commsgtes==null || _commsgtes==""){
+		if(_commsgtes==null || _commsgtes.trim()==""){
 			alert("Non e' possibile procedere perche' il testo della comunicazione e' vuoto.");
 			return;
 		}
@@ -809,7 +811,7 @@ $(window).ready(function (){
 			return;
 		}
 		if(_tipoWSDM == "LAPISOPERA" && !primoAllegatoFirmato){
-			alert(messaggioLapisoperaAllegati);
+			alert(messaggioLapis? messaggioLapis : messaggioLapisoperaAllegati);
 			return;
 		}
 		if(_commodello == '1'){

@@ -53,6 +53,10 @@
 
 <c:set var="esistonoLotti" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsistonoLottiFunction", pageContext, locCodgar)}'/>
 
+<c:set var="tipgen" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select TIPGEN from TORN where CODGAR=?", locCodgar)}'/>
+
+<c:set var="pgaroff" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetPGARAOFFunction", pageContext, tipgen)}'/>
+
 <c:choose>
 <c:when test='${esistonoLotti && (isRichiestaCigGara ne "SI") && empty param.doubleCheck && empty RISULTATO}'>
 <table style="width:100%;">
@@ -137,6 +141,14 @@
 										<td class="etichetta-dato">File Excel da importare (*)</td>
 										<td class="valore-dato"><input type="file" name="selezioneFile" maxlength="255" size="55" onkeydown="return bloccaCaratteriDaTastiera(event);"></td>
 									</tr>
+									<c:if test='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.PGAROF")}'>
+									<tr>
+										<td class="etichetta-dato">Percentuale garanzia provvisoria da impostare in ogni lotto</td>
+										<td class="valore-dato">
+											<input id="percGarProv" class="numero" name="percGarProv" title="Percentuale garanzia provvisoria da impostare in ogni lotto" onchange="javascript:checkPerc(this);"  type="text" size="7" value="${pgaroff}" maxlength="6"> %
+										</td>
+									</tr>
+									</c:if>
 									<tr>
 						    		<td colspan="2">
 								 	    <br>&nbsp;
@@ -261,7 +273,7 @@
 			<div id="popmenu" class="popupmenuskin"
 				onMouseover="highlightMenuPopup(event,'on');"
 				onMouseout="highlightMenuPopup(event,'off');"></div>
-
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/forms.js"></script>
 <script type="text/javascript">
 <!--
 	function importa(){
@@ -289,6 +301,18 @@
 	function initPagina(){
 		checkAttivaBloccoPaginaPopup();
 			document.getElementById("titolomaschera").innerHTML = "Importazione dei lotti della gara ${locCodgar}";
+	}
+	
+	var oldPerc=null;
+	// Verifica di una percentuale
+	function checkPerc(input){
+		if(!isNumericStr(input.value,true)){
+			alert("I caratteri ammessi sono le cifre, il punto come\nseparatore decimale ed eventualmente il segno");
+			input.value=oldPerc;
+		}else{
+			if(input.value)
+				input.value=oldPerc=formatNumber(input.value,15.2);
+		}
 	}
 
 	<c:if test='${RISULTATO eq "OK"}'>

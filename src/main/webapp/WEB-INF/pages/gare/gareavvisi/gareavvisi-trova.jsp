@@ -29,6 +29,8 @@
 			<gene:campoTrova campo="TIPOAPP"/>
 			<gene:campoTrova campo="OGGETTO" />
 			<gene:campoTrova campo="DATSCA" />
+			<gene:campoTrova campo="CODCPV" entita="GARCPV" from="GARE" where="GARCPV.NGARA = GARE.NGARA and GARE.NGARA = GAREAVVISI.NGARA" />
+			<gene:campoTrova campo="CUPPRG" entita="GARE" where="GARE.NGARA = GAREAVVISI.NGARA" />
 			<gene:campoTrova campo="ISARCHI" defaultValue="2" />
 		</gene:gruppoCampi>
 

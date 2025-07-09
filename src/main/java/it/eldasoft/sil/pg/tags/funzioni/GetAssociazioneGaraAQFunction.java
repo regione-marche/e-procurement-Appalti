@@ -39,13 +39,15 @@ public class GetAssociazioneGaraAQFunction extends AbstractFunzioneTag {
     SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",
         pageContext, SqlManager.class);
     
-    String ngara = (String)params[1];
+    String codgar = (String)params[1];
+    String ngaraaq;
     String select="select cogg.c0akey1, cogg.c0akey2 from gare, garecont gc, c0oggass cogg where gare.ngara = ? and "
         + "(gc.codimp=gare.ditta or gc.codimp is null) and "
         + "((gc.ngara=gare.ngara and gc.ncont=1) or (gc.ngara=gare.codgar1 and (gc.ngaral is null or gc.ngaral=gare.ngara))) "
-        + "and gc.ngara=cogg.c0akey1 and gc.ncont=cogg.c0akey2  and cogg.c0aent = 'GARECONT'"; 
+        + "and gc.ngara=cogg.c0akey1 and "+sqlManager.getDBFunction("inttostr",  new String[] {"gc.ncont"})+"=cogg.c0akey2  and cogg.c0aent = 'GARECONT'"; 
     try {
-      Vector datiGare = sqlManager.getVector(select, new Object[]{ngara});
+      ngaraaq = (String) sqlManager.getObject("select NGARAAQ from torn where codgar=?", new Object[] {codgar});
+      Vector datiGare = sqlManager.getVector(select, new Object[]{ngaraaq});
       if (datiGare!= null && datiGare.size()>0){
         String c0akey1 = null;
         String c0akey2 = null;

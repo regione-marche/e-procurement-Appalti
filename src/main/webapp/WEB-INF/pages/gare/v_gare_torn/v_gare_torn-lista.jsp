@@ -21,8 +21,6 @@
 <c:set var="esistonoGarePubblicate"
 	value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsistonoGarePubblicateFunction", pageContext,"V_GARE_TORN")}' />
 
-<c:set var="isPersonalizzazioneGenovaAttiva" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsPersonalizzazioneGenovaAttivaFunction",pageContext)}' scope="request" />
-
 <c:set var="filtroUffint" value=""/> 
 <c:if test="${! empty sessionScope.uffint}">
 	<c:set var="filtroUffint" value=" exists (select codgar from torn where codgar = V_GARE_TORN.CODGAR and CENINT = '${sessionScope.uffint}')"/>
@@ -76,14 +74,17 @@
   	<c:set var='visualizzaPopUp' value='${visualizzaLink || gene:checkProtFunz(pageContext, "MOD","MOD") || gene:checkProtFunz(pageContext, "DEL","DEL") || gene:checkProtFunz(pageContext, "ALT","Copia-gara")}'/>
   	<c:set var="garaPubblicata" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GaraPubblicataSuPortaleFunction",  pageContext, datiRiga.V_GARE_TORN_CODGAR )}'/> 	
   	<c:set var="garaEsito" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GaraEsitoFunction",  pageContext, datiRiga.V_GARE_TORN_CODICE )}'/>
-	<c:set var="bloccoPubblicazione" value='false' />		
+	<c:set var="bloccoPubblicazione" value='false' />	
+	<c:set var="bloccoPubblicazioneANAC" value='false'/>	
 			<gene:campoLista title="Opzioni" width="50">
 				<c:if test='${visualizzaPopUp}'>
 					<gene:PopUp variableJs="rigaPopUpMenu${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'">
 						<c:if test="${(datiRiga.V_GARE_TORN_GARTEL eq '1' || (datiRiga.V_GARE_TORN_GARTEL ne '1' && applicareBloccoPubblicazioneGareNonTelematiche eq '1')) and garaPubblicata eq 'SI'}">
 								<c:set var="bloccoPubblicazione" value='true' />
 						</c:if>
-						
+						 <c:set var="codgarRiga" value='${fn:substring(chiaveRiga, fn:indexOf(chiaveRiga, ":")+1, fn:length(chiaveRiga))}'/>
+						<c:set var="bloccoPubblicazioneANAC" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.npa.GetBloccoModificaPCP", pageContext, codgarRiga, "false")}'/>
+						<c:set var="isSchedaANNUltimaSchedaPubblica" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.npa.CheckSchedaANNUltimaPubblicataFunction", pageContext, codgarRiga)}'/>
 						<c:choose>
 							<c:when test='${garaLottoUnico}'>
 								<c:if test='${gene:checkProt(pageContext, "MASC.VIS.GARE.GARE-scheda")}' >
@@ -103,32 +104,18 @@
 								</c:if>
 							</c:otherwise>
 						</c:choose>
-						<c:if test='${(datiRiga.G_PERMESSI_AUTORI ne "2") && gene:checkProtFunz(pageContext, "DEL","DEL") && bloccoPubblicazione ne "true"}' >
+						<c:if test='${(datiRiga.G_PERMESSI_AUTORI ne "2") && gene:checkProtFunz(pageContext, "DEL","DEL") && bloccoPubblicazione ne "true" && bloccoPubblicazioneANAC ne "true" && isSchedaANNUltimaSchedaPubblica ne "true"}' >
 							<gene:PopUpItem title="Elimina gara" href="eliminaGara()" />
 						</c:if>
 						<c:if test='${gene:checkProtFunz(pageContext, "ALT","Copia-gara")}'>
 							<gene:PopUpItem title="Copia gara" href="copiaGara('${chiaveRigaJava}', '${datiRiga.V_GARE_TORN_TIPGEN}', ${garaLottoUnico},${tipGara },'${datiRiga.GARE_CLIV1}')"/>
 						</c:if>
-						<c:if test='${gene:checkProtFunz(pageContext, "ALT","Condividi-gara") && datiRiga.V_GARE_TORN_GARTEL != "1"}'> 
-							<c:choose>
-								<c:when test='${isPersonalizzazioneGenovaAttiva eq "1"}'>
-									<gene:PopUpItem title="Condividi e proteggi gara" href="javascript:apriGestionePermessi('${datiRiga.V_GARE_TORN_CODGAR}',${tipGara},${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})"/>
-								</c:when>
-								<c:otherwise>
-									<gene:PopUpItem title="Condividi e proteggi gara" href="javascript:apriGestionePermessiStandard('${datiRiga.V_GARE_TORN_CODGAR}',${tipGara},${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})"/>
-								</c:otherwise>
-							</c:choose>
+						<c:if test='${gene:checkProtFunz(pageContext, "ALT","Condividi-gara") && datiRiga.V_GARE_TORN_GARTEL != "1"}'>
+							<gene:PopUpItem title="Condividi e proteggi gara" href="javascript:apriGestionePermessiStandard('${datiRiga.V_GARE_TORN_CODGAR}',${tipGara},${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})"/>
 						</c:if>
 
-						<c:if test='${gene:checkProtFunz(pageContext, "ALT","Condividi-gara") && datiRiga.V_GARE_TORN_GARTEL == "1"}'> 
-							<c:choose>
-								<c:when test='${isPersonalizzazioneGenovaAttiva eq "1"}'>
-									<gene:PopUpItem title="Punto ordinante e istruttore" href="javascript:apriGestionePermessiGaraTelematica('${datiRiga.V_GARE_TORN_CODGAR}',${tipGara},${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})"/>
-								</c:when>
-								<c:otherwise>
-									<gene:PopUpItem title="Punto ordinante e istruttore" href="javascript:apriGestionePermessiGaraTelematicaStandard('${datiRiga.V_GARE_TORN_CODGAR}',${tipGara},${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})"/>
-								</c:otherwise>
-							</c:choose>
+						<c:if test='${gene:checkProtFunz(pageContext, "ALT","Condividi-gara") && datiRiga.V_GARE_TORN_GARTEL == "1"}'>
+							<gene:PopUpItem title="Punto ordinante e istruttore" href="javascript:apriGestionePermessiGaraTelematicaStandard('${datiRiga.V_GARE_TORN_CODGAR}',${tipGara},${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})"/>
 						</c:if>
 
 						<c:if test='${gene:checkProtFunz(pageContext, "ALT","Archivia-gara")}'>
@@ -327,7 +314,7 @@
 
 	
 	function listaNuovaGara(){
-		document.location.href = contextPath + "/pg/InitNuovaGara.do?" + csrfToken;
+		document.location.href = contextPath + "/pg/InitNuovaGara.do";
 	}
 
 	</gene:javaScript>

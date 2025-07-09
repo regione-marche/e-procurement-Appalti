@@ -60,7 +60,7 @@
 			campi="TECNI.CODTEC;TECNI.NOMTEC"
 			functionId="skip"
 			chiave="TORN_CODRUP">
-			<gene:campoScheda campo="CODRUP" title="Codice Responsabile Unico Procedimento" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" />
+			<gene:campoScheda campo="CODRUP" title="Codice RUP" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" />
 			<gene:campoScheda campo="NOMTEC" title="Nome" entita="TECNI" from="TORN" where="GARE.CODGAR1=TORN.CODGAR and TORN.CODRUP=TECNI.CODTEC"
 						modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.TORN.CODRUP")}' 
 						visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.TORN.CODRUP")}'/>

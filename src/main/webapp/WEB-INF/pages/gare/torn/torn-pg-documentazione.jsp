@@ -39,6 +39,8 @@
 </c:if>
 <c:set var="numeroDocumentoWSDM" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.CheckAssociataRdaJIRIDEFunction", pageContext, codiceGara)}' scope="request"/>
 
+<c:set var="isPaginaDocumentazione" value='true'/>
+
 <gene:formScheda entita="TORN" gestisciProtezioni="true" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreDocumentazioneGara" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreDocumentazioneGara">
 
 	<gene:redefineInsert name="pulsanteNuovo"></gene:redefineInsert>
@@ -58,12 +60,19 @@
 	
 	<c:set var="condizioniBando" value='${(tipologiaGara eq "3" and gene:checkProt(pageContext,"SEZ.VIS.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMGARA")) || (tipologiaGara ne "3" and gene:checkProt(pageContext,"SEZ.VIS.GARE.TORN-scheda.DOCUMGARA.DOCUMGARA"))}'/>
 	
+	<c:set var="condizioniAnacForm" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.GetSeAttivoModuloANACFormFunction", pageContext, codiceGara) eq "true"}'/>
+
 	<c:set var="condizioniRequisiti" value='${((tipologiaGara eq "3" and gene:checkProt(pageContext,"SEZ.VIS.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMREQ")) || (tipologiaGara ne "3" and gene:checkProt(pageContext,"SEZ.VIS.GARE.TORN-scheda.DOCUMGARA.DOCUMREQ"))) and itergaMacro !=3 }'/>
 	<c:set var="condizioniDocumentazioneRichiesta" value='${(tipologiaGara eq "3" and gene:checkProt(pageContext,"SEZ.VIS.GARE.TORN-OFFUNICA-scheda.DOCUMGARA.DOCUMCONC")) || (tipologiaGara ne "3" and gene:checkProt(pageContext,"SEZ.VIS.GARE.TORN-scheda.DOCUMGARA.DOCUMCONC")) }'/>
 	<gene:campoScheda>
 			<td colspan="2">
+				<c:if test='${not empty vernpa and condizioniAnacForm}'>
+				<input type="radio" value="0" name="filtroDocumentazione" id="anacFormPCP" <c:if test='${tipoDoc eq 0}'>checked="checked"</c:if> onclick="javascript:cambiaTipoDocumentazione(0);" />
+					 Schede ANAC
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				</c:if>
 				<c:if test='${condizioniBando}'>
-				<input type="radio" value="1" name="filtroDocumentazione" id="atti" <c:if test='${tipoDoc ne 2 and tipoDoc ne 3}'>checked="checked"</c:if> onclick="javascript:cambiaTipoDocumentazione('1');" />
+				<input type="radio" value="1" name="filtroDocumentazione" id="atti" <c:if test='${tipoDoc ne 2 and tipoDoc ne 3 and tipoDoc ne 0}'>checked="checked"</c:if> onclick="javascript:cambiaTipoDocumentazione('1');" />
 				 Documenti e atti
 				</c:if>	 
 				<c:if test='${condizioniBando}'>
@@ -145,9 +154,18 @@ function cambiaTipoDocumentazione(tipoDoc){
 	document.forms[0].metodo.value="apri"; 
 	document.forms[0].jspPathTo.value=document.forms[0].jspPath.value;
 	bloccaRichiesteServer();
-	document.forms[0].action += "&tipoDoc=" + tipoDoc;
+	document.forms[0].action += "?tipoDoc=" + tipoDoc;
+	document.forms[0].encoding="";
 	document.forms[0].submit();
 	
+}
+
+function visualizzaFormNPA(idForm,islotti,modpres) {
+	formVisualizzaFormNPA.key.value = "G1NPAFORM.ID=N:" + idForm;
+	formVisualizzaFormNPA.idForm.value = idForm;
+	formVisualizzaFormNPA.islotti.value = islotti;
+	formVisualizzaFormNPA.modpres.value = modpres;
+	formVisualizzaFormNPA.submit();
 }
 
 function visualizzaDocumenti(codiceGara,tipoPubblicazione,gruppo){
@@ -245,6 +263,21 @@ function visAllegatiRda(codice){
 	<input type="hidden" name="href" value="gene/system/firmadigitale/verifica-firmadigitale.jsp" />
 	<input type="hidden" name="idprg" id="idprg" value="" />
 	<input type="hidden" name="iddocdig" id="iddocdig" value="" />
+</form>
+
+<form name="formVisualizzaFormNPA" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+	<input type="hidden" name="href" value="gare/g1npaform/g1npaform-scheda.jsp" /> 
+	<input type="hidden" name="key" value="" />
+	<input type="hidden" name="codiceGara" value="${codiceGara}" />
+	<input type="hidden" name="idForm" value="" />
+	<input type="hidden" name="islotti" value="" />
+	<input type="hidden" name="modpres" value="" />
+</form>
+
+<form name="formAggiungiAnacForm" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+	<input type="hidden" name="href" value="gare/g1npaform/aggiungiAnacForm.jsp" /> 
+	<input type="hidden" name="codiceGara" value="${codiceGara}" />
+	<input type="hidden" name="ngara" value="${ngara}" />
 </form>
 
 <form name="formVisualizzaDocumenti" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">

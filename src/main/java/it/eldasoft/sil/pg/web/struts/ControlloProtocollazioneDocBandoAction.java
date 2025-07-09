@@ -68,7 +68,7 @@ public class ControlloProtocollazioneDocBandoAction extends Action {
         for(int i=0; i < datiDoc.size(); i++){
           idprg = SqlManager.getValueFromVectorParam(datiDoc.get(i), 0).getStringValue();
           iddocdg = SqlManager.getValueFromVectorParam(datiDoc.get(i), 1).longValue();
-          idAllegato = (Long)this.sqlManager.getObject(selectWsAllegati, new Object[]{"W_DOCDIG",idprg,iddocdg,entita,key1});
+          idAllegato = (Long)this.sqlManager.getObject(selectWsAllegati, new Object[]{"W_DOCDIG",idprg,iddocdg.toString(),entita,key1});
           if(idAllegato!=null){
             docTuttiNonProtocollati= false;
             break;

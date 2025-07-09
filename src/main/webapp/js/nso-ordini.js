@@ -242,7 +242,7 @@ function sendValidationRequest(msg){
 				if(msg!=null){
 					htmlOutput+="<br>Questa funzione permette di aggiornare lo stato dell'ordine a Completato.<br>L'ordine in stato Completato risultera' pronto per l'invio a NSO.";
 					$("#nso-dialog-verification-conferma").on('click',function(){
-						var html = '<form action="pg/SetNsoStatoOrdine.do?'+csrfToken+'" method="post"><input type="hidden" name="idOrdine" value="'+$('#NSO_ORDINI_ID').val()+'" /><input type="hidden" name="statoOrdine" value="2" /></form>';
+						var html = '<form action="pg/SetNsoStatoOrdine.do" method="post"><input type="hidden" name="idOrdine" value="'+$('#NSO_ORDINI_ID').val()+'" /><input type="hidden" name="statoOrdine" value="2" /></form>';
 						console.log(html);
 						$(html).appendTo('body').submit();
 						validation_dialog.dialog( "close" );

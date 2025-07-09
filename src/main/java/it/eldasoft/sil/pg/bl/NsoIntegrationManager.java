@@ -399,7 +399,7 @@ public class NsoIntegrationManager {
    * @param ord - the {@link it.eldasoft.sil.pg.db.domain.nso.Ordine Ordine}
    * @param ordXml - the {@link oasisNamesSpecificationUblSchemaXsdOrder2.OrderType ordXml} to be filled
    */
-  private void sectionAttachmentDataExtraction(final Ordine ord, final OrderType ordXml) {
+  private void sectionAttachmentDataExtraction(final Ordine ord, final OrderType ordXml) throws GestoreException {
     List<NsoAllegato> attachmentNamesList = nsoAllegatiDao.getNsoAllegatiByNsoOrdiniId(ord.getId());
     if(logger.isDebugEnabled())
       logger.debug("Found "+attachmentNamesList.size() +" attachment for "+ord);

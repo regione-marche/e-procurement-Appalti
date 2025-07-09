@@ -33,12 +33,16 @@ $(window).ready(function (){
 			$('#sezioneamministrazioneorganizzativa').show();
 			$('#rigaCodiceAoo').show();
 			$('#rigaCodiceUfficio').show();
+			$('#associaFascicoloSi').attr('checked',true);
+			$('#associaFascicoloNo').attr('checked',false);
     });
 	
 	$('#associaFascicoloNo').click(function() {
 			$('#sezioneamministrazioneorganizzativa').hide();
 			$('#rigaCodiceAoo').hide();
 			$('#rigaCodiceUfficio').hide();
+			$('#associaFascicoloSi').attr('checked',false);
+			$('#associaFascicoloNo').attr('checked',true);
 			//$('#codiceaoonuovo').val('');
 			//$('#codiceaoonuovo_filtro').val('');
 			//$('#codiceaoo_filtro').val('');
@@ -58,6 +62,7 @@ $(window).ready(function (){
     });
 	
 	_getWSLogin();
+	_gestioneWSLogin();
 	if(_logincomune=="1"){
 		bloccaCampiLoginComune();
 	}
@@ -117,7 +122,7 @@ function _validazioneFormDatiProtocollo(){
 }
 
 function caricamentoProfili(){
-	if(sso!="true" && ($("#username").val() == null || $("#username").val() == "" || $("#password").val() == null || $("#password").val() == "")){
+	if(sso!="true" && _logincomune != '1' && ($("#username").val() == null || $("#username").val() == "" || $("#password").val() == null || $("#password").val() == "")){
 		$('#profilo').empty();
 		$('#profilo_filtro_input').val('');
 		$('#profilo_filtro_input').attr('title','');
@@ -493,7 +498,8 @@ function _getWSFascicolo(callback) {
 			key2:null,
 			key3:null,
 			key4:null,
-			idconfi:idconfi
+			idconfi:idconfi,
+			tipo: "chiave"
 		},
 		success: function(json){
 			$.map( json, function( item ) {

@@ -209,7 +209,7 @@ function revokeOrder(){
 	}
 	
 	function listaNuovo(){
-		document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/nso_ordini/nso_associaCig.jsp&tipoGara=garaLottoUnico&modo=NUOVO";
+		document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/nso_ordini/nso_associaCig.jsp&tipoGara=garaLottoUnico&modo=NUOVO";
 	}
 	
 	// Funzione che esegue l'invio a NSO'

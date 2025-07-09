@@ -241,7 +241,7 @@
 		function archivioImpresaAggDef(){
 			var codiceImpresa = getValue("NSO_FORNITORE_CODIMP");
 			var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-			document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href;
+			document.location.href = contextPath + "/ApriPagina.do?" + href;
 		}
 
 

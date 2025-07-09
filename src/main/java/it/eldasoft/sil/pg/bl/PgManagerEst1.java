@@ -14,19 +14,34 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Vector;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
+import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveIDAutoincrementante;
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
+import it.eldasoft.gene.ws.objectstorage.UploadInfo;
+import it.eldasoft.sil.pg.tags.funzioni.npa.GetAnacFormAggiungibiliFunction;
+import it.eldasoft.sil.pg.tags.gestori.submit.npa.GestoreG1NPAFORM;
+import it.eldasoft.utils.spring.UtilitySpring;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.struts.upload.FormFile;
+import org.springframework.transaction.TransactionStatus;
 
+import intra.regionemarche.BandoClass;
+import intra.regionemarche.ResultClass;
+import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.bl.GenChiaviManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.TabellatiManager;
@@ -38,12 +53,20 @@ import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.domain.Tabellato;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.web.struts.tags.UtilityStruts;
+import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreChiaveIDAutoincrementante;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.scp.LoginResult;
+import it.eldasoft.sil.pg.bl.scp.PubblicaAttoEntry;
+import it.eldasoft.sil.pg.bl.scp.PubblicazioneAttoResult;
+import it.eldasoft.sil.pg.bl.scp.ValidateEntry;
 import it.eldasoft.sil.pg.bl.utils.AllegatoSintesiUtils;
+import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiGaraFunction;
 import it.eldasoft.sil.pg.tags.funzioni.GestioneFasiRicezioneFunction;
 import it.eldasoft.sil.pg.web.struts.UploadMultiploForm;
+import it.eldasoft.sil.portgare.datatypes.ImpresaAusiliariaType;
 import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.sicurezza.CriptazioneException;
 import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityFiscali;
 import it.eldasoft.utils.utility.UtilityMath;
@@ -79,6 +102,14 @@ public class PgManagerEst1 {
   private TabellatiManager          tabellatiManager;
 
   private InviaDatiRichiestaCigManager          inviaDatiRichiestaCigManager;
+  
+  private GestioneRegioneMarcheManager          gestioneRegioneMarcheManager;
+  
+  private GestionePATManager                    gestionePATManager;
+  
+  private ScpManager                            scpManager;
+
+  private InviaVigilanzaManager                 inviaVigilanzaManager;
 
   /** Manager per la gestione delle chiavi di una entita */
   private GenChiaviManager   genChiaviManager;
@@ -101,6 +132,22 @@ public class PgManagerEst1 {
 
   public void setInviaDatiRichiestaCigManager(InviaDatiRichiestaCigManager inviaDatiRichiestaCigManager) {
     this.inviaDatiRichiestaCigManager = inviaDatiRichiestaCigManager;
+  }
+
+  public void setGestioneRegioneMarcheManager(GestioneRegioneMarcheManager gestioneRegioneMarcheManager) {
+    this.gestioneRegioneMarcheManager = gestioneRegioneMarcheManager;
+  }
+  
+  public void setGestionePATManager(GestionePATManager gestionePATManager) {
+    this.gestionePATManager = gestionePATManager;
+  }
+
+  public void setInviaVigilanzaManager(InviaVigilanzaManager inviaVigilanzaManager) {
+    this.inviaVigilanzaManager = inviaVigilanzaManager;
+  }
+
+  public void setScpManager(ScpManager scpManager) {
+    this.scpManager = scpManager;
   }
 
   /**
@@ -666,11 +713,11 @@ public class PgManagerEst1 {
       autorizzato=String.valueOf(true);
       autorizzatoTelematicaOda = String.valueOf("1".equalsIgnoreCase(profilo.getRuoloUtenteMercatoElettronico()) || "3".equalsIgnoreCase(profilo.getRuoloUtenteMercatoElettronico()));
      }else if("G1STIPULA".equals(entita)){
-       String abilitazioneStd = new String (profilo.getAbilitazioneStd());
+       String abilitazioneGare = new String (profilo.getAbilitazioneGare());
        Long autori = (Long) sqlManager.getObject(
                "select autori from g_permessi where idstipula = ? and syscon = ?",
                new Object[] { idstipula, syscon });
-           if ((new Long(1)).equals(autori) || (new String("A")).equals(abilitazioneStd)) {
+           if ((new Long(1)).equals(autori) || (new String("A")).equals(abilitazioneGare)) {
              autorizzato = "true";
            }
      }else if("GARECONT".equals(entita)){
@@ -739,17 +786,19 @@ public class PgManagerEst1 {
       String ngara = datiForm.getString("GARE.NGARA");
       String cenint = datiForm.getString("CENINT_GARALTSOG");
       String codrup = datiForm.getString("CODRUP_GARALTSOG");
+      String codcentro = datiForm.getString("CODCENTRO_GARALTSOG");
+      String nomcentro = datiForm.getString("NOMCENTRO_GARALTSOG");
       try {
         String select = "select count(id) from garaltsog where ngara=?";
         Long conteggio = (Long)this.sqlManager.getObject(select, new Object[]{ngara});
         if((conteggio==null || conteggio.longValue()==0) && (cenint!=null && !"".equals(cenint) || (codrup!=null && !"".equals(codrup)))){
           Long id = new Long(this.genChiaviManager.getNextId("GARALTSOG"));
-          this.sqlManager.update("insert into garaltsog(id,ngara,cenint,codrup) values(?,?,?,?)", new Object[]{id, ngara, cenint,codrup});
+          this.sqlManager.update("insert into garaltsog(id,ngara,cenint,codrup,codcentro,nomcentro) values(?,?,?,?,?,?)", new Object[]{id, ngara, cenint, codrup, codcentro, nomcentro});
         }else if(conteggio!=null && conteggio.longValue()!=0){
           if((cenint==null || "".equals(cenint)) && (codrup==null || "".equals(codrup)))
             this.sqlManager.update("delete from garaltsog where ngara=?", new Object[]{ngara});
           else if ( (cenint!=null && !"".equals(cenint)) || (codrup!=null && !"".equals(codrup)))
-            this.sqlManager.update("update garaltsog set  cenint =?, codrup =? where ngara=?", new Object[]{cenint, codrup, ngara });
+            this.sqlManager.update("update garaltsog set  cenint =?, codrup =?, codcentro=?, nomcentro=? where ngara=?", new Object[]{cenint, codrup, codcentro, nomcentro, ngara});
         }
 
 
@@ -899,12 +948,12 @@ public class PgManagerEst1 {
         String cogtei = (String) SqlManager.getValueFromVectorParam(datiTecni, 0).getValue();
         if(cogtei==null || "".equals(cogtei)){
           erroriBloccanti = "SI";
-          msgErroriBloccanti += "<br>Il cognome del responsabile unico procedimento non e' valorizzato.";
+          msgErroriBloccanti += "<br>Il cognome del RUP non e' valorizzato.";
         }
         String nometei = (String) SqlManager.getValueFromVectorParam(datiTecni, 1).getValue();
         if(nometei==null || "".equals(nometei)){
           erroriBloccanti = "SI";
-          msgErroriBloccanti += "<br>Il nome del responsabile unico procedimento non e' valorizzato.";
+          msgErroriBloccanti += "<br>Il nome del RUP non e' valorizzato.";
         }
         String cftec = (String) SqlManager.getValueFromVectorParam(datiTecni, 2).getValue();
         String pivatec = (String) SqlManager.getValueFromVectorParam(datiTecni, 3).getValue();
@@ -912,20 +961,20 @@ public class PgManagerEst1 {
         pivatec=StringUtils.stripToNull(pivatec);
         if(cftec == null  && pivatec == null ){
           erroriBloccanti = "SI";
-          msgErroriBloccanti += "<br>Il codice fiscale e la partita iva del responsabile unico procedimento sono entrambi non valorizzati.";
+          msgErroriBloccanti += "<br>Il codice fiscale e la partita iva del RUP sono entrambi non valorizzati.";
         }else{
           Long naztei = SqlManager.getValueFromVectorParam(datiTecni, 4).longValue();
           if(naztei==null || (naztei!=null && naztei.longValue()==1)){
             if(cftec!=null){
               if (!UtilityFiscali.isValidPartitaIVA(cftec) && !UtilityFiscali.isValidCodiceFiscale(cftec)){
                 erroriBloccanti = "SI";
-                msgErroriBloccanti += "<br>Il codice fiscale del responsabile unico procedimento non ha un formato valido.";
+                msgErroriBloccanti += "<br>Il codice fiscale del RUP non ha un formato valido.";
               }
             }if(pivatec!=null){
 
               if (!UtilityFiscali.isValidPartitaIVA(pivatec) ){
                 erroriBloccanti = "SI";
-                msgErroriBloccanti += "<br>La partita iva del responsabile unico procedimento non ha un formato valido.";
+                msgErroriBloccanti += "<br>La partita iva del RUP non ha un formato valido.";
               }
 
             }
@@ -961,7 +1010,7 @@ public class PgManagerEst1 {
         if(genere!=null)
           genereString = genere.toString();
         String controllo[] = this.inviaDatiRichiestaCigManager.controlloModreaCodnuts(modrea, codnuts, genereString, profilo);
-        if("NOK".equals(controllo[0])){
+        if(false && "NOK".equals(controllo[0])){ //APPALTI-2041 tolto controllo
           erroriBloccanti = "SI";
           msgErroriBloccanti+="<br>Non è stata inserita la modalità di realizzazione";
         }
@@ -1039,6 +1088,8 @@ public class PgManagerEst1 {
   public void cancellaW_DOCDIG(String idprg, Long iddocdig) throws GestoreException {
     try {
       String deleteW_DOCDIG = "delete from w_docdig where idprg = ? and iddocdig = ?";
+      UploadInfo oldBucketInfo = ObjectStorageUtils.getUploadInfo("select bucket_ref, bucket_uuid from w_docdig where idprg=? and iddocdig=?",new Object[] {idprg, iddocdig});
+      ObjectStorageUtils.deleteFile(oldBucketInfo.bucket_ref(),oldBucketInfo.uuid());
       this.sqlManager.update(deleteW_DOCDIG, new Object[] { idprg, iddocdig });
     } catch (SQLException e) {
       throw new GestoreException("Errore nella cancellazione di W_DOCDIG", null, e);
@@ -1062,10 +1113,10 @@ public class PgManagerEst1 {
       HashMap<?, ?> hm = ((UploadMultiploForm) uploadFileForm).getFormFiles();
 
       DataColumnContainer dccW_DOCDIG = new DataColumnContainer(new DataColumn[] { new DataColumn("W_DOCDIG.IDPRG", new JdbcParametro(
-          JdbcParametro.TIPO_TESTO, idprg)) });
+          JdbcParametro.TIPO_TESTO, "PG")) });
 
       String selectMaxW_DOCDIG = "select max(iddocdig) from w_docdig where idprg = ?";
-      iddocdig = (Long) this.sqlManager.getObject(selectMaxW_DOCDIG, new Object[] { idprg });
+      iddocdig = (Long) this.sqlManager.getObject(selectMaxW_DOCDIG, new Object[] { "PG" });
       if (iddocdig == null) iddocdig = new Long(0);
       iddocdig = new Long(iddocdig.longValue() + 1);
       dccW_DOCDIG.addColumn("W_DOCDIG.IDDOCDIG", JdbcParametro.TIPO_NUMERICO, iddocdig);
@@ -1077,6 +1128,15 @@ public class PgManagerEst1 {
       if (ff != null) {
         fname = ff.getFileName();
         if (fname.length() != 0 && ff.getFileSize() > 0) {
+
+          if(!FileAllegatoManager.checkFileContent(ff.getFileData(),fname)){
+            throw new GestoreException("Il file selezionato da caricare viene scartato in quanto ha un contenuto in formato non valido secondo le verifiche mediante la libreria Apache Tika",
+                "upload.erroreVerificaContenuto", new String[]{fname}, null);
+          } else if(fname.toLowerCase().endsWith(".pdf") && FileAllegatoManager.isMaliciousPdf(ff.getFileData(), fname)) {
+            throw new GestoreException("Il file selezionato da caricare viene scartato in quanto sembra codificare dei contenuti non sicuri (malware)",
+                    "upload.erroreContenutoMalevolo", new String[]{fname}, null);
+          }
+          
           dccW_DOCDIG.addColumn("W_DOCDIG.DIGNOMDOC", JdbcParametro.TIPO_TESTO, fname);
           ByteArrayOutputStream baos = new ByteArrayOutputStream();
           baos.write(ff.getFileData());
@@ -1087,6 +1147,7 @@ public class PgManagerEst1 {
         }
       }
       dccW_DOCDIG.insert("W_DOCDIG", this.sqlManager);
+      ObjectStorageUtils.addFile("PG", iddocdig);
 
     } catch (FileNotFoundException e) {
       throw new GestoreException("File da caricare non trovato", "uploadMultiplo", new String[] { fname }, e);
@@ -1132,6 +1193,15 @@ public class PgManagerEst1 {
       if (ff != null) {
         fname = ff.getFileName();
         if (fname.length() != 0 && ff.getFileSize() > 0) {
+          
+          if(!FileAllegatoManager.checkFileContent(ff.getFileData(),fname)){
+            throw new GestoreException("Il file selezionato da caricare viene scartato in quanto ha un contenuto in formato non valido secondo le verifiche mediante la libreria Apache Tika",
+                "upload.erroreVerificaContenuto", new String[]{fname}, null);
+          } else if(fname.toLowerCase().endsWith(".pdf") && FileAllegatoManager.isMaliciousPdf(ff.getFileData(), fname)) {
+            throw new GestoreException("Il file selezionato da caricare viene scartato in quanto sembra codificare dei contenuti non sicuri (malware)",
+                    "upload.erroreContenutoMalevolo", new String[]{fname}, null);
+          }
+          
           dccW_DOCDIG.addColumn("W_DOCDIG.DIGNOMDOC", JdbcParametro.TIPO_TESTO, fname);
           ByteArrayOutputStream baos = new ByteArrayOutputStream();
           baos.write(ff.getFileData());
@@ -1142,6 +1212,7 @@ public class PgManagerEst1 {
         }
       }
       dccW_DOCDIG.update("W_DOCDIG", this.sqlManager);
+      ObjectStorageUtils.addFile("PG", iddocdig);
 
     } catch (FileNotFoundException e) {
       throw new GestoreException("File da caricare non trovato", "uploadMultiplo", new String[] { fname }, e);
@@ -1252,8 +1323,9 @@ public class PgManagerEst1 {
           impoffVal = impoff.doubleValue();
         double rib = (impoffVal + numeratore) * 100 / denominatore ;
         ribasso = new Double(rib);
-        ribasso = (Double)UtilityNumeri.arrotondaNumero(ribasso, new Integer(cifreRibasso));
-      }
+        Number ribassoNumber = UtilityNumeri.arrotondaNumero(ribasso, new Integer(cifreRibasso));
+        ribasso = new Double(ribassoNumber.doubleValue());
+        }
     }
     return ribasso;
   }
@@ -1871,5 +1943,516 @@ public class PgManagerEst1 {
           "Errore durante la lettura degli importi dei lotti di gara", null, e);
     }
   }
+  
+  public void checkAndInsertCUP(
+          TransactionStatus status, DataColumnContainer dataColumnContainer,
+          AbstractGestoreChiaveIDAutoincrementante gestore, String suffisso,
+          String ngara, HttpServletRequest request) throws GestoreException{
 
+    String nomeCampoNumeroRecord = "NUMERO_" + suffisso;
+    String nomeCampoDelete = "DEL_" + suffisso;
+    String nomeCampoMod = "MOD_" + suffisso;
+
+    // Gestione delle pubblicazioni bando solo se esiste la colonna con il
+    // numero di occorrenze
+    if (dataColumnContainer.isColumn(nomeCampoNumeroRecord)) {
+
+      // Estraggo dal dataColumnContainer tutte le occorrenze dei campi
+      // dell'entità definita per il gestore
+      DataColumnContainer tmpDataColumnContainer = new DataColumnContainer(
+          dataColumnContainer.getColumns(gestore.getEntita(), 0));
+
+      int numeroRecord = dataColumnContainer.getLong(nomeCampoNumeroRecord).intValue();
+
+      for (int i = 1; i <= numeroRecord; i++) {
+        DataColumnContainer newDataColumnContainer = new DataColumnContainer(
+            tmpDataColumnContainer.getColumnsBySuffix("_" + i, false));
+
+        boolean deleteOccorrenza = newDataColumnContainer.isColumn(nomeCampoDelete)
+            && "1".equals(newDataColumnContainer.getString(nomeCampoDelete));
+        boolean updateOccorrenza = newDataColumnContainer.isColumn(nomeCampoMod)
+            && "1".equals(newDataColumnContainer.getString(nomeCampoMod));
+
+        // Rimozione dei campi fittizi (il campo per la marcatura della delete e
+        // tutti gli eventuali campi passati come argomento)
+        newDataColumnContainer.removeColumns(new String[] {
+            gestore.getEntita() + "." + nomeCampoDelete,
+            gestore.getEntita() + "." + nomeCampoMod});
+
+        if (deleteOccorrenza) {
+          // Se è stata richiesta l'eliminazione e il campo chiave ID incrementante e'
+          // diverso da null eseguo l'effettiva eliminazione del record
+          if (newDataColumnContainer.getLong(gestore.getCampoNumericoChiave()) != null)
+            gestore.elimina(status, newDataColumnContainer);
+          // altrimenti e' stato eliminato un nuovo record non ancora inserito
+          // ma predisposto nel form per l'inserimento
+        } else {
+          if (updateOccorrenza) {
+            String cup = newDataColumnContainer.getString("GARECUP.CUP");
+            newDataColumnContainer.setValue("GARECUP.NGARA", ngara);
+            String regex = "^[a-zA-Z0-9]+$";
+            if(StringUtils.isBlank(cup) || cup.length()!= 15 || !cup.matches(regex))
+              throw new GestoreException("Il codice CUP specificato non è valido","controlloCodiceCUP");
+            
+            if (newDataColumnContainer.getLong(gestore.getCampoNumericoChiave()) == null)
+              gestore.inserisci(status, newDataColumnContainer);
+            else
+              gestore.update(status, newDataColumnContainer);
+          }
+        }
+
+        try {
+          if (deleteOccorrenza || updateOccorrenza) {
+            inserisciSchedaID(ngara, request, status);
+          }
+        } catch (Throwable e) {
+          throw new GestoreException("Errore durante l'inserimento della scheda ID", null, e);
+        }
+      }
+    }
+  }
+
+  public void inserisciSchedaID(String ngara, HttpServletRequest request, TransactionStatus status) throws Throwable {
+    String codgar = (String) sqlManager.getObject("select codgar from v_gare_genere where codice=?", new Object[] {ngara});
+
+    if (isInserireSchedaID(ngara,codgar)) {
+      GestoreG1NPAFORM gestoreG1NPAFORM = new GestoreG1NPAFORM();
+      gestoreG1NPAFORM.setRequest(request);
+
+      Long idcfnpa = (Long) sqlManager.getObject("select id from g1cf_npa where nome_scheda='ID'", null);
+
+      DataColumnContainer containerG1NPAFORM = new DataColumnContainer(new DataColumn[]{
+              new DataColumn("G1NPASCHEDA.NGARA", new JdbcParametro(JdbcParametro.TIPO_TESTO, ngara))
+              , new DataColumn("G1NPAFORM.CODGAR", new JdbcParametro(JdbcParametro.TIPO_TESTO, codgar))
+              , new DataColumn("G1NPAFORM.IDCFNPA", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, idcfnpa))
+      });
+      gestoreG1NPAFORM.inserisci(status, containerG1NPAFORM);
+
+      UtilityStruts.addMessage(request, "warning", "warnings.appalto.inseritaSchedaID", null);
+    }
+  }
+
+  private boolean isInserireSchedaID(String ngara, String codgar) throws GestoreException, SQLException {
+
+    Long countCMInCompilazione = GestoreG1NPAFORM.countSchede(GestoreG1NPAFORM.PRESENTE_CM_IN_COMPILAZIONE,sqlManager,new Object[] {codgar});
+    if (countCMInCompilazione != null && countCMInCompilazione.longValue() > 0) {
+      return false;
+    }
+    Long countIDInCompilazione = GestoreG1NPAFORM.countSchede(GestoreG1NPAFORM.PRESENTE_ID_IN_COMPILAZIONE,sqlManager,new Object[] {codgar,ngara});
+    if (countIDInCompilazione != null && countIDInCompilazione.longValue() > 0) {
+      return false;
+    }
+
+    Vector<?> datiUltimoFormAggiunto = GetAnacFormAggiungibiliFunction.getDatiUltimoFormAggiunto(codgar, sqlManager);
+    if (datiUltimoFormAggiunto != null && datiUltimoFormAggiunto.size() > 0) {
+      String schedeSucc = SqlManager.getValueFromVectorParam(datiUltimoFormAggiunto, 3).stringValue();
+      String isiniz = SqlManager.getValueFromVectorParam(datiUltimoFormAggiunto, 4).stringValue();
+      Long statoNpa = SqlManager.getValueFromVectorParam(datiUltimoFormAggiunto, 5).longValue();
+      if ("1".equals(isiniz) && ((Long) 1L).equals(statoNpa)) {
+        return false;
+      }
+      if (StringUtils.isNotBlank(schedeSucc) && schedeSucc.contains("ID")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Metodo per l'inserimento delle ditte in DITGAVVAL presenti nelle comunicazioni**/
+  public void inserisciDitteAvvalimento(String ngara, String codiceImpresa, List<ImpresaAusiliariaType> imprese, HttpServletRequest request) throws GestoreException {
+    
+    StringBuffer nota =  new StringBuffer().append("Per alcune delle ditte in avvalimento la ragione sociale fornita da portale differisce da quella in anagrafica."
+        + " Di seguito l'elenco delle incongruenze riscontrate con la ragione sociale fornita da portale e la corrispondente in anagrafica:\n");
+    boolean inserimentoNoteAvvisi = false;
+    
+    List<String> ditteAvOld = new ArrayList<String>();//contiene una lista delle occorrenze originali (busta pre-qualifica)
+    try {
+      List ditteAv = sqlManager.getListVector("select dittaav from DITGAVVAL where ngara=? and dittao=?", new Object[] {ngara, codiceImpresa});
+      for(int i=0;i<ditteAv.size();i++) {
+        ditteAvOld.add((String) SqlManager.getValueFromVectorParam(ditteAv.get(i), 0).getValue()); 
+      }
+    }catch(SQLException e) {
+      throw new GestoreException(
+          "Errore nella lettura della ditte in avvalimento per la ditta=" + codiceImpresa, null, e);
+    }
+    
+
+    for(int i=0; i<imprese.size();i++) {
+      Object par[] = null;
+      
+      ImpresaAusiliariaType impresa=imprese.get(i);
+      String codFisc=impresa.getCodiceFiscale();
+      String piva=impresa.getPartitaIVA();
+      Long tipoAvv = new Long(impresa.getAvvalimentoPer());
+      String ragSoc = impresa.getRagioneSociale();
+      
+      //gestione imprese estere
+      if("2".equals(impresa.getAmbitoTerritoriale())) {
+        codFisc = piva = impresa.getIdFiscaleEstero();
+      }
+      
+      //faccio inserimenti solo se si tratta di un'impresa non presente in banca dati
+      String selectImpreseRegistrate="select codimp from impr,w_puser where codimp=userkey1 and codimp<>? and upper(cfimp)=?";
+      if (piva != null && !"".equals(piva)) {
+        selectImpreseRegistrate+=" and pivimp=?";
+        par = new Object[]{codiceImpresa,codFisc.toUpperCase(),piva};
+      } else {
+        selectImpreseRegistrate+=" and pivimp is null";
+        par = new Object[]{codiceImpresa,codFisc.toUpperCase()};
+      }
+      
+      String codiceImpresaAvv = null;
+      boolean isNewImpresa = false;
+      try {
+        String impresaRegistrata = (String)this.sqlManager.getObject(selectImpreseRegistrate, par);
+        if (impresaRegistrata == null || "".equals(impresaRegistrata)) {
+          //L'impresa non è presente fra le imprese registrate
+          //Si controllano le imprese nella banca dati
+          String dati[] = pgManager.controlloEsistenzaDitta( piva, codFisc, "");
+          codiceImpresaAvv = dati[0];
+          isNewImpresa = "INS".equals(dati[1]);
+        }else {
+          codiceImpresaAvv=impresaRegistrata;
+        }
+        if(isNewImpresa) {//inserimento nuova occorrenza
+          String nomimp = ragSoc;
+          if (nomimp.length() > 61)
+            nomimp = nomimp.substring(0, 60);
+          Long tipoImpresa = new Long(impresa.getTipoImpresa()); 
+          Long nazimp=null;
+          if (impresa.isSetNazione()) {
+            String nazione = impresa.getNazione();
+            try {
+                nazimp = (Long) this.sqlManager.getObject("select tab1tip from tab1 where tab1cod='Ag010' and upper(tab1desc) = ?",
+                    new Object[] { nazione.toUpperCase() });
+            } catch (SQLException e) {
+                throw new GestoreException(
+                    "Errore nel determinare il valore del tabellato per la nazione " + nazione, null, e);
+            }
+          }else
+            nazimp = null;
+          //inserisco la ditta poiché assente in anagrafica
+          sqlManager.update("insert into IMPR (CODIMP,NOMIMP,NOMEST,CFIMP,PIVIMP,TIPIMP,NAZIMP) values (?,?,?,?,?,?,?) ",
+              new Object[] { codiceImpresaAvv,nomimp, ragSoc, codFisc, piva, tipoImpresa, nazimp});
+        }else {
+          //verifico incongruenze sulla ragione sociale
+          String nomest = null;
+          Vector<?> datiRagsoc = this.sqlManager.getVector("select nomest from impr where codimp=?", new Object[]{codiceImpresaAvv});
+          if (datiRagsoc != null && datiRagsoc.size()>0) {
+            nomest = SqlManager.getValueFromVectorParam(datiRagsoc, 0).getStringValue();
+          }
+          if (nomest == null)
+            nomest="";
+          String confronto1=nomest.toUpperCase();
+          String confronto2=ragSoc.toUpperCase();
+          confronto1 = confronto1.replaceAll ("[ \\p{Punct}]", "");  //elimino gli spazi e i segni di punteggiatura
+          confronto2 = confronto2.replaceAll ("[ \\p{Punct}]", "");  //elimino gli spazi e i segni di punteggiatura
+          if (!confronto1.equals(confronto2)) {
+            inserimentoNoteAvvisi = true;
+            nota.append("- ");
+            nota.append(ragSoc).append(" = ");
+            nota.append(nomest).append(" (cod.anagrafica ");
+            nota.append(codiceImpresaAvv).append(")\n");
+          }
+        }
+        
+        if(ditteAvOld.contains(codiceImpresaAvv)) {//andiamo in update
+          sqlManager.update("update DITGAVVAL set TIPOAV=? where ngara=? and dittao=? and dittaav=?",
+              new Object[] {tipoAvv, ngara, codiceImpresa,codiceImpresaAvv});
+          ditteAvOld.remove(codiceImpresaAvv);//ditta ausiliaria gestita, la rimuoviamo dalla lista
+        }else {
+        //se non c'è già, si procede all'inserimento in DITGAVVAL
+        Long newId = new Long(genChiaviManager.getNextId("DITGAVVAL"));
+        sqlManager.update("insert into DITGAVVAL (ID,NGARA,DITTAO,TIPOAV,DITTAAV) values (?,?,?,?,?) ",
+            new Object[] {newId, ngara, codiceImpresa, tipoAvv, codiceImpresaAvv});
+        }
+      } catch (SQLException e) {
+        throw new GestoreException(
+            "Errore nella verifica e inserimento della ditta in avvalimento con cfimp=" + codFisc, null, e);
+      }
+    }
+    //elimino eventuali occorrenze non presenti nella busta di presentazione dell'offerta che erano presenti nell'acquisizione delle domande di partecipazione. N.B, se RTI non viene eliminata l'occorrenza vecchia
+    if(ditteAvOld.size()>0) {
+      List<Object> params = new ArrayList<Object>();
+      params.add(ngara);
+      params.add(codiceImpresa);
+      String delete = "delete from DITGAVVAL where ngara=? and dittao=? and dittaav in (";
+      for(int i=0; i<ditteAvOld.size();i++) {
+        params.add(ditteAvOld.get(i));
+        if(i>0)  
+          delete+=",?";
+        else
+          delete+="?";
+      }
+      delete+=")";
+      try {
+        sqlManager.update(delete, params.toArray());
+      }catch(SQLException e) {
+        throw new GestoreException(
+            "Errore nell'eliminazione delle vecchie ditte in avvalimento per la ditta=" + codiceImpresa, null, e);
+      }
+    }
+   
+    if(inserimentoNoteAvvisi) {
+      try{
+        //prendiamo l'ultima occorrenza generata che non sia solo "per avvalimento" per aggiungere in coda
+        Long notecod= (Long) sqlManager.getObject("select max(notecod) from g_noteavvisi where "
+            + "NOTEPRG='PG' and NOTEENT='IMPR' and TITOLONOTA='Notifica incongruenza dati in acquisizione da portale' "
+            + "and testonota not like 'Per alcune delle ditte in avvalimento%' and NOTEKEY1=?", new Object[] {codiceImpresa});
+        if(notecod!= null && notecod>0) {
+        String testonotaEsistente = (String) sqlManager.getObject("select TESTONOTA from g_noteavvisi where notecod=?", new Object[] {notecod});
+          //appendo alla nota precedente;
+          sqlManager.update("update g_noteavvisi set testonota=? where notecod=?", new Object[] {testonotaEsistente+"\n"+nota.toString(),notecod});
+        }else {
+          //altrimenti creo una nuova nota
+          int idProfilo =-1;
+          if(request!=null) {
+            ProfiloUtente profilo = (ProfiloUtente) request.getSession().getAttribute(
+              CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+            idProfilo = profilo.getId();
+          }
+          pgManager.inserisciNotaAvviso(idProfilo, codiceImpresa, nota.toString());
+        }
+      }catch (SQLException e) {
+        logger.error(e);
+        throw new GestoreException(
+            "Errore nella gestione dell'occorrenza in G_NOTEAVVISI", null, e);
+      }
+    }
+  }
+
+  public void gestioneRettificheIntegrazioni(HashMap<String,Object> hMap) throws GestoreException, SQLException {
+
+    Response risultatoScp;
+    String tipologiaScp = "";
+
+    
+    ResourceBundle resBundleGenerale = ResourceBundle.getBundle(CostantiGenerali.RESOURCE_BUNDLE_APPL_GENERALE);
+    String errMsgEvento = resBundleGenerale.getString("errors.logEventi.inaspettataException");
+    String messageKey = null;
+    String updateTorn="";
+    Object parametri[]=null;
+    String iterga=(String)hMap.get("iterga");
+    String bandoPubblicato=(String)hMap.get("bandoPubblicato");
+    String invitoPubblicato=(String)hMap.get("invitoPubblicato");
+    int termineVisualizzatoIntero=(int)hMap.get("termineVisualizzatoIntero");
+    String codgar=(String)hMap.get("codgar");
+    String tipoGara=(String)hMap.get("tipoGara");
+    Timestamp data=(Timestamp)hMap.get("data");
+    Timestamp data_orig=(Timestamp)hMap.get("data_orig");
+    String ora=(String)hMap.get("ora");
+    String ora_orig=(String)hMap.get("ora_orig");
+    Timestamp data1=(Timestamp)hMap.get("data1");
+    Timestamp data2=(Timestamp)hMap.get("data2");
+    String genere=(String)hMap.get("genere");
+    try {
+      boolean gestionePAT=false;
+      String cenint = (String) sqlManager.getObject("select cenint from torn where codgar=?", new Object[] {codgar});
+      if (GestionePATManager.isConfiguratoPerPAT(cenint)){
+        Boolean isNegoziata = GestionePATManager.isNegoziata(iterga);
+        if("TRUE".equals(bandoPubblicato))
+          gestionePAT=true;
+        else if("TRUE".equals(invitoPubblicato) && isNegoziata)
+          gestionePAT=true;
+      }
+  
+      boolean gestioneRegioneMarche=false;
+      if (ConfigManager.getValore(CostantiAppalti.PROP_WSBANDI_TIPO)!=null
+          && "1".equals(ConfigManager.getValore(CostantiAppalti.PROP_WSBANDI_TIPO))){
+        if("TRUE".equals(bandoPubblicato))
+          gestioneRegioneMarche=true;
+      }
+  
+      switch (termineVisualizzatoIntero) {
+      case 1:
+        if("2".equals(iterga) || "4".equals(iterga) || "7".equals(iterga)){
+          if(gestioneRegioneMarche){
+            ResultClass risposta=gestioneAggiornamentoBando(codgar,tipoGara,data,data_orig,ora,ora_orig);
+            if(risposta!=null && !risposta.isResult()){
+              String msg=risposta.getError();
+              messageKey = "errors.gestoreException.*.ws.bandiRegioneMarche.updateBando.esitoNOK";
+              errMsgEvento = resBundleGenerale.getString(messageKey);
+              errMsgEvento= errMsgEvento.replace("{0}", msg);
+              throw new GestoreException("L'aggiornamento del bando da parte del servizio remoto non e' andato a buon fine", "ws.bandiRegioneMarche.updateBando.esitoNOK", new Object[]{msg}, new Exception());
+            }
+          }
+          if(gestionePAT){
+            gestionePATManager.updateTerminiBando(codgar,data,data_orig,ora,ora_orig);
+          }
+        }
+        risultatoScp = gestioneAggiornamentoScp(codgar,"2,3",genere,termineVisualizzatoIntero,hMap);
+        if(risultatoScp != null){
+          int esito = risultatoScp.getStatus();
+          switch (esito) {
+          case 200:
+            break;
+          case 400:
+          default:
+            PubblicazioneAttoResult risultatoPubblicazione = risultatoScp.readEntity(PubblicazioneAttoResult.class);
+            errMsgEvento = "Errore nell'invio dell'aggiornamento ad SCP:";
+            ArrayList<ValidateEntry> validate = (ArrayList) risultatoPubblicazione.getValidate();
+            for(int n = 0;n<validate.size();n++){
+              if("E".equals(validate.get(n).getTipo())){
+                errMsgEvento += validate.get(n).getNome() + ": " + validate.get(n).getMessaggio() + "; ";
+              }
+            }
+            throw new GestoreException("L'aggiornamento del atto SCP da parte del servizio remoto non e' andato a buon fine", "invioAttiScp.errorResponse", new Object[]{errMsgEvento}, new Exception());
+          }
+        }
+        updateTorn = "update torn set DTEPAR=?, OTEPAR=?, DTERMRICHCDP=?, DTERMRISPCDP=? where codgar=?";
+        parametri=new Object[]{data,ora,data1,data2,codgar};
+        break;
+      case 2:
+        if(!("2".equals(iterga) || "4".equals(iterga))){
+          if(gestioneRegioneMarche){
+            ResultClass risposta=gestioneAggiornamentoBando(codgar,tipoGara,data,data_orig,ora,ora_orig);
+            if(risposta!=null && !risposta.isResult()){
+              String msg=risposta.getError();
+              messageKey = "errors.gestoreException.*.ws.bandiRegioneMarche.updateBando.esitoNOK";
+              errMsgEvento = resBundleGenerale.getString(messageKey);
+              errMsgEvento= errMsgEvento.replace("{0}", msg);
+              throw new GestoreException("L'aggiornamento del bando da parte del servizio remoto non e' andato a buon fine", "ws.bandiRegioneMarche.updateBando.esitoNOK", new Object[]{msg}, new Exception());
+            }
+          }
+          if(gestionePAT){
+            gestionePATManager.updateTerminiBando(codgar,data,data_orig,ora,ora_orig);
+          }
+        }
+        if(!"1".equals(iterga)){
+          tipologiaScp = "6";
+        }else{
+          tipologiaScp = "2,3";
+        }
+        risultatoScp = gestioneAggiornamentoScp(codgar,tipologiaScp,genere,termineVisualizzatoIntero,hMap);
+        if(risultatoScp != null){
+          int esito = risultatoScp.getStatus();
+          switch (esito) {
+          case 200:
+            break;
+          case 400:
+          default:
+            PubblicazioneAttoResult risultatoPubblicazione = risultatoScp.readEntity(PubblicazioneAttoResult.class);
+            errMsgEvento = "Errore nell'invio dell'aggiornamento ad SCP:";
+            ArrayList<ValidateEntry> validate = (ArrayList) risultatoPubblicazione.getValidate();
+            for(int n = 0;n<validate.size();n++){
+              if("E".equals(validate.get(n).getTipo())){
+                errMsgEvento += validate.get(n).getNome() + ": " + validate.get(n).getMessaggio() + "; ";
+              }
+            }
+            throw new GestoreException("L'aggiornamento del atto SCP da parte del servizio remoto non e' andato a buon fine", "invioAttiScp.errorResponse", new Object[]{errMsgEvento}, new Exception());
+          }
+        }
+        updateTorn = "update torn set DTEOFF=?, OTEOFF=?, DTERMRICHCPO=?, DTERMRISPCPO=? where codgar=?";
+        parametri=new Object[]{data,ora,data1,data2,codgar};
+        break;
+      case 3:
+        updateTorn = "update torn set DESOFF=?, OESOFF=? where codgar=?";
+        parametri=new Object[]{data,ora,codgar};
+      }
+    }catch (Exception e) {
+      if(errMsgEvento.equals(resBundleGenerale.getString("errors.logEventi.inaspettataException")))
+        errMsgEvento=e.getMessage();
+      logger.error(e);
+      hMap.put("exception",e);
+    }finally {
+      hMap.put("updateTorn",updateTorn);
+      hMap.put("parametri",parametri);
+      hMap.put("messageKey", messageKey);
+      hMap.put("errMsgEvento", errMsgEvento);
+    }
+  }
+
+  private ResultClass gestioneAggiornamentoBando(String codgar, String tipoGara, Timestamp data, Timestamp dataOrig, String ora, String oraOrig) throws GestoreException{
+    ResultClass risposta = null;
+    if(!data.equals(dataOrig) || !ora.equals(oraOrig)){
+
+      String chiaveGara=codgar;
+      if(!"1".equals(tipoGara) && !"3".equals(tipoGara)) //in questi casi la chiave ha una forma del tipo: $...
+        chiaveGara=chiaveGara.substring(1);
+      ResultClass result = gestioneRegioneMarcheManager.getBando(chiaveGara);
+      if(result.isResult() && result.getBando().getBandoID()!=null){
+        TimeZone tzUTC = TimeZone.getTimeZone("UTC");
+        Calendar cal = Calendar.getInstance(tzUTC);
+        Date dataScadenza = new Date(data.getTime());
+        try {
+          dataScadenza= gestioneRegioneMarcheManager.setTimeZone(dataScadenza, tzUTC);
+        } catch (ParseException e) {
+          throw new GestoreException("Si e' verificato un errore nell'impostazione del fuso orario UTC" , null,  e);
+        }
+        String oraScadenza = ora.substring(0, 2);
+        String minutiScadenza = ora.substring(3);
+        cal.setTime(dataScadenza);
+        cal.add(Calendar.HOUR, new Integer(oraScadenza).intValue());
+        cal.add(Calendar.MINUTE, new Integer(minutiScadenza).intValue());
+        BandoClass bando = result.getBando();
+        bando.setDataScadenza(cal);
+        risposta=gestioneRegioneMarcheManager.updateBando(bando);
+      }
+    }
+    return risposta;
+  }
+
+
+  private Response gestioneAggiornamentoScp(String codgar, String tipologie, String genere, int termineVisualizzatoIntero, HashMap<String,Object> hMap) throws GestoreException, SQLException{
+
+    String select = "select tipologia from GARATTISCP where CODGAR = '" + codgar + "' and TIPOLOGIA in (" + tipologie + ")";
+    Long tipologia = (Long) sqlManager.getObject(select, new Object[]{});
+    String entita = "pubblicazioni";
+    String url = ConfigManager.getValore(ScpManager.PROP_WS_PUBBLICAZIONI_URL);
+    Response risultato = null;
+    Response accesso;
+    if(tipologia != null && StringUtils.isNotEmpty(url)){
+      try {
+        accesso = scpManager.getLogin(entita);
+        LoginResult resultAccesso = accesso.readEntity(LoginResult.class);
+        if (resultAccesso.isEsito()) {
+          String token = resultAccesso.getToken();
+          PubblicaAttoEntry pubblicazione = new PubblicaAttoEntry();
+          scpManager.valorizzaAtto(pubblicazione, codgar, "", tipologia, genere);
+
+          String date = null;
+          if(termineVisualizzatoIntero == 1){
+            Timestamp time = (Timestamp) hMap.get("DTEPAR");
+            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+            date = formatter.format(new Date(time.getTime()));
+          }else{
+            Timestamp time = (Timestamp) hMap.get("DTEOFF");
+            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+            date = formatter.format(new Date(time.getTime()));
+          }
+          if(scpManager.verificaEsistenzaValore(date)){
+            pubblicazione.setDataScadenza(date);
+
+            Client client = ClientBuilder.newClient();
+            WebTarget webTarget = client.target(url).path("Atti/Pubblica").queryParam("token", token).queryParam("modalitaInvio", "2");
+            risultato = webTarget.request(MediaType.APPLICATION_JSON).post(Entity.json(pubblicazione), Response.class);
+          }
+        }
+        return risultato;
+
+      } catch (CriptazioneException e) {
+        throw new GestoreException("Si e' verificato un errore nella decifratura delle credenziali SCP" , null,  e);
+      } catch (ParseException e) {
+        throw new GestoreException("Si e' verificato un errore nella connessione al servizio SCP" , null,  e);
+      } catch (GestoreException e) {
+        throw new GestoreException("Verificare i parametri per la connessione al servizio di pubblicazione" , null,  e);
+      }
+
+    }
+    return null;
+
+  }
+
+  public boolean isAffidamentoDiretto(String codgar) throws GestoreException, SQLException{
+    String tipoProcedura = null;
+    String getTipgarg = "select tipgarg from gare where codgar1 = ? ";
+    Long tipgarg = (Long) this.sqlManager.getObject(getTipgarg, new Object[]{codgar});
+    if(tipgarg != null) {
+      String procedura= inviaVigilanzaManager.getFromTab2("A1z11", tipgarg, false);
+      if(procedura != null) {
+          return Arrays.asList("15", "16", "17", "18").contains(procedura);
+      }
+    }
+    return false;
+  }
 }

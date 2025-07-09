@@ -64,7 +64,9 @@
 
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 
-<c:set var="where" value="DITG.NGARA5 = '${ngara }' AND DITG.CODGAR5 = '${codgar }' AND DITG.ABILITAZ = 1 AND DITG.DABILITAZ is not null AND DITG.NUMORDPL is not null" />
+<c:set var="where" value="DITG.NGARA5 = ? AND DITG.CODGAR5 = ? AND DITG.ABILITAZ = 1 AND DITG.DABILITAZ is not null AND DITG.NUMORDPL is not null" />
+<c:set var="parametri" value="T:${ngara};T:${codgar}"/>
+${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "DITG", where, parametri)}
 
 <gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.GestioneListaImportoAggiudicatoOperatoriFunction" parametro="${ngara }"/>
 
@@ -116,7 +118,7 @@
 				</td>
 			</tr>
 			<tr>
-				<td><gene:formLista entita="DITG" pagesize="${risultatiPerPagina }" tableclass="datilista" gestisciProtezioni="true" sortColumn="1" where="${where}" gestore="">
+				<td><gene:formLista entita="DITG" pagesize="${risultatiPerPagina }" tableclass="datilista" gestisciProtezioni="true" sortColumn="1" gestore="">
 					
 								
 					<gene:campoLista campo="NPROGG" title="N." width="32"/>
@@ -156,7 +158,7 @@
 		}
 		function archivioImpresa(codiceImpresa){
 			var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-			document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href;
+			document.location.href = contextPath + "/ApriPagina.do?" + href;
 		}
 </gene:javaScript>
 </gene:template>

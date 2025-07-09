@@ -18,6 +18,7 @@
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<c:set var="firmaProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 <c:set var="idUtente" value="${sessionScope.profiloUtente.id}" />
 <c:set var="fnucase" value='${gene:callFunction("it.eldasoft.gene.tags.utils.functions.GetUpperCaseDBFunction", "")}' />
@@ -33,6 +34,7 @@
 <c:set var="filtroLivelloUtenteProtocollo" value='${gene:callFunction2("it.eldasoft.gene.tags.utils.functions.FiltroLivelloUtenteFunction", pageContext, "V_GARE_NSCAD")}' scope="request"/>
 <c:set var="filtroTipoGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetFiltroTipoGaraFunction", pageContext)}' scope="request"/>
 <c:set var="uffintAbilitata" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.associazioneUffintAbilitata")}'/>
+<c:set var="multienteAbilitata" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "loginMultiEnte")}'/>
 <c:set var="visualizzazioneGareALotti" value='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.GARE.GestioneGareALotti") }' scope="request"/>
 <c:set var="visualizzazioneGareLottiOffUnica" value='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.GARE.GestioneGareLottiOffUnica") }' scope="request"/>
 <c:set var="visualizzazioneGareALottoUnico" value='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.GARE.GestioneGareALottoUnico") }' scope="request"/>
@@ -87,6 +89,19 @@
 
 <c:set var="abilitazioneCollaboratori" value="${!empty sessionScope.profiloUtente.codiceFiscale}" />
 
+<c:set var="wsUrlRichiestaDurc" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "richiesta.durc.ws.client.url")}'/>
+<c:set var="wsUrlVerificaRegolarita" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "verifica.regolarita.ws.client.url")}'/>
+
+<c:choose>
+	<c:when test="${!empty wsUrlRichiestaDurc && !empty wsUrlVerificaRegolarita}">
+		<c:set var="integrazioneWsDurc" value='1'/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="integrazioneWsDurc" value='0'/>
+	</c:otherwise>
+</c:choose>
+
+
 <gene:historyClear />
 
 <html>
@@ -112,6 +127,16 @@
 				bloccaRichiesteServer();
 				formfind.submit();
 			}
+			
+			function formFindDaFirmareButton(){
+				formfind.metodo.value="trovaStipulaDaFirmare";
+				formFindButton();
+			}
+			
+			function formConsultaAlboFornitoriRaiButton(){
+				formfind.metodo.value="consultaAlboFornitoriRai";
+				formFindButton();
+			}
 	  		
 			function trovaGaraAvanzata(){
 				apriPagina.href.value="gare/v_gare_torn/v_gare_torn-trova.jsp";
@@ -120,7 +145,7 @@
 			}
 			
 			function nuovaGara(){
-				document.location.href = "${contextPath}/pg/InitNuovaGara.do?" + csrfToken;
+				document.location.href = "${contextPath}/pg/InitNuovaGara.do";
 			}
 			
 			function trovaGaraAvanzataRicerca(){
@@ -136,11 +161,16 @@
 			}
 			
 			function nuovaGaraElencoDitte(){
-				listaNuovo.action += "&tipoGara=garaLottoUnico&garaPerElenco=1";
+				listaNuovo.action += "?tipoGara=garaLottoUnico&garaPerElenco=1";
 				listaNuovo.entita.value= "GARE";
 				listaNuovo.jspPath.value="/WEB-INF/pages/gare/gare-scheda.jsp";
 				bloccaRichiesteServer();
 				listaNuovo.submit();
+			}
+			
+			function apriListaDURC(){
+				formfind.metodo.value="trovaDocumentiDurc";
+				formFindButton();
 			}
 			
 			function trovaGaraAvanzataCataloghi(){
@@ -150,7 +180,7 @@
 			}
 			
 			function nuovaGaraCatalogo(){
-				listaNuovo.action += "&tipoGara=garaLottoUnico&garaPerCatalogo=1";
+				listaNuovo.action += "?tipoGara=garaLottoUnico&garaPerCatalogo=1";
 				listaNuovo.entita.value= "GARE";
 				listaNuovo.jspPath.value="/WEB-INF/pages/gare/gare-scheda.jsp";
 				bloccaRichiesteServer();
@@ -190,7 +220,7 @@
 			}
 		
 			function nuovoOrdineNso(){
-				document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/nso_ordini/nso_associaCig.jsp&tipoGara=garaLottoUnico&modo=NUOVO";
+				document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/nso_ordini/nso_associaCig.jsp&tipoGara=garaLottoUnico&modo=NUOVO";
 			}
 			
 			function trovaStipulaAvanzata(){
@@ -200,7 +230,7 @@
 			}
 			
 			function nuovaStipula(){
-				document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1stipula/g1stipula_nuovaStipula.jsp";
+				document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1stipula/g1stipula_nuovaStipula.jsp";
 			}
 	
 			function listaComunicazioni(tipo){
@@ -208,6 +238,13 @@
 				if(tipo==4)
 					pagina = "w_invcom-lista-ComunicazioniFS12-Da-Portale.jsp";
 				apriPagina.href.value="geneweb/w_invcom/" +pagina + "?tipo="+tipo + "&param=${sessionScope.uffint}";
+				bloccaRichiesteServer();
+				apriPagina.submit();
+			}
+
+			function listaArchiviazioniDaGestire(){
+				var pagina = "archivia-documenti-lista-gare.jsp";
+				apriPagina.href.value="gare/commons/" +pagina;
 				bloccaRichiesteServer();
 				apriPagina.submit();
 			}
@@ -250,7 +287,7 @@
 			function apriAdempimenti(){
 				var abilitazione="${abilitazioneGare}";
 				if (abilitazione == "A" || (abilitazione == "U" && ${not empty sessionScope.profiloUtente.codiceFiscale}))
-					document.location.href = "${contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/anticor/anticor-trova.jsp";
+					document.location.href = "${contextPath}/ApriPagina.do?href=gare/anticor/anticor-trova.jsp";
 				else
 					alert("Funzione non abilitata per l'utente corrente");
 			}
@@ -263,14 +300,14 @@
 			
 			function visualizzaCatalogo(catalogo){
 				var chiave = "V_GARE_CATALDITTE.CODGAR=T:$" + catalogo;
-				var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/gare/gare-scheda.jsp";
-				href += "&key=" + chiave + "&" + csrfToken;
+				var href = contextPath + "/ApriPagina.do?href=gare/gare/gare-scheda.jsp";
+				href += "&key=" + chiave;
 				document.location.href = href;
 			}
 			
 			function visualizzaElenco(elenco){
 				var chiave = "V_GARE_ELEDITTE.CODGAR=T:$" + elenco;
-				var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/gare/gare-scheda.jsp";
+				var href = contextPath + "/ApriPagina.do?href=gare/gare/gare-scheda.jsp";
 				href += "&key=" + chiave;
 				document.location.href = href;
 			}
@@ -278,11 +315,11 @@
 			function alboComponentiCommisione(modo){
 				if(modo == 1){
 					//creazione albo
-					location.href = '${pageContext.request.contextPath}/ApriPagina.do?'+csrfToken+'&href=gare/commalbo/commalbo-scheda.jsp&modo=NUOVO';
+					location.href = '${pageContext.request.contextPath}/ApriPagina.do?href=gare/commalbo/commalbo-scheda.jsp&modo=NUOVO';
 				}else{
 					//accedi ad allbo
 					var chiave = "COMMALBO.ID=N:1";
-					location.href = '${pageContext.request.contextPath}/ApriPagina.do?'+csrfToken+'&href=gare/commalbo/commalbo-scheda.jsp&key='+chiave;
+					location.href = '${pageContext.request.contextPath}/ApriPagina.do?href=gare/commalbo/commalbo-scheda.jsp&key='+chiave;
 				}
 				
 			}
@@ -306,13 +343,13 @@
 			}
 			
 			function gestisciCredenzialiSIMOG(modo){
-				var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=w3/commons/gestione-credenziali-simog.jsp";
+				var href = contextPath + "/ApriPagina.do?href=w3/commons/gestione-credenziali-simog.jsp";
 				href += "&modo=VISUALIZZA" ;	
 				document.location.href = href;
 			}
 			
 			function apriListaRdaRdi(){
-				var href = contextPath + "/pg/CollegaScollegaRda.do?"+csrfToken;
+				var href = contextPath + "/pg/CollegaScollegaRda.do";
 				document.location.href = href;
 			}
 			
@@ -358,7 +395,13 @@
 					</td>
 					<td class="arealavoro">
 						<jsp:include page="/WEB-INF/pages/commons/areaPreTitolo.jsp" />
-		
+
+						<c:if test="${gene:checkProtFunz(pageContext,'ALT','integrazioneSistemaRedazionale')}">
+							<c:set var="urlPaginaSistemaRedazionale" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.GetUrlConnessioneSistemaRedazionaleFunction", pageContext,"")}'/>
+							<c:if test="${not empty urlPaginaSistemaRedazionale}">
+						<div style="display: flex; justify-content: space-between; align-items: flex-start;">
+							</c:if>
+						</c:if>
 						<div class="contenitore-arealavoro">
 							<c:set var="metodo"	value="trovaGara"/>
 
@@ -424,6 +467,8 @@
 											<c:set var="conteggioComunicazioniDaLeggere" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetComunicazioniDaLeggereFunction", pageContext, "count", "1")}' />
 										</c:if>
 										
+										<c:set var="entitaArchiviazioniDaEseguire" value="1" />
+																			
 										<tr>
 											<td valign="middle">
 												<br/>
@@ -511,6 +556,8 @@
 											<c:set var="conteggioComunicazioniDaLeggere" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetComunicazioniDaLeggereFunction", pageContext, "count", "2")}' />
 										</c:if>
 										
+										<c:set var="entitaArchiviazioniDaEseguire" value="2" />
+										
 										<tr>
 											<td valign="middle">
 												<br/>
@@ -549,6 +596,16 @@
 												</td>
 											</tr>
 										</c:if>
+										<c:if test='${integrazioneWsDurc eq "1"}'>
+											<tr>
+												<td><br>
+												<br><b>
+												<a class="link-generico"
+													href="javascript:apriListaDURC()"
+													title="Lista documenti Durc">Lista documenti Durc</a></b>
+												</td>
+											</tr>
+										</c:if>
 									</c:if>
 									<!-- FINE - Trova gara per elenco operatori economici (ex Albo fornitori) -->
 						
@@ -557,6 +614,9 @@
 										<c:if test="${gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.GARE.RiceviComunicazioni') }">
 											<c:set var="conteggioComunicazioniDaLeggere" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetComunicazioniDaLeggereFunction", pageContext, "count", "3")}' />
 										</c:if>
+										
+										<c:set var="entitaArchiviazioniDaEseguire" value="3" />
+										
 										<tr>
 											<td valign="middle">
 												<br/>
@@ -650,6 +710,8 @@
 										<c:if test="${gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.GARE.RiceviComunicazioni') }">
 											<c:set var="conteggioComunicazioniDaLeggere" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetComunicazioniDaLeggereFunction", pageContext, "count", "5")}' />
 										</c:if>
+										
+										<c:set var="entitaArchiviazioniDaEseguire" value="5" />
 										
 										<tr>
 											<td valign="middle">
@@ -771,8 +833,37 @@
 											<c:set var="conteggioComunicazioniDaLeggere" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetComunicazioniDaLeggereFunction", pageContext, "count", "10")}' />
 											<%-- Conteggio Comunicazioni Non lette per le Stipule FINE--%>
 										</c:if>
+										
+										<c:set var="entitaArchiviazioniDaEseguire" value="10" />
+										
+										<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FirmaStipulaContratti") and autorizzatoModifiche ne "2" and firmaProvider eq 3}' >
+											<tr>
+												<td>
+													<br/>
+													<br/>
+													<b>
+														<a class="link-generico" href="javascript:formFindDaFirmareButton();" title="Richieste di approvazione/firma">Richieste di approvazione/firma</a>
+													</b>
+												</td>
+											</tr>
+										</c:if>
 									</c:if>
 									<!-- FINE - Gestione Contratti -->
+						
+									<!-- INIZIO - personalizzazione RAI/RAIWAY -->
+									<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.consultaOperatoriAlboErp") and autorizzatoModifiche ne "2"}' >
+										<tr>
+											<td>
+												<br/>
+												<br/>
+												<b>
+													<a class="link-generico" href="javascript:formConsultaAlboFornitoriRaiButton();" title="Consulta OO.EE da Albo Fornitori RAI">Consulta OO.EE da Albo Fornitori RAI</a>
+												</b>
+											</td>
+										</tr>
+									</c:if>
+									<!-- FINE - personalizzazione RAI/RAIWAY -->
+						
 						
 									<!-- INIZIO - ricerca di tutte le gare -->
 									<c:if test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.V_GARE_PROFILO-lista.ApriGare")}' >
@@ -780,8 +871,11 @@
 											<c:set var="profiloRicerca" value="true" scope="request"/> 
 											<c:set var="filtroProfilo" value=" AND V_GARE_PROFILO.CODPROFILO IN (SELECT COD_PROFILO FROM W_ACCPRO WHERE ID_ACCOUNT = ${idUtente})" scope="request"/>
 											<c:set var="filtroLivelloUtente" value="${filtroLivelloUtenteProfiloRicerca}" scope="request"/> 
-											<c:if test="${uffintAbilitata eq 1 and !amministratore}">
+											<c:if test="${uffintAbilitata eq 1 and !amministratore and multienteAbilitata ne 1}">
 												<c:set var="filtroUffint" value=" AND CENINT IN (select codein from usr_ein where syscon = ${idUtente} )" scope="request"/>
+											</c:if>
+											<c:if test="${multienteAbilitata eq 1}">
+												<c:set var="filtroUffint" value=" AND CENINT = '${sessionScope.uffint}'" scope="request"/>
 											</c:if>
 											<c:set var="conteggioComunicazioniDaLeggere" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetComunicazioniDaLeggereFunction", pageContext, "count", "8")}' />
 										</c:if>
@@ -1210,6 +1304,78 @@
 										</tr>
 									</c:if>
 						
+									<c:if test="${not empty entitaArchiviazioniDaEseguire && gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.ArchiviazioniDaEseguire')}" >
+										<c:set var="conteggioArchiviazioniDaEseguire" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetArchiviazioniDaEseguireFunction", pageContext, "count", entitaArchiviazioniDaEseguire)}' />	
+										<c:if test="${not empty conteggioArchiviazioniDaEseguire}">
+											<tr>
+												<td>
+													<br/>
+													<br/>
+													<c:choose>
+														<c:when test="${entitaArchiviazioniDaEseguire eq 1}"> 
+															<c:set var="titleTipoProcedura" value="delle procedure concluse" />
+															<c:set var="entitaArchiviazione1" value="procedura conclusa" />
+															<c:set var="entitaArchiviazione2" value="procedure concluse" />
+														</c:when>
+														<c:when test="${entitaArchiviazioniDaEseguire eq 2}">
+															<c:set var="titleTipoProcedura" value="degli elenchi pubblicati" />
+															<c:set var="entitaArchiviazione1" value="elenco pubblicato" />
+															<c:set var="entitaArchiviazione2" value="elenchi pubblicati" />
+														</c:when>
+														<c:when test="${entitaArchiviazioniDaEseguire eq 3}">
+															<c:set var="titleTipoProcedura" value="dei cataloghi pubblicati" />
+															<c:set var="entitaArchiviazione1" value="catalogo pubblicato" />
+															<c:set var="entitaArchiviazione2" value="cataloghi pubblicati" />
+														</c:when>
+														<c:when test="${entitaArchiviazioniDaEseguire eq 5}">
+															<c:set var="titleTipoProcedura" value="degli avvisi pubblicati" />
+															<c:set var="entitaArchiviazione1" value="avviso pubblicato" />
+															<c:set var="entitaArchiviazione2" value="avvisi pubblicati" />
+														</c:when>
+														<c:when test="${entitaArchiviazioniDaEseguire eq 10}">
+															<c:set var="titleTipoProcedura" value="delle stipule attive o annullate" />
+															<c:set var="entitaArchiviazione1" value="stipula attiva o annullata" />
+															<c:set var="entitaArchiviazione2" value="stipule attive o annullate" />
+														</c:when>
+													</c:choose>
+													<c:if test="${conteggioArchiviazioniDaEseguire > 0}">
+														<b><a class="link-generico" href="javascript:listaArchiviazioniDaGestire();" title="Vai alla lista ${titleTipoProcedura} con documenti da archiviare">
+													</c:if>
+														<c:choose>
+															<c:when test="${conteggioArchiviazioniDaEseguire eq 1}">
+																<c:set var="entitaArchiviazione" value="${entitaArchiviazione1}" />
+															</c:when>
+															<c:otherwise>
+																<c:set var="entitaArchiviazione" value="${entitaArchiviazione2}" />
+															</c:otherwise>
+														</c:choose>
+														<c:choose>
+															<c:when test="${conteggioArchiviazioniDaEseguire > 1}">
+																Ci sono ${conteggioArchiviazioniDaEseguire} ${entitaArchiviazione} con documenti da archiviare
+															</c:when>
+															<c:when test="${conteggioArchiviazioniDaEseguire eq 1}">
+																C'è ${conteggioArchiviazioniDaEseguire} ${entitaArchiviazione} con documenti da archiviare
+															</c:when>
+														</c:choose>
+													<c:if test="${conteggioArchiviazioniDaEseguire > 0}">
+														</a></b>
+													</c:if>
+												</td>
+											</tr>
+										</c:if>
+									</c:if>
+
+									<c:if test="${gene:checkProtFunz(pageContext,'ALT','ReportSchedeANAC') and gene:callFunctionN('it.eldasoft.sil.pg.tags.funzioni.GetSeAttivoModuloANACFormFunction', pageContext, '') eq 'true'}" >
+										<tr>
+											<td>
+												<br/>
+												<br/>
+												<b><a class="link-generico" href="javascript:formReportSchedeANAC.submit();"
+													  title="Report schede ANAC">Report schede ANAC</a></b>
+											</td>
+										</tr>
+									</c:if>
+
 									<!-- Personalizzazione AMA -->
 									<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GestioneAlboComponentiCommissione")}'>
 										<c:set var="numAlbiComponentiCommissione" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetNumAlbiComponentiCommissioneFunction", pageContext)}' />
@@ -1313,6 +1479,8 @@
 										</tr>
 										</c:if>
 									</c:if>
+									<!-- link assistenza -->
+									<jsp:include page="/WEB-INF/pages/gene/system/assistenza/link-assistenza.jsp"/>
 						
 									<c:if test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GENE.Riferimenti-Informazioni")}' >
 										<tr>
@@ -1363,7 +1531,23 @@
 									<input type="hidden" name="href" value="w3/w3gara/w3gara-lista.jsp" />
 								</form>		
 							</c:if>
+
+							<c:if test="${gene:checkProtFunz(pageContext,'ALT','ReportSchedeANAC') and gene:callFunctionN('it.eldasoft.sil.pg.tags.funzioni.GetSeAttivoModuloANACFormFunction', pageContext, '') eq 'true'}">
+								<form name="formReportSchedeANAC" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+									<input type="hidden" name="href" value="gare/commons/reportSchedeANAC.jsp" />
+								</form>
+							</c:if>
+
 						</div>
+
+						<c:if test="${gene:checkProtFunz(pageContext,'ALT','integrazioneSistemaRedazionale')}">
+						<c:if test="${not empty urlPaginaSistemaRedazionale}">
+							<jsp:include page="/WEB-INF/pages/gare/commons/sistemaRedazionale.jsp" >
+								<jsp:param name="urlPaginaSistemaRedazionale" value="${urlPaginaSistemaRedazionale}"/>
+							</jsp:include>
+						</div>
+						</c:if>
+						</c:if>
 		
 						<!-- PARTE NECESSARIA PER VISUALIZZARE I POPUP MENU DI OPZIONI PER CAMPO -->
 						<iframe class="gene" id="iframepopmenu" ></iframe>
@@ -1371,6 +1555,7 @@
 							onMouseover="highlightMenuPopup(event,'on');"
 							onMouseout="highlightMenuPopup(event,'off');"></div>
 					</td>
+
 				</tr>
 		
 				<tr>
@@ -1399,5 +1584,6 @@
 		<div id="contenitorefeedrss" style="position:absolute; left:660px; top:110px;" >
 			<jsp:include page="/WEB-INF/pages/commons/feedRss.jsp" />
 		</div>
+
 	</body>
 </html>

@@ -166,7 +166,7 @@ public class GestorePopupAnnullaCalcoloPunteggi extends
                   "select FASGAR from ditg where CODGAR5=? and NGARA5=? and DITTAO=?",
                   new Object[]{codgar, ngara, ditta});
               if(valoreDITG_FASGAR!= null && fasgar.longValue() == valoreDITG_FASGAR.longValue()){
-                this.sqlManager.update("update ditg set ammgar=1, fasgar=null where ngara5=? and ditta=?", new Object[]{ngara,ditta});
+                this.sqlManager.update("update ditg set ammgar='1', fasgar=null where ngara5=? and ditta=?", new Object[]{ngara,ditta});
               }
             }catch (GestoreException e) {
               livEvento = 3;

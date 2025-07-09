@@ -23,6 +23,8 @@
 	</c:otherwise>
 </c:choose>
 
+<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from GOEV where ngara=?", ngara)}'/>
+
 <c:choose>
 	<c:when test='${not empty param.necvan}'>
 		<c:set var="necvan" value='${param.necvan}' />
@@ -53,6 +55,18 @@
 <c:set var="MaxNumValori" value="5" />
 
 <c:set var="codiceGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetCodgar1Function", pageContext, ngara)}' />
+
+<c:set var="faseGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetFASGARFunction", pageContext, ngara)}'/>
+<c:choose>
+	<c:when test='${bloccoDati}'>
+		<c:set var="modificaLabel" value='Modifica dopo pubblicazione' />
+		<c:set var="bloccoModificaPubblicazione" value='true' />
+	</c:when>
+	<c:otherwise>
+		<c:set var="modificaLabel" value='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' />
+		<c:set var="bloccoModificaPubblicazione" value='false' />
+	</c:otherwise>
+</c:choose>
 
 <gene:template file="scheda-template.jsp" gestisciProtezioni="true" schema="GARE" idMaschera="G1CRIDEF-scheda">
 	<gene:redefineInsert name="head">
@@ -109,6 +123,9 @@
 					</span>
 				</gene:campoScheda>
 				<gene:campoScheda campo="ESPONENTE" modificabile="true" obbligatorio="true"/>
+				<gene:campoScheda campo="NGARA" entita="GOEV" where="GOEV.NGARA='${ngara}' and GOEV.NECVAN=${necvan}" visibile="false"/>
+				<gene:campoScheda campo="NECVAN" entita="GOEV" where="GOEV.NGARA='${ngara}' and GOEV.NECVAN=${necvan}" visibile="false"/>
+				<gene:campoScheda campo="ISNORIPAR" entita="GOEV" where="GOEV.NGARA='${ngara}' and GOEV.NECVAN=${necvan}" modificabile="true"/>
 				<gene:campoScheda campo="DESCRI" />
 
 				<gene:fnJavaScriptScheda funzione='formatoOnChangeInit("#G1CRIDEF_FORMATO#")' elencocampi='G1CRIDEF_FORMATO' esegui="true" />
@@ -163,9 +180,20 @@
 					<jsp:param name="inputFiltro" value="CODGAR=T:${codiceGara}"/>
 					<jsp:param name="filtroCampoEntita" value="codgar=#CODGAR#"/>
 				</jsp:include>
-				<c:if test='${ bloccoDati}'>
-					<gene:redefineInsert name="schedaModifica"></gene:redefineInsert>
-				</c:if>
+				
+				<gene:redefineInsert name="schedaModifica">
+					<c:if test='${ modo eq "VISUALIZZA" and gene:checkProtFunz(pageContext,"MOD","SCHEDAMOD") and autorizzatoModifiche ne "2" and faseGara < "5"}' >
+						<tr>
+							<td class="vocemenulaterale" >
+									<a href="javascript:schedaModifica();" title="${modificaLabel}">
+								${modificaLabel}</a>
+							</td>
+						</tr>
+					</c:if>
+				</gene:redefineInsert>
+						
+					
+				
 				<td class="comandi-dettaglio" colSpan="2">
 					<c:choose>
 						<c:when test='${modo eq "MODIFICA"}'>
@@ -174,8 +202,8 @@
 						</c:when>
 						<c:otherwise>
 							<INPUT type="button"  class="bottone-azione" value='Torna a lista criteri di valutazione' title='Torna a lista criteri di valutazione' onclick="javascript:historyVaiIndietroDi(1);">&nbsp;&nbsp;&nbsp;
-							<c:if test='${(autorizzatoModifiche ne "2") and !(bloccoDati) and gene:checkProtFunz(pageContext,"MOD","SCHEDAMOD")}'>
-								<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' onclick="javascript:schedaModifica()">
+							<c:if test='${(autorizzatoModifiche ne "2") and gene:checkProtFunz(pageContext,"MOD","SCHEDAMOD") and faseGara < "5"}'>
+								<INPUT type="button"  class="bottone-azione" value='${modificaLabel}' title='${modificaLabel}' onclick="javascript:schedaModifica()">
 							</c:if>
 						</c:otherwise>
 					</c:choose>
@@ -187,6 +215,7 @@
 			<input type="hidden" name="necvan" value="${necvan }"/>
 			<input type="hidden" name="bloccoDati" value="${bloccoDati }"/>
 			<input type="hidden" name="sezionitec" value="${sezionitec }"/>
+			<input type="hidden" name="bloccoModificaPubblicazione" id="bloccoModificaPubblicazione" value="${bloccoModificaPubblicazione}" />
 		</gene:formScheda>
 
 	</gene:redefineInsert>
@@ -440,13 +469,17 @@
 							var esponenteString = esponenteNum.toString();
 							if(esponenteString.includes(".")){
 								var array = esponenteString.split(".");
-								if(array[1].length > 1){
-									alert("L'esponente puo' avere al piu' una cifra decimale");
+								if(array[1].length > 2){
+									alert("L'esponente puo' avere al piu' due cifre decimali");
 									return;
 								}
 							}
 						}
 					}
+				}
+				if(formula==16 && $('#GOEV_MAXPUN').val() > 30){
+					if(!confirm("Il punteggio massimo del criterio è "+$('#GOEV_MAXPUN').val()+" mentre la formula impostata richiede che tale punteggio non sia superiore a 30.\n\nContinuare?"))
+						return;
 				}
 				$("#G1CRIDEF_MODPUNTI").prop('disabled', false);
 				$("#G1CRIDEF_MODMANU").prop('disabled', false);
@@ -551,50 +584,18 @@
 				}
 				form = $("#G1CRIDEF_FORMULA");
 				if(formato == 3){
-					$("#G1CRIDEF_FORMULA").find("option:nth-child(3)").addClass("removed");
-					$("#G1CRIDEF_FORMULA").find("option:nth-child(4)").addClass("removed");
-					$("#G1CRIDEF_FORMULA").find("option:nth-child(5)").addClass("removed");
-					$("#G1CRIDEF_FORMULA").find("option:nth-child(6)").addClass("removed");
-					$("#G1CRIDEF_FORMULA").find("option:nth-child(7)").addClass("removed");
-					$("#G1CRIDEF_FORMULA").find("option:nth-child(8)").addClass("removed");
-					$("#G1CRIDEF_FORMULA").find("option:nth-child(9)").addClass("removed");
-					$("#G1CRIDEF_FORMULA").find("option:nth-child(10)").addClass("removed");
-					$("#G1CRIDEF_FORMULA").find("option:nth-child(11)").addClass("removed");
-					$("#G1CRIDEF_FORMULA").find("option:nth-child(12)").addClass("removed");
-					$("#G1CRIDEF_FORMULA").find("option:nth-child(13)").addClass("removed");
-					$("#G1CRIDEF_FORMULA").find("option:nth-child(14)").addClass("removed");
-					$("#G1CRIDEF_FORMULA").find("option:nth-child(15)").addClass("removed");
-					$("#G1CRIDEF_FORMULA").find("option:nth-child(16)").addClass("removed");
+					$("#G1CRIDEF_FORMULA option:not([value=''],[value='1'], [value='2'])").addClass("removed");
 				}
 				else{
 					if(formato == 51){
-						$("#G1CRIDEF_FORMULA").find("option:nth-child(2)").addClass("removed");
-						$("#G1CRIDEF_FORMULA").find("option:nth-child(10)").addClass("removed");
-						$("#G1CRIDEF_FORMULA").find("option:nth-child(11)").addClass("removed");
-						$("#G1CRIDEF_FORMULA").find("option:nth-child(12)").addClass("removed");
-						$("#G1CRIDEF_FORMULA").find("option:nth-child(13)").addClass("removed");
-						$("#G1CRIDEF_FORMULA").find("option:nth-child(14)").addClass("removed");
-						$("#G1CRIDEF_FORMULA").find("option:nth-child(15)").addClass("removed");
+						$("#G1CRIDEF_FORMULA option:not([value=''],[value='2'], [value='3'], [value='4'], [value='5'], [value='6'], [value='11'], [value='14'], [value='16'])").addClass("removed");
 					}
 					else{
 						if(formato == 50 || formato == 52){
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(2)").addClass("removed");
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(4)").addClass("removed");
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(5)").addClass("removed");
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(6)").addClass("removed");
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(7)").addClass("removed");
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(8)").addClass("removed");
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(9)").addClass("removed");
+							$("#G1CRIDEF_FORMULA option:not([value=''],[value='2'], [value='12'], [value='8'], [value='9'], [value='10'], [value='13'], [value='15'], [value='7'])").addClass("removed");
 						}
 						else{
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(2)").addClass("removed");
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(9)").addClass("removed");
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(10)").addClass("removed");
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(11)").addClass("removed");
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(12)").addClass("removed");
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(13)").addClass("removed");
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(14)").addClass("removed");
-							$("#G1CRIDEF_FORMULA").find("option:nth-child(15)").addClass("removed");
+							$("#G1CRIDEF_FORMULA option:not([value=''],[value='2'], [value='3'], [value='4'], [value='5'], [value='6'], [value='7'], [value='11'], [value='16'])").addClass("removed");
 						}
 					}
 				}
@@ -605,6 +606,11 @@
 			
 			$( document ).ready(function() {
 				showCriregSection();
+				<c:if test='${modo eq "MODIFICA"}'>
+					var bloccoModificaPubblicazione = $("#bloccoModificaPubblicazione").val();
+					var bloccoModificaPCP = "${bloccoModificaPCP}";
+					bloccaDopoPubblicazione(bloccoModificaPubblicazione,"","",bloccoModificaPCP,"${impoOpzRinnModificabili}","${bloccoModificaPubblicazione}");
+				</c:if>
 			});
 			
 			function showCriregSection(){
@@ -638,14 +644,45 @@
 			}
 			
 			function gestioneEsponente(formula){
-				if(formula==11 || formula==13 || formula==14 || formula==15){
+				if(formula==11 || formula==13 || formula==14 || formula==15 || formula==16){
 					showObj("rowG1CRIDEF_ESPONENTE", true);
+					<c:if test='${modo ne "VISUALIZZA"}'>
+					if(formula==16){
+						var dati = [
+							{ value: "", text: "" },
+							{ value: "0.1", text: "0.1" },
+							{ value: "0.2", text: "0.2" },
+							{ value: "0.3", text: "0.3" }
+						];
+
+						var select = $('<select id="selEsponenteDropdown">');
+						$.each(dati, function(index, item) {
+							select.append($('<option>', {
+								value: item.value,
+								text: item.text
+							}));
+						});
+						$("#G1CRIDEF_ESPONENTE").after(select);
+						$("#G1CRIDEF_ESPONENTE").hide();
+						$("#selEsponenteDropdown").change(function() {
+							$("#G1CRIDEF_ESPONENTE").val($(this).val());
+						});
+						var value = $("#G1CRIDEF_ESPONENTE").val();
+						$("#G1CRIDEF_ESPONENTE").val("");
+						$("#selEsponenteDropdown").val(value).trigger("change");
+
+					}else{
+						$("#G1CRIDEF_ESPONENTE").show();
+						$("#selEsponenteDropdown").remove();
+					}
+				</c:if>
 				}else{
 					showObj("rowG1CRIDEF_ESPONENTE", false);
 					$("#G1CRIDEF_ESPONENTE").val("");
+					$("#selEsponenteDropdown").remove();
 				}
 			}
-			
+
 			function validazioneDaModpunti(modpunti){
 				var formato = $("#G1CRIDEF_FORMATO").val();
 				return validazioneModpuntiFormato(modpunti,formato);

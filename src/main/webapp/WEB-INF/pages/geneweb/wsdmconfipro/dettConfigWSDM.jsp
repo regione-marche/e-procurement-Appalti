@@ -21,7 +21,6 @@
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 
 	<c:set var="idconfi" value="${param.idconfi}"/>
-	<c:set var="wsdmconfi_descri" value="${param.descri}"/>
 	<c:set var="key" value='WSDMCONFI.ID=N:${idconfi}' scope="request" />
 	<c:set var="keyParent" value='WSDMCONFI.ID=N:${idconfi}' scope="request" />
 	
@@ -344,7 +343,7 @@
 					$("#riservatezza").show();
 					$("#fascicoloDocCommessa").show();
 				}
-				if($("#tiposistemaremoto").val()=="JIRIDE" || $("#tiposistemaremoto").val()=="ARCHIFLOW" || $("#tiposistemaremoto").val()=="ARCHIFLOWFA"){
+				if($("#tiposistemaremoto").val()=="JIRIDE" || $("#tiposistemaremoto").val()=="ARCHIFLOW" || $("#tiposistemaremoto").val()=="ARCHIFLOWFA" || $("#tiposistemaremoto").val()=="HALLEY"){
 					$("#bloccoModIndirizzoMit").show();
 				}
 				if($("#tiposistemaremoto").val()=="JIRIDE"){
@@ -368,7 +367,7 @@
 					if($("#prop24").html()=="Si")
 						$("#destinatarioFirma").show();
 				}
-				if($("#tiposistemaremoto").val()=="INFOR"){
+				if($("#tiposistemaremoto").val()=="INFOR" || $("#tiposistemaremoto").val()=="HALLEY"){
 					$("#strutturaCompetente").show();
 				}
 			}
@@ -377,6 +376,11 @@
 			if($("#tiposistemaremoto").val()=="ENGINEERINGDOC" ){
 				$("#creaFascicoloPregresso").show();	
 			}
+		}
+
+		if($("#tiposistemaremoto").val()=="HALLEY"){
+			$("#pwdDocRiga").hide();
+			$("#pwdProtRiga").hide();
 		}
 		
 	});
@@ -768,7 +772,6 @@
 			<input id="urlServizioConfDocAttivo" type="hidden" value="" />
 			<input id="urlServizioConfDoc" type="hidden" value="" />
 			<input id="urlServizioConfProt" type="hidden" value="" />
-			<input id="codapp" type="hidden" value="${param.codapp }" />
 
 			<tr>
 				<td class="comandi-dettaglio" colspan="2" >

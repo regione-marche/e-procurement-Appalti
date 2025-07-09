@@ -201,8 +201,8 @@ function _testURL(url, tns) {
 				x.overrideMimeType("application/json;charset=UTF-8");
 			}
 		},
-		url: "pg/GetURL.do",
-		data: "url=" + url + "?wsdl&tns=" + tns, 
+		url: "pg/GetInternalWSUrl.do",
+		data: "url=" + url + "&tns=" + tns, 
 		success: function(data){
 			if (data == true) {
 				_URLvalido = true;
@@ -430,7 +430,7 @@ function _getWSERPDettaglioRda(numeroRda,callback) {
 			;
 		}
 		if (callback && typeof callback === 'function'){
-			callback(json.esito);
+			callback(json);
 		}
 	};
 
@@ -1052,7 +1052,11 @@ function _creaPopolaRdaRaiway(codicerda) {
 							
 							_trx.append($("<td/>",{"html": toMoney(la.importoLotto).view}));
 							_trx.append($("<td/>",{"html": toMoney(la.importoOpzioni).view}));
-							_trx.append($("<td/>",{"text": la.codCpv}));
+							if (la.cpvSecondary !=null){
+								_trx.append($("<td/>",{"text": la.cpvPrimary+" "+la.cpvSecondary.replaceAll(";"," ")}));
+							} else {
+								_trx.append($("<td/>",{"text": la.cpvPrimary}));
+							}
 							_trx.append($("<td/>",{"html": toMoney(la.importoSicurezza).view}));
 							
 							_tableLottiRda.append(_trx);

@@ -12,11 +12,13 @@ package it.eldasoft.sil.w3.web.struts;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
@@ -24,6 +26,7 @@ import it.eldasoft.gene.commons.web.struts.CostantiGeneraliStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.w3.bl.GestioneServiziIDGARACIGManager;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
@@ -53,13 +56,18 @@ public class CancellaIDGARACIGAction extends ActionBaseNoOpzioni {
     String target = FORWARD_SUCCESS;
     String messageKey = null;
     boolean rpntFailed = false;
-
+    String errore = null;
+    String evento = "";
+    String messaggioBaseResponse = "";
+    String oggevento = "";
+    String riferimento = "";
+    Long numgara = null;
+    Long numlott = null;
     try {
-      Long numlott = null;
       String idmotivazione = "";
       String notecanc = "";        
       String entita = request.getParameter("entita");
-      Long numgara = new Long(request.getParameter("numgara"));
+      numgara = new Long(request.getParameter("numgara"));
       
       String recuperaUser = request.getParameter("recuperauser");
       String recuperaPassword = request.getParameter("recuperapassword");
@@ -99,14 +107,54 @@ public class CancellaIDGARACIGAction extends ActionBaseNoOpzioni {
 
       // Invio al web service
       if ("W3GARA".equals(entita)) {
+        evento = "CANCELLA_GARA";
+        messaggioBaseResponse="Risposta SIMOG cancellazione anagrafica gara";
+        oggevento=numgara.toString();
+        List<?> datiW3GARA = this.gestioneServiziIDGARACIGManager.getSqlManager().getVector("select id_gara, codgar from w3gara where numgara = ?", new Object[] { numgara }); 
+        String idgara = (String) SqlManager.getValueFromVectorParam(datiW3GARA, 0).getValue();
+        String codgar = (String) SqlManager.getValueFromVectorParam(datiW3GARA, 1).getValue();
+        riferimento = " (N.gara "+idgara;
+        if(StringUtils.stripToNull(codgar)!=null)
+          riferimento += ", rif.gara "+codgar.replace("$","");
+        riferimento += ")";
+        
+        GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 0, 1, oggevento, evento, "Invio richiesta a SIMOG cancellazione anagrafica gara"+riferimento, null);
         this.gestioneServiziIDGARACIGManager.cancellaGARA(simogwsuser,
             simogwspass, numgara, idmotivazione, notecanc,rpntFailed);
+        GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 1, 1, oggevento, evento, messaggioBaseResponse+riferimento, null);
       } else if ("W3LOTT".equals(entita)) {
+        evento = "CANCELLA_LOTTO";
+        messaggioBaseResponse="Risposta SIMOG cancellazione anagrafica lotto";
+        oggevento=numgara+"/"+numlott;
+        List<?> datiWLOTT = this.gestioneServiziIDGARACIGManager.getSqlManager().getVector("select ngara, cig from w3lott where numgara = ? and numlott = ?", new Object[] { numgara, numlott });
+        String ngara = (String) SqlManager.getValueFromVectorParam(datiWLOTT, 0).getValue();
+        String cig = (String) SqlManager.getValueFromVectorParam(datiWLOTT, 1).getValue();
+        riferimento = " (CIG "+cig;
+        if(StringUtils.stripToNull(ngara)!=null)
+          riferimento += ", rif.gara "+ngara;
+        riferimento+=")";
+        
+        GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 0, 1, oggevento, evento, "Invio richiesta a SIMOG cancellazione anagrafica lotto"+riferimento, null);
         this.gestioneServiziIDGARACIGManager.cancellaLOTTO(simogwsuser,
             simogwspass, numgara, numlott, idmotivazione, notecanc,rpntFailed);
+        GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 1, 1, oggevento, evento, messaggioBaseResponse+riferimento, null);
       } else if ("W3SMARTCIG".equals(entita)) {
+        evento="CANCELLA_SMARTCIG";
+        messaggioBaseResponse="Risposta SIMOG cancellazione smartCIG";
+        oggevento = numgara.toString();
+        List<?> datiW3SMARTCIG = this.gestioneServiziIDGARACIGManager.getSqlManager().getVector("select cig, codgar from w3smartcig where codrich = ?", new Object[] { numgara });
+        String cigValorizzato = (String) SqlManager.getValueFromVectorParam(datiW3SMARTCIG, 0).getValue();
+        String codgar = (String) SqlManager.getValueFromVectorParam(datiW3SMARTCIG, 1).getValue(); 
+
+        riferimento=" (CIG "+cigValorizzato;
+        if(StringUtils.stripToNull(codgar)!=null) 
+              riferimento+=", rif.gara "+codgar.replace("$","");
+        riferimento +=")";
+        
+        GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 0, 1, oggevento, evento, "Invio richiesta a SIMOG cancellazione smartCIG"+riferimento, null);
           this.gestioneServiziIDGARACIGManager.cancellaSMARTCIG(simogwsuser,
                   simogwspass, numgara,rpntFailed);
+          GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 1, 1, oggevento, evento, messaggioBaseResponse+riferimento, null);
       }
 
       target = FORWARD_SUCCESS;
@@ -114,6 +162,7 @@ public class CancellaIDGARACIGAction extends ActionBaseNoOpzioni {
       request.getSession().setAttribute("numgara", numgara);
       request.getSession().setAttribute("numeroPopUp", "1");
     } catch (GestoreException e) {
+      errore=e.getMessage();
       target = FORWARD_ERROR;
       messageKey = "errors.gestioneIDGARACIG.error";
       logger.error(this.resBundleGenerale.getString(messageKey), e);
@@ -133,11 +182,14 @@ public class CancellaIDGARACIGAction extends ActionBaseNoOpzioni {
         }
       }
     } catch (Throwable e) {
+      errore=e.getMessage();
       target = CostantiGeneraliStruts.FORWARD_ERRORE_GENERALE;
       messageKey = "errors.applicazione.inaspettataException";
       logger.error(this.resBundleGenerale.getString(messageKey), e);
       this.aggiungiMessaggio(request, messageKey);
     }
+    if(errore!=null)
+      GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 1, 3, oggevento, evento, messaggioBaseResponse+riferimento, errore);
 
     if (messageKey != null) response.reset();
 

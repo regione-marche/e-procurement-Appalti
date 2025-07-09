@@ -11,6 +11,7 @@
 %>
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 
 <c:set var="abilitazioneGare" value="${sessionScope.profiloUtente.abilitazioneGare}" />
 <c:set var="filtroLivelloUtente" value='${gene:callFunction2("it.eldasoft.gene.tags.utils.functions.FiltroLivelloUtenteFunction", pageContext, "V_GARE_ELEDITTE")}' />
@@ -20,8 +21,6 @@
 <c:if test="${! empty sessionScope.uffint}">
 	<c:set var="filtroUffint" value=" exists (select codgar from torn where codgar = V_GARE_ELEDITTE.CODGAR and CENINT = '${sessionScope.uffint}')"/>
 </c:if>
-
-<c:set var="isPersonalizzazioneGenovaAttiva" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsPersonalizzazioneGenovaAttivaFunction",pageContext)}' scope="request" />
 
 <c:set var="esistonoGarePubblicate"
 	value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsistonoGarePubblicateFunction", pageContext,"V_GARE_ELEDITTE")}' />
@@ -258,10 +257,14 @@
 									gene:checkProt(pageContext, "MASC.VIS.GARE.TORN-OFFUNICA-scheda") )}'/>  <%/*Inserita gestione gare a lotti con offerta unica*/ %>
 
   	<c:set var='visualizzaPopUp' value='${visualizzaLink || gene:checkProtFunz(pageContext, "MOD","MOD") || gene:checkProtFunz(pageContext, "DEL","DEL") || gene:checkProtFunz(pageContext, "ALT","Copia-gara")}'/>
-  	
+  		<c:set var="bloccoPubblicazioneANAC" value='false'/>
 			<gene:campoLista title="Opzioni" width="50">
 				<c:if test='${visualizzaPopUp}'>
 					<gene:PopUp variableJs="rigaPopUpMenu${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'">
+
+						 <c:set var="codgarRiga" value='${fn:substring(chiaveRiga, fn:indexOf(chiaveRiga, ":")+1, fn:length(chiaveRiga))}'/>
+						<c:set var="bloccoPubblicazioneANAC" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.npa.GetBloccoModificaPCP", pageContext, codgarRiga, "false")}'/>
+
 						<c:choose>
 							<c:when test='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GaraLottoUnicoFunction", pageContext, chiaveRigaJava)}'>
 								<c:if test='${gene:checkProt(pageContext, "MASC.VIS.GARE.GARE-scheda")}' >
@@ -280,18 +283,11 @@
 								</c:if>
 							</c:otherwise>
 						</c:choose>
-						<c:if test='${(datiRiga.G_PERMESSI_AUTORI ne "2") && gene:checkProtFunz(pageContext, "DEL","DEL")}' >
+						<c:if test='${(datiRiga.G_PERMESSI_AUTORI ne "2") && gene:checkProtFunz(pageContext, "DEL","DEL") && bloccoPubblicazioneANAC ne "true"}' >
 							<gene:PopUpItem title="Elimina elenco" href="eliminaGara()" />
 						</c:if>
-						<c:if test='${gene:checkProtFunz(pageContext, "ALT","Condividi-gara")}'> 
-							<c:choose>
-								<c:when test='${isPersonalizzazioneGenovaAttiva eq "1"}'>
-									<gene:PopUpItem title="Condividi e proteggi elenco" href="javascript:apriGestionePermessi('${datiRiga.V_GARE_ELEDITTE_CODGAR}',10,${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})" />
-								</c:when>
-								<c:otherwise>
-									<gene:PopUpItem title="Condividi e proteggi elenco" href="javascript:apriGestionePermessiStandard('${datiRiga.V_GARE_ELEDITTE_CODGAR}',10,${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})" />		
-								</c:otherwise>
-							</c:choose>
+						<c:if test='${gene:checkProtFunz(pageContext, "ALT","Condividi-gara")}'>
+							<gene:PopUpItem title="Condividi e proteggi elenco" href="javascript:apriGestionePermessiStandard('${datiRiga.V_GARE_ELEDITTE_CODGAR}',10,${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})" />
 						</c:if>
 						<c:if test='${gene:checkProtFunz(pageContext, "ALT","Archivia-gara")}'>
 							<c:if test='${(datiRiga.G_PERMESSI_AUTORI ne "2") && (datiRiga.V_GARE_ELEDDITTE_ISARCHI ne "1") && gene:checkProtFunz(pageContext, "MOD","MOD")}' >
@@ -459,12 +455,12 @@
 		document.forms[0].jspPathTo.value = "/WEB-INF/gare/gare/gare-scheda.jsp"
 		document.forms[0].entita.value = "GARE";
 		document.forms[0].metodo.value = "nuovo";
-		document.forms[0].action+="&tipoGara=garaLottoUnico&garaPerElenco=1";
+		document.forms[0].action+="?tipoGara=garaLottoUnico&garaPerElenco=1";
 		document.forms[0].submit();
 	}
 	
 	function elencoOperatori(chiaveRiga){
-		var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/ditg/lista-operatoriAbilitati.jsp";
+		var href = contextPath + "/ApriPagina.do?href=gare/ditg/lista-operatoriAbilitati.jsp";
 		href += "&key=" + chiaveRiga;
 		document.location.href = href;
 	}

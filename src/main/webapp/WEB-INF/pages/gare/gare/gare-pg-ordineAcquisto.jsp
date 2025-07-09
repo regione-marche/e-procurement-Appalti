@@ -31,6 +31,7 @@
 	</c:otherwise>
 </c:choose>
 
+<c:set var="isVerificaPDFA" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "uploadFile.verifica.pdfA")}'/>
 <c:set var="codiceGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetCodiceGaraFunction", pageContext)}' />
 <c:set var="ngara" value='${gene:getValCampo(key, "GARE.NGARA")}' />
 <c:set var="firmaProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
@@ -52,7 +53,6 @@
 <c:set var="stato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetStatoGarecontFunction",pageContext,ngara,"1")}' />
 
 <c:set var="richiestaFirma" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "documentiDb.richiestaFirma")}'/>
-
 <gene:formScheda entita="GARE" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreOrdine">
 	
 	<gene:redefineInsert name="pulsanteNuovo"></gene:redefineInsert>
@@ -121,7 +121,7 @@
 		<gene:campoScheda campo="NOMIMA" href='${gene:if(gene:checkProt(pageContext, "MASC.VIS.GENE.ImprScheda"), link, "")}'  modificabile="false"/>
 		
 			
-		<gene:campoScheda campo="CODCIG"  />
+		<gene:campoScheda campo="CODCIG" modificabile="false" />
 	<c:choose>
 		<c:when test='${fn:startsWith(datiRiga.GARE_CODCIG,"#") or fn:startsWith(datiRiga.GARE_CODCIG,"$") or fn:startsWith(datiRiga.GARE_CODCIG,"NOCIG")}'>
 			<gene:campoScheda campo="CODCIG_FIT" title="Codice CIG fittizio" campoFittizio="true" value="${datiRiga.GARE_CODCIG}" definizione="T10;;;;G1CODCIG" modificabile="false" />
@@ -130,7 +130,8 @@
 			<gene:campoScheda campo="CODCIG_FIT" title="Codice CIG fittizio" campoFittizio="true" value="" definizione="T10;;;;G1CODCIG" modificabile="false" />
 		</c:otherwise>
 	</c:choose>
-		<gene:campoScheda campo="ESENTE_CIG" campoFittizio="true" computed="true" title="Esente CIG?" definizione="T10;;;SN" defaultValue="2" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoSiNoSenzaNull" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.CODCIG") }'/>
+		<gene:campoScheda campo="ESENTE_CIG" campoFittizio="true" computed="true" title="Esente CIG?" definizione="T10;;;SN" defaultValue="2" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoSiNoSenzaNull"
+			visibile='false'/>
 		<gene:fnJavaScriptScheda funzione="gestioneEsenteCIG()" elencocampi="ESENTE_CIG" esegui="false" />
 		
 		
@@ -275,6 +276,7 @@
 		<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
 		<jsp:param name="ordineNonDefinito" value="${datiRiga.GARECONT_STATO == 2 }"/>
 		<jsp:param name="firmaRemota" value="${firmaRemota}"/>
+		<jsp:param name="isVerificaPDFA" value="${isVerificaPDFA}"/>
 	</jsp:include>
 	
 	<gene:gruppoCampi idProtezioni="DEFINIZIONE" >
@@ -421,7 +423,7 @@
 			
 			clearMsg();
 			var esenteCig = getValue("ESENTE_CIG");
-			if (esenteCig == "2" && getValue("GARE_CODCIG") != "") {
+			if (esenteCig == "2" && getValue("GARE_CODCIG") != "" || esenteCig == "") {
 				if (!controllaCIG("GARE_CODCIG")) {
 					outMsg("Codice CIG non valido", "ERR");
 					onOffMsg();
@@ -465,7 +467,7 @@
 				$('[id^="GAREIVA_IMPIVA_"]').attr('disabled',false);
 				$('#GARECONT_IMPIVA').attr('disabled',false);
 				$('#GARECONT_IMPTOT').attr('disabled',false);
-				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 				schedaConferma_Default();
 			}
 	 	}
@@ -474,7 +476,7 @@
  		
  		var schedaAnnulla_Default = schedaAnnulla;
 		function schedaAnnulla_Custom(){
-			document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+			document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 			schedaAnnulla_Default();
 	 	}
  		
@@ -513,7 +515,7 @@
 	function archivioImpresaAggDef(){
 		var codiceImpresa = getValue("GARE_DITTA");
 		var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href;
+		document.location.href = contextPath + "/ApriPagina.do?" + href;
 	}
 	
 	function checkPresenzaCenint(valore){
@@ -668,17 +670,30 @@
     </c:if>
     
     function scegliFile(indice) {
+    	var file = document.getElementById("selFile[" + indice + "]").files[0];
 		var selezioneFile = document.getElementById("selFile[" + indice + "]").value;
 		var lunghezza_stringa=selezioneFile.length;
 		var posizione_barra=selezioneFile.lastIndexOf("\\");
 		var nome=selezioneFile.substring(posizione_barra+1,lunghezza_stringa).toUpperCase();
+		var ext = nome.split(".")[1].toLowerCase();
 		if(nome.length>100){
 			alert("Il nome del file non può superare i 100 caratteri!");
 			document.getElementById("selFile[" + indice + "]").value="";
 			setValue("W_DOCDIG_DIGNOMDOC_" + indice,"");
+			$('#checkPDFaDocMessage_'+indice).css("display", "none");
+			$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
 		}else{
 			setValue("W_DOCDIG_DIGNOMDOC_" + indice,nome);
 			$("#spanRichiestaFirma_" + indice).show();
+			setValue("W_DOCDIG_DIGTIPDOC_"+indice,ext);
+			<c:if test="${isVerificaPDFA eq '1'}">
+				if(nome.includes('.PDF')){
+					checkValiditaPDFA(file,indice);
+				} else {
+					$('#checkPDFaDocMessage_'+indice).css("display", "none");
+					$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
+				}
+			</c:if>
 		}
 		
 	}
@@ -695,7 +710,7 @@
 					document.formVisFirmaDigitale.submit();
 				}else{
 					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+					document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 				}
 			</c:when>
 			<c:otherwise>
@@ -705,7 +720,7 @@
 					document.formVisFirmaDigitale.submit();
 				}else{
 					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+					document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 				}
 			</c:otherwise>
 		</c:choose>

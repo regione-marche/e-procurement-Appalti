@@ -23,6 +23,8 @@
 	</c:otherwise>
 </c:choose>
 
+<c:if test='${not empty idGoevmod and gene:matches(idGoevmod, "^-?[\\\\.0-9]+$", true)}' />
+
 
 <c:set var="MaxNumValori" value="5" />
 
@@ -51,7 +53,8 @@
 				<gene:campoScheda campo="MODPUNTI" modificabile="true" obbligatorio="true"/>
 				<gene:campoScheda campo="MODMANU" modificabile="true" obbligatorio="true"/>
 				<gene:campoScheda campo="FORMULA" obbligatorio="true"/>
-				<gene:campoScheda campo="ESPONENTE" visibile="${datiRiga.G1CRIDEF_FORMULA eq '11' or datiRiga.G1CRIDEF_FORMULA eq '13' or datiRiga.G1CRIDEF_FORMULA eq '14' or datiRiga.G1CRIDEF_FORMULA eq '15' }"/>
+				<gene:campoScheda campo="ESPONENTE" visibile="${datiRiga.G1CRIDEF_FORMULA eq '11' or datiRiga.G1CRIDEF_FORMULA eq '13' or datiRiga.G1CRIDEF_FORMULA eq '14' or datiRiga.G1CRIDEF_FORMULA eq '15' or datiRiga.G1CRIDEF_FORMULA eq '16'}"/>
+				<gene:campoScheda campo="ISNORIPAR" entita="GOEVMOD" where="GOEVMOD.ID = '${idGoevmod}'" modificabile="true"/>
 				<gene:campoScheda campo="DESCRI" />
 
 				<gene:fnJavaScriptScheda funzione='formatoOnChangeInit("#G1CRIDEF_FORMATO#")' elencocampi='G1CRIDEF_FORMATO' esegui="true" />

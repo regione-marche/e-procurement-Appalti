@@ -60,9 +60,14 @@
 	<c:set var="genereGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTipologiaGaraFunction", pageContext, codgar)}' />
 </c:if>
 
-<c:if test='${genereGara ne 10 and genereGara ne 20 }' >
-	<c:set var="whereBusteAttiveWizard" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetBusteDocumentazioneFunction",  pageContext, stepWizard, "W_INVCOM","COMTIPMA")}'/>
-</c:if>
+<c:choose>
+	<c:when test='${genereGara ne 10 and genereGara ne 20 }' >
+		<c:set var="whereBusteAttiveWizard" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetBusteDocumentazioneFunction",  pageContext, stepWizard, "W_INVCOM","COMTIPMA")}'/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="whereBusteAttiveWizard" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetBusteDocumentazioneFunction",  pageContext, stepWizard, "","")}'/>
+	</c:otherwise>
+</c:choose>
 
 <c:set var="nomimo" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetNOMIMOFunction", pageContext, numeroGara, codiceGara, codiceDitta)}' />
 
@@ -91,6 +96,7 @@
 		<input type="hidden" id="riceviComunicazioni" name="riceviComunicazioni" value="${riceviComunicazioni}" />
 		<input type="hidden" name="comunicazioniVis" id="comunicazioniVis" value="${comunicazioniVis }" />
 		<input type="hidden" name="soccorsoIstruttorio" id="soccorsoIstruttorio" value="1" />
+		<input type="hidden" name="comunicazioniRettifica" id="comunicazioniRettifica" value="0" />
 		<input type="hidden" name="stepWizard" id="stepWizard" value="${stepWizard }" />
 		<input type="hidden" name="aut" id="aut" value="${aut }" />
 		<input type="hidden" id="digitalSignatureWsCheck" name="digitalSignatureWsCheck" value="${digitalSignatureWsCheck}" />
@@ -140,7 +146,7 @@
 			var tipo="${tipo }";
 			var aut="${aut }";
 			var comunicazioniVis = "${comunicazioniVis }";
-			document.pagineForm.action += "&stepWizard=" + stepWizard + "&genereGara=" + genereGara + "&tipo=" + tipo + "&comunicazioniVis=" + comunicazioniVis + "&aut=" + aut;
+			document.pagineForm.action += "?stepWizard=" + stepWizard + "&genereGara=" + genereGara + "&tipo=" + tipo + "&comunicazioniVis=" + comunicazioniVis + "&aut=" + aut;
 		}
 		selezionaPaginaDefault(pageNumber);
 	}

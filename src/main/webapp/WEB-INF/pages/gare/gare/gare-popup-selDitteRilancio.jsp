@@ -65,6 +65,8 @@
 	</c:otherwise>
 </c:choose>
 
+<c:set var="preced" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select NGARA from GARE where NGARA=?", preced)}'/>
+<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select NGARA from GARE where NGARA=?", ngara)}'/>
 <c:set var="where" value="DITG.NGARA5='${preced }' and (DITG.FASGAR >=6 or DITG.FASGAR is null) and DITG.DITTAO not in (select D1.DITTAO from DITG D1 where D1.NGARA5='${ngara }')"/>
 <c:set var="modo" value="MODIFICA" scope="request" />
 

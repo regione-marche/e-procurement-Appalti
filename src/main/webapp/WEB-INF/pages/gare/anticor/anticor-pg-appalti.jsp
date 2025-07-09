@@ -332,7 +332,7 @@
 		document.forms[0].metodo.value="nuovo";
 		document.forms[0].activePage.value="0";
 		var pagina = "${param.tipo }";
-		document.forms[0].action += "&paginaAppalti=" + pagina;
+		document.forms[0].action += "?paginaAppalti=" + pagina;
 		bloccaRichiesteServer();
 		document.forms[0].submit();
 	}
@@ -351,13 +351,13 @@
 	
 	function listaVisualizzaAppalto(){
 		var pagina = "${param.tipo }";
-		document.forms[0].action += "&paginaAppalti=" + pagina;
+		document.forms[0].action += "?paginaAppalti=" + pagina;
 		listaVisualizza();
 	}
 	
 	function listaModificaAppalto(){
 		var pagina = "${param.tipo }";
-		document.forms[0].action += "&paginaAppalti=" + pagina;
+		document.forms[0].action += "?paginaAppalti=" + pagina;
 		listaModifica();
 	}
 </gene:javaScript>

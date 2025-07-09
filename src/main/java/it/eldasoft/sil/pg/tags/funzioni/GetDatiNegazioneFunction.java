@@ -62,6 +62,10 @@ public class GetDatiNegazioneFunction extends AbstractFunzioneTag {
               "select notneg from GARE1 where ngara = ?",
               new Object[] { codiceGara });
           pageContext.getRequest().setAttribute("initNotneg", notneg);
+          String giustneg = (String) sqlManager.getObject(
+                  "select giustneg from GARE1 where ngara = ?",
+                  new Object[] { codiceGara });
+          pageContext.getRequest().setAttribute("initGiustneg", giustneg);
         }
 
       } catch (SQLException s) {

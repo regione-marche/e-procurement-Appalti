@@ -11,15 +11,20 @@
 package it.eldasoft.sil.pg.bl;
 
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
 import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityStringhe;
 
 /**
@@ -54,20 +59,20 @@ public class AtacManager {
   private static final String SQL_LAVORAZIONI_OFFERTE_AGGIUDICATE = SQL_LAVORAZIONI_OFFERTE + " and QTAORDINATA is not null";
   private static final String SQL_VALUTAZIONE_PRODOTTI = "select count(*) from V_GARE_PRODOTTI_VALUTATI where ngara=?";
   private static final String SQL_VALUTAZIONE_PRODOTTI_AFFIDAMENTI = SQL_VALUTAZIONE_PRODOTTI + " and affidamento is not null";
-  private static final String UPDATE_STATO_RICERCA =  "update gare set ISRICONCLUSA=?  where ngara=?";
+  private static final String UPDATE_STATO_RICERCA =  "update gare set ISRICONCLUSA=?, DATCONCLUSA=?  where ngara=?";
 
   public int insAffidamentoValutazioneProdotti(Long idUtente, String seguen,String dittao, String uffint) throws GestoreException{
 
-    String insertGara = "insert into gare(ngara, codgar1, codcig, tipgarg, not_gar, ditta, nomima, iaggiu, ribagg, dattoa, impapp, seguen)" +
-        " values(?,?,?,?,?,?,?,?,?,?,?,?)";
-    String insertGare1 = "insert into gare1(ngara, codgar1) values(?,?)";
-    String insertTorn = "insert into torn(codgar, cenint, tipgen, offaum, compreq, istaut, iterga, cliv1, settore, codrup)" +
-        " values(?,?,?,?,?,?,?,?,?,?)";
+    String insertGara = "insert into gare(ngara, codgar1, codcig, tipgarg, not_gar, ditta, nomima, iaggiu, ribagg, dattoa, impapp, seguen, oggcont, prosla, loclav, locint, numssl, nomssl)" +
+        " values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    String insertGare1 = "insert into gare1(ngara, codgar1, ammrin, ammopz, codcnel, impsomme, motcoll, esecris) values(?,?,?,?,?,?,?,?)";
+    String insertTorn = "insert into torn(codgar, cenint, tipgen, offaum, compreq, istaut, iterga, cliv1, settore, codrup, vernpa, ispnrr, motcig, isnodpcm24, isnoinizia, strumproc, ordiele, orgricorso)" +
+        " values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     String insertGarecont = "insert into garecont(ngara, ncont, dverbc, dcertu, impliq, codimp) values(?,?,?,?,?,?)";
 
     String insertEdit ="insert into edit (codgar4,codime,nomime,docok,datok,ditinv,nprogt) values(?,?,?,?,?,?,?)";
 
-    String insertDitg = "insert into ditg (ngara5,dittao,codgar5,nomimo,nprogg,catimok,invgar,numordpl,invoff,impappd,impoff,ncomope) values (?,?,?,?,?,?,?,?,?,?,?,?)";
+    String insertDitg = "insert into ditg (ngara5,dittao,codgar5,nomimo,nprogg,catimok,invgar,numordpl,invoff,impappd,impoff,ncomope,codcnel,ribauo) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
     String insertG_permessi = "insert into g_permessi(numper, syscon, autori, propri, codgar) values(?,?,?,?,?)";
 
@@ -86,15 +91,45 @@ public class AtacManager {
     String valoreA1115 = null;
     String valoreA1191 = null;
 
-
+    Long oggcont = null;
+    Long motcig = null;
+    String isnodpcm24 = null;
+    String isnoinizia = null;
+    Long strumproc = null;
+    String prosla = null;
+    String loclav = null;
+    String locint = null;
+    String numssl = null;
+    String nomssl = null;
+    String codcnel = null;
+    Long orgricorso = null;
     try {
 
-      Vector<?> datiGaraPadre = this.sqlManager.getVector("select tipgen,offaum,compreq,codrup from torn,gare where codgar=codgar1 and ngara = ? ", new Object[]{seguen});
-      if(datiGaraPadre!=null && datiGaraPadre.size()>0){
-        tipgen=  (Long) SqlManager.getValueFromVectorParam(datiGaraPadre, 0).getValue();
-        offaum=  (String) SqlManager.getValueFromVectorParam(datiGaraPadre, 1).getValue();
-        compreq=  (String) SqlManager.getValueFromVectorParam(datiGaraPadre, 2).getValue();
-        codrup=  (String) SqlManager.getValueFromVectorParam(datiGaraPadre, 3).getValue();
+      String datiGarePadreSql = "select t.tipgen, t.offaum, t.compreq, t.codrup, "
+          + "g.oggcont, t.motcig, t.isnodpcm24, t.isnoinizia, t.strumproc, "
+          + "g.prosla, g.loclav, g.locint, g.numssl, g.nomssl, g1.codcnel, t.orgricorso "
+          + "from torn t "
+          + "inner join gare g on t.codgar = g.codgar1 "
+          + "inner join gare1 g1 on g1.ngara = g.ngara and g1.codgar1 = g.codgar1 "
+          + "where g.ngara = ? ";
+      Vector<?> datiGaraPadre = this.sqlManager.getVector(datiGarePadreSql, new Object[]{seguen});
+      if(datiGaraPadre!=null && !datiGaraPadre.isEmpty()){
+        tipgen = (Long) SqlManager.getValueFromVectorParam(datiGaraPadre, 0).getValue();
+        offaum = (String) SqlManager.getValueFromVectorParam(datiGaraPadre, 1).getValue();
+        compreq = (String) SqlManager.getValueFromVectorParam(datiGaraPadre, 2).getValue();
+        codrup = (String) SqlManager.getValueFromVectorParam(datiGaraPadre, 3).getValue();
+        oggcont = (Long) SqlManager.getValueFromVectorParam(datiGaraPadre, 4).getValue();
+        motcig = (Long) SqlManager.getValueFromVectorParam(datiGaraPadre, 5).getValue();
+        isnodpcm24 = (String) SqlManager.getValueFromVectorParam(datiGaraPadre, 6).getValue();
+        isnoinizia = (String) SqlManager.getValueFromVectorParam(datiGaraPadre, 7).getValue();
+        strumproc = (Long) SqlManager.getValueFromVectorParam(datiGaraPadre, 8).getValue();
+        prosla = (String) SqlManager.getValueFromVectorParam(datiGaraPadre, 9).getValue();
+        loclav = (String) SqlManager.getValueFromVectorParam(datiGaraPadre, 10).getValue();
+        locint = (String) SqlManager.getValueFromVectorParam(datiGaraPadre, 11).getValue();
+        numssl = (String) SqlManager.getValueFromVectorParam(datiGaraPadre, 12).getValue();
+        nomssl = (String) SqlManager.getValueFromVectorParam(datiGaraPadre, 13).getValue();
+        codcnel = (String) SqlManager.getValueFromVectorParam(datiGaraPadre, 14).getValue();
+        orgricorso = (Long) SqlManager.getValueFromVectorParam(datiGaraPadre, 15).getValue();
       }
 
       //TIPO PROCEDURA
@@ -160,12 +195,9 @@ public class AtacManager {
 
       Object importo = this.sqlManager.getObject( "select imptot from v_gare_prodotti_valutati"
           + " where ngara=? and dittao = ? ", new Object[] {seguen,dittao});
-
-      if(importo!=null) {
-        if(importo instanceof Double)
-          importoAggiudicazione = (Double) importo;
-        else if(importo instanceof Long)
-          importoAggiudicazione = new Double((Long)importo);
+      
+      if (importo instanceof Number) {
+        importoAggiudicazione = ((Number) importo).doubleValue();
       }
 
       Date dataInizio = null;
@@ -175,33 +207,44 @@ public class AtacManager {
       Double impLiquidato = null;
       Double ribassoAggiudicazione = Double.valueOf(0);
 
-      this.sqlManager.update(insertGara,
-          new Object[] { ngara, codgar, codcig, tipgarg, composizioneOggetto, dittao, nomimo, importoAggiudicazione, ribassoAggiudicazione, dataInizio, importoAggiudicazione, seguen});
+		String vernpa = pgManager.getVersioneNpaCorrente();
 
-      this.sqlManager.update(insertGare1, new Object[] {ngara,codgar});
+      this.sqlManager.update(insertGara,
+          new Object[] { ngara, codgar, codcig, tipgarg, composizioneOggetto, dittao, nomimo, importoAggiudicazione, ribassoAggiudicazione, dataInizio, importoAggiudicazione, seguen, oggcont, prosla, loclav, locint, numssl, nomssl});
+
+      this.sqlManager.update(insertGare1, new Object[] {ngara,codgar,"2","2",codcnel,Double.valueOf(0),Long.valueOf(10),"2"});
       Long cliv1 = null;
 
-      this.sqlManager.update(insertTorn, new Object[] {codgar,uffint,tipgen,offaum,compreq,null,iterga,cliv1,settore,codrup});
+      this.sqlManager.update(insertTorn, new Object[] {codgar,uffint,tipgen,offaum,compreq,null,iterga,cliv1,settore,codrup,vernpa,"2", motcig, isnodpcm24, isnoinizia, strumproc,"2",orgricorso});
 
       this.sqlManager.update(insertGarecont, new Object[] {ngara, Long.valueOf(1), dataInizio, dataUltimazione, impLiquidato, dittao});
 
       //DITTE
       Long nProgressivo= new Long(0);
 
-      List<String> ditteGaraPadreList = this.sqlManager.getListVector("select dittao,nomimo from ditg where ngara5=? and invoff=? and dittao<>?",
-          new Object[] {seguen,Long.valueOf(1),dittao});
+      List<String> ditteGaraPadreList = this.sqlManager.getListVector("select dittao, nomimo, ditg.codcnel, impr.codcnel  from ditg join impr on codimp=dittao where ngara5=? and invoff=? and dittao<>?",
+          new Object[] {seguen,"1",dittao});
       for (int k = 0; k < ditteGaraPadreList.size(); k++) {
         String dittao_k = (String) SqlManager.getValueFromVectorParam(ditteGaraPadreList.get(k), 0).getValue();
         String nomimo_k = (String) SqlManager.getValueFromVectorParam(ditteGaraPadreList.get(k), 1).getValue();
+        String codcnel_k = (String) SqlManager.getValueFromVectorParam(ditteGaraPadreList.get(k), 2).getValue();
+        if(StringUtils.isBlank(codcnel_k)) {
+          codcnel_k = (String) SqlManager.getValueFromVectorParam(ditteGaraPadreList.get(k), 3).getValue();
+        }
         //inserimento in EDIT
         nProgressivo = Long.valueOf(nProgressivo.longValue() +1);
         sqlManager.update(insertEdit,new Object[]{codgar,dittao_k,nomimo_k,"1","1","1",nProgressivo});
-        sqlManager.update(insertDitg,new Object[]{ngara,dittao_k,codgar,nomimo_k,nProgressivo,"1","1",nProgressivo,"1",null,null,"1"});
+        sqlManager.update(insertDitg,new Object[]{ngara,dittao_k,codgar,nomimo_k,nProgressivo,"1","1",nProgressivo,"1",null,Double.valueOf(0),"1",codcnel_k,null});
       }
       //viene valorizzato l'importo offerto pari all'aggiudicato su ditg per quella aggiudicataria
+      Vector datiAggiudicataria = this.sqlManager.getVector("select ditg.codcnel, impr.codcnel  from ditg join impr on codimp=dittao where ngara5 = ? and invoff = ? and dittao = ?", new Object[]{seguen,"1",dittao});
+      String codcnelAggiudicataria = (String) SqlManager.getValueFromVectorParam(datiAggiudicataria, 0).getValue();
+      if(StringUtils.isBlank(codcnelAggiudicataria)) {
+        codcnelAggiudicataria = (String) SqlManager.getValueFromVectorParam(datiAggiudicataria, 1).getValue();
+      }
       nProgressivo = Long.valueOf(nProgressivo.longValue() +1);
       sqlManager.update(insertEdit,new Object[]{codgar,dittao,nomimo,"1","1","1",nProgressivo});
-      sqlManager.update(insertDitg,new Object[]{ngara,dittao,codgar,nomimo,nProgressivo,"1","1",nProgressivo,"1",null,importoAggiudicazione,"1"});
+      sqlManager.update(insertDitg,new Object[]{ngara,dittao,codgar,nomimo,nProgressivo,"1","1",nProgressivo,"1",null,importoAggiudicazione,"1",codcnelAggiudicataria,Double.valueOf(0)});
 
       String selectG_PERMESSI = "select syscon,autori,propri from g_permessi where codgar = ? union select "+idUtente +",1,'1' from g_permessi ";
       List<?> datiG_PERMESSI = this.sqlManager.getListVector(selectG_PERMESSI, new Object[] { codgarPadre });
@@ -230,6 +273,7 @@ public class AtacManager {
       controllaStatoRicercaDiMercato(seguen);
       
     } catch (SQLException e) {
+      logger.error("Errore durante la creazione dell'affidamento derivato: " + e.getMessage(), e );
       throw new GestoreException("Errore nella creazione dell'affidamento derivato " + codcig, null,e);
     }
 
@@ -240,6 +284,7 @@ public class AtacManager {
   public void controllaStatoRicercaDiMercato(String seguen) throws SQLException {
     //Impostazione dello stato concluso della ricerca di mercato
     String isRiConclusa=null;
+    Timestamp dataIsRiconclusa = null;
     //Lavorazioni con offerte
     Long numOfferte = (Long)this.sqlManager.getObject(SQL_LAVORAZIONI_OFFERTE, new Object[] {seguen});
 
@@ -252,10 +297,12 @@ public class AtacManager {
       //Valutazione prodotti con affidamento
       Long numValProdottiAff = (Long)this.sqlManager.getObject(SQL_VALUTAZIONE_PRODOTTI_AFFIDAMENTI, new Object[] {seguen});
 
-      if(numValProdotti!=null && numValProdottiAff!=null && numValProdotti.longValue()==numValProdottiAff.longValue())
+      if(numValProdotti!=null && numValProdottiAff!=null && numValProdotti.longValue()==numValProdottiAff.longValue()) {
         isRiConclusa="1";
+        dataIsRiconclusa = new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime());
+      }
     }
-    this.sqlManager.update(UPDATE_STATO_RICERCA, new Object[] { isRiConclusa, seguen});
+    this.sqlManager.update(UPDATE_STATO_RICERCA, new Object[] { isRiConclusa, dataIsRiconclusa, seguen});
   }
 
   /**

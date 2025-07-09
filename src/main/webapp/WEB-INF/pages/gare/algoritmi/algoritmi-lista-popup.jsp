@@ -6,7 +6,7 @@
 <gene:template file="popup-template.jsp" gestisciProtezioni="false">
 	<gene:setString name="titoloMaschera" value="Selezione criterio di rotazione"/>
 	<gene:redefineInsert name="corpo">
-		<gene:formLista pagesize="25" tableclass="datilista" entita="ALGORITMI" sortColumn="6;4" gestisciProtezioni="false" inserisciDaArchivio='false' where="ALGORITMI.CODAPP='PG'">
+		<gene:formLista pagesize="25" tableclass="datilista" entita="ALGORITMI" sortColumn="6;4" gestisciProtezioni="false" inserisciDaArchivio='false' where="ALGORITMI.CODAPP='PG' AND TAB1.TAB1ARC is null">
 			<% // Aggiungo gli item al menu contestuale di riga %>
 			<gene:campoLista title="Opzioni" width="50">
 				<c:if test="${currentRow >= 0}" >

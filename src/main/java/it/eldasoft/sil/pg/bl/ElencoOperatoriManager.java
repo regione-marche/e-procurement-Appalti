@@ -355,6 +355,10 @@ public class ElencoOperatoriManager {
              sottotipo = datiWSDM.get("sottotipo");
            }
 
+          if("ARCHIFLOW".equals(tipoWSDM)){
+            nomeRup = datiWSDM.get("nomeRup");
+          }
+
            if("DOCER".equals(tipoWSDM)){
              tipofirma = datiWSDM.get("tipofirma");
              idunitaoperativamittenteDesc = datiWSDM.get("idunitaoperativamittenteDesc");
@@ -505,12 +509,13 @@ public class ElencoOperatoriManager {
 
         if("1".equals(integrazioneWSDM)){
           // Invio mail mediante servizi di protocollazione per ENGINEERING
-          if(abilitatoInvioMailDocumentale && ("ENGINEERING".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM)  || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM))){
+          if(abilitatoInvioMailDocumentale && ("ENGINEERING".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM)  || "TITULUS".equals(tipoWSDM) || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM) || "HALLEY".equals(tipoWSDM))){
             WSDMInviaMailType inviaMail = new WSDMInviaMailType();
             if("ENGINEERING".equals(tipoWSDM)){
               // Oggetto email
               inviaMail.setOggettoMail(oggettodocumento);
             }
+            inviaMail.setMittenteMail(datiWSDM.get("indirizzomittente"));//APPALTI-2175
             // Testo email
             inviaMail.setTestoMail(testomail);
             // Destinatari
@@ -592,8 +597,9 @@ public class ElencoOperatoriManager {
             String annoProtocolloString=null;
             if(annoProtocollo==null && !"LAPISOPERA".equals(tipoWSDM)) {
               annoProtocollo = this.gestioneWSDMManager.getAnnoFromDate(dataProtocollo);
-              annoProtocolloString = annoProtocollo.toString();
             }
+            if(annoProtocollo!=null)
+              annoProtocolloString=annoProtocollo.toString();
 
             datiWSDM.put("numeroDocumento", numeroDocumento);
             datiWSDM.put("annoProtocollo", annoProtocolloString);
@@ -612,7 +618,7 @@ public class ElencoOperatoriManager {
             Object param[]=null;
             String updateW_INVCOM = null;
 
-            if(abilitatoInvioMailDocumentale && ("JIRIDE".equals(tipoWSDM)) || "ARCHIFLOW".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM)){
+            if(abilitatoInvioMailDocumentale && ("JIRIDE".equals(tipoWSDM)) || "ARCHIFLOW".equals(tipoWSDM) || "ARCHIFLOWFA".equals(tipoWSDM) || "HALLEY".equals(tipoWSDM)){
               updateW_INVCOM = "update w_invcom set comstato = ?, comdatprot = ?, comnumprot = ?, committ = ? where idprg = ? and idcom = ?";
               param = new Object[]{statoComunicazione, dataProtocollo,
                   numeroProtocollo, indirizzoMittente, idprg,  newIdcom };
@@ -818,6 +824,8 @@ public class ElencoOperatoriManager {
 			sbQuery.append("UPDATE ditg SET dricrin = ?, strin = ?");
 			Timestamp dataInserimento = new Timestamp(UtilityDate.convertiData(dataIns,
 					UtilityDate.FORMATO_GG_MM_AAAA).getTime());
+            if(campoData!=null) //APPALTI-2126
+              dataInserimento = new Timestamp(UtilityDate.convertiData(UtilityDate.convertiData(campoData,UtilityDate.FORMATO_GG_MM_AAAA),UtilityDate.FORMATO_GG_MM_AAAA).getTime());
 			params.add(dataInserimento);
 			params.add(RINNOVO_DA_VERIFICARE);
 

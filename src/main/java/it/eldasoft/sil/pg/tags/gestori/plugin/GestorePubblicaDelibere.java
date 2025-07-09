@@ -11,6 +11,7 @@
 package it.eldasoft.sil.pg.tags.gestori.plugin;
 
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -20,10 +21,13 @@ import java.util.Vector;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 
+import intra.regionemarche.ResultClass;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.tags.BodyTagSupportGene;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.GestioneRegioneMarcheManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.utils.properties.ConfigManager;
@@ -62,7 +66,7 @@ public class GestorePubblicaDelibere extends GestorePubblicaSuPortale {
     */
     String queryDocumentiDaPubblicare = "SELECT IDDOCDG, URLDOC, NORDDOCG, IDPRG FROM DOCUMGARA WHERE CODGAR = ? AND GRUPPO = 15 AND STATODOC IS NULL";
     String queryGARE = "select TIPGARG, NOT_GAR, NGARA from GARE where CODGAR1 = ?";
-    String queryTORN = "select DESTOR, CENINT, CODRUP, TIPGAR from TORN where codgar = ?";
+    String queryTORN = "select DESTOR, CENINT, CODRUP, TIPGAR, ITERGA, DTEOFF, DTEPAR, DINVIT, OTEOFF, OTEPAR from TORN where codgar = ?";
     String titoloMessaggio = "<b>Non è possibile procedere con la pubblicazione della delibera a contrarre sul portale Appalti.</b><br>";
     String messaggio = "";
     String controlloSuperato = "SI";
@@ -93,38 +97,16 @@ public class GestorePubblicaDelibere extends GestorePubblicaSuPortale {
 
       String cenint=null;
       String codrup = null;
+      Long iterga = null;
+      Timestamp dtepar=null;
+      Timestamp dteoff=null;
+      Timestamp dinvit=null;
+      boolean dteparVisibile= false;
+      boolean dteoffVisibile=false;
+      boolean dinvitVisibile =false;
+      String oteoff=null;
+      String otepar = null;
 
-      /*
-      List listaDatiTorn= this.sqlManager.getListVector(queryTORN, new Object[]{codgar});
-      if (listaDatiTorn != null && listaDatiTorn.size() > 0) {
-        for(int i=listaDatiTorn.size()-1;i>=0;i--){
-          Long tipgar = SqlManager.getValueFromVectorParam(
-              listaDatiTorn.get(i), 3).longValue();
-          if(garaLotti && tipgar == null){
-            controlloSuperato = "NO";
-            messaggio += "<br>Non è stato inserito il tipo procedura della gara.";
-          }
-          String destor = SqlManager.getValueFromVectorParam(
-              listaDatiTorn.get(i), 0).getStringValue();
-          if(garaLotti && (destor == null || "".equals(destor))){
-            controlloSuperato = "NO";
-            messaggio += "<br>Non è stato inserito l'oggetto della gara.";
-          }
-          cenint = SqlManager.getValueFromVectorParam(
-              listaDatiTorn.get(i), 1).getStringValue();
-          if(cenint == null || "".equals(cenint)){
-            controlloSuperato = "NO";
-            messaggio += "<br>Non è stata inserita la stazione appaltante.";
-          }
-          codrup = SqlManager.getValueFromVectorParam(
-              listaDatiTorn.get(i), 2).getStringValue();
-          if(codrup == null || "".equals(codrup)){
-            controlloSuperato = "NO";
-            messaggio += "<br>Non è stato inserito il responsabile unico procedimento.";
-          }
-        }
-      }
-      */
       Vector datiTorn= this.sqlManager.getVector(queryTORN, new Object[]{codgar});
       if (datiTorn != null && datiTorn.size() > 0) {
 
@@ -150,8 +132,16 @@ public class GestorePubblicaDelibere extends GestorePubblicaSuPortale {
               datiTorn, 2).getStringValue();
           if(codrup == null || "".equals(codrup)){
             controlloSuperato = "NO";
-            messaggio += "<br>Non è stato inserito il responsabile unico procedimento.";
+            messaggio += "<br>Non è stato inserito il RUP.";
           }
+
+          int contatore = 4;
+        iterga = ((JdbcParametro) datiTorn.get(contatore++)).longValue();
+        dteoff = ((JdbcParametro) datiTorn.get(contatore++)).dataValue();
+  	    dtepar = ((JdbcParametro) datiTorn.get(contatore++)).dataValue();
+  	    dinvit = ((JdbcParametro) datiTorn.get(contatore++)).dataValue();
+  	    oteoff = ((JdbcParametro) datiTorn.get(contatore++)).stringValue();
+  	    otepar = ((JdbcParametro) datiTorn.get(contatore++)).stringValue();
 
       }
       if(garaLotti){queryGARE = queryGARE + " and NGARA <> CODGAR1";}
@@ -236,6 +226,78 @@ public class GestorePubblicaDelibere extends GestorePubblicaSuPortale {
         controlloSuperato = "NO";
         messaggio += "<br>Non è stato inserito nessun documento relativo a delibera a contrarre.";
       }
+
+		if (GestioneRegioneMarcheManager.isConfiguratoPerRM()) {
+			if (iterga != null) {
+				if (iterga.longValue() == 3 || iterga.longValue() == 5 || iterga.longValue() == 6
+						|| iterga.longValue() == 10 || iterga.longValue() == 8)
+					iterga = new Long(3);
+
+				if (iterga.longValue() == 1 || iterga.longValue() == 3 || iterga.longValue() == 9)
+					dteoffVisibile = true;
+				else
+					dteparVisibile = true;
+				if (iterga.longValue() == 3)
+					dinvitVisibile = true;
+			}
+			if (dteparVisibile) {
+				if (dtepar == null) {
+					controlloSuperato = "NO";
+					messaggio += "<br>Non è stata inserita la data termine per la presentazione della domanda di partecipazione.";
+				}
+				if (otepar == null || "".equals(otepar)) {
+					controlloSuperato = "NO";
+					messaggio += "<br>Non è stata inserita l'ora di termine per la presentazione della domanda di partecipazione.";
+				} else {
+					if (!otepar.matches(pattern_Formato_Ora) || !otepar.matches(pattern_Ora)) {
+						controlloSuperato = "NO";
+						messaggio += "<br>L'ora di termine per la presentazione della domanda di partecipazione non ha un formato valido ('hh:mm').";
+					}
+				}
+			}
+			if (dinvit == null && dinvitVisibile) {
+				controlloSuperato = "NO";
+				messaggio += "<br>Non è stata inserita la data di invito alle ditte.";
+			}
+			if (dteoffVisibile) {
+				if (dteoff == null) {
+					controlloSuperato = "NO";
+					messaggio += "<br>Non è stata inserita la data di termine per la presentazione dell'offerta.";
+				}
+				if ((oteoff == null || "".equals(oteoff))) {
+					controlloSuperato = "NO";
+					messaggio += "<br>Non è stata inserita l'ora di termine per la presentazione dell'offerta.";
+				} else {
+					if (!oteoff.matches(pattern_Formato_Ora) || !oteoff.matches(pattern_Ora)) {
+						controlloSuperato = "NO";
+						messaggio += "<br>L'ora di termine per la presentazione dell'offerta non ha un formato valido ('hh:mm').";
+					}
+				}
+			}
+	        String chiaveGara=ngara;
+	        ResultClass result = null;
+	        int idBando;
+	        if(new Long(1).equals(gentip) || new Long(3).equals(gentip) || ngara==null || "".equals(ngara))
+	          chiaveGara=codgar;
+	        try{
+	          result = this.gestioneRegioneMarcheManager.getBando(chiaveGara);
+	        }catch(GestoreException e){
+	          throw new JspException("Errore nel controllo dell'esistenza del bando sul sito istituzionale della Regione Marche ", e);
+	        }
+	        if(result.isResult() && result.getBando()!=null ){
+	          idBando = result.getBando().getBandoID();
+	          page.setAttribute("bandoIdRegMarche", idBando, PageContext.REQUEST_SCOPE);
+			}
+	        List listaTabellatiRegioneMarche[] = getTabellatiRegioneMarche();
+            page.setAttribute("listaStruttureRegionali", listaTabellatiRegioneMarche[0], PageContext.REQUEST_SCOPE);
+            page.setAttribute("listaTemiRegionali", listaTabellatiRegioneMarche[1], PageContext.REQUEST_SCOPE);
+            page.setAttribute("listaTipologieProcedure", listaTabellatiRegioneMarche[2], PageContext.REQUEST_SCOPE);
+            if(result.isResult() && result.getBando()!=null ){
+        		page.setAttribute("idTemaRegionale", new Long(result.getBando().getTemaRegionaleID()), PageContext.REQUEST_SCOPE);
+        		page.setAttribute("idTipologiaBando", new Long(result.getBando().getTipologiaProcedura()), PageContext.REQUEST_SCOPE);
+        		page.setAttribute("idStrutturaRegionale", new Long(result.getBando().getStrutturaRiferimentoID()), PageContext.REQUEST_SCOPE);
+	        }
+		}
 
       if("NO".equals(controlloSuperato)){
         page.setAttribute("titoloMsg", titoloMessaggio, PageContext.REQUEST_SCOPE);

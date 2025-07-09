@@ -181,7 +181,7 @@
 						if (!json.esitoInviaMail){
 							$("#msgErr").show(tempo);
 						}
-						opener.window.location=contextPath+'/History.do?'+csrfToken+'&metodo=reload';
+						opener.window.location=contextPath+'/History.do?metodo=reload';
 					}
 					_nowait();
     			}

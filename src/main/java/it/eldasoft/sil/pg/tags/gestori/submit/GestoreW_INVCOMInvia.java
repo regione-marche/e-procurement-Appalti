@@ -2,20 +2,23 @@ package it.eldasoft.sil.pg.tags.gestori.submit;
 
 
 
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.HashMap;
 
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
+import it.eldasoft.gene.ws.objectstorage.UploadInfo;
 import org.apache.log4j.Logger;
 import org.springframework.jdbc.core.support.SqlLobValue;
 import org.springframework.jdbc.support.lob.DefaultLobHandler;
 import org.springframework.jdbc.support.lob.LobHandler;
 import org.springframework.transaction.TransactionStatus;
 
+import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
+import it.eldasoft.gene.db.domain.LogEvento;
+import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
@@ -77,9 +80,13 @@ public class GestoreW_INVCOMInvia extends AbstractGestoreChiaveNumerica {
     Long idcom = datiForm.getLong("IDCOM");
     Long compub = datiForm.getLong("COMPUB");
     String cenint = datiForm.getString("IDCFG_NEW");
+    String coment = datiForm.getString("COMENT");
 
     Long idcomris = datiForm.getLong("IDCOMRIS");
     String idprgris = datiForm.getString("IDPRGRIS");
+    
+    Long idcomino = datiForm.getLong("IDCOMINO");
+    String idprgino = datiForm.getString("IDPRGINO");
 
     this.getRequest().setAttribute("IDPRG", idprg);
     this.getRequest().setAttribute("IDCOM", idcom.toString());
@@ -98,19 +105,20 @@ public class GestoreW_INVCOMInvia extends AbstractGestoreChiaveNumerica {
     PgManagerEst1 pgManagerEst1 = (PgManagerEst1) UtilitySpring.getBean("pgManagerEst1",
         this.getServletContext(), PgManagerEst1.class);
     
+    /* Rimosso, appalti-2140
     //se è configurato il WSDM e l'invio è a carico del documentale, cancello i destinatari in cc
       if("false".equals(inviaDescc)) {
         try {
           Object par2[] = new Object[] { idprg, idcom.toString() };
-          String delete_W_INVCOMDES = "delete from W_INVCOMDES where IDPRG = ? and IDCOM =? and descc = 1";
+          String delete_W_INVCOMDES = "delete from W_INVCOMDES where IDPRG = ? and IDCOM =? and descc = '1'";
           this.sqlManager.update(delete_W_INVCOMDES, par2);
         } catch (SQLException e) {
           logger.error("Si è verificato un errore nella cancellazione dei dati dalla W_INVCOMDES", e);
         }
       }
-    
+    */
 
-
+    String inoltroOrRisposta ="";
 
     if (compub != null && compub.intValue() == 1){
       datiForm.setValue("W_INVCOM.COMSTATO", "3");
@@ -150,27 +158,31 @@ public class GestoreW_INVCOMInvia extends AbstractGestoreChiaveNumerica {
        boolean esitoControMarcatura[] = pgManagerEst1.applicareMarcaTemporalmente(idprg, idcom,true);
        esisteMarcatura = esitoControMarcatura[0];
        applicareMarcaTemp = esitoControMarcatura[1];
+       String where = " where DIGKEY1 = ? and DIGKEY2=? and DIGENT =? and DIGNOMDOC = "
+               + AllegatoSintesiUtils.creazioneFiltroNomeFileSintesi(false,this.sqlManager);
        if(!esisteMarcatura) {
          //Si deve cancellare un eventuale allegato di sintesi già presente
-         String delete = "delete from W_DOCDIG  where DIGKEY1 = ? and DIGKEY2=? and DIGENT =? and DIGNOMDOC = "
-             + AllegatoSintesiUtils.creazioneFiltroNomeFileSintesi(false,this.sqlManager);
+         String delete = "delete from W_DOCDIG  "+where;
          Object par[] = new Object[] {idprg, idcom.toString(), "W_INVCOM"};
+         UploadInfo oldBucketInfo = ObjectStorageUtils.getUploadInfo("select bucket_ref, bucket_uuid from w_docdig "+where,par);
+         ObjectStorageUtils.deleteFile(oldBucketInfo.bucket_ref(),oldBucketInfo.uuid());
          this.sqlManager.update(delete, par);
 
          String commsgogg = datiForm.getString("COMMSGOGG");
          String commsgtes = datiForm.getString("COMMSGTES");
-         String coment = datiForm.getString("COMENT");
+         
          byte[] pdf = null;
-         InputStream iccInputStream = new FileInputStream(getRequest().getSession(true).getServletContext().getRealPath("/WEB-INF/jrReport/sRGB_v4_ICC_preference.icc"));
          if("G1STIPULA".equals(coment)) {
-           pdf = gestioneWSDMManager.getTestoComunicazioneFormattatoStipula(comkey1, commsgogg, commsgtes, idprg,idcom,iccInputStream);
-         }else {
+           pdf = gestioneWSDMManager.getTestoComunicazioneFormattatoStipula(comkey1, commsgogg, commsgtes, idprg,idcom);
+         } else if("HOMEPG".equals(coment)){
+           pdf = gestioneWSDMManager.getTestoComunicazioneFormattatoHomePG(cenint, commsgogg, commsgtes, idprg,idcom);
+         } else {
            String cig=(String)this.sqlManager.getObject("select codcig from v_gare_torn where codice = ?", new Object[] {comkey1});
-           pdf = gestioneWSDMManager.getTestoComunicazioneFormattato(comkey1, cig, commsgogg, commsgtes, idprg,idcom,iccInputStream);
+           pdf = gestioneWSDMManager.getTestoComunicazioneFormattato(comkey1, cig, commsgogg, commsgtes, idprg,idcom);
          }
-         Long maxContatore = (Long)this.sqlManager.getObject("select coalesce(max(iddocdig),0) + 1 from W_DOCDIG where idprg = ?", new Object[] {idprg});
-         String insert="insert into w_docdig(idprg,iddocdig,digent,digkey1,digkey2,dignomdoc,digdesdoc,digogg) values(?,?,?,?,?,?,?,?)";
-         String nomeAllegato = idprg + maxContatore.toString() + "_comunicazione.pdf";
+         Long maxContatore = (Long)this.sqlManager.getObject("select coalesce(max(iddocdig),0) + 1 from W_DOCDIG where idprg = ?", new Object[] {"PG"});
+         String insert="insert into w_docdig(idprg,iddocdig,digent,digkey1,digkey2,digtipdoc,dignomdoc,digdesdoc,digogg) values(?,?,?,?,?,?,?,?,?)";
+         String nomeAllegato = "PG" + maxContatore.toString() + "_comunicazione.pdf";
          //Se attiva la gestione della marcatemporale si deve chiamare l'apposito servizio
 
          String descrizioneAllegato = "Riepilogo comunicazione";
@@ -189,19 +201,33 @@ public class GestoreW_INVCOMInvia extends AbstractGestoreChiaveNumerica {
          }
 
          LobHandler lobHandler = new DefaultLobHandler();
-         this.sqlManager.update(insert, new Object[] {idprg, maxContatore, "W_INVCOM",idprg,idcom.toString(),nomeAllegato,descrizioneAllegato,new SqlLobValue(pdf, lobHandler)});
+         this.sqlManager.update(insert, new Object[] {"PG", maxContatore, "W_INVCOM",idprg,idcom.toString(),"pdf/a",nomeAllegato,descrizioneAllegato,new SqlLobValue(pdf, lobHandler)});
+         ObjectStorageUtils.addFile("PG", maxContatore);
        }
      } catch (Exception e) {
        this.getRequest().setAttribute("RISULTATO", "ERRORE.MARCATEMP");
        return;
      }
 
-
-     datiForm.setValue("W_INVCOM.COMSTATO", "2");
+     if(compub != null && compub.intValue() == 3) { //per le comunicazione con compub=3 lo stato è di default 3 dopo l'invio
+       datiForm.setValue("W_INVCOM.COMSTATO", "3");
+       String updateW_INVCOMDES = "update w_invcomdes set desdatinv = ?, desdatinv_s = ? , desstato = ? where idprg = ? and idcom = ?";
+       try {
+         this.sqlManager.update(updateW_INVCOMDES, new Object[] {
+             new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()),
+           UtilityDate.convertiData(UtilityDate.getDataOdiernaAsDate(), UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS),
+           "2", idprg, idcom});
+       } catch (SQLException e) {
+         logger.error("Si è verificato un errore nell'aggiornamento dello stato della comunicazione id:" + idprg + " idcom:" + idcom.toString(), e);
+       }
+     }
+     else
+       datiForm.setValue("W_INVCOM.COMSTATO", "2");
    }
    datiForm.setValue("W_INVCOM.IDCFG", cenint);
 
    if(idcomris != null && idprgris !=null && !"".equals(idprgris)){
+     inoltroOrRisposta="di risposta ";
       try {
         Date comdatalet = (Date) sqlManager.getObject("select COMDATLET from w_invcom where IDPRG = ? and IDCOM = ?", new Object[] { idprgris, idcomris });
         if(comdatalet == null){
@@ -212,8 +238,29 @@ public class GestoreW_INVCOMInvia extends AbstractGestoreChiaveNumerica {
         logger.error("Si è verificato un errore nel salvataggio dei dati dalla comunicazione originale", e);
       }
    }
+   if(idcomino != null && idprgino !=null && !"".equals(idprgino)){
+     inoltroOrRisposta="di inoltro ";
+   }
    this.getRequest().setAttribute("RISULTATO", "INVIOESEGUITO");
+   
+   try {
+     TabellatiManager tabellatiManager = (TabellatiManager) UtilitySpring.getBean("tabellatiManager",
+         this.getServletContext(), TabellatiManager.class);
 
-  }
-
+     String descr = tabellatiManager.getDescrTabellato("G_023", compub.toString());
+     String riferimento = "rif. "+coment+ " - "+comkey1;
+     if("HOMEPG".equals(coment))
+       riferimento = "comunicazione generica";
+     LogEvento logEvento = LogEventiUtils.createLogEvento(this.getRequest());
+     logEvento.setLivEvento(1);
+     logEvento.setOggEvento(idcom.toString());
+     logEvento.setCodEvento("INVCOM_INVIO");
+     logEvento.setDescr("Invio comunicazione "+inoltroOrRisposta+descr+" ("+riferimento+")");
+     logEvento.setErrmsg(null);
+     LogEventiUtils.insertLogEventi(logEvento);
+   } catch (Exception le) {
+     String messageKey = "errors.logEventi.inaspettataException";
+     logger.error(this.resBundleGenerale.getString(messageKey), le);
+   }
+ }
 }

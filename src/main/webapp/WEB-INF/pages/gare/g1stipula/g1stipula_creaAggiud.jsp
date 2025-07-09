@@ -13,7 +13,10 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <%@ taglib uri="http://www.eldasoft.it/tags" prefix="elda" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 
+<fmt:setBundle basename="AliceResources" />
+<c:set var="isCodificaAutomaticaTORN" value='${gene:callFunction3("it.eldasoft.gene.tags.functions.IsCodificaAutomaticaFunction", pageContext, "TORN", "CODGAR")}'/>
 
 <gene:template file="scheda-template.jsp">
 <gene:setString name="titoloMaschera" value="Crea nuova stipula"/>
@@ -49,6 +52,13 @@
 		</tr>	
 	</gene:redefineInsert>
 	<gene:redefineInsert name="corpo">
+		<c:set var="msgChiaveErrore">
+			<fmt:message key="match.tags.template.dettaglio.campoChiave.messaggio">
+				<fmt:param value="$"/>
+			</fmt:message>
+		</c:set>
+
+		<c:set var="msgChiaveErrore" value="${fn:replace(msgChiaveErrore, '\\\\', '')}" />
 		<gene:formScheda entita="GARE" gestisciProtezioni="true" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreInitGaraStipula" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreAffidamentoStipula">
 		
 		<input type="hidden" name="tipoGara" value="garaLottoUnico" />
@@ -63,8 +73,11 @@
 		<gene:campoScheda >
 			<td colspan="2"><b>Dati generali</b></td>
 		</gene:campoScheda>
-		<gene:campoScheda campo="NUMAVCP" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" />
-		<gene:campoScheda campo="CODCIG"/>
+		<gene:campoScheda campo="NGARA" visibile="${isCodificaAutomaticaTORN eq 'false'}" obbligatorio="true">
+			<gene:checkCampoScheda funzione='"##".indexOf("$") < 0' obbligatorio="true" messaggio="${msgChiaveErrore}" />
+		</gene:campoScheda>
+		<gene:campoScheda campo="NUMAVCP" visibile="${empty initVERNPA}" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" />
+		<gene:campoScheda campo="CODCIG" visibile="${empty initVERNPA}"/>
 		<c:choose>
 		<c:when test='${fn:startsWith(datiRiga.GARE_CODCIG,"#") or fn:startsWith(datiRiga.GARE_CODCIG,"$") or fn:startsWith(datiRiga.GARE_CODCIG,"NOCIG")}'>
 			<gene:campoScheda campo="CODCIG_FIT" title="Codice CIG fittizio" campoFittizio="true" value="${datiRiga.GARE_CODCIG}" definizione="T10;;;;G1CODCIG" modificabile="false" visibile="false"/>
@@ -74,9 +87,9 @@
 		</c:otherwise>
 		</c:choose>
 	
-		<gene:campoScheda campo="DACQCIG"/>
+		<gene:campoScheda campo="DACQCIG" visibile="${empty initVERNPA}"/>
 		
-		<gene:campoScheda campo="ESENTE_CIG" campoFittizio="true" computed="true" title="Esente CIG?" definizione="T10;;;SN" defaultValue="2" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoSiNoSenzaNull" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.CODCIG") }' modificabile="true"/>
+		<gene:campoScheda campo="ESENTE_CIG" campoFittizio="true" computed="true" title="Esente CIG?" definizione="T10;;;SN" defaultValue="2" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoSiNoSenzaNull" visibile='${empty initVERNPA and gene:checkProt(pageContext, "COLS.VIS.GARE.GARE.CODCIG") }' modificabile="true"/>
 		
 		<gene:fnJavaScriptScheda funzione="gestioneEsenteCIG()" elencocampi="ESENTE_CIG" esegui="false" />
 		
@@ -105,8 +118,8 @@
 			 chiave="TORN_CENINT"
 			 functionId="skip|abilitazione:1_parentFormName:formUFFINTStipula"
 			 formName="formUFFINTStipula">
-			 <gene:campoScheda campo="CENINT" entita="TORN" title="Codice stazione appaltante aderente" where="GARE.CODGAR1 = TORN.CODGAR" value="${requestScope.initCENINT}" 
-			 	modificabile='${empty initCENINT}' />
+			 <gene:campoScheda campo="CENINT" entita="TORN" title="Codice stazione appaltante aderente" where="GARE.CODGAR1 = TORN.CODGAR" value="${not empty requestScope.initCENINT?requestScope.initCENINT:param.TORN_CENINT}"
+							   modificabile='${empty initCENINT}' />
 			 <gene:campoScheda campo="NOMEIN" title="Denominazione" where="GARE.CODGAR1 = TORN.CODGAR" campoFittizio="true" definizione="T254;0;;NOTE;NOMEIN" defaultValue="${requestScope.initNOMEIN}" 
 				modificabile='${empty initNOMEIN}' />
 			<gene:campoScheda campo="ISCUC" entita="UFFINT" from ="TORN" where="TORN.CENINT = UFFINT.CODEIN and TORN.CODGAR=GARE.CODGAR1" visibile="false" defaultValue="${requestScope.initISCUC}"/>
@@ -199,7 +212,7 @@
 			}
 			document.forms[0].activePage.value = 0;
 			document.forms[0].jspPathTo.value="/WEB-INF/pages/gare/g1stipula/g1stipula-scheda.jsp";
-			document.forms[0].action = document.forms[0].action + "&ncont=" + "1&forzaModo=1";
+			document.forms[0].action = document.forms[0].action + "?ncont=" + "1&forzaModo=1";
 			schedaConferma();
 		}
 		

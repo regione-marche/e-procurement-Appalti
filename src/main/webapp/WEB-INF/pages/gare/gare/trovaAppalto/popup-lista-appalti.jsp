@@ -72,7 +72,6 @@
 			<gene:campoLista campo="NAPPAL" headerClass="sortable" width="50" href="javascript:archivioSeleziona(${datiArchivioArrayJs});" />
 			<gene:campoLista campo="CODCUA" headerClass="sortable" href="javascript:archivioSeleziona(${datiArchivioArrayJs});" />
 			<gene:campoLista campo="NOTAPP" headerClass="sortable" />
-			<gene:campoLista campo="CODCIG" headerClass="sortable" href="javascript:archivioSeleziona(${datiArchivioArrayJs});"/>
 			<gene:campoLista campo="CUPPRG" entita="PERI" where="APPA.CODLAV = PERI.CODLAV" href="javascript:archivioSeleziona(${datiArchivioArrayJs});"/>
 		</gene:formLista>
   </gene:redefineInsert>

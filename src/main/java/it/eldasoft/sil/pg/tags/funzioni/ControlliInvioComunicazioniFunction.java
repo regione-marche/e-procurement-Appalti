@@ -46,9 +46,9 @@ public class ControlliInvioComunicazioniFunction extends AbstractFunzioneTag {
       Vector<?> datiComunicazione = sqlManager.getVector("select COMDATSCA, COMORASCA, COMMSGTES from w_invcom where idprg = ? and idcom = ?", new Object[] { idprg, idcom.toString() });
       if (datiComunicazione != null && datiComunicazione.size() > 0) {
         String commsgtes = SqlManager.getValueFromVectorParam(datiComunicazione, 2).getStringValue();
-        if(commsgtes == null || "".equals(commsgtes)) {
+        if(commsgtes == null || commsgtes.trim().isEmpty()) {
           ret="NO-TESTOCOM";
-        } else if ("1".equals(commodello)) {
+        } else if ("1".equals(commodello) || "11".equals(commodello) || "16".equals(commodello)) {
           Timestamp comdatsca = SqlManager.getValueFromVectorParam(datiComunicazione, 0).dataValue();
           String comorasca = SqlManager.getValueFromVectorParam(datiComunicazione, 1).getStringValue();
           if (comdatsca==null || comorasca==null || "".equals(comorasca)) {

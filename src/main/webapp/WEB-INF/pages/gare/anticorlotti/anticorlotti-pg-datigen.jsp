@@ -168,7 +168,7 @@
 	
 	function selezionaPaginaCustom(pageNumber) {
 		var paginaAppalti="${paginaAppalti }"
-		document.pagineForm.action += "&paginaAppalti=" + paginaAppalti;
+		document.pagineForm.action += "?paginaAppalti=" + paginaAppalti;
 		selezionaPaginaDefault(pageNumber);
 	}
 		
@@ -270,7 +270,7 @@
 		setValue("ANTICORLOTTI_CIG", getValue("ANTICORLOTTI_CIG").toUpperCase(), false);
 
 		var esenteCig = getValue("ESENTE_CIG");
-		if (esenteCig == "2") {
+		if (esenteCig == "2" || esenteCig == "") {
 			if (!controllaCIG("ANTICORLOTTI_CIG")) {
 				outMsg("Codice CIG non valido", "ERR");
 				onOffMsg();

@@ -14,7 +14,13 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <gene:template file="scheda-template.jsp" gestisciProtezioni="true" schema="GARE" idMaschera="GARE-scheda">
-
+ 
+<c:choose>
+    <c:when test='${ not empty param.listaRdaSelezionate}' >
+       <c:set var="listaRdaSelezionate" value="${param.listaRdaSelezionate}" scope="request"/>
+	</c:when>
+</c:choose>
+ 
 <c:choose>
 	<c:when test='${modo eq "NUOVO" and param.tipoGara eq "garaLottoUnico" and empty param.garaPerElenco and empty param.garaPerCatalogo}' >
 		<gene:setString name="titoloMaschera" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTitleFunction", pageContext, "GARE")}' />
@@ -92,6 +98,8 @@
 	<c:set var="lottoDiGara" value="true" scope="request"/>
 </c:if>
 	<gene:redefineInsert name="corpo">
-	  	<jsp:include page="gare-pagine-scheda.jsp" />
+	  	<jsp:include page="gare-pagine-scheda.jsp">
+    		<jsp:param name="listaRdaSelezionate" value="${param.listaRdaSelezionate}" />
+		</jsp:include>	  	
 	</gene:redefineInsert>
 </gene:template>

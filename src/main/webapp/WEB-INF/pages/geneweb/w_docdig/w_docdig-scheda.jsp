@@ -39,7 +39,7 @@
 		<c:set var="integrazioneWSDM" value="${integrazioneWSDM}" scope="request"/>
 	</c:otherwise>
 </c:choose>
-
+<c:set var="isVerificaPDFA" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "uploadFile.verifica.pdfA")}'/>
 <c:set var="digitalSignatureUrlCheck" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-check-url")}'/>
 <c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
 <c:choose>
@@ -72,6 +72,9 @@
 	<c:set var="firmaProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
 	<c:if test='${firmaProvider eq 2}'>
 		<c:set var="firmaRemota" value="true"/>
+	</c:if>
+	<c:if test='${firmaProvider eq 3}'>
+		<c:set var="richiestaFirma" value="0"/>
 	</c:if>
 	<c:set var="datins" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetCOMDATINSFunction",pageContext,idprg,idcom)}' />
 	
@@ -122,6 +125,7 @@
 			</gene:campoScheda>
 			<gene:campoScheda campo="FIT_DIGNOMDOC" campoFittizio="true" definizione="T100;;;;DIGNOMDOC" modificabile="false" value="${datiRiga.W_DOCDIG_DIGNOMDOC}"/>
 			<gene:campoScheda campo="DIGFIRMA" visibile='false'/>
+			<gene:campoScheda campo="DIGTIPDOC" entita="W_DOCDIG" visibile="false" definizione="T2;0;;SN;DIGTIPDOC" value="${datiRiga.W_DOCDIG_DIGTIPDOC}" />
 			<c:choose>
 				<c:when test='${modo eq "VISUALIZZA" }'>
 					<gene:campoScheda title="Visualizza allegato" >
@@ -142,6 +146,8 @@
 				<c:when test='${modo eq "NUOVO"}'>
 					<gene:campoScheda title="Nome file (*)" >
 						<input type="file" name="selezioneFile" id="selezioneFile" onchange="javascript:scegliFile(this.value);" class="file" size="70" onkeydown="return bloccaCaratteriDaTastiera(event);" />
+						<span id="checkPDFaDocMessage" style="display:none; color: blue;"><b>ATTENZIONE:</b> file non conforme al formato PDF/A</span>
+						<img id="imgCheckPDFaDocMessage" style="display:none;" src="${contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
 						<c:if test="${richiestaFirma eq '1'}">
 							<span style="float:right;">Richiesta firma?<input type="checkbox" name="richiestaFirma" id="richiestaFirma" class="file" size="50" onchange="javascript:aggiornaRichiestaFirma(this);"></span>
 						</c:if>
@@ -188,9 +194,12 @@
 			historyVaiIndietroDi(1);
 		}
 	
+		<c:if test='${modo eq "MODIFICA" or modo eq "NUOVO"}'>
 		document.forms[0].encoding="multipart/form-data";
+		</c:if>
 	
 		function scegliFile(valore) {
+			var file = document.getElementById("selezioneFile").files[0];
 			selezioneFile = document.getElementById("selezioneFile").value;
 			setValue("FILEDAALLEGARE",selezioneFile);
 			
@@ -202,13 +211,25 @@
 				alert("Il formato del file selezionato non è valido.\nI formati consentiti sono: " + formatoAllegati);
 				document.getElementById("selezioneFile").value="";
 				setValue("W_DOCDIG_DIGNOMDOC_" + indice,"");
+				$('#checkPDFaDocMessage').css("display", "none");
+				$('#imgCheckPDFaDocMessage').css("display", "none");
 				return;
 			}
 			if(nome.length>100){
 				alert("Il nome del file non può superare i 100 caratteri!");
 				document.getElementById("selezioneFile").value="";
+				$('#checkPDFaDocMessage').css("display", "none");
+				$('#imgCheckPDFaDocMessage').css("display", "none");
 			}else{
 				setValue("W_DOCDIG_DIGNOMDOC",nome);
+				<c:if test="${isVerificaPDFA eq '1'}">
+					if(nome.includes('.PDF')){
+						checkValiditaPDFA(file);
+					} else {
+						$('#checkPDFaDocMessage').css("display", "none");
+						$('#imgCheckPDFaDocMessage').css("display", "none");
+					}
+				</c:if>
 			}
 
 		}
@@ -232,7 +253,7 @@
 						document.formVisFirmaDigitale.submit();
 					}else{
 						var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-						document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+						document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 					}
 				</c:when>
 				<c:otherwise>
@@ -249,7 +270,7 @@
 						document.formVisFirmaDigitale.submit();
 					}else{
 						var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-						document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+						document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 					}
 				</c:otherwise>
 			</c:choose>
@@ -274,6 +295,64 @@
 			}else{
 				setValue("W_DOCDIG_DIGFIRMA","");
 			}
+		}
+		
+		function checkValiditaPDFA(file) {
+			if(file != undefined){
+				var formdata = false;
+				if (window.FormData) {
+					formdata = new FormData();
+				}
+				if (formdata) {
+					formdata.append("file", file);
+				}
+				_wait();
+				$.ajax({
+					url: "CheckFormatoFilePDFa.do",
+					data: formdata,
+					enctype: 'multipart/form-data',
+					type: 'POST',
+					cache: false,
+					contentType: false,
+					processData: false,
+					dataType: "json",
+					success: function(res) {
+						console.log(res);
+						if(res.esito == 'ko'){
+							$('#checkPDFaDocMessage').css("display", "contents");
+							$('#imgCheckPDFaDocMessage').css("display", "none");
+							setValue("W_DOCDIG_DIGTIPDOC","pdf");
+						} else {
+							$('#checkPDFaDocMessage').css("display", "none");
+							$('#imgCheckPDFaDocMessage').css("display", "unset");
+							setValue("W_DOCDIG_DIGTIPDOC","pdf/a");
+						}
+					},
+					error: function(e) {
+						alert('Errore nella verifica del file!');
+					},
+					complete: function() {
+						_nowait();
+					}
+				});
+			} else {
+				$('#checkPDFaDocMessage').css("display", "none");
+				$('#imgCheckPDFaDocMessage').css("display", "none");
+				setValue("W_DOCDIG_DIGTIPDOC",null);
+			}
+		}
+			
+		function _wait() {
+			document.getElementById('bloccaScreen').style.visibility = 'visible';
+			$('#bloccaScreen').css("width", $(document).width());
+			$('#bloccaScreen').css("height", $(document).height());
+			document.getElementById('wait').style.visibility = 'visible';
+			$("#wait").offset({ top: $(window).height() / 2, left: ($(window).width() / 2) - 200 });
+		}
+
+		function _nowait() {
+			document.getElementById('bloccaScreen').style.visibility = 'hidden';
+			document.getElementById('wait').style.visibility = 'hidden';
 		}
 		
 	</gene:javaScript>

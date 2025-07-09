@@ -27,7 +27,6 @@
 		<c:set var="codimp" value="${param.codimp}" />
 		<c:set var="ngara" value="${param.ngara}" />
 		
-		<c:set var="where" value="RAGIMP.CODIME9='${codimp}' AND RAGIMP.CODDIC NOT IN (SELECT CODDIC FROM RAGDET WHERE RAGDET.NGARA ='${ngara }' AND RAGDET.CODIMP='${codimp}')" />
 	</c:if>
 	
 	<c:choose>
@@ -74,7 +73,7 @@
 		</c:choose>
 		
 		
-		<gene:formLista entita="RAGIMP" where="${where}" pagesize="20" sortColumn="3" tableclass="datilista" gestisciProtezioni="true" 
+		<gene:formLista entita="RAGIMP" pagesize="20" sortColumn="3" tableclass="datilista" gestisciProtezioni="true" 
 				gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAssociaDitteRAGDET" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreRaggruppamentoImprese">
 			<gene:campoLista title="Seleziona<br><center>${titoloMenu}</center>" width="50">
 				<c:if test="${currentRow >= 0}">

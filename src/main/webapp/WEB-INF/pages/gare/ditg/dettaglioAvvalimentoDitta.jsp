@@ -58,7 +58,7 @@
 		<jsp:param name="sezioneListaVuota" value="true" />
 		<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/ditg/avvalimento-interno-scheda.jsp"/>
 		<jsp:param name="arrayCampi" value="'DITGAVVAL_ID_','DITGAVVAL_NGARA_','DITGAVVAL_DITTAO_','DITGAVVAL_TIPOAV_','DITGAVVAL_DITTART_','IMPR_NOMEST1_','DITGAVVAL_DITTAAV_','IMPR_NOMEST2_','DITGAVVAL_CODCAT_','V_CAIS_TIT_DESCAT_','DITGAVVAL_NUMCLA_','DITGAVVAL_NOTEAV_'"/>
-		<jsp:param name="arrayVisibilitaCampi" value="false, false, false, true, true, true, true, true, true, true, true, true" />
+		<jsp:param name="arrayVisibilitaCampi" value="false, false, false, true, true, true, true, true, false, false, false, true" />
 		<jsp:param name="titoloSezione" value="Avvalimento " />
 		<jsp:param name="titoloNuovaSezione" value="Nuovo avvalimento" />
 		<jsp:param name="descEntitaVociLink" value="avvalimento" />

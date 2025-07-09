@@ -101,6 +101,7 @@
 
 <c:if test="${integrazioneWSDM eq '1'}">
 	<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.EsistonoAllegatiComunicazioneFunction" parametro="${idprg};${idcom}"/>
+	<c:set var="esitoControlli" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ControlliInvioComunicazioniFunction",pageContext,idprg,idcom,commodello)}' />
 </c:if>
 
 <gene:set name="titoloMenu">
@@ -133,7 +134,7 @@
 			<gene:campoLista campo="IDCOM" visibile="false"/>
 			<gene:campoLista campo="IDCOMDES" width="40" title="N°" visibile="false"/>
 			<gene:campoLista campo="DESCODSOG" visibile="false" />
-			<gene:campoLista campo="DESCC" visibile="false" where="DESCC=1"/>
+			<gene:campoLista campo="DESCC" visibile="false" where="DESCC='1'"/>
 			
 <%/*
 // 			<c:if test="${datiRiga.IMPR_NOMEST ne ''}">
@@ -143,18 +144,30 @@
 */%>
    		    <gene:campoLista campo="DESINTEST" />
 			<gene:campoLista campo="DESMAIL" />
-			<gene:campoLista campo="COMTIPMA" width="100"/>
+			<gene:campoLista campo="COMTIPMA" title="Tipo"/>
 			<c:if test="${!empty comstato and comstato ne '1'}">
 				<gene:campoLista campo="DESSTATO" />
 				<c:if test='${statopec eq "true"}'>
 					<gene:campoLista campo="DESESITOPEC" width="150" />
+					<c:set var="tmp" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetDocumentiRiconciliazionePECFunction",pageContext,idprg,idcom,datiRiga.W_INVCOMDES_IDCOMDES)}' />
+					<gene:campoLista title="Ricevute" width="20">
+					<c:if test="${not empty idDocumentoAccettazionePEC or not empty idDocumentoAccettazionePEC}">
+						<c:if test="${not empty idDocumentoAccettazionePEC}">
+							<a href="javascript:downloadEML('${idprg}','${idDocumentoAccettazionePEC}','accettazione.eml')" title="Download accettazione" >
+								<img width="24" height="24" title="Download accettazione" alt="Download accettazione" src="${pageContext.request.contextPath}/img/visualizzafile.gif">
+							</a>
+						</c:if>
+						<c:if test="${not empty idDocumentoRicevutaPEC}">
+							<a href="javascript:downloadEML('${idprg}','${idDocumentoRicevutaPEC}','consegna.eml')" title="Download ricevuta" >
+								<img width="24" height="24" title="Download consegna" alt="Download consegna" src="${pageContext.request.contextPath}/img/visualizzafile.gif">
+							</a>
+						</c:if>
+					</c:if>
+					</gene:campoLista>
 				</c:if>
 				<gene:campoLista campo="DESDATINV" width="150" />
 				<c:if test='${statopec eq "true"}'>
 					<gene:campoLista campo="DESDATCONS" width="150" />
-				</c:if>
-				<c:if test="${fn:contains(listaOpzioniDisponibili, 'OP114#')}">
-					<gene:campoLista campo="DESDATLET" width="150" title="Data e ora lettura su portale"/>
 				</c:if>
 				<gene:campoLista campo="DESERRORE" />						
 			</c:if>
@@ -172,7 +185,7 @@
 		<c:when test="${comstato eq '1' and autorizzatoModificaComunicazione eq 'true'}">
 			<gene:redefineInsert name="listaNuovo">
 				<c:if test='${gene:checkProtFunz(pageContext,"INS","LISTANUOVO")}'>
-					<c:if test='${entitaParent ne "NSO_ORDINI" and commodello ne "1" }}' >
+					<c:if test='${entitaParent ne "NSO_ORDINI" and commodello ne "1" }' >
 						<tr>
 							<td class="vocemenulaterale">
 								<a href="javascript:ricercaDestinatariAnagrafica('${idprg}','${idcom}');" title="Aggiungi destinatari da anagrafica" tabindex="1503">
@@ -212,7 +225,6 @@
 					<c:if test='${entitaParent ne "NSO_ORDINI" and commodello ne "1"}' >
 							<INPUT type="button"  class="bottone-azione" value='Aggiungi destinatari da anagrafica' title='Aggiungi destinatari da anagrafica' onclick="javascript:ricercaDestinatariAnagrafica('${idprg}','${idcom}');">&nbsp;
 					</c:if>	
-							<br><br>
 						
 							<INPUT type="button"  class="bottone-azione" value='Aggiungi altri destinatari' title='Aggiungi altri destinatari' onclick="javascript:aggiungiAltriIndirizzi('${idprg}','${idcom}');">&nbsp;&nbsp;
 						
@@ -237,23 +249,28 @@
 <gene:javaScript>
 	
 	var autorizzatoTelematiche ="${autorizzatoTelematiche }";
+	var bloccoInvioComunicazioniGeneriche ="${bloccoInvioComunicazioniGeneriche}";
 	var cenint = "${cenint}";
 	var descc = "${descc}";
+	var coment = "${coment}";
 
 	function aggiungiAltriIndirizzi(idprg,idcom){
-		openPopUpCustom("href=geneweb/w_invcomdes/w_invcomdes-schedaPopup-insert.jsp&modo=NUOVO"+"&idprg=" + idprg + "&idcom=" + idcom + "&" +csrfToken + "&idconfi=${idconfi}" + "&descc="+descc, "aggiungiAltriIndirizzi", 850, 500, "yes", "yes");
+		openPopUpCustom("href=geneweb/w_invcomdes/w_invcomdes-schedaPopup-insert.jsp&modo=NUOVO"+"&idprg=" + idprg + "&idcom=" + idcom + "&idconfi=${idconfi}" + "&descc="+descc, "aggiungiAltriIndirizzi", 850, 500, "yes", "yes");
 	}
 	
 	function ricercaDestinatariAnagrafica(idprg,idcom){
-		openPopUpCustom("href=geneweb/w_invcomdes/w_invcomdes-ricerca-destinatariAnagrafica-popup.jsp&idprg=" + idprg + "&idcom=" + idcom + "&filtroRadio=1&" +csrfToken + "&idconfi=${idconfi}" + "&descc="+descc, "aggiundiDestinatariAnagrafica", 950, 500, "yes", "yes");
+		openPopUpCustom("href=geneweb/w_invcomdes/w_invcomdes-ricerca-destinatariAnagrafica-popup.jsp&idprg=" + idprg + "&idcom=" + idcom + "&filtroRadio=1&idconfi=${idconfi}" + "&descc="+descc +"&coment=" +coment, "aggiundiDestinatariAnagrafica", 950, 500, "yes", "yes");
 	}
 	
 	function inviacomunicazione(idprg,idcom){
 		if(autorizzatoTelematiche == "false"){
 			alert("Non e' possibile procedere.\nLa funzione e' disponibile solo al Punto ordinante");
 			return;
+		}if(bloccoInvioComunicazioniGeneriche == "true"){
+			alert("Non e' possibile procedere.\nL'utente non risulta abilitato all'invio di comunicazioni generiche");
+				return;
 		}else{
-			if(cenint == ""){
+			if(cenint == "" && coment != "HOMEPG"){
 				alert("Non e' possibile procedere.\nDeve essere specificata la stazione appaltante");
 				return;
 			}else{
@@ -266,6 +283,7 @@
 	
 	function protocollacomunicazione(idprg,idcom) {
 		var esistonoAllegatiDaFirmare = "${esistonoAllegatiDaFirmare}";
+		var esitoControlli = "${esitoControlli}";
 		if(autorizzatoTelematiche == "false"){
 			alert("Non e' possibile procedere.\nLa funzione e' disponibile solo al Punto ordinante");
 			return;
@@ -275,6 +293,9 @@
 				return;
 			}else if(esistonoAllegatiDaFirmare == 'TRUE'){
 				alert("Non e' possibile procedere.\nVi sono degli allegati in attesa di firma");
+				return;
+			}else if(esitoControlli == 'NO-TERMINISCA'){
+				alert("Non è possibile inviare la comunicazione in quanto la data termine presentazione documentazione è precedente alla data corrente");
 				return;
 			}else{
 				document.formprotocollacomunicazione.idprg.value = idprg;
@@ -303,7 +324,7 @@
 		var entitaWSDM="${entitaWSDM }";
 		var idconfi="${idconfi }";
 		var comdatins ="${comdatins }";
-		document.pagineForm.action += "&keyAdd=" + keyAdd + "&chiaveWSDM=" + chiaveWSDM + "&entitaWSDM=" + entitaWSDM + "&comdatins=" + comdatins + "&cenint=" + cenint + "&idconfi=" + idconfi;
+		document.pagineForm.action += "?keyAdd=" + keyAdd + "&chiaveWSDM=" + chiaveWSDM + "&entitaWSDM=" + entitaWSDM + "&comdatins=" + comdatins + "&cenint=" + cenint + "&idconfi=" + idconfi;
 		selezionaPaginaDefault(pageNumber);
 	}
 	
@@ -316,8 +337,13 @@
 	}
 	
 	function aggiorna(){
-			window.location=contextPath+'/History.do?'+csrfToken+'&metodo=reload&numeroPopUp='+getNumeroPopUp();
+			window.location=contextPath+'/History.do?metodo=reload&numeroPopUp='+getNumeroPopUp();
 		}
+
+	function downloadEML(idprg,iddocdig,dignomdoc) {
+		var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
+		document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+	}
 </gene:javaScript>
 
 <form name="formprotocollacomunicazione" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">

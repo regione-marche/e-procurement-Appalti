@@ -1107,8 +1107,8 @@ $(window).on("load", function (){
         	if(tipoNodo=="C" || tipoNodo=="CISARCHI" || tipoNodo== "CA" || tipoNodo== "CAISARCHI"){
         		var caisim = nodoCorrente.attr("caisim");
             	var descrizione = nodoCorrente.attr("descrizione");
-            	$("#Campo8").val(caisim) ;
-            	$("#Campo9").val(descrizione) ;
+            	$("#"+$("#campoCodiceCategoria").val()).val(caisim) ;
+            	$("#"+$("#campoDescrizioneCategoria").val()).val(descrizione) ;
             	$("#mascheraAlberoCategorie").dialog( "close" );
         	}else{
         		alert("Non e'stata selezionata una categoria");

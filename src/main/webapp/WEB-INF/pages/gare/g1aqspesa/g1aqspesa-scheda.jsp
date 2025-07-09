@@ -169,7 +169,7 @@
 	<gene:javaScript>
 	
 	function schedaNuovoCustom() {
-		document.forms[0].action=document.forms[0].action+"&cenint=${cenint}&ngara=${ngara}&ncont=${ncont}&codimp=${codimp}&ngaral=${ngaral}";
+		document.forms[0].action=document.forms[0].action+"?cenint=${cenint}&ngara=${ngara}&ncont=${ncont}&codimp=${codimp}&ngaral=${ngaral}";
 		schedaNuovoDefault();
 	}
 	

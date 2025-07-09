@@ -68,6 +68,7 @@ public class SetRichiestaArchiviazioneAction extends Action {
     JSONObject result = new JSONObject();
 
     Long syscon = null;
+    Long sysdet = null;
     Long tipo_archiviazione = null;
     Long _idRichiesta = null;
 
@@ -133,6 +134,13 @@ public class SetRichiestaArchiviazioneAction extends Action {
     String uocompetenza= request.getParameter("uocompetenza");
     String uocompetenzadescrizione= request.getParameter("uocompetenzadescrizione");
 
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+      username = credenziali[0];
+      password = credenziali[1];
+    }
+
     if(!"G1STIPULA".equals(entita)) {
       entita="GARE";
       if("1".equals(genere))
@@ -144,12 +152,6 @@ public class SetRichiestaArchiviazioneAction extends Action {
 
 
     if("TITULUS".equals(tipoWSDM)){
-      if("10".equals(genere) || "20".equals(genere))
-        tipodocumento=this.gestioneWSDMManager.TIPO_DOCUMENTO_ELENCO_ARCHIVIAZIONE;
-      else if("11".equals(genere))
-        tipodocumento=this.gestioneWSDMManager.TIPO_DOCUMENTO_AVVISO_ARCHIVIAZIONE;
-      else
-        tipodocumento=this.gestioneWSDMManager.TIPO_DOCUMENTO_GARA_ARCHIVIAZIONE;
       inout ="INT";
     }
 
@@ -277,7 +279,7 @@ public class SetRichiestaArchiviazioneAction extends Action {
             allegati[0].setTitolo("Apertura fascicolo");
             allegati[0].setIdAllegato(idDocumento + "|1");
           }
-          InputStream iccInputStream = new FileInputStream(request.getSession(true).getServletContext().getRealPath("/WEB-INF/jrReport/sRGB_v4_ICC_preference.icc"));
+          InputStream iccInputStream = new FileInputStream(request.getSession(true).getServletContext().getRealPath("/WEB-INF/jrReport/sRGB2014.icc"));
           try {
             allegati[0].setContenuto(UtilityStringhe.string2PdfA(commsgtes,iccInputStream));
           } catch (com.itextpdf.text.DocumentException e) {
@@ -383,13 +385,12 @@ public class SetRichiestaArchiviazioneAction extends Action {
     syscon = null;
     tipo_archiviazione = new Long(2);
 
-    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    ProfiloUtente profiloUtente = (ProfiloUtente) request.getSession().getAttribute(
+        CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+    syscon = sysdet = new Long(profiloUtente.getId());
+
     if (wsdmLoginComune != null && "1".equals(wsdmLoginComune)) {
       syscon = new Long(-1);
-    } else {
-      ProfiloUtente profiloUtente = (ProfiloUtente) request.getSession().getAttribute(
-          CostantiGenerali.PROFILO_UTENTE_SESSIONE);
-      syscon = new Long(profiloUtente.getId());;
     }
 
     //Per l'integrazione DOCER adopero alcuni campi di GARDOC_JOBS per contentere dei dati che non sono allineati col nome del campo:
@@ -404,7 +405,7 @@ public class SetRichiestaArchiviazioneAction extends Action {
 
     //INSERIMENTO in GARDOC_JOBS
     _idRichiesta = archiviazioneDocumentiManager.insertJobArchiviazioneDocumenti(syscon, codgar, entita, tipoWSDM, classificadocumento, codiceregistrodocumento,
-        tipodocumento, mittenteinterno, idtitolazione, idindice, idunitaoperativadestinataria,mezzo, struttura,supporto,tipo_archiviazione,sottotipo);
+        tipodocumento, mittenteinterno, idtitolazione, idindice, idunitaoperativadestinataria,mezzo, struttura,supporto,tipo_archiviazione,sottotipo,sysdet);
     result.put("idRichiesta", _idRichiesta);
 
     out.println(result);

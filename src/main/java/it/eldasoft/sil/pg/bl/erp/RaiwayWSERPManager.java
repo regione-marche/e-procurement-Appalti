@@ -10,16 +10,24 @@
  */
 package it.eldasoft.sil.pg.bl.erp;
 
+import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.GestioneWSERPManager;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.utility.UtilityStringhe;
 import it.maggioli.eldasoft.ws.erp.WSERPFornitoreResType;
 import it.maggioli.eldasoft.ws.erp.WSERPFornitoreType;
 import it.maggioli.eldasoft.ws.erp.WSERPGaraType;
 import it.maggioli.eldasoft.ws.erp.WSERPOdaType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaResType;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.Date;
@@ -37,6 +45,9 @@ public class RaiwayWSERPManager {
   private SqlManager          sqlManager;
 
   private GestioneWSERPManager gestioneWSERPManager;
+  
+  /** Manager con funzionalita' generali */
+  private GeneManager               geneManager;
 
   public void setSqlManager(SqlManager sqlManager) {
     this.sqlManager = sqlManager;
@@ -45,7 +56,20 @@ public class RaiwayWSERPManager {
   public void setGestioneWSERPManager(GestioneWSERPManager gestioneWSERPManager) {
     this.gestioneWSERPManager = gestioneWSERPManager;
   }
-
+  
+  /**
+   * @param geneManager
+   *        geneManager da settare internamente alla classe.
+   */
+  public void setGeneManager(GeneManager geneManager) {
+    this.geneManager = geneManager;
+  }
+  
+  public static final String APPALTI_MS_RAI_WS_BASEURL = "appalti-ms.rai.ws.baseUrl";
+  public static final String APPALTI_MS_RAI_WS_CLIENTID = "appalti-ms.rai.ws.clientId";
+  public static final String APPALTI_MS_RAI_WS_CLIENTKEY = "appalti-ms.rai.ws.clientKey";
+  public static final String APPALTI_MS_RAI_WS_USERNAME = "appalti-ms.rai.ws.username";
+  public static final String APPALTI_MS_RAI_WS_PASSWORD = "appalti-ms.rai.ws.password";
 
   public WSERPRdaResType  inviaDatiProcedura (String username, String password, HashMap datiMask) throws GestoreException, SQLException{
 
@@ -191,8 +215,8 @@ public class RaiwayWSERPManager {
                if(new Long(1).equals(nazimp)){
                  siglanaz = "IT";
                }else{
-                 siglanaz = (String) this.sqlManager.getObject("select tab2d1 from tab2 where tab2cod= ?" +
-                         " and tab2tip =? ", new Object[]{"G_z23",nazimp.toString()});
+                 siglanaz = (String) this.sqlManager.getObject("select codiso from g_nazioni where codice =?",
+                         new Object[]{nazimp});
                }
              }
              String capimp = (String) SqlManager.getValueFromVectorParam(datiIMPR.get(0), 6).getValue();
@@ -279,10 +303,12 @@ public class RaiwayWSERPManager {
                  caldataIso.setTime(datiso);
                  fornitore.setDataIscrizioneISO(caldataIso);
              }
-             if(orgCertificatore != null) {
-           	 fornitore.setOctIscrizioneISO(orgCertificatore); 
+             if(octiso != null) {
+               fornitore.setOctIscrizioneISO(octiso.toString()); 
              }
-             
+             if(orgCertificatore != null) {
+               fornitore.setDescOctIscrizioneISO(orgCertificatore); 
+             }
              if(tipimp!=null) {
            	  fornitore.setTipologia(tipimp.toString());  
              }
@@ -303,6 +329,114 @@ public class RaiwayWSERPManager {
 	  
   }
 	  
+  public String insertAnagraficaFornitore(String codiceFiscale, String partitaIva) throws Exception {
+    Object[] obj = new Object[]{codiceFiscale, partitaIva};
+    String controlloSeEsisteImpr = "select codimp from impr where cfimp = ? and ";
+    if(partitaIva != null) {
+      controlloSeEsisteImpr += "pivimp = ? ";
+    } else {
+      controlloSeEsisteImpr += "pivimp is null ";
+      obj = new Object[]{codiceFiscale};
+    }
+    String codiceImpresa = null;
+    String codimprSql = (String)sqlManager.getObject(controlloSeEsisteImpr, obj);
+    if (codimprSql != null) {
+        codiceImpresa = codimprSql;
+    } else {
+      JSONObject operatoreJson = getOperatoreEconomico(codiceFiscale, partitaIva);
+      String denominazione = operatoreJson.getString("denominazione");
+      codiceFiscale = operatoreJson.getString("codiceFiscale");
+      partitaIva = operatoreJson.getString("partitaIva");
+      String email = operatoreJson.getString("email");
+      String pec = operatoreJson.getString("pec");
+      String nazione = operatoreJson.getString("nazione");
+      codiceImpresa = geneManager.calcolaCodificaAutomatica("IMPR","CODIMP");
+      String insertQuery = "INSERT INTO IMPR (CODIMP,TIPIMP,NOMEST,NOMIMP,CFIMP,PIVIMP,EMAIIP,EMAI2IP,NAZIMP) VALUES (?,?,?,?,?,?,?,?,?)";
+      sqlManager.update(insertQuery, new Object[]{codiceImpresa,null,denominazione,denominazione,codiceFiscale,partitaIva,email,pec,null});
+    }
+    
+    return codiceImpresa;
+  }
+  
+  
+  public String getAuthorization() throws Exception {
+    
+    String url = ConfigManager.getValore(APPALTI_MS_RAI_WS_BASEURL);
+    if (url == null || "".equals(url)) {
+      throw new GestoreException("L'indirizzo per la connessione al web service non e' definito", "");
+    }
+    if (url.endsWith("/"))
+      url = url.substring(0, url.length() - 1);
+
+    url = url + "/authenticate";
+
+    HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+
+    conn.setRequestMethod("POST");
+    conn.setRequestProperty("clientId", ConfigManager.getValore(APPALTI_MS_RAI_WS_CLIENTID));
+    conn.setRequestProperty("clientKey", ConfigManager.getValore(APPALTI_MS_RAI_WS_CLIENTKEY));
+    conn.setRequestProperty("password", ConfigManager.getValore(APPALTI_MS_RAI_WS_PASSWORD));
+    conn.setRequestProperty("username", ConfigManager.getValore(APPALTI_MS_RAI_WS_USERNAME));
+    conn.setRequestProperty("Content-Type", "application/json");
+
+    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+    StringBuilder response = new StringBuilder();
+    String line;
+    while ((line = reader.readLine()) != null) {
+      response.append(line);
+    }
+    reader.close();
+    conn.disconnect();
+
+    JSONObject jsonObject = JSONObject.fromObject(response.toString());
+
+    return jsonObject.getString("token");
+
+  }
+  
+  public JSONObject getOperatoreEconomico(String cf, String piva) throws Exception {
+
+    String url = ConfigManager.getValore(APPALTI_MS_RAI_WS_BASEURL);
+    if (url == null || "".equals(url)) {
+      throw new GestoreException("L'indirizzo per la connessione al web service non e' definito", "");
+    }
+    if (url.endsWith("/"))
+      url = url.substring(0, url.length() - 1);
+
+    url = url + "/getOperatoriEconomici?cfOe="+cf;
+    
+    if(piva != null) {
+      url += "&pivaOe="+piva;
+    }
+    HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+    conn.setRequestMethod("GET");
+    conn.setRequestProperty("Authorization", getAuthorization());
+    conn.setRequestProperty("Content-Type", "application/json");
+
+    JSONObject res = null;
+    BufferedReader reader = null;
+    if (conn.getResponseCode() == 404) {
+      logger.error("La risorsa con codice fiscale "+cf+" non è stata trovata (404 Not Found)");
+    } else if (conn.getResponseCode() == 200) {
+      reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+      StringBuilder response = new StringBuilder();
+      String line;
+      while ((line = reader.readLine()) != null) {
+          response.append(line);
+      }
+      res = JSONArray.fromObject(response.toString()).getJSONObject(0);
+    } else {
+      logger.error("La richiesta ha restituito un codice di stato inaspettato: " + conn.getResponseCode());
+    }
+
+    if (reader != null) {
+      reader.close();
+    }
+    conn.disconnect();
+
+    return res;
+
+  }
 
 
 

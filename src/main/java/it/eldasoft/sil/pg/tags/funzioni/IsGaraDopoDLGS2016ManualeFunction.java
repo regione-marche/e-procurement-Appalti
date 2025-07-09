@@ -95,22 +95,26 @@ public class IsGaraDopoDLGS2016ManualeFunction extends AbstractFunzioneTag {
           esitoControllo = aggiudicazioneManager.getLeggeCalcoloSoglia(iterga, dinvit, dpubavg, datpub, calcsome);
 
           if(esitoControllo > 0){
-            if(esitoControllo != 3)
+            if(esitoControllo < 3)
               result=aggiudicazioneManager.isModalitaManuale();
 
             if("true".equals(eseguireControlloDitteNuovaNormativa) && !new Long(6).equals(modlicg)){
               //Controllo che il numero di ditte ammesse in gara sia superiore al valore specificato nel tabellato A1135
               Object[] soglia = aggiudicazioneManager.getImportoSogliaPerGara(tipgen,dpubavg,dinvit,iterga.intValue(),1,codgar1);
+              Double valmax = aggiudicazioneManager.getValMax(codgar1);
+              if(valmax==null) {
+                valmax= new Double(0);
+              }
               Double importoSogliaPerGara = (Double) soglia[0];
               int numeroVoceParametro=1;
-              if (importoGara < importoSogliaPerGara.doubleValue())
+              if (valmax < importoSogliaPerGara.doubleValue())
                 numeroVoceParametro=2;
               //Object[] risultato = aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(ngara,"A1135",numeroVoceParametro);
               Object[] risultato = null;
               if("true".equals(controlloSoloDitteInvOff))
                 risultato = aggiudicazioneManager.controlloNumDitteInvoffSopraSoglia(ngara,"A1135",numeroVoceParametro,calcsome);
               else
-                risultato = aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(ngara,"A1135",numeroVoceParametro,calcsome);
+                risultato = aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(ngara,"A1135",numeroVoceParametro,calcsome,null);
               esitoControlloNumDitte = (Boolean)risultato[0];
               String descTabellatoValoreConfronto = (String)risultato[1];
               pageContext.setAttribute("sogliaNumDitte",descTabellatoValoreConfronto, PageContext.REQUEST_SCOPE);
@@ -124,12 +128,19 @@ public class IsGaraDopoDLGS2016ManualeFunction extends AbstractFunzioneTag {
                 String initEscauto = null;
                 //Gestione per campo ESCAUTO
                 Long ditteAmmesse = aggiudicazioneManager.conteggioDitte(ngara,"(AMMGAR <> '2' or AMMGAR is null) and (MOTIES < 99 or MOTIES is null)");
-                if (importoGara < importoSogliaPerGara.doubleValue()){
-                  if(ditteAmmesse!=null && ditteAmmesse.longValue() < 10)
-                    initEscauto = "1/3";
-                  else if(ditteAmmesse!=null && ditteAmmesse.longValue() >= 10)
-                    initEscauto = "2";
-                }else if(importoGara >= importoSogliaPerGara.doubleValue())
+                if (valmax < importoSogliaPerGara.doubleValue()){
+                  if(esitoControllo>=4) {
+                    if(new Long(2).equals(tipgen))
+                      initEscauto="6";
+                    else
+                      initEscauto = "5bis";
+                  }else {
+                    if(ditteAmmesse!=null && ditteAmmesse.longValue() < 10)
+                      initEscauto = "1/3";
+                    else if(ditteAmmesse!=null && ditteAmmesse.longValue() >= 10)
+                      initEscauto = "2";
+                  }
+                }else if(valmax >= importoSogliaPerGara.doubleValue())
                   initEscauto = "4";
                 pageContext.setAttribute("initEscauto",initEscauto, PageContext.REQUEST_SCOPE);
               }
@@ -138,11 +149,12 @@ public class IsGaraDopoDLGS2016ManualeFunction extends AbstractFunzioneTag {
           pageContext.setAttribute("isGaraDLGS2016",new Boolean(esitoControllo== 1), PageContext.REQUEST_SCOPE);
           pageContext.setAttribute("isGaraDLGS2017",new Boolean(esitoControllo== 2), PageContext.REQUEST_SCOPE);
           pageContext.setAttribute("isGaraDL2019",new Boolean(esitoControllo== 3), PageContext.REQUEST_SCOPE);
+          pageContext.setAttribute("isGaraDLGS2023",new Boolean(esitoControllo== 4), PageContext.REQUEST_SCOPE);
           pageContext.setAttribute("calcsoang",calcsoang, PageContext.REQUEST_SCOPE);
           pageContext.setAttribute("esitoControlloDitteDLGS2016",esitoControlloNumDitte, PageContext.REQUEST_SCOPE);
         }
         if("true".equals(eseguireControlloDitteNormativaPrecedente)){
-          Boolean risultato = (Boolean)aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(ngara,"A2063",1,"0")[0];
+          Boolean risultato = (Boolean)aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(ngara,"A2063",1,"0",null)[0];
           pageContext.setAttribute("controlloDitteNormativaPrecedente",risultato, PageContext.REQUEST_SCOPE);
         }
       } catch (SQLException e) {

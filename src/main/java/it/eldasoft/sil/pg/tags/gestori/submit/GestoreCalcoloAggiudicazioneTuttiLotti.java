@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
 
@@ -107,6 +108,7 @@ public GestoreCalcoloAggiudicazioneTuttiLotti(boolean isGestoreStandard) {
     String isGaraDLGS2016 = impl.getString("ISGARADLGS2016");
     String isGaraDLGS2017 = impl.getString("ISGARADLGS2017");
     String isGaraDL2019 = impl.getString("ISGARADL2019");
+    String isGaraDLGS2023 = impl.getString("ISGARADLGS2023");
     String legregsicVisibile = impl.getString("LEGREGSICVISIBILE");
     String legregsic = "";
     int numeroVoceParametroA1135=1;
@@ -118,6 +120,7 @@ public GestoreCalcoloAggiudicazioneTuttiLotti(boolean isGestoreStandard) {
     boolean calcoloSogliaEseguito = true;
     boolean erroreSelect = false;
     Double importoSogliaPerGara = null;
+    Double valmax = null;
     Long tipgenGara = null;
     Timestamp dpubavg = null;
     Timestamp dinvit = null;
@@ -126,11 +129,11 @@ public GestoreCalcoloAggiudicazioneTuttiLotti(boolean isGestoreStandard) {
     //Si procede con il calcolo della soglia di anomalia e dell'aggiudicazione per ogni lotto
     List listaLotti;
     try {
-      listaLotti = this.sqlManager.getListVector("select g.ngara, g.modlicg, g.calcsoang, g.dittap, g1.metsoglia, g1.metcoeff, g1.riptec, g1.ripeco, g.modastg, g.impapp " +
+      listaLotti = this.sqlManager.getListVector("select g.ngara, g.modlicg, g.calcsoang, g.dittap, g1.metsoglia, g1.metcoeff, g1.riptec, g1.ripeco, g.modastg, g.impapp, g1.metoepv " +
       		"from gare g, gare1 g1 where g.codgar1=? and g.ngara=g1.ngara and g.ngara!=g.codgar1 order by g.ngara", new Object[]{ngara});
 
       //Individua parametro 'numero minimo ditte per calcolo soglia', differenziato per gare sopra e sotto soglia
-      if("true".equals(isGaraDLGS2016) || "true".equals(isGaraDLGS2017) || "true".equals(isGaraDL2019) || "1".equals(legregsic)){
+      if("true".equals(isGaraDLGS2016) || "true".equals(isGaraDLGS2017) || "true".equals(isGaraDL2019) || "true".equals(isGaraDLGS2023) || "1".equals(legregsic)){
         Vector<?> datiGara = this.sqlManager.getVector("select t.imptor, t.iterga, t.tipgen, t.dpubav, t.dinvit " +
             "from torn t where t.codgar=?", new Object[]{ngara});
         imptor = SqlManager.getValueFromVectorParam(datiGara, 0).doubleValue();
@@ -139,11 +142,12 @@ public GestoreCalcoloAggiudicazioneTuttiLotti(boolean isGestoreStandard) {
         dpubavg = SqlManager.getValueFromVectorParam(datiGara, 3).dataValue();
         dinvit = SqlManager.getValueFromVectorParam(datiGara, 4).dataValue();
         Object[] soglia = aggiudicazioneManager.getImportoSogliaPerGara(tipgenGara,dpubavg,dinvit,iterga.intValue(),1,ngara);
+        valmax = aggiudicazioneManager.getValMax(ngara);
         importoSogliaPerGara = (Double) soglia[0];
-        if(imptor==null){
-          imptor = new Double(0);
+        if(valmax==null){
+          valmax = new Double(0);
         }
-        if (imptor < importoSogliaPerGara.doubleValue())
+        if (valmax < importoSogliaPerGara.doubleValue())
           numeroVoceParametroA1135=2;
       }
     } catch (SQLException e) {
@@ -240,8 +244,8 @@ public GestoreCalcoloAggiudicazioneTuttiLotti(boolean isGestoreStandard) {
           modastg=SqlManager.getValueFromVectorParam(listaLotti.get(row), 8).longValue();
 
           try {
-            if("true".equals(isGaraDLGS2016) || "true".equals(isGaraDLGS2017) || "true".equals(isGaraDL2019) || "1".equals(legregsicLotto)){
-              valoreRitornoControllo = (Boolean)aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(lotto,"A1135", numeroVoceParametroA1135, "")[0];
+            if("true".equals(isGaraDLGS2016) || "true".equals(isGaraDLGS2017) || "true".equals(isGaraDL2019) || "true".equals(isGaraDLGS2023) || "1".equals(legregsicLotto)){
+              valoreRitornoControllo = (Boolean)aggiudicazioneManager.controlloNumDitteAmmesseSopraSoglia(lotto,"A1135", numeroVoceParametroA1135, "",null)[0];
               DLG2016CalcoloGraduatoria = new Boolean(!valoreRitornoControllo.booleanValue());
             }
            } catch (SQLException e) {
@@ -303,12 +307,19 @@ public GestoreCalcoloAggiudicazioneTuttiLotti(boolean isGestoreStandard) {
           initEscauto = null;
           if(modastg!=null && modastg.longValue()==1 && !new Long(6).equals(modlicg) && "1".equals(calcsoang) && !DLG2016CalcoloGraduatoria.booleanValue()){
             ditteAmmesse = aggiudicazioneManager.conteggioDitte(lotto,"AMMGAR <> '2' and (MOTIES < 99 or MOTIES is null)");
-            if (imptor.doubleValue() < importoSogliaPerGara.doubleValue()){
-              if(ditteAmmesse!=null && ditteAmmesse.longValue() < 10)
-                initEscauto = new Long(1);
-              else if(ditteAmmesse!=null && ditteAmmesse.longValue() >= 10)
-                initEscauto = new Long(2);
-            }else if(imptor >= importoSogliaPerGara.doubleValue())
+            if (valmax < importoSogliaPerGara.doubleValue()){
+              if("true".equals(isGaraDLGS2023)) {
+                if(new Long(2).equals(tipgenGara))
+                  initEscauto=new Long(6);
+                else
+                  initEscauto = new Long(5);
+              }else {
+                if(ditteAmmesse!=null && ditteAmmesse.longValue() < 10)
+                  initEscauto = new Long(1);
+                else if(ditteAmmesse!=null && ditteAmmesse.longValue() >= 10)
+                  initEscauto = new Long(2);
+              }
+            }else if(valmax >= importoSogliaPerGara.doubleValue())
               initEscauto = new Long(4);
             campiLotti.addColumn("GARE1.ESCAUTOFIT", initEscauto);
           }
@@ -379,6 +390,20 @@ public GestoreCalcoloAggiudicazioneTuttiLotti(boolean isGestoreStandard) {
                       descrLog+=" - " + AggiudicazioneManager.stringaSogliaNorma_DL_32_2019_G;
                     else
                       descrLog+=" - " + AggiudicazioneManager.stringaSogliaNorma_DL_32_2019_S;
+                  }
+                }
+                if("true".equals(isGaraDLGS2023)){
+                    if (DLG2016CalcoloGraduatoria.booleanValue())
+                      descrLog+=" - " + AggiudicazioneManager.stringaSogliaNorma_DLgs_36_2023_G;
+                    else
+                      descrLog+=" - " + AggiudicazioneManager.stringaSogliaNorma_DLgs_36_2023_S;
+                }
+
+                if(new Long(2).equals(critlicg)) {
+                    String metoepv = (String) SqlManager.getValueFromVectorParam(listaLotti.get(row), 10).getValue();
+                    if(StringUtils.isNotBlank(metoepv)) {
+                      String descrizioneMetodoOepv = tabellatiManager.getDescrTabellato("A1z35", metoepv);
+                      descrLog += " - Criterio offerte anomale: " + descrizioneMetodoOepv;
                   }
                 }
 
@@ -482,6 +507,11 @@ public GestoreCalcoloAggiudicazioneTuttiLotti(boolean isGestoreStandard) {
                 errMsgEvento = errMsgEvento.replace("{0}", UtilityNumeri.convertiImporto(new Double(esito[3]), 2));
                 listaMessaggi.add(" - " + errMsgEvento);
                 livEvento = 2;
+              }else if(initEscauto!= null && initEscauto.longValue()==6){
+                messageKey = "warnings.gare.aggiudicazioneFaseA.ControlloSottogliaForniture";
+                errMsgEvento = this.resBundleGenerale.getString(messageKey);
+                listaMessaggi.add(" - " + errMsgEvento);
+                livEvento = 2;
               }else{
                 //best case
                 listaMessaggi.add(" - Calcolo soglia anomalia completato.");
@@ -519,12 +549,19 @@ public GestoreCalcoloAggiudicazioneTuttiLotti(boolean isGestoreStandard) {
                       if("true".equals(isGaraDLGS2017))
                         descrLog+=" - adeguato DLgs.56/2017";
                     }
-                    if("true".equals(isGaraDL2019)){
+                    if("true".equals(isGaraDL2019) || "true".equals(isGaraDLGS2023)){
                       String soglianorma= campiLotti.getString("GARE1.SOGLIANORMA");
                       if(soglianorma!=null)
                         descrLog+=" - " + soglianorma;
                     }
                   }
+                if(new Long(2).equals(critlicg)) {
+                  String metoepv = (String) SqlManager.getValueFromVectorParam(listaLotti.get(row), 10).getValue();
+                  if(StringUtils.isNotBlank(metoepv)) {
+                    String descrizioneMetodoOepv = tabellatiManager.getDescrTabellato("A1z35", metoepv);
+                    descrLog += " - Criterio offerte anomale: " + descrizioneMetodoOepv;
+                  }
+                }
                   descrLog+=")";
                   if(initEscauto!=null){
                     descrLog += ". Esclusione automatica off.anomale prevista e " + tabellatiManager.getDescrTabellato("A1165", initEscauto.toString());

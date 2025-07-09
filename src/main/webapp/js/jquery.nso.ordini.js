@@ -125,7 +125,7 @@ $(window).on("load", function (){
 			document.forms[0].entita.value = "NSO_ORDINI";
 			document.forms[0].jspPath.value="/WEB-INF/pages/gare/nso_ordini/nso_ordini-scheda.jsp";
 			document.forms[0].jspPathTo.value="/WEB-INF/pages/gare/nso_ordini/nso_ordini-scheda.jsp";
-			document.forms[0].action = document.forms[0].action + "&ngara="+ngara+"&arrmultikey="+arrmultikey + "&" + csrfToken;
+			document.forms[0].action = document.forms[0].action + "?ngara="+ngara+"&arrmultikey="+arrmultikey;
 			bloccaRichiesteServer();
 			document.forms[0].submit();
 		}

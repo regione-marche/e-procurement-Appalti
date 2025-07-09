@@ -65,9 +65,10 @@
 		<gene:campoScheda campo="NOMIMA" href='${gene:if(gene:checkProt(pageContext, "MASC.VIS.GENE.ImprScheda"), link, "")}' visibile="${param.aqoper ne '2' }" modificabile="false"/>
 		<gene:campoScheda campo="IAGGIU"  modificabile="false" visibile="${param.aqoper ne '2' }"/>
 		<gene:campoScheda campo="IMPQUA"  entita="GARECONT" where="GARECONT.NGARA=GARE.NGARA AND GARECONT.NCONT=1" visibile="${datiRiga.TORN_ACCQUA eq 1 }" />
-		<gene:campoScheda campo="ESECSCIG" entita="GARECONT" where="GARECONT.NGARA=GARE.NGARA AND GARECONT.NCONT=1" visibile="${datiRiga.TORN_ACCQUA eq 1 && datiRiga.GARE1_AQOPER eq 1 && datiRiga.TORN_ALTRISOG ne 3}" />
+		<gene:campoScheda campo="ESECSCIG" entita="GARECONT" where="GARECONT.NGARA=GARE.NGARA AND GARECONT.NCONT=1" visibile="${datiRiga.TORN_ACCQUA eq 1 && datiRiga.GARE1_AQOPER eq 1 && datiRiga.TORN_ALTRISOG ne 3 && datiRiga.GARECONT_ESECSCIG eq 1}" />
 		<gene:campoScheda campo="CONTSPE" entita="GARECONT" where="GARECONT.NGARA=GARE.NGARA AND GARECONT.NCONT=1" visibile="${datiRiga.TORN_ACCQUA eq 1 }" />
 		<gene:campoScheda campo="RICSUB" entita="DITG" where="DITG.NGARA5 = GARE.NGARA and DITG.CODGAR5=GARE.CODGAR1 and DITG.DITTAO=GARE.DITTA"  modificabile="${!empty datiRiga.GARE_DITTA}" visibile="${param.aqoper ne '2' }"/>
+		<gene:campoScheda campo="CODCNEL" entita="DITG" where="DITG.NGARA5 = GARE.NGARA and DITG.CODGAR5=GARE.CODGAR1 and DITG.DITTAO=GARE.DITTA"  modificabile="${!empty datiRiga.GARE_DITTA}" visibile="${param.aqoper ne '2' }"/>
 	</gene:gruppoCampi>
 	
 	<c:choose>
@@ -193,7 +194,7 @@
 			<jsp:param name="nomeAttributoLista" value='listaDitteAggiudicatarie' />
 			<jsp:param name="idProtezioni" value="DITGAQ" />
 			<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/ditgaq/ditte-aggiudicatarie-stipula.jsp"/>
-			<jsp:param name="arrayCampi" value="'DITGAQ_ID_', 'DITGAQ_NGARA_', 'DITGAQ_DITTAO_','IMPR_NOMIMP_','DITGAQ_IAGGIU_','DITG_RICSUB_', 'DITGAQ_RIDISO_','DITGAQ_IMPGAR_','DITGAQ_NQUIET_','DITGAQ_DQUIET_','DITGAQ_ISTCRE_','DITGAQ_INDIST_','DITG_RIBAUO_','DITG_IMPOFF_','DITGAQ_BANAPP_','DITGAQ_COORBA_','DITGAQ_CODBIC_'"/>		
+			<jsp:param name="arrayCampi" value="'DITGAQ_ID_', 'DITGAQ_NGARA_', 'DITGAQ_DITTAO_','IMPR_NOMIMP_','DITGAQ_IAGGIU_','DITG_RICSUB_', 'DITGAQ_RIDISO_','DITGAQ_IMPGAR_','DITGAQ_NQUIET_','DITGAQ_DQUIET_','DITGAQ_ISTCRE_','DITGAQ_INDIST_','DITG_RIBAUO_','DITG_IMPOFF_','DITGAQ_BANAPP_','DITGAQ_COORBA_','DITGAQ_CODBIC_','DITG_CODCNEL_'"/>
 			<jsp:param name="titoloSezione" value="Ditta aggiudicataria" />
 			<jsp:param name="titoloNuovaSezione" value="Nuova ditta aggiudicataria" />
 			<jsp:param name="descEntitaVociLink" value="ditta aggiudicataria" />
@@ -204,7 +205,7 @@
 	
 	<gene:gruppoCampi idProtezioni="COMMDITTECONTRATTO" >
 		<gene:campoScheda visibile="${param.chiamante ne 'aggiudicazione-efficace' }">
-			<td colspan="2"><b>Comunicazione alle ditte della data stipula del contratto</b></td>
+			<td colspan="2"><b>Comunicazione stipula contratto</b></td>
 		</gene:campoScheda>
 		<gene:campoScheda campo="DCOMDITTAGG" visibile="${param.chiamante ne 'aggiudicazione-efficace' }"/>
 		<gene:campoScheda campo="NCOMDITTAGG" visibile="${param.chiamante ne 'aggiudicazione-efficace' }"/>
@@ -213,7 +214,7 @@
 		
 	</gene:gruppoCampi>
 
-	<gene:campoScheda campo="ID" entita="G1STIPULA" where="G1STIPULA.NGARA=GARE.NGARA AND ID_PADRE IS NULL" visibile="false"/>
+	<gene:campoScheda campo="ID" entita="G1STIPULA" where="G1STIPULA.NGARA=GARE.NGARA AND ID_PADRE IS NULL AND STATO != 6" visibile="false"/>
 	<gene:gruppoCampi idProtezioni="STIPCONT" visibile="${param.chiamante ne 'aggiudicazione-efficace' && !(empty datiRiga.G1STIPULA_ID) }">
 		<gene:campoScheda >
 			<td colspan="2"><b>Stipula contratto</b></td>
@@ -228,6 +229,7 @@
 		<c:set var="assegnatario" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetDescrizioneUtenteStipulaFunction", pageContext, datiRiga.G1STIPULA_ASSEGNATARIO)}'/>
 		<gene:campoScheda title="Contract Manager" campo="ASSEGNATO_A" campoFittizio="true" definizione="T80;0;;;G_USYSUTE" value="${assegnatario}" modificabile="false"/>
 		<gene:campoScheda campo="STATO" entita="G1STIPULA" where="G1STIPULA.NGARA=GARE.NGARA AND ID_PADRE IS NULL" modificabile="false" />
+		<gene:campoScheda entita="G1STIPULA" campo="NUMODA" where="G1STIPULA.NGARA=GARE.NGARA AND ID_PADRE IS NULL" modificabile = "false" visibile="${integrazioneWSERP eq '1' and tipoWSERP eq 'INARCASSA' }" />
 	</gene:gruppoCampi>
 	
 	
@@ -242,16 +244,61 @@
 	</c:choose>
 	
 	<gene:gruppoCampi idProtezioni="ATTOCONT">
-		<gene:campoScheda addTr="false" visibile="${param.chiamante ne 'aggiudicazione-efficace' }">
+		<gene:campoScheda addTr="false" >
 			<tr id="rowTITOLO_ATTO_CONTRATTUALE">
-				<td colspan="2"><b>${titoloSezioneATTOCONT }</b></td>
+				<td colspan="2"><b>${titoloSezioneATTOCONT}</b></td>
 			</tr>
 		</gene:campoScheda>
-		<gene:campoScheda campo="TIATTO" visibile="${param.chiamante ne 'stipula-accordo-quadro'  && param.chiamante ne 'aggiudicazione-efficace'}" modificabile="${empty datiRiga.G1STIPULA_ID}"/>
-		<gene:campoScheda campo="NREPAT" visibile="${param.chiamante ne 'stipula-accordo-quadro' && param.chiamante ne 'aggiudicazione-efficace'}" modificabile="${empty datiRiga.G1STIPULA_ID}"/>
-		<gene:campoScheda campo="NUMCONT" entita="GARECONT" where="GARECONT.NGARA=GARE.NGARA AND GARECONT.NCONT=1" visibile="${param.chiamante ne 'stipula-accordo-quadro'  && param.chiamante ne 'aggiudicazione-efficace'}"/>
+		<gene:campoScheda campo="TIATTO" visibile="${param.chiamante ne 'stipula-accordo-quadro'}" modificabile="${empty datiRiga.G1STIPULA_ID}"/>
+		
+		<c:choose>
+			<c:when test="${ integrazioneWSERP eq '1' && tipoWSERP eq 'SIGLA' }">
+				<gene:campoScheda campo="NREPAT" modificabile="false"/>
+			</c:when>
+			<c:otherwise>
+				<c:choose>
+					<c:when test='${   (modo eq "VISUALIZZA" or modo eq "MODIFICA")
+					                and integrazioneWSERP eq "1" 
+					                and tipoWSERP eq "RAI" 
+					                and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp") }'>
+						<gene:campoScheda campo="NREPAT" 
+										  href="javascript:popUpVisualizzaContrattoErp();"
+										  modificabile="false">			   
+						    &nbsp;&nbsp;&nbsp;<input type="button" value="Elimina associazione" id="EliminaAssociazioneErp" class="bottone-azione" onclick="javascript:eliminaAssociazioneContrattoErp();" style="display:none;" />			    
+						</gene:campoScheda>
+					</c:when>
+					<c:otherwise>
+						<gene:campoScheda campo="NREPAT" modificabile="${empty datiRiga.G1STIPULA_ID}"/>
+					</c:otherwise>
+				</c:choose>					
+			</c:otherwise>
+		</c:choose>
+		
+		<gene:campoScheda campo="NUMCONT" entita="GARECONT" where="GARECONT.NGARA=GARE.NGARA AND GARECONT.NCONT=1" visibile="${param.chiamante ne 'stipula-accordo-quadro'}"/>
 		<gene:campoScheda campo="NUMRDO" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" title="Invio dati contratto ERP" visibile='${integrazioneWSERP eq "1" && (tipoWSERP eq "CAV" || tipoWSERP eq "AMIU")}' modificabile='false' />
-		<gene:campoScheda campo="DAATTO" visibile="${param.chiamante ne 'aggiudicazione-efficace' }" modificabile="${empty datiRiga.G1STIPULA_ID}"/>
+		
+		<c:choose>
+			<c:when test='${ (modo eq "VISUALIZZA" or modo eq "MODIFICA")
+			                and integrazioneWSERP eq "1" 
+			                and tipoWSERP eq "RAI" 
+			                and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp") }'>
+			    <c:choose>
+				    <c:when test='${modo eq "VISUALIZZA"}'>         
+						<gene:campoScheda campo="DAATTO" modificabile="false">
+						    &nbsp;&nbsp;&nbsp;<input type="button" value="Elimina associazione" id="EliminaAssociazioneErp" class="bottone-azione" onclick="javascript:eliminaAssociazioneContrattoErp();" style="display:none;" />			    
+						</gene:campoScheda>
+					</c:when>
+				    <c:when test='${modo eq "MODIFICA"}'>         
+						<gene:campoScheda campo="DAATTO" modificabile="true">
+						    &nbsp;&nbsp;&nbsp;<input type="button" value="Elimina associazione" id="EliminaAssociazioneErp" class="bottone-azione" onclick="javascript:eliminaAssociazioneContrattoErp();" style="display:none;" />			    
+						</gene:campoScheda>
+					</c:when>
+				</c:choose>								
+			</c:when>
+			<c:otherwise>
+				<gene:campoScheda campo="DAATTO" modificabile="${empty datiRiga.G1STIPULA_ID}"/>
+			</c:otherwise>
+		</c:choose>
 		<gene:campoScheda campo="NPROAT" entita="GARECONT" where="GARECONT.NGARA=GARE.NGARA AND GARECONT.NCONT=1" visibile='${param.chiamante ne "stipula-accordo-quadro" && param.chiamante ne "aggiudicazione-efficace"}'/>
 		<gene:campoScheda campo="DPROAT" entita="GARECONT" where="GARECONT.NGARA=GARE.NGARA AND GARECONT.NCONT=1" visibile='${param.chiamante ne "stipula-accordo-quadro" && param.chiamante ne "aggiudicazione-efficace"}'/>
 		<gene:campoScheda campo="DATRES" entita="GARECONT" where="GARECONT.NGARA=GARE.NGARA AND GARECONT.NCONT=1" visibile='${param.chiamante ne "stipula-accordo-quadro" && param.chiamante ne "aggiudicazione-efficace"}'/>
@@ -273,7 +320,7 @@
 			<jsp:param name="nomeAttributoLista" value='listaVariantiStipula' />
 			<jsp:param name="idProtezioni" value="G1STIPULA" />
 			<jsp:param name="jspDettaglioSingolo" value="/WEB-INF/pages/gare/g1stipula/g1stipula-varianti-stipula.jsp"/>
-			<jsp:param name="arrayCampi" value="'G1STIPULA_ID_', 'G1STIPULA_NGARA_', 'G1STIPULA_CODSTIPULA_','G1STIPULA_OGGETTO_','G1STIPULA_IMPSTIPULA_','G1STIPULA_CREATO_DA_','G1STIPULA_ASSEGNATO_A_','G1STIPULA_STATO_','G1STIPULA_TIATTO_','G1STIPULA_NREPAT_','G1STIPULA_DAATTO_'"/>		
+			<jsp:param name="arrayCampi" value="'G1STIPULA_ID_', 'G1STIPULA_NGARA_', 'G1STIPULA_CODSTIPULA_','G1STIPULA_OGGETTO_','G1STIPULA_IMPSTIPULA_','G1STIPULA_CREATO_DA_','G1STIPULA_ASSEGNATO_A_','G1STIPULA_STATO_','G1STIPULA_TIATTO_','G1STIPULA_NREPAT_','G1STIPULA_DAATTO_','G1STIPULA_NUMODA_'"/>		
 			<jsp:param name="titoloSezione" value="Ulteriore stipula" />
 			<jsp:param name="sezioneInseribile" value="false"/>
         	<jsp:param name="sezioneEliminabile" value="false"/>
@@ -393,6 +440,60 @@
 			});
 		  //}
 		}
+		
+	function eliminaAssociazioneContrattoErp(){
+	   
+	   	var conferma = confirm("Sei sicuro di voler eliminare l'associazione creata?");
+		if(conferma) {
+	        var codContrattoErp = $('#GARE_NREPAT').val();
+	        var codStipula = $('#G1STIPULA_CODSTIPULA').val();
+	        var codGara = $('#GARE_NGARA').val();
+	        
+			$.ajax({
+				url: "pg/EliminaAssociazioneContrattoErp.do",
+				type: 'POST',
+				data: {
+				        numeroContrattoErp:  codContrattoErp
+				       ,codGara: codGara
+				       ,idStipula: "${idStipula}"
+				       ,codStipula: codStipula
+				      },
+				cache: false,
+				dataType: "json",
+				success: function(rispostaJson) {				    
+				    historyReload();				    
+				},
+				error: function(e) {
+					alert("Errore durante l'eliminazione dell'associazione al contratto Erp");
+				},
+				complete: function() {
+					// _nowait();
+				}
+			});
+		}
+	}
+	
+	function visualizzaPulsanteEliminaAssociazioneErp() {
+	    var codContrattoErp = $('#GARE_NREPAT').val();
+	    
+	    var condizionaPerRai = ${modo eq "VISUALIZZA" && integrazioneWSERP eq "1" && tipoWSERP eq "RAI" && gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp") };
+	
+	    if (codContrattoErp && condizionaPerRai) {
+	        $("#EliminaAssociazioneErp").show();
+	    } else {
+	        // $("#EliminaAssociazioneErp").hide();
+	    }
+	}
+
+	
+	function popUpVisualizzaContrattoErp(){
+	   var codContrattoErp = $('#GARE_NREPAT').val();
+
+	   var href = "href=gare/g1stipula/popup-richiesta-numero-contratto-Erp.jsp&modo=VISUALIZZA&idStipula=${idStipula}&codContrattoErp="+codContrattoErp;
+	   openPopUpCustom(href, "Visualizza numero contratto Sap associato", 800, 450, "yes", "yes");
+	}	
+
+	visualizzaPulsanteEliminaAssociazioneErp();				
 </gene:javaScript>
 
 <div id="mascheraImpostaStato" title="Scelta modalit&agrave; inserimento documenti" style="display:none;">

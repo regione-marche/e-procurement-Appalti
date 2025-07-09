@@ -159,7 +159,7 @@ function _wait() {
 			return $("#dialog-form-download-allegati").dialog( "close" );
 		}else{
 			if(counter > maxCount && archivioCreato == "true"){
-			document.location.href='pg/ScaricaTuttiAllegatiComunicazione.do?'+csrfToken+'&metodo=download&path='+encodeURIComponent(path);
+			document.location.href='pg/ScaricaTuttiAllegatiComunicazione.do?metodo=download&path='+encodeURIComponent(path);
 			return $("#dialog-form-download-allegati").dialog( "close" );
 		}
 		if((!iddocdg || !idprgDoc)){
@@ -190,7 +190,7 @@ function _wait() {
 				if (counter < maxCount){
 					ajaxCallDownload(counter,path);
 				}else{
-					document.location.href='pg/ScaricaTuttiAllegatiComunicazione.do?'+csrfToken+'&metodo=download&path='+encodeURIComponent(path);
+					document.location.href='pg/ScaricaTuttiAllegatiComunicazione.do?metodo=download&path='+encodeURIComponent(path);
 					return $("#dialog-form-download-allegati").dialog( "close" );
 				}
 			}

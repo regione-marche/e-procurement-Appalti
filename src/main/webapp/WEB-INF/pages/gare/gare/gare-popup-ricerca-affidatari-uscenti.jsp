@@ -116,7 +116,6 @@
 			
 			<input type="hidden" name="garaElenco" value="${garaElenco}" />
 			<input type="hidden" name="tipoGara" value="${tipoGara}" />
-			<input type="hidden" name="where" id="where" value="${where}" />
 			<input type="hidden" name="ngara" id="ngara" value="${ngara}" />
             <input type="hidden" name="categoriaPrev" id="categoriaPrev" value="${categoriaPrev}" />
             <input type="hidden" name="classifica" id="classifica" value="${classifica}" />

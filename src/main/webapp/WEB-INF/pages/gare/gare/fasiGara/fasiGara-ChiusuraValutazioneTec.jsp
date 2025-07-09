@@ -102,7 +102,7 @@
 										</a>
 									</td>
 								</tr>
-								<c:if test="${isProceduraTelematica ne 'true' or (isProceduraTelematica eq 'true' and  (faseGara > 5 or !visOffertaEco))}">
+								<c:if test="${isProceduraTelematica ne 'true' or (isProceduraTelematica eq 'true' and  (faseGara > 5 or !visOffertaEco) and !(iterga eq '9' and tipoconc eq '2'))}">
 									<tr>
 										<td class="vocemenulaterale">
 											<a href="javascript:avanti();" title='Fase seguente' tabindex="1506">
@@ -164,6 +164,21 @@
 						<gene:campoScheda campo="DTERMPRESCC"  entita="GARESTATI" where="GARESTATI.CODGAR=GARE.CODGAR1 and GARESTATI.NGARA=GARE.NGARA and GARESTATI.FASGAR=${fasGarPerEsclusioneDitta} and GARESTATI.STEPGAR=${paginaAttivaWizard}" />
 						<gene:campoScheda campo="DVVERCC"      entita="GARESTATI" where="GARESTATI.CODGAR=GARE.CODGAR1 and GARESTATI.NGARA=GARE.NGARA and GARESTATI.FASGAR=${fasGarPerEsclusioneDitta} and GARESTATI.STEPGAR=${paginaAttivaWizard}" />
 					</gene:gruppoCampi>
+					<c:if test="${iterga eq '9'}">
+						<c:if test="${tipoconc eq '2'}">
+							<c:set var="ngaraconc2grado" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from gare where ngarapa=?", gene:getValCampo(key,"NGARA"))}'/>
+							<gene:campoScheda>
+								<td colspan="2"><b>Concorso di progettazione 2° grado</b></td>
+							</gene:campoScheda>
+							<gene:campoScheda campo="NGARACONC2GRADO" modificabile='false' campoFittizio="true" definizione="T20;;;;NGARA" value="${ngaraconc2grado}" />
+							<c:if test="${empty ngaraconc2grado}">
+								<gene:campoScheda>
+									<td class="etichetta-dato"><span style="color:blue" ><b>ATTENZIONE</b></span></td>
+									<td class="valore-dato"><span style="color:blue" >Per procedere con il 2° grado accedere al profilo 'Concorsi di progettazione di 2° grado' e creare la procedura di 2° grado selezionando la gara corrente come riferimento al 1° grado.</span></td>
+								</gene:campoScheda>
+							</c:if>
+						</c:if>
+					</c:if>
 				</gene:formScheda>
 			</td>
 		</tr>

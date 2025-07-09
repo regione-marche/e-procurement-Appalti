@@ -196,7 +196,7 @@ function openModal(idcom,idprg,idconfi,contextPath){
 					});
 					if(!tabellaCreata){
 						var p = document.createElement("p");
-						var message = document.createTextNode("Nessuna irregolarità segnalata.");
+						var message = document.createTextNode("Nessun dato trovato");
 						p.appendChild(message);
 						tablearea.appendChild(p);
 					}

@@ -153,7 +153,7 @@ public class StampaRiepilogoPswBusteAction extends ActionBaseNoOpzioni {
             SimplePdfExporterConfiguration configuration = new SimplePdfExporterConfiguration();
             configuration.setPdfaConformance(PdfaConformanceEnum.PDFA_1A);
 //            String pathToICC = ctx.getRealPath(PDF_A_ICC_PATH);
-            configuration.setIccProfilePath(request.getSession().getServletContext().getRealPath("/WEB-INF/jrReport/sRGB_v4_ICC_preference.icc"));
+            configuration.setIccProfilePath(request.getSession().getServletContext().getRealPath("/WEB-INF/jrReport/sRGB2014.icc"));
             jrExporter.setConfiguration(configuration);
 //            jrExporter.setParameter(JRExporterParameter.JASPER_PRINT, print);
 //            jrExporter.setParameter(JRExporterParameter.OUTPUT_STREAM, baosJrReport);

@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.xml.rpc.ServiceException;
 
 import org.apache.axis2.AxisFault;
@@ -123,8 +124,11 @@ import it.avlp.smartCig.ws.ServicesServiceLocator;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.bl.TabellatiManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.db.domain.LogEvento;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.w3.utils.UtilityDateExtension;
 import it.eldasoft.sil.w3.utils.UtilitySITAT;
 import it.eldasoft.utils.properties.ConfigManager;
@@ -145,11 +149,27 @@ public class GestioneServiziIDGARACIGManager {
   public static final String          GARAGIAPUBBLICATA = "SIMOGWS_GARALOTTOMANAGER_APP_31";
   public static final String          LOGIN_SIMOG_ERRATA = "SIMOGWS_UNDEFINEND_ERR_01";
   public static final String          RUP_NON_PRESENTE_O_SENZA_COLL = "SIMOGWS_ACTIONS_APP_03";
+  private static final String         SESSIONE_GIA_ATTIVA = "SIMOGWS_WSSMANAGER_APP_18";
   private static final String         PROP_SIMOG_WS_LOGIN = "it.eldasoft.simog.ws.login";
   private static final String         PROP_SIMOG_WS_PASSWORD = "it.eldasoft.simog.ws.password";
   private static final String         PROP_SIMOG_WS_RUOLOUTENTE =  "it.eldasoft.simog.ws.ruoloutente";
+  private static final String         MESSAGGIO_SESSIONE_GIA_ATTIVA = ". Il servizio SIMOG è momentaneamente bloccato. Attendere qualche minuto e riprovare";
   
-  
+  private static final String         SOCKET_TIMEOUT_EXCEPTION = "Il servizio SIMOG in questo momento sembra sovraccarico e non risponde nei tempi attesi. Riprovare più tardi";
+  private static final String         UNKNOWN_HOST_OR_CONNECT_EXCEPTION = "Il servizio SIMOG non è disponibile. Riprovare più tardi o verificare la configurazione";
+  private static final String         SQL_OR_CRIPTAZIONE_EXCEPTION = "Si e' verificato un errore durante l'interazione con la base dati";
+  private static final String         ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA = "Si e' verificato un errore durante l'elaborazione degli identificativi di gara";
+  private static final String         ERRORE_SERVIZIO_IDENTIFICATIVI_GARA = "Si e' verificato un errore durante l'interazione con il servizio SIMOG di elaborazione degli identificativi di gara";
+  private static final String         ERRORE_ELABORAZIONE_REQUISITI_GARA = "Si e' verificato un errore durante l'elaborazione dei requisiti di gara";
+  private static final String         ERRORE_SERVIZIO_REQUISITI_GARA = "Si e' verificato un errore durante l'interazione con il servizio SIMOG di elaborazione dei requisiti di gara";
+  private static final String         ERRORE_CONSULTAZIONE_GARA = "Si e' verificato un errore durante la consultazione della gara";
+  private static final String         ERRORE_SERVIZIO_CONSULTAZIONE_GARA = "Si e' verificato un errore durante l'interazione con il servizio SIMOG di consultazione della gara";
+  private static final String         ERRORE_CREDENZIALI = "Errore nella gestione delle credenziali di accesso al servizio di elaborazione degli identificativi di gara";
+  private static final String         ERRORE_ELABORAZIONE_LISTA_COLLABORAZIONI = "Si e' verificato un errore durante l'elaborazione della lista delle collaborazioni";
+  private static final String         ERRORE_SERVIZIO_LISTA_COLLABORAZIONI = "Si e' verificato un errore durante l'interazione con il servizio SIMOG di consultazione della lista delle collaborazioni";
+  private static final String         ERRORE_PRELIEVO_COLLABORAZIONE  = "Errore durante la lettura dell'idUfficio del centro di costo associato alla gara";
+  private static final String         ERRORE_INDICE_CC_NON_PRESENTE = "L'indice del centro di costo indicato non e' presente nella lista degli indici ammessi dai servizi SIMOG per il RUP indicato oppure non fa riferimento a questa stazione appaltante. Si prega di riassociare il centro di costo nei dati generali della Gara";
+
 //  private static final String         PROP_SIMOG_WS_TRUSTSTORE         = "it.eldasoft.simog.ws.truststore";
 //  private static final String         PROP_SIMOG_WS_TRUSTSTOREPASSWORD = "it.eldasoft.simog.ws.truststorepassword";
 
@@ -161,6 +181,8 @@ public class GestioneServiziIDGARACIGManager {
   private GestioneXMLIDGARACIGManager gestioneXMLIDGARACIGManager;
 
   private TabellatiManager tabellatiManager;
+  
+  private PgManager pgManager;
   
   public SqlManager getSqlManager() {
     return this.sqlManager;
@@ -177,6 +199,10 @@ public class GestioneServiziIDGARACIGManager {
   
   public void setTabellatiManager(TabellatiManager tabellatiManager) {
 	  this.tabellatiManager = tabellatiManager;
+  }
+  
+  public void setPgManager(PgManager pgManager) {
+    this.pgManager = pgManager;
   }
 
   /**
@@ -323,16 +349,24 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (ServiceException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione degli identificativi di gara",
+          ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.error", e);
 
     } catch (RemoteException e) {
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con il servizio di elaborazione degli identificativi di gara",
+          ERRORE_SERVIZIO_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.remote.error", e);
     } catch (Exception e) {
     	throw new GestoreException(
-    	          "Si e' verificato un errore durante l'elaborazione degli identificativi di gara",
+    	          ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA,
     	          "gestioneIDGARACIG.ws.error", e);
     } finally {
       this.wsChiudiSessione(simogWS, hMapwsLogin);
@@ -365,9 +399,18 @@ public class GestioneServiziIDGARACIGManager {
       //String index_ufficioId = this.getIndiceCollaborazione(numgara, "W3GARA");
       String idUfficio = this.getIdUfficioCollaborazione(numgara, "W3GARA");
       
-      String cfein = (String) this.sqlManager.getObject(
-      		"select uffint.cfein from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?",
-              new Object[] { numgara });
+      String cfein = null;
+      String cfanac = null;
+      String iscuc = null;
+      Vector<?> datiSA = sqlManager.getVector(
+          "select uffint.cfein, uffint.cfanac, uffint.iscuc from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?", new Object[] { numgara });
+      if(datiSA!= null){
+          cfein = datiSA.get(0).toString();
+          cfanac = datiSA.get(1).toString();
+          iscuc = datiSA.get(2).toString();
+          if (iscuc != null && iscuc.equals("1") && cfanac != null && !cfanac.trim().equals(""))
+            cfein = cfanac;
+      }
       //hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, index_ufficioId, cfein);
       hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, idUfficio, cfein, rpntFailed);
       
@@ -389,10 +432,7 @@ public class GestioneServiziIDGARACIGManager {
           this.aggiornaW3GARACIG(numgara, idgara);
       } else {
         throw new GestoreException(
-            "L'indice del centro di costo indicato "
-                //+ hMapwsLogin.get("index")
-                + idUfficio
-                + " non e' presente nella lista degli indici ammessi dai servizi SIMOG per il RUP indicato oppure non fa riferimento a questa stazione appaltante. Si prega di riassociare il centro di costo nei dati generali della Gara",
+            ERRORE_INDICE_CC_NON_PRESENTE,
             "gestioneIDGARACIG.ws.login.indexNonAmmesso",
             new Object[] { hMapwsLogin.get("index") }, null);
       }
@@ -401,20 +441,28 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (ServiceException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione degli identificativi di gara",
+          ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.error", e);
 
     } catch (RemoteException e) {
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con il servizio di elaborazione degli identificativi di gara",
+          ERRORE_SERVIZIO_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.remote.error", e);
     } catch (SQLException e) {
         throw new GestoreException(
-                "Si e' verificato un errore durante l'interazione con la base dati",
+            SQL_OR_CRIPTAZIONE_EXCEPTION,
                 "gestioneIDGARACIG.sqlerror", e);
     } catch (CriptazioneException e) {
             throw new GestoreException(
-                "Si e' verificato un errore durante l'interazione con la base dati",
+                SQL_OR_CRIPTAZIONE_EXCEPTION,
                 "gestioneIDGARACIG.sqlerror", e);
     }
 	finally {
@@ -449,10 +497,19 @@ public class GestioneServiziIDGARACIGManager {
       simogWS = this.getSimogWS();
       //String index_ufficioId = this.getIndiceCollaborazione(numgara, "W3SMARTCIG");
       String idUfficio = this.getIdUfficioCollaborazione(numgara, "W3SMARTCIG");
-      
-      String cfein = (String) this.sqlManager.getObject(
-      		"select uffint.cfein from W3SMARTCIG left join uffint on W3SMARTCIG.codein=uffint.codein where W3SMARTCIG.CODRICH = ?",
-              new Object[] { numgara });
+
+      String cfein = null;
+      String cfanac = null;
+      String iscuc = null;
+      Vector<?> datiSA = sqlManager.getVector(
+          "select uffint.cfein, uffint.cfanac, uffint.iscuc from W3SMARTCIG left join uffint on W3SMARTCIG.codein=uffint.codein where W3SMARTCIG.CODRICH = ?", new Object[] { numgara });
+      if(datiSA!= null){
+          cfein = datiSA.get(0).toString();
+          cfanac = datiSA.get(1).toString();
+          iscuc = datiSA.get(2).toString();
+          if (iscuc != null && iscuc.equals("1") && cfanac != null && !cfanac.trim().equals(""))
+            cfein = cfanac;
+      }
       //hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, index_ufficioId, cfein);
       hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, idUfficio, cfein, rpntFailed);
       
@@ -472,10 +529,7 @@ public class GestioneServiziIDGARACIGManager {
           this.aggiornaW3SMARTCIG(numgara, smartCig);
       } else {
         throw new GestoreException(
-            "L'indice del centro di costo indicato "
-                //+ hMapwsLogin.get("index")
-                + idUfficio
-                + " non e' presente nella lista degli indici ammessi dai servizi SIMOG per il RUP indicato oppure non fa riferimento a questa stazione appaltante. Si prega di riassociare il centro di costo nei dati generali della Gara",
+            ERRORE_INDICE_CC_NON_PRESENTE,
             "gestioneIDGARACIG.ws.login.indexNonAmmesso",
             new Object[] { hMapwsLogin.get("index") }, null);
       }
@@ -484,26 +538,34 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (SocketTimeoutException e) {
     	throw new GestoreException(
-  	          "Il servizio di elaborazione degli identificativi di gara", "gestioneIDGARACIG.error",
+  	          SOCKET_TIMEOUT_EXCEPTION, "gestioneIDGARACIG.error",
   	          new Object[] { "Il servizio di elaborazione degli identificativi di gara" }, null);
     } 
       catch (ServiceException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione degli identificativi di gara",
+          ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.error", e);
 
     } 
     catch (RemoteException e) {
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con il servizio di elaborazione degli identificativi di gara",
+          ERRORE_SERVIZIO_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.remote.error", e);
     } catch (SQLException e) {
         throw new GestoreException(
-                "Si e' verificato un errore durante l'interazione con la base dati",
+            SQL_OR_CRIPTAZIONE_EXCEPTION,
                 "gestioneIDGARACIG.sqlerror", e);
 	} catch (CriptazioneException e) {
 	  throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+	      SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } finally {
       this.wsChiudiSessione(simogWS, hMapwsLogin);
@@ -537,9 +599,18 @@ public class GestioneServiziIDGARACIGManager {
       //String index_ufficioId = this.getIndiceCollaborazione(numgara, "W3GARA");
       String idUfficio = this.getIdUfficioCollaborazione(numgara, "W3GARA");
       
-      String cfein = (String) this.sqlManager.getObject(
-      		"select uffint.cfein from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?",
-              new Object[] { numgara });
+      String cfein = null;
+      String cfanac = null;
+      String iscuc = null;
+      Vector<?> datiSA = sqlManager.getVector(
+          "select uffint.cfein, uffint.cfanac, uffint.iscuc from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?", new Object[] { numgara });
+      if(datiSA!= null){
+          cfein = datiSA.get(0).toString();
+          cfanac = datiSA.get(1).toString();
+          iscuc = datiSA.get(2).toString();
+          if (iscuc != null && iscuc.equals("1") && cfanac != null && !cfanac.trim().equals(""))
+            cfein = cfanac;
+      }
       //hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, index_ufficioId, cfein);
       hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, idUfficio, cfein, rpntFailed);
       
@@ -553,29 +624,34 @@ public class GestioneServiziIDGARACIGManager {
               logger.debug("wsInviaRequisiti.messaggio: " + messaggio);
       } else {
         throw new GestoreException(
-            "L'indice del centro di costo indicato "
-                //+ hMapwsLogin.get("index")
-                + idUfficio
-                + " non e' presente nella lista degli indici ammessi dai servizi SIMOG per il RUP indicato oppure non fa riferimento a questa stazione appaltante. Si prega di riassociare il centro di costo nei dati generali della Gara",
+            ERRORE_INDICE_CC_NON_PRESENTE,
             "gestioneIDGARACIG.ws.login.indexNonAmmesso",
             new Object[] { hMapwsLogin.get("index") }, null);
       }
       
     } catch (ServiceException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione dei requisiti di gara",
+          ERRORE_ELABORAZIONE_REQUISITI_GARA,
           "gestioneIDGARACIG.ws.error", e);
     } catch (RemoteException e) {
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con il servizio di elaborazione dei requisiti di gara",
+          ERRORE_SERVIZIO_REQUISITI_GARA,
           "gestioneIDGARACIG.ws.remote.error", e);
     } catch (SQLException e) {
         throw new GestoreException(
-            "Si e' verificato un errore durante l'interazione con la base dati",
+            SQL_OR_CRIPTAZIONE_EXCEPTION,
             "gestioneIDGARACIG.sqlerror", e);
 	} catch (CriptazioneException e) {
 	  throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+	      SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } finally {
       this.wsChiudiSessione(simogWS, hMapwsLogin);
@@ -741,13 +817,21 @@ public class GestioneServiziIDGARACIGManager {
       hMapwsLogin = this.wsLoginCollaborazioni(simogWS, simogwsuser,
           simogwspass, rpntFailed);
       
-      String cfAzienda = (String) sqlManager.getObject(
-          "select cfein from uffint where codein = ?",
-          new Object[] { codein });
-      String denomAzienda = (String) sqlManager.getObject(
-          "select nomein from uffint where codein = ?",
-          new Object[] { codein });
-
+      String cfAzienda = null;
+      String cfAnac = null;
+      String iscuc = null;
+      String denomAzienda = null;
+      Vector<?> datiSA = sqlManager.getVector(
+          "select cfein, cfanac, iscuc, nomein from uffint where codein = ?", new Object[] { codein });
+      if(datiSA!= null){
+        cfAzienda = datiSA.get(0).toString();
+        cfAnac = datiSA.get(1).toString();
+        iscuc = datiSA.get(2).toString();
+        denomAzienda = datiSA.get(3).toString();
+      }
+      if (iscuc != null && iscuc.equals("1") && StringUtils.isNotBlank(cfAnac)) {
+        cfAzienda = cfAnac;
+      }
 
       // Gestione della lista delle collaborazioni
       ResponseCheckLogin responseCheckLogin = ((ResponseCheckLogin) hMapwsLogin.get("responseCheckLogin"));
@@ -806,7 +890,7 @@ public class GestioneServiziIDGARACIGManager {
                   }
                   
                 }else {
-                  List<?> aziende = sqlManager.getListVector("select codein, nomein from uffint where cfein = ?",new Object[] { azienda_codicefiscale });
+                  List<?> aziende = sqlManager.getListVector("select codein, nomein from uffint where cfein = ? or (iscuc='1' and cfanac= ?)",new Object[] { azienda_codicefiscale,azienda_codicefiscale });
                   for(int j=0; j<aziende.size();j++) {
                     String codeinFromSql = (String) SqlManager.getValueFromVectorParam(aziende.get(j), 0).getValue();
                     denomAzienda = (String) SqlManager.getValueFromVectorParam(aziende.get(j), 1).getValue();
@@ -831,20 +915,28 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (ServiceException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione della lista delle collaborazioni",
+          ERRORE_ELABORAZIONE_LISTA_COLLABORAZIONI,
           "gestioneIDGARACIG.ws.error", e);
 
     } catch (RemoteException e) {
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con il servizio",
+          ERRORE_SERVIZIO_LISTA_COLLABORAZIONI,
           "gestioneIDGARACIG.ws.remote.error", e);
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } catch (CriptazioneException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } finally {
       this.wsChiudiSessione(simogWS, hMapwsLogin);
@@ -881,9 +973,18 @@ public class GestioneServiziIDGARACIGManager {
       //String index_ufficioId = this.getIndiceCollaborazione(numgara, "W3GARA");
       String idUfficio = this.getIdUfficioCollaborazione(numgara, "W3GARA");
       
-      String cfein = (String) this.sqlManager.getObject(
-      		"select uffint.cfein from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?",
-              new Object[] { numgara });
+      String cfein = null;
+      String cfanac = null;
+      String iscuc = null;
+      Vector<?> datiSA = sqlManager.getVector(
+          "select uffint.cfein, uffint.cfanac, uffint.iscuc from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?", new Object[] { numgara });
+      if(datiSA!= null){
+          cfein = datiSA.get(0).toString();
+          cfanac = datiSA.get(1).toString();
+          iscuc = datiSA.get(2).toString();
+          if (iscuc != null && iscuc.equals("1") && cfanac != null && !cfanac.trim().equals(""))
+            cfein = cfanac;
+      }
       //hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, index_ufficioId, cfein);
       hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, idUfficio, cfein, rpntFailed);
 
@@ -954,10 +1055,7 @@ public class GestioneServiziIDGARACIGManager {
       }
       } else {
         throw new GestoreException(
-            "L'indice del centro di costo indicato "
-                //+ hMapwsLogin.get("index")
-                + idUfficio
-                + " non e' presente nella lista degli indici ammessi dai servizi SIMOG per il RUP indicato oppure non fa riferimento a questa stazione appaltante. Si prega di riassociare il centro di costo nei dati generali della Gara",
+            ERRORE_INDICE_CC_NON_PRESENTE,
             "gestioneIDGARACIG.ws.login.indexNonAmmesso",
             new Object[] { hMapwsLogin.get("index") }, null);
       }
@@ -967,20 +1065,28 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (ServiceException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione degli identificativi di gara",
+          ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.error", e);
 
     } catch (RemoteException e) {
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con il servizio di elaborazione degli identificativi di gara",
+          ERRORE_SERVIZIO_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.remote.error", e);
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } catch (CriptazioneException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } finally {
       this.wsChiudiSessione(simogWS, hMapwsLogin);
@@ -1012,9 +1118,18 @@ public class GestioneServiziIDGARACIGManager {
       //String index_ufficioId = this.getIndiceCollaborazione(numgara, "W3GARA");
       String idUfficio = this.getIdUfficioCollaborazione(numgara, "W3GARA");
       
-      String cfein = (String) this.sqlManager.getObject(
-      		"select uffint.cfein from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?",
-              new Object[] { numgara });
+      String cfein = null;
+      String cfanac = null;
+      String iscuc = null;
+      Vector<?> datiSA = sqlManager.getVector(
+          "select uffint.cfein, uffint.cfanac, uffint.iscuc from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?", new Object[] { numgara });
+      if(datiSA!= null){
+          cfein = datiSA.get(0).toString();
+          cfanac = datiSA.get(1).toString();
+          iscuc = datiSA.get(2).toString();
+          if (iscuc != null && iscuc.equals("1") && cfanac != null && !cfanac.trim().equals(""))
+            cfein = cfanac;
+      }
       //hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, index_ufficioId, cfein);
       hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, idUfficio, cfein, rpntFailed);
       
@@ -1037,10 +1152,7 @@ public class GestioneServiziIDGARACIGManager {
     	  this.aggiornaW3GARASTATO(numgara, 4L);
       } else {
         throw new GestoreException(
-            "L'indice del centro di costo indicato "
-                //+ hMapwsLogin.get("index")
-                + idUfficio
-                + " non e' presente nella lista degli indici ammessi dai servizi SIMOG per il RUP indicato oppure non fa riferimento a questa stazione appaltante. Si prega di riassociare il centro di costo nei dati generali della Gara",
+            ERRORE_INDICE_CC_NON_PRESENTE,
             "gestioneIDGARACIG.ws.login.indexNonAmmesso",
             new Object[] { hMapwsLogin.get("index") }, null);
       }
@@ -1049,21 +1161,29 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (ServiceException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione degli identificativi di gara",
+          ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.error", e);
 
     } catch (RemoteException e) {
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con il servizio di elaborazione degli identificativi di gara",
+          ERRORE_SERVIZIO_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.remote.error", e);
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } catch (CriptazioneException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } finally {
       this.wsChiudiSessione(simogWS, hMapwsLogin);
@@ -1098,8 +1218,8 @@ public class GestioneServiziIDGARACIGManager {
 
     SimogWSPDDServiceStub simogWS = null;
     HashMap<String, Object> hMapwsLogin = new HashMap<String, Object>();
-    int validitaCig = this.controlloCIG(cig);
-    if (validitaCig == -1) {
+    boolean validitaCig = pgManager.controlloCodiceCIG(cig);
+    if (!validitaCig) {
     	throw new GestoreException(
     	          "Il codice cig inserito non è valido",
     	          "gestioneIDGARACIG.consultagaralotto.cigesistente");
@@ -1109,11 +1229,11 @@ public class GestioneServiziIDGARACIGManager {
       simogWS = this.getSimogWS();
       hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass,rpntFailed);
 
-      if (validitaCig == 0) {
+      if (cig.substring(0,1).toUpperCase().matches("[0-9A-U]")) {
     	  String datiGaraLottoXML = this.wsConsultaGara(simogWS, hMapwsLogin, cig);
     	  hMapConsultaGaraLotto = this.gestioneXMLIDGARACIGManager.inserisciGaraLottodaSIMOG(
     	          datiGaraLottoXML, cig, syscon, codUffInt, codrup);
-      } else if (validitaCig == 1) {
+      } else {
     	  Services simogSmartCigWS = this.getSimogWSSmartCig();
     	  ComunicazioneType comunicazione = this.wsConsultaSmartCig(simogSmartCigWS, hMapwsLogin, cig, syscon, codrup);
     	  hMapConsultaGaraLotto = this.gestioneXMLIDGARACIGManager.inserisciSMARTCIGdaSIMOG(
@@ -1124,16 +1244,24 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (ServiceException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante la consultazione della gara",
+          ERRORE_CONSULTAZIONE_GARA,
           "gestioneIDGARACIG.ws.error", e);
 
     } catch (RemoteException e) {
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con il servizio di consultazione della gara",
+          ERRORE_SERVIZIO_CONSULTAZIONE_GARA,
           "gestioneIDGARACIG.ws.remote.error", e);
     } catch (CriptazioneException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } finally {
       this.wsChiudiSessione(simogWS, hMapwsLogin);
@@ -1163,8 +1291,8 @@ public class GestioneServiziIDGARACIGManager {
 
     SimogWSPDDServiceStub simogWS = null;
     HashMap<String, Object> hMapwsLogin = new HashMap<String, Object>();
-    int validitaCig = this.controlloCIG(cig);  
-    if (validitaCig != 0) {
+    boolean validitaCig = pgManager.controlloCodiceCIG(cig);
+    if (!validitaCig || !cig.substring(0,1).toUpperCase().matches("[0-9A-U]")) {
     	throw new GestoreException(
     	          "Il codice cig inserito non è valido",
     	          "gestioneIDGARACIG.consultagaralotto.cigesistente");
@@ -1174,7 +1302,7 @@ public class GestioneServiziIDGARACIGManager {
     	simogWS = this.getSimogWS();
     	hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass,rpntFailed);
 
-    	if (validitaCig == 0) {
+    	if (cig.substring(0,1).toUpperCase().matches("[0-9A-U]")) {
     		// Richiesta dei dati gara e lotto a SIMOG a partire dal CIG
     		String datiGaraLottoXML = this.wsConsultaGara(simogWS, hMapwsLogin, cig);
     		SchedaType schedaDatiSIMOG = SchedaType.Factory.parse(datiGaraLottoXML);
@@ -1333,15 +1461,23 @@ public class GestioneServiziIDGARACIGManager {
     	throw e;
     } catch (ServiceException e) {
     	throw new GestoreException(
-    			"Si e' verificato un errore durante la consultazione della gara",
+    			ERRORE_CONSULTAZIONE_GARA,
     				"gestioneIDGARACIG.ws.error", e);
     } catch (RemoteException e) {
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
     	throw new GestoreException(
-    			"Si e' verificato un errore durante l'interazione con il servizio di consultazione della gara",
+    			ERRORE_SERVIZIO_CONSULTAZIONE_GARA,
     		  		"gestioneIDGARACIG.ws.remote.error", e);
 	} catch (CriptazioneException e) {
 	  throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+	      SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } finally {
     	this.wsChiudiSessione(simogWS, hMapwsLogin);
@@ -1797,73 +1933,6 @@ public class GestioneServiziIDGARACIGManager {
 		
 		return valoreCampo;
 	}
-
-
-  /**
-   * Restituisce la validita' del CIG
-   *
-   * @param codiceCIG cig
-   * @return validita'(-1:cig non valido, 0:cig, 1:smartcig)
-   */
-  private int controlloCIG(final String codiceCIG) {
-
-	    String strC1_7 = "";// primi 7 caratteri
-	    String strC4_10 = "";// dal 4 al 10 carattere
-	    String strK = ""; //Firma
-	    long nDecStrK_chk = 0;//Firma decimale
-	    long nDecStrK = 0;//controllo della firma decimale
-	    int result = -1;
-
-	    if ("".equals(codiceCIG) || codiceCIG.length() != 10 || "0000000000".equals(codiceCIG)) {
-	      //Errori di struttura
-	      return result;
-	    }
-	    //Verifico se si tratta di cig o smart cig
-	    String strC1 = "" + codiceCIG.charAt(0); //Estraggo il primo carattere
-	    if(StringUtils.isNumeric(strC1)){
-
-	    //CIG
-	      try {
-	        strK = codiceCIG.substring(7,10); //Estraggo la firma
-	        nDecStrK = Integer.parseInt (strK, 16); //trasformo in decimale
-	        strC1_7 = codiceCIG.substring(0,7); //Estraggo la parte significativa
-	        long nStrC1 = Integer.parseInt(strC1_7);
-	         //Calcola Firma
-	        nDecStrK_chk = ((nStrC1 * 1/1) * 211 % 4091);
-	        result = 0;
-	      }catch(Exception e){
-	          //Impossibile calcolare la firma
-	          return result;
-	      }
-
-	    }else{
-
-	      //SMART CIG
-	      if(!strC1.equals("X") && !strC1.equals("Z") && !strC1.equals("Y")){
-	        return result;
-	      }
-	      try {
-	        strK=codiceCIG.substring(1,3);//Estraggo la firma
-	        nDecStrK = Integer.parseInt (strK, 16); //trasformo in decimale
-	        strC4_10 = codiceCIG.substring(3,10);
-	        long nDecStrC4_10 = Integer.parseInt (strC4_10, 16); //trasformo in decimale
-	        //Calcola Firma
-	        nDecStrK_chk = ((nDecStrC4_10 * 1/1) * 211 % 251);
-	        result = 1;
-	      }catch(Exception e){
-	        //Impossibile calcolare la firma
-	        return result;
-	      }
-	    }
-
-	    if (nDecStrK_chk != nDecStrK) {
-	      //La firma non coincide
-	      return result;
-	    }
-
-	    return result;
-
-	  }
   
   /**
    * Richiesta di cancellazione della gara già assegnata
@@ -1889,9 +1958,18 @@ public class GestioneServiziIDGARACIGManager {
       //String index_ufficioId = this.getIndiceCollaborazione(numgara, "W3GARA");
       String idUfficio = this.getIdUfficioCollaborazione(numgara, "W3GARA");
       
-      String cfein = (String) this.sqlManager.getObject(
-      		"select uffint.cfein from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?",
-              new Object[] { numgara });
+      String cfein = null;
+      String cfanac = null;
+      String iscuc = null;
+      Vector<?> datiSA = sqlManager.getVector(
+          "select uffint.cfein, uffint.cfanac, uffint.iscuc from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?", new Object[] { numgara });
+      if(datiSA!= null){
+          cfein = datiSA.get(0).toString();
+          cfanac = datiSA.get(1).toString();
+          iscuc = datiSA.get(2).toString();
+          if (iscuc != null && iscuc.equals("1") && cfanac != null && !cfanac.trim().equals(""))
+            cfein = cfanac;
+      }
       //hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, index_ufficioId, cfein);
       hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, idUfficio, cfein, rpntFailed);
 
@@ -1905,10 +1983,7 @@ public class GestioneServiziIDGARACIGManager {
     	      this.aggiornaW3GARACancellazione(numgara, idmotivazione, notecanc);
       } else {
         throw new GestoreException(
-            "L'indice del centro di costo indicato "
-                //+ hMapwsLogin.get("index")
-                + idUfficio
-                + " non e' presente nella lista degli indici ammessi dai servizi SIMOG per il RUP indicato oppure non fa riferimento a questa stazione appaltante. Si prega di riassociare il centro di costo nei dati generali della Gara",
+            ERRORE_INDICE_CC_NON_PRESENTE,
             "gestioneIDGARACIG.ws.login.indexNonAmmesso",
             new Object[] { hMapwsLogin.get("index") }, null);
       }
@@ -1918,21 +1993,29 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (ServiceException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione degli identificativi di gara",
+          ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.error", e);
 
     } catch (RemoteException e) {
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con il servizio di elaborazione degli identificativi di gara",
+          ERRORE_SERVIZIO_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.remote.error", e);
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } catch (CriptazioneException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } finally {
       this.wsChiudiSessione(simogWS, hMapwsLogin);
@@ -1961,7 +2044,7 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -1981,7 +2064,7 @@ public class GestioneServiziIDGARACIGManager {
 		  this.sqlManager.update(updateW3GARA, new Object[] { idgara, new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()), 2L, numgara });
 	  } catch (SQLException e) {
 		  throw new GestoreException(
-			"Si e' verificato un errore durante l'interazione con la base dati",
+		      SQL_OR_CRIPTAZIONE_EXCEPTION,
 			"gestioneIDGARACIG.sqlerror", e);
 	  } finally {
 		  try {
@@ -2013,7 +2096,7 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -2057,7 +2140,7 @@ public class GestioneServiziIDGARACIGManager {
 		}
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -2098,7 +2181,7 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -2138,7 +2221,7 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -2170,7 +2253,7 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -2207,7 +2290,7 @@ public class GestioneServiziIDGARACIGManager {
       
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -2243,7 +2326,7 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -2274,7 +2357,7 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -2368,7 +2451,7 @@ public class GestioneServiziIDGARACIGManager {
     	idUfficio = (idUfficio == null)?"":idUfficio;
     } catch (SQLException e) {
       throw new GestoreException(
-          "Errore durante la lettura dell'idUfficio del centro di costo associato alla gara",
+          ERRORE_PRELIEVO_COLLABORAZIONE,
           "controlloW3GARA", e);
     }
 
@@ -2414,7 +2497,7 @@ public class GestioneServiziIDGARACIGManager {
       }
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -2451,7 +2534,7 @@ public class GestioneServiziIDGARACIGManager {
 		  }
 	  } catch (SQLException e) {
 		  throw new GestoreException(
-				  "Si e' verificato un errore durante l'interazione con la base dati",
+		      SQL_OR_CRIPTAZIONE_EXCEPTION,
 				  "gestioneIDGARACIG.sqlerror", e);
 	  } finally {
 		  try {
@@ -2484,7 +2567,7 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -2519,7 +2602,7 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -2548,7 +2631,7 @@ public class GestioneServiziIDGARACIGManager {
 
 	    } catch (SQLException e) {
 	      throw new GestoreException(
-	          "Si e' verificato un errore durante l'interazione con la base dati",
+	          SQL_OR_CRIPTAZIONE_EXCEPTION,
 	          "gestioneIDGARACIG.sqlerror", e);
 	    } finally {
 	    	try {
@@ -2588,7 +2671,7 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -2628,7 +2711,7 @@ public class GestioneServiziIDGARACIGManager {
       }
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -2721,7 +2804,7 @@ public class GestioneServiziIDGARACIGManager {
     	}
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } finally {
     	if (status != null) {
@@ -2733,7 +2816,7 @@ public class GestioneServiziIDGARACIGManager {
 				}
 			} catch (SQLException ex) {
 				throw new GestoreException(
-				          "Si e' verificato un errore durante l'interazione con la base dati",
+				    SQL_OR_CRIPTAZIONE_EXCEPTION,
 				          "gestioneIDGARACIG.sqlerror", ex);
 			}
 		}
@@ -2768,9 +2851,18 @@ public class GestioneServiziIDGARACIGManager {
       simogWS = this.getSimogWS();
       //String index_ufficioId = this.getIndiceCollaborazione(numgara, "W3GARA");
       String idUfficio = this.getIdUfficioCollaborazione(numgara, "W3GARA");
-      String cfein = (String) this.sqlManager.getObject(
-      		"select uffint.cfein from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?",
-              new Object[] { numgara });
+      String cfein = null;
+      String cfanac = null;
+      String iscuc = null;
+      Vector<?> datiSA = sqlManager.getVector(
+          "select uffint.cfein, uffint.cfanac, uffint.iscuc from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?", new Object[] { numgara });
+      if(datiSA!= null){
+          cfein = datiSA.get(0).toString();
+          cfanac = datiSA.get(1).toString();
+          iscuc = datiSA.get(2).toString();
+          if (iscuc != null && iscuc.equals("1") && cfanac != null && !cfanac.trim().equals(""))
+            cfein = cfanac;
+      }
       //hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, index_ufficioId, cfein);
       hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, idUfficio, cfein, rpntFailed);
       
@@ -2792,10 +2884,7 @@ public class GestioneServiziIDGARACIGManager {
           cig = ((String) hMapwsInserisciLotto.get("cig"));
       } else {
         throw new GestoreException(
-            "L'indice del centro di costo indicato "
-                //+ hMapwsLogin.get("index")
-                + idUfficio
-                + " non e' presente nella lista degli indici ammessi dai servizi SIMOG per il RUP indicato oppure non fa riferimento a questa stazione appaltante. Si prega di riassociare il centro di costo nei dati generali della Gara",
+            ERRORE_INDICE_CC_NON_PRESENTE,
             "gestioneIDGARACIG.ws.login.indexNonAmmesso",
             new Object[] { hMapwsLogin.get("index") }, null);
       }
@@ -2804,21 +2893,29 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (ServiceException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione degli identificativi di gara",
+          ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.error", e);
 
     } catch (RemoteException e) {
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con il servizio di elaborazione degli identificativi di gara",
+          ERRORE_SERVIZIO_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.remote.error", e);
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } catch (CriptazioneException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } finally {
       this.wsChiudiSessione(simogWS, hMapwsLogin);
@@ -2851,9 +2948,18 @@ public class GestioneServiziIDGARACIGManager {
       simogWS = this.getSimogWS();
       //String index_ufficioId = this.getIndiceCollaborazione(numgara, "W3GARA");
       String idUfficio = this.getIdUfficioCollaborazione(numgara, "W3GARA");
-      String cfein = (String) this.sqlManager.getObject(
-      		"select uffint.cfein from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?",
-              new Object[] { numgara });
+      String cfein = null;
+      String cfanac = null;
+      String iscuc = null;
+      Vector<?> datiSA = sqlManager.getVector(
+          "select uffint.cfein, uffint.cfanac, uffint.iscuc from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?", new Object[] { numgara });
+      if(datiSA!= null){
+          cfein = datiSA.get(0).toString();
+          cfanac = datiSA.get(1).toString();
+          iscuc = datiSA.get(2).toString();
+          if (iscuc != null && iscuc.equals("1") && cfanac != null && !cfanac.trim().equals(""))
+            cfein = cfanac;
+      }
       //hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, index_ufficioId, cfein);
       hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, idUfficio, cfein, rpntFailed);
       
@@ -2874,10 +2980,7 @@ public class GestioneServiziIDGARACIGManager {
           //this.gestioneRequisiti(numgara);
       } else {
         throw new GestoreException(
-            "L'indice del centro di costo indicato "
-                //+ hMapwsLogin.get("index")
-                + idUfficio
-                + " non e' presente nella lista degli indici ammessi dai servizi SIMOG per il RUP indicato oppure non fa riferimento a questa stazione appaltante. Si prega di riassociare il centro di costo nei dati generali della Gara",
+            ERRORE_INDICE_CC_NON_PRESENTE,
             "gestioneIDGARACIG.ws.login.indexNonAmmesso",
             new Object[] { hMapwsLogin.get("index") }, null);
       }
@@ -2887,21 +2990,29 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (ServiceException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione degli identificativi di gara",
+          ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.error", e);
 
     } catch (RemoteException e) {
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con il servizio di elaborazione degli identificativi di gara",
+          ERRORE_SERVIZIO_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.remote.error", e);
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } catch (CriptazioneException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } finally {
       this.wsChiudiSessione(simogWS, hMapwsLogin);
@@ -2934,9 +3045,18 @@ public class GestioneServiziIDGARACIGManager {
       //String index_ufficioId = this.getIndiceCollaborazione(numgara, "W3GARA");
       String idUfficio = this.getIdUfficioCollaborazione(numgara, "W3GARA");
       
-      String cfein = (String) this.sqlManager.getObject(
-      		"select uffint.cfein from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?",
-              new Object[] { numgara });
+      String cfein = null;
+      String cfanac = null;
+      String iscuc = null;
+      Vector<?> datiSA = sqlManager.getVector(
+          "select uffint.cfein, uffint.cfanac, uffint.iscuc from w3gara left join uffint on w3gara.codein=uffint.codein where w3gara.numgara = ?", new Object[] { numgara });
+      if(datiSA!= null){
+          cfein = datiSA.get(0).toString();
+          cfanac = datiSA.get(1).toString();
+          iscuc = datiSA.get(2).toString();
+          if (iscuc != null && iscuc.equals("1") && cfanac != null && !cfanac.trim().equals(""))
+            cfein = cfanac;
+      }
       //hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, index_ufficioId, cfein);
       hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, idUfficio, cfein, rpntFailed);
 
@@ -2953,10 +3073,7 @@ public class GestioneServiziIDGARACIGManager {
     	      this.aggiornaW3GARASTATO(numgara, 3L);
       } else {
         throw new GestoreException(
-            "L'indice del centro di costo indicato "
-                //+ hMapwsLogin.get("index")
-                + idUfficio
-                + " non e' presente nella lista degli indici ammessi dai servizi SIMOG per il RUP indicato oppure non fa riferimento a questa stazione appaltante. Si prega di riassociare il centro di costo nei dati generali della Gara",
+            ERRORE_INDICE_CC_NON_PRESENTE,
             "gestioneIDGARACIG.ws.login.indexNonAmmesso",
             new Object[] { hMapwsLogin.get("index") }, null);
       }
@@ -2966,21 +3083,29 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (ServiceException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione degli identificativi di gara",
+          ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.error", e);
 
-    } catch (RemoteException e) {
+    }catch (RemoteException e) {
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con il servizio di elaborazione degli identificativi di gara",
+          ERRORE_SERVIZIO_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.remote.error", e);
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } catch (CriptazioneException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } finally {
       this.wsChiudiSessione(simogWS, hMapwsLogin);
@@ -3010,9 +3135,18 @@ public class GestioneServiziIDGARACIGManager {
       //String index_ufficioId = this.getIndiceCollaborazione(numgara, "W3SMARTCIG");
       String idUfficio = this.getIdUfficioCollaborazione(numgara, "W3SMARTCIG");
       
-      String cfein = (String) this.sqlManager.getObject(
-      		"select uffint.cfein from W3SMARTCIG left join uffint on W3SMARTCIG.codein=uffint.codein where W3SMARTCIG.CODRICH = ?",
-              new Object[] { numgara });
+      String cfein = null;
+      String cfanac = null;
+      String iscuc = null;
+      Vector<?> datiSA = sqlManager.getVector(
+          "select uffint.cfein, uffint.cfanac, uffint.iscuc from W3SMARTCIG left join uffint on W3SMARTCIG.codein=uffint.codein where W3SMARTCIG.CODRICH = ?", new Object[] { numgara });
+      if(datiSA!= null){
+          cfein = datiSA.get(0).toString();
+          cfanac = datiSA.get(1).toString();
+          iscuc = datiSA.get(2).toString();
+          if (iscuc != null && iscuc.equals("1") && cfanac != null && !cfanac.trim().equals(""))
+            cfein = cfanac;
+      }
       //hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, index_ufficioId, cfein);
       hMapwsLogin = this.wsLogin(simogWS, simogwsuser, simogwspass, idUfficio, cfein, rpntFailed);
       
@@ -3036,10 +3170,7 @@ public class GestioneServiziIDGARACIGManager {
           this.annullaW3SMARTCIG(numgara);
       } else {
         throw new GestoreException(
-            "L'indice del centro di costo indicato "
-                //+ hMapwsLogin.get("index")
-                + idUfficio
-                + " non e' presente nella lista degli indici ammessi dai servizi SIMOG per il RUP indicato oppure non fa riferimento a questa stazione appaltante. Si prega di riassociare il centro di costo nei dati generali della Gara",
+            ERRORE_INDICE_CC_NON_PRESENTE,
             "gestioneIDGARACIG.ws.login.indexNonAmmesso",
             new Object[] { hMapwsLogin.get("index") }, null);
       }
@@ -3049,20 +3180,28 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (ServiceException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione degli identificativi di gara",
+          ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.error", e);
 
     } catch (RemoteException e) {
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con il servizio di elaborazione degli identificativi di gara",
+          ERRORE_SERVIZIO_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.remote.error", e);
     } catch (SQLException e) {
         throw new GestoreException(
-                "Si e' verificato un errore durante l'interazione con la base dati",
+            SQL_OR_CRIPTAZIONE_EXCEPTION,
                 "gestioneIDGARACIG.sqlerror", e);
           } catch (CriptazioneException e) {
             throw new GestoreException(
-                "Si e' verificato un errore durante l'interazione con la base dati",
+                SQL_OR_CRIPTAZIONE_EXCEPTION,
                 "gestioneIDGARACIG.sqlerror", e);
     }
 	finally {
@@ -3196,6 +3335,8 @@ public class GestioneServiziIDGARACIGManager {
     if (error != null) {
     	logger.error("Il servizio di login ha risposto con il seguente messaggio: "
     	          + error);
+    	 if(error.indexOf(SESSIONE_GIA_ATTIVA)>-1)
+           error += MESSAGGIO_SESSIONE_GIA_ATTIVA;
     	      throw new GestoreException(
     	          "Il servizio di login ha risposto con il seguente messaggio: "
     	              + error, "gestioneIDGARACIG.ws.login.error",
@@ -3329,6 +3470,8 @@ public class GestioneServiziIDGARACIGManager {
       
       logger.error("Il servizio di login ha risposto con il seguente messaggio: "
           + messaggio);
+      if(messaggio.indexOf(SESSIONE_GIA_ATTIVA)>-1)
+        messaggio += MESSAGGIO_SESSIONE_GIA_ATTIVA;
       throw new GestoreException(
           "Il servizio di login ha risposto con il seguente messaggio: "
               + messaggio, "gestioneIDGARACIG.ws.login.error",
@@ -3437,6 +3580,8 @@ public class GestioneServiziIDGARACIGManager {
       
       logger.error("Il servizio di login ha risposto con il seguente messaggio: "
           + messaggio);
+      if(messaggio.indexOf(SESSIONE_GIA_ATTIVA)>-1)
+        messaggio += MESSAGGIO_SESSIONE_GIA_ATTIVA;
       throw new GestoreException(
           "Il servizio di login ha risposto con il seguente messaggio: "
               + messaggio, "gestioneIDGARACIG.ws.login.error",
@@ -3525,6 +3670,8 @@ public class GestioneServiziIDGARACIGManager {
     if (error != null) {
     	logger.error("Il servizio di login ha risposto con il seguente messaggio: "
     	          + error);
+    	 if(error.indexOf(SESSIONE_GIA_ATTIVA)>-1)
+           error += MESSAGGIO_SESSIONE_GIA_ATTIVA;
     	      throw new GestoreException(
     	          "Il servizio di login ha risposto con il seguente messaggio: "
     	              + error, "gestioneIDGARACIG.ws.login.error",
@@ -4520,12 +4667,12 @@ public class GestioneServiziIDGARACIGManager {
       }
     } catch (SQLException e) {
       throw new GestoreException(
-          "Errore nella gestione delle credenziali di accesso al servizio di elaborazione degli identificativi di gara",
+          ERRORE_CREDENZIALI,
           "gestioneSIMOGWSUserPass.error", e);
 
     } catch (CriptazioneException e) {
       throw new GestoreException(
-          "Errore nella gestione delle credenziali di accesso al servizio di elaborazione degli identificativi di gara",
+          ERRORE_CREDENZIALI,
           "gestioneSIMOGWSUserPass.error", e);
     }
 
@@ -4580,12 +4727,12 @@ public class GestioneServiziIDGARACIGManager {
       }
     } catch (SQLException e) {
       throw new GestoreException(
-          "Errore nella gestione delle credenziali di accesso al servizio di elaborazione degli identificativi di gara",
+          ERRORE_CREDENZIALI,
           "gestioneSIMOGWSUserPass.error", e);
 
     } catch (CriptazioneException e) {
       throw new GestoreException(
-          "Errore nella gestione delle credenziali di accesso al servizio di elaborazione degli identificativi di gara",
+          ERRORE_CREDENZIALI,
           "gestioneSIMOGWSUserPass.error", e);
     }
 
@@ -4643,12 +4790,12 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Errore nella gestione delle credenziali di accesso al servizio di elaborazione degli identificativi di gara",
+          ERRORE_CREDENZIALI,
           "gestioneSIMOGWSUserPass.error", e);
 
     } catch (CriptazioneException e) {
       throw new GestoreException(
-          "Errore nella gestione delle credenziali di accesso al servizio di elaborazione degli identificativi di gara",
+          ERRORE_CREDENZIALI,
           "gestioneSIMOGWSUserPass.error", e);
     }
 
@@ -4695,7 +4842,7 @@ public class GestioneServiziIDGARACIGManager {
 
     } catch (SQLException e) {
       throw new GestoreException(
-          "Errore nella gestione delle credenziali di accesso al servizio di elaborazione degli identificativi di gara",
+          ERRORE_CREDENZIALI,
           "gestioneSIMOGWSUserPass.error", e);
     }
 
@@ -4800,27 +4947,35 @@ public class GestioneServiziIDGARACIGManager {
       }
     }catch(SQLException e){
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     } 
     catch (AxisFault e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione degli identificativi di gara",
+          ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.error", e);
     } catch (ServiceException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione degli identificativi di gara",
+          ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.error", e);
     } catch (RemoteException e) {
-        throw new GestoreException( "Si e' verificato un errore durante l'interazione con il servizio di elaborazione degli identificativi di gara",
+      if(e.getCause()!= null && (e.getCause().toString().indexOf("UnknownHostException")>-1 || e.getCause().toString().indexOf("ConnectException")>-1))
+        throw new GestoreException(
+            UNKNOWN_HOST_OR_CONNECT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e);
+      if(e.getCause()!= null && e.getCause().toString().indexOf("SocketTimeoutException")>-1)
+        throw new GestoreException(
+            SOCKET_TIMEOUT_EXCEPTION,
+            "gestioneIDGARACIG.ws.remote.error", e); 
+        throw new GestoreException( ERRORE_SERVIZIO_IDENTIFICATIVI_GARA,
         "gestioneIDGARACIG.ws.remote.error", e);
     } catch (XmlException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'elaborazione degli identificativi di gara",
+          ERRORE_ELABORAZIONE_IDENTIFICATIVI_GARA,
           "gestioneIDGARACIG.ws.error", e);
     } catch (CriptazioneException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
     finally {
@@ -4890,7 +5045,7 @@ public class GestioneServiziIDGARACIGManager {
       }
     } catch (SQLException e) {
       throw new GestoreException(
-          "Si e' verificato un errore durante l'interazione con la base dati",
+          SQL_OR_CRIPTAZIONE_EXCEPTION,
           "gestioneIDGARACIG.sqlerror", e);
     }
 
@@ -4898,4 +5053,25 @@ public class GestioneServiziIDGARACIGManager {
       logger.debug("collegaW3LOTTCIG: fine metodo");
 
   }
+  
+  public static void loggaEventoSIMOG(HttpServletRequest request, int isResponse, int livEvento, String oggEvento, String codEventoAgg, String descrizioneEvento, String errore) {
+    try {
+      String reqORresp = "REQ_";
+      if(isResponse==1)
+        reqORresp = "RES_";
+      if(isResponse==-1)
+        reqORresp = "";
+      
+      LogEvento logEvento = LogEventiUtils.createLogEvento(request);
+      logEvento.setCodApplicazione("PG");
+      logEvento.setOggEvento(oggEvento);
+      logEvento.setLivEvento(livEvento);
+      logEvento.setCodEvento("GA_SIMOG_"+reqORresp+codEventoAgg);
+      logEvento.setDescr(descrizioneEvento);
+      logEvento.setErrmsg(errore);
+      LogEventiUtils.insertLogEventi(logEvento);
+    } catch (Exception le) {
+      logger.error("Errore inaspettato durante la tracciatura su w_logeventi", le);
+    }
+  }    
 }

@@ -59,9 +59,10 @@
 		<c:set var="radioNascosti" value='style="display:none"'/>
 	</c:if>
 
-	<c:set var="where" value="idanticor=${chiave } and (daannoprec='2' or daannoprec='3') and idcontratto is not null group by upper(idcontratto) having(count(*)>1)"/>
-	<c:set var="numContrattiDuplicati" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "count(*)","ANTICORLOTTI", where)}'/>
-
+	<c:set var="where" value="idanticor= ? and (daannoprec='2' or daannoprec='3') and idcontratto is not null group by upper(idcontratto) having(count(*)>1)"/>
+	<c:set var="sql" value="${'select count(*) from ANTICORLOTTI where '}${where}"/>
+	<c:set var="numContrattiDuplicati" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, sql, chiave)}'/>
+	
 	<gene:redefineInsert name="corpo">
 		<form name="importaDati" id="importaDati" action="${pageContext.request.contextPath}/pg/ImportAdempimenti190SAP.do" enctype="multipart/form-data" method="post" 
 					<c:if test="${processato}">style="display: none"</c:if>>

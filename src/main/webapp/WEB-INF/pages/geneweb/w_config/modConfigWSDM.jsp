@@ -116,7 +116,7 @@
 				var codiceuo=$("#cuoProt option:selected").val();
 				var idutente=$("#idUtenteProt").val();
 				var idutenteuop=$("#iduoProt").val();
-				setWSLogin(syscon, servizio, username, password, ruolo, nome, cognome, codiceuo, idutente, idutenteuop);
+				setWSLogin(syscon, servizio, username, password, ruolo, nome, cognome, codiceuo, idutente, idutenteuop,"configurazione");
 			}
 			
 			if(condLoginComune && condUrlDocumentale ){
@@ -130,7 +130,7 @@
 				var codiceuo=$("#cuoDoc option:selected").val();
 				var idutente=$("#idUtenteDoc").val();
 				var idutenteuop=$("#iduoDoc").val();
-				setWSLogin(syscon, servizio, username, password, ruolo, nome, cognome, codiceuo, idutente, idutenteuop);
+				setWSLogin(syscon, servizio, username, password, ruolo, nome, cognome, codiceuo, idutente, idutenteuop,"configurazione");
 			}
 			document.formProprieta.submit();
 		}

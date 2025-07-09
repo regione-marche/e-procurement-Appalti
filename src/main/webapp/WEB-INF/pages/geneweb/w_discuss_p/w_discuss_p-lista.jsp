@@ -28,27 +28,35 @@
 			<c:set var="addKeyRiga" value="" />
 			<c:forEach begin="1" end="${fn:length(campiKey)}" step="1" varStatus="indicekey">
 				<c:set var="strTmp" value='${fn:substringAfter(campiKey[indicekey.index-1], ":")}' />
+				<c:if test="${not empty parametri}">
+					<c:set var="parametri" value="${parametri};"/>
+				</c:if>
+			<c:set var="parametri" value='${parametri}T:${strTmp}'/>
 				<c:choose>
 					<c:when test="${indicekey.last}">
 						<c:set var="addKeyRiga" value='${addKeyRiga}W_DISCUSS_P.DISCKEY${indicekey.index}=T:${strTmp}' />
-						<c:set var="whereKey" value='${whereKey} W_DISCUSS_P.DISCKEY${indicekey.index}=${gene:concat(gene:concat("\'", strTmp), "\'")}' />
+						<c:set var="whereKey" value='${whereKey} W_DISCUSS_P.DISCKEY${indicekey.index}=?' />
 					</c:when>
 					<c:otherwise>
 						<c:set var="addKeyRiga" value='${addKeyRiga}W_DISCUSS_P.DISCKEY${indicekey.index}=T:${strTmp};' />
-						<c:set var="whereKey" value='${whereKey} W_DISCUSS_P.DISCKEY${indicekey.index}=${gene:concat(gene:concat("\'", strTmp), "\'")} AND ' />
+						<c:set var="whereKey" value='${whereKey} W_DISCUSS_P.DISCKEY${indicekey.index}=? AND ' />
 					</c:otherwise>
 				</c:choose>
 			</c:forEach>
 	
-			<c:set var="whereKey" value="${whereKey} AND W_DISCUSS_P.DISCENT='${param.entita}' " />
+			<c:set var="whereKey" value="${whereKey} AND W_DISCUSS_P.DISCENT=? " />
+			<c:if test="${not empty parametri}">
+				<c:set var="parametri" value="${parametri};"/>
+			</c:if>
+		<c:set var="parametri" value='${parametri}T:${param.entita}'/>
 		</c:if>
 
 		<table class="lista">
 			<tr>
 				<td>
-
+		${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "W_DISCUSS_P", whereKey, parametri)}
 		<gene:formLista entita="W_DISCUSS_P" pagesize="20" tableclass="datilista" sortColumn="-7" gestisciProtezioni="true"
-				where="${whereKey} " gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreW_DISCUSS_P" >
+				gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreW_DISCUSS_P" >
 		<c:if test='${not empty param.chiave}'>
 			<c:set var="key" value="${param.chiave}" />
 			<c:set var="keyParent" value="${param.chiave}" />

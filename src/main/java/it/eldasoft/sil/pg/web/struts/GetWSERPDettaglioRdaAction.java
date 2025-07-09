@@ -6,6 +6,7 @@ import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
 import it.eldasoft.sil.pg.bl.GestioneWSERPManager;
 import it.eldasoft.utils.properties.ConfigManager;
+import it.maggioli.eldasoft.ws.conf.WSERPConfigurazioneOutType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaResType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaType;
 import it.maggioli.eldasoft.ws.erp.WSERP_ServiceLocator;
@@ -67,7 +68,11 @@ public class GetWSERPDettaglioRdaAction extends Action {
     JSONObject result = new JSONObject();
 
     try {
-
+      String tipoWSERP = "";
+      WSERPConfigurazioneOutType configurazione = gestioneWSERPManager.wserpConfigurazioneLeggi("WSERP");
+      if (configurazione.isEsito()) {
+        tipoWSERP = configurazione.getRemotewserp();
+      }
       String url = ConfigManager.getValore(PROP_WSERP_URL);
       ProfiloUtente profilo = (ProfiloUtente) request.getSession().getAttribute(
           CostantiGenerali.PROFILO_UTENTE_SESSIONE);
@@ -89,8 +94,22 @@ public class GetWSERPDettaglioRdaAction extends Action {
       input.setTipoRdaErp(tiporda);
       input.setCodiceRda(codicerda);
 
-      WSERPRdaResType output = wserp_ServiceLocator.getWSERPImplPort().WSERPDettaglioRda(utente, password, input);
-
+      WSERPRdaResType output = new WSERPRdaResType();
+      if ("ARCHIFLOW".equals(tipoWSERP)){
+        Long gareRda = (Long)this.sqlManager.getObject("select count(*) from garerda where numrda = ?", new Object[]{codicerda});
+        //Controllo che in DB non ci sia una gara con il codice RDA inserito, se c'e' blocco l'avanzamento e segnalo il problema
+        if(gareRda != null && gareRda > 0) {
+          output.setEsito(false);
+          output.setMessaggio("il codice RDA risulta gia' associato ad una gara");
+        } else {
+          output = wserp_ServiceLocator.getWSERPImplPort().WSERPDettaglioRda(utente, password, input);
+        }
+      } if ("CONI".equals(tipoWSERP)){
+        output = wserp_ServiceLocator.getWSERPImplPort().WSERPListaRda(utente, password, input);
+      } else {
+        output = wserp_ServiceLocator.getWSERPImplPort().WSERPDettaglioRda(utente, password, input);
+      }
+      
       if (output.isEsito()) {
         esito = true;
         messaggio = output.getMessaggio();

@@ -332,6 +332,9 @@ function _popolaTabellaDettaglioValutazione(dettagliValutazione) {
 		var descValCommissione;
 		if((modpunti == 1 || modpunti == 3) && maxpunCridef>0 && d.dataCommissione){
 			descValCommissione = getValCommissione(d,assegnazioneCoeffAbilitataCommissione);
+			var dataCommissioneConCoeffSettati = d.dataCommissione.filter(datoCommissione => datoCommissione.coeffi != null);
+			if(dataCommissioneConCoeffSettati.length > 0)
+				nascondiPulsanteCoeffiTotale = true;
 		}
 		var numdeci = parseInt(d.numdeci);
 		if(!numdeci){numdeci = 2;}
@@ -897,21 +900,32 @@ $(window).ready(function (){
 		focusCleanup: true,
 		cache: false,
 		 buttons: {
-	            "Conferma" : function() {
-	            	//Salvataggio dei dati
-	            	if ( $("#formCoefficente").validate().form()) {
-	            		var options = $("#mascheraSchedaCoefficente").dialog( "option" );
-	            		setCoefficente($("#coeffImpostato").val(),$("#punteggioVal").text(),options.idCridef,options.necvan,$("#noteImpostato").val());
-	            	} 
-	            	
+	            "Conferma" : {
+					id:"botConferma",
+					text:"Conferma",
+					click: function(e) {
+						//Salvataggio dei dati
+						if ( $("#formCoefficente").validate().form()) {
+							$("#botConferma").prop('disabled', true);
+							$("#botConferma").css('opacity',0.2);					
+							$("#botAnnulla").prop('disabled', true);
+							$("#botAnnulla").css('opacity',0.2);
+							var options = $("#mascheraSchedaCoefficente").dialog( "option" );
+							setCoefficente($("#coeffImpostato").val(),$("#punteggioVal").text(),options.idCridef,options.necvan,$("#noteImpostato").val());
+						} 
+	            	}
 	            },
-	            "Annulla" : function() {
-	            	$('#selectA1z07').find('option').remove();
-	            	$("#tdCoeff").hide();
-	    			$("#tdSelectCoeff").hide();
-	    			$("#errorMessage") .text("");
-	            	$(this).dialog( "close" );
-	            }
+	            "Annulla" : {
+					id:"botAnnulla",
+					text:"Annulla",
+					click:function() {
+						$('#selectA1z07').find('option').remove();
+						$("#tdCoeff").hide();
+						$("#tdSelectCoeff").hide();
+						$("#errorMessage") .text("");
+						$(this).dialog( "close" );
+					}
+				}
 	          }
 	});
 	
@@ -932,19 +946,30 @@ $(window).ready(function (){
 		focusCleanup: true,
 		cache: false,
 		 buttons: {
-	            "Conferma" : function() {
-	            	//Salvataggio dei dati
-					if ( $("#formCoefficenteCommissione").validate().form()) {
-	            		$(this).find("#formCoefficenteCommissione").submit();
-	            	} 
-					
+	            "Conferma" : {
+					id:"botConferma2",
+					text:"Conferma",
+					click: function() {
+						//Salvataggio dei dati
+						if ( $("#formCoefficenteCommissione").validate().form()) {
+							$("#botConferma2").prop('disabled', true);
+							$("#botConferma2").css('opacity',0.2);
+							$("#botAnnulla2").prop('disabled', true);
+							$("#botAnnulla2").css('opacity',0.2);
+							$(this).find("#formCoefficenteCommissione").submit();
+						} 
+					}	
 	            },
-	            "Annulla" : function() {
-					$(this).find('#errorMessage').html("");
-	            	$('.tabellato').each(function() {
-						$(this).find('option').remove();
-					});
-	            	$(this).dialog( "close" );
+	            "Annulla" : {
+					id:"botAnnulla2",
+					text:"Annulla",
+					click:function() {
+						$(this).find('#errorMessage').html("");
+						$('.tabellato').each(function() {
+							$(this).find('option').remove();
+						});
+						$(this).dialog( "close" );
+					}
 	            }
 	          }
 	});
@@ -974,6 +999,10 @@ $(window).ready(function (){
 			},
 			success: function(data){
 				$("#mascheraSchedaCoefficente").dialog("close");
+				$("#botConferma").prop('disabled', false);
+				$("#botConferma").css('opacity',1);
+				$("#botAnnulla").prop('disabled', false);
+				$("#botAnnulla").css('opacity',1);
 				$("#tdCoeff").hide();
 				$("#tdSelectCoeff").hide();
 				$("#maxpunG1cridef").val("");
@@ -1012,9 +1041,18 @@ $(window).ready(function (){
 			   data: form.serialize(), // serializes the form's elements.
 			   success: function(data){
 				$("#mascheraCoefficenteCommissione").dialog("close");
+				$("#botConferma2").prop('disabled', false);
+				$("#botConferma2").css('opacity',1);
+				$("#botAnnulla2").prop('disabled', false);
+				$("#botAnnulla2").css('opacity',1);
 				_getDettaglio();
 			   }
 			 })
+		}else{
+			$("#botConferma2").prop('disabled', false);
+			$("#botConferma2").css('opacity',1);
+			$("#botAnnulla2").prop('disabled', false);
+			$("#botAnnulla2").css('opacity',1);
 		}
 	});
 

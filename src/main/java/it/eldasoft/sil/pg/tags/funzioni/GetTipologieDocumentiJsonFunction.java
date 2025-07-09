@@ -16,6 +16,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 
+import org.apache.commons.lang.StringUtils;
+
 import it.eldasoft.gene.bl.GeneManager;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
@@ -61,7 +63,17 @@ public class GetTipologieDocumentiJsonFunction extends AbstractFunzioneTag {
     String contextPath = ((HttpServletRequest) pageContext.getRequest()).getContextPath();
 
     try {
-        List<?> w9cfPubb = sqlManager.getListVector("select ID, NOME, CL_WHERE_VIS, CL_WHERE_ULT, GRUPPO from G1CF_PUBB order by NUMORD", new Object[] {});
+
+    	String verNPA = (String) sqlManager.getObject("select vernpa from torn where codgar=?", new Object[] { codiceGara });
+    	String condizionePCP = " where id ";
+
+    	if (StringUtils.isNotEmpty(verNPA)) {
+    		condizionePCP += "> 100";
+    	} else {
+    		condizionePCP += "< 100";
+    	}
+
+        List<?> w9cfPubb = sqlManager.getListVector("select ID, NOME, CL_WHERE_VIS, CL_WHERE_ULT, GRUPPO from G1CF_PUBB" + condizionePCP + " order by NUMORD", new Object[] {});
         if (w9cfPubb != null && w9cfPubb.size() > 0) {
           for (int i = 0; i < w9cfPubb.size(); i++) {
               tipoPubblicazione = SqlManager.getValueFromVectorParam(w9cfPubb.get(i), 0).longValue();

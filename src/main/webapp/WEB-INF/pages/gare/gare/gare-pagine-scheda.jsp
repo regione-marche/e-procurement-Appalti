@@ -25,6 +25,9 @@
 <c:set var="isProceduraTelematica" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.IsProceduraTelematicaGaraFunction", pageContext, gene:getValCampo(key,"NGARA"))}' scope="request"/>
 <c:set var="uffintGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetUffintGaraFunction",  pageContext,codiceGara)}' scope="request"/>
 <c:set var="idconfi" value='${gene:callFunction3("it.eldasoft.gene.tags.functions.GetWSDMConfiAttivaFunction",  pageContext,uffintGara,sessionScope.moduloAttivo)}' scope="request"/>
+<c:set var="tipoconc" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select tipoconc from torn where codgar=?", codiceGara)}' scope="request"/>
+<c:set var="isfineconc" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select isfineconc from torn where codgar=?", codiceGara)}' scope="request"/>
+<c:set var="verNPA" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select vernpa from torn where codgar=?", codiceGara)}'/>
 
 <c:set var="ngara" value='${gene:getValCampo(key, "GARE.NGARA")}' />
 <c:set var="ditta" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetDittaFunction", pageContext, ngara)}' />
@@ -67,6 +70,9 @@
 <c:choose>
 	<c:when test="${itergaMacro eq 3 && isRicercaMercatoNegoziata eq 'true'}">
 		<c:set var="titleFasiGaraTab3" value="3. Apertura offerte e valutazione" />
+	</c:when>
+	<c:when test="${iterga eq 9 && tipoconc eq 2}">
+		<c:set var="titleFasiGaraTab3" value="3. Apertura offerte" />
 	</c:when>
 	<c:otherwise>
 		<c:set var="titleFasiGaraTab3" value="3. Apertura offerte e calcolo aggiud." />
@@ -140,6 +146,14 @@
 		<jsp:include page="gare-pg-altridati.jsp" />
 	</gene:pagina>
 
+	<gene:pagina title="Altri dati" idProtezioni="ALTRIDATIOFFUNICA" visibile='${lottoOffertaUnica}'>
+		<jsp:include page="gare-pg-altridati-offertaUnica.jsp" />
+	</gene:pagina>
+
+	<gene:pagina title="Dati procedimento" idProtezioni="DATIPROCEDIMENTO" visibile="${garaLottoUnico and not garaPerElenco and not garaPerCatalogo}">
+		<jsp:include page="gare-pg-datiprocedimento.jsp" />
+	</gene:pagina>
+
 	<gene:pagina title="Categorie" idProtezioni="CATEGORIEGARA" visibile="${garaPerElenco || garaPerCatalogo}">
 		<jsp:include page="gare-pg-categorie-albero.jsp" />
 	</gene:pagina>
@@ -150,6 +164,10 @@
 		
 	<gene:pagina title="Altri dati" idProtezioni="CRITERIELEDITTE" >
 		<jsp:include page="gare-pg-criteri-rotazione.jsp" />
+	</gene:pagina>
+
+	<gene:pagina title="Dati procedimento" idProtezioni="DATIPROCEDIMENTO" visibile="${garaLottoUnico and (garaPerElenco or garaPerCatalogo)}">
+		<jsp:include page="gare-pg-datiprocedimento.jsp" />
 	</gene:pagina>
 	
 	<gene:pagina title="Criteri di valutazione" idProtezioni="CRITERI" visibile="${modlicg eq '6' and not garaPerElenco and not garaPerCatalogo}">
@@ -212,8 +230,14 @@
 			<jsp:param name="isRicercaMercatoNegoziata" value="${isRicercaMercatoNegoziata}"/>
 		</jsp:include>
 	</gene:pagina>
+	<c:if test="${iterga eq 9 && tipoconc eq 2}">
+		<c:set var="ngaraSecondoGradoConcluso" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from gare where ngarapa=? and isriconclusa=\'1\'", ngara)}'/>
+		<gene:pagina title="Graduatoria 2° grado" idProtezioni="FASIGARA" selezionabile="${faseGara >= 7 && not empty ngaraSecondoGradoConcluso}">
+			<jsp:include page="gare-pg-graduatoriaSecGrado.jsp" />
+		</gene:pagina>
+	</c:if>
 	<c:if test="${!(isRicercaMercatoNegoziata eq 'true')}">
-		<gene:pagina title="${prefTitleAggiudicazione}Aggiudicazione" idProtezioni="AGGDEF"  selezionabile="${empty prefTitleAggiudicazione or !empty dittaProv}"  visibile='${not lottoOffertaUnica and not garaPerElenco and not garaPerCatalogo}'>
+		<gene:pagina title="${prefTitleAggiudicazione}Aggiudicazione" idProtezioni="AGGDEF"  selezionabile="${(empty prefTitleAggiudicazione or (!empty dittaProv and iterga ne '9') or isfineconc eq '1')}"   visibile='${not lottoOffertaUnica and not garaPerElenco and not garaPerCatalogo}'>
 			<jsp:include page="gare-pg-aggiudicazione-definitiva.jsp">
 				<jsp:param name="lottoDiGara" value="${lottoDiGara}" />
 			</jsp:include>
@@ -259,7 +283,7 @@
 	
 	<c:choose>
 		<c:when test='${garaPerElenco}'>
-			<gene:pagina title="Pubblicità elenco" idProtezioni="PUBBLICITA" visibile="${itergaMacro !=3  and garaLottoUnico}">
+			<gene:pagina title="Pubblicità elenco" idProtezioni="PUBBLICITA" visibile="${itergaMacro !=3  and garaLottoUnico and empty verNPA}">
 				<jsp:include page="gare-pg-pubblicita.jsp">
 					<jsp:param name="iterga" value="${iterga}" /> 
 					<jsp:param name="garaPerElenco" value="garaPerElenco" /> 
@@ -267,13 +291,14 @@
 			</gene:pagina>
 		</c:when>
 		<c:when test='${garaPerCatalogo}'>
-			<gene:pagina title="Pubblicità catalogo" idProtezioni="PUBBLICITA" visibile="${itergaMacro !=3  and garaLottoUnico}">
+			<gene:pagina title="Pubblicità catalogo" idProtezioni="PUBBLICITA" visibile="${itergaMacro !=3  and garaLottoUnico and empty verNPA}">
 				<jsp:include page="gare-pg-pubblicita.jsp" >
 					<jsp:param name="iterga" value="${iterga}" /> 
 					<jsp:param name="garaPerCatalogo" value="garaPerCatalogo" /> 
 				</jsp:include>
 			</gene:pagina>
 		</c:when>
+		<c:when test="${not empty verNPA or not empty initVERNPA}"/>
 		<c:otherwise>
 			<c:if test="${garaLottoUnico}">
 				<gene:pagina title="Pubblicità gara" idProtezioni="PUBBLICITA" visibile="${garaLottoUnico}">
@@ -298,6 +323,8 @@
 </gene:formPagine>
 
 <gene:javaScript>
+
+// alert("vediamo:${param.listaRdaSelezionate}" ); // TODO:ROS: da togliere, usata per debugging
 			
 var selezionaPaginaOld = selezionaPagina;
 

@@ -21,6 +21,9 @@
 <%@ taglib uri="http://struts.apache.org/tags-html" prefix="html"%>
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 
+<%-- test per consentire utilizzo della pagina solo agli amministratori di sistema --%>
+<c:set var="nonusato" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.CheckOpzioniUtenteFunction", pageContext, "ou89")}' />
+
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 <c:set var="listaOpzioniDisponibili" value="${fn:join(opzDisponibili,'#')}#"/>
 <c:set var="listaOpzioniUtenteAbilitate" value="${fn:join(profiloUtente.funzioniUtenteAbilitate,'#')}#" />
@@ -66,55 +69,55 @@ font: 11px Verdana, Arial, Helvetica, sans-serif;
 
 	<tr class="listadocstyle">
 	 	<td>
-			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1documod/g1documod-lista.jsp&gruppo=1&busta= "'>
+			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-lista.jsp&gruppo=1&busta= "'>
 			${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1064","1","false")}</a>
 		</td>
 	</tr>
 	<tr class="listadocstyle">
 		<td>
-			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1documod/g1documod-lista.jsp&gruppo=6&busta= "'>
+			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-lista.jsp&gruppo=6&busta= "'>
 			${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1064","6","false")}</a>
 		</td>
 	</tr>
 	<tr class="listadocstyle">
 	 	<td>
-			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1documod/g1documod-lista.jsp&gruppo=4&busta= "'>
+			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-lista.jsp&gruppo=4&busta= "'>
 			${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1064","4","false")}</a>
 		</td>
 	</tr>
 	<tr class="listadocstyle">
 	 	<td>
-			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1documod/g1documod-lista.jsp&gruppo=3&busta=4"'>
+			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-lista.jsp&gruppo=3&busta=4"'>
 			Documenti busta ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1013","4","false")}</a>
 		</td>
 	</tr>
 	<tr class="listadocstyle">
 	 	<td>
-			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1documod/g1documod-lista.jsp&gruppo=3&busta=1"'>
+			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-lista.jsp&gruppo=3&busta=1"'>
 			Documenti busta ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1013","1","false")}</a>
 		</td>
 	</tr>
 	<tr class="listadocstyle">
 	 	<td>
-			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1documod/g1documod-lista.jsp&gruppo=3&busta=2"'>
+			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-lista.jsp&gruppo=3&busta=2"'>
 			Documenti busta ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1013","2","false")}</a>
 		</td>
 	</tr>
 	<tr class="listadocstyle">
 	 	<td>
-			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1documod/g1documod-lista.jsp&gruppo=3&busta=3"'>
+			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-lista.jsp&gruppo=3&busta=3"'>
 			Documenti busta ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1013","3","false")}</a>
 		</td>
 	</tr>
 	<tr class="listadocstyle">
 		<td>
-			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1documod/g1documod-lista.jsp&gruppo=20&busta= "'>
+			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-lista.jsp&gruppo=20&busta= "'>
 			${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1064","20","false")}</a>
 		</td>
 	</tr>
 	<tr class="listadocstyle">
 		<td>
-			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1documod/g1documod-lista.jsp&gruppo=2&busta= "'>
+			<a class="listadocstyle" href='javascript:document.location.href="${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1documod/g1documod-lista.jsp&gruppo=2&busta= "'>
 			${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoFunction", pageContext, "A1064","2","false")}</a>
 		</td>
 	</tr>

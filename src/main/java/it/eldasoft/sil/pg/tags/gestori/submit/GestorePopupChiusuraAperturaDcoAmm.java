@@ -161,8 +161,8 @@ public class GestorePopupChiusuraAperturaDcoAmm extends AbstractGestoreEntita {
                 for(int i=0;i<listaLotti.size();i++){
                   lotto = SqlManager.getValueFromVectorParam(listaLotti.get(i), 0).getStringValue();
                   //Nel caso di fase economica si deve specificare che siamo nel caso di lotto
-                  mepaManager.impostaComunicazioniAScartate(lotto,"OFFERTE_ECO_LOTTI_DISTINTI");
-                  mepaManager.impostaComunicazioniDaRiaquisireLottoPlicoUnicoOfferteDistinte(lotto);
+                  mepaManager.impostaComunicazioniAScartate(lotto,"OFFERTE_ECO_LOTTI_DISTINTI", null);
+                  mepaManager.impostaComunicazioniDaRiaquisireLottoPlicoUnicoOfferteDistinte(lotto, null);
 
                 }
               }
@@ -172,11 +172,11 @@ public class GestorePopupChiusuraAperturaDcoAmm extends AbstractGestoreEntita {
                 //Nel caso di bustalotti=1 si deve specificare che siamo nel caso di lotto
                 tipo="OFFERTE_ECO_LOTTI_DISTINTI";
               }
-              mepaManager.impostaComunicazioniAScartate(ngara,tipo);
+              mepaManager.impostaComunicazioniAScartate(ngara,tipo, null);
               if("1".equals(bustalotti))
-                mepaManager.impostaComunicazioniDaRiaquisireLottoPlicoUnicoOfferteDistinte(ngara);
+                mepaManager.impostaComunicazioniDaRiaquisireLottoPlicoUnicoOfferteDistinte(ngara, null);
               else
-                mepaManager.impostaComunicazioniDaRiaquisire(ngara);
+                mepaManager.impostaComunicazioniDaRiaquisire(ngara, null);
 
             }
           }

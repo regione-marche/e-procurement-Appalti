@@ -39,6 +39,8 @@ public class ArchiviaEsportaDocumentiTask {
   private SqlManager                            sqlManager;
 
   private GestioneWSDMManager      gestioneWSDMManager;
+  
+  private AnalizzaArchiviazioneDocumentiManager analizzaArchiviazioneDocumentiManager;
 
   public void setCreazioneArchivioDocumentiGaraManager(CreazioneArchivioDocumentiGaraManager creazioneArchivioDocumentiGaraManager) {
     this.creazioneArchivioDocumentiGaraManager = creazioneArchivioDocumentiGaraManager;
@@ -54,6 +56,10 @@ public class ArchiviaEsportaDocumentiTask {
 
   public void setGestioneWSDMManager(GestioneWSDMManager gestioneWSDMManager) {
     this.gestioneWSDMManager = gestioneWSDMManager;
+  }
+  
+  public void setAnalizzaArchiviazioneDocumentiManager(AnalizzaArchiviazioneDocumentiManager analizzaArchiviazioneDocumentiManager) {
+    this.analizzaArchiviazioneDocumentiManager = analizzaArchiviazioneDocumentiManager;
   }
 
   /**
@@ -104,11 +110,12 @@ public class ArchiviaEsportaDocumentiTask {
       String supporto = null;
       String sottotipo = null;
       String entitaGardoc = null;
+      Long sysconW_message_in = null;
 
       boolean tabellatiInDb= this.gestioneWSDMManager.isTabellatiInDb();
 
       String selRichiesteDaElaborare = "select j.id_archiviazione, j.codgara, j.syscon, j.classifica, j.cod_reg,"
-          + " j.tipo_doc, j.mitt_int, j.indice, j.classifica_tit, j.uo_mittdest, j.mezzo, j.struttura, j.supporto, j.sottotipo, j.entita "
+          + " j.tipo_doc, j.mitt_int, j.indice, j.classifica_tit, j.uo_mittdest, j.mezzo, j.struttura, j.supporto, j.sottotipo, j.entita, j.sysdet "
           + " from gardoc_jobs j"
           + " where j.tipo_archiviazione = ? and j.da_processare = ?  ";
 
@@ -122,15 +129,16 @@ public class ArchiviaEsportaDocumentiTask {
       List listaDocumentiDaElaborare = null;
       try {
         listaRichiesteDaElaborare = sqlManager.getListVector(selRichiesteDaElaborare,
-            new Object[] {new Long(2), new Long(1) });
+            new Object[] {new Long(2), "1" });
 
         if (listaRichiesteDaElaborare != null && listaRichiesteDaElaborare.size() > 0) {
           for (int h = 0; h < listaRichiesteDaElaborare.size(); h++) {
-
+            genere=null;
             idArchiviazione = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 0).longValue();
             codgara = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 1).getStringValue();
             entitaGardoc = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 14).getStringValue();
             sysconRichiesta = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 2).longValue();
+            sysconW_message_in = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 15).longValue();
             classificadocumento = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 3).getStringValue();
             codiceregistrodocumento = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 4).getStringValue();
             tipodocumento = SqlManager.getValueFromVectorParam(listaRichiesteDaElaborare.get(h), 5).getStringValue();
@@ -233,7 +241,13 @@ public class ArchiviaEsportaDocumentiTask {
 
               // aggiorno la riga di archiviazione
               archiviazioneDocumentiManager.updateJobArchiviazioneDocumenti(idArchiviazione, statoGardocJobs, numDocEsitoNegativo,
-                  messaggioApp, codgara, codice, genere, sysconRichiesta);
+                  messaggioApp, codgara, codice, genere, sysconW_message_in);
+              
+              //lancio puntalmente il task per l'analisi delle gare con documenti da archiviare
+              if(genere==null)//stipule
+                analizzaArchiviazioneDocumentiManager.analizzaEntita(null,new Long(codgara));
+              else//gare/avvisi/elenchi
+                analizzaArchiviazioneDocumentiManager.analizzaEntita(codgara,null);
             }
           }// for listaRichiesteDaElaborare
 
@@ -267,11 +281,11 @@ public class ArchiviaEsportaDocumentiTask {
       List cos_listaRichiesteDaElaborare = null;
       List cos_listaDocumentiDaElaborare = null;
       try {
-        cos_listaRichiesteDaElaborare = sqlManager.getListVector(cos_selRichiesteDaElaborare, new Object[] {new Long(3), new Long(1) });
+        cos_listaRichiesteDaElaborare = sqlManager.getListVector(cos_selRichiesteDaElaborare, new Object[] {new Long(3), "1" });
 
         if (cos_listaRichiesteDaElaborare != null && cos_listaRichiesteDaElaborare.size() > 0) {
           for (int h = 0; h < cos_listaRichiesteDaElaborare.size(); h++) {
-
+            genere=null;
             idArchiviazione = SqlManager.getValueFromVectorParam(cos_listaRichiesteDaElaborare.get(h), 0).longValue();
             codgara = SqlManager.getValueFromVectorParam(cos_listaRichiesteDaElaborare.get(h), 1).getStringValue();
             sysconRichiesta = SqlManager.getValueFromVectorParam(cos_listaRichiesteDaElaborare.get(h), 2).longValue();
@@ -286,6 +300,9 @@ public class ArchiviaEsportaDocumentiTask {
 
             cos_listaDocumentiDaElaborare = sqlManager.getListVector(cos_selDocumentiDaElaborare, new Object[] {idArchiviazione,
                 new Long(1) });
+
+            String uffint = (String) sqlManager.getObject("select cenint from torn where codgar=?", new Object[]{codgara});
+            uffint=null;
 
             int numDocEsitoNegativo = 0;
             String messaggioApp = null;
@@ -313,6 +330,7 @@ public class ArchiviaEsportaDocumentiTask {
                 d.put(ArchiviazioneDocumentiManager.IDARCHIVIAZIONE, idArchiviazione);
                 d.put(ArchiviazioneDocumentiManager.ENTITA, entita);
                 d.put(ArchiviazioneDocumentiManager.PROVENIENZA, provenienza);
+                d.put(ArchiviazioneDocumentiManager.UFFINT, uffint);
                 documenti.add(d);
 
               } // for documenti da elaborare
@@ -321,7 +339,7 @@ public class ArchiviaEsportaDocumentiTask {
                 int esito = 1;
                 
                 SFTPManager sftp = new SFTPManager();
-                sftp.connect();
+                sftp.connect(uffint);
                 
                 for (int i = 0; i < documenti.size(); i++) {   
                   Long iddocu = (Long) documenti.get(i).get("idDoc");
@@ -333,7 +351,7 @@ public class ArchiviaEsportaDocumentiTask {
                     numDocEsitoNegativo++;
                     //a fronte di un problema, apro una nuova connessione
                     sftp = new SFTPManager();
-                    sftp.connect();
+                    sftp.connect(uffint);
                   }
                 }
                 sftp.disconnect();
@@ -351,6 +369,13 @@ public class ArchiviaEsportaDocumentiTask {
             // aggiorno la riga di archiviazione
             archiviazioneDocumentiManager.updateJobArchiviazioneDocumenti(idArchiviazione, statoGardocJobs, numDocEsitoNegativo,
                 messaggioApp, codgara, codice, genere, sysconRichiesta);
+            
+            // aggiorno la riga di archiviazione
+            if(genere==null)//stipule
+              logger.debug("Archiviazione di una stipula verso COS?! codgara="+codgara);
+              //analizzaArchiviazioneDocumentiManager.analizzaEntita(null,new Long(codgara)); //teoricamente non entrerò mai qui, non si possono archiviare doc. di stipule a COS (12/04/2023)
+            else//gare/avvisi/elenchi
+              analizzaArchiviazioneDocumentiManager.analizzaEntita(codgara,null);
  
             String errMsg = null;
             int livEvento = 1;

@@ -22,7 +22,7 @@
 		WHERE G.CODGAR1 = #CODGAR#
 	</sql>
 	<sql id="gareOrderByCodiga">
-		ORDER BY G.CODIGA
+		ORDER BY CAST(G.CODIGA as NUMERIC(10))
 	</sql>
 	<sql id="gareByFKJoin">
 		JOIN TORN T

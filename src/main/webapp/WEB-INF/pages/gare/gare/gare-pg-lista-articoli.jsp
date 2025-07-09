@@ -194,7 +194,7 @@
 	
 	function scaricaModello(){
 		var chiave = '${idGaraCatalogo}';
-		var href="${contextPath}/pg/ExportModelloArticoli.do?"+csrfToken+"&chiave="+chiave+"&numeroPopUp=1";
+		var href="${contextPath}/pg/ExportModelloArticoli.do?chiave="+chiave+"&numeroPopUp=1";
 		document.location.href=href;
 	}
 	

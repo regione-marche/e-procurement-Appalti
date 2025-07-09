@@ -87,6 +87,10 @@
 <c:set var="integrazioneWSDM" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNFunction", pageContext, codgar, idconfi)}'/>
 <c:set var="tipoGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTipologiaGaraFunction",  pageContext,codgar)}' />
 
+<c:if test="${integrazioneWSDM eq '1'}">
+	<c:set var="esitoControlli" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ControlliInvioComunicazioniFunction",pageContext,idprg,idcom,"1")}' />
+</c:if>
+
 <gene:formScheda entita="W_INVCOM" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreW_INVCOM">
 	<gene:campoScheda campo="IDPRG" visibile="false"/>
 	<gene:campoScheda campo="IDCOM" visibile="false"/>
@@ -200,12 +204,16 @@
 	}
 	
 	function protocollacomunicazione(idprg,idcom) {
+		var esitoControlli = "${esitoControlli}";
 		if(autorizzatoTelematiche == "false"){
 			alert("Non e' possibile procedere.\nLa funzione e' disponibile solo al Punto ordinante");
 			return;
 		}else{
 			if(cenint == ""){
 				alert("Non e' possibile procedere.\nDeve essere specificata la stazione appaltante");
+				return;
+			}else if(esitoControlli == 'NO-TERMINISCA'){
+				alert("Non è possibile inviare la comunicazione in quanto la data termine presentazione documentazione è precedente alla data corrente");
 				return;
 			}else{
 				document.formprotocollacomunicazione.idprg.value = idprg;
@@ -234,7 +242,7 @@
 		var entitaWSDM="${entitaWSDM }";
 		var idconfi="${idconfi }";
 		var comdatins ="${comdatins }";
-		document.pagineForm.action += "&keyAdd=" + keyAdd + "&chiaveWSDM=" + chiaveWSDM + "&entitaWSDM=" + entitaWSDM + "&comdatins=" + comdatins + "&cenint=" + cenint + "&idconfi=" + idconfi;
+		document.pagineForm.action += "?keyAdd=" + keyAdd + "&chiaveWSDM=" + chiaveWSDM + "&entitaWSDM=" + entitaWSDM + "&comdatins=" + comdatins + "&cenint=" + cenint + "&idconfi=" + idconfi;
 		selezionaPaginaDefault(pageNumber);
 	}
 	

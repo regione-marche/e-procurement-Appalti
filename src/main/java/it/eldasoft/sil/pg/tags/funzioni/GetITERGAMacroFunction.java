@@ -62,12 +62,14 @@ public class GetITERGAMacroFunction extends AbstractFunzioneTag {
       	if(iterga != null) {
             switch(iterga.intValue()){
             case 1:
+            case 9:
               result = "1";
               break;
             case 3:
             case 5:
             case 6:
             case 8:
+            case 10:
                 result = "3";
                 break;
             case 7:

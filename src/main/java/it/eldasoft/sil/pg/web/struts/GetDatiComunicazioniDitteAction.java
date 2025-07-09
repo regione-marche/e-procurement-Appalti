@@ -12,6 +12,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspException;
 
+import it.eldasoft.sil.pg.bl.PgManager;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
@@ -34,6 +36,7 @@ public class GetDatiComunicazioniDitteAction extends Action {
   private PgManagerEst1 pgManagerEst1;
   private GeneManager geneManager;
   private TabellatiManager tabellatiManager;
+  private PgManager pgManager;
 
   /**
    * @param sqlManager
@@ -63,6 +66,10 @@ public class GetDatiComunicazioniDitteAction extends Action {
     this.tabellatiManager = tabellatiManager;
   }
 
+  public void setPgManager(PgManager pgManager) {
+    this.pgManager = pgManager;
+  }
+
   @Override
   public final ActionForward execute(final ActionMapping mapping, final ActionForm form, final HttpServletRequest request,
       final HttpServletResponse response) throws Exception {
@@ -82,7 +89,10 @@ public class GetDatiComunicazioniDitteAction extends Action {
     String genereGara = request.getParameter("genereGara");
     String riceviComunicazioni = request.getParameter("riceviComunicazioni");
     String soccorsoIstruttorio = request.getParameter("soccorsoIstruttorio");
+    String comunicazioniRettifica = request.getParameter("comunicazioniRettifica");
     String whereBusteAttiveWizard = (String) request.getSession().getAttribute("whereBusteAttiveWizard");
+
+    String ngaraFS12=ngara;
 
     String entita = "GARE";
     if ("3".equals(genereGara)) {
@@ -106,19 +116,41 @@ public class GetDatiComunicazioniDitteAction extends Action {
       // 8 - MsgErroreStato
       // 9 - descrizione busta
       String dittaMandanteRTOfferta = null;
+      String dittao=ditta;
 
-      //Si deve determinare se la ditta è un RT
+      //per la gare con idanonimo devo recuperare l'impresa in chiaro per recuperare la comunicazione di rettifica
+      String idanonimo = (String) sqlManager.getObject("select idanonimo from ditg where ngara5=? and dittao=?",new Object[] {ngara,ditta});
+      if(StringUtils.isNotBlank(idanonimo)) {
+        try {
+          String iddecodificato = pgManager.decodifica(idanonimo);
+          if (iddecodificato.indexOf("#") > -1) {
+            String[] token = iddecodificato.split("#");
+            ditta = token[token.length - 1];
+          }
+        } catch (Exception e) {
+          throw new JspException("Errore nella decifratura dell'idanonimo", e);
+        }
+      }
+
       String dittaGara = ditta;
+      //Si deve determinare se la ditta è un RT
       String mandataria = null;
       boolean mandatariaIngara=true;
       Long tipimp = (Long)this.sqlManager.getObject("select tipimp from impr where codimp=?", new Object[]{ditta});
-       if(tipimp != null && (tipimp.longValue()==3 || tipimp.longValue()==10)){
+       if(tipimp != null && (tipimp.longValue()==3 || tipimp.longValue()==10) && StringUtils.isBlank(idanonimo)){
         mandataria = (String)this.sqlManager.getObject("select coddic from ragimp where codime9=? and impman=?", new Object[]{ditta, "1"});
         dittaGara= mandataria;
         Long conteggio = (Long)this.sqlManager.getObject("select count(*) from ditg where codgar5=? and dittao=?", new Object[]{codgar,mandataria});
         if(conteggio==null || new Long(0).equals(conteggio))
           mandatariaIngara=false;
       }
+       if(StringUtils.isBlank(idanonimo)){//devo recuperare le comunicazioni inviate a destinatari anonimi (non posso fare affidamento sul descodsog)
+         Long iterga = (Long) sqlManager.getObject("select iterga from torn where codgar=?", new Object[]{codgar});
+         if(new Long(9).equals(iterga) || new Long(10).equals(iterga)){
+           idanonimo= this.pgManager.codifica(ngara+"#"+dittaGara);
+         }
+       }
+
 
       //Comunicazioni inviate
       String desdatinvString = sqlManager.getDBFunction("DATETIMETOSTRING",
@@ -137,9 +169,9 @@ public class GetDatiComunicazioniDitteAction extends Action {
           + "a.COMTIPMA, "                  //8
           + "a.COMDATSCA, "                 //9
           + "a.COMORASCA "                  //10
-          + "from W_INVCOM a, W_INVCOMDES b where coment=? and comkey1=? and comstato !=1 and"
-          + " a.idprg = b.idprg and a.idcom = b.idcom and (descodsog= ? or COND1 or COND2) and b.idcomdes= "
-          + "(select min(c.idcomdes) from W_INVCOMDES c where c.idprg=a.idprg and c.idcom = a.idcom and (c.descodsog=? or COND1.1 or COND2.1)) ";
+          + "from W_INVCOM a, W_INVCOMDES b where coment=? and comkey1=? and comstato !='1' and"
+          + " a.idprg = b.idprg and a.idcom = b.idcom and ((descodsog= ? or (idanonimo=? and idanonimo is not null)) or COND1 or COND2) and b.idcomdes= "
+          + "(select min(c.idcomdes) from W_INVCOMDES c where c.idprg=a.idprg and c.idcom = a.idcom and ((c.descodsog=? or (c.idanonimo=? and c.idanonimo is not null)) or COND1.1 or COND2.1)) ";
 
       if ("1".equals(soccorsoIstruttorio)) {
         select += " and a.commodello = 1";
@@ -147,14 +179,18 @@ public class GetDatiComunicazioniDitteAction extends Action {
           whereBusteAttiveWizard = whereBusteAttiveWizard.replaceAll("W_INVCOM", "a");
           select += " and (" + whereBusteAttiveWizard + ")";
         }
-      } else {
-        select += " and (a.commodello is null or a.commodello <> 1)";
+      } else if ("1".equals(comunicazioniRettifica)){
+        select += " and a.commodello in (11,12) and (a.comkey2 is null or a.comkey2=?)";
+      } else if ("2".equals(comunicazioniRettifica)){
+        select += " and a.commodello in (11,12,16,17) and (a.comkey2 is null or a.comkey2=?)";
+      }else {
+        select += " and (a.commodello is null or a.commodello not in (1,10,11,12,13,14,15,16,17,18))";
       }
       //Si deve controllare se vi sono ditte che hanno presentato ditte in RT, in questo caso si deve visualizzare la comunicazione
       //sia per il raggruppamento che per la ditta singola
-      Long acquisizione = (Long)this.sqlManager.getObject("select acquisizione from ditg where ngara5=? and dittao=?", new Object[]{ngara,ditta});
+      Long acquisizione = (Long)this.sqlManager.getObject("select acquisizione from ditg where ngara5=? and dittao=?", new Object[]{ngara,dittao});
       if(new Long(5).equals(acquisizione)){
-         dittaMandanteRTOfferta = (String)this.sqlManager.getObject("select dittao from ditg where ngara5=? and rtofferta=? ", new Object[]{ngara,ditta});
+         dittaMandanteRTOfferta = (String)this.sqlManager.getObject("select dittao from ditg where ngara5=? and rtofferta=? ", new Object[]{ngara,dittao});
         select=select.replaceFirst("COND1", "descodsog='" + dittaMandanteRTOfferta + "'");
         select=select.replaceFirst("COND1.1", "c.descodsog='" + dittaMandanteRTOfferta + "'");
       }else{
@@ -170,7 +206,9 @@ public class GetDatiComunicazioniDitteAction extends Action {
         select=select.replaceFirst("or COND2", "");
         select=select.replaceFirst("or COND2.1", "");
       }
-      parametri = new Object[]{entita, ngara, ditta, ditta};
+      parametri = new Object[]{entita, ngara, ditta, idanonimo, ditta, idanonimo};
+      if("1".equals(comunicazioniRettifica) || "2".equals(comunicazioniRettifica))
+        parametri = new Object[]{entita, ngara, ditta, idanonimo, ditta, idanonimo,ngaraFS12};
 
       List<?> comunicazioneInviate = this.sqlManager.getListVector(select, parametri);
       if (comunicazioneInviate != null && comunicazioneInviate.size() > 0) {
@@ -193,7 +231,7 @@ public class GetDatiComunicazioniDitteAction extends Action {
             dataLong = data.getTime();
           hMapComunicazioneInviata.put("dataInvioInserimento", dataLong);
           testo = SqlManager.getValueFromVectorParam(comunicazioneInviate.get(i), 2).getStringValue();
-          if ("1".equals(soccorsoIstruttorio) && testo != null) {
+          if (("1".equals(soccorsoIstruttorio) || "1".equals(comunicazioniRettifica) || "2".equals(comunicazioniRettifica)) && testo != null) {
             comdatsca = SqlManager.getValueFromVectorParam(comunicazioneInviate.get(i), 9).dataValue();
             comorasca = SqlManager.getValueFromVectorParam(comunicazioneInviate.get(i), 10).getStringValue();
             if (comdatsca != null && comorasca != null) {
@@ -273,12 +311,19 @@ public class GetDatiComunicazioniDitteAction extends Action {
           else if (gestoreProfili.checkProtec(profiloAttivo, "FUNZ", "VIS", "ALT.GARE.V_GARE_CATALDITTE-lista.ApriGare"))
             profilo ="3";
           selectJoin += this.pgManagerEst1.getFiltroComunicazioniSoccorsoIstruttorio(profilo);
+        } else if ("1".equals(comunicazioniRettifica)){
+          selectJoin += " and commodello in (10,13) and (comkey3 is null or comkey3=?)";
+        } else if ("2".equals(comunicazioniRettifica)){
+          selectJoin += " and commodello in (10,13,15,18) and (comkey3 is null or comkey3=?)";
         } else
-          selectJoin += " and (commodello is null or commodello <> 1)";
+          selectJoin += " and (commodello is null or commodello not in (1,10,11,12,13,14,15,16,17,18))";
 
         String ulterioriFiltri = " and (IDPRGRIS is null or IDCOMRIS is null)";
         select = selectCampi +selectJoin + ulterioriFiltri;
-        List<?> comunicazioneRicevute = this.sqlManager.getListVector(select, new Object[]{"FS12", new Long(3), chiaveGaraComunicazioniRicev, dittaGara});
+        Object[] parametri2 = new Object[]{"FS12", "3", chiaveGaraComunicazioniRicev, dittaGara};
+        if("1".equals(comunicazioniRettifica) || "2".equals(comunicazioniRettifica))
+          parametri2 = new Object[]{"FS12", "3", chiaveGaraComunicazioniRicev, dittaGara, ngaraFS12};
+        List<?> comunicazioneRicevute = this.sqlManager.getListVector(select, parametri2);
         if (comunicazioneRicevute != null && comunicazioneRicevute.size() > 0) {
           Date data = null;
           Long dataLong=null;
@@ -299,7 +344,7 @@ public class GetDatiComunicazioniDitteAction extends Action {
               dataLong = data.getTime();
             hMapComunicazioneRicevuta.put("dataInvioInserimento", dataLong);
             testo = SqlManager.getValueFromVectorParam(comunicazioneRicevute.get(i), 2).getStringValue();
-            if ("1".equals(soccorsoIstruttorio) && testo != null) {
+            if (("1".equals(soccorsoIstruttorio) || "1".equals(comunicazioniRettifica) || "2".equals(comunicazioniRettifica)) && testo != null) {
               comdatsca = SqlManager.getValueFromVectorParam(comunicazioneRicevute.get(i), 9).dataValue();
               comorasca = SqlManager.getValueFromVectorParam(comunicazioneRicevute.get(i), 10).getStringValue();
               if (comdatsca != null && comorasca != null)
@@ -344,7 +389,7 @@ public class GetDatiComunicazioniDitteAction extends Action {
             + "IDCOMRIS";                       //12
         ulterioriFiltri = " and (IDPRGRIS is not null and IDCOMRIS is not null)";
         select = selectCampi + ulterioriCampi + selectJoin + ulterioriFiltri;
-        comunicazioneRicevute = this.sqlManager.getListVector(select, new Object[]{"FS12", new Long(3), chiaveGaraComunicazioniRicev, dittaGara});
+        comunicazioneRicevute = this.sqlManager.getListVector(select, parametri2);
         if (comunicazioneRicevute != null && comunicazioneRicevute.size() > 0) {
           Date data = null;
           Long dataLong=null;
@@ -352,7 +397,7 @@ public class GetDatiComunicazioniDitteAction extends Action {
           String comkey1 = null;
           String idprgris = null;
           Long idcomris = null;
-          String selectDestinatari="select count(*) from w_invcomdes where idprg=? and IDCOM=? and (descodsog=?";
+          String selectDestinatari="select count(*) from w_invcomdes where idprg=? and IDCOM=? and (descodsog=? or idanonimo=?";
           if(dittaMandanteRTOfferta != null && !"".equals(dittaMandanteRTOfferta))
             selectDestinatari += " or descodsog='" + dittaMandanteRTOfferta + "'";
           if(mandataria != null && !"".equals(mandataria)){
@@ -371,7 +416,7 @@ public class GetDatiComunicazioniDitteAction extends Action {
           for (int i = 0; i < comunicazioneRicevute.size(); i++) {
             idprgris = SqlManager.getValueFromVectorParam(comunicazioneRicevute.get(i), 11).getStringValue();
             idcomris = SqlManager.getValueFromVectorParam(comunicazioneRicevute.get(i), 12).longValue();
-            numDestinatari = (Long)this.sqlManager.getObject(selectDestinatari, new Object[]{idprgris,idcomris,ditta});
+            numDestinatari = (Long)this.sqlManager.getObject(selectDestinatari, new Object[]{idprgris,idcomris,ditta,idanonimo});
             if(numDestinatari!=null && numDestinatari.longValue()>0){
               HashMap<String, Object> hMapComunicazioneRicevuta = new HashMap<String, Object>();
               hMapComunicazioneRicevuta.put("oggetto", SqlManager.getValueFromVectorParam(comunicazioneRicevute.get(i), 0).getValue());

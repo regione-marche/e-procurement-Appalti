@@ -73,7 +73,11 @@ public class GetWSERPPresenzaRdaFunction extends AbstractFunzioneTag {
           }
         }
       }
-      if("RAIWAY".equals(tipoWSERP)){
+      if(     "RAIWAY".equals(tipoWSERP)
+    	   || "INARCASSA".equals(tipoWSERP)
+    	   || "ARCHIFLOW".equals(tipoWSERP)
+    	   || "CONI".equals(tipoWSERP)
+      ){
         codiceRda = (String) sqlManager.getObject("select numrda from garerda where codgar = ? ", new Object[] { codiceGara });
         pageContext.setAttribute("codiceRda", codiceRda, PageContext.REQUEST_SCOPE);
         countRdaGarerda = (Long) sqlManager.getObject("select count(*) from garerda where codgar = ? " +

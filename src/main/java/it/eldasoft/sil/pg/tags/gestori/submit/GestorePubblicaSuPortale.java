@@ -10,56 +10,14 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.text.DateFormat;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Vector;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-
-import org.apache.commons.lang.time.DateUtils;
-import org.apache.log4j.Logger;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.FormulaEvaluator;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.jdbc.core.support.SqlLobValue;
-import org.springframework.jdbc.support.lob.DefaultLobHandler;
-import org.springframework.jdbc.support.lob.LobHandler;
-import org.springframework.transaction.TransactionStatus;
-
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.Chunk;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.Font;
+import com.itextpdf.text.*;
 import com.itextpdf.text.Font.FontFamily;
-import com.itextpdf.text.PageSize;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.Phrase;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.lowagie.text.DocumentException;
-
 import intra.regionemarche.ResultClass;
-import it.eldasoft.gene.bl.FileAllegatoManager;
-import it.eldasoft.gene.bl.GenChiaviManager;
-import it.eldasoft.gene.bl.GeneManager;
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.bl.TabellatiManager;
+import it.eldasoft.gene.bl.*;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.db.datautils.DataColumn;
@@ -72,32 +30,46 @@ import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
-import it.eldasoft.sil.pg.bl.ControlliOepvManager;
-import it.eldasoft.sil.pg.bl.GestioneATCManager;
-import it.eldasoft.sil.pg.bl.GestioneProgrammazioneManager;
-import it.eldasoft.sil.pg.bl.GestioneRegioneMarcheManager;
-import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
-import it.eldasoft.sil.pg.bl.ImportExportOffertaPrezziManager;
-import it.eldasoft.sil.pg.bl.PgManagerEst1;
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
+import it.eldasoft.gene.ws.objectstorage.UploadInfo;
+import it.eldasoft.sil.pg.bl.*;
 import it.eldasoft.sil.pg.bl.cifrabuste.CifraturaBusteManager;
-import it.eldasoft.sil.pg.db.domain.CostantiAppalti;
 import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.sicurezza.CriptazioneException;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
 import it.eldasoft.utils.utility.UtilityStringhe;
 import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
-import it.maggioli.eldasoft.ws.dm.WSDMFascicoloResType;
-import it.maggioli.eldasoft.ws.dm.WSDMInviaMailType;
-import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
-import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAnagraficaType;
-import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoInType;
-import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoResType;
-import it.maggioli.eldasoft.ws.dm.WSDMTipoVoceRubricaType;
+import it.maggioli.eldasoft.ws.dm.*;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.DateUtils;
+import org.apache.log4j.Logger;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.jdbc.core.support.SqlLobValue;
+import org.springframework.jdbc.support.lob.DefaultLobHandler;
+import org.springframework.jdbc.support.lob.LobHandler;
+import org.springframework.transaction.TransactionStatus;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+import javax.servlet.jsp.JspException;
+import java.io.*;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.*;
 
 
 /**
- * Gestore non standard (in quanto è implementato il costruttore in modo da non
- * gestire l'aggiornamento dei dati sull'entità principale), per gestire la pubblicazione
+ * Gestore non standard (in quanto ï¿½ implementato il costruttore in modo da non
+ * gestire l'aggiornamento dei dati sull'entitï¿½ principale), per gestire la pubblicazione
  * su portale alice gare
  *
  * @author Marcello Caminiti
@@ -120,7 +92,7 @@ public class GestorePubblicaSuPortale extends
 
   private ControlliOepvManager controlliOepvManager;
 
-  private GestioneATCManager gestioneATCManager;
+  private GestionePATManager gestionePATManager;
 
   private GenChiaviManager genChiaviManager;
 
@@ -154,8 +126,8 @@ public class GestorePubblicaSuPortale extends
     controlliOepvManager = (ControlliOepvManager) UtilitySpring.getBean("controlliOepvManager",
         this.getServletContext(), ControlliOepvManager.class);
 
-    gestioneATCManager = (GestioneATCManager) UtilitySpring.getBean("gestioneATCManager",
-        this.getServletContext(), GestioneATCManager.class);
+    gestionePATManager = (GestionePATManager) UtilitySpring.getBean("gestionePATManager",
+        this.getServletContext(), GestionePATManager.class);
 
     genChiaviManager = (GenChiaviManager) UtilitySpring.getBean("genChiaviManager",
         this.getServletContext(), GenChiaviManager.class);
@@ -218,6 +190,10 @@ public class GestorePubblicaSuPortale extends
         String ngara = datiForm.getString("NGARA");
         Timestamp datpub = datiForm.getData("DATPUB");
         String bando = datiForm.getString("BANDO");
+        String motivoPubblicazioneForzata=null;
+        if(datiForm.isColumn("MOTIVAZIONE_FORZAPUBB")) {
+          motivoPubblicazioneForzata = datiForm.getString("MOTIVAZIONE_FORZAPUBB");
+        }
         if(datpub == null){
           datpub = new Timestamp(System.currentTimeMillis());
           Date data = new Date(datpub.getTime());
@@ -231,7 +207,6 @@ public class GestorePubblicaSuPortale extends
         String garavviso = null;
         String iterga = UtilityStruts.getParametroString(this.getRequest(),"iterga");
         String soloPunteggiTec = UtilityStruts.getParametroString(this.getRequest(),"soloPunteggiTec");
-        String uuid = UtilityStruts.getParametroString(this.getRequest(),"uuid");
 
         Long genere = (Long) sqlManager.getObject("select genere from V_GARE_TORN where codgar = ?", new Object[]{codgar});
         boolean formularioCompletoAbilitato = false;
@@ -274,11 +249,23 @@ public class GestorePubblicaSuPortale extends
         String gestioneFascicoloWSDM = null;
 
         index_bando = Integer.parseInt(bando);
+
+
+        Long countPreced = (Long) sqlManager.getObject("select count(*) from gare where codgar1=? and preced is not null", new Object[]{codgar});
+        boolean isGaraRilancio = countPreced != null && countPreced > 0;
+        Vector<?> datiTornPerPAT = this.sqlManager.getVector("select iterga,vernpa,cenint from torn where codgar=?", new Object[] { codgar });
+        Long itergaTORN = ((JdbcParametro) datiTornPerPAT.get(0)).longValue();
+        String vernpa = ((JdbcParametro) datiTornPerPAT.get(1)).stringValue();
+        String cenint = ((JdbcParametro) datiTornPerPAT.get(2)).stringValue();
+        Boolean isRicercaMercato = Arrays.asList(8L).contains(itergaTORN);
+        boolean isAffidamentoDiretto = pgManagerEst1.isAffidamentoDiretto(codgar);
+        boolean isConcorsoProgettazioneSecondoGrado = ((Long) 10L).equals(itergaTORN);
+        boolean pubblicaSuPAT = GestionePATManager.isConfiguratoPerPAT(cenint) && !isRicercaMercato && !isGaraRilancio && StringUtils.isNotEmpty(vernpa) && !isConcorsoProgettazioneSecondoGrado;
         switch (index_bando) {
         case 1:
           codEvento = "GA_PUBBLICA_BANDO";
           descrEvento = "Pubblicazione " + descrGenere + " su area pubblica di Portale Appalti";
-          //Se la data inserita è >= rispetto a quella inserita nella popup, allora si deve bloccare il salvataggio
+          //Se la data inserita ï¿½ >= rispetto a quella inserita nella popup, allora si deve bloccare il salvataggio
           try {
             //java.sql.Date dteoff = (java.sql.Date)this.sqlManager.getObject("select dteoff from torn where codgar=?", new Object[]{codgar});
             Vector<?> datiTorn = this.sqlManager.getVector("select dteoff,gartel,iterga,dtepar from torn where codgar=?", new Object[]{codgar});
@@ -289,7 +276,7 @@ public class GestorePubblicaSuPortale extends
               dtepar = SqlManager.getValueFromVectorParam(datiTorn, 3).dataValue();
               if(datpub != null){
                 Date data1 = new Date(datpub.getTime());
-                if("1".equals(iterga)){
+                if("1".equals(iterga) || "9".equals(iterga)){
                   Date data2 = new Date(dteoff.getTime());
                   if(data1.compareTo(data2)>0){
                     livEvento = 3;
@@ -350,15 +337,11 @@ public class GestorePubblicaSuPortale extends
                     data =  new Timestamp(datsca.getTime());
                 }
                 this.associazioneFascicoloWSDM(genPubblicazione,ngara,codgar,iterga,datpub,data,riservatezzaAttiva,null,idconfi);
-              } catch (SQLException e) {
+              } catch (SQLException | IOException | CriptazioneException e) {
                 livEvento = 3;
                 errMsgEvento = "Errore nella creazione del Fascicolo";
                 throw new GestoreException("Errore nella creazione del Fascicolo", null, e);
-              } catch (IOException e) {
-                livEvento = 3;
-                errMsgEvento = "Errore nella creazione del Fascicolo";
-                throw new GestoreException("Errore nella creazione del Fascicolo", null, e);
-              }catch (DocumentException e) {
+              } catch (DocumentException e) {
                 this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
                 livEvento = 3;
                 errMsgEvento = "Errore nella creazione del Fascicolo";
@@ -368,85 +351,53 @@ public class GestorePubblicaSuPortale extends
           //}
 
 
-          //Integrazione Regione Marche pubblicazione bando
-          if (ConfigManager.getValore(CostantiAppalti.PROP_WSBANDI_TIPO)!=null
-              && "1".equals(ConfigManager.getValore(CostantiAppalti.PROP_WSBANDI_TIPO))){
-            String temaRegionale = UtilityStruts.getParametroString(this.getRequest(),"temaRegionale");
-            String tipologiaBando = UtilityStruts.getParametroString(this.getRequest(),"tipologiaBando");
-            String strutturaRegionale = UtilityStruts.getParametroString(this.getRequest(),"strutturaRegionale");
-            String idBando = UtilityStruts.getParametroString(this.getRequest(),"bandoIdRegMarche");
-            if(idBando!=null && !"".equals(idBando)){
-              ResultClass risposta=this.gestioneRegioneMarcheManager.updateBando(ngara, codgar, genPubblicazione, datpub, new Long(strutturaRegionale), new Long(temaRegionale), new Long(tipologiaBando), "BANDO", new Long(idBando));
-              if(!risposta.isResult()){
-                String msg= risposta.getError();
+			// Integrazione Regione Marche pubblicazione bando
+			if (GestioneRegioneMarcheManager.isConfiguratoPerRM()) {
+				String temaRegionale = UtilityStruts.getParametroString(this.getRequest(), "temaRegionale");
+				String tipologiaBando = UtilityStruts.getParametroString(this.getRequest(), "tipologiaBando");
+				String strutturaRegionale = UtilityStruts.getParametroString(this.getRequest(), "strutturaRegionale");
+				String idBando = UtilityStruts.getParametroString(this.getRequest(), "bandoIdRegMarche");
+				if (idBando != null && !"".equals(idBando)) {
+					ResultClass risposta = this.gestioneRegioneMarcheManager.updateBando(ngara, codgar,
+							genPubblicazione, datpub, new Long(strutturaRegionale), new Long(temaRegionale),
+							new Long(tipologiaBando), "BANDO", new Long(idBando));
+					if (!risposta.isResult()) {
+						String msg = risposta.getError();
+						livEvento = 3;
+						messageKey = "errors.gestoreException.*.ws.bandiRegioneMarche.updateBando.esitoNOK";
+						errMsgEvento = this.resBundleGenerale.getString(messageKey);
+						errMsgEvento = errMsgEvento.replace("{0}", msg);
+						throw new GestoreException(
+								"L'aggiornamento del bando da parte del servizio remoto non e' andato a buon fine",
+								"ws.bandiRegioneMarche.updateBando.esitoNOK", new Object[] { msg },
+								new Exception());
+					}
+				} else {
+					ResultClass risposta = this.gestioneRegioneMarcheManager.insertBando(ngara, codgar,
+							genPubblicazione, datpub, new Long(strutturaRegionale), new Long(temaRegionale),
+							new Long(tipologiaBando), "BANDO");
+					if (!risposta.isResult()) {
+						String msg = risposta.getError();
+						livEvento = 3;
+						messageKey = "errors.gestoreException.*.ws.bandiRegioneMarche.addBando.esitoNOK";
+						errMsgEvento = this.resBundleGenerale.getString(messageKey);
+						errMsgEvento = errMsgEvento.replace("{0}", msg);
+						throw new GestoreException(
+								"L'inserimento del bando da parte del servizio remoto non e' andato a buon fine",
+								"ws.bandiRegioneMarche.addBando.esitoNOK", new Object[] { msg }, new Exception());
+					}
+				}
+			}
+			// Integrazione PAT-ISWEB pubblicazione bando
+			if (pubblicaSuPAT) {
+              try {
+                gestionePATManager.pubblicaTornata(this.getRequest(), codgar, datpub);
+              } catch (GestoreException e) {
                 livEvento = 3;
-                messageKey = "errors.gestoreException.*.ws.bandiRegioneMarche.updateBando.esitoNOK";
-                errMsgEvento = this.resBundleGenerale.getString(messageKey);
-                errMsgEvento= errMsgEvento.replace("{0}", msg);
-                throw new GestoreException("L'aggiornamento del bando da parte del servizio remoto non e' andato a buon fine", "ws.bandiRegioneMarche.updateBando.esitoNOK", new Object[]{msg}, new Exception());
+                errMsgEvento = e.getMessage();
+                throw e;
               }
-            }else {
-              ResultClass risposta=this.gestioneRegioneMarcheManager.insertBando(ngara, codgar, genPubblicazione, datpub, new Long(strutturaRegionale), new Long(temaRegionale), new Long(tipologiaBando), "BANDO");
-              if(!risposta.isResult()){
-                String msg= risposta.getError();
-                livEvento = 3;
-                messageKey = "errors.gestoreException.*.ws.bandiRegioneMarche.addBando.esitoNOK";
-                errMsgEvento = this.resBundleGenerale.getString(messageKey);
-                errMsgEvento= errMsgEvento.replace("{0}", msg);
-                throw new GestoreException("L'inserimento del bando da parte del servizio remoto non e' andato a buon fine", "ws.bandiRegioneMarche.addBando.esitoNOK", new Object[]{msg}, new Exception());
-              }
-            }
-          }
-
-
-          //Integrazione ATC pubblicazione bando
-          if (ConfigManager.getValore(CostantiAppalti.PROP_WSBANDI_TIPO)!=null
-              && "2".equals(ConfigManager.getValore(CostantiAppalti.PROP_WSBANDI_TIPO)) && (uuid==null || "".equals(uuid))){
-            String strutturaATC = UtilityStruts.getParametroString(this.getRequest(),"strutturaATC");
-            HashMap<String,String> risposta=this.gestioneATCManager.insertBando(ngara, codgar, genPubblicazione, datpub, strutturaATC, "BANDO");
-            if(risposta!=null){
-              if(risposta.get("msg")!=null && !"".equals(risposta.get("msg"))){
-                String msg= risposta.get("msg");
-                livEvento = 3;
-                messageKey = "errors.gestoreException.*.ws.ATC.InternetSoluzioni.addOggetto.esitoNOK";
-                errMsgEvento = this.resBundleGenerale.getString(messageKey);
-                errMsgEvento= errMsgEvento.replace("{0}", msg);
-                throw new GestoreException("L'inserimento del bando da parte del servizio remoto non e' andato a buon fine", "ws.ATC.InternetSoluzioni.addOggetto.esitoNOK", new Object[]{msg}, new Exception());
-              }else{
-                Integer newId= null;
-                String insertGaruuid = "insert into garuuid(id,codgar,tipric,uuid,ngara) values(?,?,?,?,?)";
-                String numLotti = risposta.get("numLotti");
-                int numLottiInt = Integer.parseInt(numLotti);
-                String codiceLotto=null;
-                for(int i=0;i<=numLottiInt;i++){
-                  codiceLotto=null;
-                  newId= this.genChiaviManager.getNextId("GARUUID");
-                  //Si deve prelevare il valore da mettere in uuid dalla risposta del servizio
-                  if(i==0){
-                    //Gestione dell'id della gara
-                    if(risposta.get("idGara")!=null && !"".equals(risposta.get("idGara"))){
-                      uuid= risposta.get("idGara");
-                    }
-                  }else{
-                    //Gestione dell'id del lotto
-                    if(risposta.get("idLotto" + i)!=null && !"".equals(risposta.get("idLotto" + i))){
-                      uuid= risposta.get("idLotto" + i);
-                    }
-                    if(risposta.get("codiceLotto" + i)!=null && !"".equals(risposta.get("codiceLotto" + i))){
-                      codiceLotto = risposta.get("codiceLotto" + i);
-                    }
-                  }
-                  try {
-                    this.sqlManager.update(insertGaruuid, new Object[] { newId,codgar,"ATCPAT_bando",uuid,codiceLotto});
-                  } catch (SQLException e) {
-                    livEvento = 3;
-                    errMsgEvento = "Errore nell'inserimento id GARUUID";
-                    throw new GestoreException("Errore nell'inserimento id GARUUID", null, e);
-                  }
-                }
-              }
-            }
-          }
+			}
 
           Vector<DataColumn> elencoCampi1 = new Vector<DataColumn>();
           elencoCampi1.add(new DataColumn("PUBBLI.CODGAR9",
@@ -456,10 +407,16 @@ public class GestorePubblicaSuPortale extends
               new JdbcParametro(JdbcParametro.TIPO_NUMERICO, new Long(11))));
           elencoCampi1.add(new DataColumn("PUBBLI.DATPUB",
               new JdbcParametro(JdbcParametro.TIPO_DATA, datpub)));
+          
+          if(StringUtils.isNotBlank(motivoPubblicazioneForzata)) {
+            String tespub= "Pubblicazione anticipata rispetto a scheda ANAC per il seguente motivo: "+motivoPubblicazioneForzata;
+            elencoCampi1.add(new DataColumn("PUBBLI.TESPUB",
+                new JdbcParametro(JdbcParametro.TIPO_TESTO, tespub)));
+          }
 
 
           DataColumnContainer container1 = new DataColumnContainer(elencoCampi1);
-          // si predispone il gestore per l'aggiornamento dell'entità
+          // si predispone il gestore per l'aggiornamento dell'entitï¿½
           DefaultGestoreEntitaChiaveNumerica gestore1 = new DefaultGestoreEntitaChiaveNumerica(
               "PUBBLI", "NUMPUB",new String[] { "CODGAR9" }, this.getRequest());
 
@@ -501,13 +458,13 @@ public class GestorePubblicaSuPortale extends
           codEvento = "GA_PUBBLICA_ESITO";
           descrEvento = "Pubblicazione esito di gara su area pubblica di Portale Appalti";
 
-          //Integrazione Regione Marche pubblicazione bando
-          if (ConfigManager.getValore(CostantiAppalti.PROP_WSBANDI_TIPO)!=null
-              && "1".equals(ConfigManager.getValore(CostantiAppalti.PROP_WSBANDI_TIPO))){
+          //Integrazione Regione Marche pubblicazione esito
+          if (GestioneRegioneMarcheManager.isConfiguratoPerRM()){
             String temaRegionale = UtilityStruts.getParametroString(this.getRequest(),"temaRegionale");
             String tipologiaBando = UtilityStruts.getParametroString(this.getRequest(),"tipologiaBando");
             String strutturaRegionale = UtilityStruts.getParametroString(this.getRequest(),"strutturaRegionale");
             String idBando = UtilityStruts.getParametroString(this.getRequest(),"bandoIdRegMarche");
+            Long countPubbliBandi = (Long) sqlManager.getObject("select count(*) from pubbli where codgar9=? and tippub=11", new Object[] { codgar });
             if(idBando==null || "".equals(idBando)){
               ResultClass risposta = this.gestioneRegioneMarcheManager.insertBando(ngara, codgar, genPubblicazione, datpub, new Long(strutturaRegionale), new Long(temaRegionale), new Long(tipologiaBando), "ESITO");
               if(!risposta.isResult()){
@@ -518,58 +475,31 @@ public class GestorePubblicaSuPortale extends
                 errMsgEvento = errMsgEvento.replace("{0}", msg);
                 throw new GestoreException("L'inserimento del bando da parte del servizio remoto non e' andato a buon fine", "ws.bandiRegioneMarche.addBando.esitoNOK", new Object[]{msg}, new Exception());
               }
-            }
+			} else if (!(countPubbliBandi != null && countPubbliBandi > 0)) {
+				ResultClass risposta = this.gestioneRegioneMarcheManager.updateBando(ngara, codgar, genPubblicazione, datpub, new Long(strutturaRegionale), new Long(temaRegionale), new Long(tipologiaBando),
+						"ESITO", new Long(idBando));
+				if (!risposta.isResult()) {
+					String msg = risposta.getError();
+					livEvento = 3;
+					messageKey = "errors.gestoreException.*.ws.bandiRegioneMarche.updateBando.esitoNOK";
+					errMsgEvento = this.resBundleGenerale.getString(messageKey);
+					errMsgEvento = errMsgEvento.replace("{0}", msg);
+					throw new GestoreException("L'aggiornamento del bando da parte del servizio remoto non e' andato a buon fine", "ws.bandiRegioneMarche.updateBando.esitoNOK", new Object[] { msg }, new Exception());
+				}
+			}
           }
 
-          //Integrazione ATC pubblicazione bando
-          if (ConfigManager.getValore(CostantiAppalti.PROP_WSBANDI_TIPO)!=null
-              && "2".equals(ConfigManager.getValore(CostantiAppalti.PROP_WSBANDI_TIPO)) && (uuid==null || "".equals(uuid))){
-            String strutturaATC = UtilityStruts.getParametroString(this.getRequest(),"strutturaATC");
-            HashMap<String,String> risposta=this.gestioneATCManager.insertBando(ngara, codgar, genPubblicazione, datpub, strutturaATC, "ESITO");
-            if(risposta!=null){
-              if(risposta.get("msg")!=null && !"".equals(risposta.get("msg"))){
-                String msg= risposta.get("msg");
+			// Integrazione PAT-ISWEB pubblicazione esito
+			if (pubblicaSuPAT) {
+              try {
+                gestionePATManager.pubblicaTornata(this.getRequest(), codgar,datpub);
+              } catch (GestoreException e) {
                 livEvento = 3;
-                messageKey = "errors.gestoreException.*.ws.ATC.InternetSoluzioni.addOggetto.esitoNOK";
-                errMsgEvento = this.resBundleGenerale.getString(messageKey);
-                errMsgEvento= errMsgEvento.replace("{0}", msg);
-                throw new GestoreException("L'inserimento del bando da parte del servizio remoto non e' andato a buon fine", "ws.ATC.InternetSoluzioni.addOggetto.esitoNOK", new Object[]{msg}, new Exception());
-              }else{
-                Integer newId= null;
-                String insertGaruuid = "insert into garuuid(id,codgar,tipric,uuid,ngara) values(?,?,?,?,?)";
-                String numLotti = risposta.get("numLotti");
-                int numLottiInt = Integer.parseInt(numLotti);
-                String codiceLotto=null;
-                for(int i=0;i<=numLottiInt;i++){
-                  codiceLotto=null;
-                  newId= this.genChiaviManager.getNextId("GARUUID");
-                  //Si deve prelevare il valore da mettere in uuid dalla risposta del servizio
-                  if(i==0){
-                    //Gestione dell'id della gara
-                    if(risposta.get("idGara")!=null && !"".equals(risposta.get("idGara"))){
-                      uuid= risposta.get("idGara");
-                    }
-                  }else{
-                    //Gestione dell'id del lotto
-                    if(risposta.get("idLotto" + i)!=null && !"".equals(risposta.get("idLotto" + i))){
-                      uuid= risposta.get("idLotto" + i);
-                    }
-                    if(risposta.get("codiceLotto" + i)!=null && !"".equals(risposta.get("codiceLotto" + i))){
-                      codiceLotto = risposta.get("codiceLotto" + i);
-                    }
-                  }
-                  try {
-                    this.sqlManager.update(insertGaruuid, new Object[] { newId,codgar,"ATCPAT_esito",uuid,codiceLotto});
-                  } catch (SQLException e) {
-                    livEvento = 3;
-                    errMsgEvento = "Errore nell'inserimento id GARUUID";
-                    throw new GestoreException("Errore nell'inserimento id GARUUID", null, e);
-                  }
-                }
+                errMsgEvento = e.getMessage();
+                throw e;
               }
-            }
-          }
 
+            }
 
           String chiave = ngara;
           if(ngara==null || "".equals(ngara))
@@ -588,7 +518,7 @@ public class GestorePubblicaSuPortale extends
 
 
           DataColumnContainer container2 = new DataColumnContainer(elencoCampi2);
-          // si predispone il gestore per l'aggiornamento dell'entità
+          // si predispone il gestore per l'aggiornamento dell'entitï¿½
           DefaultGestoreEntitaChiaveNumerica gestore2 = new DefaultGestoreEntitaChiaveNumerica(
               "PUBG", "NPUBG",new String[] { "NGARA" }, this.getRequest());
 
@@ -598,10 +528,12 @@ public class GestorePubblicaSuPortale extends
           break;
         case 3:
           integrazioneWSDM = UtilityStruts.getParametroString(this.getRequest(),"integrazioneWSDM");
+          if(new Long(10).equals(itergaTORN))
+            integrazioneWSDM="0";
           codEvento = "GA_PUBBLICA_INVITO";
           descrEvento = "Pubblicazione gara su area riservata di Portale Appalti";
 
-          //Se la data inserita è >= rispetto a quella inserita nella popup, allora si deve bloccare il salvataggio
+          //Se la data inserita ï¿½ >= rispetto a quella inserita nella popup, allora si deve bloccare il salvataggio
           Date data1 = null;
           Vector<?> datiTorn=null;
           try {
@@ -643,6 +575,16 @@ public class GestorePubblicaSuPortale extends
                 errMsgEvento = this.resBundleGenerale.getString(messageKey);
                 throw new GestoreException("La data di pubblicazione deve essere successiva o uguale alla data corrente", "erroreDataPubbl.dataCorrente", new Exception());
               }
+            }
+          }
+
+          if (pubblicaSuPAT && !isAffidamentoDiretto) {
+            try {
+              gestionePATManager.pubblicaTornata(this.getRequest(), codgar,datpub);
+            } catch (GestoreException e) {
+              livEvento = 3;
+              errMsgEvento = e.getMessage();
+              throw e;
             }
           }
 
@@ -774,6 +716,7 @@ public class GestorePubblicaSuPortale extends
                 DataColumnContainer containerW_DOCDIG = new DataColumnContainer(elencoCampiW_DOCDIG);
 
                 containerW_DOCDIG.insert("W_DOCDIG", sqlManager);
+                ObjectStorageUtils.addFile("PG", nProgressivoW_DOCDIG);
 
                 //Inserimento in DOCUMGARA
                 Long iddocdg= nProgressivoW_DOCDIG;   //iddocdg
@@ -822,27 +765,17 @@ public class GestorePubblicaSuPortale extends
               boolean gestioneTramiteTask= false;
               if("1".equals(integrazioneWSDM))
                 gestioneTramiteTask=true;
-              this.invioInvito(datiForm, profilo, numDestinatari, numAllegati, integrazioneWSDM,riservatezzaAttiva,gestioneTramiteTask,genPubblicazione,ngara,codgar,iterga,idconfi);
-            } catch (SQLException e) {
+              this.invioInvito(datiForm, profilo, numDestinatari, numAllegati, integrazioneWSDM,riservatezzaAttiva,gestioneTramiteTask,genPubblicazione,ngara,codgar,new Long(10).equals(itergaTORN)?"10":iterga,idconfi);
+            } catch (SQLException | IOException | CriptazioneException | DocumentException e) {
               this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
               livEvento = 3;
               errMsgEvento = e.getMessage();
               throw new GestoreException("Errore nell'invio dell'invito", null, e);
-            } catch (IOException e) {
-              this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
-              livEvento = 3;
-              errMsgEvento = e.getMessage();
-              throw new GestoreException("Errore nell'invio dell'invito", null, e);
-            }catch(GestoreException e){
+            } catch(GestoreException e){
               this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
               errMsgEvento = e.getMessage();
               livEvento = 3;
               throw e;
-            }catch (DocumentException e) {
-              this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
-              livEvento = 3;
-              errMsgEvento = e.getMessage();
-              throw new GestoreException("Errore nell'invio dell'invito", null, e);
             }
           }else{
             garavviso = UtilityStruts.getParametroString(this.getRequest(),"garavviso");
@@ -852,17 +785,7 @@ public class GestorePubblicaSuPortale extends
                 try {
                   Timestamp data = this.getData(iterga, dteoff, dtepar);
                   this.associazioneFascicoloWSDM(genPubblicazione,ngara,codgar,iterga,datpub,data,riservatezzaAttiva,null,idconfi);
-                } catch (SQLException e) {
-                  this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
-                  livEvento = 3;
-                  errMsgEvento = "Errore nella creazione del Fascicolo";
-                  throw new GestoreException("Errore nella creazione del Fascicolo", null, e);
-                } catch (IOException e) {
-                  this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
-                  livEvento = 3;
-                  errMsgEvento = "Errore nella creazione del Fascicolo";
-                  throw new GestoreException("Errore nella creazione del Fascicolo", null, e);
-                }catch (DocumentException e) {
+                } catch (SQLException | IOException | CriptazioneException | DocumentException e) {
                   this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
                   livEvento = 3;
                   errMsgEvento = "Errore nella creazione del Fascicolo";
@@ -883,7 +806,7 @@ public class GestorePubblicaSuPortale extends
           elencoCampi3.add(new DataColumn("PUBBLI.DATPUB",
               new JdbcParametro(JdbcParametro.TIPO_DATA, datpub)));
           DataColumnContainer container3 = new DataColumnContainer(elencoCampi3);
-          // si predispone il gestore per l'aggiornamento dell'entità
+          // si predispone il gestore per l'aggiornamento dell'entitï¿½
           DefaultGestoreEntitaChiaveNumerica gestore3 = new DefaultGestoreEntitaChiaveNumerica(
               "PUBBLI", "NUMPUB",new String[] { "CODGAR9" }, this.getRequest());
 
@@ -921,7 +844,7 @@ public class GestorePubblicaSuPortale extends
 
 
              DataColumnContainer container4 = new DataColumnContainer(elencoCampi4);
-             // si predispone il gestore per l'aggiornamento dell'entità
+             // si predispone il gestore per l'aggiornamento dell'entitï¿½
              DefaultGestoreEntitaChiaveNumerica gestore4 = new DefaultGestoreEntitaChiaveNumerica(
                  "PUBG", "NPUBG",new String[] { "NGARA" }, this.getRequest());
 
@@ -978,7 +901,7 @@ public class GestorePubblicaSuPortale extends
 
 
           try {
-            this.sqlManager.update("update DITG set AMMGAR = null, INVGAR = '1' where CODGAR5 = ? and ACQUISIZIONE = 9 and AMMGAR = 2",new Object[]{codgar});
+            this.sqlManager.update("update DITG set AMMGAR = null, INVGAR = '1' where CODGAR5 = ? and ACQUISIZIONE = 9 and AMMGAR = '2'",new Object[]{codgar});
           } catch (SQLException e) {
             this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
             livEvento = 3;
@@ -988,7 +911,7 @@ public class GestorePubblicaSuPortale extends
         }
 
 
-        //Quando non si è nel caso di invio invito con gara in corso, va popolata CHIAVIBUSTE e gestire l'aggiornamento dello stato della documentazione
+        //Quando non si ï¿½ nel caso di invio invito con gara in corso, va popolata CHIAVIBUSTE e gestire l'aggiornamento dello stato della documentazione
         if(!"5".equals(bando)) {
           // TODO: va gestito inserendo le opportune condizioni per ogni busta prevista, eventualmente anche differenziando le buste per i singoli lotti
           String descTabellato = null;
@@ -1217,9 +1140,9 @@ public class GestorePubblicaSuPortale extends
       throws GestoreException {
   }
 
-  //Viene inserita la comunicazione con stato=2
+  //Viene inserita la comunicazione con stato=2,3
   public void invioInvito(DataColumnContainer datiForm, ProfiloUtente profilo, String numDestinatari, String numAllegati, String integrazioneWSDM, String riservatezzaAttiva,
-      boolean gestioneTramiteTask,Long genereGara, String ngara,String codgar, String iterga, String idconfi) throws GestoreException, SQLException, IOException, DocumentException {
+      boolean gestioneTramiteTask,Long genereGara, String ngara,String codgar, String iterga, String idconfi) throws GestoreException, SQLException, IOException, DocumentException, CriptazioneException {
 
     String tipoWSDM = null;
     boolean abilitatoInvioMailDocumentale = false;
@@ -1238,7 +1161,7 @@ public class GestorePubblicaSuPortale extends
         abilitatoInvioSingolo=true;
 
       if(gestioneTramiteTask){
-        //gestioneFascicoloWSDM vale 1 quando è attiva la fascicolazione e non esiste il fascicolo in wsfascicolo
+        //gestioneFascicoloWSDM vale 1 quando ï¿½ attiva la fascicolazione e non esiste il fascicolo in wsfascicolo
         // quindi si deve creare il fascicolo prima della gestione dell'invito
         gestioneFascicoloWSDM = UtilityStruts.getParametroString(this.getRequest(),"gestioneFascicoloWSDM");
         if("PALEO".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM) || "FOLIUM".equals(tipoWSDM))
@@ -1263,14 +1186,14 @@ public class GestorePubblicaSuPortale extends
           }
 
           idOccorrenzaTask=gestioneInvioInvito(datiForm,profilo,"1",i,numAllegati,integrazioneWSDM, tipoWSDM, abilitatoInvioMailDocumentale, abilitatoInvioSingolo,insDocGareInWsallegati,
-              riservatezzaAttiva, gestioneTramiteTask,creazioneOccorrenzaTask,idconfi,idOccorrenzaTask);
+              riservatezzaAttiva, gestioneTramiteTask,creazioneOccorrenzaTask,idconfi,idOccorrenzaTask,iterga);
         }
       }
     }else{
       if(gestioneTramiteTask && "1".equals(gestioneFascicoloWSDM))
         this.associazioneFascicoloWSDM(genereGara, ngara, codgar, iterga, null, null, riservatezzaAttiva,oggettoDocumentoFittizio,idconfi);
 
-      gestioneInvioInvito(datiForm,profilo,numDestinatari,0,numAllegati,integrazioneWSDM, tipoWSDM, abilitatoInvioMailDocumentale, abilitatoInvioSingolo,true,riservatezzaAttiva,gestioneTramiteTask, true,idconfi,null);
+      gestioneInvioInvito(datiForm,profilo,numDestinatari,0,numAllegati,integrazioneWSDM, tipoWSDM, abilitatoInvioMailDocumentale, abilitatoInvioSingolo,true,riservatezzaAttiva,gestioneTramiteTask, true,idconfi,null,iterga);
     }
   }
 
@@ -1302,7 +1225,7 @@ public class GestorePubblicaSuPortale extends
    */
   private Long gestioneInvioInvito(DataColumnContainer datiForm, ProfiloUtente profilo, String numDestinatari, int indiceDestinatario, String numAllegati,
       String integrazioneWSDM, String tipoWSDM, boolean abilitatoInvioMailDocumentale, boolean abilitatoInvioSingolo, boolean insDocGareInWsallegati,  String riservatezzaAttiva,
-      boolean gestioneTask, boolean creazioneOccorrenzaTask, String idconfi, Long idOccorrenzaTask) throws SQLException, GestoreException, IOException, DocumentException{
+      boolean gestioneTask, boolean creazioneOccorrenzaTask, String idconfi, Long idOccorrenzaTask, String iterga) throws SQLException, GestoreException, IOException, DocumentException{
 
     FileAllegatoManager fileAllegatoManager = (FileAllegatoManager) UtilitySpring.getBean("fileAllegatoManager",
         this.getServletContext(), FileAllegatoManager.class);
@@ -1335,11 +1258,13 @@ public class GestorePubblicaSuPortale extends
     String stato ="2";
     if(gestioneTask)
       stato ="14";
+    if("10".equals(iterga))
+      stato="3";
     parametri[7] = stato; //COMSTATO
-    parametri[8] = datiForm.getString("COMINTEST"); //COMINTEST
+    parametri[8] = "10".equals(iterga)?null:datiForm.getString("COMINTEST"); //COMINTEST
     parametri[9] = datiForm.getString("COMMSGOGG");    //COMMSGOGG
     parametri[10] = datiForm.getString("COMMSGTES");  //COMMSGTES
-    parametri[11] = (long) 2;   //COMPUB -- riservata
+    parametri[11] = (long) ("10".equals(iterga)?3:2);   //COMPUB -- riservata //compub = 3 se iterga=10
     parametri[12] = datiForm.getString("COMMSGTIP");
     parametri[13] = "1"; //COMNORISPONDI
     String uffintAbilitato = (String)this.getRequest().getSession().getAttribute("uffint");
@@ -1495,6 +1420,19 @@ public class GestorePubblicaSuPortale extends
             String codiceuo= UtilityStruts.getParametroString(this.getRequest(),"codiceuo");
             String idutente= UtilityStruts.getParametroString(this.getRequest(),"idutente");
             String idutenteunop= UtilityStruts.getParametroString(this.getRequest(),"idutenteunop");
+            String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+
+            if("1".equals(wsdmLoginComune)){
+              try {
+                String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO, idconfi);
+                username = credenziali[0];
+                password = credenziali[1];
+              }catch (CriptazioneException | SQLException e) {
+                throw new GestoreException(
+                        "Errore nel recupero delle credenziali comuni per l'integrazione WSDM", null, e);
+              }
+            }
+
             WSDMFascicoloResType wsdmFascicoloRes = this.gestioneWSDMManager.wsdmFascicoloMetadatiLeggi(username, password, ruolo, nome, cognome, codiceuo,
                 idutente, idutenteunop, null, anno, numerofascicolo, "FASCICOLOPROTOCOLLO", classificafascicolo,idconfi);
             if (wsdmFascicoloRes.isEsito()) {
@@ -1506,7 +1444,7 @@ public class GestorePubblicaSuPortale extends
 
         }
       }else if(gestioneTask && "SI_FASCICOLO_NUOVO".equals(inserimentoinfascicolo)){
-        //Se il fascicolo non esisteva, è stato creato immediatemente prima della chiamata di questo metodo, quindi si deve aggiornare
+        //Se il fascicolo non esisteva, ï¿½ stato creato immediatemente prima della chiamata di questo metodo, quindi si deve aggiornare
         inserimentoinfascicolo = "SI_FASCICOLO_ESISTENTE";
       }
 
@@ -1562,6 +1500,8 @@ public class GestorePubblicaSuPortale extends
 
     String destinatarioPrincipale="";
     //Inserimento destinatari in W_INVCOMDES
+    //Si cancellano eventuali dati sporchi nel db
+    this.sqlManager.update("delete from w_invcomdes where idprg=? and idcom=?", new Object[] {idprg, newIdcom});
     if(numDestinatari!=null && !"".equals(numDestinatari)){
       int numDest = (new Long(numDestinatari)).intValue();
       if("1".equals(integrazioneWSDM))
@@ -1576,7 +1516,7 @@ public class GestorePubblicaSuPortale extends
 
 
       for(int i= valorePartenza; i < valoreFine; i++){
-        parametri = new Object[8];
+        parametri = new Object[12];
         parametri[0] = idprg;   //IDPRG
         parametri[1] = newIdcom;    //IDCOM
         Long newIdcomdes = (Long) sqlManager.getObject("SELECT max(idcomdes) FROM w_invcomdes WHERE idprg=? AND idcom=?",
@@ -1588,20 +1528,24 @@ public class GestorePubblicaSuPortale extends
         parametri[2] = newIdcomdes; //IDCOMDES
         parametri[3] = "IMPR";  //DESCODENT
         parametri[4] = datiForm.getString("DITTA_" + i); //DESCODSOG
-        parametri[5] = datiForm.getString("MAIL_" + i);    //DESMAIL
+        parametri[5] = "10".equals(iterga)? null:datiForm.getString("MAIL_" + i);    //DESMAIL
         parametri[6] = datiForm.getString("INTESTAZIONE_" + i); //DESINTEST
         String tipo = datiForm.getString("TIPO_" + i);
         Long comtipma = new Long(2);
         if("PEC".equals(tipo))
           comtipma = new Long(1);
-        parametri[7] = comtipma;    //COMTIPMA
+        parametri[7] = "10".equals(iterga)? null:comtipma;    //COMTIPMA
+        parametri[8] = "10".equals(iterga)? "2":null;    //DESSTATO
+        parametri[9] = "10".equals(iterga)? new Timestamp(UtilityDate.getDataOdiernaAsDate().getTime()):null; //desdatinv
+        parametri[10]= "10".equals(iterga)? UtilityDate.convertiData(UtilityDate.getDataOdiernaAsDate(), UtilityDate.FORMATO_GG_MM_AAAA_HH_MI_SS):null;//desdatinv_s
+        parametri[11]= "10".equals(iterga)? datiForm.getString("IDANONIMO_" + i):null;
         sqlManager.update("INSERT INTO w_invcomdes(IDPRG,IDCOM,IDCOMDES,DESCODENT,DESCODSOG,"
-            + "DESMAIL,DESINTEST,COMTIPMA) VALUES(?,?,?,?,?,?,?,?)", parametri);
+            + "DESMAIL,DESINTEST,COMTIPMA,DESSTATO,DESDATINV,DESDATINV_S,IDANONIMO) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", parametri);
 
         if("1".equals(integrazioneWSDM)){
           int indiceArrayDestinatari = i;
           //nel caso di PALEO ed invio tramite documentale, si crea una comunicazione per ogni destinarario,
-          //quindi esisterà sempre un solo elemento nel vettore destinatari.
+          //quindi esisterï¿½ sempre un solo elemento nel vettore destinatari.
           if(abilitatoInvioSingolo){
             indiceArrayDestinatari = 0;
           }
@@ -1653,7 +1597,7 @@ public class GestorePubblicaSuPortale extends
 
     // Invio mail mediante servizi di protocollazione per ENGINEERING
     if("1".equals(integrazioneWSDM) && !gestioneTask && abilitatoInvioMailDocumentale && ("ENGINEERING".equals(tipoWSDM) || "TITULUS".equals(tipoWSDM)
-        || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM))){
+        || "SMAT".equals(tipoWSDM) || "URBI".equals(tipoWSDM) || "ENGINEERINGDOC".equals(tipoWSDM) || "LAPISOPERA".equals(tipoWSDM) || "HALLEY".equals(tipoWSDM))){
       WSDMInviaMailType inviaMail = new WSDMInviaMailType();
 
         // Testo email
@@ -1666,6 +1610,7 @@ public class GestorePubblicaSuPortale extends
           // Oggetto email
           inviaMail.setOggettoMail(oggettodocumento);
         }
+        inviaMail.setMittenteMail(indirizzomittente);//APPALTI-2175
         // Destinatari
         /*
         String selectW_INVCOMDESMail = "select desmail from w_invcomdes where idprg = ? and idcom = ?";
@@ -1684,7 +1629,7 @@ public class GestorePubblicaSuPortale extends
 
     //Inserimento allegati in W_DOCDIG
     //Nel caso sia presente l'integrazione WSDM si devono inviare a WSDM sia i documenti che vengono allegati alla comunicazione
-    //(cioè i documenti di cui si sta eseguendo l'inserimento nella W_DOCDIG), sia i documenti stessi presi direttamente dalla W_DOCDIG
+    //(cioï¿½ i documenti di cui si sta eseguendo l'inserimento nella W_DOCDIG), sia i documenti stessi presi direttamente dalla W_DOCDIG
     int numeroAllegati = 1;
     int numAll = 0;
     int numAllegatiReali=0;
@@ -1751,7 +1696,7 @@ public class GestorePubblicaSuPortale extends
 
     if(numAllegati!=null && !"".equals(numAllegati)){
       for(int i=0; i<numAll; i++){
-        parametri = new Object[8];
+        parametri = new Object[9];
         parametri[0] = idprg;   //IDPRG
         Long newIddocdig = (Long) sqlManager.getObject("SELECT max(iddocdig) FROM w_docdig WHERE idprg=?", new Object[]{idprg});
         if (newIddocdig == null) {
@@ -1767,14 +1712,16 @@ public class GestorePubblicaSuPortale extends
         LobHandler lobHandler = new DefaultLobHandler(); // reusable object
         BlobFile fileAllegato = fileAllegatoManager.getFileAllegato(idprg, datiForm.getLong("IDDOCDIG_" + i));
         parametri[7] = new SqlLobValue(fileAllegato.getStream(), lobHandler);
+        parametri[8] = datiForm.getString("DIGTIPDOC_"+ i);    //DIGTIPDOC
         sqlManager.update("INSERT INTO w_docdig(IDPRG,IDDOCDIG,DIGENT,DIGKEY1,DIGKEY2,"
-                    + "DIGNOMDOC,DIGDESDOC,DIGOGG) VALUES (?,?,?,?,?,?,?,?)", parametri);
+                    + "DIGNOMDOC,DIGDESDOC,DIGOGG,DIGTIPDOC) VALUES (?,?,?,?,?,?,?,?,?)", parametri);
+        ObjectStorageUtils.addFile("PG", newIddocdig);
 
         if("1".equals(integrazioneWSDM) && !gestioneTask){
           idAllegatiNuovi[i] = newIddocdig;
           String dignomdoc = datiForm.getString("NOME_" + i);
           String tipo = GestioneWSDMManager.getTipoFile(dignomdoc);
-          //Documento già presente nella W_DOCDIG
+          //Documento giï¿½ presente nella W_DOCDIG
           allegati[indiceAllegati + i] = new WSDMProtocolloAllegatoType();
           allegati[indiceAllegati + i].setNome(dignomdoc);
           allegati[indiceAllegati + i].setTitolo( datiForm.getString("DESCRIZIONE_"+ i));
@@ -1852,6 +1799,18 @@ public class GestorePubblicaSuPortale extends
       String codiceuo = UtilityStruts.getParametroString(this.getRequest(),"codiceuo");
       String idutente = UtilityStruts.getParametroString(this.getRequest(),"idutente");
       String idutenteunop = UtilityStruts.getParametroString(this.getRequest(),"idutenteunop");
+
+      String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+      if("1".equals(wsdmLoginComune)){
+        try {
+          String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO, idconfi);
+          username = credenziali[0];
+          password = credenziali[1];
+        }catch (CriptazioneException | SQLException e) {
+        throw new GestoreException(
+                "Errore nel recupero delle credenziali comuni per l'integrazione WSDM", null, e);
+        }
+      }
 
       if(password==null)
         password="";
@@ -1975,7 +1934,7 @@ public class GestorePubblicaSuPortale extends
       }
     }else  if("1".equals(integrazioneWSDM) && gestioneTask){
       //Nel caso di abilitazione dell'invio singolo, la funzione viene chiamata una volta per ogni destinatario, ma l'inserimento in GARPRO_WSDM deve avvenire solo una volta
-      //e ciò è controllato dalla variabile creazioneOccorrenzaTask
+      //e ciï¿½ ï¿½ controllato dalla variabile creazioneOccorrenzaTask
       Long idGarpro=null;
 
       if(creazioneOccorrenzaTask) {
@@ -2018,15 +1977,23 @@ public class GestorePubblicaSuPortale extends
     return idRet;
   }
 
-  private void associazioneFascicoloWSDM(Long genereGara, String ngara, String codgar, String iterga, Timestamp datpub, Timestamp datFinePubb, String riservatezzaAttiva, String oggettoDocumentoFittizio, String idconfi) throws GestoreException, SQLException, IOException, DocumentException{
+  private void associazioneFascicoloWSDM(Long genereGara, String ngara, String codgar, String iterga, Timestamp datpub, Timestamp datFinePubb, String riservatezzaAttiva, String oggettoDocumentoFittizio, String idconfi) throws GestoreException, SQLException, IOException, DocumentException, CriptazioneException {
 
     String inserimentoinfascicolo = null;
     String classificafascicolo = null;
     String oggettodocumento = null;
     String tiposistemaremoto = UtilityStruts.getParametroString(this.getRequest(),"tiposistemaremoto");
+    String servizio = UtilityStruts.getParametroString(this.getRequest(),"servizio");
 
     String username = UtilityStruts.getParametroString(this.getRequest(),"username");
     String password =UtilityStruts.getParametroString( this.getRequest(),"password");
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+      username = credenziali[0];
+      password = credenziali[1];
+    }
+
     if(password== null)
       password="";
     String ruolo = UtilityStruts.getParametroString(this.getRequest(),"ruolo");
@@ -2061,7 +2028,7 @@ public class GestorePubblicaSuPortale extends
 
     String entita = UtilityStruts.getParametroString(this.getRequest(),"entita");
     String key1 = UtilityStruts.getParametroString(this.getRequest(),"key1");
-    String servizio = UtilityStruts.getParametroString(this.getRequest(),"servizio");
+
     String codiceaoo =   UtilityStruts.getParametroString(this.getRequest(),"codiceaoonuovo");
     String idDocumento=null;
     String mezzo = UtilityStruts.getParametroString(this.getRequest(),"mezzo");
@@ -2235,7 +2202,7 @@ public class GestorePubblicaSuPortale extends
           }
         }else{
           //Nel caso non ci sono allegati alla documentazione non si deve procedere
-          //Va ricordato che esiste sicuramente un documento di gruppo 1, perchè altrimenti non sarebbe
+          //Va ricordato che esiste sicuramente un documento di gruppo 1, perchï¿½ altrimenti non sarebbe
           //stato possibile accedere alla funzione di pubblicazione.
           throw new GestoreException("Non e' possibile procedere con la creazione del fascicolo per mancanza di allegati al bando","errors.gestoreException.*.wsdm.fascicoloprotocollo.fascicoloinserisci.error.allegati",null, new Exception());
         }
@@ -2246,7 +2213,7 @@ public class GestorePubblicaSuPortale extends
         allegati[0].setNome("Fascicolo.pdf");
         allegati[0].setTipo("pdf");
         allegati[0].setTitolo(commsgtes);
-        InputStream iccInputStream = new FileInputStream(getRequest().getSession(true).getServletContext().getRealPath("/WEB-INF/jrReport/sRGB_v4_ICC_preference.icc"));
+        InputStream iccInputStream = new FileInputStream(getRequest().getSession(true).getServletContext().getRealPath("/WEB-INF/jrReport/sRGB2014.icc"));
         try {
           allegati[0].setContenuto(UtilityStringhe.string2PdfA(commsgtes,iccInputStream));
         } catch (com.itextpdf.text.DocumentException e) {
@@ -2550,6 +2517,8 @@ public class GestorePubblicaSuPortale extends
       idprg = (String) SqlManager.getValueFromVectorParam(deleteList.get(i), 0).getValue();
       iddocdig = (Long) SqlManager.getValueFromVectorParam(deleteList.get(i), 1).getValue();
       if(iddocdig!=null){
+        UploadInfo oldBucketInfo = ObjectStorageUtils.getUploadInfo("select bucket_ref, bucket_uuid from w_docdig where idprg=? and iddocdig = ?",new Object[]{idprg,iddocdig});
+        ObjectStorageUtils.deleteFile(oldBucketInfo.bucket_ref(),oldBucketInfo.uuid());
         this.sqlManager.update("delete from w_docdig where idprg=? and iddocdig = ?", new Object[]{idprg,iddocdig});
       }
       if(deleteImprdocg){

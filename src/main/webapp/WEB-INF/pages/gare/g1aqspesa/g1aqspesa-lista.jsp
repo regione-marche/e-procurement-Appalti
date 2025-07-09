@@ -151,7 +151,7 @@
   <gene:javaScript>
 	
 	function listaVisualizzaCustom() {
-		document.forms[0].action=document.forms[0].action+"&cenint=${cenint}&ngara=${ngara}&ncont=${ncont}&codimp=${codimp}&ngaral=${ngaral}";
+		document.forms[0].action=document.forms[0].action+"?cenint=${cenint}&ngara=${ngara}&ncont=${ncont}&codimp=${codimp}&ngaral=${ngaral}";
 		listaVisualizzaDefault();
 	}
 	
@@ -159,7 +159,7 @@
 	var listaVisualizza = listaVisualizzaCustom;
 	
 	function listaModificaCustom() {
-		document.forms[0].action=document.forms[0].action+"&cenint=${cenint}&ngara=${ngara}&ncont=${ncont}&codimp=${codimp}&ngaral=${ngaral}";
+		document.forms[0].action=document.forms[0].action+"?cenint=${cenint}&ngara=${ngara}&ncont=${ncont}&codimp=${codimp}&ngaral=${ngaral}";
 		listaModificaDefault();
 	}
 	
@@ -167,7 +167,7 @@
 	var listaModifica = listaModificaCustom;
 	
 	function listaNuovoCustom() {
-		document.forms[0].action=document.forms[0].action+"&cenint=${cenint}&ngara=${ngara}&ncont=${ncont}&codimp=${codimp}&ngaral=${ngaral}";
+		document.forms[0].action=document.forms[0].action+"?cenint=${cenint}&ngara=${ngara}&ncont=${ncont}&codimp=${codimp}&ngaral=${ngaral}";
 		listaNuovoDefault();
 	}
 	

@@ -90,12 +90,18 @@ public class GestorePopupDettaglioSoggettiAggregati extends AbstractGestoreEntit
     int id=0;
     String codiceSoggettoSelezionato = null;
     Long idSoggetto = null;
+    String codcentro = null;
+    String nomcentro = null;
     boolean soggettoTrovato = false;
     for (int i = 1; i <= numeroSoggetti; i++) {
       DataColumnContainer dataColumnContainerDiRiga = new DataColumnContainer(
           impl.getColumnsBySuffix("_" + i, false));
       codein = dataColumnContainerDiRiga.getString("CODEIN_FIT");
       idSoggetto = dataColumnContainerDiRiga.getLong("GARALTSOG.ID");
+      if(dataColumnContainerDiRiga.isColumn("GARALTSOG.CODCENTRO")) {
+        codcentro = dataColumnContainerDiRiga.getString("GARALTSOG.CODCENTRO");
+        nomcentro = dataColumnContainerDiRiga.getString("GARALTSOG.NOMCENTRO");
+      }
 
       soggettoTrovato = false;
 
@@ -111,13 +117,19 @@ public class GestorePopupDettaglioSoggettiAggregati extends AbstractGestoreEntit
         }
       }
 
-      if(soggettoTrovato && (idSoggetto==null || "".equals(idSoggetto))){
+      if(soggettoTrovato){
         //Inserimento in GARALTSOG se id non valorizzato
         try {
+          if(idSoggetto==null) {
           id = genChiaviManager.getNextId("GARALTSOG");
           this.getSqlManager().update(
-              "insert into GARALTSOG(id,ngara,cenint) values(?,?,?)",
-              new Object[] { new Long(id),numeroGara,codein});
+              "insert into GARALTSOG(id,ngara,cenint,codcentro, nomcentro) values(?,?,?,?,?)",
+              new Object[] { new Long(id),numeroGara,codein,codcentro,nomcentro});
+          }else if(dataColumnContainerDiRiga.isColumn("GARALTSOG.CODCENTRO") && dataColumnContainerDiRiga.isModifiedColumn("GARALTSOG.CODCENTRO")){
+            this.getSqlManager().update(
+                "update GARALTSOG set codcentro=?, nomcentro=? where id=?",
+                new Object[] {codcentro,nomcentro, idSoggetto});
+          }
         }catch (SQLException e) {
           throw new GestoreException("Errore nell'inserimento dei dati in GARALTSOG",null, e);
         }

@@ -36,7 +36,7 @@
 				functionId="ditteRaggruppamentoAvvalimentoInterno"
 				parametriWhere="T:${codiceDitta}"
 				chiave="DITGAVVAL_DITTART_${param.contatore}" >
-				<gene:campoScheda entita="DITGAVVAL" campo="DITTART_${param.contatore}" campoFittizio="true" obbligatorio="true" visibile="true" definizione="T10;0;;;G1DITTART" value="${item[4]}" />
+				<gene:campoScheda entita="DITGAVVAL" campo="DITTART_${param.contatore}" campoFittizio="true" visibile="true" definizione="T10;0;;;G1DITTART" value="${item[4]}" />
 				<gene:campoScheda title="Ragione sociale" entita="IMPR" campo="NOMEST1_${param.contatore}" campoFittizio="true" visibile="true" definizione="T2000;0;;;NOMIMP" value="${item[5]}" />
 			</gene:archivio>
 		</c:if>
@@ -80,7 +80,7 @@
 				functionId="ditteRaggruppamentoAvvalimentoInterno"
 				parametriWhere="T:${codiceDitta}"
 				chiave="DITGAVVAL_DITTART_${param.contatore}" >
-				<gene:campoScheda entita="DITGAVVAL" campo="DITTART_${param.contatore}" campoFittizio="true" obbligatorio="true" visibile="true" definizione="T10;0;;;G1DITTART" />
+				<gene:campoScheda entita="DITGAVVAL" campo="DITTART_${param.contatore}" campoFittizio="true" visibile="true" definizione="T10;0;;;G1DITTART" />
 				<gene:campoScheda title="Ragione sociale" entita="IMPR" campo="NOMEST1_${param.contatore}" campoFittizio="true" visibile="true" definizione="T2000;0;;;NOMIMP" />
 			</gene:archivio>
 		</c:if>
@@ -116,7 +116,7 @@
 <gene:javaScript>
 
 	function gestioneSOA_${param.contatore}(tipoav) {
-		if (tipoav == '1') {
+		if (tipoav === '' || tipoav == '1' || tipoav == '5') {
 			document.getElementById("rowDITGAVVAL_CODCAT_${param.contatore}").style.display = 'none';
 			document.getElementById("rowV_CAIS_TIT_DESCAT_${param.contatore}").style.display = 'none';
 			document.getElementById("rowDITGAVVAL_NUMCLA_${param.contatore}").style.display = 'none';

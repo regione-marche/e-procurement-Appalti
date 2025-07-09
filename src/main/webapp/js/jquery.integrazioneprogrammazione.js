@@ -360,12 +360,18 @@ function _popolaRda(data,codgar,id,ngara,bloccoSoloLettura,bloccoPubblicata){
 			
 			var nSelected = 0;
 			var arrmultikey  = '';
+			var tipgen=null;
+			var arrtipgen = [];
 			$( "input[id^='"+id+"_ck_pos_']" ).each( function( index ) {
 				if($( this ).prop( "checked")){
 					nSelected= nSelected + 1;
 					_ck_id = $(this).attr("id");
 					_ck_key = _ck_id.split(id+'_ck_pos_')[1];
 					arrmultikey  = arrmultikey + _ck_key + ';';
+					var tipologia = $(this).closest('tr').find('td').get(2).innerText;
+					if(tipologia && arrtipgen.indexOf(tipologia)<0)
+						arrtipgen.push(tipologia);
+
 				}
 			});
 
@@ -373,7 +379,26 @@ function _popolaRda(data,codgar,id,ngara,bloccoSoloLettura,bloccoPubblicata){
 				$('#'+id).DataTable().page.len(tableResultXpage)?.draw();
 				alert("Selezionare almeno una RdA/RdI");
 			} else{
-				document.location.href = contextPath + "/pg/InitNuovaGara.do?"+csrfToken+"&arrRda="+arrmultikey;
+				var href=contextPath + "/pg/InitNuovaGara.do?arrRda="+arrmultikey;
+				if(arrtipgen.length===1){
+					var tmp = arrtipgen[0];
+					switch(tmp) {
+						case 'Lavori':
+							tipgen=1;
+							break;
+						case 'Forniture':
+							tipgen=2;
+							break;
+						case 'Servizi':
+							tipgen=3;
+							break;
+						default:
+					}
+					if(tipgen){
+					href += "&tipoAppalto="+tipgen;
+					}
+				}
+				document.location.href = href;
 			}
 		});
 		
@@ -403,7 +428,7 @@ function _popolaRda(data,codgar,id,ngara,bloccoSoloLettura,bloccoPubblicata){
 				alert("Selezionare almeno una RdA/RdI");
 			} else{
 				bloccaRichiesteServer();
-				var newUrl = contextPath + "/pg/CollegaScollegaRda.do?"+csrfToken+"&codgar="+codgar+"&handleRda=scollega&arrRda="+arrmultikey+"&autorizzatoModifiche=1&bloccoModificatiDati="+bloccoPubblicata;
+				var newUrl = contextPath + "/pg/CollegaScollegaRda.do?codgar="+codgar+"&handleRda=scollega&arrRda="+arrmultikey+"&autorizzatoModifiche=1&bloccoModificatiDati="+bloccoPubblicata;
 				if(ngaraParam){
 					newUrl = newUrl.replace('handleRda=scollega','handleRda=scollegalotto');
 					newUrl += "&ngara="+ngara;
@@ -511,7 +536,7 @@ function _creaFinestraSelRda(codgar,ngara) {
 					alert("Selezionare almeno una RdA/RdI");
 				} else{
 					bloccaRichiesteServer();
-					var newUrl = contextPath + "/pg/CollegaScollegaRda.do?"+csrfToken+"&codgar="+codgar+"&handleRda=collega&arrRda="+arrmultikey+"&autorizzatoModifiche=1&bloccoModificatiDati="+bloccoPubblicata;
+					var newUrl = contextPath + "/pg/CollegaScollegaRda.do?codgar="+codgar+"&handleRda=collega&arrRda="+arrmultikey+"&autorizzatoModifiche=1&bloccoModificatiDati="+bloccoPubblicata;
 					if(ngaraParam){
 						newUrl = newUrl.replace('handleRda=collega','handleRda=collegalotto');
 						newUrl += "&ngara="+ngara;

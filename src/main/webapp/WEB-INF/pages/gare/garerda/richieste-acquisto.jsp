@@ -23,7 +23,7 @@
 		<gene:campoScheda campo="CODGAR_${param.contatore}" entita="GARERDA" campoFittizio="true" visibile="false" definizione="T21;0;;;G1CODGARRDA" value="${item[1]}" />
 		<gene:campoScheda campo="CODCARR_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="T50;0;;;G1CODCARR" value="${item[13]}" visibile="false" />
 		<c:choose>
-		<c:when test='${integrazioneERPvsWSDM eq "1" || (integrazioneWSERP eq "1" && (tipoWSERP eq "FNM" || tipoWSERP eq "CAV" || tipoWSERP eq "AMIU" || tipoWSERP eq "RAIWAY"))}'>
+		<c:when test='${integrazioneERPvsWSDM eq "1" || (integrazioneWSERP eq "1" && (tipoWSERP eq "FNM" || tipoWSERP eq "CAV" || tipoWSERP eq "AMIU" || tipoWSERP eq "RAIWAY" || tipoWSERP eq "INARCASSA" || tipoWSERP eq "CONI" ))}'>
 		<gene:campoScheda campo="NUMRDA_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="T50;0;;;G1NUMRDA" value="${item[4]}" modificabile="${integrazioneWSERP ne '1'}" href="javascript:visMetaDati('${item[4]}','${item[16]}','${tipoWSERP}');"/>
 		</c:when>
 		<c:otherwise>
@@ -41,10 +41,11 @@
 		<gene:campoScheda title="Unit&agrave; di misura" campo="UNIMIS_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="T10;0;;;G1UNIMISRDA" value="${item[10]}" visibile="${integrazioneWSERP eq '1' && tipoWSERP eq 'UGOVPA'}"/>
 		<gene:campoScheda title="Quantit&agrave;" campo="QUANTI_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="F12.3;0;;;G1QUANTRDA" value="${item[14]}" visibile="${integrazioneWSERP eq '1'}"/>
 		<gene:campoScheda title="Importo" campo="PREZUN_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="F15;0;;;G1PREUNRDA" value="${item[15]}" visibile="${integrazioneWSERP eq '1'}"/>
+		<gene:campoScheda title="Importo totale" campo="IMPORTO_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="F15;0;;MONEY;G1IMPRDA" value="${item[19]}" visibile="${integrazioneWSERP eq '1' && (tipoWSERP eq 'INARCASSA' || tipoWSERP eq 'CONI')}"/>
 		<gene:campoScheda campo="PERCIVA_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="N2;0;;;G1PEIVARDA" value="${item[12]}" visibile="${integrazioneWSERP eq '1' && tipoWSERP eq 'UGOVPA'}"/>
 		<gene:campoScheda campo="ESERCIZIO_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="T4;0;;;G1ESERCIZIORDA" value="${item[16]}" visibile="${integrazioneWSERP eq '1' && tipoWSERP eq 'FNM'}"/>
 		<gene:campoScheda campo="NGARA_${param.contatore}" entita="GARERDA" campoFittizio="true" visibile="false" definizione="T20;0;;;G1CODGARRDA" value="${item[17]}" />
-		<gene:campoScheda campo="STRUTTURA_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="T20;0;;;G1STRUTTURDA" value="${item[18]}" visibile="${integrazioneWSERP eq '1' && tipoWSERP eq 'RAIWAY'}" />
+		<gene:campoScheda campo="STRUTTURA_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="T20;0;;;G1STRUTTURDA" value="${item[18]}" visibile="${integrazioneWSERP eq '1' && (tipoWSERP eq 'RAIWAY' || tipoWSERP eq 'ARCHIFLOW')}" />
 	</c:when>
 	<c:otherwise>
 		<gene:campoScheda campo="ID_${param.contatore}" entita="GARERDA" campoFittizio="true" visibile="false" definizione="N10;1;;;G1IDGARERDA" />
@@ -62,9 +63,10 @@
 		<gene:campoScheda title="Unit&agrave; di misura" campo="UNIMIS_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="T10;0;;;G1UNIMISRDA" visibile="${integrazioneWSERP eq '1' && tipoWSERP eq 'UGOVPA'}"/>
 		<gene:campoScheda title="Quantit&agrave;" campo="QUANTI_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="F12.3;0;;;G1QUANTRDA"  visibile="${integrazioneWSERP eq '1'}"/>
 		<gene:campoScheda title="Importo" campo="PREZUN_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="F15;0;;;G1PREUNRDA"  visibile="${integrazioneWSERP eq '1'}"/>
+		<gene:campoScheda title="Importo totale" campo="IMPORTO_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="F15;0;;MONEY;G1IMPRDA" visibile="${integrazioneWSERP eq '1' && (tipoWSERP eq 'INARCASSA' || tipoWSERP eq 'CONI')}"/>
 		<gene:campoScheda campo="PERCIVA_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="N2;0;;;G1PEIVARDA" visibile="${integrazioneWSERP eq '1' && tipoWSERP eq 'UGOVPA'}"/>
 		<gene:campoScheda campo="ESERCIZIO_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="T4;0;;;G1ESERCIZIORDA" visibile="${integrazioneWSERP eq '1' && tipoWSERP eq 'FNM'}"/>
 		<gene:campoScheda campo="NGARA_${param.contatore}" entita="GARERDA" campoFittizio="true" visibile="false" definizione="T20;0;;;G1NGARARDA" />
-		<gene:campoScheda campo="STRUTTURA_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="T20;0;;;G1STRUTTURDA" visibile="${integrazioneWSERP eq '1' && tipoWSERP eq 'RAIWAY'}"/>
+		<gene:campoScheda campo="STRUTTURA_${param.contatore}" entita="GARERDA" campoFittizio="true" definizione="T20;0;;;G1STRUTTURDA" visibile="${integrazioneWSERP eq '1' && (tipoWSERP eq 'RAIWAY' || tipoWSERP eq 'ARCHIFLOW')}"/>
 	</c:otherwise>
 </c:choose>

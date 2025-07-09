@@ -37,7 +37,7 @@
 		</c:choose>
 		<c:choose>
 			<c:when test='${not empty statoArt80}'>
-				<img width="16" height="16" title="Esito verifica requisiti art.80 DLgs.50/2016:&#13; ${statoArt80}" alt="Esito verifica requisiti art.80 DLgs.50/2016 - ${statoArt80}" src="${pageContext.request.contextPath}/img/${nomeIconaStato}"/>
+				<img width="16" height="16" title="Esito verifica requisiti:&#13; ${statoArt80}" alt="Esito verifica requisiti - ${statoArt80}" src="${pageContext.request.contextPath}/img/${nomeIconaStato}"/>
 			</c:when>
 			<c:otherwise>
 				&nbsp;

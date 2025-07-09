@@ -88,6 +88,9 @@ var numDitteStatoSoccorso;
 var isConcProg="";
 var gestioneConcProg="";
 var statocg="";
+var iterga;
+var isfineconc;
+var _codeinOrgricorso;
 
 function setImportoVisibile(importoVis){
 	importoVisibile = importoVis;
@@ -247,7 +250,12 @@ function setPaginaFasiGara(valore){
 	paginaFasiGara = valore;
 }
 
-function calcoloPercentualeCauzione(ribauo){
+function calcoloPercentualeCauzione(ribauo, isAcqua, isGaraDLGS2023, isSottoSoglia){
+	if(isGaraDLGS2023 && isAcqua)
+		return 2;
+	if(isGaraDLGS2023 && isSottoSoglia)
+		return 5;
+		
 	var ribasso = 0;
 	var percauz = 10;
 	ribasso=Math.abs(ribauo);
@@ -258,7 +266,7 @@ function calcoloPercentualeCauzione(ribauo){
 	ribasso = ribasso - 10;
 	if (ribasso > 0)
 		percauz += ribasso;
-        return percauz;
+	return percauz;
 }
 
 function setFaseGara(valore){
@@ -347,6 +355,14 @@ function setGestioneConcProg(valore){
 
 function setStatocg(valore){
 	statocg=valore;
+}
+
+function setIterga(valore){
+	iterga=valore;
+}
+
+function setIsfineconc(valore){
+	isfineconc=valore;
 }
 
 function calcolaRIBAUO(impapp, onprge, impsic, impnrl, sicinc, impoff, onsogrib) {
@@ -845,9 +861,9 @@ function avanti(){
 	
 	
 	if(document.forms[0].action.indexOf("Scheda.do") >= 0){
-		document.forms[0].action = contextPath + "/Lista.do?"+csrfToken;
+		document.forms[0].action = contextPath + "/Lista.do";
 		if(paginaAttivaWizard == step7_5Wizard && pgAsta == "2"){
-			document.forms[0].action += "&metodo=leggi";
+			document.forms[0].action += "?metodo=leggi";
 		}
 		document.forms[0].keyParent.value = document.forms[0].key.value;
 	} else {
@@ -905,7 +921,7 @@ function archivioImpresa(codiceImpresa){
 		openPopUp(href, "schedaImpresa");
 	}else{
 		var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
+		document.location.href = contextPath + "/ApriPagina.do?" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
 	}
 }
 
@@ -981,13 +997,13 @@ function verificaDocumentiRichiesti(chiaveRiga,tipo,comunicazioniVis,documentiEl
 	if(tipo == "CONSULTAZIONE")
 		openPopUpCustom(href, "verificaDocumentiRichiesti", 1100, 550, "yes", "yes");
 	else
-		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href;
+		document.location.href = contextPath + "/ApriPagina.do?" + href;
 	//openPopUpCustom(href, "verificaDocumentiRichiesti", 1100, 550, "yes", "yes");
 }
 
 function esitoAnalisiDocumentiDGUE(codgar,ngara,dittao,fase,statoDGUE){
 	
-	var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/dgue_elaborazioni/listaStatoAnalisiDgue.jsp";
+	var href = contextPath + "/ApriPagina.do?href=gare/dgue_elaborazioni/listaStatoAnalisiDgue.jsp";
 	
 	href += "&codgar="+codgar;
 	href += "&ngara="+ngara;
@@ -1044,7 +1060,7 @@ function AnnullaFiltro(annulla){
 }
 
 function apriDettaglioPerLotto(chiave){
-	var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/gare/dettaglioOffertePerLotti-OffertaUnicaLotti.jsp";
+	var href = contextPath + "/ApriPagina.do?href=gare/gare/dettaglioOffertePerLotti-OffertaUnicaLotti.jsp";
 	href += "&chiave=" + chiave + "&paginaAttivaWizard=" + paginaAttivaWizard;
 			
 	document.location.href = href;
@@ -1058,19 +1074,20 @@ function apriPopupProspettoPunteggi(chiave){
 }
 
 function inviaComunicazione(chiaveRiga,inviaComunicazioneAbilitato,idconfi){
-	if(inviaComunicazioneAbilitato=="NoPec"){
+	var skipControlli = (iterga=='9' || iterga=='10') && isfineconc != '1';
+	if(inviaComunicazioneAbilitato=="NoPec" && !skipControlli){
 		alert("Non e' possibile procedere.\nLa ditta selezionata non ha un indirizzo PEC specificato in anagrafica");
 		return;
-	}else if(inviaComunicazioneAbilitato=="NoPecRTI"){
+	}else if(inviaComunicazioneAbilitato=="NoPecRTI" && !skipControlli){
 		alert("Non e' possibile procedere.\nLa mandataria del raggruppamento selezionato non ha un indirizzo PEC specificato in anagrafica");
 		return;
-	}else if(inviaComunicazioneAbilitato=="NoMail"){
+	}else if(inviaComunicazioneAbilitato=="NoMail" && !skipControlli){
 		alert("Non e' possibile procedere.\nLa ditta selezionata non ha un indirizzo PEC o E-mail specificato in anagrafica");
 		return;
-	}else if(inviaComunicazioneAbilitato=="NoMailRTI"){
+	}else if(inviaComunicazioneAbilitato=="NoMailRTI" && !skipControlli){
 		alert("Non e' possibile procedere.\nLa mandataria del raggruppamento selezionato non ha un indirizzo PEC o E-mail specificato in anagrafica");
 		return;
-	}else if(inviaComunicazioneAbilitato=="NoMandatariaRTI"){
+	}else if(inviaComunicazioneAbilitato=="NoMandatariaRTI" && !skipControlli){
 		alert("Non e' possibile procedere.\nNell'anagrafica del raggruppamento selezionato non e' specificata la mandataria");
 		return;
 	}else{
@@ -1105,7 +1122,7 @@ function inviaComunicazione(chiaveRiga,inviaComunicazioneAbilitato,idconfi){
 			var entitaWSDM="GARE";
 			var chiaveWSDM=numeroGara;
 		}
-		href+="&entitaWSDM=" + entitaWSDM + "&chiaveWSDM=" + chiaveWSDM+"&"+csrfToken;
+		href+="&entitaWSDM=" + entitaWSDM + "&chiaveWSDM=" + chiaveWSDM;
 		if(idconfi){href+="&idconfi=" + idconfi;}
 		document.location.href = href;
 	}
@@ -1122,7 +1139,7 @@ function listaDitteConsorziate(chiaveRiga){
 		faseGara = 0;
 	if(bloccoAggiudicazione=="1" || (isProceduraTelematica=="true" && faseGara>=5))
 		bloccoPagina=true;			
-	var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gene/ragdet/ragdet-lista.jsp";
+	var href = contextPath + "/ApriPagina.do?href=gene/ragdet/ragdet-lista.jsp";
 	href += "&key=" + chiaveRiga+ "&bloccoPagina=" + bloccoPagina;
 	document.location.href = href;
 }
@@ -1162,14 +1179,14 @@ function disattivaAperturaOfferte(){
 }
 
 function dettaglioPartecipazioneLotti(chiaveRiga, bustalotti){
-	var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/ditg/dettaglioPartecipazioneDittaPerLotti.jsp";
+	var href = contextPath + "/ApriPagina.do?href=gare/ditg/dettaglioPartecipazioneDittaPerLotti.jsp";
 	href += "&key=" + chiaveRiga + "&stepWizard=" + paginaAttivaWizard + "&bustalotti=" + bustalotti;
 	href += "&isProceduraTelematica=" + isProceduraTelematica + "&faseGara=" + faseGara;
 	document.location.href = href;
 }
 
 function dettaglioAmmissioneLotti(chiaveRiga, bustalotti){
-	var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/ditg/dettaglioAmmissioneDittaPerLotti.jsp";
+	var href = contextPath + "/ApriPagina.do?href=gare/ditg/dettaglioAmmissioneDittaPerLotti.jsp";
 	href += "&key=" + chiaveRiga + "&stepWizard=" + paginaAttivaWizard + "&bustalotti=" + bustalotti;
 	href += "&isProceduraTelematica=" + isProceduraTelematica + "&faseGara=" + faseGara;
 	document.location.href = href;
@@ -1269,13 +1286,6 @@ function verificaPassword(pwd, pwd1, tipo){
 }
 
 
-function aperturaBusteTecnicheAnonime(ngara,codiceGara) {
-	var pagina="gare-popup-acquisizioniBusteTecniche.jsp";
-	href = "href=gare/gare/" + pagina + "&ngara=" + ngara + "&codgar=" + codiceGara + "&dittao=&bustalotti=0";
-	href += "&anonima=1";
-	openPopUpCustom(href, "bustaTecAnonima", 500, 350, "yes", "yes");
-}
-
 /*
  * La funzione effettua il calcolo di IMPGAR alla modifica di IMPQUA,
  * in particolare se numeroIterazioni e' valorizzato e positivo allora 
@@ -1306,32 +1316,23 @@ function aggiornaImpgarDaImpqua(impqua,accqua,numeroIterazioni){
 			if(numeroIterazioni==-1)
 				valoreMaxIterazioni =1;
 			for (var i=1; i<=valoreMaxIterazioni;i++ ){
-				var campoRibauo = "DITG_RIBAUO_" + i;
 				var campoImpoff = "DITG_IMPOFF_" + i;
 				var campoRidiso = "DITGAQ_RIDISO_" + i;
 				var campoImpgar = "DITGAQ_IMPGAR_" + i;
 				
 				if(numeroIterazioni==-1){
-					campoRibauo = "DITG_RIBAUO";
 					campoImpoff = "DITG_IMPOFF";
 					campoRidiso = "GARE_RIDISO";
 					campoImpgar = "GARE_IMPGAR";
 				}
 				var importoGaranzia = 0;
-				var ribauo = getValue(campoRibauo);
 				if(impqua >0){
-					if(ribauo == null || ribauo == "" || modlicg==6){
-						var impoff = getValue(campoImpoff);
-						ribauo = calcolaRIBAUO(impapp,onprge,impsic,impnrl,sicinc,impoff,onsogrib);
-						ribauo = parseFloat(ribauo);
-					}
-					var percauz = calcoloPercentualeCauzione(ribauo);
-					importoGaranzia = round((impqua * parseFloat(percauz)) / 100, 2);
+					importoGaranzia = round((impqua * 2) / 100, 2);
 				}
 				var ridiso = getValue(campoRidiso);
 			
 				if (ridiso==1) {
-					importoGaranzia = importoGaranzia / 2;
+					importoGaranzia = importoGaranzia * (1-0.3);//riduzione del 30%  (prima 50%) APPALTI-1377 - DLgs 36-2023 
 				}
 				setValue(campoImpgar,toMoney(importoGaranzia));
 			}
@@ -1347,8 +1348,8 @@ function EvadiIdsAssociati() {
 	openPopUpCustom(href, "evadiidsassiciati", 450, 350, "yes", "yes");
 }
 
-//Se RIDISO = 1 si dimezza il valore di IMPGAR
-//Se RIDISO = 2 si raddoppia il valore di IMPGAR 
+//Se RIDISO = 1 si riduce del 30% il valore di IMPGAR
+//Se RIDISO = 2 si ripristina il valore di IMPGAR
 function calcolaIMPGAR(){
 	var newRidiso = getValue("GARE_RIDISO");
 	var oldRidiso = ridisoPrec;
@@ -1362,9 +1363,9 @@ function calcolaIMPGAR(){
 	
 	if (newRidiso != oldRidiso) {
 		if (newRidiso==1) {
-			importoCauzione = importoCauzione / 2;
+			importoCauzione = importoCauzione * (1-0.3); //riduzione del 30%  (prima 50%) - DLgs 36-2023 
 		}else{ 
-			importoCauzione = importoCauzione * 2;
+			importoCauzione = importoCauzione / (1-0.3);
 		}
 	}
 	ridisoPrec = newRidiso;
@@ -1372,7 +1373,8 @@ function calcolaIMPGAR(){
 }
 
 //La funzione aggiorna il valore dell'importo cauzione in funzione di RIDISO
-//Se ridiso=1 si dimezza l'importo cauzione, altrimenti si raddoppia
+//Se RIDISO = 1 si riduce del 30% il valore di IMPGAR
+//Se RIDISO = 2 si ripristina il valore di IMPGAR
 function aggiornaImportoCauzione(modcont){
 	var newRidiso = getValue("GARE_RIDISO");
 	var oldRidiso = ridisoPrec;
@@ -1390,9 +1392,9 @@ function aggiornaImportoCauzione(modcont){
 	
 	if (newRidiso != oldRidiso) {
 		if (newRidiso==1) {
-			importoCauzione = importoCauzione / 2;
+			importoCauzione = importoCauzione * (1-0.3);//riduzione del 30%  (prima 50%) - DLgs 36-2023 
 		}else{ 
-			importoCauzione = importoCauzione * 2;
+			importoCauzione = importoCauzione / (1-0.3);
 		}
 		setValue(nomeCampoImporto,  round(eval(importoCauzione), 5));
 	}
@@ -1433,7 +1435,7 @@ function dettaglioAvvalimento(chiaveRiga){
 	if(bloccoAggiudicazione=="1" || (isProceduraTelematica=="true" && faseGara>=5))
 		bloccoPagina=true;			
 	
-	var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/ditg/dettaglioAvvalimentoDitta.jsp";
+	var href = contextPath + "/ApriPagina.do?href=gare/ditg/dettaglioAvvalimentoDitta.jsp";
 	href += "&key=" + chiaveRiga + "&bloccoPagina=" + bloccoPagina;
 	document.location.href = href;
 }
@@ -1517,7 +1519,7 @@ function dettaglioValutazioneTecEco(chiave,tipo,esistonoDitteConPunteggio,fasgar
 		tipo = "1";
 		sez = "1";
 	}
-	var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/goev/goev-dettaglioValutazioneTecEco.jsp";
+	var href = contextPath + "/ApriPagina.do?href=gare/goev/goev-dettaglioValutazioneTecEco.jsp";
 	href += "&chiave=" + chiave+ "&tipo=" + tipo + "&esistonoDitteConPunteggio=" + esistonoDitteConPunteggio + "&faseGara=" + fasgar + "&autorizzatoModifiche=" + autorizzatoModifiche;
 	href += "&sezTec=" + sez;
 	document.location.href = href;
@@ -1564,6 +1566,7 @@ function controllaCIG(nomeCampo) {
 	var strC1; // primo carattere
 	var strC1_7; // primi 7 caratteri
 	var strC4_10; // dal 4 al 10 carattere
+	var strC2_7; //dal 2 al 10 carattere
 	
 	var strK; // Firma
 	var strK_chk; // variabile d'appoggio per il controllo della firma
@@ -1582,6 +1585,24 @@ function controllaCIG(nomeCampo) {
 	 	try {
 	 		//Calcola Firma
 			strK_chk = ((strC1_7 * 1 / 1) * 211 % 4091).toString(16);
+			strK_chk = parseInt(strK_chk,16); // Trasformo in decimale
+	 	} catch (err) {
+			//Impossibile calcolare la firma
+			//alert ("Codice CIG non valido");
+			return false;
+	 	}
+	 	if (strK_chk != strK) {
+			//La firma non coincide
+			//alert ("Codice CIG non valido");
+			return false;
+	 	}
+	}else if(/[A-U]/.test(strC1.toUpperCase())){
+		strC2_7 = cig.substring(1,7);
+		strK = cig.substring(7,10);
+		strK = parseInt(strK,16); 
+		try {
+	 		//Calcola Firma
+			strK_chk = ((parseInt(strC2_7, 16) + strC1.toUpperCase().charCodeAt(0) - 64) * 211 % 4091).toString(16);
 			strK_chk = parseInt(strK_chk,16); // Trasformo in decimale
 	 	} catch (err) {
 			//Impossibile calcolare la firma
@@ -1640,6 +1661,7 @@ function setVisibilitaDaAmmrin(valore,valmax) {
 		imprin=inizializzaNumeri(imprin,"F");
 		
 		setValue("GARE1_DESRIN","");
+		setValue("GARE1_NUMRIN","");
 		setValue("GARE1_IMPRIN","");
 		valmax = valmax - imprin;
 		if(valmax!=0)
@@ -1648,6 +1670,7 @@ function setVisibilitaDaAmmrin(valore,valmax) {
 			setValue("VALMAX_FIT","");
 	}
 	showObj("rowGARE1_DESRIN", visibile);
+	showObj("rowGARE1_NUMRIN", visibile);
 	showObj("rowGARE1_IMPRIN", visibile);
 }
 
@@ -1707,7 +1730,7 @@ function gestioneTipneg_Alteng(iterga,entita) {
 	//Se iterga != 1,2,7 si visualizzano alteng e tipneg, altrimenti si nascondono
 	var vis = true;
 	var campoTipneg=entita+"_TIPNEG";
-	if(iterga=="1" || iterga =="2" || iterga =="7" || iterga =="8" || iterga=="" || iterga==null)
+	if(iterga=="1" || iterga =="2" || iterga =="7" || iterga =="8" || iterga =="9" || iterga=="" || iterga==null)
 		vis=false;
 	showObj("row" + campoTipneg,vis);
 	showObj("rowTORN_ALTNEG",vis);
@@ -1817,11 +1840,6 @@ function AnnullaAperturaOfferte(chiave,bustalotti){
 	href += "&ngara=" + chiave;
 	href += "&bustalotti=" + bustalotti;
 	openPopUpCustom(href, "annullaAperturaOfferte", 700, 300, "yes", "yes");
-} 
-
-function aggiornaCompreq(compreq){
-	if(compreq == "1")
-	 setValue("TORN_COMPREQ","1");
 }
 
 function apriDettaglioSorteggioDitteVerificaRequisiti(ngara,lotto){
@@ -1946,52 +1964,65 @@ function apriCreaFascicoloStipula(idstipula,codStipula, idconfi, garaStipula){
 	openPopUpCustom(href, "creaFascicolo", 800, 550, "no", "no");
 }
 
-function bloccaDopoPubblicazione(bloccoModificatiDati,offtel) {
+function bloccaDopoPubblicazione(bloccoModificatiDati,offtel,fasgarNotGreaterThan2,bloccoModificaPCP,impoOpzRinnModificabili,bloccoModificaPubblicazione) {
 	if (bloccoModificatiDati=='true') {
+		var bloccaDopoPubblicazionePortale = bloccoModificaPubblicazione != "TRUE" && bloccoModificaPubblicazione != "true";
 		var notInput="";
 		var notJsPopUp="";
+		var sezioniANAC="";
+		var sezioniNonANAC="";
 		var arrayInput = 
 		[
+			{"campo" : "GARE_DINLAVG"},
+			{"campo" : "GARE_TEUTIL"},
+			{"campo" : "GARE1_DTERMCON"},
+			{"campo" : "GARE1_NGIOCON"},
+			{"campo" : "TORN_AQDURATA"},
+			{"campo" : "TORN_AQTEMPO"},
+			{"campo" : "TORN_MOTACC"},
+			{"campo" : "TORN_BANWEB"},
+			{"campo" : "TORN_CONTOECO"},
+			{"campo" : "TORN_DURATA"},
 			{"campo" : "TORN_CODRUP"},
 			{"campo" : "NOMTEC"},
 			{"campo" : "TECNI_NOMTEC"},
-			{"campo" : "GARE_DINLAVG"},
-			{"campo" : "GARE_TEUTIL"},
-			{"campo" : "TECNI_NOMTEC"},
+			{"campo" : "GAREAVVISI_DATSCA"},
+			{"campo" : "MECATALOGO_NUMPRODART"},
+			{"campo" : "GAREALBO_TCONGELAMENTO"},
 			{"campo" : "GARE_CUPPRG"},
-			{"campo" : "GARE_CUPMST"},
-			{"campo" : "GARE_SUBGAR"},
-			{"campo" : "GARE1_CODCUI"},
-			{"campo" : "GARE1_ANNINT"},
-			{"campo" : "GARE1_DTERMCON"},
-			{"campo" : "GARE1_NGIOCON"},
-			{"campo" : "TORN_NORMA"},
-			{"campo" : "TORN_AQDURATA"},
-			{"campo" : "TORN_AQTEMPO"},
-			{"campo" : "TORN_SOMMAUR"},
-			{"campo" : "TORN_CODNUTS"},
-			{"campo" : "TORN_SELPAR"},
-			{"campo" : "TORN_MINOPE"},
-			{"campo" : "TORN_MAXOPE"},
-			{"campo" : "TORN_DATDOC"},
-			{"campo" : "TORN_ORADOC"},
-			{"campo" : "TORN_IMPDOC"},
-			{"campo" : "TORN_MOTACC"},
-			{"campo" : "TORN_BANWEB"},
-			{"campo" : "TORN_NOFDIT"},
-			{"campo" : "TORN_NGADIT"},
-			{"campo" : "TORN_CONTOECO"}
+			{"campo" : "ORGRICORSO_NOMPUN"}
 		];
-		if(offtel==3){
-			arrayInput.push({"campo" : "GARE_IMPMIS"},{"campo" : "GARE_IMPNRM"},{"campo" : "GARE_IMPSMI"},{"campo" : "GARE_NOTMIS"},{"campo" : "GARE_IMPCOR"});
-			arrayInput.push({"campo" : "GARE_IMPNRC"},{"campo" : "GARE_IMPSCO"},{"campo" : "GARE_NOTCOR"},{"campo" : "GARE_ONPRGE"},{"campo" : "GARE_IMPAPP"});
-			arrayInput.push({"campo" : "GARE_IMPNRL"},{"campo" : "GARE_IMPSIC"},{"campo" : "GARE1_IMPMANO"});			
+		if (impoOpzRinnModificabili=='true') {
+			arrayInput.push({"campo" : "GARE_IMPAPP"},{"campo" : "GARE_IMPNRL"},{"campo" : "GARE_IMPSIC"},{"campo" : "GARE1_IMPMANO"},{"campo" : "GARE1_IMPRIN"},{"campo" : "GARE1_IMPSERV"},{"campo" : "GARE1_IMPPROR"},{"campo" : "GARE1_IMPALTRO"});
+			arrayInput.push({"campo" : "GARE_IMPMIS"},{"campo" : "GARE_IMPNRM"},{"campo" : "GARE_IMPSMI"},{"campo" : "GARE_NOTMIS"});
+			arrayInput.push({"campo" : "GARE_IMPCOR"},{"campo" : "GARE_IMPNRC"},{"campo" : "GARE_IMPSCO"},{"campo" : "GARE_NOTCOR"},{"campo" : "GARE_ONPRGE"});
+		}
+		notInput = notInput + ":not([id^='GARECUP_CUP_'])";
+		if(!(bloccoModificaPCP=='true')){
+			if(offtel==3){
+				arrayInput.push({"campo" : "TORN_NOFDIT"},{"campo" : "TORN_NGADIT"},{"campo" : "GARE_IMPMIS"},{"campo" : "GARE_IMPNRM"},{"campo" : "GARE_IMPSMI"},{"campo" : "GARE_NOTMIS"},{"campo" : "GARE_IMPCOR"});
+				arrayInput.push({"campo" : "GARE_IMPNRC"},{"campo" : "GARE_IMPSCO"},{"campo" : "GARE_NOTCOR"},{"campo" : "GARE_ONPRGE"},{"campo" : "GARE_IMPAPP"});
+				arrayInput.push({"campo" : "GARE_IMPNRL"},{"campo" : "GARE_IMPSIC"},{"campo" : "GARE1_IMPMANO"});			
+			}
+			arrayInput.push({"campo" : "TORN_CODNUTS"},{"campo" : "GARE_CUPMST"},{"campo" : "GARE1_CODCUI"},{"campo" : "GARE1_ANNINT"},
+			{"campo" : "TORN_DATDOC"},{"campo" : "TORN_ORADOC"},{"campo" : "TORN_IMPDOC"},
+			{"campo" : "TORN_NORMA"},{"campo" : "TORN_SELPAR"},{"campo" : "TORN_MINOPE"},{"campo" : "TORN_MAXOPE"},
+			{"campo" : "GARE1_QUOFEMMI"},{"campo" : "GARE1_QUOGIOVA"},{"campo" : "GARE_LOCLAV"},{"campo" : "GARE_LOCINT"},{"campo" : "GARE_NOMSSL"},{"campo" : "GARE_NUMSSL"},
+			{"campo" : "GARE1_CODCNEL"},{"campo" : "GARE1_CIGCOLL"},{"campo" : "CENTROCOSTO"},{"campo" : "CENTROCOSTO_GARALTSOG"},{"campo" : "TORN_CODDRP"},{"campo" : "TORN_NOMDRP"},{"campo" : "GARE1_IMPSOMME"},
+			{"campo": "GARE_IDIAUT"},{"campo": "TORN_ISTAUT"},{"campo": "TORN_NGADIT"},{"campo": "TORN_NOFDIT"});
+			sezioniANAC = ":not([id^='G1QUOTADER_']):not([id^='G1DFINA_']):not([id^='G1MISPREMIALI_'])";
+		} else if(bloccaDopoPubblicazionePortale) {
+			$("[id^='rowtitoloCPVCOMP_']").each( function() {
+				$(this).hide();
+			});
+			sezioniNonANAC = ":not([id^='GARATT_'])";
+			arrayInput.push({"campo" : "GARE_DATTOG"},{"campo" : "GARE_NATTOG"},{"campo" : "TORN_DATTOT"},{"campo" : "TORN_NATTOT"},{"campo" : "TORN_DATRICT"},{"campo" : "GARE_NPROAG"});
 		}
 		 $.each(arrayInput,function( index, value ) {
 			notInput =   notInput+":not('#"+value.campo+"')";
 			notJsPopUp = notJsPopUp+":not('#jsPopUp"+value.campo+"')";
 		 });	
-		$("input:not([type=button])" + notInput + ":not([id^='GARTECNI_']):not([id^='GARCPV_']):not([id^='XTORN_']):not([id^='XGARE_'])").each(function(i) {
+		$("input:not([type=button])" + notInput + sezioniANAC + sezioniNonANAC + ":not([id^='PUBBTERM_']):not([id^='GARTECNI_']):not([id^='GARCPV_']):not([id^='XTORN_']):not([id^='XGARE_'])").each(function(i) {
 				$(this).attr('readonly','readonly');
 				$(this).attr('tabindex','-1');
 				$(this).css('border-color','#A3A6FF');
@@ -2000,22 +2031,27 @@ function bloccaDopoPubblicazione(bloccoModificatiDati,offtel) {
 		});
 		var arrayText = 
 		[
-			{"campo" : "GARE_NOT_GAR"},
-			{"campo" : "GARE_NOTEGA"},
-			{"campo" : "TORN_DESTOR"},
-			{"campo" : "TORN_PAGDOC"},
-			{"campo" : "TORN_MODFIN"},
-			{"campo" : "TORN_PROGEU"},
-			{"campo" : "TORN_SELOPE"},
 			{"campo" : "TORN_DESGREEN"},
-			{"campo" : "GARSOSPE_NOTE"}
+			{"campo" : "GARSOSPE_NOTE"},
+			{"campo" : "G1CRIDEF_DESCRI"},
+			{"campo" : "TORN_INDNOTIFICHE"},
+			{"campo" : "GARE_NOTEGA"},
+			{"campo" : "TORN_RIESAME"}
 		];
+		if (impoOpzRinnModificabili=='true') {
+			arrayText.push({"campo" : "GARE1_DESRIN"},{"campo" : "GARE1_DESOPZ"});
+		}
+		if(!(bloccoModificaPCP=='true')){
+			arrayText.push({"campo" : "TORN_DESTOR"},{"campo" : "GARE_NOT_GAR"},{"campo" : "TORN_PAGDOC"},{"campo" : "TORN_MODFIN"},{"campo" : "TORN_PROGEU"},{"campo" : "TORN_SELOPE"});
+		} else if(bloccaDopoPubblicazionePortale) {
+			arrayText.push({"campo" : "TORN_NOTEAT"});
+		}
 		var notText="";
 		 $.each(arrayText,function( index, value ) {
 			notText =   notText+":not('#"+value.campo+"')";
 			notJsPopUp = notJsPopUp+":not('#jsPopUp"+value.campo+"')";
 		 });	
-		$("textarea" + notText + ":not([id^='XTORN_']):not([id^='XGARE_'])").each(function(i) {
+		$("textarea" + notText + sezioniANAC + sezioniNonANAC + ":not([id^='PUBBTERM_']):not([id^='XTORN_']):not([id^='XGARE_'])").each(function(i) {
 			$(this).attr('readonly','readonly');
 			$(this).attr('tabindex','-1');
 			$(this).css('border-color','#A3A6FF');
@@ -2025,54 +2061,54 @@ function bloccaDopoPubblicazione(bloccoModificatiDati,offtel) {
 		var arraySelect = 
 		[
 			{"campo" : "GARE_TEMESI"},
-			{"campo" : "GARE_SEGRETA"},
-			{"campo" : "GARE_TIPLAV"},
 			{"campo" : "GARE1_ESPLPORT"},
 			{"campo" : "GARE1_ESPLECO"},
 			{"campo" : "GARE1_ESPLBASE"},
 			{"campo" : "TORN_AQTEMPO"},
-			{"campo" : "TORN_SOMMAUR"},
-			{"campo" : "TORN_CODNUTS"},
-			{"campo" : "TORN_SELPAR"},
-			{"campo" : "TORN_MINOPE"},
-			{"campo" : "TORN_MAXOPE"},
-			{"campo" : "TORN_AMMVAR"},
-			{"campo" : "TORN_PROFAS"},
-			{"campo" : "TORN_MODREA"},
-			{"campo" : "TORN_ELEPAR"},
-			{"campo" : "TORN_APFINFC"},
-			{"campo" : "TORN_PROGEU"},
-			{"campo" : "TORN_ACCAPPUB"},
-			{"campo" : "TORN_OFFLOT"},
-			{"campo" : "TORN_OGGCONT"},
-			{"campo" : "V_GARE_TORN_OGGCONT_LAVORI"},
-			{"campo" : "V_GARE_TORN_OGGCONT_FORNITURE"},
 			{"campo" : "TORN_TIPLAV"},
-			{"campo" : "TORN_PROURG"},
-			{"campo" : "TORN_PREINF"},
-			{"campo" : "TORN_DOCWEB"},
-			{"campo" : "TORN_TERRID"},
-			{"campo" : "TORN_NORMA"},
-			{"campo" : "TORN_NORMA1"},
-			{"campo" : "TORN_TUS"},
-			{"campo" : "TORN_URBASCO"},
-			{"campo" : "TORN_ISGREEN"},
-			{"campo" : "TORN_ISRECYCLE"},
-			{"campo" : "TORN_ISPNRR"},
 			{"campo" : "GARE1_MOTESENTECIG"},
 			{"campo" : "TORN_CLIV2"},
-			{"campo" : "TORN_ISARCHI"}
+			{"campo" : "TORN_ISARCHI"},
+			{"campo" : "G1CRIDEF_MODMANU"},
+			{"campo" : "GAREALBO_TIPOLOGIA"},
+			{"campo" : "GAREALBO_CADENZAMAN"},
+			{"campo" : "MECATALOGO_VISPREZZIOE"},
+			{"campo" : "TORN_RELUPROC"},
+			{"campo" : "GOEV_ISNORIPAR"},
+			{"campo" : "TORN_MOTAGGIDIR"}
+			,{"campo" : "TORN_ORDIELE"}
 
 		];
-		if(offtel==3){
-			arraySelect.push({"campo" : "GARE_ONSOGRIB"});			
+		if(fasgarNotGreaterThan2){
+			arraySelect.push({"campo" : "TORN_INVERSA"},{"campo" : "TORN_COMPREQ"});
 		}
+		if (impoOpzRinnModificabili=='true') {
+			arraySelect.push({"campo" : "GARE1_AMMRIN"},{"campo" : "GARE1_AMMOPZ"},{"campo" : "GARE_ONSOGRIB"});
+		}
+		if(!(bloccoModificaPCP=='true')){
+			if(offtel==3){
+				arraySelect.push({"campo" : "GARE_ONSOGRIB"});
+			}
+			arraySelect.push({"campo" : "TORN_OFFLOT"},{"campo" : "TORN_URBASCO"},{"campo" : "TORN_CODNUTS"},{"campo" : "TORN_MODREA"},{"campo" : "TORN_SELPAR"},{"campo" : "TORN_MINOPE"},
+				{"campo" : "TORN_MAXOPE"},{"campo" : "TORN_AMMVAR"},{"campo" : "TORN_PROFAS"},{"campo" : "TORN_ELEPAR"},{"campo" : "TORN_APFINFC"},
+				{"campo" : "TORN_ACCAPPUB"},{"campo" : "TORN_OGGCONT"},{"campo" : "V_GARE_TORN_OGGCONT_LAVORI"},{"campo" : "V_GARE_TORN_OGGCONT_FORNITURE"},
+				{"campo" : "GARE_TIPLAV"},{"campo" : "TORN_SOMMAUR"},{"campo" : "TORN_PROURG"},{"campo" : "TORN_PREINF"},
+				{"campo" : "TORN_DOCWEB"},{"campo" : "TORN_TERRID"},{"campo" : "GARE_SEGRETA"},{"campo" : "GARE_SUBGAR"},{"campo" : "TORN_ISGREEN"},
+				{"campo" : "TORN_ISRECYCLE"},{"campo" : "TORN_ISPNRR"},{"campo" : "TORN_NORMA1"},{"campo" : "TORN_TUS"},{"campo" : "TORN_PROGEU"},
+				{"campo" : "GARE1_PREVQUOTA"},{"campo" : "GARE1_DEROGAAQ"},{"campo" : "GARE_PROSLA"},{"campo" : "GARE1_CATMERC"},{"campo" : "GARE1_DISPOPART"},{"campo" : "GARE1_SERVILOC"},
+				{"campo" : "GARE1_ISSTRUMEL"},{"campo" : "GARE1_ACCESSI"},{"campo" : "GARE1_AFFIRIS"},{"campo" : "GARE1_ESECRIS"},{"campo" : "GARE1_MOTCOLL"},{"campo" : "TORN_MOTCIG"},{"campo" : "TORN_ISNODPCM24"},
+				{"campo" : "TORN_ISNOINIZIA"},{"campo" : "TORN_STRUMPROC"},{"campo" : "TORN_MOTESCLU"},{"campo" : "TORN_MOTESCLC"},
+				{"campo" : "TORN_FATTRA"},{"campo" : "GARE1_LOCNAZ"});
+		} else if(bloccaDopoPubblicazionePortale) {
+			arraySelect.push({"campo" : "GARE_TATTOG"},{"campo" : "TORN_TATTOT"});
+		}
+		
 		var notSelect="";
 		 $.each(arraySelect,function( index, value ) {
 			notSelect =   notSelect+":not('#"+value.campo+"')";
 			notJsPopUp = notJsPopUp+":not('#jsPopUp"+value.campo+"')";
 		 });	
-		$("select:not([id^='GARTECNI_'])" + notSelect + ":not([id^='XGARE_']):not([id^='XTORN_'])").each(function(i) {
+		$("select:not([id^='GARTECNI_'])" + notSelect + sezioniANAC + sezioniNonANAC + ":not([id^='XGARE_']):not([id^='XTORN_'])").each(function(i) {
 			$(this).attr('readonly','readonly');
 			$(this).attr('tabindex','-1');
 			$(this).css('border-colojsPopUpr','#A3A6FF');
@@ -2089,16 +2125,30 @@ function bloccaDopoPubblicazione(bloccoModificatiDati,offtel) {
 				columnclone.val($(this).val());
 			}
 		});
-		$("[id^='rowLink']:not('#rowLinkAddULTREFINC'):not('#rowLinkAddCPVCOMP')").hide();
+		var linkAddANAC = "";
+		var rowTitoloANAC = "";
+		var linkAddNonANAC = "";
+		var rowTitoloNonANAC = "";
+		if (sezioniANAC != "") {
+			linkAddANAC = ":not('#rowLinkAddG1DFINA')";
+			rowTitoloANAC = ":not([id^='rowtitoloG1DFINA'])";
+		}
+		if (sezioniNonANAC != "") {
+			linkAddNonANAC = ":not('#rowLinkAddATAU')";
+			rowTitoloNonANAC = ":not([id^='rowtitoloATAU'])";
+		}
+		$("[id^='rowLink']:not('#rowLinkAddPUBBLITERMISCR'):not('#rowLinkAddULTREFINC'):not('#rowLinkAddCPVCOMP'):not('#rowLinkAddGARECUP')"+linkAddANAC+linkAddNonANAC).hide();
 		
-		$.each($("[id^='rowtitolo']:not([id^='rowtitoloULTREFINC']):not([id^='rowtitoloCPVCOMP'])"),function( index, value ) {
+		$("[id^='elimina_VALMIN_']").hide();
+		
+		$.each($("[id^='rowtitolo']:not([id^='rowtitoloPUBBLITERMISCR_']):not([id^='rowtitoloULTREFINC']):not([id^='rowtitoloCPVCOMP']):not([id^='rowtitoloGARECUP'])" + rowTitoloANAC + rowTitoloNonANAC),function( index, value ) {
 			$(this).find("td[id^='tdTitoloDestra']").hide();
 		});	
 		
-		jQuery("input" + notInput + ":not([id^='GARTECNI_'])" + ":not([id^='XTORN_']):not([id^='XGARE_'])").bind('mousedown', function(e) {
+		jQuery("input:not([type=button])" + notInput + sezioniANAC + sezioniNonANAC + ":not([id^='PUBBTERM_']):not([id^='GARTECNI_'])" + ":not([id^='XTORN_']):not([id^='XGARE_'])").bind('mousedown', function(e) {
 			e.preventDefault();
 		});
-		$("[id^='jsPopUp']"+notJsPopUp+":not([id^='jsPopUpGARTECNI_']):not([id^='jsPopUpGARCPV_']):not([id^='jsPopUpXTORN_']):not([id^='jsPopUpXGARE_'])").hide();
+		$("[id^='jsPopUp']"+notJsPopUp+sezioniANAC+sezioniNonANAC+":not([id^='jsPopUpGARTECNI_']):not([id^='jsPopUpPUBBTERM_']):not([id^='jsPopUpGARCPV_']):not([id^='jsPopUpXTORN_']):not([id^='jsPopUpXGARE_'])").hide();
 	}
 }
 
@@ -2114,7 +2164,7 @@ function richiestaSoccorsoIstruttorio(chiaveRiga,modelloSoccoroIstruttorioConfig
 		if((bustalotti == 1 && paginaFasiGara == "aperturaOffAggProvLottoOffUnica" ) || (bustalotti == 2 && paginaFasiGara == "aggiudProvDefOffertaUnica"))
 			numeroGara = codiceGara;
 				
-		var href = contextPath + "/Lista.do?"+csrfToken+"&numModello=" + numeroModello + "&keyAdd=W_INVCOM.COMKEY1=T:" + numeroGara ;
+		var href = contextPath + "/Lista.do?numModello=" + numeroModello + "&keyAdd=W_INVCOM.COMKEY1=T:" + numeroGara ;
 		if(isGaraLottiConOffertaUnica != "true" && !(bustalotti == 1 && paginaFasiGara == "aperturaOffAggProvLottoOffUnica")){
 			href += "&keyParent=GARE.NGARA=T:" + numeroGara;
 		}else{
@@ -2129,7 +2179,7 @@ function richiestaSoccorsoIstruttorio(chiaveRiga,modelloSoccoroIstruttorioConfig
 			var entitaWSDM="GARE";
 			var chiaveWSDM=numeroGara;
 		}
-		href+="&entitaWSDM=" + entitaWSDM + "&chiaveWSDM=" + chiaveWSDM+"&"+csrfToken;
+		href+="&entitaWSDM=" + entitaWSDM + "&chiaveWSDM=" + chiaveWSDM;
 		if(idconfi){href+="&idconfi=" + idconfi;}
 		href+="&stepWizard=" + stepWizard;
 		document.location.href = href;
@@ -2182,4 +2232,131 @@ function apriPopupRipristinaValutazioneMEVAL(gara,lotto){
 function apriPopupModificaUOCompetenza(gara,entita,idconfi){
 	var href = "href=gare/wsdm/popup-aggiornaUOCompetenza-DB.jsp?gara=" + gara +"&entita=" + entita + "&idconfi=" + idconfi;
 	openPopUpCustom(href, "modificaUOCompetenza", 700, 500, "no", "no");
+}
+
+function valorizzaCentroCosto(codein, modalita){
+	var href = "href=gare/commons/popup-valorizza-centrocosto.jsp?codein="+codein+"&modalita="+modalita;
+	openPopUpCustom(href, "valorizzaCC", 850, 400, "yes", "yes");
+}
+
+function gestioneSoggettiANAC(ruolo, codgar){
+		var href = "href=gare/commons/popup-gestioneSoggettiANAC.jsp?ruolo="+ruolo+"&codgar="+codgar;
+		openPopUpCustom(href, "gestioneSoggettiANAC", 900, 400, "yes", "yes");
+}
+
+function getCodIstatImpresa(codiceNazione){
+	var result=null;
+	$.ajax({
+		type: "POST",
+		dataType: "json",
+		async: false,
+		beforeSend: function(x) {
+			if (x && x.overrideMimeType) {
+				x.overrideMimeType("application/json;charset=UTF-8");
+			}
+		},
+		url: "pg/GetISTATNazione.do",
+		data: {
+			codiceNazione: codiceNazione
+		},
+		success: function(data) {
+			if (data) {
+				result = data.codIstat;
+			}
+		},
+		error: function(e) {
+			alert("Errore durante il recupero del codice ISTAT per la nazione straniera");
+		}
+	});
+	return result;
+}
+
+function checkF12RettificaInCorso(ngara, comtipo) {
+	var result = "OK";
+	$.ajax({
+		type: "POST",
+		dataType: "json",
+		async: false,
+		beforeSend: function (x) {
+			if (x && x.overrideMimeType) {
+				x.overrideMimeType("application/json;charset=UTF-8");
+			}
+		},
+		url: "pg/CheckFS12RettificaInCorso.do",
+		data: {
+			ngara: ngara,
+			comtipo: comtipo
+		},
+		success: function (data) {
+			if (data) {
+				result = data.esitoCheckFS12Rettifica;
+			}
+		},
+		error: function (e) {
+			alert("Errore durante la verifica della presenza di eventuali comunicazioni di rettifica");
+		}
+	});
+	return result;
+}
+
+function alertFVOENonAccessibile(){
+	alert("Funzionalità non disponibile.\n" +
+		"È possibile accedere alle verifiche FVOE solo dopo aver inviato e confermato ad ANAC la scheda con l'elenco dei partecipanti o con l'esito dell'affidamento (S2, AD*, A3_6).")
+}
+
+function copyToClipboard(event, text, element) {
+	event.preventDefault();
+	navigator.clipboard.writeText(text).then(() => {
+		let tooltip = element.nextElementSibling;
+		tooltip.style.visibility = "visible";
+		setTimeout(() => {
+			tooltip.style.visibility = "hidden";
+		}, 1500);
+	});
+}
+
+function getOrganizzazioneRicorsi(codein, modo){
+	if(codein) {
+		showObj("rowORGRICORSO_NOMPUN", true);
+		var oldOrgRicorso = null;
+		var skip = false;
+		if (_codeinOrgricorso) {
+			setValue("TORN_ORGRICORSO", "");
+			setValue("ORGRICORSO_NOMPUN", "");
+		} else {
+			oldOrgRicorso = getValue("TORN_ORGRICORSO");
+			if ((oldOrgRicorso == null || oldOrgRicorso === "") && modo !== 'NUOVO')
+				skip = true;
+		}
+		_codeinOrgricorso = getValue("TORN_CENINT");
+
+		document.formOrganizzazioneRicorso.archWhereParametriLista.value = codein;
+		if (document.formPuntiContPresentazioneOfferta)
+			document.formPuntiContPresentazioneOfferta.archWhereParametriLista.value = codein;
+
+		if (!skip) {
+			$.ajax({
+				type: "GET",
+				dataType: "json",
+				async: false,
+				url: "pg/GetOrganizzazioneRicorsi.do",
+				data: {
+					codein: codein,
+					orgricorso: oldOrgRicorso
+				},
+				success: function (data) {
+					if (data.numPun) {
+						setValue("TORN_ORGRICORSO", data.numPun);
+						setValue("ORGRICORSO_NOMPUN", data.nomPun);
+					}
+				},
+
+				error: function (e) {
+					alert("Errore nella lettura dell'organizzazione dei ricorsi");
+				}
+			});
+		}
+	} else{
+		showObj("rowORGRICORSO_NOMPUN", false);
+	}
 }

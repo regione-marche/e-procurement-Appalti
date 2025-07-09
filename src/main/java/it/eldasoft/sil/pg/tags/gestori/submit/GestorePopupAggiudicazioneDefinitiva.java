@@ -12,13 +12,11 @@ package it.eldasoft.sil.pg.tags.gestori.submit;
 
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
 
@@ -132,6 +130,11 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
       ngara = impl.getString("NGARA5_1");
     else
       ngara = impl.getString("NGARA5");
+    
+    String ngaraDITG=ngara;
+    if(impl.isColumn("NGARA_PRIMOGRADO"))
+      ngara=impl.getColumn("NGARA_PRIMOGRADO").getValue().getStringValue();
+    
 
     String oldAggiudicataria = null;
 
@@ -165,6 +168,10 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
       else
         dataColumnContainerGARE.addColumn("GARE.PRIMAAGGIUDICATARIASELEZIONATA",
             impl.getColumn("PRIMAAGGIUDICATARIASELEZIONATA"));
+      if(impl.isColumn("NGARA_PRIMOGRADO")){
+        dataColumnContainerGARE.addColumn("GARE.NGARA_SECONDOGRADO",
+            JdbcParametro.TIPO_TESTO,ngaraDITG);
+      }
       
       boolean isIntegrazioneProgrammazioneException = false;
 
@@ -177,6 +184,10 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
 
         String elencoe=(String)this.sqlManager.getObject("select elencoe from gare where ngara=?", new Object[]{chiaveGara});
 
+        String aggrtcomp = null;
+        if (StringUtils.isNotEmpty(elencoe))
+          aggrtcomp = (String) sqlManager.getObject("select aggrtcomp from garealbo where ngara=? and codgar= ?", new Object[]{elencoe, "$" + elencoe});
+
         oldAggiudicataria = (String)this.sqlManager.getObject("select ditta from gare where ngara = ?", new Object[]{ngara});
 
         // Aggiornamento del campo DITG.RICSUB e DITG.IMPOFF della ditta aggiudicataria
@@ -185,7 +196,7 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
               "select CODGAR5, DITTAO, NGARA5, RICSUB, IMPOFF from DITG " +
                "where DITTAO = ? and NGARA5 = ?", new Object[]{
                 dataColumnContainerGARE.getColumn("GARE.PRIMAAGGIUDICATARIASELEZIONATA").getValue().getValue(),
-                ngara});
+                ngaraDITG});
         dataColumncontainerDITG.getColumn("DITG.CODGAR5").setChiave(true);
         dataColumncontainerDITG.getColumn("DITG.NGARA5").setChiave(true);
         dataColumncontainerDITG.getColumn("DITG.DITTAO").setChiave(true);
@@ -230,7 +241,7 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
 
         // Aggiornamento dell'occorrenza di GARE, rimuovendo prima i campi fittizi
         // quali PRIMAAGGIUDICATARIASELEZIONATA
-        dataColumnContainerGARE.removeColumns(new String[]{"GARE.PRIMAAGGIUDICATARIASELEZIONATA"});
+        dataColumnContainerGARE.removeColumns(new String[]{"GARE.PRIMAAGGIUDICATARIASELEZIONATA","GARE.NGARA_SECONDOGRADO"});
         dataColumnContainerGARE.update("GARE", this.getSqlManager());
 
         //Aggiornamento dati atto di aggiudicazione
@@ -280,10 +291,20 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
             numcla = (Long)((JdbcParametro) datiCatg.get(1)).getValue();
           }
 
-          String codiceDittaElenco = this.pgManager.getDittaSelezionataDaElenco(codiceDitta,chiaveGara);
-          stazioneAppaltante = (String)this.sqlManager.getObject("select cenint from torn where codgar=?", new Object[]{codgar});
-          if(codiceDittaElenco!=null){
-            this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, elencoe, codiceDittaElenco, catiga, tipoGara, numcla, stazioneAppaltante, tipoalgo, "INS");
+          Long tipimp = (Long) sqlManager.getObject("select tipimp from impr where codimp=?", new Object[] {codiceDitta});
+          if ("1".equals(aggrtcomp) && Arrays.asList(3L,10L).contains(tipimp)) {
+            aggiudicazioneManager.controlloDitteNonInElenco(codiceDitta,codiceElenco, elencoe);
+            List<Vector<?>> listaDitteDelRT = sqlManager.getListVector("select coddic from ragimp where codime9=?", new Object[] {codiceDitta});
+            for (Vector<?> dittaDelRT : listaDitteDelRT) {
+              String coddic = ((JdbcParametro) dittaDelRT.get(0)).getStringValue();
+              this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, elencoe, coddic, catiga, tipoGara, numcla, stazioneAppaltante, tipoalgo, "INS");
+            }
+          } else {
+            String codiceDittaElenco = this.pgManager.getDittaSelezionataDaElenco(codiceDitta, chiaveGara);
+            stazioneAppaltante = (String) this.sqlManager.getObject("select cenint from torn where codgar=?", new Object[]{codgar});
+            if (codiceDittaElenco != null) {
+              this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, elencoe, codiceDittaElenco, catiga, tipoGara, numcla, stazioneAppaltante, tipoalgo, "INS");
+            }
           }
         }
 
@@ -370,7 +391,7 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
               iaggiu=0;
 
             double impgar = aggiudicazioneManager.calcolaImportoGaranzia(iaggiu, ribauo, tipgen,
-                ridiso.equals("1"));
+                ridiso.equals("1"),ngara);
 
             elencoCampi.add(new DataColumn("DITGAQ.IMPGAR", new JdbcParametro(JdbcParametro.TIPO_DECIMALE, new Double(impgar))));
 
@@ -392,7 +413,14 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
             //ditta che poi sarà presente anche in DITGAQ, quindi quando si effettua il conteggio, tale ditta va considerata una solo volta
             if(elencoe!=null && !"".equals(elencoe) && dattoa!=null  && !codiceDitta.equals(ditta)){
               codiceDittaElencoDitgaq = this.pgManager.getDittaSelezionataDaElenco(ditta,chiaveGara);
-              if(codiceDittaElencoDitgaq!=null){
+              Long tipimp = (Long) sqlManager.getObject("select tipimp from impr where codimp=?", new Object[] {ditta});
+              if ("1".equals(aggrtcomp) && Arrays.asList(3L,10L).contains(tipimp)) {
+                List<Vector<?>> listaDitteDelRT = sqlManager.getListVector("select coddic from ragimp where codime9=?", new Object[] {ditta});
+                for (Vector<?> dittaDelRT : listaDitteDelRT) {
+                  String coddic = ((JdbcParametro) dittaDelRT.get(0)).getStringValue();
+                  this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, elencoe, coddic, catiga, tipoGara, numcla, stazioneAppaltante, tipoalgo, "INS");
+                }
+              } else if (codiceDittaElencoDitgaq!=null) {
                 this.pgManager.aggiornaNumAggiudicazioni(codiceElenco, elencoe, codiceDittaElencoDitgaq, catiga, tipoGara, numcla, stazioneAppaltante, tipoalgo, "INS");
               }
             }
@@ -655,7 +683,7 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
               contspe = SqlManager.getValueFromVectorParam(datiGarecont, 1).getStringValue();
             }
 
-            if("1".equals(aqoper) && !(new Long(3).equals(altrisog))){
+            if(false && "1".equals(aqoper) && !(new Long(3).equals(altrisog))){ //APP-1926 dismesso campo esecscig
               if("".equals(esecscig)){
                 esecscig="1";
               }
@@ -739,6 +767,11 @@ public class GestorePopupAggiudicazioneDefinitiva extends AbstractGestoreEntita 
         }
         errMsgEvento = "";
 
+      } catch (GestoreException e) {
+        livEvento = 3;
+        this.getRequest().setAttribute("RISULTATO", "ERRORI");
+        errMsgEvento = e.getMessage();
+        throw e;
       } catch (Throwable e) {
         livEvento = 3;
         this.getRequest().setAttribute("RISULTATO", "ERRORI");

@@ -123,7 +123,7 @@
 			}
 			window.opener.document.forms[0].CENTRICOSTO_DENOMCENTRO.value = denom;
 			if(${empty sessionScope.uffint}){
-				window.opener.document.getElementById("UFFINT_CFEINview").innerText = cfein;
+				window.opener.document.getElementById("CFEINview").innerText = cfein;
 				window.opener.document.getElementById("UFFINT_NOMEINview").innerText = nomein;
 			}
 			window.opener.document.getElementById("CENTRICOSTO_CODCENTROview").innerText = codcc;

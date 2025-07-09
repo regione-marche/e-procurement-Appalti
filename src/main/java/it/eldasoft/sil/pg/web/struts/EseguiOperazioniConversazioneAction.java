@@ -84,6 +84,7 @@ public class EseguiOperazioniConversazioneAction extends Action {
         // DISCID == -1 (messaggio fittizio).
         String selectW_DISCUSS_P = "select discdesttype from w_discuss_p where discid_p = ?";
         String selectG_PERMESSI = "select syscon from g_permessi where (codgar = ? or codgar = ?) and syscon <> ?";
+        String selectG_PERMESSI_STIPULA = "select syscon from g_permessi where CAST(idstipula as varchar(12))=? and syscon <> ?";
         String selectW_DISCDEST = "select destid, destname, destmail from w_discdest where discid_p = ? and discid = ?";
         String deleteW_DISCDEST = "delete from w_discdest where discid_p = ? and discid = ?";
         String insertW_DISCDEST = "insert into w_discdest (discid_p, discid, destnum, destid, destname, destmail) values (?,?,?,?,?,?)";
@@ -93,18 +94,25 @@ public class EseguiOperazioniConversazioneAction extends Action {
         this.sqlManager.update(deleteW_DISCDEST, new Object[] {discid_p, discid});
         
         if (DESTINATARI_TUTTI.equals(discdesttype)) {
-          String codgar = (String) this.sqlManager.getObject("select disckey1 from w_discuss_p where discid_p = ?",
-              new Object[] { discid_p });
-          List<?> datiG_PERMESSI = this.sqlManager.getListVector(selectG_PERMESSI, new Object[] { codgar, "$" + codgar, syscon });
-          for (int p = 0; p < datiG_PERMESSI.size(); p++) {
-            Long g_permessi_syscon = (Long) SqlManager.getValueFromVectorParam(datiG_PERMESSI.get(p), 0).getValue();
-            String operatoreNome = (String) this.sqlManager.getObject("select sysute from usrsys where syscon = ?",
-                new Object[] { g_permessi_syscon });
-            String operatoreEMail = (String) this.sqlManager.getObject("select email from usrsys where syscon = ?",
-                new Object[] { g_permessi_syscon });
-            if (operatoreNome != null && !"".equals(operatoreNome.trim()) && operatoreEMail != null && !"".equals(operatoreEMail)) {
-              this.sqlManager.update(insertW_DISCDEST, new Object[] { discid_p, discid, new Long(p + 1), g_permessi_syscon, operatoreNome,
-                  operatoreEMail });
+          List<?> datiG_PERMESSI = null;
+          List<?> datiW_DISCUSS = this.sqlManager.getListVector("select disckey1, discent from w_discuss_p where discid_p = ?",new Object[] { discid_p });
+          if(datiW_DISCUSS!=null && datiW_DISCUSS.size()>0) {
+            String disckey1 = (String) SqlManager.getValueFromVectorParam(datiW_DISCUSS.get(0), 0).getValue();
+            String discent = (String) SqlManager.getValueFromVectorParam(datiW_DISCUSS.get(0), 1).getValue();
+            if("G1STIPULA".equals(discent))
+              datiG_PERMESSI = this.sqlManager.getListVector(selectG_PERMESSI_STIPULA, new Object[] {disckey1, syscon });
+            else
+              datiG_PERMESSI = this.sqlManager.getListVector(selectG_PERMESSI, new Object[] {disckey1, "$" + disckey1, syscon });
+            for (int p = 0; p < datiG_PERMESSI.size(); p++) {
+              Long g_permessi_syscon = (Long) SqlManager.getValueFromVectorParam(datiG_PERMESSI.get(p), 0).getValue();
+              String operatoreNome = (String) this.sqlManager.getObject("select sysute from usrsys where syscon = ?",
+                  new Object[] { g_permessi_syscon });
+              String operatoreEMail = (String) this.sqlManager.getObject("select email from usrsys where syscon = ?",
+                  new Object[] { g_permessi_syscon });
+              if (operatoreNome != null && !"".equals(operatoreNome.trim()) && operatoreEMail != null && !"".equals(operatoreEMail)) {
+                this.sqlManager.update(insertW_DISCDEST, new Object[] { discid_p, discid, new Long(p + 1), g_permessi_syscon, operatoreNome,
+                    operatoreEMail });
+              }
             }
           }
         } else if (DESTINATARI_ALCUNI.equals(discdesttype)) {

@@ -756,7 +756,7 @@ public class AurManager {
 	      LoggerImportOffertaPrezzi loggerImport = new LoggerImportOffertaPrezzi();
 
 	      try {
-	        importExportOffertaPrezziManager.creazioneLotti(mappaCodiciLotti, ngara, loggerImport, tipoFornitura,mappaDescrizioniLotti,null,null);
+	        importExportOffertaPrezziManager.creazioneLotti(mappaCodiciLotti, ngara, loggerImport, tipoFornitura,mappaDescrizioniLotti,null,null,null);
 	      } catch (GestoreException e) {
             logger.error("Errore nell'inserimento dei lotti", e);
             throw new SQLException();

@@ -55,6 +55,7 @@ public class VisualizzaPermessiUtentiRicercaMercatoAction extends DispatchAction
 		String codein = request.getParameter("codein");
 		String genereGara = request.getParameter("genereGara");
         String codric = request.getParameter("codric");
+        String uffint = (String) request.getSession().getAttribute("uffint");
 		
 		try {
 		  request.getSession().setAttribute("id", id);
@@ -70,7 +71,7 @@ public class VisualizzaPermessiUtentiRicercaMercatoAction extends DispatchAction
 	          CostantiGenerali.PROFILO_UTENTE_SESSIONE)).getId();
 		  
 		  if (this.permessiManager.hasAccountCondivisionePredefinita(
-				new Integer(utenteDiRiferimento), CostantiPermessi.VALORE_DEFAULT_PREDEFINITO_GARE)) {
+				new Integer(utenteDiRiferimento), CostantiPermessi.VALORE_DEFAULT_PREDEFINITO_GARE, uffint)) {
 		    request.setAttribute("esisteCondivisionePredefinita", "1");
 		  }
 		  
@@ -115,6 +116,7 @@ public class VisualizzaPermessiUtentiRicercaMercatoAction extends DispatchAction
 		String messageKey = null;
 
 		try {
+		    String uffint = (String) request.getSession().getAttribute("uffint");
 			String valoreChiave = request.getParameter("codgar");
 			if (valoreChiave == null)
 				valoreChiave = (String) request.getAttribute("codgar");
@@ -139,7 +141,7 @@ public class VisualizzaPermessiUtentiRicercaMercatoAction extends DispatchAction
 					try {
 						this.permessiManager.insertPermessiPredefiniti("codgar", valoreChiave,
 							new Integer(utenteDiRiferimento), CostantiPermessi.VALORE_DEFAULT_PREDEFINITO_GARE,
-							listaPermessiEntita);
+							listaPermessiEntita, uffint);
 						inserito = true;
 					} catch (DataIntegrityViolationException div) {
 						if (numeroTentativi < CostantiGenerali.NUMERO_MAX_TENTATIVI_INSERT) {

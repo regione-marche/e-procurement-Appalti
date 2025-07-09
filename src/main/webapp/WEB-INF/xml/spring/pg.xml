@@ -59,6 +59,7 @@
 				<prop key="controlloEsistenzaDittaElencoGara">PROPAGATION_REQUIRED,-it.eldasoft.gene.web.struts.tags.gestori.GestoreException</prop>
 				<prop key="aggiornaStatoW_INVOCM">PROPAGATION_REQUIRED</prop>
 				<prop key="controllaDatiAVCP">PROPAGATION_SUPPORTS</prop>
+				<prop key="aggiornaFaseGara">PROPAGATION_REQUIRED,-it.eldasoft.gene.web.struts.tags.gestori.GestoreException</prop>
 				<prop key="*">PROPAGATION_SUPPORTS</prop>
 			</props>
 		</property>
@@ -88,6 +89,10 @@
 		<property name="tabellatiManager" ref="tabellatiManager" />
 		<property name="genChiaviManager" ref="genChiaviManager" />
 		<property name="inviaDatiRichiestaCigManager" ref="inviaDatiRichiestaCigManager" />
+		<property name="gestioneRegioneMarcheManager" ref="gestioneRegioneMarcheManager" />
+		<property name="gestionePATManager" ref="gestionePATManager" />
+		<property name="inviaVigilanzaManager" ref="inviaVigilanzaManager" />
+		<property name="scpManager" ref="scpManager" />
 	</bean>
 		
 	<bean name="acquisisciRegistrazioniPortaleManager" class="it.eldasoft.sil.pg.bl.tasks.AcquisisciRegistrazioniPortaleManager">
@@ -216,6 +221,15 @@
 			</bean>
 		</property>
 	</bean>
+
+	<bean id="exportLottiPartecipantiManager" parent="importExportExcelManagerTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.pg.bl.ExportLottiPartecipantiManager" >
+				<property name="sqlDao" ref="sqlDao" />
+				<property name="tabellatiManager" ref="tabellatiManager" />
+			</bean>
+		</property>
+	</bean>
 	
 	<bean id="importExportDitteGaraManager" parent="importExportExcelManagerTransactionProxy" > 
 		<property name="target">
@@ -320,6 +334,43 @@
 				<property name="gestioneWSDMManager" ref="gestioneWSDMManager" />
 				<property name="pgManagerEst1" ref="pgManagerEst1" />
 			</bean>
+		</property>
+	</bean>
+	
+		<bean id="conservazioneDocumentiAggiudicatariManagerTransactionProxy"
+				class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"
+				abstract="true">
+		<property name="transactionManager" ref="transactionManager" />
+		<property name="transactionAttributes">
+			<props>
+				<prop key="insert*">PROPAGATION_REQUIRED</prop>
+				<prop key="update*">PROPAGATION_REQUIRED</prop>
+				<prop key="aggiungi*">PROPAGATION_REQUIRED</prop>
+			</props>
+		</property>
+	</bean>
+
+	<bean id="conservazioneDocumentiAggiudicatariManager" parent="conservazioneDocumentiAggiudicatariManagerTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.pg.bl.tasks.ConservazioneDocumentiAggiudicatariManager" >
+				<property name="sqlManager" ref="sqlManager" />
+				<property name="genChiaviManager" ref="genChiaviManager" />
+				<property name="gestioneWSDMManager" ref="gestioneWSDMManager" />
+			</bean>
+		</property>
+	</bean>   
+	
+    <bean id="conservazioneDocumentiAggiudicatarioJob"
+				class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="conservazioneDocumentiAggiudicatariManager" />
+		<property name="targetMethod" value="aggiungiInformazioniDocumentoWSDM" />
+		<property name="concurrent" value="false"/>
+	</bean>
+        
+    <bean id="conservazioneDocumentiAggiudicatarioTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="conservazioneDocumentiAggiudicatarioJob" />
+		<property name="cronExpression">
+            <value>0 4/5 * * * ? 2099</value>
 		</property>
 	</bean>
 	
@@ -501,9 +552,18 @@
 		<property name="archiviazioneDocumentiManager" ref="archiviazioneDocumentiManager" />
 		<property name="sqlManager" ref="sqlManager" />
 		<property name="gestioneWSDMManager" ref="gestioneWSDMManager" />
+		<property name="analizzaArchiviazioneDocumentiManager" ref="analizzaArchiviazioneDocumentiManager" />
+	</bean>
+
+	<bean name="archiviaDocumentiDigiPTask" class="it.eldasoft.sil.pg.bl.tasks.ArchiviaDocumentiDigiPTask" >
+		<property name="creazioneArchivioDocumentiGaraManager" ref="creazioneArchivioDocumentiGaraManager" />
+		<property name="archiviazioneDocumentiManager" ref="archiviazioneDocumentiManager" />
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="analizzaArchiviazioneDocumentiManager" ref="analizzaArchiviazioneDocumentiManager" />
+		<property name="fileAllegatoManager" ref="fileAllegatoManager"/>
 	</bean>
 	
-        <bean name="generazioneInvioIndiceCOSTask" class="it.eldasoft.sil.pg.bl.tasks.GenerazioneInvioIndiceCOSTask" >
+	<bean name="generazioneInvioIndiceCOSTask" class="it.eldasoft.sil.pg.bl.tasks.GenerazioneInvioIndiceCOSTask" >
 		<property name="archiviazioneDocumentiManager" ref="archiviazioneDocumentiManager" />
 		<property name="sqlManager" ref="sqlManager" />
 		<property name="fileAllegatoManager" ref="fileAllegatoManager" />
@@ -522,6 +582,20 @@
 			<value>0 0/5 * * * ?</value>
 		</property>
 	</bean>
+
+	<bean id="archiviaDocumentiDigiPJob"
+		  class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="archiviaDocumentiDigiPTask" />
+		<property name="targetMethod" value="archiviaDocumenti" />
+		<property name="concurrent" value="false"/>
+	</bean>
+
+	<bean id="archiviaDocumentiDigiPTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="archiviaDocumentiDigiPJob" />
+		<property name="cronExpression">
+			<value>0 0/5 * * * ?</value>
+		</property>
+	</bean>
 	
     <bean id="generazioneInvioIndiceCOSJob"
 				class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
@@ -529,6 +603,7 @@
 		<property name="targetMethod" value="generazioneInvioIndiceCOS" />
 		<property name="concurrent" value="false"/>
 	</bean>
+
         
     <bean id="generazioneInvioIndiceCOSTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
 		<property name="jobDetail" ref="generazioneInvioIndiceCOSJob" />
@@ -814,6 +889,17 @@
 		<property name="genChiaviManager" ref="genChiaviManager" />
 	</bean>
 	
+	<bean id="npaManager" class="it.eldasoft.sil.pg.bl.npa.NpaManager" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="npaFunzioniManager" ref="npaFunzioniManager" />
+	</bean>
+	
+	<bean id="npaFunzioniManager" class="it.eldasoft.sil.pg.bl.npa.NpaFunzioniManager" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="inviaVigilanzaManager" ref="inviaVigilanzaManager" />
+		<property name="pgManagerEst1" ref="pgManagerEst1" />
+	</bean>
+	
 	<bean id="mepaManagerTransactionProxy"
 				class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"
 				abstract="true">
@@ -1091,7 +1177,7 @@
 		</property>
 	</bean>
 	
-	<bean id="gestioneATCManagerTransactionProxy"
+	<bean id="gestionePATManagerTransactionProxy"
 		class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"
 		abstract="true">
 		<property name="transactionManager" ref="transactionManager" />
@@ -1104,11 +1190,12 @@
 		</property>
 	</bean>
 	
-	<bean id="gestioneATCManager" parent="gestioneATCManagerTransactionProxy" >
+	<bean id="gestionePATManager" parent="gestionePATManagerTransactionProxy" >
 		<property name="target">
-			<bean class="it.eldasoft.sil.pg.bl.GestioneATCManager" >
+			<bean class="it.eldasoft.sil.pg.bl.GestionePATManager" >
 				<property name="sqlManager" ref="sqlManager" />
 				<property name="pgManagerEst1" ref="pgManagerEst1" />
+				<property name="genChiaviManager" ref="genChiaviManager" />
 			</bean>
 		</property>
 	</bean>
@@ -1178,11 +1265,33 @@
 		</property>
 	</bean>
 	
+	<bean name="acquisisciAggiornamentiERPAnagraficaManager" class="it.eldasoft.sil.pg.bl.tasks.AcquisisciAggiornamentiERPAnagraficaManager">
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
+		<property name="saceERPManager" ref="saceERPManager" />
+	</bean>
+	
+	<bean id="acqAggERPAnagraficaJob" class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="acquisisciAggiornamentiERPAnagraficaManager" />
+		<property name="targetMethod" value="acquisisciAggiornamentiERPAnagrafica" />
+		<property name="concurrent" value="false"/>
+	</bean>
+	
+	<bean id="acquisisciAggiornamentiERPAnagraficaTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="acqAggERPAnagraficaJob" />
+		<property name="cronExpression">
+			<value>0 0 0 1 1 ? 2099</value>
+		</property>
+	</bean>
+	
 	<bean name="aggiornaERPStatoGaraManager" class="it.eldasoft.sil.pg.bl.tasks.AggiornaERPStatoGaraManager">
 		<property name="sqlManager" ref="sqlManager" />
 		<property name="gestioneWSDMManager" ref="gestioneWSDMManager" />
 		<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
 		<property name="fileAllegatoManager" ref="fileAllegatoManager" />
+		<property name="inarcassaWSERPManager" ref="inarcassaWSERPManager" />
+		<property name="coniWSERPManager" ref="coniWSERPManager" />
+		<property name="eusisWSERPManager" ref="eusisWSERPManager" />
 	</bean>
 
 	<bean id="aggERPStatoGaraJob" class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
@@ -1193,6 +1302,92 @@
 
 	<bean id="aggiornaERPStatoGaraTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
 		<property name="jobDetail" ref="aggERPStatoGaraJob" />
+		<property name="cronExpression">
+			<value>0 0 0 1 1 ? 2099</value>
+		</property>
+	</bean>
+	
+	<bean name="trasferisciFileAlDocumentaleTask" class="it.eldasoft.sil.pg.bl.tasks.TrasferisciFileAlDocumentaleTask">
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="archiviazioneDocumentiManager" ref="archiviazioneDocumentiManager" />
+	</bean>
+
+	<bean id="trasferisciFileAlDocumentaleJob" class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="trasferisciFileAlDocumentaleTask" />
+		<property name="targetMethod" value="trasferisciFileAlDocumentale" />
+		<property name="concurrent" value="false"/>
+	</bean>
+
+	<bean id="trasferisciFileAlDocumentaleTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="trasferisciFileAlDocumentaleJob" />
+		<property name="cronExpression">
+			<value>0 0 0 1 1 ? 2099</value>
+		</property>
+	</bean>
+	
+	<bean name="inviaCigNewADCTask" class="it.eldasoft.sil.pg.bl.tasks.inviaCigNewADCTask">
+		<property name="newAdcManager" ref="newAdcManager" />
+	</bean>
+
+	<bean id="inviaCigNewADCJob" class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="inviaCigNewADCTask" />
+		<property name="targetMethod" value="inviaCigNewADC" />
+		<property name="concurrent" value="false"/>
+	</bean>
+
+	<bean id="inviaCigNewADCTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="inviaCigNewADCJob" />
+		<property name="cronExpression">
+			<value>0 0 0 1 1 ? 2099</value>
+		</property>
+	</bean>
+	
+	<bean name="inviaDocumentiNewADCTask" class="it.eldasoft.sil.pg.bl.tasks.inviaDocumentiNewADCTask">
+		<property name="newAdcManager" ref="newAdcManager" />
+	</bean>
+
+	<bean id="inviaDocumentiNewADCJob" class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="inviaDocumentiNewADCTask" />
+		<property name="targetMethod" value="inviaDocumentiNewADC" />
+		<property name="concurrent" value="false"/>
+	</bean>
+
+	<bean id="inviaDocumentiNewADCTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="inviaDocumentiNewADCJob" />
+		<property name="cronExpression">
+			<value>0 0 0 1 1 ? 2099</value>
+		</property>
+	</bean>
+	
+	<bean name="inviaRupNewADCTask" class="it.eldasoft.sil.pg.bl.tasks.inviaRupNewADCTask">
+		<property name="newAdcManager" ref="newAdcManager" />
+	</bean>
+
+	<bean id="inviaRupNewADCJob" class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="inviaRupNewADCTask" />
+		<property name="targetMethod" value="inviaRupNewADC" />
+		<property name="concurrent" value="false"/>
+	</bean>
+
+	<bean id="inviaRupNewADCTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="inviaRupNewADCJob" />
+		<property name="cronExpression">
+			<value>0 0 0 1 1 ? 2099</value>
+		</property>
+	</bean>
+	
+	<bean name="allineaCigNewADCTask" class="it.eldasoft.sil.pg.bl.tasks.allineaCigNewADCTask">
+		<property name="newAdcManager" ref="newAdcManager" />
+	</bean>
+	
+	<bean id="allineaCigNewADCJob" class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="allineaCigNewADCTask" />
+		<property name="targetMethod" value="allineaCigNewADC" />
+		<property name="concurrent" value="false"/>
+	</bean>
+
+	<bean id="allineaCigNewADCTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="allineaCigNewADCJob" />
 		<property name="cronExpression">
 			<value>0 0 0 1 1 ? 2099</value>
 		</property>
@@ -1268,6 +1463,16 @@
 		</property>
 	</bean>
 	
+	<bean id="siglaWSERPManager" parent="erpManagerTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.pg.bl.erp.SiglaWSERPManager" >
+				<property name="sqlManager" ref="sqlManager" />
+				<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
+				<property name="fileAllegatoManager" ref="fileAllegatoManager" />
+			</bean>
+		</property>
+	</bean>
+	
 	<bean id="raiWSERPManager" parent="erpManagerTransactionProxy" >
 		<property name="target">
 			<bean class="it.eldasoft.sil.pg.bl.erp.RaiWSERPManager" >
@@ -1292,6 +1497,45 @@
 			<bean class="it.eldasoft.sil.pg.bl.erp.RaiwayWSERPManager" >
 				<property name="sqlManager" ref="sqlManager" />
 				<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
+				<property name="geneManager" ref="geneManager" />
+			</bean>
+		</property>
+	</bean>
+	
+	<bean id="saceERPManager" parent="erpManagerTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.pg.bl.erp.SaceERPManager" >
+				<property name="sqlManager" ref="sqlManager" />
+				<property name="genChiaviManager" ref="genChiaviManager" />
+			</bean>
+		</property>
+	</bean>
+	
+	<bean id="inarcassaWSERPManager" parent="erpManagerTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.pg.bl.erp.InarcassaWSERPManager" >
+				<property name="sqlManager" ref="sqlManager" />
+				<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
+				<property name="geneManager" ref="geneManager" />
+			</bean>
+		</property>
+	</bean>
+	
+	<bean id="coniWSERPManager" parent="erpManagerTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.pg.bl.erp.ConiWSERPManager" >
+				<property name="sqlManager" ref="sqlManager" />
+				<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
+				<property name="geneManager" ref="geneManager" />
+			</bean>
+		</property>
+	</bean>
+	
+	<bean id="eusisWSERPManager" parent="erpManagerTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.pg.bl.erp.EusisWSERPManager" >
+				<property name="sqlManager" ref="sqlManager" />
+				<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
 			</bean>
 		</property>
 	</bean>
@@ -1314,7 +1558,141 @@
 		</property>
 	</bean>
 	
+	<bean name="verificaRegolaritaManager" class="it.eldasoft.sil.pg.bl.tasks.VerificaRegolaritaManager">
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="genChiaviManager" ref="genChiaviManager" />
+	</bean>
 	
+	<bean id="verificaRegolaritaManagerJob" class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="verificaRegolaritaManager" />
+		<property name="targetMethod" value="verificaRegolarita" />
+		<property name="concurrent" value="false"/>
+	</bean>
+
+	<bean id="verificaRegolaritaManagerTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="verificaRegolaritaManagerJob" />
+		<property name="cronExpression">
+			<value>0 0 0 1 1 ? 2099</value>
+		</property>
+	</bean>
+	
+	<bean name="richiestaDURCManager" class="it.eldasoft.sil.pg.bl.tasks.RichiestaDURCManager">
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="genChiaviManager" ref="genChiaviManager" />
+	</bean>
+	
+	<bean id="richiestaDURCManagerJob" class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="richiestaDURCManager" />
+		<property name="targetMethod" value="richiestaDURC" />
+		<property name="concurrent" value="false"/>
+	</bean>
+
+	<bean id="richiestaDURCManagerTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="richiestaDURCManagerJob" />
+		<property name="cronExpression">
+			<value>0 0 0 1 1 ? 2099</value>
+		</property>
+	</bean>
+	
+	<bean name="scadenzaTerminiPatManager" class="it.eldasoft.sil.pg.bl.tasks.ScadenzaTerminiPatManager">
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="gestionePATManager" ref="gestionePATManager" />
+	</bean>
+	
+	<bean id="scadenzaTerminiPatManagerJob" class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="scadenzaTerminiPatManager" />
+		<property name="targetMethod" value="verificaScadenzaTerminiPAT" />
+		<property name="concurrent" value="false"/>
+	</bean>
+	
+	<bean id="scadenzaTerminiPatManagerTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="scadenzaTerminiPatManagerJob" />
+		<property name="cronExpression">
+			<value>0 0 0 1 1 ? 2099</value>
+		</property>
+	</bean>
+	
+	<bean name="invioNotificheComunicazioniManager" class="it.eldasoft.sil.pg.bl.tasks.InvioNotificheComunicazioniManager">
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="mailManager" ref="mailManager" />
+	</bean>
+	
+	<bean id="invioNotificheComunicazioniManagerJob" class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="invioNotificheComunicazioniManager" />
+		<property name="targetMethod" value="inviaNotificheComunicazioni" />
+		<property name="concurrent" value="false"/>
+	</bean>
+	
+	<bean id="invioNotificheComunicazioniTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="invioNotificheComunicazioniManagerJob" />
+		<property name="cronExpression">
+			<value>0 0 0 1 1 ? 2099</value>
+		</property>
+	</bean>
+	
+	<bean id="scambioDatiPCPManagerTransactionProxy"
+				class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"
+				abstract="true">
+		<property name="transactionManager" ref="transactionManager" />
+		<property name="transactionAttributes">
+			<props>
+				<prop key="service*">PROPAGATION_REQUIRED</prop>
+				<prop key="update*">PROPAGATION_REQUIRED</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<bean id="scambioDatiPCPManager" parent="scambioDatiPCPManagerTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.pg.bl.npa.ScambioDatiPCPManager">
+				<property name="sqlManager" ref="sqlManager" />
+				<property name="fileAllegatoManager" ref="fileAllegatoManager" />
+				<property name="npaFunzioniManager" ref="npaFunzioniManager" />
+				<property name="pgManager" ref="pgManager" />
+				<property name="pgManagerEst1" ref="pgManagerEst1" />
+				<property name="tabellatiManager" ref="tabellatiManager" />
+				<property name="geneManager" ref="geneManager" />
+				<property name="genChiaviManager" ref="genChiaviManager" />
+				<property name="validazioneManipolazioneEFormManager" ref="validazioneManipolazioneEFormManager" />
+				<property name="gestisciInvioFEUManager" ref="gestisciInvioFEUManager" />
+			</bean>
+		</property>
+	</bean>
+	
+	<bean id="gestisciInvioFEUManager" class="it.eldasoft.sil.pg.bl.npa.GestisciInvioFEUManager" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="fileAllegatoManager" ref="fileAllegatoManager" />
+		<property name="npaFunzioniManager" ref="npaFunzioniManager" />
+	</bean>
+	
+	<bean id="newAdcManager" class="it.eldasoft.sil.pg.bl.nadc.NewAdcManager" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="fileAllegatoManager" ref="fileAllegatoManager" />
+	</bean>
+
+	<bean id="validazioneManipolazioneEFormManager" class="it.eldasoft.sil.pg.bl.ValidazioneManipolazioneEFormManager" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="fileAllegatoManager" ref="fileAllegatoManager" />
+	</bean>
+	
+	<bean id="gestioneJSONEformManager" class="it.eldasoft.sil.pg.ws.rest.eforms.bl.GestioneJSONEformManager" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="inviaVigilanzaManager" ref="inviaVigilanzaManager" />
+	</bean>
+	<bean id="formatoDiGestioneJSONEformManager" class="it.eldasoft.sil.pg.ws.rest.eforms.bl.FormatoDiGestioneJSONEformManager" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="inviaVigilanzaManager" ref="inviaVigilanzaManager" />
+	</bean>
+	
+	<bean id="exportEForm" class="it.eldasoft.sil.pg.ws.rest.eforms.export.ExportEForm" >
+		<property name="gestioneJSONEformManager" ref="gestioneJSONEformManager" />
+	</bean>
+	<bean id="formatoExportEForm" class="it.eldasoft.sil.pg.ws.rest.eforms.export.FormatoExportEForm" >
+		<property name="formatoDiGestioneJSONEformManager" ref="formatoDiGestioneJSONEformManager" />
+	</bean>
+		
+	
+
 	<!-- ========================= STRUTS ACTION DEFINITIONS ========================= -->
 	
 	<bean name="/pg/SetProfiloVisualizzaGare" class="it.eldasoft.sil.pg.web.struts.SetProfiloVisualizzaGareAction">
@@ -1367,6 +1745,10 @@
 	
 	<bean name="/pg/EseguiExportLottiGara" class="it.eldasoft.sil.pg.web.struts.EseguiExportLottiGaraAction">
 		<property name="importExportLottiGaraManager" ref="importExportLottiGaraManager"/>
+	</bean>
+
+	<bean name="/pg/EseguiExportLottiPartecipanti" class="it.eldasoft.sil.pg.web.struts.EseguiExportLottiPartecipantiAction">
+		<property name="exportLottiPartecipantiManager" ref="exportLottiPartecipantiManager"/>
 	</bean>
 	
 	<bean name="/pg/EseguiExportOperatoriIscritti" class="it.eldasoft.sil.pg.web.struts.EseguiExportOperatoriIscrittiAction">
@@ -1455,6 +1837,7 @@
 	
 	<bean name="/pg/InviaRichiestaExportDocumenti" class="it.eldasoft.sil.pg.web.struts.InviaRichiestaExportDocumentiAction">
 		<property name="creazioneArchivioDocumentiGaraManager" ref="creazioneArchivioDocumentiGaraManager" />
+    <property name="sqlManager" ref="sqlManager" />
 	</bean>
 	
 	<bean name="/pg/DownloadFile" class="it.eldasoft.sil.pg.web.struts.DownloadFileAction">
@@ -1587,6 +1970,8 @@
 		<property name="pgManager" ref="pgManager" />
 		<property name="mepaManager" ref="mepaManager" />
 		<property name="pgManagerEst1" ref="pgManagerEst1" />
+		<property name="tabellatiManager" ref="tabellatiManager" />
+		<property name="genChiaviManager" ref="genChiaviManager" />
 	</bean>	
 	
 	<bean name="/pg/AnalisiDocumentiDGUE" class="it.eldasoft.sil.pg.web.struts.AnalisiDocumentiDGUEAction">
@@ -1644,11 +2029,20 @@
 		<property name="sqlManager" ref="sqlManager" />
 	</bean>
 	
+	<bean name="/pg/GetRettificaTerminiPCP" class="it.eldasoft.sil.pg.web.struts.GetRettificaTerminiPCPAction" >
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+	
 	<bean name="/pg/GetCigAssegnatiCancellati" class="it.eldasoft.sil.pg.web.struts.GetCigAssegnatiCancellatiAction" >
 		<property name="sqlManager" ref="sqlManager" />
 	</bean>
 	
 	<bean name="/pg/GetStoricoRisposte" class="it.eldasoft.sil.pg.web.struts.GetStoricoRisposteAction" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="tabellatiManager" ref="tabellatiManager" />
+	</bean>
+
+	<bean name="/pg/GetStoricoInoltri" class="it.eldasoft.sil.pg.web.struts.GetStoricoInoltriAction" >
 		<property name="sqlManager" ref="sqlManager" />
 		<property name="tabellatiManager" ref="tabellatiManager" />
 	</bean>
@@ -1724,12 +2118,14 @@
 		<property name="sqlManager" ref="sqlManager" />
 		<property name="gestioneWSDMManager" ref="gestioneWSDMManager" />
 		<property name="pgManagerEst1" ref="pgManagerEst1" />
+		<property name="fileAllegatoManager" ref="fileAllegatoManager" />
 	</bean>
 	
 	<bean name="/pg/ProtocollaComunicazione" class="it.eldasoft.sil.pg.web.struts.ProtocollaComunicazioneAction">
 		<property name="sqlManager" ref="sqlManager" />
 		<property name="gestioneWSDMManager" ref="gestioneWSDMManager" />
 		<property name="fileAllegatoManager" ref="fileAllegatoManager" />
+		<property name="tabellatiManager" ref="tabellatiManager" />
 	</bean>
 	
 	<bean name="/pg/GetWSDMDocumentoAllegato" class="it.eldasoft.sil.pg.web.struts.GetWSDMDocumentoAllegatoAction">
@@ -1827,7 +2223,28 @@
 		
 	<bean name="/pg/AvanzamentoApDocAJAX" class="it.eldasoft.sil.pg.web.struts.AvanzamentoApDocAJAXAction">
 		<property name="sqlManager" ref="sqlManager" />
+		<property name="pgManager" ref="pgManager" />
 	</bean>	
+	
+	<bean name="/pg/ErroreComponiVerbale"
+		class="it.eldasoft.gene.web.struts.genmod.ApriElencoModelliAction">
+		<property name="modelliManager" ref="modelliManager" />
+		<property name="ricercheManager" ref="ricercheManager" />
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+
+	<bean name="/pg/SalvaParametriVerbale" class="it.eldasoft.sil.pg.web.struts.SalvaParametriVerbaleAction">
+		<property name="modelliManager" ref="modelliManager" />
+		<property name="tabellatiManager" ref="tabellatiManager" />
+		<property name="ricercheManager" ref="ricercheManager" />
+	</bean>	
+
+	<bean name="/pg/ComponiVerbale" class="it.eldasoft.sil.pg.web.struts.ComponiVerbaleAction">
+		<property name="modelliManager" ref="modelliManager" />
+		<property name="documentiAssociatiManager" ref="documentiAssociatiManager" />
+		<property name="geneManager" ref="geneManager" />
+		<property name="ricercheManager" ref="ricercheManager" />
+	</bean>
 
 	<bean name="/pg/AvanzamentoApEcoAJAX" class="it.eldasoft.sil.pg.web.struts.AvanzamentoApEcoAJAXAction">
 		<property name="sqlManager" ref="sqlManager" />
@@ -1835,6 +2252,7 @@
 	
 	<bean name="/pg/AvanzamentoApTecAJAX" class="it.eldasoft.sil.pg.web.struts.AvanzamentoApTecAJAXAction">
 		<property name="sqlManager" ref="sqlManager" />
+		<property name="pgManager" ref="pgManager" />
 	</bean>
 	
 	<bean name="/pg/AvanzamentoApPreqAJAX" class="it.eldasoft.sil.pg.web.struts.AvanzamentoApPreqAJAXAction">
@@ -1849,6 +2267,28 @@
 		<property name="sqlManager" ref="sqlManager" />
 	</bean>
 	
+	<bean name="/pg/AssegnaEtichettaComunicazioneAJAX" class="it.eldasoft.sil.pg.web.struts.AssegnaEtichettaComunicazioneAJAXAction">
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+
+	<bean name="/pg/EliminaAnacFormAJAX" class="it.eldasoft.sil.pg.web.struts.npa.EliminaAnacFormAJAX">
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="geneManager" ref="geneManager" />
+		<property name="pgManager" ref="pgManager" />
+	</bean>
+	
+	<bean name="/pg/InserisciJsonNpa" class="it.eldasoft.sil.pg.web.struts.npa.InserisciJsonNpaAction" >
+		<property name="npaManager" ref="npaManager" />
+		<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
+	</bean>
+
+	<bean name="/pg/AggiungiLottiSchedaAJAX" class="it.eldasoft.sil.pg.web.struts.npa.AggiungiLottiSchedaAJAX">
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="genChiaviManager" ref="genChiaviManager" />
+		<property name="geneManager" ref="geneManager" />
+		<property name="pgManager" ref="pgManager" />
+	</bean>
+
 	<bean name="/pg/GetWSDMDescrizioneEnte" class="it.eldasoft.sil.pg.web.struts.GetWSDMDescrizioneEnteAction" >
        <property name="sqlManager" ref="sqlManager" />
     </bean>
@@ -1891,6 +2331,7 @@
 		<property name="geneManager" ref="geneManager" />
 		<property name="pgManagerEst1" ref="pgManagerEst1" />
 		<property name="tabellatiManager" ref="tabellatiManager" />
+		<property name="pgManager" ref="pgManager" />
 	</bean>
 	
 	<bean name="/pg/GetAllegatiComunicazioniDitte" class="it.eldasoft.sil.pg.web.struts.GetAllegatiComunicazioniDitteAction" >
@@ -1901,10 +2342,11 @@
 		<property name="geneManager" ref="geneManager" />
 		<property name="sqlManager" ref="sqlManager" />
 		<property name="gestioneWSDMManager" ref="gestioneWSDMManager" />
+		<property name="archiviazioneDocumentiManager" ref="archiviazioneDocumentiManager"/>
 	</bean>
 
 	<bean name="/pg/GetListaDocumenti" class="it.eldasoft.sil.pg.web.struts.GetListaDocumentiAction" >
-		<property name="sqlManager" ref="sqlManager" />
+		<property name="archiviazioneDocumentiManager" ref="archiviazioneDocumentiManager" />
 	</bean>
 	
 	<bean name="/pg/SetDocumentoArchiviato" class="it.eldasoft.sil.pg.web.struts.SetDocumentoArchiviatoAction" >
@@ -1951,7 +2393,7 @@
 		<property name="sqlManager" ref="sqlManager" />
 	</bean>
 	
-	<bean name="/pg/GetURL" class="it.eldasoft.sil.pg.web.struts.GetURLAction" >
+	<bean name="/pg/GetInternalWSUrl" class="it.eldasoft.sil.pg.web.struts.GetInternalWSUrlAction" >
 	</bean>	
 	
 	<bean name="/pg/GetListaPermessiUtenti" class="it.eldasoft.sil.pg.web.struts.permessi.GetListaPermessiUtentiAction" >
@@ -1991,6 +2433,7 @@
 	
 	<bean name="/pg/SetStatoStipula" class="it.eldasoft.sil.pg.web.struts.SetStatoStipulaAction" >
 		<property name="sqlManager" ref="sqlManager" />
+		<property name="genChiaviManager" ref="genChiaviManager" />
 	</bean>
 
 	<bean name="/pg/SetNOrdine" class="it.eldasoft.sil.pg.web.struts.SetNOrdineAction" >
@@ -2000,6 +2443,12 @@
 
 	<bean name="/pg/SetStatoDocumentoStipula" class="it.eldasoft.sil.pg.web.struts.SetStatoDocumentoStipulaAction" >
 		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+	<bean name="/pg/SetFirmaInoltraStipulaMassiva" class="it.eldasoft.sil.pg.web.struts.SetFirmaInoltraStipulaMassivaAction" >
+		<property name="firmaRemotaManager" ref="firmaRemotaManager" />
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="genChiaviManager" ref="genChiaviManager" />
+		<property name="mailManager" ref="mailManager" />
 	</bean>
 	
     <bean name="/pg/GetPermessiUtenteStipula" class="it.eldasoft.sil.pg.web.struts.GetPermessiUtenteStipulaAction">
@@ -2054,6 +2503,16 @@
 		<property name="permessiManager" ref="permessiManager" />
 	</bean>
 
+	<bean name="/pg/FormRicercaInserimentoArticoli" class="it.eldasoft.sil.pg.web.struts.FormRicercaInserimentoArticoliAction" >
+		<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+	
+	<bean name="/pg/TrovaArticolo" class="it.eldasoft.sil.pg.web.struts.FormRicercaInserimentoArticoliAction" >
+		<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+
 	<bean name="/pg/VisualizzaPermessiUtentiRicercaMercato" class="it.eldasoft.sil.pg.web.struts.permessi.VisualizzaPermessiUtentiRicercaMercatoAction" >
 		<property name="permessiManager" ref="permessiManager" />
 	</bean>	
@@ -2099,7 +2558,12 @@
 		<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
 		<property name="sqlManager" ref="sqlManager" />
 	</bean>
-
+	
+	<bean name="/pg/GetWSERPListaAllegatiOda" class="it.eldasoft.sil.pg.web.struts.GetWSERPListaAllegatiOdaAction">
+		<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+	
 	<bean name="/pg/GetWSERPCarrelloAssociato" class="it.eldasoft.sil.pg.web.struts.GetWSERPCarrelloAssociatoAction">
 		<property name="sqlManager" ref="sqlManager" />
 	</bean>
@@ -2154,6 +2618,11 @@
 	<bean name="/pg/GetWSERPAlboFornitori" class="it.eldasoft.sil.pg.web.struts.GetWSERPAlboFornitoriAction">
 		<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
 		<property name="sqlManager" ref="sqlManager" />
+		<property name="raiwayWSERPManager" ref="raiwayWSERPManager" />
+	</bean>
+	
+	<bean name="/pg/GetWSERPCategorie" class="it.eldasoft.sil.pg.web.struts.GetWSERPCategorieAction">
+		<property name="raiwayWSERPManager" ref="raiwayWSERPManager" />
 	</bean>
 	
 	<bean name="/pg/GestioneAlberoNUTS" class="it.eldasoft.sil.pg.web.struts.GestioneAlberoNUTSAction" >
@@ -2189,6 +2658,7 @@
 	<bean name="/pg/AssociaDocumentiDittaProtocollo" class="it.eldasoft.sil.pg.web.struts.AssociaDocumentiDittaProtocolloAction">
 		<property name="sqlManager" ref="sqlManager" />
 		<property name="archiviazioneDocumentiManager" ref="archiviazioneDocumentiManager" />
+		<property name="gestioneWSDMManager" ref="gestioneWSDMManager" />
 	</bean>
 	
 	<bean name="/pg/ReinviaMailIcCaricoDocumentale" class="it.eldasoft.sil.pg.web.struts.ReinviaMailIcCaricoDocumentaleAction">
@@ -2225,6 +2695,7 @@
 	
 	<bean name="/pg/VerificaInvioComunicazioni" class="it.eldasoft.sil.pg.web.struts.VerificaInvioComunicazioniAction" >
 		<property name="gestioneWSDMManager" ref="gestioneWSDMManager" />
+		<property name="sqlManager" ref="sqlManager" />
 	</bean>
 	
 	<bean name="/pg/IsTabellatiWsdmPresentiInDB" class="it.eldasoft.sil.pg.web.struts.IsTabellatiWsdmPresentiInDBAction" >
@@ -2347,6 +2818,7 @@
 				<property name="tabellatiManager" ref="tabellatiManager" />
 				<property name="genChiaviManager" ref="genChiaviManager" />
 				<property name="fileAllegatoManager" ref="fileAllegatoManager" />
+				<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
 			</bean>
 		</property>
 	</bean>
@@ -2449,6 +2921,15 @@
 		<property name="pgManagerEst1" ref="pgManagerEst1" />
 	</bean>
 	
+	<bean name="/pg/EliminaBozzaMEForm" class="it.eldasoft.sil.pg.web.struts.EliminaBozzaMEFormAction" >
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+	
+	<bean name="/SaveQFormEditor" class="it.eldasoft.sil.pg.web.struts.SaveQFormEditorAction">
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="genChiaviManager" ref="genChiaviManager" />
+	</bean>
+	
 	<bean name="/pg/AggiungiDestinatariNotifiche" class="it.eldasoft.sil.pg.web.struts.AggiungiDestinatariNotificheAction">
 		<property name="sqlManager" ref="sqlManager" />
 	</bean>
@@ -2473,6 +2954,16 @@
 	<bean name="/pg/InserimentoFornitoreAlbo" class="it.eldasoft.sil.pg.web.struts.InserimentoFornitoreAlboAction">
 		<property name="sqlManager" ref="sqlManager" />
 		<property name="raiWSERPManager" ref="raiWSERPManager" />
+		<property name="raiwayWSERPManager" ref="raiwayWSERPManager" />
+	</bean>
+	
+	<bean name="/pg/InserisciAllegatoOdaComunicazioni" class="it.eldasoft.sil.pg.web.struts.InserisciAllegatoOdaComunicazioniAction">
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="gestioneWSERPManager" ref="gestioneWSERPManager" />
+	</bean>
+	
+	<bean name="/pg/GetTokenEForms" class="it.eldasoft.sil.pg.web.struts.GetTokenEFormsAction">
+		<property name="sqlManager" ref="sqlManager" />
 	</bean>
 	
 	<bean name="/pg/GetWSDMListaFascicoli" class="it.eldasoft.sil.pg.web.struts.GetWSDMListaFascicoliAction">
@@ -2718,4 +3209,286 @@
 		</property>
 	</bean>	
 	
+
+	<bean id="letturaDatiFascicoloWSDMTask" class="it.eldasoft.sil.pg.bl.tasks.LetturaDatiFascicoloWSDMTask" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="gestioneWSDMManager" ref="gestioneWSDMManager" />
+		<property name="analizzaArchiviazioneDocumentiManager" ref="analizzaArchiviazioneDocumentiManager"/>
+	</bean>
+
+	<bean id="letturaDatiFascicoloWSDMJob"
+		  class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="letturaDatiFascicoloWSDMTask" />
+		<property name="targetMethod" value="letturaDatiFascicoloLapisopera" />
+		<property name="concurrent" value="false"/>
+	</bean>
+
+	<bean id="letturaDatiFascicoloWSDMSchedulerTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="letturaDatiFascicoloWSDMJob" />
+		<property name="cronExpression">
+			<value>0 0 0 1 1 ? 2099</value>
+		</property>
+	</bean>
+
+	<bean name="/pg/ConcludiIndagineMercato" class="it.eldasoft.sil.pg.web.struts.ConcludiIndagineMercatoAction">
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+	
+	<bean name="/pg/SetRichiestaConservazioneDocumentiAggiudicatari" class="it.eldasoft.sil.pg.web.struts.SetRichiestaConservazioneDocumentiAggiudicatariAction" >
+		<property name="conservazioneDocumentiAggiudicatariManager" ref="conservazioneDocumentiAggiudicatariManager" />
+	</bean>
+	
+	<bean name="/pg/IsSuperataDataTerminePresentazione" class="it.eldasoft.sil.pg.web.struts.IsSuperataDataTerminePresentazioneAction">
+		<property name="mepaManager" ref="mepaManager" />
+	</bean>
+	
+	<bean name="/pg/GetStatoGara" class="it.eldasoft.sil.pg.web.struts.GetStatoGaraAction">
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+	
+	<bean name="/pg/ConteggioDitte" class="it.eldasoft.sil.pg.web.struts.ConteggioDitteAction">
+		<property name="aggiudicazioneManager" ref="aggiudicazioneManager" />
+	</bean>
+
+	<bean id="analizzaArchiviazioneDocumentiManagerTransactionProxy"
+				class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"
+				abstract="true">
+		<property name="transactionManager" ref="transactionManager" />
+		<property name="transactionAttributes">
+			<props>
+				<prop key="analizza*">PROPAGATION_REQUIRED</prop>
+			</props>
+		</property>
+	</bean>
+
+	<bean id="analizzaArchiviazioneDocumentiManager" parent="analizzaArchiviazioneDocumentiManagerTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.pg.bl.tasks.AnalizzaArchiviazioneDocumentiManager" >
+				<property name="sqlManager" ref="sqlManager" />
+				<property name="tabellatiManager" ref="tabellatiManager" />
+				<property name="archiviazioneDocumentiManager" ref="archiviazioneDocumentiManager" />
+				<property name="gestioneWSDMManager" ref="gestioneWSDMManager" />
+			</bean>
+		</property>
+	</bean>
+	
+	<bean id="analizzaArchiviazioneDocumentiJob"
+				class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="analizzaArchiviazioneDocumentiManager" />
+		<property name="targetMethod" value="analizzaEntita" />
+		<property name="concurrent" value="false"/>
+	</bean>
+	
+	<bean id="analizzaArchiviazioneDocumentiTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="analizzaArchiviazioneDocumentiJob" />
+		<property name="cronExpression">
+			<value>0 0 5 * * ? 2099</value>
+		</property>
+	</bean>	
+	
+	<bean name="/pg/GestisciListaConfidur" class="it.eldasoft.sil.pg.web.struts.GestisciListaConfidurAction">
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="genChiaviManager" ref="genChiaviManager" />
+	</bean>
+	
+	<bean name="/pg/GetListaDestinatari" class="it.eldasoft.sil.pg.web.struts.GetListaDestinatariAction">
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="tabellatiManager" ref="tabellatiManager" />
+	</bean>
+	
+	<bean name="/pg/SetIsriconclusa" class="it.eldasoft.sil.pg.web.struts.SetIsriconclusaAction">
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>	
+	
+	<bean name="/pg/ScambioDatiPCP" class="it.eldasoft.sil.pg.web.struts.npa.ScambioDatiPCPAction">
+		<property name="scambioDatiPCPManager" ref="scambioDatiPCPManager" />
+	</bean>	
+	
+	<bean name="/pg/InitInvioPCP" class="it.eldasoft.sil.pg.web.struts.npa.InitInvioPCPAction" >
+		<property name="tabellatiManager" ref="tabellatiManager" />
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="scambioDatiPCPManager" ref="scambioDatiPCPManager"/>
+	</bean>	
+
+	<bean name="/pg/CheckNumeroContrattoErp" class="it.eldasoft.sil.pg.web.struts.CheckNumeroContrattoErpAction">
+	    <property name="sqlManager" ref="sqlManager" />
+	    <property name="newAdcManager" ref="newAdcManager" />
+	</bean>	
+	
+	<bean name="/pg/AssociaInfoContrattoErp" class="it.eldasoft.sil.pg.web.struts.AssociaInfoContrattoErpAction">
+	    <property name="sqlManager" ref="sqlManager" />	
+	    <property name="genChiaviManager" ref="genChiaviManager" />	    
+	</bean>	
+	
+	<bean name="/pg/EliminaAssociazioneContrattoErp" class="it.eldasoft.sil.pg.web.struts.EliminaAssociazioneContrattoErpAction">
+	    <property name="sqlManager" ref="sqlManager" />	 
+	     
+	    <property name="genChiaviManager" ref="genChiaviManager" />   
+	</bean>			
+
+	<bean name="/pg/ControllaInviaFEUAJAX" class="it.eldasoft.sil.pg.web.struts.npa.ControllaInviaFEUAJAX">
+		<property name="inviaBandoAvvisoSimapManager" ref="inviaBandoAvvisoSimapManager" />
+		<property name="controllaBandoAvvisoSimapManager" ref="controllaBandoAvvisoSimapManager" />
+		<property name="leggiPubblicazioniManager" ref="leggiPubblicazioniManager" />
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+	
+	<bean name="/pg/GestisciInvioFEUAJAX" class="it.eldasoft.sil.pg.web.struts.npa.GestisciInvioFEUAJAX">
+		<property name="gestisciInvioFEUManager" ref="gestisciInvioFEUManager" />
+	</bean>
+	
+	<bean name="/pg/RimuoviAnonimato" class="it.eldasoft.sil.pg.web.struts.RimuoviAnonimatoAction">
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>	
+
+	<bean name="/pg/LoginFEU" class="it.eldasoft.sil.pg.web.struts.npa.LoginFEU" />
+
+	<bean name="/pg/InitPubblicazioneAtti" class="it.eldasoft.sil.pg.web.struts.npa.InitPubblicazioneAttiAction" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="wsdmConfigManager" ref="wsdmConfigManager" />
+	</bean>
+
+	<bean name="/pg/CopiaDocumentiInDOCUMATTI" class="it.eldasoft.sil.pg.web.struts.npa.CopiaDocumentiInDOCUMATTI" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="genChiaviManager" ref="genChiaviManager" />
+		<property name="geneManager" ref="geneManager" />
+		<property name="fileAllegatoManager" ref="fileAllegatoManager" />
+	</bean>
+	
+	<bean name="/pg/CheckPrimoDocumentoFirmato" class="it.eldasoft.sil.pg.web.struts.CheckPrimoDocumentoFirmatoAction">
+		<property name="gestioneWSDMManager" ref="gestioneWSDMManager" />
+		<property name="fileAllegatoManager" ref="fileAllegatoManager" />
+	</bean>
+
+	<bean name="/pg/GetISTATNazione" class="it.eldasoft.sil.pg.web.struts.GetISTATNazioneAction" >
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+
+	<bean name="/pg/LeggiDocumentiBIC" class="it.eldasoft.sil.pg.web.struts.LeggiDocumentiBICAction">
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+
+	<bean name="/pg/GeneraTokenIntegrazioneBIC" class="it.eldasoft.sil.pg.web.struts.GeneraTokenIntegrazioneBICAction">
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+
+	<bean name="/pg/CheckFS12RettificaInCorso" class="it.eldasoft.sil.pg.web.struts.CheckFS12RettificaInCorsoAction" >
+		<property name="mepaManager" ref="mepaManager" />
+	</bean>
+
+	<bean name="consultaPubblicazioneSchedeANACTask" class="it.eldasoft.sil.pg.bl.tasks.ConsultaPubblicazioneSchedeANACTask">
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="scambioDatiPCPManager" ref="scambioDatiPCPManager" />
+	</bean>
+
+	<bean id="consultaPubblicazioneSchedeANACJob" class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean" >
+		<property name="targetObject" ref="consultaPubblicazioneSchedeANACTask" />
+		<property name="targetMethod" value="consultaPubblicazioneSchedeANAC" />
+		<property name="concurrent" value="false"/>
+	</bean>
+
+	<bean id="consultaPubblicazioneSchedeANACTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean" >
+		<property name="jobDetail" ref="consultaPubblicazioneSchedeANACJob" />
+		<property name="cronExpression" >
+			<value>0 0/20 8-18 ? * MON-FRI 2099</value>
+		</property>
+	</bean>
+
+	<bean id="gestioneFVOEManagerTransactionProxy"
+		  class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"
+		  abstract="true">
+		<property name="transactionManager" ref="transactionManager" />
+		<property name="transactionAttributes">
+			<props>
+				<prop key="aggiungi*">PROPAGATION_REQUIRED</prop>
+			</props>
+		</property>
+	</bean>
+
+	<bean id="gestioneFVOEManager" parent="gestioneFVOEManagerTransactionProxy" >
+		<property name="target">
+			<bean class="it.eldasoft.sil.pg.bl.GestioneFVOEManager" >
+				<property name="sqlManager" ref="sqlManager" />
+				<property name="genChiaviManager" ref="genChiaviManager" />
+			</bean>
+		</property>
+	</bean>
+
+	<bean name="/pg/GestioneDitteFVOE" class="it.eldasoft.sil.pg.web.struts.GestioneDitteFVOEAction">
+		<property name="gestioneFVOEManager" ref="gestioneFVOEManager" />
+	</bean>
+
+	<bean name="/pg/GetDatiTecnico" class="it.eldasoft.sil.pg.web.struts.npa.GetDatiTecnicoAction" >
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+
+	<bean name="/pg/GetDatiImpresa" class="it.eldasoft.sil.pg.web.struts.npa.GetDatiImpresaAction" >
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+
+	<bean name="/pg/InitSelezioneElPrem" class="it.eldasoft.sil.pg.web.struts.InitSelezioneElPremAction" >
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+
+	<bean name="/pg/GetListaElementiPremiali" class="it.eldasoft.sil.pg.web.struts.GetListaElementiPremialiAction" >
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+
+	<bean name="/pg/AggiungiElementiPremiali" class="it.eldasoft.sil.pg.web.struts.AggiungiElementiPremialiAJAX" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="genChiaviManager" ref="genChiaviManager" />
+		<property name="geneManager" ref="geneManager" />
+	</bean>
+
+	<bean name="/pg/LargeFileGenToken" class="it.eldasoft.sil.pg.web.struts.LargeFileGenTokenAction"/>
+
+	<bean name="/pg/DownloadDocumentoAssociato" class="it.eldasoft.sil.pg.web.struts.DownloadDocumentoAssociatoAction">
+		<property name="fileAllegatoManager" ref="fileAllegatoManager" />
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="geneManager" ref="geneManager" />
+	</bean>
+
+	<bean name="/pg/ReportSchedeANAC" class="it.eldasoft.sil.pg.web.struts.ReportSchedeANACAction" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="geneManager" ref="geneManager" />
+		<property name="tabellatiManager" ref="tabellatiManager" />
+	</bean>
+
+	<bean name="/pg/ListaDocumentiAssociatiGara" class="it.eldasoft.gene.web.struts.docass.ListaDocumentiAssociatiAction">
+		<property name="documentiAssociatiManager" ref="documentiAssociatiManager" />
+	</bean>
+
+	<bean name="chiudiFascicoloManager" class="it.eldasoft.sil.pg.bl.tasks.ChiudiFascicoloManager" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="gestioneWSDMManager" ref="gestioneWSDMManager" />
+		<property name="analizzaArchiviazioneDocumentiManager" ref="analizzaArchiviazioneDocumentiManager"/>
+		<property name="archiviazioneDocumentiManager" ref="archiviazioneDocumentiManager"/>
+		<property name="tabellatiManager" ref="tabellatiManager"/>
+	</bean>
+
+	<bean id="chiudiFascicoloJob"
+		  class="it.eldasoft.gene.commons.web.spring.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="chiudiFascicoloManager" />
+		<property name="targetMethod" value="analizzaEChiudi" />
+		<property name="concurrent" value="false"/>
+	</bean>
+
+	<bean id="chiudiFascicoloTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="chiudiFascicoloJob" />
+		<property name="cronExpression">
+			<value>0 0 23 1 * ?</value>
+		</property>
+	</bean>
+
+
+	<bean name="/pg/WSDMChiudiFascicolo" class="it.eldasoft.sil.pg.web.struts.WSDMChiudiFascicoloAction" >
+		<property name="sqlManager" ref="sqlManager" />
+		<property name="gestioneWSDMManager" ref="gestioneWSDMManager" />
+		<property name="chiudiFascicoloManager" ref="chiudiFascicoloManager"/>
+	</bean>
+
+	<bean name="/pg/GetOrganizzazioneRicorsi" class="it.eldasoft.sil.pg.web.struts.GetOrganizzazioneRicorsiAction">
+		<property name="sqlManager" ref="sqlManager" />
+	</bean>
+
 </beans>

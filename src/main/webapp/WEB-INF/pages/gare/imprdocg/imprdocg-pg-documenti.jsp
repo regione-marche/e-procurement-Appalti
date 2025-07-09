@@ -70,9 +70,14 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 
 <c:set var="tipoImpresa" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTipologiaImpresaFunction",  pageContext,key)}'/>
 
-<c:if test='${genereGara ne 10 and genereGara ne 20 and tipo != "CONSULTAZIONE"}' >
-	<c:set var="whereBusteAttiveWizard" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetBusteDocumentazioneFunction",  pageContext, stepWizard, "V_GARE_DOCDITTA","BUSTA")}'/>
-</c:if>
+<c:choose>
+	<c:when test='${genereGara ne 10 and genereGara ne 20 and tipo != "CONSULTAZIONE"}' >
+		<c:set var="whereBusteAttiveWizard" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetBusteDocumentazioneFunction",  pageContext, stepWizard, "V_GARE_DOCDITTA","BUSTA")}'/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="whereBusteAttiveWizard" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetBusteDocumentazioneFunction",  pageContext, stepWizard, "","")}'/>
+	</c:otherwise>
+</c:choose>
 
 <gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.InizializzaUpdateListaFunction" parametro="${key}" />
 
@@ -166,6 +171,15 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
   			<c:set var="whereV_GARE_DOCDITTA" value="${whereV_GARE_DOCDITTA} and (V_GARE_DOCDITTA.DOCANNUL is null or  V_GARE_DOCDITTA.DOCANNUL <> '1')"/>
   		</c:otherwise>
   	</c:choose>
+	
+	<c:choose>
+		<c:when test="${updateLista eq 1}">
+			<c:set var="opreload" value="0" />
+		</c:when>
+		<c:otherwise>
+			<c:set var="opreload" value="1" />
+		</c:otherwise>
+	</c:choose>	
   	
   	
   	<%// Creo la lista per i documenti%>
@@ -173,9 +187,13 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 					
 			<tr>
 				<td ${stileDati}>
+				<c:set var="datiLista" value="${[]}" scope="request"/>
   				<gene:formLista entita="V_GARE_DOCDITTA" where='${whereV_GARE_DOCDITTA}' pagesize="0" tableclass="datilista" sortColumn="${ordinamento }" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreVerificaDocumenti">
-  					
-  					<jsp:include page="/WEB-INF/pages/commons/bloccaModifica-pg-lista-scheda.jsp">
+  					<c:if test="${(genereGara eq 10 or genereGara eq 20) and not empty datiRiga.V_GARE_DOCDITTA_IDDOCDG and not empty datiRiga.V_GARE_DOCDITTA_IDPRG}">
+						<c:set var="hrefFitt" value="javascript:visualizzaFileAllegato(\`${datiRiga.V_GARE_DOCDITTA_IDPRG}\` ,${datiRiga.V_GARE_DOCDITTA_IDDOCDG},\`${datiRiga.V_GARE_DOCDITTA_DIGNOMDOC}\` ,\`${datiRiga.V_GARE_DOCDITTA_DATARILASCIO}\` ,\`${datiRiga.V_GARE_DOCDITTA_ORARILASCIO}\` ,\`${datiRiga.V_GARE_DOCDITTA_DOCTEL }\` ,${currentRow}, \`${datiRiga.IMPRDOCG_NORDDOCI}\` , \`${datiRiga.IMPRDOCG_PROVENI}\` );"/>
+						<c:set var="noUse" value="${datiLista.add([datiRiga.V_GARE_DOCDITTA_IDDOCDG,datiRiga.V_GARE_DOCDITTA_IDPRG,datiRiga.V_GARE_DOCDITTA_DESCRIZIONE,datiRiga.V_GARE_DOCDITTA_DIGNOMDOC,datiRiga.V_GARE_DOCDITTA_DATARILASCIO,datiRiga.V_GARE_DOCDITTA_ORARILASCIO,datiRiga.V_GARE_DOCDITTA_DATASCADENZA,datiRiga.V_GARE_DOCDITTA_SITUAZDOCI,hrefFitt])}"/>
+					</c:if>
+						<jsp:include page="/WEB-INF/pages/commons/bloccaModifica-pg-lista-scheda.jsp">
 							<jsp:param name="entita" value="V_GARE_TORN"/>
 							<jsp:param name="inputFiltro" value="CODGAR=T:${codiceGara}"/>
 							<jsp:param name="filtroCampoEntita" value="codgar=#CODGAR#"/>
@@ -294,10 +312,10 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 							<gene:campoLista title="Opzioni<center>${titoloMenu}</center>" width="50"  >
 								<c:if test="${currentRow >= 0}">
 									<c:if test="${datiRiga.V_GARE_DOCDITTA_PROVENI eq 2 and datiRiga.V_GARE_DOCDITTA_DOCTEL ne 1}">
-										<gene:PopUp variableJs="rigaPopUpMenu${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'" >
+										<gene:PopUp variableJs="rigaPopUpMenu${currentRow}" onClick="chiaveRiga='${chiaveRigaJava};IMPRDOCG.CODGAR=T:${codiceGara}'" >
 											<gene:PopUpItem title="Elimina" href="listaElimina()" />
 										</gene:PopUp>
-										<input type="checkbox" name="keys" value="${chiaveRiga}"  />
+										<input type="checkbox" name="keys" value="${chiaveRiga};IMPRDOCG.CODGAR=T:${codiceGara}"  />
 									</c:if>
 								</c:if>
 							</gene:campoLista>
@@ -326,7 +344,7 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 					
 					<gene:campoLista campoFittizio="true" visibile="false">
 						<input type="hidden" id="INPUT_DESCRIZIONE_${currentRow}" value="${datiRiga.V_GARE_DOCDITTA_DESCRIZIONE}"/>
-					</gene:campoLista>					
+					</gene:campoLista>
 					<input type="hidden" name="numeroDocumenti" id="numeroDocumenti" value="" />
 					<input type="hidden" name="codiceDitta" id="codiceDitta" value="${codiceDitta }" />
 					<input type="hidden" name="stepWizard" id="stepWizard" value="${stepWizard }" />
@@ -394,7 +412,7 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 			<input type="hidden" name="href" value="gene/system/firmadigitale/verifica-firmadigitale-popUp.jsp" />
 			<input type="hidden" name="idprg" id="idprg" value="" />
 			<input type="hidden" name="iddocdig" id="iddocdig" value="" />
-			<input type="hidden" name="opreload" id="opreload" value="1" />
+			<input type="hidden" name="opreload" id="opreload" value="${opreload}" />
 		</form>
 		
   
@@ -435,13 +453,13 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 		var href = "${pageContext.request.contextPath}/pg/VisualizzaDgueApp.do";
 		var codiceDitta = "${codiceDitta}";
 		var codiceGara = "${codiceGara }";
-		//document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig+ "&codiceDitta=" + codiceDitta+ "&codiceGara=" + codiceGara;
+		//document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig+ "&codiceDitta=" + codiceDitta+ "&codiceGara=" + codiceGara;
 		var getUrl = window.location;
 		var baseUrl = getUrl .protocol + "//" + getUrl.host + "/" + getUrl.pathname.split('/')[1]+'/';
 		console.log('baseUrl: '+baseUrl);
 		var a = document.createElement("a");
 		a.target = 'blank';
-		a.href = baseUrl+'pg/VisualizzaDgueApp.do?'+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig+ "&codiceDitta=" + codiceDitta+ "&codiceGara=" + codiceGara;
+		a.href = baseUrl+"pg/VisualizzaDgueApp.do?idprg=" + idprg + "&iddocdig=" + iddocdig+ "&codiceDitta=" + codiceDitta+ "&codiceGara=" + codiceGara;
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
@@ -505,7 +523,7 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 					tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
 					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
 					var nomeCodificato = encodeURIComponent(dignomdoc);
-					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + nomeCodificato;
+					document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + nomeCodificato;
 				}
 			</c:when>
 			<c:otherwise>
@@ -541,7 +559,7 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 					tracciamentoDownloadDocimpresa(idprg, iddocdig,numeroGara,codiceDitta,doctel);
 					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
 					var nomeCodificato = encodeURIComponent(dignomdoc);
-					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + nomeCodificato;
+					document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + nomeCodificato;
 				}
 			</c:otherwise>
 		</c:choose>
@@ -577,13 +595,13 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunct
 			var tipo="${tipo }";
 			var comunicazioniVis = "${comunicazioniVis }";
 			var aut="${aut}";
-			document.pagineForm.action += "&stepWizard=" + stepWizard + "&genereGara=" + genereGara + "&tipo=" + tipo + "&comunicazioniVis=" + comunicazioniVis + "&aut=" + aut;
+			document.pagineForm.action += "?stepWizard=" + stepWizard + "&genereGara=" + genereGara + "&tipo=" + tipo + "&comunicazioniVis=" + comunicazioniVis + "&aut=" + aut;
 		}
 		selezionaPaginaDefault(pageNumber);
 	}
 	
 	function apriListaDocAnnullati(){
-		var href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&key=${key}";
+		var href = "${pageContext.request.contextPath}/ApriPagina.do?key=${key}";
 		href += "&href=gare/imprdocg/imprdocg-lista-docAnnullati.jsp";
 		href += "&stepWizard=${stepWizard }";
 		href += "&tipo=${tipo }";

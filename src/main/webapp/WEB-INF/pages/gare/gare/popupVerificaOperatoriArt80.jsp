@@ -65,7 +65,7 @@
 		</c:choose>
 	</c:if>
 		
-	<gene:setString name="titoloMaschera" value="Richiesta verifica requisiti operatori art.80 DLgs.50/2016" />
+	<gene:setString name="titoloMaschera" value="Richiesta verifica requisiti operatori" />
 
 	<gene:redefineInsert name="corpo">
 		<gene:formScheda entita="GARE" gestisciProtezioni="false" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupVerificaOperatoriArt80">
@@ -102,7 +102,7 @@
 							<c:set var="msgGenere" value="catalogo"/>
 						</c:otherwise>
 					</c:choose>
-					Mediante questa funzione viene richiesta la verifica dei requisiti di cui all'art.80 del DLgs.50/2016 per gli operatori in ${msgGenere } che sono nello stato abilitazione indicato sotto.
+					Mediante questa funzione viene richiesta la verifica dei requisiti per gli operatori in ${msgGenere } che sono nello stato abilitazione indicato sotto.
 					<br>Vengono considerati solo gli operatori per cui non è mai stata fatta alcuna richiesta.
 					<br>Specificare la tipologia di controllo da richiedere.<br><br>
 					Confermi l'operazione?

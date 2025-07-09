@@ -39,11 +39,29 @@
 		<c:set var="entitaParent" value='GARE' scope="request" />
 	</c:if>
 	
+	<c:choose>
+			<c:when test='${not empty param.entitaNoKey}'>
+				<c:set var="entitaNoKey" value="${param.entitaNoKey}" scope="request"/>
+			</c:when>
+			<c:otherwise>
+				<c:set var="entitaNoKey" value="${entitaNoKey}" scope="request"/>
+			</c:otherwise>
+		</c:choose>
+		
+	<c:if test="${entitaNoKey eq 'HOMEPG'}">
+		<c:set var="entitaParent" value='HOMEPG' scope="request"/>
+	</c:if>
+	
 	<c:if test='${modo eq "VISUALIZZA" or modo eq "MODIFICA" or empty modo}' >
 		<c:set var="idprg" value='${gene:getValCampo(key,"IDPRG")}'/>
 		<c:set var="idcom" value='${gene:getValCampo(key,"IDCOM")}'/>
 		<c:set var="where" value="IDPRG='${idprg }' and IDCOM=${idcom }"/>
 		<c:set var="commodello" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "COMMODELLO","W_INVCOM",where)}' scope="request"/>
+		<c:set var="coment" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "COMENT","W_INVCOM",where)}' scope="request"/>
+		<c:if test="${coment eq 'HOMEPG'}">
+			<c:set var="listaOpzioniUtenteAbilitate" value="${fn:join(profiloUtente.funzioniUtenteAbilitate,'#')}#" />
+			<c:set var="bloccoInvioComunicazioniGeneriche" value="${!fn:contains(listaOpzioniUtenteAbilitate, 'ou241#')}" scope="request"/>
+		</c:if>
 	</c:if>
 			
 	<gene:setString name="titoloMaschera" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTitleComunicazioneFunction", pageContext, "W_INVCOM")}' />
@@ -68,8 +86,7 @@
 					<jsp:param name="idconfi" value="${idconfi}" /> 
 				</jsp:include>
 			</gene:pagina>
-			<gene:pagina title="Soggetti destinatari in CC" idProtezioni="W_INVCOMDESCC" visibile='${configInvioCC && !(abilitatoInvioMailDocumentale && integrazioneWSDM eq "1")}' selezionabile='${(tipoEvidenza[0] ne "1")}'>
-
+			<gene:pagina title="Soggetti destinatari in CC" idProtezioni="W_INVCOMDESCC" visibile='${configInvioCC && coment ne "HOMEPG" && tipoEvidenza[0] ne "3"}' selezionabile='${(tipoEvidenza[0] ne "1")}'>
 				<jsp:include page="w_invcom-pg-lista-w_invcomdescc.jsp" >
 					<jsp:param name="idconfi" value="${idconfi}" /> 
 				</jsp:include>

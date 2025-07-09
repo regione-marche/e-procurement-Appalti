@@ -200,7 +200,7 @@
 		</c:when>
 		<c:otherwise>
 			var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-			document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
+			document.location.href = contextPath + "/ApriPagina.do?" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
 		</c:otherwise>
 	</c:choose>
 		}
@@ -218,7 +218,7 @@
 	<c:if test='${paginaAttivaWizard > 1}'>
 		function indietro(){
 			if(document.forms[0].action.indexOf("Scheda.do") >= 0){
-				document.forms[0].action = "${pageContext.request.contextPath}/Lista.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/Lista.do";
 				document.forms[0].keyParent.value = document.forms[0].key.value;
 			} else {
 				document.forms[0].pgSort.value = "";

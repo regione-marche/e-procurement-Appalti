@@ -18,6 +18,7 @@
 <c:if test='${!empty param.forzaModo}'>
 	<c:set var="modo" value="NUOVO" scope="request"/>
 </c:if>
+<c:set var="richiestaApprovazioneFirma" value="0" scope="request"/>
 
 <c:if test='${fn:contains(key,"V_GARE_STIPULA")}'>
 	<c:set var="key" value='${fn:replace(key,"V_GARE_STIPULA","G1STIPULA")}' scope="request"/>

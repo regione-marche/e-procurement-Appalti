@@ -107,7 +107,7 @@ public class GestorePopupAnnullaRicezionePlichiDomande extends
     try{
 
 
-        if("1".equals(iterga) || "2".equals(tipo)){
+        if("1".equals(iterga) || "9".equals(iterga) || "2".equals(tipo)){
           //Cancellazione occorrenze W_DOCDIG
           String sqlW_DOCDIG = "select w.idprg, iddocdig from w_docdig w,imprdocg i where codgar=? and w.idprg = i.idprg and iddocdig = iddocdg";
           errMsgEvento = this.deleteW_DOCDIG(sqlW_DOCDIG, codgar, errMsgEvento);
@@ -639,7 +639,7 @@ public class GestorePopupAnnullaRicezionePlichiDomande extends
     String buste = "('FS11','FS11A','FS14')";
     if("2".equals(tipo))
       buste = "('FS10','FS10A' )";
-    String selectW_INVCOM = "select idprg, idcom from w_invcom where comkey2=? and comtipo in " + buste + " and comstato=6";
+    String selectW_INVCOM = "select idprg, idcom from w_invcom where comkey2=? and comtipo in " + buste + " and comstato='6'";
 
     List<?> datiW_INVCOM = this.sqlManager.getListVector(selectW_INVCOM, new Object[]{ngara});
     if(datiW_INVCOM!=null && datiW_INVCOM.size()>0){
@@ -655,9 +655,9 @@ public class GestorePopupAnnullaRicezionePlichiDomande extends
       }
       msgRet+=") \r\n";
     }
-    String update = "update w_invcom set comstato=? where comkey2=? and comtipo in " + buste + " and (comstato=6 or comstato=7";
+    String update = "update w_invcom set comstato=? where comkey2=? and comtipo in " + buste + " and (comstato='6' or comstato='7'";
     if("1".equals(tipo))
-      update+=" or comstato=8 or comstato=13";
+      update+=" or comstato='8' or comstato='13'";
     update+=")";
     this.sqlManager.update(update, new Object[]{new Long(5),ngara});
 

@@ -29,7 +29,7 @@
   <gene:javaScript>
 
   	function conferma(){
-			var href = "href=gare/v_ditte_prit/popupConfermaStampaLista.jsp&tipprot=${param.tipprot}&datap=${param.datap}&operatoreDatap=${param.operatoreDatap}" + "&" + csrfToken;
+			var href = "href=gare/v_ditte_prit/popupConfermaStampaLista.jsp&tipprot=${param.tipprot}&datap=${param.datap}&operatoreDatap=${param.operatoreDatap}";
 			document.location.href = "${contextPath}/ApriPagina.do?href=gare/v_ditte_prit/composizioneInCorso.jsp&tipprot=${param.tipprot}&datap=${param.datap}&operatoreDatap=${param.operatoreDatap}";
 		}
 

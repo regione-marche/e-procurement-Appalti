@@ -1,0 +1,18 @@
+TABLE.modale {
+	margin:0; PADDING: 0px; width: 100%; FONT-SIZE: 11px; border-collapse:collapse;
+}
+TABLE.modale TD {
+	PADDING: 2px 0px 2px; 
+}
+TABLE.modale TD.etichetta-dato {
+	width:180px; HEIGHT: 22px; PADDING-RIGHT: 10px;  BACKGROUND-COLOR: #efefef; color:#000000; TEXT-ALIGN: right;
+}
+TABLE.modale TD.valore-dato {
+	PADDING-LEFT: 10px; TEXT-ALIGN: left;
+}
+TABLE.modale TD.valore-dato A {
+	text-decoration: underline; color:#000000;
+}
+TABLE.modale TD.valore-dato A:hover {
+	text-decoration: none;
+}

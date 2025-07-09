@@ -20,7 +20,7 @@ import it.eldasoft.gene.tags.decorators.campi.AbstractGestoreCampoTabellato;
 public class GestoreCampoTipoImpresaNoRaggruppamento extends AbstractGestoreCampoTabellato {
 
     public GestoreCampoTipoImpresaNoRaggruppamento() {
-	super(false, "T100");
+	super(false, "N2");
     }
 
     @Override

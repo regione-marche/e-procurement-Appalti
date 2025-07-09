@@ -78,7 +78,7 @@ public class GestoreImportaCriteriModello extends AbstractGestoreEntita{
       //Lista criteri da importare
       List listaCriteri = sqlManager.getListVector(
           "select G.NECVAN,G.NORPAR,G.TIPPAR,G.MAXPUN,G.DESPAR,G.LIVPAR,G.NECVAN1," +
-          "G.NORPAR1,G.MINPUN, G1.ID, G1.DESCRI,G1.MAXPUN,G1.FORMATO,G1.MODPUNTI,G1.MODMANU,G.ISNOPRZ,G1.NUMDECI,G1.FORMULA, G1.ESPONENTE from GOEVMOD G LEFT JOIN G1CRIDEF G1 "
+          "G.NORPAR1,G.MINPUN, G1.ID, G1.DESCRI,G1.MAXPUN,G1.FORMATO,G1.MODPUNTI,G1.MODMANU,G.ISNOPRZ,G1.NUMDECI,G1.FORMULA, G1.ESPONENTE, G.ISNORIPAR from GOEVMOD G LEFT JOIN G1CRIDEF G1 "
             + "ON G.ID = G1.IDGOEVMOD where G.IDCRIMOD = ? ORDER BY G.NECVAN, G1.ID",new Object[] { modelloSelezionato });
 
         //Si devono cancellare gli eventuali criteri presenti nella gara di destinazione

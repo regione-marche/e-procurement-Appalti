@@ -37,10 +37,34 @@
 		<c:set var="esisteRettificaOfferta" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsistonoDatiRettificaTerminiFunction",  pageContext, param.valoreCodgar, "2")}'/>
 		<c:set var="esisteRettificaApertura" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsistonoDatiRettificaTerminiFunction",  pageContext, param.valoreCodgar, "3")}'/>
 	</c:if>
-	
+	<c:set var="schedaInRettifica" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select g1npascheda.id from g1npascheda, g1npaform where g1npascheda.idform=g1npaform.id and g1npascheda.idschedanparet is not null and g1npascheda.statonpa>=1 and g1npascheda.statonpa not in (34,50,60) and g1npaform.codgar=?", param.valoreCodgar)}'/>
+	<c:if test='${not empty schedaInRettifica}'>
+		<c:set var="esisteRettificaPartecipazionePCP" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select count(1) from g1nparet where dtepar is not null and idnpascheda=?", schedaInRettifica)>0}'/>
+		<c:set var="esisteRettificaOffertaPCP" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select count(1) from g1nparet where dteoff is not null and idnpascheda=?", schedaInRettifica)>0}'/>
+		<c:set var="esisteRettificaAperturaPCP" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select count(1) from g1nparet where desoff is not null and idnpascheda=?", schedaInRettifica)>0}'/>
+	</c:if>
 	<gene:gruppoCampi idProtezioni="PDP" >
 		<gene:campoScheda nome="PDP">
-			<td colspan="2"><b>Termini per la presentazione della domanda di partecipazione</b> <c:if test="${esisteRettificaPartecipazione eq 'true' }"> <span style="float:right" ><a id="aLinkVisualizzaDettaglioRettificaTerminiPartecipazione" href="javascript:showDettRetifica(1);" class="link-generico">Visualizza termini di gara precedenti alla rettifica</a></span></c:if></td>
+			<td colspan="2"><b>Termini per la presentazione della domanda di partecipazione</b> 
+			<c:if test="${esisteRettificaPartecipazione eq 'true' }"> <span style="float:right" ><a id="aLinkVisualizzaDettaglioRettificaTerminiPartecipazione" href="javascript:showDettRetifica(1);" class="link-generico">Visualizza termini di gara precedenti alla rettifica</a></span></c:if>
+			</td>
+		</gene:campoScheda>
+		<c:if test="${esisteRettificaPartecipazionePCP}">
+			<gene:campoScheda nome="PDPRETTPCP">
+				<td colspan="2">
+					 <span style="float:right"><div style="color: blue;display: contents;"><b>ATTENZIONE</b>: Rettifica dei termini in corso. <a id="aLinkVisualizzaDettaglioRettificaTerminiPartecipazionePCP" href="javascript:showDettRettificaPCP(1);" class="link-generico" style="margin-left: 10px">Visualizza nuovi termini</a></div></span>
+				</td>
+			</gene:campoScheda>
+		</c:if>
+		<gene:campoScheda addTr="false" visibile="${esisteRettificaPartecipazionePCP}">
+				<tr id="rigaTabellaRettificaTerminiPartecipazPCP">
+					<td colspan="2">
+						<table id="tabellaRettificaTerminiPartecipazPCP" class="griglia" >		
+		</gene:campoScheda>
+		<gene:campoScheda addTr="false" visibile="${esisteRettificaPartecipazionePCP}">
+						</table>
+					<td>
+				<tr>
 		</gene:campoScheda>
 		<gene:campoScheda campo="DTEPAR" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" speciale='${gene:checkProtFunz(pageContext, "ALT","CalcoloTermineMinimo")}' >
 			<c:if test='${gene:checkProtFunz(pageContext, "ALT","CalcoloTermineMinimo")}'>
@@ -130,8 +154,27 @@
 		
 	<gene:gruppoCampi idProtezioni="PDO">
 		<gene:campoScheda nome="PDO">
-			<td colspan="2"><b>Termini per la presentazione dell'offerta</b> <c:if test="${esisteRettificaOfferta eq 'true' }"> <span style="float:right"><a id="aLinkVisualizzaDettaglioRettificaTerminiOfferta" href="javascript:showDettRetifica(2);" class="link-generico">Visualizza termini di gara precedenti alla rettifica</a></span></c:if></td>
+			<td colspan="2"><b>Termini per la presentazione dell'offerta</b> 
+			<c:if test="${esisteRettificaOfferta eq 'true' }"> <span style="float:right"><a id="aLinkVisualizzaDettaglioRettificaTerminiOfferta" href="javascript:showDettRetifica(2);" class="link-generico">Visualizza termini di gara precedenti alla rettifica</a></span></c:if>
+			</td>
 		</gene:campoScheda>
+		<c:if test="${esisteRettificaOffertaPCP}">
+			<gene:campoScheda nome="PDORETTPCP">
+				<td colspan="2">
+					 <span style="float:right"><div style="color: blue;display: contents;"><b>ATTENZIONE</b>: Rettifica dei termini in corso. <a id="aLinkVisualizzaDettaglioRettificaTerminiOffertaPCP" href="javascript:showDettRettificaPCP(2);" class="link-generico" style="margin-left: 10px">Visualizza nuovi termini</a></div></span>
+				</td>
+			</gene:campoScheda>
+		</c:if>
+		<gene:campoScheda addTr="false" visibile="${esisteRettificaOffertaPCP}">
+				<tr id="rigaTabellaRettificaTerminiOffertaPCP">
+					<td colspan="2">
+						<table id="tabellaRettificaTerminiOffertaPCP" class="griglia" >		
+		</gene:campoScheda>
+		<gene:campoScheda addTr="false" visibile="${esisteRettificaOffertaPCP}">
+						</table>
+					<td>
+				<tr>
+		</gene:campoScheda>	
 		<gene:campoScheda campo="DTEOFF" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" speciale='${gene:checkProtFunz(pageContext, "ALT","CalcoloTermineMinimo")}'>
 			<c:if test='${gene:checkProtFunz(pageContext, "ALT","CalcoloTermineMinimo")}'>
 				<gene:popupCampo titolo="Calcola termine minimo" href="calcolaTermineMinimo('DTEOFF');" />
@@ -192,7 +235,26 @@
 
 	<gene:gruppoCampi idProtezioni="OFF">
 		<gene:campoScheda nome="OFF">
-			<td colspan="2"><b>Apertura plichi</b> <c:if test="${esisteRettificaApertura eq 'true' }"> <span style="float:right"><a id="aLinkVisualizzaDettaglioRettificaTerminiApertura" href="javascript:showDettRetifica(3);" class="link-generico">Visualizza termini di gara precedenti alla rettifica</a></span></c:if></td>
+			<td colspan="2"><b>Apertura plichi</b> 
+			<c:if test="${esisteRettificaApertura eq 'true' }"> <span style="float:right"><a id="aLinkVisualizzaDettaglioRettificaTerminiApertura" href="javascript:showDettRetifica(3);" class="link-generico">Visualizza termini di gara precedenti alla rettifica</a></span></c:if>
+			</td>
+		</gene:campoScheda>
+		<c:if test="${esisteRettificaAperturaPCP}">
+			<gene:campoScheda nome="OFFRETTPCP">
+				<td colspan="2">
+					 <span style="float:right"><div style="color: blue;display: contents;"><b>ATTENZIONE</b>: Rettifica dei termini in corso. <a id="aLinkVisualizzaDettaglioRettificaTerminiAperturaPCP" href="javascript:showDettRettificaPCP(3);" class="link-generico" style="margin-left: 10px">Visualizza nuovi termini</a></div></span>
+				</td>
+			</gene:campoScheda>
+		</c:if>
+		<gene:campoScheda addTr="false" visibile="${esisteRettificaAperturaPCP}">
+				<tr id="rigaTabellaRettificaTerminiAperturaPCP">
+					<td colspan="2">
+						<table id="tabellaRettificaTerminiAperturaPCP" class="griglia" >		
+		</gene:campoScheda>
+		<gene:campoScheda addTr="false" visibile="${esisteRettificaAperturaPCP}">
+						</table>
+					<td>
+				<tr>
 		</gene:campoScheda>
 		<gene:campoScheda campo="DESOFF" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" />
 		<gene:campoScheda campo="OESOFF" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" />
@@ -247,6 +309,7 @@
 		<gene:fnJavaScriptScheda funzione="showCampiContatto('#PCODOC_FIT#','DOCGAR','PCODOC')" elencocampi="PCODOC_FIT" esegui="false" />
 		<gene:fnJavaScriptScheda funzione="showCampiContatto('#PCOOFF_FIT#','LOCOFF','PCOOFF')" elencocampi="PCOOFF_FIT" esegui="false" />
 		<gene:fnJavaScriptScheda funzione="showCampiContatto('#PCOGAR_FIT#','LOCGAR','PCOGAR')" elencocampi="PCOGAR_FIT" esegui="false" />
+		<gene:fnJavaScriptScheda funzione="controllaVALOFF()" elencocampi="TORN_VALOFF" esegui="false" />
 	</c:if>
 		
 	<gene:javaScript>
@@ -266,13 +329,13 @@
 		if(isGaraLottoUnico){
 			// La sezione 'Termini per la presentazione della documentazione per controllo requisiti'
 			// non e' mai visibile per gare a lotto unico o per gare a lotti con offerta unica
-			if(tipoProcAggiud == "1"){  // Procedura aperta
+			if(tipoProcAggiud == "1" || tipoProcAggiud == "9"){  // Procedura aperta
 				//alert("1.1");
 				showSezioneTerminiPresDomandaPartecipa(false);
 				showSezioneTerminiPresOfferta(true);
 				showSezioneAperturaOfferte(true);
 				showSezioneEstremiInvito(false);
-			}else if(tipoProcAggiud=="3" || tipoProcAggiud=="5" || tipoProcAggiud=="6"){
+			}else if(tipoProcAggiud=="3" || tipoProcAggiud=="5" || tipoProcAggiud=="6" || tipoProcAggiud=="10"){
 				//Solo se gara a lotto unico, se invece della pagina 'Ricezione domande offerte' 
 				//è visibile la pagina 'Ditte concorrenti' (profilo Affidamenti diretti), vengono rese disponibili
 				//le sezioni 'Invito' e 'Termine pres.offerte' 
@@ -346,7 +409,7 @@
 				} 
 			}
 		}
-		if(tipoProcAggiud==3 || tipoProcAggiud==5 || tipoProcAggiud == 6){
+		if(tipoProcAggiud==3 || tipoProcAggiud==5 || tipoProcAggiud == 6 || tipoProcAggiud == 10){
 			showSezioneAvvisoBando(false);	
 		}else{
 			showSezioneAvvisoBando(true);
@@ -371,6 +434,7 @@
 
 	function showSezioneTerminiPresDomandaPartecipa(visualizzaSezione){
 		showObj("rowPDP",visualizzaSezione);
+		showObj("rowPDPRETTPCP",visualizzaSezione);
 		showObj("rowTORN_DTEPAR", visualizzaSezione);
 		showObj("rowTORN_OTEPAR", visualizzaSezione);
 		showObj("rowTORN_DOCGAR", visualizzaSezione);
@@ -490,8 +554,22 @@
 			setValue("TORN_" + nomeCampoFit, "");
 		}
 	}
+	
+	function controllaVALOFF(){
+		var valoff = Number($("#TORN_VALOFF").val());
+		if ($("#TORN_VALOFF").val() === "") {
+			return;
+		}
+		if (!Number.isInteger(valoff) || valoff < 1) {
+			alert("Il campo Numero giorni di validita' offerta deve essere un numero intero positivo");
+			$("#TORN_VALOFF").val("");
+		}
+	}
+
+	
 	function showSezioneTerminiPresOfferta(visualizzaSezione){
 		showObj("rowPDO", visualizzaSezione);
+		showObj("rowPDORETTPCP", visualizzaSezione);
 		showObj("rowTORN_DTEOFF", visualizzaSezione);
 		showObj("rowTORN_OTEOFF", visualizzaSezione);
 		//showObj("rowTORN_LOCOFF", visualizzaSezione);
@@ -554,6 +632,7 @@
 
 	function showSezioneAperturaOfferte(visualizzaSezione){
 		showObj("rowOFF",visualizzaSezione);
+		showObj("rowOFFRETTPCP",visualizzaSezione);
 		showObj("rowTORN_DESOFF", visualizzaSezione);
 		showObj("rowTORN_OESOFF", visualizzaSezione);
 		//showObj("rowTORN_LOCGAR", visualizzaSezione);
@@ -926,6 +1005,15 @@
 	$("#rigaTabellaRettificaTerminiApertura").hide();
 	$("#tabellaRettificaTerminiApertura").hide();
 	
+	$("#rigaTabellaRettificaTerminiPartecipazPCP").hide();
+	$("#tabellaRettificaTerminiPartecipazPCP").hide();
+	
+	$("#rigaTabellaRettificaTerminiOffertaPCP").hide();
+	$("#tabellaRettificaTerminiOffertaPCP").hide();
+	
+	$("#rigaTabellaRettificaTerminiAperturaPCP").hide();
+	$("#tabellaRettificaTerminiAperturaPCP").hide();
+	
 	storicoPartecipazioneCreato = false;
 	storicoOffertaCreato = false;
 	storicoAperturaPartecipazioneCreato = false;
@@ -979,6 +1067,63 @@
 				$('#aLinkVisualizzaDettaglioRettificaTerminiApertura').text('Nascondi termini di gara precedenti alla rettifica');
 				$('#tabellaRettificaTerminiApertura').show();
 				$("#rigaTabellaRettificaTerminiApertura").show();
+		   }
+		}
+	}
+	
+	var pcpPartecipazioneCreato = false;
+	var pcpOffertaCreato = false;
+	var pcpAperturaPartecipazioneCreato = false;
+	
+	function showDettRettificaPCP(tipo){
+		var codgar=getValue("TORN_CODGAR");
+		if(codgar==null || codgar=="")
+			codgar=getValue("GARE_CODGAR1");
+		var contextPath = "${contextPath}";
+		if(tipo==1 && pcpPartecipazioneCreato==false){
+			var visualizzaDataChiarimenti = "${gene:checkProt(pageContext, 'COLS.VIS.GARE.TORN.DTERMRICHCDP') }";
+			var visualizzaRispostaChiarimenti = "${gene:checkProt(pageContext, 'COLS.VIS.GARE.TORN.DTERMRISPCDP') }";
+			caricamentoStoricoRettificaTerminiPCP(codgar, tipo, contextPath,visualizzaDataChiarimenti,visualizzaRispostaChiarimenti);
+			pcpPartecipazioneCreato=true;
+		}else if(tipo==2 && pcpOffertaCreato==false){
+			var visualizzaDataChiarimenti = "${gene:checkProt(pageContext, 'COLS.VIS.GARE.TORN.DTERMRICHCPO') }";
+			var visualizzaRispostaChiarimenti = "${gene:checkProt(pageContext, 'COLS.VIS.GARE.TORN.DTERMRISPCPO') }";
+			caricamentoStoricoRettificaTerminiPCP(codgar, tipo, contextPath,visualizzaDataChiarimenti,visualizzaRispostaChiarimenti);
+			pcpOffertaCreato=true;
+		}else if(tipo==3 && pcpAperturaPartecipazioneCreato==false){
+			caricamentoStoricoRettificaTerminiPCP(codgar, tipo, contextPath,"false","false");
+			pcpAperturaPartecipazioneCreato=true;
+		}
+				
+		if(tipo==1){
+			if ($('#tabellaRettificaTerminiPartecipazPCP').is(':visible')) {  
+				$("#rigaTabellaRettificaTerminiPartecipazPCP").hide();
+				$('#tabellaRettificaTerminiPartecipazPCP').hide();
+				$('#aLinkVisualizzaDettaglioRettificaTerminiPartecipazionePCP').text('Visualizza nuovi termini');
+			}else{
+				$('#aLinkVisualizzaDettaglioRettificaTerminiPartecipazionePCP').text('Nascondi nuovi termini');
+				$("#rigaTabellaRettificaTerminiPartecipazPCP").show();
+				$('#tabellaRettificaTerminiPartecipazPCP').show();
+			}
+		}else if(tipo==2){
+			if ($('#tabellaRettificaTerminiOffertaPCP').is(':visible')) {  
+				$('#tabellaRettificaTerminiOffertaPCP').hide();
+				$("#rigaTabellaRettificaTerminiOffertaPCP").hide();
+				$('#aLinkVisualizzaDettaglioRettificaTerminiOffertaPCP').text('Visualizza nuovi termini');
+			}else{
+				$('#aLinkVisualizzaDettaglioRettificaTerminiOffertaPCP').text('Nascondi nuovi termini');
+				$('#tabellaRettificaTerminiOffertaPCP').show();
+				$("#rigaTabellaRettificaTerminiOffertaPCP").show();
+		   }
+		}else if(tipo==3){
+			if ($('#tabellaRettificaTerminiAperturaPCP').is(':visible')) {  
+				$('#tabellaRettificaTerminiAperturaPCP').hide();
+				$("#rigaTabellaRettificaTerminiAperturaPCP").hide();
+				$('#aLinkVisualizzaDettaglioRettificaTerminiAperturaPCP').text('Visualizza nuovi termini');
+			}else{
+				$('#aLinkVisualizzaDettaglioRettificaTerminiAperturaPCP').text('Nascondi nuovi termini');
+				$('#tabellaRettificaTerminiAperturaPCP').show();
+				$("#rigaTabellaRettificaTerminiAperturaPCP").show();
 		   }
 		}
 	}

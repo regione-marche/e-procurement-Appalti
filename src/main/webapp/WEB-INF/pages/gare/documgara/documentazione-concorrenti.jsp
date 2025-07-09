@@ -82,9 +82,12 @@
 				<gene:campoScheda campo="IDDOCDG_${param.contatore}" entita="DOCUMGARA" campoFittizio="true"  visibile="false" definizione="N12;0;;;IDDOCDGDG" value="${item[6]}" />
 				<gene:campoScheda campo="IDPRG_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2;1;;;DIGIDPRG" value="${item[5]}"/>
 				<gene:campoScheda campo="IDDOCDIG_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="N12;1;;;DIGID"  value="${item[6]}" />
-				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" title="Fac-simile" modificabile="false" visibile="${item[21] ne '1'}" definizione="T100;0;;;DIGNOMDOC"  value="${documentazioneConcorrentiDescFile[(3 * param.contatore) - 2 ]}" href="javascript:visualizzaFileAllegato('${item[5]}','${item[6]}',${gene:string4Js(documentazioneConcorrentiDescFile[(3 * param.contatore) - 2 ])});">
-					<c:if test='${item[20] ne "DGUE" and not empty documentazioneConcorrentiDescFile[(3 * param.contatore) - 2 ] and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and item[7] ne "5" and not empty param.firmaRemota and param.autorizzatoModifiche ne "2" and modificabile and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.FirmaRemotaDocumenti")}'>
-						<a style="float:right;" href="javascript:openModal('${item[5]}','${item[6]}','${documentazioneConcorrentiDescFile[(3 * param.contatore) - 2 ]}','${pageContext.request.contextPath}');">
+				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" title="Fac-simile" modificabile="false" visibile="${item[21] ne '1'}" definizione="T100;0;;;DIGNOMDOC"  value="${documentazioneConcorrentiDescFile[(4 * param.contatore) - 3 ]}" href="javascript:visualizzaFileAllegato('${item[5]}','${item[6]}',${gene:string4Js(documentazioneConcorrentiDescFile[(4 * param.contatore) - 3 ])});">
+					<c:if test="${param.isVerificaPDFA eq '1' && documentazioneConcorrentiDescFile[(4 * param.contatore) - 1 ] eq 'pdf/a'}">
+						&nbsp;<img id="imgCheckPDFaDocMessage_${param.contatore}" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
+					</c:if>
+					<c:if test='${item[20] ne "DGUE" and not empty documentazioneConcorrentiDescFile[(4 * param.contatore) - 3 ] and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and item[7] ne "5" and not empty param.firmaRemota and param.autorizzatoModifiche ne "2" and modificabile and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.FirmaRemotaDocumenti")}'>
+						<a style="float:right;" href="javascript:openModal('${item[5]}','${item[6]}','${documentazioneConcorrentiDescFile[(4 * param.contatore) - 3 ]}','${pageContext.request.contextPath}');">
 						<img src="${pageContext.request.contextPath}/img/firmaRemota.png" title="Firma digitale del documento" alt="Firma documento" width="16" height="16">
 						<span title="Firma digitale del documento">Firma documento</span></a>
 					</c:if>
@@ -92,13 +95,16 @@
 						<a style="float:right;" href="javascript:apriConMDGUE('<c:out value="${codiceGara}" />', '${item[5]}', '${item[6]}')">Apri con M-DGUE</a>
 					</c:if>
 				</gene:campoScheda>
+				<gene:campoScheda campo="DIGTIPDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2;0;;SN;DIGTIPDOC" value="${documentazioneConcorrentiDescFile[(4 * param.contatore) - 1 ]}"/>
 				<gene:campoScheda campo="GENTEL_${param.contatore}" entita="DOCUMGARA" campoFittizio="true" visibile="false" modificabile="false" definizione="T2;0;;SN;G1GENTEL" value="${item[21]}" />
 				<c:if test='${(modo eq "MODIFICA" or modo eq "NUOVO") and item[21] ne "1" and campiEsistentiModificabiliDaProfilo and modificabile and item[20] ne "DGUE"}'>
 					<gene:campoScheda title="Nome file" nome="selezioneFile_${param.contatore}">
 							<input type="file" name="selFile[${param.contatore}]" id="selFile[${param.contatore}]" class="file" size="70" onkeydown="return bloccaCaratteriDaTastiera(event);" onchange='javascript:scegliFile(${param.contatore});'/>
+							<span id="checkPDFaDocMessage_${param.contatore}" style="display:none; color: blue;"><b>ATTENZIONE:</b> file non conforme al formato PDF/A</span>
+							<img id="imgCheckPDFaDocMessage_${param.contatore}" style="display:none;" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
 					</gene:campoScheda>
 				</c:if>
-				<gene:campoScheda campo="DIGDESDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true"  visibile="false" definizione="T2000;0;;;DIGDESDOC"  gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote" value="${documentazioneConcorrentiDescFile[(3 * param.contatore) - 3]}"/>
+				<gene:campoScheda campo="DIGDESDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true"  visibile="false" definizione="T2000;0;;;DIGDESDOC"  gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote" value="${documentazioneConcorrentiDescFile[(4 * param.contatore) - 4]}"/>
 				<gene:campoScheda campo="STATODOC_${param.contatore}" entita="DOCUMGARA" campoFittizio="true" visibile="false" definizione="N7;0;A1061;;STODOCDG" value="${item[7]}" />
 				<gene:campoScheda campo="VALENZA_${param.contatore}" entita="DOCUMGARA" campoFittizio="true" visibile="false" definizione="N2;0;;;VALENZADG" value="${item[11]}" />
 				<c:if test="${item[21] eq '1'}">
@@ -136,10 +142,17 @@
 				<gene:campoScheda campo="IDDOCDG_${param.contatore}" entita="DOCUMGARA" campoFittizio="true"  visibile="false" definizione="N12;0;;;IDDOCDGDG"  />
 				<gene:campoScheda campo="IDPRG_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2;1;;;DIGIDPRG" />
 				<gene:campoScheda campo="IDDOCDIG_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="N12;1;;;DIGID" />
-				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" title="Fac-simile" modificabile="false" definizione="T100;0;;;DIGNOMDOC" value=''/>
+				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" title="Fac-simile" modificabile="false" definizione="T100;0;;;DIGNOMDOC" value=''>
+					<c:if test="${param.isVerificaPDFA eq '1' && documentazioneConcorrentiDescFile[(4 * param.contatore) - 1 ] eq 'pdf/a'}">
+						&nbsp;<img id="imgCheckPDFaDocMessage_${param.contatore}" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
+					</c:if>
+				</gene:campoScheda>
+				<gene:campoScheda campo="DIGTIPDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2;0;;SN;DIGTIPDOC" />
 				<c:if test='${modo eq "MODIFICA" or modo eq "NUOVO"}'>
 					<gene:campoScheda title="Nome file" nome="selezioneFile_${param.contatore}">
 							<input type="file" name="selFile[${param.contatore}]" id="selFile[${param.contatore}]" class="file" size="70" onkeydown="return bloccaCaratteriDaTastiera(event);" onchange='javascript:scegliFile(${param.contatore});'/>
+							<span id="checkPDFaDocMessage_${param.contatore}" style="display:none; color: blue;"><b>ATTENZIONE:</b> file non conforme al formato PDF/A</span>
+							<img id="imgCheckPDFaDocMessage_${param.contatore}" style="display:none;" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
 					</gene:campoScheda>
 				</c:if>
 				<gene:campoScheda campo="DIGDESDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true"  visibile="false" definizione="T2000;0;;;DIGDESDOC"  gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote"/>

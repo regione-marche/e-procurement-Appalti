@@ -46,7 +46,7 @@
 	
 	<c:set var="parametri" value="T:${numeroGara};T:${numeroGara};N:${numeroSeduta}"/>
 	<c:set var="where" value="GFOF.NGARA2=? AND GFOF.CODFOF NOT IN (SELECT CODFOF FROM GARSEDPRES WHERE GARSEDPRES.NGARA = ? AND GARSEDPRES.NUMSED=?)"/>
-	${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunction", pageContext, "GFOF", where, parametri)}
+	${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "GFOF", where, parametri)}
 	
 	<c:set var="where1" value="GFOF.NGARA2='${numeroGara}' AND GFOF.CODFOF NOT IN (SELECT CODFOF FROM GARSEDPRES WHERE GARSEDPRES.NGARA ='${numeroGara }' AND GARSEDPRES.NUMSED=${numeroSeduta})" />
 		

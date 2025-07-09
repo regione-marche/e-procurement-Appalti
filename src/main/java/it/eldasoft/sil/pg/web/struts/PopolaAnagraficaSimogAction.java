@@ -109,14 +109,14 @@ public class PopolaAnagraficaSimogAction extends ActionBaseNoOpzioni {
         	  }
           }
           ArrayList<String> erroriBloccanti = new ArrayList<String>();
-          if(!"NOUPD".equals(tipooperazione)) {
-        	  erroriBloccanti = (ArrayList<String>) result.get("erroriBloccanti");  
-          }
           ArrayList<String> erroriNonBloccanti = new ArrayList<String>();
+          ArrayList<String> avvisiNonBloccanti = new ArrayList<String>();
           if(!"NOUPD".equals(tipooperazione)) {
+        	  erroriBloccanti = (ArrayList<String>) result.get("erroriBloccanti");
         	  erroriNonBloccanti = (ArrayList<String>) result.get("erroriNonBloccanti");  
+        	  avvisiNonBloccanti = (ArrayList<String>) result.get("avvisiNonBloccanti");
           }          
-          if((erroriBloccanti.size() == 0 && erroriNonBloccanti.size() == 0) || modalita.equals("COMPLETA") )  {//BEST CASE---ACCEDO ALLA SCHEDA
+          if((erroriBloccanti.size() == 0 && erroriNonBloccanti.size() == 0 && avvisiNonBloccanti.size() == 0) || modalita.equals("COMPLETA") )  {//BEST CASE---ACCEDO ALLA SCHEDA
             String esitoWS = null;
             String key = null;
             //recupero la chiave e apro la scheda
@@ -151,6 +151,8 @@ public class PopolaAnagraficaSimogAction extends ActionBaseNoOpzioni {
             esitoWS = "true";
             request.setAttribute("esitoWS", esitoWS);
           }else{
+            if(avvisiNonBloccanti.size() > 0)
+              request.setAttribute("avvisiNonBloccanti", avvisiNonBloccanti);
             if(erroriBloccanti.size() == 0){
               //CAMBIARE QUESTO FORWARD NELLA PAGINA CHE CHIEDE ALL'UTENTE SE VUOLE PROSEGUIRE
               request.setAttribute("erroriNonBloccanti", erroriNonBloccanti);

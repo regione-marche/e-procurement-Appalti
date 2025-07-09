@@ -16,10 +16,12 @@
 
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 <script type="text/javascript" src="${contextPath}/js/jquery.documenti.gara.js"></script>
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>
 
 <c:set var="numeroGara" value='${gene:getValCampo(key, "NGARA")}'/>
 <c:set var="dollaro" value="$"/>
 <c:set var="codiceGara" value="${dollaro }${numeroGara }"/>
+<c:set var="tipoDoc"  value="${param.tipoDoc}" />
 
 <c:set var="bloccoPubblicazionePortale" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteBloccoPubblicazionePortaleFunction", pageContext,codiceGara,"BANDO","false")}' />
 
@@ -27,7 +29,9 @@
 
 <c:set var="richiestaFirma" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "documentiDb.richiestaFirma")}'/>
 
-<gene:formScheda entita="GAREAVVISI" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreDocumentazioneGara">
+<c:set var="isPaginaDocumentazione" value='true'/>
+
+<gene:formScheda entita="GAREAVVISI" gestisciProtezioni="true" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreDocumentazioneGara" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreDocumentazioneGara">
 
 	<gene:redefineInsert name="pulsanteNuovo"></gene:redefineInsert>
 	<gene:redefineInsert name="schedaNuovo"></gene:redefineInsert>
@@ -63,15 +67,34 @@
 	<gene:campoScheda campo="MODLICG" entita="GARE" where="GAREAVVISI.CODGAR = GARE.CODGAR1 and GAREAVVISI.NGARA = GARE.NGARA" visibile="false"/>
 	<gene:campoScheda campo="VALTEC" entita="GARE1" where="GAREAVVISI.CODGAR = GARE1.CODGAR1 and GAREAVVISI.NGARA = GARE1.NGARA" visibile="false"/>
 	
+	<c:choose>
+	<c:when test="${not empty vernpa and gene:callFunctionN('it.eldasoft.sil.pg.tags.funzioni.GetSeAttivoModuloANACFormFunction', pageContext, datiRiga.GAREAVVISI_CODGAR) eq 'true'}">
+		<gene:campoScheda>
+		<td colspan="2">
+			<input type="radio" value="0" name="filtroDocumentazione" id="anacFormPCP" <c:if test='${tipoDoc eq 0}'>checked="checked"</c:if> onclick="javascript:cambiaTipoDocumentazione(0);" />
+			 Schede ANAC
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		
+			<input type="radio" value="1" name="filtroDocumentazione" id="atti" <c:if test='${tipoDoc ne 2 and tipoDoc ne 3 and tipoDoc ne 0}'>checked="checked"</c:if> onclick="javascript:cambiaTipoDocumentazione('1');" />
+			 Documenti e atti
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		</td>
+		</gene:campoScheda>
+	</c:when>
+
+	<c:otherwise>
+		<input type="hidden" name="filtroDocumentazione" id="filtroDocumentazione" value="1"/>
+	</c:otherwise>
+	</c:choose>
+	
 	<jsp:include page="/WEB-INF/pages/gare/documgara/elenco-documenti-albero.jsp">
 		<jsp:param name="numeroGara" value="${numeroGara}"/>
 		<jsp:param name="codiceGara" value="${codiceGara}"/>
 		<jsp:param name="genere" value="11"/>
 		<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
-		<jsp:param name="tipoDoc" value="1"/>
+		<jsp:param name="tipoDoc" value="${tipoDoc}"/>
+		<jsp:param name="gruppo" value="${tipoDoc}"/>
 	</jsp:include>
-	
-	<input type="hidden" name="filtroDocumentazione" id="filtroDocumentazione" value="1"/>
 	
 </gene:formScheda>
 
@@ -80,7 +103,24 @@
 
 document.forms[0].encoding="multipart/form-data";
 
+function cambiaTipoDocumentazione(tipoDoc){
+	document.forms[0].metodo.value="apri";
+	document.forms[0].jspPathTo.value=document.forms[0].jspPath.value;
+	bloccaRichiesteServer();
+	document.forms[0].action += "?tipoDoc=" + tipoDoc;
+	document.forms[0].encoding="";
+	document.forms[0].submit();
+}
+
 var idconfi = "${idconfi}";
+
+function visualizzaFormNPA(idForm,islotti,modpres) {
+	formVisualizzaFormNPA.key.value = "G1NPAFORM.ID=N:" + idForm;
+	formVisualizzaFormNPA.idForm.value = idForm;
+	formVisualizzaFormNPA.islotti.value = islotti;
+	formVisualizzaFormNPA.modpres.value = modpres;
+	formVisualizzaFormNPA.submit();
+}
 
 function visualizzaDocumenti(ngara,tipoPubblicazione,gruppo){
 	var href = contextPath + "/ApriPagina.do?href=gare/documgara/documenti-tipologia.jsp";
@@ -99,12 +139,12 @@ function pubblicaSuPortaleAppalti(){
 }
 
 function ConfermaModifica(){
-	document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+	document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 	schedaConferma();
 }
  
 function ConfermaAnnulla(){
-	document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+	document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 	schedaAnnulla();
 }
  
@@ -150,6 +190,21 @@ function scegliFile(indice) {
 	<input type="hidden" name="href" value="gene/system/firmadigitale/verifica-firmadigitale.jsp" />
 	<input type="hidden" name="idprg" id="idprg" value="" />
 	<input type="hidden" name="iddocdig" id="iddocdig" value="" />
+</form>
+
+<form name="formVisualizzaFormNPA" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+	<input type="hidden" name="href" value="gare/g1npaform/g1npaform-scheda.jsp" /> 
+	<input type="hidden" name="key" value="" />
+	<input type="hidden" name="codiceGara" value="${codiceGara}" />
+	<input type="hidden" name="idForm" value="" />
+	<input type="hidden" name="islotti" value="" />
+	<input type="hidden" name="modpres" value="" />
+</form>
+
+<form name="formAggiungiAnacForm" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+	<input type="hidden" name="href" value="gare/g1npaform/aggiungiAnacForm.jsp" /> 
+	<input type="hidden" name="codiceGara" value="${codiceGara}" />
+	<input type="hidden" name="ngara" value="${ngara}" />
 </form>
 
 <form name="formVisualizzaDocumenti" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">

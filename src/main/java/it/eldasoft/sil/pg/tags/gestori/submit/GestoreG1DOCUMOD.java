@@ -14,6 +14,8 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
+import it.eldasoft.gene.ws.objectstorage.UploadInfo;
 import org.apache.struts.upload.FormFile;
 import org.springframework.transaction.TransactionStatus;
 
@@ -63,7 +65,10 @@ public class GestoreG1DOCUMOD extends AbstractGestoreChiaveIDAutoincrementante {
                 Long iddocdig = (Long)SqlManager.getValueFromVectorParam(listaW_DOCDIG.get(i), 0).getValue();
                 String idprg = (String)SqlManager.getValueFromVectorParam(listaW_DOCDIG.get(i), 1).getValue();
                 //delete
+			 	UploadInfo oldBucketInfo = ObjectStorageUtils.getUploadInfo("select bucket_ref, bucket_uuid from w_docdig where idprg=? and iddocdig=?",new Object[] {idprg, iddocdig});
+			 	ObjectStorageUtils.deleteFile(oldBucketInfo.bucket_ref(),oldBucketInfo.uuid());
                 String query = " delete from W_DOCDIG where IDPRG = ? AND IDDOCDIG = ? ";
+
                 sqlManager.update(query, new Object[]{idprg,iddocdig});
               }
             }

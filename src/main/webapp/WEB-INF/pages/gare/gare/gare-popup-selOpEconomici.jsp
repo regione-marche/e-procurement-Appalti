@@ -191,11 +191,23 @@
 	</c:otherwise>
 </c:choose>
 
+<c:choose>
+	<c:when test='${param.filtroElPremFasce eq "true"}'>
+		<c:set var="filtroElPremFasce" value="${param.filtroElPremFasce}"/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="filtroElPremFasce" value="${filtroElPremFasce}"/>
+	</c:otherwise>
+</c:choose>
+
+
 <c:if test='${empty RISULTATO or RISULTATO ne "OK"}' >
 	${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetDatiGarealboFunction", pageContext, garaElenco)}
 </c:if>
 
 <c:set var="where" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetFiltroSelOperatoriFunction", pageContext)}' scope="request"/>
+
+<c:set var="ngaraBonificato" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from GARE where ngara=?", ngara)}'/>
 
 <c:choose>
 	<c:when test='${not empty RISULTATO and RISULTATO eq "OK"}' >
@@ -319,9 +331,8 @@
 	</c:when>
 	<c:otherwise>
 	
-	
-	
-	
+<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.IsElencoElPremFunction" parametro="${ngara}" />
+
 <c:if test="${!empty elencoNumcla}">
 	<c:set var="classificaCatPrev" value='${fn:substringBefore(elencoNumcla,",")}'/>
 	<c:if test='${empty classificaCatPrev && fn:indexOf(elencoNumcla,",")<0}'>
@@ -329,7 +340,7 @@
 	</c:if>
 </c:if>
 
-<c:set var="ordinamento" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetOrdinamentoElencoOpEconomiciFunction", pageContext,tipoalgo,classificaCatPrev,entita)}' scope="request"/>
+<c:set var="ordinamento" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.GetOrdinamentoElencoOpEconomiciFunction", pageContext,tipoalgo,classificaCatPrev,entita,ngara)}' scope="request"/>
 
 ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetImportoGaraFunction", pageContext,ngara,isGaraLottiConOffertaUnica)}
 
@@ -367,7 +378,7 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetImportoGaraFunction", 
 			Nella lista sottostante sono riportate le ditte abilitate all'elenco operatori economici 
 			a cui è stato assegnato un numero ordine e qualificate ${labelFiltro} seguenti categorie o prestazioni della gara corrente:<br>
 			${tableCategorie }
-			<c:if test="${tableFiltriAggiuntiviObbl ne '' || tableFiltriAggiuntivi ne '' || tableZoneAttivita ne ''}">
+			<c:if test="${tableFiltriAggiuntiviObbl ne '' || tableFiltriAggiuntivi ne '' || tableZoneAttivita ne '' || (not empty sessionScope.filtroElPremFasce and sessionScope.filtroElPremFasce ne '')}">
 				<br/>Gli operatori sono ulteriormente filtrati in base ai seguenti criteri:<br/>
 			</c:if>
 			<c:if test="${tableFiltriAggiuntiviObbl ne ''}">
@@ -380,12 +391,15 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetImportoGaraFunction", 
 				Zone di attivit&agrave;:
 				${tableZoneAttivita}
 			</c:if>
+			<c:if test="${(not empty sessionScope.filtroElPremFasce and sessionScope.filtroElPremFasce ne '')}">
+				Fascia di punteggio: ${filtroElPremFasce}<br>
+			</c:if>
 			<c:if test="${tableAffidatariEsclusi ne ''}">
 				<br/>Viene escluso dalla selezione l'affidatario uscente:<br/>
 				${tableAffidatariEsclusi}
 			</c:if>
 			<br/>
-			L'ordine con cui sono presentate le ditte si basa sul criterio di rotazione '${criterioRotazioneDesc}'.
+			L'ordine con cui sono presentate le ditte si basa<c:if test='${isElencoElPrem eq "true" and inseritiElementiPremiali eq "true"}'> sul punteggio derivante dal possesso degli elementi premiali e</c:if> sul criterio di rotazione '${criterioRotazioneDesc}'.
 			<c:choose>
 				<c:when test="${aggnumord eq '1'}">
 					In particolare il numero d'ordine è stato appena riassegnato alle ditte con modalità casuale.
@@ -403,6 +417,25 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetImportoGaraFunction", 
 				L'importo limite è ${ctrlimpValorePerVisualizzazione}
 				<c:if test='${ctrlaggiu eq 1}'> e gli operatori che superano tale importo non possono venire selezionati</c:if>.
 				<c:set var="ditteSelezionabili" value="0"/>
+			</c:if>
+			<c:if test='${isElencoElPrem eq "true"}'>
+				<br/><br/>
+				<c:choose>
+					<c:when test="${inseritiElementiPremiali eq 'true'}">
+						<b>Elenco con elementi premiali:</b>
+						<c:if test="${not empty elpremsinf && not empty elpremsint}">
+							<br>Fascia 3 da ${elpremsint} a 100
+							<br>Fascia 2 da ${elpremsinf} a ${elpremsint}
+							<br>Fascia 1 da 0 a ${elpremsinf}
+						</c:if>
+						<c:if test="${not empty delpremcont}">
+							<br/>Data ultimo calcolo punteggi: ${delpremcont}
+						</c:if>
+					</c:when>
+					<c:otherwise>
+						Nessun elemento premiale definito.
+					</c:otherwise>
+				</c:choose>
 			</c:if>
 			<br/><br/>
 			<c:if test='${not empty minOp}'>
@@ -509,7 +542,30 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetImportoGaraFunction", 
 							<input type="hidden" name="campoDisabilitatoImportoSopraLimite" value="${ctrlaggiu eq 1 and valoreIMPAGG > ctrlimp}"/>
 						</c:if>
 					</gene:campoLista>
-					
+
+					<c:if test='${isElencoElPrem eq "true" and inseritiElementiPremiali eq "true"}'>
+						<c:if test="${not empty elpremsinf && not empty elpremsint}">
+							<c:set var="punteggioDitta" value="${datiRiga.ELPREMPUN_PUNTOT}" />
+							<c:set var="numeroFascia" value="${punteggioDitta > elpremsint ? 3 : punteggioDitta > elpremsinf ? 2 : 1}" />
+							<gene:campoLista campo="Fascia" title="Fascia" campoFittizio="true" definizione="N1;;;;" >
+								<center>
+								<c:set var="fasciaImgSize" value="16" />
+								<c:choose>
+									<c:when test="${numeroFascia eq 3}">
+										<img width="${fasciaImgSize}" height="${fasciaImgSize}" title="Fascia 3" alt="Fascia 3" src="${pageContext.request.contextPath}/img/elpremFascia3.svg"/>
+									</c:when>
+									<c:when test="${numeroFascia eq 2}">
+										<img width="${fasciaImgSize}" height="${fasciaImgSize}" title="Fascia 2" alt="Fascia 2" src="${pageContext.request.contextPath}/img/elpremFascia2.svg"/>
+									</c:when>
+									<c:when test="${numeroFascia eq 1}">
+										<img width="${fasciaImgSize}" height="${fasciaImgSize}" title="Fascia 1" alt="Fascia 1" src="${pageContext.request.contextPath}/img/elpremFascia1.svg"/>
+									</c:when>
+								</c:choose>
+								</center>
+							</gene:campoLista>
+						</c:if>
+					</c:if>
+
 					<gene:campoLista campo="GARA"  visibile="false"/>
 					<gene:campoLista campo="CODICE" visibile="false"/>
 					<gene:campoLista campo="RAGSOC" ordinabile="${selezioneAutomaticaDitte eq 'false'}"/>
@@ -527,6 +583,11 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetImportoGaraFunction", 
 							<gene:campoLista campo="LUOGO_DITTA" campoFittizio="true" value='${gene:concat(datiRiga.V_DITTE_ELESUM_LOCIMP, gene:if(empty datiRiga.V_DITTE_ELESUM_PROIMP, "", gene:concat(" (", gene:concat(datiRiga.V_DITTE_ELESUM_PROIMP, ")"))))}' definizione="T100;;;;LOCIMP" ordinabile="false"/>
 						</c:otherwise>
 					</c:choose>
+
+					<c:if test='${isElencoElPrem eq "true" and inseritiElementiPremiali eq "true"}'>
+						<gene:campoLista campo="PUNTOT" entita="ELPREMPUN" where="${entita}.codice=ELPREMPUN.codimp and ${entita}.gara=ELPREMPUN.ngara and ELPREMPUN.ngarag='${ngaraBonificato}'" width="60" />
+					</c:if>
+
 					<c:choose>
 						<c:when test="${entita == 'V_DITTE_ELECAT_SA' }">
 							<gene:campoLista campo="NUMIRTOT" ordinabile="${selezioneAutomaticaDitte eq 'false'}" title="N.inviti e penalità" visibile="${tipoalgo eq '9'}" width="80"/>
@@ -647,7 +708,7 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetImportoGaraFunction", 
 						</c:choose>
 					</c:if>
 					</gene:campoLista >
-					
+
 					
 					
 					<input type="hidden" name="entita" id="entita" value="${entita}" />
@@ -684,6 +745,7 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetImportoGaraFunction", 
 					<input type="hidden" name="modalitaSelezioneMista" id="modalitaSelezioneMista" value="${modalitaSelezioneMista}" />
 					<input type="hidden" name="elencoIdFiltriSpecificiObbl" id="elencoIdFiltriSpecificiObbl" value="${elencoIdFiltriSpecificiObbl}" />
 					<input type="hidden" name="modalitaFiltroCategorie" id="modalitaFiltroCategorie" value="${sessionScope.modalitaFiltroCategorie}" />
+					<input type="hidden" name="filtroElPremFasce" id="filtroElPremFasce" value="${filtroElPremFasce}" />
 				</gene:formLista></td>
 			</tr>
 			<tr>
@@ -722,6 +784,11 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetImportoGaraFunction", 
 			</tr>
 			<tr>
 				<td class="comandi-dettaglio"  colSpan="2">
+
+					<c:if test='${not empty elpremsinf && not empty elpremsint}'>
+						<INPUT type="button"  class="bottone-azione" value='Filtra su fasce di punteggio' title='Filtra su fasce di punteggio' onclick="javascript:applicaFiltroElPremFasce();">
+						&nbsp;
+					</c:if>
 					<c:if test='${showFiltroEsclAffUsc eq "1"}'>
 						<INPUT type="button"  class="bottone-azione" value='Escludi affidatario uscente' title='Escludi affidatario uscente' onclick="javascript:escludiAffidatariUscenti();">			
 						&nbsp;
@@ -876,6 +943,11 @@ ${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetImportoGaraFunction", 
 			href += "&garaElenco=${garaElenco }";
 			href += "&stazioneAppaltante=${stazioneAppaltante }";
 			openPopUpCustom(href, "impostaFiltroZoneAtt", 600, 600, "yes", "yes");
+		}
+
+		function applicaFiltroElPremFasce(){
+			href = "href=gare/gare/gare-popup-filtroElPremFasce.jsp";
+			openPopUpCustom(href, "impostaFiltroElPremFasce", 600, 250, "yes", "yes");
 		}
 
 		function escludiAffUsc(){

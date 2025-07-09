@@ -29,6 +29,15 @@
 	<c:set var="esisteGaraOLIAMM" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsisteGaraOLIAMMFunction",  pageContext,gene:getValCampo(param.key, "CODGAR"))}' />
 </c:if>
 
+<c:set var="codiceGara" value='${gene:getValCampo(key, "CODGAR")}'/>
+
+<c:set var="sql" value="select vernpa from torn where codgar=?"/>
+<c:set var="chiaveSQL" value='${codiceGara}'/>
+<c:set var="verNPA" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, sql, chiaveSQL)}'/>
+
+<c:if test='${modo ne "NUOVO"}'>
+	<c:set var="bloccoModificaPCP" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.npa.GetBloccoModificaPCP", pageContext, codiceGara, "true")}'/>
+</c:if>
 
 <c:if test='${modo eq "MODIFICA" and tipologiaGara == "3"}'>
 	<c:set var="bloccoGcap" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteBloccoGcapFunction",  pageContext,gene:getValCampo(param.key, "CODGAR"),"OFFERTA_UNICA")}' />
@@ -52,7 +61,7 @@
 
 <c:choose>
 	<c:when test='${(isProceduraTelematica || applicareBloccoPubblicazioneGareNonTelematiche eq "1") && (bloccoPubblicazionePortaleEsito eq "TRUE" || bloccoPubblicazionePortaleBando eq "TRUE") }'>
-		<c:set var="modificaLabel" value='Modifica dopo pubblicazione' />
+		<c:set var="modificaLabel" value='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' />
 		<c:set var="bloccoModificaPubblicazione" value='TRUE' />
 		<c:set var="bloccoModificatiDati" value='true' />
 		<c:set var="campiModificabili" value="true"/>
@@ -65,18 +74,22 @@
 	</c:otherwise>
 </c:choose>
 
-<c:set var="isFascicoloDocumentaleAbilitato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.IsApplicaFascicolazioneValidaFunction",  pageContext, gene:getValCampo(param.key, "CODGAR"), idconfi)}' />
+<c:if test="${bloccoModificaPCP}">
+	<c:set var="bloccoModificatiDati" value='true' />
+</c:if>
 
 <%/* Altri dati generali della gara */%>
 <gene:formScheda entita="TORN" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreTORN">
 
 	<input type="hidden" name="bloccoModificaPubblicazione" value="${bloccoModificaPubblicazione}" />
+	<input type="hidden" name="bloccoModificaPCP" value="${bloccoModificaPCP}" />
 	<input type="hidden" name="paginaAltriDatiTorn" value="si" />
 	
 	<gene:redefineInsert name="pulsanteNuovo"></gene:redefineInsert>
 	<gene:redefineInsert name="schedaNuovo"></gene:redefineInsert>
 	
 	<gene:campoScheda campo="CODGAR" visibile="false" />
+	<gene:campoScheda campo="ISCONCES" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" visibile="false"/>
 	
 	<gene:campoScheda campo="TIPOLOGIA" title="Tipologia gara" entita="V_GARE_TORN" visibile='false' campoFittizio="true" value="${tipologiaGara}" definizione="N1"/>
 	<gene:campoScheda campo="CATIGA_FIT" campoFittizio="true" definizione="T30" value="${catiga}" visibile="false" />
@@ -85,8 +98,16 @@
 	<gene:campoScheda visibile="${bloccoModificatiDati eq 'true' and modo eq 'MODIFICA'}">
 		<td colspan="2" style="color:#0000FF">
 		<br><b>ATTENZIONE:</b>&nbsp;
-		Parte dei dati sono in sola consultazione perché la gara è pubblicata su portale Appalti<br>&nbsp;
-		</td>	
+		Parte dei dati sono in sola consultazione perché <c:if test="${bloccoModificaPCP}"> sono state inviate delle schede ad ANAC. </c:if>
+		<c:if test="${bloccoModificaPubblicazione}">
+			<c:choose>
+				<c:when test="${bloccoModificaPCP}">La gara è anche </c:when>
+				<c:otherwise>la gara è </c:otherwise>
+			</c:choose>
+			pubblicata su portale Appalti.
+		 </c:if>
+		    <br>&nbsp;
+		</td>
 	</gene:campoScheda>
 	
 	<%/* Campi per GARA DIVISA IN LOTTI CON OFFERTA UNICA */%>
@@ -98,6 +119,8 @@
 			<gene:campoScheda>
 				<td colspan="2"><b>Luogo principale di esecuzione o consegna</b></td>
 			</gene:campoScheda>
+			<gene:campoScheda campo="LOCNAZ" entita="GARE1" where="TORN.CODGAR = GARE1.NGARA" modificabile="${campiModificabili}" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoLOCNAZ"/>
+				<gene:fnJavaScriptScheda funzione='changeNazione("#GARE1_LOCNAZ#")' elencocampi='GARE1_LOCNAZ' esegui="true"/>
 			<gene:campoScheda campo="PROSLA" entita="GARE" where="TORN.CODGAR = GARE.NGARA " modificabile="${campiModificabili}">
 				<c:set var="functionId" value="default_${!empty datiRiga.GARE_PROSLA}" />
 				<c:if test="${!empty datiRiga.GARE_PROSLA}">
@@ -118,6 +141,7 @@
 			<gene:campoScheda campo="LOCLAV" entita="GARE" where="TORN.CODGAR = GARE.NGARA " modificabile="${campiModificabili}"/>
 			<gene:campoScheda campo="LOCINT" entita="GARE" where="TORN.CODGAR = GARE.NGARA " modificabile="${campiModificabili}"/>
 			</gene:archivio>
+			<gene:campoScheda campo="LOCINT_FITT" campoFittizio="true" definizione="T9;;;;G1LOCINT" />
 			<gene:campoScheda campo="NOMSSL" entita="GARE" where="TORN.CODGAR = GARE.NGARA " modificabile="${campiModificabili}"/>
 			<gene:campoScheda campo="NUMSSL" entita="GARE" where="TORN.CODGAR = GARE.NGARA " modificabile="${campiModificabili}"/>
 		</gene:gruppoCampi>
@@ -244,15 +268,27 @@
 		<jsp:param name="garaOfferteDistinte" value="${garaOfferteDistinte}"/>
 		<jsp:param name="campoGaraTelematica" value="TORN_GARTEL"/>
 		<jsp:param name="datiModificabili" value="true"/>
+		<jsp:param name="verNPA" value="${verNPA}"/>
 	</jsp:include>
 	
-	<gene:gruppoCampi idProtezioni="ESPLGARA" visibile="${datiRiga.TORN_GARTEL eq 1}">
+	<gene:gruppoCampi idProtezioni="ULTDATICONCES" visibile="${datiRiga.TORN_ISCONCES eq '1'}">
 		<gene:campoScheda>
-			<td colspan="2"><b>Sedute telematiche/espletamento gara</b></td>
+			<td colspan="2"><b>Ulteriori dati contratto di concessione </b></td>
 		</gene:campoScheda>
-		<gene:campoScheda entita="GARE1" campo="ESPLPORT" where="TORN.CODGAR = GARE1.NGARA" />
-		<gene:campoScheda entita="GARE1" campo="ESPLECO" where="GARE1.NGARA = GARE.NGARA" />
-		<gene:campoScheda entita="GARE1" campo="ESPLBASE" where="GARE1.NGARA = GARE.NGARA" visibile="${datiRiga.TORN_OFFTEL eq 3}"/>
+		<gene:archivio titolo="Imprese"
+			lista='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-lista-popup.jsp","")}'
+			scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda.jsp","")}'
+			schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.ImprScheda"),"gene/impr/impr-scheda-popup.jsp", "")}'
+			campi="IMPR.CODIMP;IMPR.NOMEST"
+			chiave="TORN_CODPROMO"
+			formName="formArchivioImprese" 
+			functionId="ditteDitg">
+			<gene:campoScheda campo="CODPROMO"/>
+			<gene:campoScheda campo="NOMEST" entita="IMPR" where="TORN.CODPROMO=IMPR.CODIMP" />
+		</gene:archivio>
+
+		<gene:campoScheda campo="ISPRELPROM"/>
+		<gene:campoScheda campo="ISSOCSCOPO"/>
 	</gene:gruppoCampi>
 	
 	<gene:gruppoCampi idProtezioni="SOPRALLUOGO" visibile='${tipologiaGara == "3" }'>
@@ -265,83 +301,11 @@
 		<gene:campoScheda campo="SOPRORA"  entita="GARE1" where="TORN.CODGAR = GARE1.NGARA " modificabile="${campiModificabili}"/>
 		<gene:campoScheda campo="SOPRREF" entita="GARE1" where="TORN.CODGAR = GARE1.NGARA " modificabile="${campiModificabili}"/>
 	</gene:gruppoCampi>
-	
-	<c:if test="${isFascicoloDocumentaleAbilitato eq '1'}">
-		<c:set var="tipoWSDM" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetTipoWSDMFunction", pageContext, "FASCICOLOPROTOCOLLO", "NO", idconfi)}' />
-		<gene:gruppoCampi idProtezioni="ISPGD">
-			<gene:campoScheda>
-				<td colspan="2"><b>Integrazione con sistema di protocollazione e gestione documentale</b></td>
-			</gene:campoScheda>
-			<c:if test="${!empty datiRiga.WSFASCICOLO_CODICE and datiRiga.WSFASCICOLO_CODICE !=''}">
-				<c:set var="rifFascicolo" value="Cod.: ${datiRiga.WSFASCICOLO_CODICE}"/>
-			</c:if>
-			<c:if test="${!empty datiRiga.WSFASCICOLO_ANNO and datiRiga.WSFASCICOLO_ANNO !=''}">
-				<c:if test="${!empty rifFascicolo && rifFascicolo !=''}">
-					<c:set var="rifFascicolo" value="${rifFascicolo } -"/>
-				</c:if>
-				<c:set var="rifFascicolo" value="${rifFascicolo } Anno: ${datiRiga.WSFASCICOLO_ANNO}"/>
-			</c:if>
-			<c:if test="${!empty datiRiga.WSFASCICOLO_NUMERO and datiRiga.WSFASCICOLO_NUMERO !=''}">
-				<c:if test="${!empty rifFascicolo && rifFascicolo !=''}">
-					<c:set var="rifFascicolo" value="${rifFascicolo } -"/>
-				</c:if>
-				<c:set var="rifFascicolo" value="${rifFascicolo } Num.: ${datiRiga.WSFASCICOLO_NUMERO}"/>
-			</c:if>
-			<c:if test="${!empty datiRiga.WSFASCICOLO_CLASSIFICA and datiRiga.WSFASCICOLO_CLASSIFICA !='' && tipoWSDM ne 'JIRIDE'}">
-				<c:if test="${!empty rifFascicolo && rifFascicolo !=''}">
-					<c:set var="rifFascicolo" value="${rifFascicolo } -"/>
-				</c:if>
-				<c:set var="rifFascicolo" value="${rifFascicolo } Classifica: ${datiRiga.WSFASCICOLO_CLASSIFICA}"/>
-			</c:if>
-			<c:if test="${tipoWSDM eq 'TITULUS'|| tipoWSDM eq 'ENGINEERINGDOC'}">
-				<c:choose>
-					<c:when test="${tipoWSDM eq 'ENGINEERINGDOC'}">
-						<c:set var="labelCoduff" value="U.O. di competenza"/>
-					</c:when>
-					<c:otherwise>
-						<c:set var="labelCoduff" value="Ufficio"/>
-					</c:otherwise>
-				</c:choose>
-				<c:if test="${!empty datiRiga.WSFASCICOLO_CODAOO and datiRiga.WSFASCICOLO_CODAOO !=''}" >
-					<c:set var="rifFascicolo" value="${rifFascicolo } - AOO: ${datiRiga.WSFASCICOLO_CODAOO}"/>
-					<c:if test="${!empty datiRiga.WSFASCICOLO_DESAOO and datiRiga.WSFASCICOLO_DESAOO !=''}" >
-						<c:set var="rifFascicolo" value="${rifFascicolo } ${datiRiga.WSFASCICOLO_DESAOO}"/>
-					</c:if>
-				</c:if>
-				<c:if test="${!empty datiRiga.WSFASCICOLO_CODUFF and datiRiga.WSFASCICOLO_CODUFF !=''}" >
-					<c:set var="rifFascicolo" value="${rifFascicolo } - ${labelCoduff}: ${datiRiga.WSFASCICOLO_CODUFF}"/>
-					<c:if test="${!empty datiRiga.WSFASCICOLO_DESUFF and datiRiga.WSFASCICOLO_DESUFF !=''}" >
-						<c:set var="rifFascicolo" value="${rifFascicolo } ${datiRiga.WSFASCICOLO_DESUFF}"/>
-					</c:if>
-				</c:if>
-			</c:if>
-			<c:choose>
-				<c:when test="${tipologiaGara == '3' }">
-					<c:set var="entWSDM" value="'GARE'"/>
-				</c:when>
-				<c:otherwise>
-					<c:set var="entWSDM" value="'TORN'"/>
-				</c:otherwise>
-			</c:choose>
-			
-			<gene:campoScheda campo="ISPGD_FIT" campoFittizio="true" title="Riferimento al fascicolo" definizione="T40;"  value="${rifFascicolo}" modificabile="false"/>
-			<gene:campoScheda campo="CODICE" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=TORN.CODGAR and WSFASCICOLO.ENTITA=${entWSDM}" visibile="false"/>
-			<gene:campoScheda campo="ANNO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=TORN.CODGAR and WSFASCICOLO.ENTITA=${entWSDM}" visibile="false"/>
-			<gene:campoScheda campo="NUMERO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=TORN.CODGAR and WSFASCICOLO.ENTITA=${entWSDM}" visibile="false"/>
-			<gene:campoScheda campo="CLASSIFICA" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA=${entWSDM}" visibile="false"/>
-			<gene:campoScheda campo="CODAOO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA=${entWSDM}" visibile="false"/>
-			<gene:campoScheda campo="DESAOO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA=${entWSDM}" visibile="false"/>
-			<gene:campoScheda campo="CODUFF" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA=${entWSDM}" visibile="false"/>
-			<gene:campoScheda campo="DESUFF" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA=${entWSDM}" visibile="false"/>
-		</gene:gruppoCampi>
-	</c:if>
-	
+
 	<jsp:include page="/WEB-INF/pages/gene/attributi/sezione-attributi-generici.jsp">
 		<jsp:param name="entitaParent" value="TORN"/>
 	</jsp:include>
-	
-	
-	
+
 	<gene:campoScheda>	
 		<jsp:include page="/WEB-INF/pages/commons/bloccaModifica-scheda.jsp">
 			<jsp:param name="entita" value="V_GARE_TORN"/>
@@ -395,6 +359,17 @@
 									</c:if>
 										Modifica U.O. di competenza
 									<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
+								</td>
+							</tr>
+						</c:if>
+					</c:if>
+					<c:if test="${bloccoPubblicazionePortaleBando eq 'TRUE' && gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.ModificaSchedaP31')}" >
+						<c:set var="schedaP3_1Compatibile" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.npa.IsSchedaP3_1CompatibileFunction", pageContext, codiceGara)}'/>
+						<c:if test="${schedaP3_1Compatibile eq 'true'}" >
+							<tr>
+								<td class="vocemenulaterale" >
+										<a href="javascript:visualizzaG1SCHEP31();" title="Ridefinisci dati scheda P3_1">
+									Ridefinisci dati scheda P3_1</a>
 								</td>
 							</tr>
 						</c:if>
@@ -494,7 +469,38 @@
 	   comando = comando + "&ngara=" + codgar;
 	   openPopUpCustom(comando, "collegafascicolo", 450, 350, "yes", "yes");
 	}
-	
+
+	function changeNazione(valore){
+		if(valore==='1' || valore === ''){
+			showObj("rowGARE_PROSLA", true);
+			showObj("rowGARE_LOCLAV", true);
+			showObj("rowGARE_LOCINT", true);
+			showObj("rowLOCINT_FITT", false);
+		}else{
+			setValue("GARE_PROSLA", "");
+			showObj("rowGARE_PROSLA", false)
+			showObj("rowGARE_LOCLAV", false);
+			showObj("rowGARE_LOCINT", false);
+			setValue("LOCINT_FITT",$('#GARE_LOCINT').val());
+			showObj("rowLOCINT_FITT", true);
+			$("#LOCINT_FITT" ).prop("readonly", true);
+			$("#LOCINT_FITT" ).css('background-color','#EFEFEF');
+		}
+	}
+
+	var oldLOCNAZ=getValue("GARE1_LOCNAZ");
+	$("#GARE1_LOCNAZ").on('change', function() {
+		if(this.value!=='1' && this.value!==''){
+			var codistat=getCodIstatImpresa(this.value);
+			setValue("GARE_LOCINT", codistat);
+			setValue("LOCINT_FITT", codistat);
+		}else{
+			if(oldLOCNAZ!=='1' && oldLOCNAZ !== '')
+				setValue("GARE_LOCINT", '');
+		}
+		oldLOCNAZ=getValue("GARE1_LOCNAZ");
+	});
+
 	function changeComune(provincia, nomeUnCampoInArchivio) {
 		changeFiltroArchivioComuni(provincia, nomeUnCampoInArchivio);
 		setValue("GARE_LOCLAV", "");
@@ -503,7 +509,19 @@
 	
 	<c:if test='${modo eq "MODIFICA"}'>
 		var bloccoModificatiDati = $("#bloccoModificatiDati").val();
-		bloccaDopoPubblicazione(bloccoModificatiDati,"");
+		var bloccoModificaPCP = "${bloccoModificaPCP}";
+		bloccaDopoPubblicazione(bloccoModificatiDati,"","",bloccoModificaPCP,"${impoOpzRinnModificabili}","${bloccoModificaPubblicazione}");
 	</c:if>
+	
+	
+	function visualizzaG1SCHEP31(){
+		formVisualizzaG1SCHEP31.submit();
+	}
 
 </gene:javaScript>
+
+<form name="formVisualizzaG1SCHEP31" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+	<input type="hidden" name="href" value="gare/g1schep31/g1schep31-pagine-scheda.jsp" /> 
+	<input type="hidden" name="key" value="TORN.CODGAR=T:${codiceGara};" />
+	<input type="hidden" name="autorizzatoModifiche" value="${autorizzatoModifiche}" />
+</form>

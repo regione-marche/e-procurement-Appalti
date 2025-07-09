@@ -360,7 +360,7 @@
 			codiceFascicoloOrig = $("#codicefascicolo").val();
 						
 			if(_tipoWSDM == "LAPISOPERA"){
-				_popolaTabellato("classifica","classificafascicoloRic");
+				_popolaTabellato("classificafascicolo","classificafascicoloRic");
 				_popolaTabellato("struttura","strutturaRic");
 				$("#divDatiRicerca").show();
 				$("#oggettofascicolonuovo").val("");

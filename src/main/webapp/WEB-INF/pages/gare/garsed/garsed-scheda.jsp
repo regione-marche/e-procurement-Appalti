@@ -16,6 +16,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 
 <c:set var="genereGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTipologiaGaraFunction",  pageContext,keyParent)}'/>
+<c:set var="nomeFileModello" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "verbaleGara.nomeModello")}'/>
 <%/*La pagina può essere richiamata anche da TORN per le gare divise a lotti con offerta unica*/ %>
 <c:choose>
 	<c:when test='${genereGara eq "3"}'>
@@ -92,6 +93,15 @@
 				</c:choose>
 			</tr>
 		</c:if>
+		<c:if test="${ not empty nomeFileModello and modoAperturaScheda eq 'VISUALIZZA' and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.GARSED-scheda.componiVerbale')}">
+		<tr>
+			<td class="vocemenulaterale">
+				<a href="javascript:apriModaleComponiVerbale();" title="Componi Verbale">
+					Componi verbale
+				</a>
+  				</td>
+		</tr>
+		</c:if>
 		</gene:redefineInsert>
 		
 		
@@ -125,7 +135,7 @@
 				<gene:campoScheda campo="NGARA" visibile="false" value='${fn:substringAfter(keyParent, ":")}'/>
 				<gene:campoScheda campo="NUMSED" visibile="false" />
 				<gene:campoScheda campo="TIPSED" defaultValue="1"/>
-				<gene:campoScheda campo="FASE" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoFASE"/>
+				<gene:campoScheda campo="FASE" obbligatorio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoFASE"/>
 				<gene:campoScheda campo="DATVERB" >
 					<gene:checkCampoScheda funzione='controlloValorizzazioneCampo("#GARSED_ORAFIN#","##")' obbligatorio="true" messaggio='Per valorizzare la "Data verbale" valorizzare prima "Ora fine seduta"' onsubmit="true"/>
 				</gene:campoScheda>
@@ -195,6 +205,12 @@
 			</gene:campoScheda>
 		</gene:formScheda>
 
+		<c:if test="${ not empty nomeFileModello and modoAperturaScheda eq 'VISUALIZZA' and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.GARSED-scheda.componiVerbale')}">
+			<jsp:include page="/WEB-INF/pages/gare/garsed/componiVerbale.jsp">
+				<jsp:param name="numeroGara" value='${numeroGara}'/>
+				<jsp:param name="numeroSeduta" value='${numeroSeduta}'/>
+			</jsp:include>
+		</c:if>
 	</gene:redefineInsert>
 	<gene:javaScript>
 		function controlloValorizzazioneCampo(valoreDaControllare,valore){
@@ -208,7 +224,7 @@
 			var numeroGara = "${numeroGara }";
 		    var numeroSeduta = "${numeroSeduta }";
 		    var dataSeduta= getValue("GARSED_DATINI");
-		    var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/garsedpres/garsedpres-lista.jsp";
+		    var href = contextPath + "/ApriPagina.do?href=gare/garsedpres/garsedpres-lista.jsp";
 			var key="${key }";
 			href += "&key=" + key + "&dataSeduta=" + dataSeduta;
 			document.location.href = href;

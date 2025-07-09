@@ -20,6 +20,7 @@ import it.eldasoft.utils.spring.UtilitySpring;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Vector;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
@@ -31,7 +32,7 @@ import javax.servlet.jsp.PageContext;
  */
 public class GetFiltroSelOpUltimaAggiudicatariaFunction extends AbstractFunzioneTag {
 
-
+  protected static final String REGEXP = "^[a-zA-Z0-9-_\\\\./ \\\\$@]+$";
 
   public GetFiltroSelOpUltimaAggiudicatariaFunction() {
     super(1, new Class[] { PageContext.class});
@@ -50,7 +51,7 @@ public class GetFiltroSelOpUltimaAggiudicatariaFunction extends AbstractFunzione
     String where="";
     String where1="";
     String categoriaPrev = pageContext.getRequest().getParameter("categoriaPrev");
-    String garaElenco = pageContext.getRequest().getParameter("garaElenco");
+    String garaElenco = "";
     String classifica = pageContext.getRequest().getParameter("classifica");
     String ngara = pageContext.getRequest().getParameter("ngara");
     Long tipoCategoria = this.getTipoCategoria(categoriaPrev, sqlManager);
@@ -60,6 +61,36 @@ public class GetFiltroSelOpUltimaAggiudicatariaFunction extends AbstractFunzione
     String esisteClassificaServizi = esisteClassificaCategoria.function(pageContext, new Object[]{pageContext,"TAB1","G_036"});
     String esisteClassificaLavori150 = esisteClassificaCategoria.function(pageContext, new Object[]{pageContext,"TAB1","G_037"});
     String esisteClassificaServiziProfessionali = esisteClassificaCategoria.function(pageContext, new Object[]{pageContext,"TAB1","G_049"});
+    
+  //Controlli per Sql injection
+    // classifica deve essere un numero
+    if(classifica!=null && !"".equals(classifica)) {
+      try {
+        new Long(classifica);
+      }catch(NumberFormatException e) {
+        throw new JspException(
+            "Errore di validazione dei parametri");
+      }
+    }
+    if(categoriaPrev!= null && !"".equals(categoriaPrev) && !categoriaPrev.matches(REGEXP)) {
+      throw new JspException(
+          "Errore di validazione dei parametri");
+    }
+    
+    try {
+      Vector<?> datiGara = sqlManager.getVector("select elencoe from gare where ngara = ?", new Object[] {ngara});
+      if(datiGara!=null && datiGara.size()>0){
+        if(pageContext.getRequest().getParameter("garaElenco")!=null && !pageContext.getRequest().getParameter("garaElenco").isEmpty())
+        garaElenco   =      SqlManager.getValueFromVectorParam(datiGara, 0).getValue().toString();
+      }else {
+        throw new JspException(
+            "Errore durante il prelievo delle informazioni della gara");
+      }
+     }
+     catch(SQLException ex) {
+       throw new JspException(
+           "Errore durante la validazione", ex);
+     }
 
     where = "ngara <> '" + ngara + "' and codgar1=codgar and (accqua != '1' or accqua is null)";
     where +=" and ditta is not null  and ((genere is null and elencoe='" + garaElenco + "' and dattoa is not null";

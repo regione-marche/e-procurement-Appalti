@@ -15,6 +15,8 @@ import it.eldasoft.sil.pg.bl.PgManagerEst1;
 import it.eldasoft.utils.spring.UtilitySpring;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
@@ -40,20 +42,20 @@ public class EsistonoOccorrenzeGaraltsogFunction extends AbstractFunzioneTag {
       SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager", pageContext, SqlManager.class);
       try {
         String select = "select count(*) from garaltsog where ngara ";
+        List<String> param = new ArrayList<String>();
         if("1".equals(modcont) || modcont==null || "".equals(modcont)){
-          select += " = '";
+          select += " =  ? ";
           if("1".equals(modcont))
-            select+=ngaral;
+            param.add(ngaral);
           else
-            select+=ngara;
-          select += "'";
+            param.add(ngara);
         }else if("2".equals(modcont)){
           PgManagerEst1 pgManagerEst1 = (PgManagerEst1) UtilitySpring.getBean("pgManagerEst1", pageContext, PgManagerEst1.class);
           lotti = pgManagerEst1.getElencoLottiAggiudicati(ngara, codimp);
           select += " in(" + lotti + ")";
         }
 
-        Long conteggio = (Long) sqlManager.getObject(select, null);
+        Long conteggio = (Long) sqlManager.getObject(select, param.toArray());
 
         if (conteggio != null && conteggio.longValue() > 0) {
           ret = "true";

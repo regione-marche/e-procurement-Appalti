@@ -33,7 +33,7 @@ public class GestioneAggiudProvDefOffertaUnicaFunction extends GestioneFasiGaraF
   @Override
   protected String gestioneAvanzamentoWizard(String paginaAttivaWizard,
       PageContext pageContext, Long modalitaAggiudicazioneGara, Long iterGara,
-      boolean isGaraLottiConOffertaUnica, boolean isSorteggioControlloRequisiti, boolean isValtec, String ricastae, boolean visOffertaEco) {
+      boolean isGaraLottiConOffertaUnica, boolean isSorteggioControlloRequisiti, boolean isValtec, String ricastae, boolean visOffertaEco, String isriconclusa) {
 
   	int wizardPaginaAttiva = UtilityNumeri.convertiIntero(paginaAttivaWizard).intValue();
 

@@ -15,9 +15,9 @@ import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
 import it.eldasoft.gene.db.domain.LogEvento;
 import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.sil.pg.bl.erp.RaiWSERPManager;
+import it.eldasoft.sil.pg.bl.erp.RaiwayWSERPManager;
 
 import java.io.IOException;
-import java.sql.SQLException;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -28,11 +28,6 @@ import org.apache.log4j.Logger;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
-import org.apache.xmlbeans.XmlException;
-import org.example.getElencoFornitoriResults.DettaglioFornitore;
-import org.example.getElencoFornitoriResults.RetXmlGetDettaglioFornitoreDocument;
-
-import pc_nicola.aur.WebServices.WsAURSoapProxy;
 
 /**
  * Esegue l'inserimento dei fornitori con i dati prelevati dall'albo RAI 
@@ -41,6 +36,7 @@ public class InserimentoFornitoreAlboAction extends ActionBaseNoOpzioni {
 
   static Logger     logger = Logger.getLogger(InserimentoFornitoreAlboAction.class);
   
+  private RaiwayWSERPManager raiwayWSERPManager;
   
   private SqlManager sqlManager;
   
@@ -52,6 +48,10 @@ public class InserimentoFornitoreAlboAction extends ActionBaseNoOpzioni {
   
   public void setRaiWSERPManager(RaiWSERPManager raiWSERPManager){
 	    this.raiWSERPManager = raiWSERPManager;
+  }
+  
+  public void setRaiwayWSERPManager(RaiwayWSERPManager raiwayWSERPManager){
+    this.raiwayWSERPManager = raiwayWSERPManager;
   }
     
   protected ActionForward runAction(ActionMapping mapping, ActionForm form,
@@ -66,18 +66,19 @@ public class InserimentoFornitoreAlboAction extends ActionBaseNoOpzioni {
     codFornitore =StringUtils.stripToEmpty(codFornitore);
     String codiceFornitore = "";
     if(!"".equals(codFornitore)) {
-    	codiceFornitore = new String(request.getParameter("codiceFornitore"));
+    	codiceFornitore = request.getParameter("codiceFornitore");
     }
     
-    String categoria = new String(request.getParameter("categoria"));
-    String qsl = new String(request.getParameter("qsl"));
+    String categoria = request.getParameter("categoria");
+    String qsl = request.getParameter("qsl");
     String qslMsg="solo fornitori qualificati";
     if("2".equals(qsl)) {
     	qslMsg="fornitori con documenti scaduti";
     }
-    String ngara = new String(request.getParameter("ngara"));
-    String garaLottiConOffertaUnica = new String(request.getParameter("garaLottiConOffertaUnica"));
-    String numeroFaseAttiva = new String(request.getParameter("numeroFaseAttiva"));
+    String ngara = request.getParameter("ngara");
+    String garaLottiConOffertaUnica = request.getParameter("garaLottiConOffertaUnica");
+    String numeroFaseAttiva = request.getParameter("numeroFaseAttiva");
+    String tipoWSERP = request.getParameter("tipoWSERP");
     listaFornitoriSelezionati = request.getParameterValues("keys");
     Long numFaseAttiva=null;
     if (numeroFaseAttiva!=null && !"".equals(numeroFaseAttiva))
@@ -90,9 +91,30 @@ public class InserimentoFornitoreAlboAction extends ActionBaseNoOpzioni {
     String descrEvento = "";
     String errMsgEvento = "";
     String ditteInsDaAlbo ="";
-
+    
     	try {
     		
+    	  //macro in per tipoWSERP raiway insert su impr e prima chiamata la WS
+    	  if("RAIWAY".equals(tipoWSERP)) {
+    	    String[] listaFornitori = null;
+    	    if (listaFornitoriSelezionati != null) {
+    	      listaFornitori = new String[listaFornitoriSelezionati.length];
+    	      for (int i = 0; i < listaFornitoriSelezionati.length; i++) {
+    	        String[] valoriFornitoriSelezionati = listaFornitoriSelezionati[i].split("_");
+    	        if (valoriFornitoriSelezionati.length > 0) {
+    	          if (valoriFornitoriSelezionati.length > 1) { // ci sono due parametri cf e piva
+    	            listaFornitori[i] = raiwayWSERPManager.insertAnagraficaFornitore(valoriFornitoriSelezionati[0], valoriFornitoriSelezionati[1]);
+    	          } else { // c'è solo il cf
+    	            listaFornitori[i] = raiwayWSERPManager.insertAnagraficaFornitore(valoriFornitoriSelezionati[0], null);
+    	          }
+  	            }
+    	      }//for
+    	    }
+    	    if(listaFornitori != null) {
+    	      listaFornitoriSelezionati = listaFornitori;
+    	    }
+    	  }
+    	  
     	      oggEvento = ngara;
     	      //determino la categoria prevalente della gara
     	      String catiga = (String)this.sqlManager.getObject("select catiga from catg where ngara=?", new Object[]{ngara});
@@ -123,8 +145,7 @@ public class InserimentoFornitoreAlboAction extends ActionBaseNoOpzioni {
 		    }
 		    target = "success";
 		    request.setAttribute("RISULTATO", "OK");
-    
-		} catch (SQLException e) {
+		} catch (Exception e) {
 		     livEvento =3;
 		     errMsgEvento = e.getMessage();
 	        target = "errore";

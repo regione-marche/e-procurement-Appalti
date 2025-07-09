@@ -31,8 +31,8 @@
 		<gene:campoScheda campo="TIATTO_${param.contatore}" entita="G1STIPULA" campoFittizio="true" modificabile="false" definizione="N3;0;A2042;;G1ST_TIATTO" value="${item[5]}" />
 		<gene:campoScheda campo="NREPAT_${param.contatore}" entita="G1STIPULA" campoFittizio="true" modificabile="false" definizione="T40;0;;;G1ST_NREPAT" value="${item[6]}" />
 		<gene:campoScheda campo="DAATTO_${param.contatore}" entita="G1STIPULA" campoFittizio="true" modificabile="false" definizione="D;0;;;G1ST_DAATTO" value="${item[7]}" />
-		
-		
+		<gene:campoScheda campo="NUMODA_${param.contatore}" entita="G1STIPULA" campoFittizio="true" modificabile="false" definizione="T50;0;;;G1ST_NUMODA" value="${item[11]}" visibile="${integrazioneWSERP eq '1' and tipoWSERP eq 'INARCASSA' }" />
+
 	</c:when>
 	<c:otherwise>
 		<gene:campoScheda campo="ID_${param.contatore}" entita="G1STIPULA" campoFittizio="true" visibile="false" definizione="N12;1;;;G1ST_ID " />
@@ -46,7 +46,7 @@
 		<gene:campoScheda campo="TIATTO_${param.contatore}" entita="G1STIPULA" campoFittizio="true" modificabile="false" definizione="N3;0;A2042;;G1ST_TIATTO" />
 		<gene:campoScheda campo="NREPAT_${param.contatore}" entita="G1STIPULA" campoFittizio="true" modificabile="false" definizione="T40;0;;;G1ST_NREPAT" />
 		<gene:campoScheda campo="DAATTO_${param.contatore}" entita="G1STIPULA" campoFittizio="true" modificabile="false" definizione="D;0;;;G1ST_DAATTO" />
-		
+		<gene:campoScheda campo="NUMODA_${param.contatore}" entita="G1STIPULA" campoFittizio="true" modificabile="false" definizione="T50;0;;;G1ST_NUMODA" visibile="${integrazioneWSERP eq '1' and tipoWSERP eq 'INARCASSA' }" />
 		
 	</c:otherwise>
 </c:choose>

@@ -1,20 +1,24 @@
 $(window).on("load", function (){
-
-
+    
     var _tablePosizioni = null;
     _getTipoWSERP();
+    
     var _searchRow=$('<tr/>');
     var _bRow=$('<br/>');
     var visNumPos = false;
     var visOggetto = false;
     var visTotale = false;
     var visDettagli = false;
-    if(_tipoWSERP == 'RAIWAY'){
+    
+    if(   (_tipoWSERP == 'RAIWAY')
+        ||(_tipoWSERP == 'INARCASSA')
+    ){
         visNumPos = true;
         visOggetto = true;
         visTotale = true;
-        visDettagli = false;
-    }
+		visDettagli = false;
+    }//if
+    
     _popolaPosizioni();
     _wait();
 
@@ -71,41 +75,153 @@ $(window).on("load", function (){
 
         $("#posizioniContainer").append(_table);
     }
+    
+    function _creaTabellaPosizioniINARCASSA(){
+        var _table = $('<table/>', {"id": "listaposizionirda", "class": "schedagperm", "cellspacing": "0", "width" : "100%"});
 
-    function _popolaPosizioni(){
+        var _tr = $('<tr/>', {"class": "intestazione"});
+        _tr.append('<th/>', {"class": "codgar"});
+        _tr.append('<th/>');
+        _tr.append('<th/>');
+        _tr.append('<th/>');
+        _tr.append('<th/>');
+        _tr.append('<th/>');
+        _tr.append('<th/>');
+        var _thck = $('<th/>', {"id": "selpos","class": "ck"});
+        _tr.append(_thck);
+
+        var _thead = $('<thead/>');
+        _thead.append(_tr);
+
+        var _tbody = $('<tbody/>');
+
+        var _tr2 = $('<tr/>', {"class": "intestazione"});
+        _tr2.append('<td/>', {"class": "codgar"});
+        _tr2.append('<td/>');
+        _tr2.append('<td/>');
+        _tr2.append('<td/>');
+        _tr2.append('<td/>');
+        _tr2.append('<td/>');
+        _tr2.append('<td/>');
+        _tr2.append('<td/>');
+        var _tfoot = $('<tfoot/>');
+        _tfoot.append(_tr2);
+
+        _table.append(_thead);
+        _table.append(_tbody);
+        _table.append(_tfoot);
+
+        $("#posizioniContainer").append(_table);
+    }//_creaTabellaPosizioniINARCASSA    
+
+    function _popolaPosizioni(){		
         _waitgperm();
-        _creaTabellaPosizioni();
-        _tableRda = $('#listaposizionirda').removeAttr('width').DataTable( {
-            "ajax": {
-                "url": "pg/GetWSERPListaRda.do",
-                "data" : function (n) {
-                    return {
-                        operation: $("#operation").val(),
-                        codgar: $("#codgar").val(),
-                        codice: $("#codice").val(),
-                        genere: $("#genere").val(),
-                        tipoAppalto: $("#tipoAppalto").val(),
-                        tipoGara: $("#tipoGara").val(),
-                        uffint: $("#uffint").val(),
-                        scProfilo: $("#scProfilo").val(),
-                        codicerda: $("#codiceRda").val(),
-                        filtroLotto: $("#filtroLotto").val(),
-                        modo: $("#modo").val()
-                    };
+        
+        if (_tipoWSERP == 'INARCASSA'){
+			_creaTabellaPosizioniINARCASSA();
+		} else {
+		   _creaTabellaPosizioni();
+		}//if
+                
+        var arrayColumnDefs = [];
+        var arrayAoColumns = [];
+        
+        if (_tipoWSERP == 'INARCASSA'){
+			arrayColumnDefs = [
+                {
+                    "data": "codiceRda",
+                    "visible": true,
+                    "sTitle": "codice Rda",
+                    "className": "dt-body-center",
+                    "sWidth" : "70px",
+                    "searchable": true,
+                    "targets": [ 0 ]
+                },				
+                {
+                    "data": "numPos",
+                    "visible": visNumPos,
+                    "sTitle": "Numero posizione",
+                    "className": "dt-body-center",
+                    "sWidth" : "70px",
+                    "searchable": true,
+                    "targets": [ 1 ]
                 },
-                error: function(e){
-                    var messaggio = "Errore durante la lettura del rda";
-                    $('#rdamessaggio').text(messaggio);
-                    $('#rdamessaggio').show(300);
+                {
+                    "data": "oggetto",
+                    "visible": visOggetto,
+                    "sTitle": "Descrizione",
+                    "sWidth": "150px",
+                    "class" : "descr",
+                    "searchable": true,
+                    "targets": [ 2 ]
                 },
-                "complete": function() {
-                    _nowaitgperm();
+                {
+                    "data": "prezzo",
+                    "visible": true,
+                    "render": $.fn.dataTable.render.number('.', ',', 2, '',' \u20ac') ,
+                    "sTitle": "Prezzo",
+                    "sWidth": "50px",
+                    "class" : "descr",
+                    "searchable": false,
+                    "targets": [ 3 ]
+                }, 
+                {
+                    "data": "qta",
+                    "visible": true,                    
+                    "sTitle": "Quantita",
+                    "sWidth": "100px",
+                    "class" : "descr",
+                    "searchable": false,
+                    "targets": [ 4 ]
+                },                 
+                {
+                    "data": "udm",
+                    "visible": true,
+                    "sTitle": "Unit&agrave; di misura",
+                    "sWidth": "100px",
+                    "class" : "descr",
+                    "searchable": true,
+                    "targets": [ 5 ]
+                },                              
+                {
+                    "data": "dettagli",
+                    "visible": visDettagli,
+                    "sTitle": "Visualizza dettagli",
+                    "sWidth": "100px",
+                    "class" : "descr",
+                    "searchable": false,
+                    "targets": [ 6 ]
+                },
+                {
+                    "data": "checkPos",
+                    "visible": true,
+                    "targets": [ 7 ],
+                    "class" : "ck",
+                    "sWidth" : "70px",
+                    "render": function (data, type, full, meta ) {
+                          var _div = $("<div/>");
+                          var keyRecord = full.codiceRda +"-" + full.numPos;
+                          var _check = $("<input/>",{"type":"checkbox", "id": "ck_pos_" + keyRecord});
+                          _div.append(_check);
+
+                          return _div.html();
+                       } 
                 }
-            },
-
-            "bAutoWidth": false,
-
-            "columnDefs": [
+            ];	
+            
+            arrayAoColumns = [
+                 { "bSortable": true,  "bSearchable": true  }
+                ,{ "bSortable": false, "bSearchable": false }
+                ,{ "bSortable": false, "bSearchable": true  }
+                ,{ "bSortable": false, "bSearchable": false }
+                ,{ "bSortable": false, "bSearchable": false }
+                ,{ "bSortable": false, "bSearchable": false }
+                ,{ "bSortable": false, "bSearchable": false }
+                ,{ "bSortable": false, "bSearchable": false }
+            ];            	
+			
+		} else if (_tipoWSERP == 'RAIWAY'){
+			arrayColumnDefs = [
                 {
                     "data": "numPos",
                     "visible": visNumPos,
@@ -151,14 +267,58 @@ $(window).on("load", function (){
                     "sWidth" : "70px",
                     "render": function (data, type, full, meta ) {
                         var _div = $("<div/>");
-                        if(_tipoWSERP == 'RAIWAY'){
+                        if(    ( _tipoWSERP == 'RAIWAY')
+                             ||( _tipoWSERP == 'INARCASSA')
+                        ){
                             var _check = $("<input/>",{"type":"checkbox", "id": "ck_pos_" + full.numPos});
                             _div.append(_check);
                         }
                         return _div.html();
                     }
                 }
-            ],
+            ];
+            
+            arrayAoColumns = [
+                 { "bSortable": true,  "bSearchable": true  }
+                ,{ "bSortable": false, "bSearchable": true  }
+                ,{ "bSortable": false, "bSearchable": false }
+                ,{ "bSortable": false, "bSearchable": false }
+                ,{ "bSortable": false, "bSearchable": false }
+            ];
+		}//if
+        
+        
+        _tableRda = $('#listaposizionirda').removeAttr('width').DataTable( {
+            "ajax": {
+                "url": "pg/GetWSERPListaRda.do",
+                "data" : function (n) {
+                    return {
+                        operation: $("#operation").val(),
+                        codgar: $("#codgar").val(),
+                        codice: $("#codice").val(),
+                        genere: $("#genere").val(),
+                        tipoAppalto: $("#tipoAppalto").val(),
+                        tipoGara: $("#tipoGara").val(),
+                        uffint: $("#uffint").val(),
+                        scProfilo: $("#scProfilo").val(),
+                        codicerda: $("#codiceRda").val(),
+                        filtroLotto: $("#filtroLotto").val(),
+                        modo: $("#modo").val()
+                    };
+                },
+                error: function(e){
+                    var messaggio = "Errore durante la lettura del rda";
+                    $('#rdamessaggio').text(messaggio);
+                    $('#rdamessaggio').show(300);
+                },
+                "complete": function() {
+                    _nowaitgperm();
+                }
+            },
+
+            "bAutoWidth": false,
+
+            "columnDefs": arrayColumnDefs,
 
             "drawCallback": function ( settings ) {
 
@@ -197,29 +357,36 @@ $(window).on("load", function (){
             "pagingType": "full_numbers",
             "lengthMenu": [[20, 50, 70, 100], ["20 posizioni", "50 posizioni", "70 posizioni", "100 posizioni"]],
             "ordering": false,
-            "aoColumns": [
-                { "bSortable": true, "bSearchable": true },
-                { "bSortable": false, "bSearchable": true },
-                { "bSortable": false, "bSearchable": false },
-                { "bSortable": false, "bSearchable": false },
-                { "bSortable": false, "bSearchable": false },
-            ]
+            "aoColumns": arrayAoColumns
         });
 
-        if(_tipoWSERP == 'RAIWAY'){
-            $('#listaposizionirda tfoot td').eq(0).html( '<input class="search" size="20" type="text" placeholder="Ric.Rda."/>' );
-            $('#listaposizionirda tfoot td').eq(1).html( '<input class="search" size="20" type="text" placeholder="Ric.Oggetto."/>' );
+        if(    (_tipoWSERP == 'RAIWAY')
+             ||(_tipoWSERP == 'INARCASSA')  
+        ){
+            if (_tipoWSERP == 'INARCASSA'){
+				$('#listaposizionirda tfoot td').eq(0).html( '<input class="search" size="20" type="text" placeholder="Ric.Rda."/>' );
+                $('#listaposizionirda tfoot td').eq(2).html( '<input class="search" size="20" type="text" placeholder="Ric.Descrizione."/>' );
+			} else {
+				$('#listaposizionirda tfoot td').eq(0).html( '<input class="search" size="20" type="text" placeholder="Ric.Rda."/>' );
+                $('#listaposizionirda tfoot td').eq(1).html( '<input class="search" size="20" type="text" placeholder="Ric.Oggetto."/>' );
+			}//if
+            
+            
             var _center = $("<center/>");
             var _href = "<a href='javascript:_selezionaTutti();' Title='Seleziona tutti'> <img src='"+_contextPath+"/img/ico_check.gif' height='15' width='15' alt='Seleziona tutti'></a>";
             var _href = _href + "&nbsp;";
             var _href = _href + "<a href='javascript:_deselezionaTutti();' Title='Deseleziona tutti'><img src='"+_contextPath+"/img/ico_uncheck.gif' height='15' width='15' alt='Deseleziona tutti'></a>";
             _center.append(_href);
             _center.appendTo($("#selpos"));
+            
             _tableRda.columns().eq(0).each( function (colIdx) {
                 $('input', _tableRda.column(colIdx).footer()).on( 'keyup change', function () {
+					console.log("**** valore = "+ this.value);
+					console.log("**** valore = "+ colIdx);
                     _tableRda.column(colIdx).search(this.value).draw();
                 });
             });
+                       
         }
 
         $('#menuimporta, #pulsimporta').click(function() {
@@ -239,6 +406,16 @@ $(window).on("load", function (){
             if (!(nSelected > 0)){
                 alert("Selezionare almeno una posizione")
             } else{
+				if (_tipoWSERP == 'INARCASSA'){
+				   //var comando = "href=gare/commons/popup-conferma-posizioni.jsp?codgar=" + $("#codgar").val() + "&genere=" + $("#genere").val() + "&codice=" + $("#codice").val();				 
+				   //document.getElementById('bloccaScreen').style.visibility='visible';
+				   //openPopUpCustom(comando, "Conferma cancellazione", 700, 250, "yes", "yes");
+				   //document.getElementById('bloccaScreen').style.visibility='hidden';
+				   if (!confirm("Confermi l'inserimento delle posizioni selezionate?\nATTENZIONE: procedendo verranno cancellate le eventuali lavorazioni preesistenti")){
+					  return;
+				   }//if				  
+				}//if
+				 								 
                 _waitgperm();
                 $.ajax({
                     type: "GET",
@@ -270,12 +447,65 @@ $(window).on("load", function (){
                         _nowaitgperm();
                     }
                 });
-            }
+	                
+            
+            }//if
         });
 
         $("#listaposizionirda_filter").hide();
     }
 });
+
+function chiamaSetWSERPPosRdaInGara(){
+	
+	// recupero le chiavi delle posizioni selezionate... 
+    var nSelected = 0;
+    var arrmultikey  = '';
+    $( "input[id^='ck_pos_']" ).each( function( index ) {
+        if($( this ).prop( "checked")){
+            nSelected= nSelected + 1;
+            _ck_id = $(this).attr("id");
+            if (_ck_id.substring(0,7) == 'ck_pos_'){
+                _ck_key = _ck_id.substring(7);
+                arrmultikey  = arrmultikey + _ck_key + ';';
+            }
+        }
+    });	
+	// _waitgperm();
+	
+	// passo ad associare le posizioni...
+    $.ajax({
+        type: "GET",
+        dataType: "json",
+        url: "pg/SetWSERPPosRdaInGara.do",
+        data : {
+            codgar: $("#codgar").val(),
+            codice: $("#codice").val(),
+            linkrda: $("#linkrda").val(),
+            uffint: $("#uffint").val(),
+            tipoAppalto: $("#tipoAppalto").val(),
+            tipgar: $("#tipoProcedura").val(),
+            codiceRda: $("#codiceRda").val(),
+            arrmultikey: arrmultikey
+        },
+        success: function(res) {
+            var esito= res.Esito;
+            if(esito!="0") {
+                var msgEsito = "Errore nella associazione delle posizioni in gara. " + res.MsgErrore;
+                alert(msgEsito);
+            } else{
+                historyVaiIndietroDi(1);
+            }
+        },
+        error: function(e){
+            alert("Errore nella associazione delle posizioni in gara");
+        },
+        complete: function() {
+            _nowaitgperm();
+        }
+    });	
+	
+}//chiamaSetWSERPPosRdaInGara
 
 function _selezionaTutti() {
     $("input[id^='ck_pos_']").prop("checked","checked");

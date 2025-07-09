@@ -132,7 +132,7 @@
 		
 		function visualizzaFileAllegato(discid_p,discid,allnum,allname) {
 			var href = "${pageContext.request.contextPath}/pg/VisualizzaDocumentoWDISCALL.do";
-			document.location.href=href + "?" + csrfToken + "&discid_p=" + discid_p + "&discid=" + discid + "&allnum=" + allnum + "&allname=" + allname;
+			document.location.href=href + "?discid_p=" + discid_p + "&discid=" + discid + "&allnum=" + allnum + "&allname=" + allname;
 		}	
 	
 		var schedaConfermaOld=schedaConferma;

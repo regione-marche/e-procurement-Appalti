@@ -24,7 +24,7 @@ import it.eldasoft.utils.spring.UtilitySpring;
 public class ControlliValiditaFunzAnnullamentoFunction extends AbstractFunzioneTag {
 
   public ControlliValiditaFunzAnnullamentoFunction() {
-    super(4, new Class[] { PageContext.class, String.class, String.class, String.class  });
+    super(5, new Class[] { PageContext.class, String.class, String.class, String.class, String.class  });
   }
 
   @Override
@@ -34,6 +34,7 @@ public class ControlliValiditaFunzAnnullamentoFunction extends AbstractFunzioneT
     String ngara = (String) params[1];
     String tipo = (String) params[2];
     String genere = (String) params[3];
+    String iterga = (String) params[4];
     boolean controlliSuperati = true;
     String esito = "OK";
 
@@ -63,35 +64,44 @@ public class ControlliValiditaFunzAnnullamentoFunction extends AbstractFunzioneT
               controlliSuperati = false;
         }
       }
+
       if(!controlliSuperati)
         esito = "NOK";
       else{
-        select="select count(*) from w_invcom where comkey2=? and comtipo = 'FS11' and comstato in (6,7)";
-        if("2".equals(tipo))
-          select="select count(*) from w_invcom where comkey2=? and comtipo = 'FS10' and comstato in (6,7)";
-        Long conteggio = (Long) sqlManager.getObject(select, new Object[]{ngara});
-        if(conteggio == null || new Long(0).equals(conteggio)) {
-          //Si deve controllare se vi sono ditte con fasgar=1
-          conteggio = (Long) sqlManager.getObject("select count(*) from ditg where ngara5=? and fasgar=1", new Object[]{ngara});
-          if(conteggio == null || new Long(0).equals(conteggio))
-            esito = "NO-BUSTE";
-        }
-        else{
-          if("1".equals(tipo)){
+        if("7".equals(iterga)) {
+          String isriconclusa=(String)sqlManager.getObject("select isriconclusa from gare where ngara=?", new Object[]{ngara});
+          if("1".equals(isriconclusa)) {
+            controlliSuperati = false;
+            esito = "CONCLUSA";
+          }
+        }else {
+          select="select count(*) from w_invcom where comkey2=? and comtipo = 'FS11' and comstato in ('6','7')";
+          if("2".equals(tipo))
+            select="select count(*) from w_invcom where comkey2=? and comtipo = 'FS10' and comstato in ('6','7')";
+          Long conteggio = (Long) sqlManager.getObject(select, new Object[]{ngara});
+          if(conteggio == null || new Long(0).equals(conteggio)) {
+            //Si deve controllare se vi sono ditte con fasgar=1
+            conteggio = (Long) sqlManager.getObject("select count(*) from ditg where ngara5=? and fasgar=1", new Object[]{ngara});
+            if(conteggio == null || new Long(0).equals(conteggio))
+              esito = "NO-BUSTE";
+          }
+          else{
+            if("1".equals(tipo)){
 
-            if("2".equals(genere))
-              select="select count(*) from w_invcom where comkey2=? and comtipo in ('FS11B','FS11C')  and comstato in (6,7,8,13,16,17)";
-            else
-              select="select count(*) from w_invcom,gare  where codgar1=? and codgar1 != ngara and comkey2=ngara and comtipo in ('FS11B','FS11C')  and comstato in (6,7,8,13,16,17)";
-          }else{
-            select="select count(*) from w_invcom where comkey2=? and comtipo = 'FS11' and comstato in (6,7)";
+              if("2".equals(genere))
+                select="select count(*) from w_invcom where comkey2=? and comtipo in ('FS11B','FS11C')  and comstato in ('6','7','8','13','16','17')";
+              else
+                select="select count(*) from w_invcom,gare  where codgar1=? and codgar1 != ngara and comkey2=ngara and comtipo in ('FS11B','FS11C')  and comstato in ('6','7','8','13','16','17')";
+            }else{
+              select="select count(*) from w_invcom where comkey2=? and comtipo = 'FS11' and comstato in ('6','7')";
+            }
+
+            conteggio = (Long) sqlManager.getObject(select, new Object[]{ngara});
+            if(conteggio!=null && conteggio.longValue()>0)
+              esito = "BUSTE-AC";
           }
 
-          conteggio = (Long) sqlManager.getObject(select, new Object[]{ngara});
-          if(conteggio!=null && conteggio.longValue()>0)
-            esito = "BUSTE-AC";
         }
-
       }
 
 

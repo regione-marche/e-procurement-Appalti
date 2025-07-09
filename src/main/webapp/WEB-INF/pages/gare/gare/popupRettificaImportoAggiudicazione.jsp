@@ -39,6 +39,11 @@
 
 <c:set var="modo" value="MODIFICA" scope="request" />
 
+	<c:set var="integrazioneWSERP" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSERPFunction", pageContext)}' />
+	<c:if test='${integrazioneWSERP eq "1"}'>
+		<c:set var="tipoWSERP" value='${requestScope.tipoWSERP}' />
+	</c:if>
+	
 	<c:choose>
 		<c:when test='${!empty param.codgar}'>
 			<c:set var="codgar" value="${param.codgar}" />
@@ -56,6 +61,7 @@
 			<c:set var="ngara" value="${ngara}" />
 		</c:otherwise>
 	</c:choose>
+	<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from GARE where ngara=?", ngara)}'/>
 	
 	<c:choose>
 		<c:when test='${!empty param.isOfferteUnica}'>
@@ -139,6 +145,13 @@
 			</c:choose>
 		</c:otherwise>
 	</c:choose>	
+	
+	<c:set var="isOdaPresente" value=""/>
+	<c:if test="${tipoWSERP eq 'INARCASSA'}">
+		<c:set var="isOdaPresente" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select numoda from g1stipula where ngara = ?", ngara)}'/>
+	</c:if>
+	
+	
 	<gene:redefineInsert name="corpo">
 	<gene:formScheda entita="GARE" where="GARE.NGARA='${ngara }'" gestisciProtezioni="false" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestorePopupRettificaImportoAggiudicazione" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupRettificaImportoAggiudicazione">
 			
@@ -150,6 +163,9 @@
 						${requestScope.msg }
 					</c:when>
 					<c:otherwise>
+						<c:if test="${isOdaPresente ne ''}">
+							<font style='color:#0000FF;'> Attenzione: esiste gia' un ordine creato per questa RDA, ricordarsi di aggiornare l'importo direttamente in ERP</font><br><br>
+						</c:if>
 						Mediante questa funzione è possibile rettificare l'importo di aggiudicazione calcolato a sistema.
 						<br>${messaggio}
 					</c:otherwise>

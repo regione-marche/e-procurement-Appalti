@@ -66,7 +66,7 @@
   	<gene:javaScript>
 
   	function esporta(){
-			document.location.href = "${pageContext.request.contextPath}/pg/EsportaAntimafia.do?"+csrfToken+"&codiceGara=${ngara}&tipoRichiesta=${tipoRichiesta}&islottoGara=${islottoGara}";
+			document.location.href = "${pageContext.request.contextPath}/pg/EsportaAntimafia.do?codiceGara=${ngara}&tipoRichiesta=${tipoRichiesta}&islottoGara=${islottoGara}";
 		}
 
 		function chiudi(){

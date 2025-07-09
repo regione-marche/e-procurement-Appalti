@@ -97,6 +97,7 @@
 													<c:if test="${ gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.FASIGARA.AcquisizioneTecAnonima') }">
 													<tr>
 														<td class="vocemenulaterale">
+															<c:set var="aperturaBusteTecnicheAnonime" value="true"/>
 															<a href="javascript:aperturaBusteTecnicheAnonime('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}');" title='${etichettaAcquisizioneAnonima }' tabindex="1504">${etichettaAcquisizioneAnonima}</a>
 														</td>
 									                </tr>
@@ -201,11 +202,12 @@
 					</gene:gruppoCampi>
 					<gene:campoScheda campo="COMPREQ" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" visibile="false" />
 					<gene:campoScheda campo="CHIUSURA_APERTURA_FASI" definizione="T20;0" campoFittizio="true" visibile="false" value="" />
-								
 				</gene:formScheda>
 			</td>
 		</tr>
+		
 <gene:javaScript>
 	
-
+	
 </gene:javaScript>
+

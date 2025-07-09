@@ -29,9 +29,9 @@
 	//           Poichè le properties sono individuate in base alla posizione consecutiva nella pagina, se si modifica l'ordine delle properties si deve modificare il riferimento
 	//			 a tale property nella funzione
 	
-	arrayProprieta = [["PG","it.eldasoft.sil.pg.vigilanza.nomeApplicativo" ],["PG","it.eldasoft.sil.pg.vigilanza.ws.url"],["W_","it.eldasoft.sil.pl.vigilanza.ws.login.comune"],["W_","it.eldasoft.sil.pl.vigilanza.ws.login.utente"],["W_","it.eldasoft.sil.pl.vigilanza.ws.login.password"],["W_","it.eldasoft.sil.pl.vigilanza.ossreg"],["PG","it.eldasoft.inviodaticig.ws.url"],["PG","it.eldasoft.inviodaticig.nomeApplicativo"]];
+	arrayProprieta = [["PG","it.eldasoft.sil.pg.vigilanza.nomeApplicativo" ],["PG","it.eldasoft.sil.pg.vigilanza.ws.url"],["W_","it.eldasoft.sil.pl.vigilanza.ws.login.comune"],["W_","it.eldasoft.sil.pl.vigilanza.ws.login.utente"],["W_","it.eldasoft.sil.pl.vigilanza.ws.login.password"],["W_","it.eldasoft.sil.pl.vigilanza.ossreg"],["PG","it.eldasoft.inviodaticig.ws.url"],["PG","it.eldasoft.inviodaticig.nomeApplicativo"],["W_","it.eldasoft.sil.pg.vigilanza.smartCig"],["W_","it.eldasoft.sil.pg.vigilanza.elencoPartecipanti"]];
 	                                                                                                                                                                    											
-	tipoProprieta = [ "","","-b","","p","-b","",""];											
+	tipoProprieta = [ "","","-b","","p","-b","","","-b","-b"];											
 	
 	
 	$(document).ready(function() {
@@ -238,7 +238,33 @@
 					
 				</td>
 			</tr>
-			
+			<tr id="">
+				<td class="etichetta-dato">
+					<span id="titleProp9" >Consenti invio smartCIG a Vigilanza?</span>
+				</td>
+				<td class="valore-dato">
+					<input type="hidden" id="codapp9" name="codapp" />
+					<input type="hidden" id="chiave9" name="chiave"  maxlength="60" />
+					<select id="prop9" name="valore" >
+						<option value='1'>Si</option>
+						<option value='0'>No</option>
+					</select>
+					
+				</td>
+			</tr>
+			<tr id="">
+				<td class="etichetta-dato">
+					<span id="titleProp10" >Invia elenco partecipanti?</span>
+				</td>
+				<td class="valore-dato">
+					<input type="hidden" id="codapp10" name="codapp" />
+					<input type="hidden" id="chiave10" name="chiave"  maxlength="60" />
+					<select id="prop10" name="valore" >
+						<option value='1'>Si</option>
+						<option value='0'>No</option>
+					</select>
+				</td>
+			</tr>
 			
 			<tr>
 				<td colspan="2">

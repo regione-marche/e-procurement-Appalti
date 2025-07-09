@@ -55,7 +55,7 @@
 			<c:otherwise>
 				<c:choose>
 					<c:when test="${entita eq 'W3SMARTCIG'}">
-						window.opener.location=contextPath+'/History.do?'+csrfToken+'&metodo=reload';
+						window.opener.location=contextPath+'/History.do?metodo=reload';
 					</c:when>
 					<c:otherwise>
 						window.opener.selezionaPagina(0);

@@ -57,7 +57,7 @@
 									<b>Il servizio di marcatura temporale non risponde o risponde in maniera errata, riprovare più tardi oppure contattare il servizio di assistenza.</b>
 									<br><br>
 								</c:when>
-								<c:when test="${compub eq '1'}">
+								<c:when test="${compub eq '1' or compub eq '3'}">
 									<br>
 									La comunicazione selezionata è stata inviata
 									<br><br>
@@ -168,6 +168,7 @@
 					</tr>
 					<tr>
 						<td>
+							<c:set var="idprg" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select idprg from W_INVCOM where idprg=? and idcom=?", idprg, idcom)}'/>
 							<gene:formScheda entita="W_INVCOM" gestisciProtezioni="true"
 								gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreW_INVCOMInvia"
 								where="W_INVCOM.IDPRG = '${idprg}' AND W_INVCOM.IDCOM = ${idcom}">
@@ -181,6 +182,8 @@
 								<gene:campoScheda campo="IDCFG_NEW" visibile="false" campoFittizio="true" definizione="T10" value="${param.cenint}"/> 
 								<gene:campoScheda campo="IDCOMRIS" visibile="false"/>
 								<gene:campoScheda campo="IDPRGRIS" visibile="false"/>
+								<gene:campoScheda campo="IDCOMINO" visibile="false"/>
+								<gene:campoScheda campo="IDPRGINO" visibile="false"/>
 								<gene:campoScheda campo="COMMSGOGG" visibile="false"/>
 								<gene:campoScheda campo="COMMSGTES" visibile="false"/>
 								<gene:campoScheda campo="COMENT" visibile="false"/>

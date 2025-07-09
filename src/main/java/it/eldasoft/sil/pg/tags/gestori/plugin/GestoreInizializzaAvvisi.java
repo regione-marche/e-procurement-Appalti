@@ -17,13 +17,20 @@ import it.eldasoft.gene.tags.BodyTagSupportGene;
 import it.eldasoft.gene.tags.utils.UtilityTags;
 import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestorePreload;
+import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityDate;
+
 import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Gestore di plugin per l'inizializzazione degli Avvisi
@@ -43,6 +50,8 @@ public class GestoreInizializzaAvvisi extends AbstractGestorePreload {
       throws JspException {
     SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",
         page, SqlManager.class);
+    PgManager pgManager = (PgManager) UtilitySpring.getBean("pgManager",
+    	page, PgManager.class);
 
 
     String modo = (String) page.getAttribute(
@@ -65,6 +74,17 @@ public class GestoreInizializzaAvvisi extends AbstractGestorePreload {
         // delle autorizzazioni
         String inputFiltro = "CODGAR=T:" + codgar;
         page.setAttribute("inputFiltro", inputFiltro, PageContext.REQUEST_SCOPE);
+
+		String verNPA = (String) sqlManager.getObject("select vernpa from torn where codgar=?", new Object[] {codgar});
+		page.setAttribute("verNPA", verNPA, PageContext.REQUEST_SCOPE);
+		String nomeDRP = (String) sqlManager.getObject("select nomtec from tecni where codtec=(select coddrp from torn where codgar=?)", new Object[] {codgar});
+		page.setAttribute("initNOMDRP", nomeDRP, PageContext.REQUEST_SCOPE);
+
+      } else {
+			String verNPA = pgManager.getVersioneNpaCorrente();
+			if (StringUtils.isNotBlank(verNPA)) {
+				page.setAttribute("initVERNPA", verNPA, PageContext.REQUEST_SCOPE);
+			}
       }
       String log = (String) page.getAttribute("log");
       if("true".equals(log)){

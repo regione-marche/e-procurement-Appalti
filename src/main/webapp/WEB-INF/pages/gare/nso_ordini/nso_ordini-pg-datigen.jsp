@@ -294,7 +294,6 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 <gene:javaScript>
 		function leggiComunicazioni() {
 			var href = contextPath + "/ApriPagina.do?href=geneweb/w_invcom/w_invcom-in-lista.jsp&genere=${genere}&chiave=" + document.forms[0].key.value;
-			href+="&" + csrfToken;
 			href+="&COD_ORD=" + document.forms[0].NSO_ORDINI_CODORD.value;
 			document.location.href = href;
 		}
@@ -303,7 +302,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			var entitaWSDM="NSO_ORDINI";
 			var chiaveWSDM=getValue("NSO_ORDINI_ID");
 			var idconfi=idconfi;
-			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=geneweb/w_invcom/w_invcom-lista.jsp&genere=${genere}&entita=" + document.forms[0].entita.value + "&chiave=" + document.forms[0].key.value;
+			var href = contextPath + "/ApriPagina.do?href=geneweb/w_invcom/w_invcom-lista.jsp&genere=${genere}&entita=" + document.forms[0].entita.value + "&chiave=" + document.forms[0].key.value;
 			href+="&entitaWSDM=" + entitaWSDM + "&chiaveWSDM=" + chiaveWSDM + "&idconfi=" + idconfi;
 			href+="&COD_ORD=" + document.forms[0].NSO_ORDINI_CODORD.value;
 			document.location.href = href;
@@ -339,7 +338,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 				href = href + "&idconfi="+idconfi;
 			} */
 			href+="&ditta="+ditta;
-			document.location.href = href + "&" + csrfToken;
+			document.location.href = href;
 		}
 	</c:if>
 </gene:javaScript>

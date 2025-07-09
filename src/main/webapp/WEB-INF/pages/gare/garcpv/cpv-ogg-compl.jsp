@@ -23,8 +23,11 @@
 		<gene:campoScheda addTr="false" campo="NUMCPV_${param.contatore}" entita="GARCPV" campoFittizio="true" visibile="false" definizione="N3;1;;;G1NUMCPV" value="${item[1]}"/>
 		<c:choose>
 			<c:when test="${param.datiModificabili }">
-				<gene:campoScheda  title="Codice CPV complementare" addTr="false" campo="CODCPV_${param.contatore}" entita="GARCPV" href="javascript:formCPV(${requestScope.modCODCPV}, 'GARCPV_CODCPV_${param.contatore}')" campoFittizio="true" definizione="T20;;;;G1CODCPV" value="${item[2]}" speciale="true">
-					<gene:popupCampo titolo="Dettaglio codice CPV" href="formCPV(${requestScope.modCODCPV}, 'GARCPV_CODCPV_${param.contatore}')" />
+				<gene:campoScheda  title="Codice CPV complementare" addTr="false" campo="CODCPV_${param.contatore}" entita="GARCPV" href="javascript:formCPV(${requestScope.modCODCPV}, 'GARCPV_CODCPV_${param.contatore}')" campoFittizio="true" definizione="T20;;;;G1CODCPV" value="${item[2]}"
+					speciale="${not param.bloccoModificaPCP}">
+					<c:if test="${not param.bloccoModificaPCP}">
+						<gene:popupCampo titolo="Dettaglio codice CPV" href="formCPV(${requestScope.modCODCPV}, 'GARCPV_CODCPV_${param.contatore}')" />
+					</c:if>
 				</gene:campoScheda>
 				</c:when>
 				<c:otherwise>
@@ -43,8 +46,11 @@
 		</gene:campoScheda>
 		<gene:campoScheda addTr="false" campo="NGARA_${param.contatore}" entita="GARCPV" campoFittizio="true" visibile="false" definizione="T20;1;;;G1NGARACPV" value="${param.chiave}"/>
 		<gene:campoScheda addTr="false" campo="NUMCPV_${param.contatore}" entita="GARCPV" campoFittizio="true" visibile="false" definizione="N3;1;;;G1NUMCPV"/>
-		<gene:campoScheda title="Codice CPV complementare" addTr="false" campo="CODCPV_${param.contatore}" entita="GARCPV" href="javascript:formCPV(${requestScope.modCODCPV}, 'GARCPV_CODCPV_${param.contatore}')" campoFittizio="true" definizione="T20;;;;G1CODCPV" speciale="true">
-			<gene:popupCampo titolo="Dettaglio codice CPV" href="formCPV(${requestScope.modCODCPV}, 'GARCPV_CODCPV_${param.contatore}')" />
+		<gene:campoScheda title="Codice CPV complementare" addTr="false" campo="CODCPV_${param.contatore}" entita="GARCPV" href="javascript:formCPV(${requestScope.modCODCPV}, 'GARCPV_CODCPV_${param.contatore}')" campoFittizio="true" definizione="T20;;;;G1CODCPV"
+			speciale="${not param.bloccoModificaPCP}">
+			<c:if test="${not param.bloccoModificaPCP}">
+				<gene:popupCampo titolo="Dettaglio codice CPV" href="formCPV(${requestScope.modCODCPV}, 'GARCPV_CODCPV_${param.contatore}')" />
+			</c:if>
 		</gene:campoScheda>
 		<gene:campoScheda addTr="false" campo="TIPCPV_${param.contatore}" entita="GARCPV" campoFittizio="true" visibile="false" definizione="T2;;;;G1TIPCPV" value="2"/>
 		<gene:campoScheda addTr="false">
@@ -67,7 +73,9 @@
 	
 	$(window).ready(function (){
 		
+		<c:if test="${not param.bloccoModificaPCP}">
 		_creaLinkAlberoCpvVP($("#GARCPV_CODCPV_${param.contatore}").parent(), "${modo}", $("#GARCPV_CODCPV_${param.contatore}"), $("#GARCPV_CODCPV_${param.contatore}view") );
+		</c:if>
 		
 		$("#GARCPV_CODCPV_${param.contatore}").change(function(){
 			$("#GARCPV_MOD_CPVCOMP_${param.contatore}").val("1");

@@ -49,13 +49,13 @@ public class CaricaDescPuntiContattoFunction extends AbstractFunzioneTag {
 
     try {
       if("TORN".equals(entita)){
-        select="select cenint,PCOPRE,PCODOC,PCOOFF,PCOGAR from torn where codgar=?";
+        select="select cenint,PCOPRE,PCODOC,PCOOFF,PCOGAR,FUNZSVOLTE from torn where codgar=?";
         Vector datiTorn = sqlManager.getVector(select, new Object[]{codice});
         if(datiTorn!=null && datiTorn.size()>0){
           String cenint = SqlManager.getValueFromVectorParam(datiTorn, 0).getStringValue();
           if(cenint!=null && !"".equals(cenint)){
             select="select nompun from punticon where codein=? and numpun=?";
-            for(int i=0;i<4;i++){
+            for(int i=0;i<5;i++){
               Long progressivo = SqlManager.getValueFromVectorParam(datiTorn, i+1).longValue();
               if(progressivo!=null){
                 String desc = (String)sqlManager.getObject(select, new Object[]{cenint,progressivo});
@@ -80,6 +80,10 @@ public class CaricaDescPuntiContattoFunction extends AbstractFunzioneTag {
                         PageContext.REQUEST_SCOPE);
                     break;
                   }
+                  case 4:{
+                      pageContext.setAttribute("initNOMPUN_ORGRICORSO", desc,
+                              PageContext.REQUEST_SCOPE);
+                  }break;
                 }
               }
             }

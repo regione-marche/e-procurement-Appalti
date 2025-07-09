@@ -14,6 +14,9 @@
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 
+<%-- test per consentire utilizzo della pagina solo agli amministratori di sistema --%>
+<c:set var="nonusato" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.CheckOpzioniUtenteFunction", pageContext, "ou89")}' />
+
 <!--N.B.: RIDEFINITI CONTROLLI CUSTOMIZZATI PER g_confcod_scheda DI GENE-->
 <gene:javaScript>
 	//Cambio il riferimento al gestore di Gene (GestoreG_CONFCOD) specificando un gestore per Gare (GestoreG_CONFCODGare) 

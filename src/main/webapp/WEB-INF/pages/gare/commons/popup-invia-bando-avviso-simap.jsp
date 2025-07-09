@@ -19,22 +19,37 @@
 
 <c:set var="contextPath" value="${pageContext.request.contextPath}"/>
 
-<c:set var="settore" value="${param.settore}"/>
+<c:if test="${ not empty param.settore }">
+	<c:set var="settore" value="${param.settore}"/>
+</c:if>
+<c:if test="${ not empty param.tipoAvv }">
+	<c:set var="tipoAvvGAREAVVISO" value="${param.tipoAvv}"/>
+</c:if>
+<c:if test="${ not empty param.iterga }">
+	<c:set var="iterga" value="${param.iterga}"/>
+</c:if>
+<c:if test="${ not empty param.genereGara }">
+	<c:set var="genereGara" value="${param.genereGara}"/>
+</c:if>
+<c:if test="${ not empty param.codgar }">
+	<c:set var="codgar" value="${param.codgar}"/>
+</c:if>
 
 <div style="width: 97%;"><gene:template file="popup-template.jsp">
 
 	<gene:redefineInsert name="addHistory" />
 	<gene:redefineInsert name="gestioneHistory" />
 	<gene:setString name="titoloMaschera" value='Invio dei dati a Formulari Europei per la creazione dei formulari GUUE' />
-	<c:set var="ssoprotocollo" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "sso.protocollo")}'/>
-
+	
 	<gene:redefineInsert name="corpo">
 	
 		<form action="${contextPath}/pg/InviaBandoAvvisoSimap.do" method="post" name="formInviaBandoAvvisoSimap" id="BandoInvioForm" >
-			<input type="hidden" name="codgar" value="${param.codgar}" />
-			<input type="hidden" name="genereGara" value="${param.genereGara}" />
+			<input type="hidden" name="codgar" value="${codgar}" />
+			<input type="hidden" name="genereGara" value="${genereGara}" />
 			<input type="hidden" id="metodoInvio" name="metodo" value="controllaEdInvia" />
-			<input type="hidden" name="iterga" value="${param.iterga}"/>
+			<input type="hidden" name="iterga" value="${iterga}"/>
+			<input type="hidden" name="tipoAvvGAREAVVISO" value="${tipoAvvGAREAVVISO}"/>
+			<input type="hidden" name="settore" value="${settore}"/>
 			<table class="dettaglio-notab">
 				<tr>
 					<td class="valore-dato" colspan="2">
@@ -45,19 +60,16 @@
 						<br>
 						<br>
 						<br>
-						<c:if test="${empty ssoprotocollo || ssoprotocollo eq '0'}">
-							<b>Credenziali (utente e password) per la connessione a Formulari Europei</b>
-							<br>
-							<br>
-							<input id="correnti" type="radio" name="credenziali" value="CORRENTI" checked onchange="javascipt:gestioneCredenziali()">Credenziali correnti
-							<br>
-							<input id="altre" type="radio" name="credenziali" value="ALTRE" onchange="javascipt:gestioneCredenziali()">Altre credenziali
-							<br>
-						</c:if>
+						<b>Credenziali (utente e password) per la connessione a Formulari Europei</b>
+						<br>
+						<br>
+						<input id="correnti" type="radio" name="credenziali" value="CORRENTI" checked onchange="javascipt:gestioneCredenziali()">Credenziali correnti
+						<br>
+						<input id="altre" type="radio" name="credenziali" value="ALTRE" onchange="javascipt:gestioneCredenziali()">Altre credenziali
+						<br>
 					</td>
 				</tr>
 				
-				<c:if test="${empty ssoprotocollo || ssoprotocollo eq '0'}">
 					<tr>	
 						<td class="etichetta-dato">Utente</td>
 						<td class="valore-dato">
@@ -70,7 +82,6 @@
 							<input type="password" name="password" size="15" disabled/>
 						</td>
 					</tr>
-				</c:if>
 				
 				<tr>
 					<td class="valore-dato" colspan="2"> 
@@ -80,7 +91,7 @@
 						<br>
 						
 						<c:choose>
-						<c:when test="${settore eq 'S'}">
+						<c:when test="${settore eq 'S' or tipoAvvGAREAVVISO eq '2'}">
 							<c:set var="LabelAvvisoPreinformazione" value="Avviso periodico indicativo"/>
 							<c:set var="LabelSottotipoAvvisoPreinformazione" value="Soltanto avviso periodico indicativo"/>
 						</c:when>
@@ -164,7 +175,6 @@
 			var metodo = $("#metodoInvio").val();
 			
 			if(metodo == 'controllaEdInvia'){
-			<c:if test="${empty ssoprotocollo || ssoprotocollo eq '0'}">
 				var altre = document.formInviaBandoAvvisoSimap.altre;
 				if (altre.checked) {
 					var username = document.formInviaBandoAvvisoSimap.username;
@@ -180,7 +190,6 @@
 						invia = "false";
 					}
 				}
-			</c:if>
 				var formulario = "";
 				var fs1 = document.formInviaBandoAvvisoSimap.fs1;
 				var fs2 = document.formInviaBandoAvvisoSimap.fs2;
@@ -232,7 +241,7 @@
 		}
 		
 		<c:choose>
-			<c:when test="${param.genereGara eq 11 }">
+			<c:when test="${genereGara eq 11 }">
 				var radioButton = document.formInviaBandoAvvisoSimap.formulario;
 				console.log("tipo 11");
 				for(var i = 0; i < radioButton.length; i++) { // uso radioButton.length per sapere quanti radio button ci sono
@@ -251,7 +260,7 @@
 			</c:when>
 			<c:otherwise>
 			console.log("tipo non 11");
-				<c:if test="${param.iterga eq 1}">
+				<c:if test="${iterga eq 1 or iterga eq 9}">
 					var radioButton = document.formInviaBandoAvvisoSimap.formulario;
 					for(var i = 0; i < radioButton.length; i++) { // uso radioButton.length per sapere quanti radio button ci sono
 						if(radioButton[i].value!="FS2" && radioButton[i].value!="FS3" ) { // scorre tutti i vari radio button
@@ -263,7 +272,7 @@
 					aggiornaSottoTipo(false);
 				</c:if>
 				
-				<c:if test="${param.iterga eq 2 or  param.iterga eq 4}">
+				<c:if test="${iterga eq 2 or  iterga eq 4}">
 					var radioButton = document.formInviaBandoAvvisoSimap.tipoavviso;
 					for(var i = 0; i < radioButton.length; i++) { // uso radioButton.length per sapere quanti radio button ci sono
 						if(radioButton[i].value=="1" ) { // scorre tutti i vari radio button
@@ -275,7 +284,7 @@
 					aggiornaSottoTipo(true);
 				</c:if>
 				
-				<c:if test="${param.iterga ne 1 and param.iterga ne 2 and param.iterga ne 4}">
+				<c:if test="${iterga ne 1 and iterga ne 2 and iterga ne 4 and iterga ne 9}">
 					var radioButton = document.formInviaBandoAvvisoSimap.formulario;
 					for(var i = 0; i < radioButton.length; i++) { // uso radioButton.length per sapere quanti radio button ci sono
 						if(radioButton[i].value!="FS3" ) { // scorre tutti i vari radio button

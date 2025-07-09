@@ -23,6 +23,7 @@
 	<gene:redefineInsert name="corpo">
 			<jsp:include page="gare-pg-aggiudicazione-definitiva.jsp">
 				<jsp:param name="lottoDiGara" value="${lottoDiGara}" />
+				<jsp:param name="isGaraALotti" value="true" />
 			</jsp:include>
 	</gene:redefineInsert>
 </gene:template>

@@ -289,7 +289,7 @@ $(window).on("load", function (){
 			var ext = vet[vet.length-1];
 			ext = ext.toUpperCase();
 			var href = contextPath + "/pg/VisWSERPAllegato.do";
-			document.location.href=href+"?"+csrfToken+"&path=" + id + "&nomedoc=" + encodeURIComponent(nomedoc);
+			document.location.href=href+"?path=" + id + "&nomedoc=" + encodeURIComponent(nomedoc);
 
  }
   

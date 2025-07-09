@@ -63,7 +63,7 @@
 		<c:set var="idconfi" value="${idconfi}" />
 	</c:otherwise>
 </c:choose>
-
+<c:set var="isVerificaPDFA" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "uploadFile.verifica.pdfA")}'/>
 <c:set var="digitalSignatureUrlCheck" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-check-url")}'/>
 <c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
 <c:choose>
@@ -94,7 +94,11 @@
 			<gene:campoLista campo="FIRMACHECKTS" ordinabile="false" visibile="false" />
 			<gene:campoLista campo="DIGDESDOC" />
 			<gene:campoLista campo="DIGNOMDOC" >
+				<c:if test="${isVerificaPDFA eq '1' && datiRiga.W_DOCDIG_DIGTIPDOC eq 'pdf/a'}">
+					&nbsp;<img id="imgCheckPDFaDocMessage" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
+				</c:if>
 			</gene:campoLista>
+			<gene:campoLista campo="DIGTIPDOC" visibile="false" definizione="T2;0;;SN;DIGTIPDOC" value="${datiRiga.W_DOCDIG_DIGTIPDOC}" />
 			<gene:campoLista campo="FIRMA_FIT" campoFittizio="true"  title ="" width="24" definizione="T2;;;;G1_DIGFIRMACHECK_DD"  >
 				<%-- gestione controllo firma elettronica --%>
 				<c:if test="${not empty datiRiga.W_DOCDIG_FIRMACHECK and datiRiga.W_DOCDIG_FIRMACHECK=='1'}">
@@ -114,8 +118,8 @@
 			<input type="hidden" name="INPUT_IDPRG_${currentRow}" id="INPUT_IDPRG_${currentRow}" value="${datiRiga.W_DOCDIG_IDPRG}"/>
 			<input type="hidden" name="INPUT_DIGNOMDOC_${currentRow}" id="INPUT_DIGNOMDOC_${currentRow}" value="${datiRiga.W_DOCDIG_DIGNOMDOC}"/>
 			</gene:campoLista>
-			<gene:campoLista campo="COMKEY1" entita="W_INVCOM" where="W_INVCOM.IDPRG=W_DOCDIG.IDPRG AND W_INVCOM.IDCOM=W_DOCDIG.DIGKEY1" visibile="false" />
-			<gene:campoLista campo="COMKEY2" entita="W_INVCOM" where="W_INVCOM.IDPRG=W_DOCDIG.IDPRG AND W_INVCOM.IDCOM=W_DOCDIG.DIGKEY1" visibile="false"/>
+			<gene:campoLista campo="COMKEY1" entita="W_INVCOM" where="W_INVCOM.IDPRG=W_DOCDIG.IDPRG AND CAST(W_INVCOM.IDCOM AS VARCHAR(12))=W_DOCDIG.DIGKEY1" visibile="false" />
+			<gene:campoLista campo="COMKEY2" entita="W_INVCOM" where="W_INVCOM.IDPRG=W_DOCDIG.IDPRG AND CAST(W_INVCOM.IDCOM AS VARCHAR(12))=W_DOCDIG.DIGKEY1" visibile="false"/>
 			<input type="hidden" name="chiaveWSDM" id="chiaveWSDM" value="${chiaveWSDM}"/>
 			<input type="hidden" name="entitaWSDM" id="entitaWSDM" value="${entitaWSDM}"/>
 			<input type="hidden" name="genere" id="genere" value="${genere}"/>
@@ -169,7 +173,7 @@
 					document.formVisFirmaDigitale.submit();
 				}else{
 					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+					document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 				}
 			</c:when>
 			<c:otherwise>
@@ -180,7 +184,7 @@
 					document.formVisFirmaDigitale.submit();
 				}else{
 					var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+					document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 				}
 			</c:otherwise>
 		</c:choose>
@@ -193,7 +197,7 @@
 		var chiaveWSDM="${chiaveWSDM }";
 		var entitaWSDM="${entitaWSDM }";
 		var genere = "${genere }";
-		document.pagineForm.action += "&keyAdd=" + keyAdd + "&chiaveWSDM=" + chiaveWSDM + "&entitaWSDM=" + entitaWSDM + "&genere=" + genere;
+		document.pagineForm.action += "?keyAdd=" + keyAdd + "&chiaveWSDM=" + chiaveWSDM + "&entitaWSDM=" + entitaWSDM + "&genere=" + genere;
 		selezionaPaginaDefault(pageNumber);
 	}
 </gene:javaScript>

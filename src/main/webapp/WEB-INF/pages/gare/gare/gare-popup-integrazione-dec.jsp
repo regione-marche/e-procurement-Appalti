@@ -23,6 +23,13 @@
 		<c:set var="ngara" value="${param.ngara}" />
 	</c:otherwise>
 </c:choose>
+<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from GARE where ngara=?", ngara)}'/>
+<c:set var="codiceGara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select codgar1 from GARE where ngara=?", ngara)}'/>
+
+<c:set var="isAttivoModuloANACForm" value="${gene:callFunctionN('it.eldasoft.sil.pg.tags.funzioni.GetSeAttivoModuloANACFormFunction', pageContext, codiceGara)}"/>
+<c:if test="${isAttivoModuloANACForm eq 'true'}">
+	<c:set var="presenteAD5" value="${gene:callFunctionN('it.eldasoft.sil.pg.tags.funzioni.GetCountSchedeFunction', pageContext, 'inviataAD5', codiceGara) > 0}" />
+</c:if>
 
 <c:choose>
 	<c:when test='${not empty param.ncont}'>
@@ -30,6 +37,15 @@
 	</c:when>
 	<c:otherwise>
 		<c:set var="ncont" value="${ncont}" />
+	</c:otherwise>
+</c:choose>
+
+<c:choose>
+	<c:when test='${not empty param.codimp}'>
+		<c:set var="codimp" value="${param.codimp}" />
+	</c:when>
+	<c:otherwise>
+		<c:set var="codimp" value="${codimp}" />
 	</c:otherwise>
 </c:choose>
 
@@ -55,12 +71,14 @@
 
 <c:choose>
 	<c:when test="${integrazioneDec ne '1'}">
-		<c:set var="nomeIntegrazione" value="Monitoraggio OO.PP." />	
+		<c:set var="nomeIntegrazione" value="Monitoraggio OO.PP." />
 	</c:when>
 	<c:otherwise>
 		<c:set var="nomeIntegrazione" value="Direzione Esecuzione Contratti" />
 	</c:otherwise>
 </c:choose>
+
+<c:set var="inviateSchedeAggiudicazione" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.npa.GetSeInviateSchedeAggiudicazioneFunction", pageContext, ngara, codimp)}'/>
 
 <gene:template file="popup-template.jsp">
 	
@@ -84,7 +102,7 @@
 			<c:set var="creaLavoriSingolo" value="true" />
 			<c:set var="creaLavoriAssociato" value="${singoloAppalto eq '2'}" />
 			<c:set var="creaLavori" value="${creaLavoriSingolo || creaLavoriAssociato}" />
-			<c:set var="creaFornitureServiziSingolo" value="${integrazioneDec eq '1'}" />
+			<c:set var="creaFornitureServiziSingolo" value="${integrazioneDec eq '1' || true}" />
 			<c:set var="creaFornitureServiziAssociato" value="${singoloAppalto eq '2'}" />
 			<c:set var="creaFornitureServizi" value="${creaFornitureServiziSingolo || creaFornitureServiziAssociato}" />	
 
@@ -97,8 +115,7 @@
 			<gene:campoScheda entita="V_GARE_TORN" campo="GENERE" modificabile="false" where="GARE.CODGAR1 = V_GARE_TORN.CODICE" visibile="false"/>
 			<gene:campoScheda entita="TORN" campo="DESTOR" where="TORN.CODGAR = GARE.CODGAR1" visibile="false"/>
 			<gene:campoScheda entita="TORN" campo="MODCONT" where="TORN.CODGAR = GARE.CODGAR1" visibile="false"/>
-			
-		
+
 			<gene:campoScheda visibile="${isLavoroAssociato eq '1' && empty RISULTATO}">
 				<td colspan="2">
 					<div style="margin:6 0 6 0;">
@@ -113,6 +130,11 @@
 						</c:if>						
 						Aggiornare con i dati correnti ?
 						<br><br>
+						<c:if test="${not inviateSchedeAggiudicazione && isAttivoModuloANACForm eq 'true'}">
+							<div style="color: blue;margin:6 0 6 0;">
+								<b>ATTENZIONE:</b> Non è stata inviata ad ANAC la scheda relativa alla fase di aggiudicazione.<br><br>
+							</div>
+						</c:if>
 					</div>
 				</td>
 			</gene:campoScheda>
@@ -137,24 +159,42 @@
 				</td>
 			</gene:campoScheda>
 
-			<gene:gruppoCampi visibile="${isLavoroAssociato ne '1'}">
-				<gene:campoScheda>
+			<gene:gruppoCampi visibile="${empty RISULTATO}">
+				<gene:campoScheda visibile="${isLavoroAssociato ne '1'}">
 					<td colspan="2">
 						<div style="margin:6 0 6 0;">
 							<br>
 							Creare un nuovo contratto in ${nomeIntegrazione} ?
 							<br><br>
 						</div>
+
+						<c:if test="${!(inviateSchedeAggiudicazione eq 'true') && isAttivoModuloANACForm eq 'true'}">
+							<div style="color: blue;margin:6 0 6 0;">
+								<b>ATTENZIONE:</b> Non è stata inviata ad ANAC la scheda relativa alla fase di aggiudicazione.<br><br>
+							</div>
+						</c:if>
 					</td>
-				</gene:campoScheda>	
-				
+				</gene:campoScheda>
+
+				<c:if test="${isLavoroAssociato eq '1'}">
+					<c:set var="sql" value="select notapp from appa where codlav=? and nappal=?"/>
+					<c:set var="APPA_NOTAPP" value="${gene:callFunctionN('it.eldasoft.gene.tags.functions.GetSafeDataFromDB', pageContext, sql, datiRiga.GARE_CLAVOR, datiRiga.GARE_NUMERA)}"/>
+					<c:set var="sql" value="select affidamdir from appa where codlav=? and nappal=?"/>
+					<c:set var="APPA_AFFIDAMDIR" value="${gene:callFunctionN('it.eldasoft.gene.tags.functions.GetSafeDataFromDB', pageContext, sql, datiRiga.GARE_CLAVOR, datiRiga.GARE_NUMERA)}"/>
+					<c:set var="sql" value="select tiplav from peri where codlav=?"/>
+					<c:set var="PERI_TIPLAV" value="${gene:callFunctionN('it.eldasoft.gene.tags.functions.GetSafeDataFromDB', pageContext, sql, datiRiga.GARE_CLAVOR)}"/>
+				</c:if>
+
 				<gene:campoScheda title="Tipo contratto" entita="TORN" campo="TIPGEN" visibile="true" modificabile="false"/>			
-				<gene:campoScheda title="Codice contratto" campo="APPA_CODLAV" obbligatorio="true" visibile='${isCodificaAutomatica eq "false"}' campoFittizio="true" definizione="T20;0"/>
+				<gene:campoScheda title="Codice contratto" campo="APPA_CODLAV" obbligatorio="true" visibile='${isCodificaAutomatica eq "false"}' value="${isLavoroAssociato eq '1'? (datiRiga.GARE_CLAVOR).concat('/').concat(datiRiga.GARE_NUMERA)  : ''}" modificabile="${isLavoroAssociato ne '1'}" campoFittizio="true" definizione="T20;0"/>
 				<gene:campoScheda title="N. appalto" campo="APPA_NAPPAL" visibile="false" campoFittizio="true" definizione="N7;0"/>
 				<gene:campoScheda title="Tipo contratto" campo="APPA_TIPLAVG" modificabile="false" campoFittizio="true" definizione="N7;0;A1007" visibile="false"/>
-				<gene:campoScheda title="Descrizione contratto" campo="APPA_NOTAPP" gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote" campoFittizio="true" definizione="T2000;0"/>
+				<gene:campoScheda title="Descrizione contratto" campo="APPA_NOTAPP" gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote" value="${isLavoroAssociato eq '1'? APPA_NOTAPP : ''}" modificabile="${isLavoroAssociato ne '1'}" campoFittizio="true" definizione="T2000;0"/>
+				<gene:campoScheda title="Tipo iniziativa" campo="PERI_TIPLAV" obbligatorio="true" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoTIPLAV" value="${isLavoroAssociato eq '1'? PERI_TIPLAV : ''}" modificabile="${isLavoroAssociato ne '1'}" campoFittizio="true" definizione="T100;0;A20s2"/>
+				<gene:campoScheda title="Affidamento diretto con scheda AD5?" campo="APPA_AFFIDAMDIR" obbligatorio="true" visibile="${fn:startsWith(codiceGara, '$')}" value="${isLavoroAssociato eq '1'? APPA_AFFIDAMDIR : 0}" campoFittizio="true" gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoSiNo" definizione="T1;0"/>
+				<gene:campoScheda title="" campo="ISATTIVOMODULOANACFORM" visibile="false" value="${isAttivoModuloANACForm}" campoFittizio="true" definizione="T10;0"/>
 
-				<gene:campoScheda visibile="${(integrazioneDec ne '1' && isLavoroAssociato ne '1' && datiRiga.TORN_TIPGEN ne '1')}">
+				<gene:campoScheda visibile="${(false && integrazioneDec ne '1' && isLavoroAssociato ne '1' && datiRiga.TORN_TIPGEN ne '1')}">
 					<td colspan="2">
 						<br>
 						<div style="margin:6 0 6 0;">
@@ -164,21 +204,22 @@
 						</div>
 					</td>
 				</gene:campoScheda>
-		
+
+				<c:set var="isVisibileLavoroEsistente" value="${isLavoroAssociato ne '1' and ((creaLavori eq 'true' && datiRiga.TORN_TIPGEN eq '1') || (creaFornitureServizi eq 'true' && datiRiga.TORN_TIPGEN ne '1'))}"/>
 				<gene:campoScheda title="Collegare a una commessa esistente ?" 
 					campo="LAVORO_ESISTENTE" 
 					campoFittizio="true" 
 					definizione="T1;0"
-					visibile="${(creaLavori eq 'true' && datiRiga.TORN_TIPGEN eq '1') || (creaFornitureServizi eq 'true' && datiRiga.TORN_TIPGEN ne '1')}" > 
-					<c:if test="${(creaLavoriSingolo && datiRiga.TORN_TIPGEN eq '1') || (creaFornitureServiziSingolo && datiRiga.TORN_TIPGEN ne '1')}">
+					visibile="${isVisibileLavoroEsistente}" >
+					<c:if test="${isVisibileLavoroEsistente}">
 						<gene:addValue value="2" descr="No" />
 					</c:if>
-					<c:if test="${(creaLavoriAssociato && datiRiga.TORN_TIPGEN eq '1') || (creaFornitureServiziAssociato && datiRiga.TORN_TIPGEN ne '1')}">
+					<c:if test="${isVisibileLavoroEsistente}">
 						<gene:addValue value="1" descr="Si"/>
 					</c:if>
 				</gene:campoScheda>
-				
-				<gene:archivio titolo="commesse" 
+
+				<gene:archivio titolo="commesse"
 					inseribile="false"
 					lista="lavo/appa/appa-lista-dec-peri-popup.jsp" 
 					scheda="" 
@@ -187,8 +228,8 @@
 					functionId="${functionId}"
 					parametriWhere="${parametriWhere}"
 					chiave="" >
-					<gene:campoScheda title="Codice commessa" campo="PERI_CODLAV" obbligatorio="true" campoFittizio="true" definizione="T20;0"/>
-					<gene:campoScheda title="Descrizione" campo="PERI_TITSIL" campoFittizio="true" definizione="T2000;0" gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote"/>
+					<gene:campoScheda title="Codice commessa" campo="PERI_CODLAV" obbligatorio="true" visibile="${isLavoroAssociato ne '1'}" campoFittizio="true" definizione="T20;0"/>
+					<gene:campoScheda title="Descrizione" campo="PERI_TITSIL" campoFittizio="true" visibile="${isLavoroAssociato ne '1'}" definizione="T2000;0" gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote"/>
 				</gene:archivio>
 			
 			</gene:gruppoCampi>
@@ -224,6 +265,7 @@
 					&nbsp;
 				</td>
 			</gene:campoScheda>
+			<input type="hidden" name="codimp" value="${codimp}">
 		</gene:formScheda>
 	</gene:redefineInsert>
 	
@@ -251,8 +293,10 @@
 		function gestioneLAVORO_ESISTENTE(lavoro_esistente){
 			document.getElementById("rowPERI_CODLAV").style.display = (lavoro_esistente == '1' ? '':'none');
 			document.getElementById("rowPERI_TITSIL").style.display = (lavoro_esistente == '1' ? '':'none');
+			document.getElementById("rowPERI_TIPLAV").style.display = (lavoro_esistente == '1' ? 'none':'');
 			setValue("PERI_CODLAV","");
 			setValue("PERI_TITSIL","");
+			setValue("PERI_TIPLAV","");
 			
 			<c:if test='${isCodificaAutomatica eq "false"}'>
 				document.getElementById("rowAPPA_CODLAV").style.display = (lavoro_esistente == '2' ? '':'none');
@@ -275,7 +319,31 @@
 			}
 			setValue("APPA_NOTAPP",notapp);
 		}
-		
+
+		function disabilitaAFFIDAMDIR() {
+			$('#APPA_AFFIDAMDIR').css('border-colojsPopUpr','#A3A6FF');
+			$('#APPA_AFFIDAMDIR').css('border-width','1px');
+			$('#APPA_AFFIDAMDIR').css('background-color','#E0E0E0');
+			$('#APPA_AFFIDAMDIR').attr("disabled", true);
+		}
+
+		$(document).ready(function() {
+			if (${isAttivoModuloANACForm eq 'true'}) {
+				if (${presenteAD5 eq 'true'}) {
+					$('#APPA_AFFIDAMDIR').val(1);
+				} else {
+					$('#APPA_AFFIDAMDIR').val(2);
+				}
+				disabilitaAFFIDAMDIR();
+			}
+		});
+
+		var schedaConfermaOld=schedaConferma;
+		schedaConferma=function(){
+			$('#APPA_AFFIDAMDIR').removeAttr("disabled");
+			schedaConfermaOld();
+		}
+
 	</gene:javaScript>
 	
 </gene:template>

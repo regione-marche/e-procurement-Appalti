@@ -70,6 +70,13 @@ public class GetWSDMListaUfficiAction extends Action {
     if("".equals(descrizioneUfficio))
       descrizioneUfficio=null;
 
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+      username = credenziali[0];
+      password = credenziali[1];
+    }
+
     if(username!=null && !"".equals(username)){
 
       // Filtro in funzione della tipologia di utente.

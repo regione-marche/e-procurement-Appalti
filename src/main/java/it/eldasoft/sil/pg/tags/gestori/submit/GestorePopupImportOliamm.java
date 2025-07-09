@@ -194,7 +194,7 @@ public class GestorePopupImportOliamm extends
 
       if (!mappaCodiciLotti.isEmpty()) {
         LoggerImportOffertaPrezzi loggerImport = new LoggerImportOffertaPrezzi();
-        importExportOffertaPrezziManager.creazioneLotti(mappaCodiciLotti, numeroGara, loggerImport, new Long(98),mappaDescrizioniLotti,mappaCodiciLottiOLIAMM,null);
+        importExportOffertaPrezziManager.creazioneLotti(mappaCodiciLotti, numeroGara, loggerImport, new Long(98),mappaDescrizioniLotti,mappaCodiciLottiOLIAMM,null,null);
         importExportOffertaPrezziManager.aggiornamentoDitteLotti(mappaCodiciLotti, numeroGara);
       }else{
         //Aggiornamento IMPAPP,GAROFF,IDIAUT.GARE e ISTAUT.TORN per la gara a lotto unico
@@ -222,19 +222,22 @@ public class GestorePopupImportOliamm extends
         String fdfs = PgManager.getTabellatoPercCauzioneProvvisoria(2);
         String tmpPerCauzProvv = this.tabellatiManager.getDescrTabellato(fdfs,
             "1");
-        Double percentualeCauzioneProvv = new Double(tmpPerCauzProvv);
+        Double percentualeCauzioneProvv = null;
+        if(tmpPerCauzProvv!=null && !"".equals(tmpPerCauzProvv))
+          percentualeCauzioneProvv = new Double(tmpPerCauzProvv);
 
-        int numeroDecimali = this.pgManager.getArrotondamentoCauzioneProvvisoria(2);
-
-        double garoff = UtilityMath.round(impapp.doubleValue()
+        Double garoff = null;
+        if(percentualeCauzioneProvv != null) {
+        garoff = UtilityMath.round(impapp.doubleValue()
             * percentualeCauzioneProvv.doubleValue()
-            / 100, numeroDecimali);
-
+            / 100, 2);
+        }
+        
         Double importoDitta = this.pgManager.getContributoAutoritaStAppaltante(
             impapp, "A1z01");
 
         this.sqlManager.update("update gare set impapp=?, garoff=?, idiaut=? where ngara=?",
-            new Object[]{impapp,new Double(garoff),importoDitta,numeroGara});
+            new Object[]{impapp,garoff,importoDitta,numeroGara});
 
         Double importoContributo = this.pgManager.getContributoAutoritaStAppaltante(impapp, "A1z02");
         this.sqlManager.update("update torn set istaut=? where codgar=?",

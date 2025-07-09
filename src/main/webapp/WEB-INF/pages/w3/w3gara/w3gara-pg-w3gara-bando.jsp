@@ -15,8 +15,6 @@
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 
-<c:set var="v3_04_8_Attiva" value='${gene:callFunction2("it.eldasoft.sil.w3.tags.funzioni.IsAttivaVx_xx_xFunction",pageContext,"5")}' />
-
 <gene:formScheda entita="W3GARA" gestisciProtezioni="true"
 	gestore="it.eldasoft.sil.w3.tags.gestori.submit.GestoreW3GARABANDO">
 
@@ -65,7 +63,7 @@
 	<gene:campoScheda campo="SITO_MINISTERO_INF_TRASF" />
 	<gene:campoScheda campo="LINK_SITO" />
 	<gene:campoScheda campo="ESTREMA_URGENZA" visibile="false"/>
-	<gene:campoScheda campo="LINK_AFFIDAMENTO_DIRETTO" visibile="${datiRiga.W3GARA_ESTREMA_URGENZA eq 2  && v3_04_8_Attiva}">
+	<gene:campoScheda campo="LINK_AFFIDAMENTO_DIRETTO" visibile="${datiRiga.W3GARA_ESTREMA_URGENZA eq 2}">
 		<gene:checkCampoScheda funzione='validURL("##")' obbligatorio="true" messaggio="Il valore dell'indirizzo URL specificato non è valido: è possibile inserire solo un indirizzo URL che inizi con 'http://' o 'https://' e non contenga spazi o virgole" onsubmit="false"/>
 	</gene:campoScheda>
 	<gene:campoScheda campo="SITO_OSSERVATORIO" visibile="false"/>
@@ -125,12 +123,12 @@
 	var tmpSchedaAnnulla = schedaAnnulla;
 	
 	var schedaConferma = function(){
-		document.forms[0].action = "${pageContext.request.contextPath}/w3/Scheda.do?" + csrfToken;
+		document.forms[0].action = "${pageContext.request.contextPath}/w3/Scheda.do";
 		tmpSchedaConferma();
 	}
 	
 	var schedaAnnulla = function(){
-		document.forms[0].action = "${pageContext.request.contextPath}/w3/Scheda.do?" + csrfToken;
+		document.forms[0].action = "${pageContext.request.contextPath}/w3/Scheda.do";
 		tmpSchedaAnnulla();
 	}
 	
@@ -169,7 +167,7 @@
 
 	function visualizzaFileAllegato(campo_numgara, campo_numdoc, campo_nome_documento) {
 		var href = "${pageContext.request.contextPath}/w3/VisualizzaDocumentoAllegato.do";
-		document.location.href = href+ "?" + csrfToken + "&numgara=" + getValue(campo_numgara) + "&numdoc=" + getValue(campo_numdoc) + "&nome_documento=" + getValue(campo_nome_documento);
+		document.location.href = href+ "?numgara=" + getValue(campo_numgara) + "&numdoc=" + getValue(campo_numdoc) + "&nome_documento=" + getValue(campo_nome_documento);
 	}
 	
 	function validURL(str) {

@@ -86,6 +86,8 @@
 		<property name="target">
 			<bean class="it.eldasoft.sil.w3.bl.ValidazioneIDGARACIGManager" >
 				<property name="sqlManager" ref="sqlManager" />
+				<property name="tabellatiManager" ref="tabellatiManager" />
+				<property name="pgManager" ref="pgManager" />
 			</bean>
 		</property>
 	</bean>
@@ -150,6 +152,7 @@
 				<property name="gestioneXMLIDGARACIGManager" ref="gestioneXMLIDGARACIGManager" />
 				<property name="sqlManager" ref="sqlManager" />
 				<property name="tabellatiManager" ref="tabellatiManager" />
+				<property name="pgManager" ref="pgManager" />
 			</bean>
 		</property>
 	</bean>

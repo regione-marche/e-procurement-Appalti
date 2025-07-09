@@ -32,8 +32,8 @@
 		<c:set var="valore" value="" />
 	</c:when>
 	<c:otherwise>
-		<gene:sqlSelect nome="outSel" tipoOut="VectorString" >
-			select cpvcod4 from tabcpv where cpvcod='S2020' and cpvcod4 like '${fn:substring( param.valore, 0,8 )}%'
+		<gene:sqlSelect nome="outSel" tipoOut="VectorString" parametri="TABCPV.CPVCOD4=T:${fn:substring( param.valore, 0,8 )}%" >
+			select cpvcod4 from tabcpv where cpvcod='S2020' and cpvcod4 like #TABCPV.CPVCOD4#
 		</gene:sqlSelect>
 		<c:set var="valore" value="${outSel[0]}" />
 	</c:otherwise>
@@ -97,7 +97,7 @@
 		
 		function reloadCPV() {
 			bloccaRichiesteServer();
-			document.location.href="${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=lavo/commons/dettaglio-codice-cpv.jsp&modo=MODIFICA&campo=${param.campo}&valore="+getValue("CPVCOD");
+			document.location.href="${pageContext.request.contextPath}/ApriPagina.do?href=lavo/commons/dettaglio-codice-cpv.jsp&modo=MODIFICA&campo=${param.campo}&valore="+getValue("CPVCOD");
 		}
 		
 		function conferma(){

@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
 
@@ -110,6 +111,7 @@ public class GestorePopupAssociaOperatoriEconomici extends GestoreFasiRicezione 
     String filtroCategoria = UtilityStruts.getParametroString(this.getRequest(),"filtroCategoria");
     String filtriZone = UtilityStruts.getParametroString(this.getRequest(),"filtriZone");
     String filtriAffidatariEsclusi = UtilityStruts.getParametroString(this.getRequest(),"filtriAffidatariEsclusi");
+    String filtroElPremFasce = UtilityStruts.getParametroString(this.getRequest(),"filtroElPremFasce");
 
     String ctrlimpValorePeriodo = UtilityStruts.getParametroString(this.getRequest(),"ctrlimpValorePeriodo");
     String ctrlimp = UtilityStruts.getParametroString(this.getRequest(),"ctrlimp");
@@ -187,6 +189,25 @@ public class GestorePopupAssociaOperatoriEconomici extends GestoreFasiRicezione 
         errMsgEvento="";
         this.getRequest().setAttribute("AGGIORNAMENTO_IMPORTO", "OK");
         return;
+      }
+
+      String isElencoElPrem = null;
+      Double elpremsinf = null;
+      Double elpremsint = null;
+      String delpremcont = null;
+      boolean inseritiElementiPremiali = false;
+      try {
+        isElencoElPrem = (String) sqlManager.getObject("select iselprem from garealbo where ngara=(select elencoe from gare where ngara=?)", new Object[]{ngara});
+        Vector<JdbcParametro> datiGare1 = sqlManager.getVector("select elpremsinf,elpremsint," + sqlManager.getDBFunction("datetimetostring",  new String[] {"DELPREMCONT"}) + " from gare1 where ngara=?", new Object[]{ngara});
+        if ("1".equals(isElencoElPrem) && datiGare1 != null && datiGare1.size() > 0) {
+          elpremsinf = datiGare1.get(0).getValue() != null ? ((Number) datiGare1.get(0).getValue()).doubleValue() : null;
+          elpremsint = datiGare1.get(1).getValue() != null ? ((Number) datiGare1.get(1).getValue()).doubleValue() : null;
+          delpremcont = (String) datiGare1.get(2).getValue();
+          Long countElementiPremiali = (Long) sqlManager.getObject("select count(*) from elpremgare where ngara=?", new Object[]{ngara});
+          inseritiElementiPremiali = countElementiPremiali != null && countElementiPremiali > 0;
+        }
+      } catch (SQLException e) {
+        throw new GestoreException("Errore nella lettura degli elementi premiali", null, e);
       }
 
       //Nel caso di selezione da elenco operatori economici ultima aggiudicataria
@@ -538,6 +559,9 @@ public class GestorePopupAssociaOperatoriEconomici extends GestoreFasiRicezione 
       if(listaDittePerTracciatura!= null){
         if(!"1".equals(ultimaAggiudicataria)){
           errMsgEvento = "Criterio di rotazione: " + criterioRotazioneDesc;
+          if ("1".equals(isElencoElPrem)) {
+            errMsgEvento = "Elenco con elementi premiali: Si\n" + errMsgEvento;
+          }
           if("1".equals(aggnumord)){
             errMsgEvento+= " con assegnazione numero ordine con modalità casuale.";
           }
@@ -550,7 +574,7 @@ public class GestorePopupAssociaOperatoriEconomici extends GestoreFasiRicezione 
           else
             errMsgEvento +="tute le";
           errMsgEvento +=" seguenti categorie o prestazioni della gara corrente:\n" + filtroCategoria;
-          if((filtriUlteriori != null && !"".equals(filtriUlteriori)) || (filtriZone != null && !"".equals(filtriZone))){
+          if((filtriUlteriori != null && !"".equals(filtriUlteriori)) || (filtriZone != null && !"".equals(filtriZone)) || StringUtils.isNotEmpty(filtroElPremFasce)){
             errMsgEvento = errMsgEvento+ "\nGli operatori sono ulteriormente filtrati in base ai seguenti criteri:";
           }
           if(filtriUlteriori != null && !"".equals(filtriUlteriori)){
@@ -558,6 +582,9 @@ public class GestorePopupAssociaOperatoriEconomici extends GestoreFasiRicezione 
           }
           if(filtriZone != null && !"".equals(filtriZone)){
             errMsgEvento = errMsgEvento+ "\nZone di attività:" + filtriZone;
+          }
+          if (StringUtils.isNotEmpty(filtroElPremFasce)) {
+            errMsgEvento = errMsgEvento+ "\nFascia di punteggio " + filtroElPremFasce;
           }
           if(filtriAffidatariEsclusi != null && !"".equals(filtriAffidatariEsclusi)){
             errMsgEvento = errMsgEvento+ "\nViene escluso dalla selezione l'affidatario uscente:" + filtriAffidatariEsclusi;
@@ -575,6 +602,17 @@ public class GestorePopupAssociaOperatoriEconomici extends GestoreFasiRicezione 
             }
           }
 
+          if ("1".equals(isElencoElPrem)) {
+            if (inseritiElementiPremiali) {
+              errMsgEvento += "\nElenco con elementi premiali:";
+              if (elpremsinf != null && elpremsint != null) {
+                errMsgEvento += "\nFascia 3 da 100 a " + elpremsint + "\nFascia 2 da " + elpremsint + " a " + elpremsinf + "\nFascia 1 da " + elpremsinf + " a 0";
+              }
+              errMsgEvento += "\nData ultimo conteggio " + delpremcont;
+            } else {
+              errMsgEvento += "\nNessun elemento premiale definito.";
+            }
+          }
           errMsgEvento = errMsgEvento + "\nN. operatori selezionati: " + numeroOperatoriDaSelezionare;
           if("true".equals(selezioneAutomaticaDitte)){
             errMsgEvento+= "\nSelezione automatica da elenco.";
@@ -586,6 +624,30 @@ public class GestorePopupAssociaOperatoriEconomici extends GestoreFasiRicezione 
           }
         }else{
           errMsgEvento = "N. operatori selezionati: " + listaDitteSelezionate.length;
+        }
+
+        HashMap<String, Long> mappaFasceDitte = new HashMap<>();
+        if (elpremsinf != null && elpremsint != null) {
+          try {
+            List<Vector<JdbcParametro>> listaPunteggiDitte = sqlManager.getListVector("select codimp, puntot from elprempun where ngarag=?", new Object[] {ngara});
+            for (Vector<JdbcParametro> punteggioDitta : listaPunteggiDitte) {
+              String codimp = (String) punteggioDitta.get(0).getValue();
+              Double puntot = punteggioDitta.get(1).getValue() != null ? ((Number) punteggioDitta.get(1).getValue()).doubleValue() : null;
+              Long fascia = null;
+              if (puntot != null) {
+                if (puntot > elpremsint)
+                  fascia = 3L;
+                else if (puntot > elpremsinf) {
+                  fascia = 2L;
+                } else {
+                  fascia = 1L;
+                }
+              }
+              mappaFasceDitte.put(codimp,fascia);
+            }
+          } catch (SQLException e) {
+            throw new GestoreException("Errore durante la lettura dei punteggi elementi premiali", null, e);
+          }
         }
 
         boolean ultima = false;
@@ -614,7 +676,11 @@ public class GestorePopupAssociaOperatoriEconomici extends GestoreFasiRicezione 
               selezionata = "NON selezionata";
             }
           }
-          errMsgEvento = errMsgEvento + "\n" + (i+1) + " - " + codicedittaTracciatura + " - " + selezionata;
+          String fasciaPunteggio = "";
+          if (elpremsinf != null && elpremsint != null && mappaFasceDitte.get(codicedittaTracciatura) != null) {
+            fasciaPunteggio = " - fascia di appartenenza " + mappaFasceDitte.get(codicedittaTracciatura);
+          }
+          errMsgEvento = errMsgEvento + "\n" + (i+1) + " - " + codicedittaTracciatura + " - " + selezionata + fasciaPunteggio;
           if(codicedittaTracciatura.equals(lastDittaSelezionata)){
             ultima = true;
           }

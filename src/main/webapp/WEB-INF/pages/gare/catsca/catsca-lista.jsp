@@ -15,6 +15,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<%-- test per consentire utilizzo della pagina solo agli amministratori di sistema --%>
+<c:set var="nonusato" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.CheckOpzioniUtenteFunction", pageContext, "ou89")}' />
 
 <gene:template file="lista-template.jsp" gestisciProtezioni="true" schema="GARE" idMaschera="CATSCA-lista" >
 	<gene:setString name="titoloMaschera" value="Configurazione scadenze gara"/>
@@ -59,7 +61,7 @@
    <gene:javaScript>
   function ListaDettaglio(tiplav,liminf,limsup,calcolo) {
 	 var href = "href=gare/catsca/catsca-lista-dettaglio.jsp?TIPLAV="+tiplav+"&LIMINF="+liminf+"&LIMSUP="+limsup+"&CALCOLO="+calcolo;
-	document.location.href="ApriPagina.do?"+csrfToken+"&"+href;
+	document.location.href="ApriPagina.do?"+href;
   }
   </gene:javaScript>
   

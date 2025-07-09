@@ -19,10 +19,18 @@
 </gene:set>
 
 <c:set var="idStipula" value='${gene:getValCampo(key, "G1STIPULA.ID")}' />
-
+<c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
+<c:set var="contextPath" value="${pageContext.request.contextPath}" />
 <c:set var="abilitazioneGare" value="${sessionScope.profiloUtente.abilitazioneGare}" />
 <c:set var="utente" value="${sessionScope.profiloUtente.id}" />
 <c:set var="tmp" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetDatiStipulaFunction", pageContext, idStipula)}'/>
+<c:set var="numeroDocumenti" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetNumDocumentiDaFirmareFunction", pageContext,idStipula)}'/>
+
+<jsp:include page="/WEB-INF/pages/commons/bloccaModifica-pg-lista-scheda.jsp">
+	<jsp:param name="entita" value="V_GARE_STIPULA"/>
+	<jsp:param name="inputFiltro" value="${key}"/>
+	<jsp:param name="filtroCampoEntita" value="idstipula=${idStipula}"/>
+</jsp:include>
 
 <table class="dettaglio-tab-lista">
 	<tr>
@@ -31,12 +39,20 @@
 				<gene:redefineInsert name="listaNuovo" />
 				<gene:redefineInsert name="listaEliminaSelezione" />
 				<gene:redefineInsert name="addToAzioni" >
-					<c:if test='${(abilitazioneGare eq "A" || utente eq requestScope.creatore || utente eq requestScope.assegnatario) and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA-scheda.APPRSTIP.InoltraPerApprovazione")}'>
-					
+					<c:if test='${(abilitazioneGare eq "A" || utente eq requestScope.creatore || utente eq requestScope.assegnatario) and statoStipula ne 6 and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA-scheda.APPRSTIP.InoltraPerApprovazione")}'>
 						<tr>
 							<td class="vocemenulaterale">
 								<a href='javascript:inoltraPerApprovazione();' title='Inoltra per approvazione' tabindex="1501">
 									Inoltra per approvazione
+								</a>
+							</td>
+						</tr>
+					</c:if>
+					<c:if test='${autorizzatoModifiche ne "2" && digitalSignatureProvider eq 3 && statoStipula ne 6}'>
+						<tr>
+							<td class="vocemenulaterale">
+								<a href="javascript:checkNumeroDocumenti('${numeroDocumenti}','PG','','', '${contextPath}','');" title="Firma tutti i documenti con richiesta di firma" tabindex="1510">
+									Firma documenti
 								</a>
 							</td>
 						</tr>
@@ -59,8 +75,17 @@
 		</td>
 	</tr>
 </table>
-<gene:javaScript>
 
+<jsp:include page="/WEB-INF/pages/gene/system/firmadigitale/modalPopupFirmaDigitaleRemota.jsp" >
+	<jsp:param name="modalita" value="massiva"/>
+	<jsp:param name="numeroDocumenti" value="${numeroDocumenti}"/>
+	<jsp:param name="numeroDocumentiFormato" value="${conteggioFormato}"/>
+	<jsp:param name="entitaFirma" value="DOCSTIPULA"/>
+	<jsp:param name="chiaveFirma" value="${idStipula}"/>
+</jsp:include>
+
+<gene:javaScript>
+		
 		function inoltraPerApprovazione() {
 			var idStipula = "${idStipula}";
 			var href = "href=gare/g1stipula/g1stipula-InoltraPerApprovazione.jsp?idStipula="+idStipula;
@@ -69,4 +94,7 @@
 			openPopUpCustom(href, "inoltraPerApprovazione", dim1, dim2, "no", "yes");
 		}
 
+		function checkNumeroDocumenti(numeroDocumenti,idprg,iddocdig,nome,contextPath,coacod){
+			openModal(idprg,iddocdig,nome,contextPath,coacod);
+		}
 </gene:javaScript>

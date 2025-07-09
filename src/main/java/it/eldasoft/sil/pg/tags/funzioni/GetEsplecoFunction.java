@@ -38,13 +38,13 @@ public class GetEsplecoFunction extends AbstractFunzioneTag {
     SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",
         pageContext, SqlManager.class);
 
-    String ngara = (String) GeneralTagsFunction.cast("string", params[1]);
+    String codgar = (String) GeneralTagsFunction.cast("string", params[1]);
     String espleco="";
 
-    if (ngara != null && ngara.length()>0){
-      String select="select espleco from gare1 where ngara=?";
+    if (codgar != null && codgar.length()>0){
+      String select="select espleco from gare1 where codgar1=? and (ngara = codgar1 or codgar1 like '$%')";
       try {
-        Vector datiGara1 = sqlManager.getVector(select, new Object[] { ngara });
+        Vector datiGara1 = sqlManager.getVector(select, new Object[] { codgar });
         if(datiGara1!=null && datiGara1.size()>0){
           espleco= SqlManager.getValueFromVectorParam(datiGara1, 0).getStringValue();
         }

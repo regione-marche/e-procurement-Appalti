@@ -20,6 +20,7 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
+import it.eldasoft.utils.sicurezza.CriptazioneException;
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
 
@@ -211,26 +212,13 @@ public class GestorePubblicaStipula extends
 
           errMsgEvento = "";
 
-        } catch (SQLException e) {
+        } catch (SQLException | DocumentException | IOException | CriptazioneException e) {
           errMsgEvento = "Errore nell'invio all'aggiudicatario contraente";
           livEvento = 3;
           listaDoc = "";
           this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
           throw new GestoreException("Errore nell'invio all'aggiudicatario contraente", null, e);
-        } catch (IOException e) {
-          errMsgEvento = "Errore nell'invio all'aggiudicatario contraente";
-          livEvento = 3;
-          listaDoc = "";
-          this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
-          throw new GestoreException("Errore nell'invio all'aggiudicatario contraente", null, e);
-        } catch (DocumentException e) {
-          errMsgEvento = "Errore nell'invio all'aggiudicatario contraente";
-          livEvento = 3;
-          listaDoc = "";
-          this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
-          throw new GestoreException("Errore nell'invio all'aggiudicatario contraente", null, e);
-        }
-        finally {
+        } finally {
 
         //Tracciatura eventi
         try {
@@ -258,7 +246,7 @@ public class GestorePubblicaStipula extends
 
 
 
-  private void gestioneInvioAggiudicatarioContraente(DataColumnContainer datiForm, ProfiloUtente profilo, Long idStipula, String numDestinatari, String idconfi, String codstipula) throws SQLException, GestoreException, IOException, DocumentException{
+  private void gestioneInvioAggiudicatarioContraente(DataColumnContainer datiForm, ProfiloUtente profilo, Long idStipula, String numDestinatari, String idconfi, String codstipula) throws SQLException, GestoreException, IOException, DocumentException, CriptazioneException {
 
     FileAllegatoManager fileAllegatoManager = (FileAllegatoManager) UtilitySpring.getBean("fileAllegatoManager",
         this.getServletContext(), FileAllegatoManager.class);
@@ -317,6 +305,13 @@ public class GestorePubblicaStipula extends
     String sottotipo = this.getRequest().getParameter("sottotipo");
     String tipofirma = this.getRequest().getParameter("tipofirma");
     String idunitaoperativamittenteDesc = this.getRequest().getParameter("idunitaoperativamittenteDesc");
+
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = gestioneWSDMManager.recuperaCredenzialiComuni(GestioneWSDMManager.SERVIZIO_FASCICOLOPROTOCOLLO,idconfi);
+      username = credenziali[0];
+      password = credenziali[1];
+    }
 
     String tipoWSDM = null;
     if("1".equals(integrazioneWSDM)){
@@ -675,6 +670,13 @@ public class GestorePubblicaStipula extends
     String uocompetenzadescrizione = this.getRequest().getParameter("uocompetenzadescrizione");
 
     String riservatezzaAttiva = ConfigManager.getValore("wsdm.applicaRiservatezza."+idconfi);
+
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+      username = credenziali[0];
+      password = credenziali[1];
+    }
 
     Long isRiservatezza = null;
     if("JIRIDE".equals(tiposistemaremoto) && "1".equals(riservatezzaAttiva) && !"10".equals(genereGara) && !"11".equals(genereGara) && !"20".equals(genereGara) && !"G1STIPULA".equals(entita)){

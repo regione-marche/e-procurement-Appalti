@@ -130,6 +130,7 @@
 	</c:if>
 		
 	<gene:redefineInsert name="corpo">
+		<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from GARE where ngara=?", ngara)}'/>
 		<c:set var="chiave" value="${ngara}" />
 		
 		<c:choose>
@@ -141,7 +142,7 @@
 			</c:otherwise>
 		</c:choose>
 	
-		<gene:formScheda entita="GARE" where="GARE.NGARA = '${chiave}'" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAggiudicazioneProvvisoria">
+		<gene:formScheda entita="GARE" where="GARE.NGARA = '${chiave}'" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupAggiudicazioneProvvisoria" gestisciProtezioni="true">
 			<c:choose>
 				<c:when test='${modoRichiamo eq "SOGLIA"}'>
 					<c:choose>
@@ -190,7 +191,7 @@
 					<c:choose>
 						<c:when test='${modoRichiamo eq "SOGLIA"}'>
 							<c:choose>
-								<c:when test="${((isGaraDLGS2017 or isGaraDLGS2016 or isGaraDL2019) and !esitoControlloDitteDLGS2016 and calcsoang eq '1') or (!empty sogliaDitteOepv and sogliaDitteOepv ne '' and tipoTitolo eq 'GRADUATORIA')}">
+								<c:when test="${((isGaraDLGS2017 or isGaraDLGS2016 or isGaraDL2019 or isGaraDLGS2023) and !esitoControlloDitteDLGS2016 and calcsoang eq '1') or (!empty sogliaDitteOepv and sogliaDitteOepv ne '' and tipoTitolo eq 'GRADUATORIA')}">
 									 <gene:campoScheda>
 									 	<td colSpan="2"><b>ATTENZIONE</b><br>
 									 	<c:choose>
@@ -306,6 +307,7 @@
 			<gene:campoScheda campo="TIPGARG" visibile="false" />
 			<gene:campoScheda campo="MODLICG" visibile="false" />
 			<gene:campoScheda campo="CRITLICG" modificabile="false" />
+			<gene:campoScheda campo="METOEPV" visibile="${calcsoang eq '1' && datiRiga.GARE_CRITLICG eq '2' && (empty sogliaDitteOepv or sogliaDitteOepv eq '' or tipoTitolo ne 'GRADUATORIA')}" modificabile="false" entita="GARE1" where="GARE1.NGARA = GARE.NGARA"/>
 			<gene:campoScheda campo="ULTDETLIC" entita="GARE1" where="GARE1.NGARA = GARE.NGARA" modificabile="false" visibile="${!empty datiRiga.GARE1_ULTDETLIC && modoRichiamo eq 'AGGIUDICAZIONE'}"/>
 			<gene:campoScheda campo="AQOPER" entita="GARE1" where="GARE1.NGARA = GARE.NGARA" visibile="false"/>
 			<gene:campoScheda visibile="${!empty datiRiga.GARE1_ULTDETLIC && modoRichiamo eq 'AGGIUDICAZIONE' && gestionePuneco eq 'true'}">
@@ -411,6 +413,24 @@
 							 				</td>
 						 			</gene:campoScheda>
 				 				</c:when>
+				 				<c:when test="${initEscauto eq '5bis' }">
+				 					<gene:campoScheda nome="ESCLUSIONE_FIT" >
+						 				<td class="etichetta-dato"></td>
+							 				<td class="valore-dato"> <b>La gara ha importo inferiore alla soglia comunitaria ed è per lavori o servizi.</b>
+							 				<br>Viene pertanto applicata l'esclusione automatica delle offerte anomale.
+								 				<input type="radio" value="5" name="escautoInit" id="esclusioneSi" checked="checked"  style="display: none;"/>
+							 				</td>
+						 			</gene:campoScheda>
+				 				</c:when>
+				 				<c:when test="${initEscauto eq '6' }">
+				 					<gene:campoScheda nome="ESCLUSIONE_FIT" >
+						 				<td class="etichetta-dato"></td>
+							 				<td class="valore-dato"> <b>La gara è per forniture.</b>
+							 				<br>Non può essere applicata l'esclusione automatica delle offerte anomale.
+								 				<input type="radio" value="6" name="escautoInit" id="esclusioneNo" checked="checked"  style="display: none;"/>
+							 				</td>
+						 			</gene:campoScheda>
+				 				</c:when>
 				 				<c:otherwise>
 				 					<gene:campoScheda nome="ESCLUSIONE_FIT" >
 						 				<td class="etichetta-dato"></td>
@@ -450,7 +470,7 @@
 			<c:choose>
 				<c:when test='${modoRichiamo eq "SOGLIA" && RISULTATO eq "CALCOLOESEGUITO"}'>
 					<c:choose>
-						<c:when test="${datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' or datiRiga.GARE1_SOGLIANORMA eq 'LR13_2019'}">
+						<c:when test="${datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S'  or datiRiga.GARE1_SOGLIANORMA eq 'DLGS36_2023_S' or datiRiga.GARE1_SOGLIANORMA eq 'LR13_2019'}">
 							<c:set var="titoloSommarib" value="Somma ribassi offerte mediate" />
 						</c:when>
 						<c:when test="${descrizioneA1132 eq '1' }">
@@ -466,7 +486,7 @@
 						</gene:campoScheda>
 						<gene:campoScheda campo="METSOGLIA" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" visibile="${(isGaraDLGS2016 or isGaraDLGS2017) and esitoControlloDitteDLGS2016 and calcoloGradQform ne 'true' and datiRiga.GARE1_LEGREGSIC ne '1' }"  />
 						<gene:campoScheda campo="NOFVAL" modificabile="false" />
-						<gene:campoScheda title="Numero offerte accantonate per taglio delle ali" computed = "true" campo="(NOFVAL - NOFMED)" definizione="N24.5;" visibile="${datiRiga.GARE_MODLICG ne 6 and calcsoang eq '1' and calcoloGradQform ne 'true' and ((esitoControlloDitteDLGS2016  and (isGaraDLGS2016 || isGaraDLGS2017)) || (controlloDitteNormativaPrecedente and !isGaraDLGS2016 and !isGaraDLGS2017)) and (empty datiRiga.GARE1_METSOGLIA || (datiRiga.GARE1_METSOGLIA ne 4 && datiRiga.GARE1_METSOGLIA ne 3) || isGaraDL2019)}">
+						<gene:campoScheda title="Numero offerte accantonate per taglio delle ali" computed = "true" campo="(NOFVAL - NOFMED)" definizione="N24.5;" visibile="${datiRiga.GARE_MODLICG ne 6 and calcsoang eq '1' and calcoloGradQform ne 'true' and ((esitoControlloDitteDLGS2016  and (isGaraDLGS2016 || isGaraDLGS2017)) || (controlloDitteNormativaPrecedente and !isGaraDLGS2016 and !isGaraDLGS2017)) and (empty datiRiga.GARE1_METSOGLIA || (datiRiga.GARE1_METSOGLIA ne 4 && datiRiga.GARE1_METSOGLIA ne 3) || isGaraDL2019 || isGaraDLGS2023)}">
 							&nbsp;&nbsp;
 							<c:if test="${!empty datiRiga.GARE1_NOFALASUP}">
 								:&nbsp;&nbsp;&nbsp;${datiRiga.GARE1_NOFALASUP} offerte più alte <c:if test="${!empty datiRiga.GARE1_NOFALAINF}">,</c:if>
@@ -479,12 +499,12 @@
 						<gene:campoScheda campo="MEDIA" visibile="${datiRiga.GARE_MODLICG ne 6 and !(datiRiga.GARE1_METSOGLIA eq 4 and isGaraDLGS2016) }" modificabile="false" />			
 						<gene:campoScheda campo="MEDIASCA" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" modificabile="false" visibile="${(datiRiga.GARE_MODLICG eq 13 or datiRiga.GARE_MODLICG eq 14) and datiRiga.GARE1_SOGLIANORMA ne 'LR13_2019' and (empty datiRiga.GARE1_METSOGLIA || datiRiga.GARE1_METSOGLIA eq 1 || datiRiga.GARE1_METSOGLIA eq 5) and esitoControlloDitteDLGS2016 and calcoloGradQform ne 'true'}"/>
 						<gene:campoScheda campo="METCOEFF_VIS" campoFittizio="true" definizione="F1.1;0;;;G1METCOEFF"  value='${datiRiga.GARE1_METCOEFF}' modificabile="false" visibile="${(datiRiga.GARE_MODLICG eq 13 or datiRiga.GARE_MODLICG eq 14) and (isGaraDLGS2016 || isGaraDLGS2017) and datiRiga.GARE1_METSOGLIA eq 5 and esitoControlloDitteDLGS2016 and calcoloGradQform ne 'true'}"/>
-						<gene:campoScheda campo="SOGLIA1"  entita="GARE1" where="GARE.NGARA = GARE1.NGARA" modificabile="false" visibile="${datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' and datiRiga.GARE_NOFVAL >= 15 }"/>
-						<gene:campoScheda campo="SOMMARIB" title="${titoloSommarib }" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" modificabile="false" visibile="${((datiRiga.GARE_MODLICG eq 13 or datiRiga.GARE_MODLICG eq 14) and datiRiga.GARE1_METSOGLIA eq 2 and esitoControlloDitteDLGS2016 and calcoloGradQform ne 'true') or (datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' and datiRiga.GARE_NOFVAL >= 15) or datiRiga.GARE1_SOGLIANORMA eq 'LR13_2019' }"/>
+						<gene:campoScheda campo="SOGLIA1"  entita="GARE1" where="GARE.NGARA = GARE1.NGARA" modificabile="false" visibile="${(datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S'  or datiRiga.GARE1_SOGLIANORMA eq 'DLGS36_2023_S') and datiRiga.GARE_NOFVAL >= 15 }"/>
+						<gene:campoScheda campo="SOMMARIB" title="${titoloSommarib }" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" modificabile="false" visibile="${((datiRiga.GARE_MODLICG eq 13 or datiRiga.GARE_MODLICG eq 14) and datiRiga.GARE1_METSOGLIA eq 2 and esitoControlloDitteDLGS2016 and calcoloGradQform ne 'true') or ((datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' or datiRiga.GARE1_SOGLIANORMA eq 'DLGS36_2023_S') and datiRiga.GARE_NOFVAL >= 15) or datiRiga.GARE1_SOGLIANORMA eq 'LR13_2019' }"/>
 						<gene:campoScheda campo="MEDIAIMP" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" modificabile="false" visibile="${(datiRiga.GARE_MODLICG eq 13 or datiRiga.GARE_MODLICG eq 14) and datiRiga.GARE1_METSOGLIA eq 4 and isGaraDLGS2016 }"/>
 						<gene:campoScheda campo="SOGLIAIMP" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" modificabile="false" visibile="${(datiRiga.GARE_MODLICG eq 13 or datiRiga.GARE_MODLICG eq 14) and datiRiga.GARE1_METSOGLIA eq 4 and isGaraDLGS2016 }"/>
-						<gene:campoScheda campo="SOGLIAVAR"  entita="GARE1" where="GARE.NGARA = GARE1.NGARA" modificabile="false" visibile="${datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' and datiRiga.GARE_NOFVAL >= 15 }"/>
-						<gene:campoScheda campo="MEDIARAP"  entita="GARE1" where="GARE.NGARA = GARE1.NGARA" modificabile="false" visibile="${datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' and datiRiga.GARE_NOFVAL < 15 }"/>
+						<gene:campoScheda campo="SOGLIAVAR"  entita="GARE1" where="GARE.NGARA = GARE1.NGARA" modificabile="false" visibile="${(datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' or datiRiga.GARE1_SOGLIANORMA eq 'DLGS36_2023_S') and datiRiga.GARE_NOFVAL >= 15 }"/>
+						<gene:campoScheda campo="MEDIARAP"  entita="GARE1" where="GARE.NGARA = GARE1.NGARA" modificabile="false" visibile="${(datiRiga.GARE1_SOGLIANORMA eq 'DL32_2019_S' or datiRiga.GARE1_SOGLIANORMA eq 'DLGS36_2023_S') and datiRiga.GARE_NOFVAL < 15 }"/>
 						<gene:campoScheda campo="LIMMAX"  visibile="${(datiRiga.GARE_MODLICG eq 13 or datiRiga.GARE_MODLICG eq 14) and esitoControlloDitteDLGS2016 and calcoloGradQform ne 'true'}" modificabile="false"/>
 						<gene:campoScheda campo="NOFALAINF" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" visibile="false"/>
 						<gene:campoScheda campo="NOFALASUP" entita="GARE1" where="GARE.NGARA = GARE1.NGARA" visibile="false"/>
@@ -541,6 +561,7 @@
 			<input type="hidden" id="isGaraDLGS2016" name="isGaraDLGS2016" value="${isGaraDLGS2016 }"/>
 			<input type="hidden" id="isGaraDLGS2017" name="isGaraDLGS2017" value="${isGaraDLGS2017 }"/>
 			<input type="hidden" id="isGaraDL2019" name="isGaraDL2019" value="${isGaraDL2019 }"/>
+			<input type="hidden" id="isGaraDLGS2023" name="isGaraDLGS2023" value="${isGaraDLGS2023 }"/>
 			<input type="hidden" id="esitoControlloDitteDLGS2016" name="esitoControlloDitteDLGS2016" value="${esitoControlloDitteDLGS2016 }"/>
 			<input type="hidden" id="sogliaDitteOepv" name="sogliaDitteOepv" value="${sogliaDitteOepv }"/>
 			<input type="hidden" id="escauto" name="escauto" value=""/>
@@ -672,6 +693,7 @@
 		showObj("jsPopUpGARE_MODLICG", false);
 		showObj("jsPopUpGARE_PRECUT", false);
 		showObj("jsPopUpGARE_CRITLICG", false);
+		showObj("jsPopUpGARE1_METOEPV", false);
 		showObj("jsPopUpGARE1_ULTDETLIC", false);
 		
 		showObj("jsPopUpGARE_NOFVAL", false);

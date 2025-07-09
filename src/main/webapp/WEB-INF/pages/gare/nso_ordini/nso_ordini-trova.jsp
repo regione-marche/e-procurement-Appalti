@@ -52,7 +52,7 @@
   <gene:javaScript>
   
 	function nuovoOrdineNso(){
-		document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/nso_ordini/nso_associaCig.jsp&tipoGara=garaLottoUnico&modo=NUOVO";
+		document.location.href = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/nso_ordini/nso_associaCig.jsp&tipoGara=garaLottoUnico&modo=NUOVO";
 	}
   
   

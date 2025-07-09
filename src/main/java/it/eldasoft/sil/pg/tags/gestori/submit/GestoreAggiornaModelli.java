@@ -51,7 +51,7 @@ public class GestoreAggiornaModelli extends AbstractGestoreEntita{
       int cridefId = 0;
 
       List datiGoev = sqlManager.getListVector("select goev.norpar,goev.tippar,goev.maxpun,goev.minpun,goev.despar,goev.livpar,goev.necvan1,goev.norpar1,goev.necvan,goev.isnoprz, " +
-            "g1cridef.descri,g1cridef.maxpun,g1cridef.formato,g1cridef.numdeci,g1cridef.modpunti,g1cridef.modmanu,g1cridef.formula,g1cridef.id, g1cridef.esponente " +
+            "g1cridef.descri,g1cridef.maxpun,g1cridef.formato,g1cridef.numdeci,g1cridef.modpunti,g1cridef.modmanu,g1cridef.formula,g1cridef.id, g1cridef.esponente, goev.isnoripar " +
             "from goev left join g1cridef on g1cridef.ngara = goev.ngara and goev.necvan = g1cridef.necvan where goev.ngara = ? " +
             "order by goev.necvan", new Object[] { ngara });
 
@@ -78,6 +78,8 @@ public class GestoreAggiornaModelli extends AbstractGestoreEntita{
               8).longValue();
           String isnoprz = SqlManager.getValueFromVectorParam(datiGoev.get(i),
               9).stringValue();
+          String isnoripar = SqlManager.getValueFromVectorParam(datiGoev.get(i),
+              19).stringValue();
           //g1cridef
           String g1descri = SqlManager.getValueFromVectorParam(datiGoev.get(i),
               10).stringValue();
@@ -101,7 +103,7 @@ public class GestoreAggiornaModelli extends AbstractGestoreEntita{
           goevmodId = genChiaviManager.getNextId("GOEVMOD");
           cridefId = genChiaviManager.getNextId("G1CRIDEF");
 
-          sqlManager.update("insert into goevmod (id,idcrimod,necvan,norpar,tippar,isnoprz,maxpun,minpun,despar,livpar,necvan1,norpar1) values (?,?,?,?,?,?,?,?,?,?,?,?)",  new Object[] { goevmodId,idcrimod,necvan,norpar,tippar,isnoprz,maxpun,minpun,despar,livpar,necvan1,norpar1});
+          sqlManager.update("insert into goevmod (id,idcrimod,necvan,norpar,tippar,isnoprz,maxpun,minpun,despar,livpar,necvan1,norpar1,isnoripar) values (?,?,?,?,?,?,?,?,?,?,?,?,?)",  new Object[] { goevmodId,idcrimod,necvan,norpar,tippar,isnoprz,maxpun,minpun,despar,livpar,necvan1,norpar1,isnoripar});
           if(livpar != 3){
             sqlManager.update("insert into g1cridef (id,idgoevmod,descri,maxpun,formato,numdeci,modpunti,modmanu,formula,esponente) values (?,?,?,?,?,?,?,?,?,?)",  new Object[] { cridefId,goevmodId,g1descri,g1maxpun,formato,numdeci,modpunti,modmanu,formula,esponente});
           }

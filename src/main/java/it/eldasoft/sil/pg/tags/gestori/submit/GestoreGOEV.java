@@ -800,7 +800,7 @@ public class GestoreGOEV extends AbstractGestoreChiaveNumerica {
     List listaCriteriTecnici = sqlManager.getListVector(cercaCriteriTecniciDef,new Object[] { ngara, id});
 
     if (listaCriteriTecnici == null || listaCriteriTecnici.size() <= 0) {
-      String delete = "delete from documgara where ngara = ? and descrizione = 'Offerta tecnica'";
+      String delete = "delete from documgara where ngara = ? and descrizione = 'Offerta tecnica' and busta = 2 and gentel = '1'";
       sqlManager.update(delete, new Object[]{ngara});
       }
     }

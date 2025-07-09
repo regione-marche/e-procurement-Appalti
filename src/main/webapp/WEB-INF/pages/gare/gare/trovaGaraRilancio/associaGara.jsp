@@ -104,7 +104,7 @@
 
 		function indietro(){
 			bloccaRichiesteServer();
-			document.location.href = "${pageContext.request.contextPath}/pg/InitNuovaGara.do?" + csrfToken;
+			document.location.href = "${pageContext.request.contextPath}/pg/InitNuovaGara.do";
 		}
 
 		function creaNuovaGara(){
@@ -119,7 +119,7 @@
 				document.forms[0].jspPath.value="/WEB-INF/pages/gare/gare/gare-scheda.jsp";
 				document.forms[0].jspPathTo.value="/WEB-INF/pages/gare/gare/gare-scheda.jsp";
 				var preced = getValue("GARE_PRECED");
-				document.forms[0].action = document.forms[0].action + "&tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&preced=" + preced;
+				document.forms[0].action = document.forms[0].action + "?tipoAppalto=${param.tipoAppalto}&tipoGara=${param.tipoGara}&proceduraTelematica=${param.proceduraTelematica}&modalitaPresentazione=${param.modalitaPresentazione}&preced=" + preced;
 				bloccaRichiesteServer();
 				document.forms[0].submit();
 			}

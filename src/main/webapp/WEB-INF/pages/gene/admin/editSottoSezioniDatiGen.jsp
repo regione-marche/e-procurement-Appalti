@@ -106,6 +106,12 @@
 	  		</html:select>
  		</td>
 	</tr>
+	<tr>
+		<td class="etichetta-dato" >Abilitazione all'invio di comunicazioni generiche</td>
+		<td class="valore-dato"> 
+			<input type="checkbox" name="opzioniUtenteSys" value="ou241" <c:if test='${fn:contains(listaOpzioniUtenteSys, "ou241#")}'>checked="checked" </c:if>/>
+		</td>
+	</tr>
 </c:if>
 
 <c:if test='${moduloAttivo eq "PL" || (moduloAttivo eq "PG" && integrazioneLavori eq true)}'>

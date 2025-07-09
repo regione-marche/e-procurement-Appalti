@@ -58,7 +58,7 @@
 <gene:javaScript>
 	
 	function indietro(){
-		document.location.href = '${pageContext.request.contextPath}/ApriPagina.do?'+csrfToken+'&href=gare/gare/gare-importAntimafia.jsp';
+		document.location.href = '${pageContext.request.contextPath}/ApriPagina.do?href=gare/gare/gare-importAntimafia.jsp';
 	}	
 
 </gene:javaScript>	

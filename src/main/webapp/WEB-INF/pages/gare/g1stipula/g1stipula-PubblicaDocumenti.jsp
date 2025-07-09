@@ -52,7 +52,7 @@
 			
 			window.onload = function () { 
 				window.opener.bloccaRichiesteServer();
-				window.opener.location = "${contextPath}/History.do?"+csrfToken+"&metodo=reload";
+				window.opener.location = "${contextPath}/History.do?metodo=reload";
 			}
 			
 			function chiudi(){
@@ -770,7 +770,7 @@
 			
 			function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 			}
 			
 
@@ -805,7 +805,7 @@
 			if (opzInvio==0){
 				alert("Selezionare almeno un opzione");
 			}else{
-				var ref = "${pageContext.request.contextPath}/ApriPagina.do?"+csrfToken+"&href=gare/g1stipula/g1stipula-PubblicaDocumenti.jsp&idStipula="+idStipula+"&opzInvio="+opzInvio+"&idconfi="+idconfi;
+				var ref = "${pageContext.request.contextPath}/ApriPagina.do?href=gare/g1stipula/g1stipula-PubblicaDocumenti.jsp&idStipula="+idStipula+"&opzInvio="+opzInvio+"&idconfi="+idconfi;
 				<c:if test="${integrazioneWSDM =='1' }">
 					ref += "&step=1";
 				</c:if>

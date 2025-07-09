@@ -16,6 +16,9 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<%-- test per consentire utilizzo della pagina solo agli amministratori di sistema --%>
+<c:set var="nonusato" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.CheckOpzioniUtenteFunction", pageContext, "ou89")}' />
+
 <c:set var="visualizzaLink" value='${gene:checkProt(pageContext, "MASC.VIS.GARE.CATPUB-scheda")}'/>
 <c:set var="tipoSelezionato" value="${gene:if(empty param.TIPO,1,param.TIPO)}"/>
 
@@ -101,7 +104,7 @@
 
 	<gene:javaScript>
 	function cambiaTipoPubblicazione(tipo) {
-		document.location.href="ApriPagina.do?"+csrfToken+"&href=gare/catpub/catpub-lista.jsp?TIPO="+tipo;
+		document.location.href="ApriPagina.do?href=gare/catpub/catpub-lista.jsp?TIPO="+tipo;
 	}
   </gene:javaScript>
 </gene:template>

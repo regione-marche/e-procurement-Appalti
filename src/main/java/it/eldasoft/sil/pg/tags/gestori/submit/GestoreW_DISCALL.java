@@ -111,6 +111,12 @@ public class GestoreW_DISCALL extends AbstractGestoreChiaveNumerica {
         } else if (!FileAllegatoManager.isEstensioneFileAmmessa(this.getForm().getSelezioneFile().getFileName())) {
           throw new GestoreException("Il file selezionato da caricare ha un'estensione non accettata", "upload.estensioneNonAmmessa",
               new String[] { this.getForm().getSelezioneFile().getFileName() }, null);
+        } else if(!FileAllegatoManager.checkFileContent(this.getForm().getSelezioneFile().getFileData(),this.getForm().getSelezioneFile().getFileName())){
+          throw new GestoreException("Il file selezionato da caricare viene scartato in quanto ha un contenuto in formato non valido secondo le verifiche mediante la libreria Apache Tika",
+              "upload.erroreVerificaContenuto", new String[]{this.getForm().getSelezioneFile().getFileName()}, null);
+        } else if(this.getForm().getSelezioneFile().getFileName().toLowerCase().endsWith(".pdf") && FileAllegatoManager.isMaliciousPdf(this.getForm().getSelezioneFile().getFileData(), this.getForm().getSelezioneFile().getFileName())) {
+          throw new GestoreException("Il file selezionato da caricare viene scartato in quanto sembra codificare dei contenuti non sicuri (malware)",
+                  "upload.erroreContenutoMalevolo", new String[]{this.getForm().getSelezioneFile().getFileName()}, null);
         } else {
 
           baos = new ByteArrayOutputStream();

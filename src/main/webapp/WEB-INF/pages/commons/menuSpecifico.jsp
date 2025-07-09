@@ -18,6 +18,7 @@
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 
 <c:set var="opzioniUtenteAbilitate" value="${fn:join(profiloUtente.funzioniUtenteAbilitate,'#')}#" />
+<c:set var="listaOpzioniDisponibili" value="${fn:join(opzDisponibili,'#')}#" />
 <c:set var="moduloAttivo" value="${sessionScope.moduloAttivo}" scope="request"/>
 <c:set var="isNavigazioneDisattiva" value="${isNavigazioneDisabilitata}" />
 			
@@ -36,7 +37,11 @@
  	 		<c:otherwise>
 				<c:set var="titoloMenuGareElenchiAvvisiCatologhi" value="Elenchi"/>  	  				  	
  	  	</c:otherwise>
- 	  </c:choose>    
+ 	  </c:choose>
+
+	<c:if test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.ModuloComunicazioniGeneriche") and fn:contains(listaOpzioniDisponibili, "OP114#")}'>
+		<c:set var="titoloMenuGareElenchiAvvisiCatologhi" value="${titoloMenuGareElenchiAvvisiCatologhi} e comunicazioni generiche"/>
+	</c:if>
 
 	    <c:choose>
   	  <c:when test='${isNavigazioneDisattiva eq	"1"}'>
@@ -63,13 +68,17 @@
 </c:if>
 
 <c:if test='${gene:checkProt(pageContext,"MENU.VIS.STIPULE")}' >
+	<c:set var="titoloMenuStipule" value="Stipule"/>
+	<c:if test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.ModuloComunicazioniGeneriche") and fn:contains(listaOpzioniDisponibili, "OP114#")}'>
+		<c:set var="titoloMenuStipule" value="${titoloMenuStipule} e comunicazioni generiche"/>
+	</c:if>
   	  <td>
 	<c:choose>
 	  	<c:when test='${isNavigazioneDisattiva eq "1"}'>
-			<span><c:out value="Stipule" /></span>
+			<span><c:out value="${titoloMenuStipule}" /></span>
 		</c:when>
 	  	<c:otherwise>
-		  <a id="lnavbarStipule" href="javascript:showSubmenuNavbar('lnavbarStipule',linksetSubMenuStipule);" tabindex="1230">Stipule</a>
+		  <a id="lnavbarStipule" href="javascript:showSubmenuNavbar('lnavbarStipule',linksetSubMenuStipule);" tabindex="1230">${titoloMenuStipule}</a>
 		</c:otherwise>
   	  </c:choose>
 	  </td>

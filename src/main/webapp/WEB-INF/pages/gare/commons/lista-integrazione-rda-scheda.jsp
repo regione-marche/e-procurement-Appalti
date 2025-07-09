@@ -346,7 +346,13 @@
 			}else{
 				formListaRdaRdi.handleRda.value = "scollega";
 			}
-			formListaRdaRdi.action = formListaRdaRdi.action.includes("CSRFToken")? formListaRdaRdi.action : formListaRdaRdi.action + "?" +csrfToken
+			if(!document.formListaRdaRdi.CSRFToken){
+				var csrfT = document.createElement("input");
+				csrfT.type = "hidden";
+				csrfT.value = csrfToken.split("=")[1];
+				csrfT.name = "CSRFToken";
+				document.formListaRdaRdi.appendChild(csrfT);
+			}
 			formListaRdaRdi.submit();
 		}else{
 			var data = ${requestScope.listaRDARDI}

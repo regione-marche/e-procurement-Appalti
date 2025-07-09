@@ -39,12 +39,16 @@
 				</c:if>
 				<c:set var="idUtente" value="${sessionScope.profiloUtente.id}" />
 				<c:set var="uffintAbilitata" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.associazioneUffintAbilitata")}'/>
+				<c:set var="multienteAbilitata" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "loginMultiEnte")}'/>
 				
 				<c:set var="filtroLivelloUtente" value='${gene:callFunction2("it.eldasoft.gene.tags.utils.functions.FiltroLivelloUtenteFunction", pageContext, "V_GARE_PROFILO")}' scope="request"/>
 				<c:set var="filtroProfilo" value=" AND V_GARE_PROFILO.CODPROFILO IN (SELECT COD_PROFILO FROM W_ACCPRO WHERE ID_ACCOUNT = ${idUtente})" scope="request"/>
-				<c:if test="${uffintAbilitata eq 1 and !amministratore}">
+				<c:if test="${uffintAbilitata eq 1 and !amministratore and multienteAbilitata ne 1 }">
 					<c:set var="filtroUffint" value=" AND CENINT IN (select codein from usr_ein where syscon = ${idUtente} )" scope="request"/>
-				</c:if>	
+				</c:if>
+				<c:if test="${multienteAbilitata eq 1}">
+					<c:set var="filtroUffint" value=" AND CENINT = '${sessionScope.uffint}'" scope="request"/>
+				</c:if>
 				<c:set var="uffintAbilitati" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.associazioneUffintAbilitata")}'/>
 				<c:set var="filtroTipoGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetFiltroTipoGaraFunction", pageContext)}' scope="request"/>
 				<c:set var="profilo" value='8'/>
@@ -167,8 +171,11 @@
 							<gene:campoLista ordinabile="false" campo="C09" title="Profilo" definizione="T20;0"/>
 							<gene:campoLista visibile="false">
 								<c:choose>
-									<c:when test="${datiRiga.OBJ11 ne '11'}">
+									<c:when test="${datiRiga.OBJ11 ne '11' && not empty datiRiga.OBJ9}">
 										<c:set var="genereGaraAbilitato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.CheckProtProfiliFunction", pageContext, datiRiga.OBJ9,tipoGara)}' />
+									</c:when>
+									<c:when test="${empty datiRiga.OBJ9}">
+										<c:set var="genereGaraAbilitato" value='false' />
 									</c:when>
 									<c:otherwise>
 										<c:set var="genereGaraAbilitato" value='true'/>
@@ -204,6 +211,7 @@
 		function apriComunicazione(chiave1,chiave2,chiaveGara,tipoGara,idStipula){
 			var genere;
 			var keyParent;
+			<c:if test="${not empty chiaveGara}">
 			<c:choose>
 				<c:when test='${gene:checkProt(pageContext,"MASC.VIS.GARE.V_GARE_TORN-lista") || gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.V_GARE_PROFILO-lista.ApriGare")}'>
 					var entitaWSDM;
@@ -263,6 +271,7 @@
 			document.forms[0].genere.value = genere;
 			document.forms[0].keyAdd.value = keyAdd;
 			document.forms[0].keyParent.value = keyParent;
+			</c:if>
 			document.forms[0].entita.value = "W_INVCOM";
 			document.forms[0].pathScheda.value = "geneweb/w_invcom/w_invcom-in-scheda.jsp";
 			chiaveRiga = "W_INVCOM.IDPRG=T:" + chiave1 + ";W_INVCOM.IDCOM=N:" + chiave2;
@@ -284,26 +293,26 @@
 				</c:when>
 				<c:when test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.V_GARE_ELEDITTE-lista.ApriGare")}'>
 					var chiave = "V_GARE_ELEDITTE.CODGAR=T:$" + chiave1;
-					var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/gare/gare-scheda.jsp";
+					var href = contextPath + "/ApriPagina.do?href=gare/gare/gare-scheda.jsp";
 					href += "&key=" + chiave;
 					document.location.href = href;
 				</c:when>
 				<c:when test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.V_GARE_CATALDITTE-lista.ApriGare")}'>
 					var chiave = "V_GARE_CATALDITTE.CODGAR=T:$" + chiave1;
-					var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/gare/gare-scheda.jsp";
+					var href = contextPath + "/ApriPagina.do?href=gare/gare/gare-scheda.jsp";
 					href += "&key=" + chiave;
 					document.location.href = href;
 				</c:when>
 				<c:when test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.GAREAVVISI-lista.ApriAvviso")}'>
 					//Per ora non gestito da portale quindi non testato
 					var chiave = "GAREAVVISI.NGARA=T:" + chiave1;
-					var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/gareavvisi/gareavvisi-scheda.jsp";
+					var href = contextPath + "/ApriPagina.do?href=gare/gareavvisi/gareavvisi-scheda.jsp";
 					href += "&key=" + chiave;
 					document.location.href = href;
 				</c:when>
 				<c:when test='${gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.MERIC-lista.ApriRicercaMercato")}'>
 					var chiave = "GARECONT.NGARA=T:" + chiave1 + ";GARECONT.NCONT=N:1";
-					var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/garecont/garecont-scheda.jsp";
+					var href = contextPath + "/ApriPagina.do?href=gare/garecont/garecont-scheda.jsp";
 					href += "&key=" + chiave + "&id=" + chiave2;
 					document.location.href = href;
 				</c:when>
@@ -312,13 +321,13 @@
 				 --%>
 				 <c:when test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.creazioneOrdini")}'>
 				 	var chiave = "NSO_ORDINI.ID=T:" + chiave1;
-					var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/nso_ordini/nso_ordini-scheda.jsp";
+					var href = contextPath + "/ApriPagina.do?href=gare/nso_ordini/nso_ordini-scheda.jsp";
 					href += "&key=" + chiave
 					document.location.href = href;
 				 </c:when>
 				<c:when test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GestioneStipulaContratti")}'>
 				 	var chiave = "G1STIPULA.ID=N:" + chiave1;
-					var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/g1stipula/g1stipula-scheda.jsp";
+					var href = contextPath + "/ApriPagina.do?href=gare/g1stipula/g1stipula-scheda.jsp";
 					href += "&key=" + chiave
 					document.location.href = href;
 				</c:when>

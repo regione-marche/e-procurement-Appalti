@@ -88,7 +88,8 @@
 		<c:if test="${autorizzatoModifiche eq '2' or garaPub}">
 			<gene:redefineInsert name="schedaModifica"></gene:redefineInsert>
 		</c:if>
-		<c:if test='${datiRiga.QFORM_STATO eq 5 and modoQform eq "VISQFORM"}'>
+		<c:set var="checkIsElPrem" value="${gene:callFunction2('it.eldasoft.sil.pg.tags.funzioni.CheckIsElPremFunction',pageContext,ngara) eq 'true'}"/>
+		<c:if test='${datiRiga.QFORM_STATO eq 5 and modoQform eq "VISQFORM" && checkIsElPrem eq "false"}'>
 			<c:set var="rettificaAbilitata" value="true"/>
 			<c:choose>
 				<c:when test="${empty idRettifica }">
@@ -178,8 +179,16 @@
 			<c:set var="parametriWhere" value="N:${busta}"/>
 		</c:when>
 		<c:otherwise>
-			<c:set var="functionId" value="elenco"/>
-			<c:set var="parametriWhere" value=""/>
+			<c:choose>
+				<c:when test="${checkIsElPrem eq 'true'}">
+					<c:set var="functionId" value="elencopremiale"/>
+					<c:set var="parametriWhere" value=""/>
+				</c:when>
+				<c:otherwise>
+					<c:set var="functionId" value="elenco"/>
+					<c:set var="parametriWhere" value=""/>
+				</c:otherwise>
+			</c:choose>
 		</c:otherwise>
 	</c:choose>
 	

@@ -23,7 +23,9 @@
 <c:set var="abilitazioneGare" value="${sessionScope.profiloUtente.abilitazioneGare}" />
 <c:set var="codgar" value="${param.codgar}" />
 <c:set var="ngara" value="${param.ngara}" />
-<c:set var="where" value="DITG.CODGAR5='${codgar}' AND DITG.NGARA5='${ngara}' AND (INVOFF is NULL or INVOFF='1') AND (FASGAR IS NULL OR FASGAR > 1)" />
+<c:set var="where" value="DITG.CODGAR5=? AND DITG.NGARA5=? AND (INVOFF is NULL or INVOFF='1') AND (FASGAR IS NULL OR FASGAR > 1)" />
+<c:set var="parametri" value="T:${codgar};T:${ngara}"/>
+${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "DITG", where, parametri)}
 <c:set var="whereDitgstati" value="DITG.CODGAR5=DITGSTATI.CODGAR AND DITG.NGARA5=DITGSTATI.NGARA AND DITG.DITTAO=DITGSTATI.DITTAO AND DITGSTATI.FASGAR=8" />
 
 
@@ -49,7 +51,7 @@
 
 		<table class="lista">
 			<tr>
-				<td><gene:formLista entita="DITG" pagesize="20" tableclass="datilista" gestisciProtezioni="false" sortColumn="7;8" where ="${where}" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreDITGSTATI">
+				<td><gene:formLista entita="DITG" pagesize="20" tableclass="datilista" gestisciProtezioni="false" sortColumn="7;8" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreDITGSTATI">
 					<gene:redefineInsert name="listaNuovo" />
 					<gene:redefineInsert name="listaEliminaSelezione" />
 					<gene:redefineInsert name="documentiAzioni" />					

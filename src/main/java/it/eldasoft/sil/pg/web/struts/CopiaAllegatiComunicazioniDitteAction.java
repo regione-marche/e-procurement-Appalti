@@ -12,6 +12,7 @@ import java.util.Vector;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
 import org.apache.log4j.Logger;
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
@@ -35,7 +36,7 @@ public class CopiaAllegatiComunicazioniDitteAction extends Action {
 	/** Logger */
 	  static Logger               logger                        = Logger.getLogger(CopiaAllegatiComunicazioniDitteAction.class);
 
-  private static String selectW_DOCDIG = "select DIGDESDOC, DIGNOMDOC from W_DOCDIG where IDPRG = ? AND IDDOCDIG = ?";
+  private static String selectW_DOCDIG = "select DIGDESDOC, DIGNOMDOC, DIGTIPDOC from W_DOCDIG where IDPRG = ? AND IDDOCDIG = ?";
   private static String selectW_INVOCM = "select COMNUMPROT, COMMSGOGG, COMTIPMA from W_INVCOM where IDPRG = ? AND IDCOM = ? ";
   private static String updateW_DOCDIG="update w_docdig set digkey1=?, digkey2=? where idprg=? and iddocdig=?";
   String insertIMPRDOCG="insert into imprdocg(codgar,ngara, codimp,proveni,doctel,norddoci,busta,descrizione,datarilascio,orarilascio,idprg,iddocdg) "
@@ -118,6 +119,7 @@ public class CopiaAllegatiComunicazioniDitteAction extends Action {
         Long newIddocdg = null;
         String digdescdoc = null;
         String dignomdoc = null;
+        String digtipdoc = null;
         Long maxNorddoci = null;
         String descrizione = null;
         Vector<?> datiW_invcom = null;
@@ -145,6 +147,7 @@ public class CopiaAllegatiComunicazioniDitteAction extends Action {
         for (int i = 0; i < allegati.size(); i++) {
           digdescdoc = SqlManager.getValueFromVectorParam(allegati.get(i), 0).getStringValue();
           dignomdoc = SqlManager.getValueFromVectorParam(allegati.get(i), 1).getStringValue();
+          digtipdoc = SqlManager.getValueFromVectorParam(allegati.get(i), 2).getStringValue();
 
           fileAllegato = fileAllegatoManager.getFileAllegato(idprg,iddocdigLong);
 
@@ -165,8 +168,10 @@ public class CopiaAllegatiComunicazioniDitteAction extends Action {
               new DataColumn("W_DOCDIG.IDDOCDIG", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, newIddocdg)),
               new DataColumn("W_DOCDIG.DIGENT", new JdbcParametro(JdbcParametro.TIPO_TESTO, "IMPRDOCG")),
               new DataColumn("W_DOCDIG.DIGNOMDOC", new JdbcParametro(JdbcParametro.TIPO_TESTO, dignomdoc)),
+              new DataColumn("W_DOCDIG.DIGTIPDOC", new JdbcParametro(JdbcParametro.TIPO_TESTO, digtipdoc)),
               new DataColumn("W_DOCDIG.DIGOGG", new JdbcParametro(JdbcParametro.TIPO_BINARIO, baos))});
           dccW_docdig.insert("W_DOCDIG", this.sqlManager);
+          ObjectStorageUtils.addFile(idPrg, newIddocdg);
         //brutalmente mi faccio la copia dopo la insert
           String sqlUpdate= "update W_DOCDIG set FIRMACHECKTS = (select w2.FIRMACHECKTS from W_DOCDIG w2 where w2.idprg='PA' and w2.digkey1=? and w2.IDDOCDIG=?)," +
               		"FIRMACHECK = (select w2.FIRMACHECK from W_DOCDIG w2 where w2.idprg='PA' and w2.digkey1=? and w2.IDDOCDIG=?) " +

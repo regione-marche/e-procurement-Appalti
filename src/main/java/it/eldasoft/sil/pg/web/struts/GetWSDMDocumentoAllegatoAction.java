@@ -18,6 +18,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import it.eldasoft.utils.properties.ConfigManager;
 import org.apache.log4j.Logger;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
@@ -64,6 +65,13 @@ public class GetWSDMDocumentoAllegatoAction extends ActionBaseNoOpzioni {
       String tipoallegato = request.getParameter("getdocumentoallegato_tipoallegato");
       String servizio = request.getParameter("getdocumentoallegato_servizio");
       String idconfi = request.getParameter("getdocumentoallegato_idconfi");
+
+      String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+      if("1".equals(wsdmLoginComune)){
+        String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+        username = credenziali[0];
+        password = credenziali[1];
+      }
 
       WSDMProtocolloDocumentoResType wsdmProtocolloDocumentoRes = this.gestioneWSDMManager.wsdmDocumentoLeggi(username, password, ruolo,
           nome, cognome, codiceuo, idutente, idutenteunop, numeroDocumento,servizio,idconfi);

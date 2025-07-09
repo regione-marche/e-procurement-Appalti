@@ -80,6 +80,7 @@
 	<gene:setString name="titoloMaschera" value="Annulla calcolo aggiudicazione" />
 	
 	<gene:redefineInsert name="corpo">
+		<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from GARE where ngara=?", ngara)}'/>
 		<c:set var="chiave" value="${ngara}" />
 		
 		<c:choose>

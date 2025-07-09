@@ -225,7 +225,8 @@
 			<input type="hidden" name="scProfilo" id="scProfilo" value="${param.scProfilo}" />
 			<input type="hidden" name="messaggioControllo" id="messaggioControllo" value="${param.messaggioControllo}" />
 			<input type="hidden" name="tipoGara" id="tipoGara" value="${param.tipoGara}" />
-
+             
+                    
 		<table class="dettaglio-notab">
 			<tr>
 				<td>
@@ -254,7 +255,7 @@
 										</c:otherwise>
 										</c:choose>
 								</c:when>
-								<c:when test='${requestScope.tipoWSERP eq "RAIWAY"}'>
+								<c:when test='${requestScope.tipoWSERP eq "RAIWAY" || requestScope.tipoWSERP eq "INARCASSA" || requestScope.tipoWSERP eq "CONI"}'>
 									<c:choose>
 										<c:when test='${param.tipoGara=="garaLottoUnico"}'>
 											<INPUT type="button" id="pulsassprocedi" class="bottone-azione" value='Prosegui' title='Prosegui'>
@@ -285,7 +286,14 @@
 			<input type="hidden" name="numeroPopUp" value="0" /> 
 			<input type="hidden" name="metodo" value="nuovo" /> 
 			<input type="hidden" name="entita" value="" /> 
-			<input type="hidden" name="gestisciProtezioni" value="1" />
+			<input type="hidden" name="gestisciProtezioni" value="1" />	
+			<input type="hidden" name="listaRdaSelezionate" id="listaRdaSelezionate" value="" />   
+			<c:choose>
+				<c:when test='${(requestScope.tipoWSERP eq "INARCASSA" || requestScope.tipoWSERP eq "CONI") and param.tipoGara!="garaLottoUnico"}'>
+					<input type="hidden" name="keyParent" value=${param.chiavePadre} /> 
+					<input type="hidden" name="key" value=${param.chiavePadre} /> 
+				</c:when>
+			</c:choose>      				
 		</form>
 		
 		
@@ -340,6 +348,17 @@
 				</tr>
 				</tr>
 			</c:when>
+			<c:when test='${requestScope.tipoWSERP eq "INARCASSA"}'>
+				<tr>
+				<tr>
+					<td class="vocemenulaterale">
+						<c:if test='${isNavigazioneDisattiva eq isNavigazioneDisattiva}'>
+							<a href="#" id="menuassprocedi" title="Prosegui" tabindex="1512">Prosegui</a>
+						</c:if>
+					</td>
+				</tr>
+				</tr>
+			</c:when>						
 			<c:otherwise>
 				<tr>
 			       	<tr>

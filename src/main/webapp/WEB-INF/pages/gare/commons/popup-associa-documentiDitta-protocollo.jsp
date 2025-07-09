@@ -104,6 +104,7 @@
 	</gene:redefineInsert>
 	<gene:javaScript>
 		$(window).on("load", function (){
+		_getTabellatiInDB();
 		_popolaTabellato("ruolo","ruolo");
 		_popolaTabellato("tipocollegamento","tipocollegamento");
 		_getWSLogin();
@@ -125,7 +126,7 @@
 			if ($("#richiestawslogin").validate().form()){
 				var utente =$("#username").val();
 				var ruolo = $("#ruolo option:selected").val();
-				if(utente=="" || ruolo==""){
+				if(_logincomune != 1 && (utente=="" || ruolo=="")){
 					outMsg("I campi 'Utente' e 'Ruolo' devono essere valorizzati", "ERR");
 					onOffMsg();
 					return;
@@ -141,6 +142,7 @@
 				ruolo: $("#ruolo option:selected").val(),
 				tipocollegamento: $("#tipocollegamento option:selected").val(),
 				codgar : $("#codgar").val(),
+				idconfi: $("#idconfi").val()
 			},
     		success: function(json) {
     			if (json) {
@@ -158,7 +160,7 @@
 						$("#msgNumDoc").show(tempo);
 						if (json.esito == -1)
 							$("#msgErr").show(tempo);
-						opener.window.location=contextPath+'/History.do?'+csrfToken+'&metodo=reload';
+						opener.window.location=contextPath+'/History.do?metodo=reload';
 					}
 					_nowait();
     			}

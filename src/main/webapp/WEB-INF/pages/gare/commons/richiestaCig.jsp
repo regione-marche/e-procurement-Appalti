@@ -191,13 +191,14 @@
 				</tr>
 			</c:when>
 
-			<c:when test='${empty erroriBloccanti && !empty erroriNonBloccanti}'>
+			<c:when test='${empty erroriBloccanti && (!empty erroriNonBloccanti || !empty avvisiNonBloccanti)}'>
 			
 			
 				<tr>
-					<br>
-					<br>
+					
 					<c:if test="${not empty erroriNonBloccanti}">
+					<br>
+					<br>
 						<b>Ci sono dei dati incompleti nella gara:</b>
 					</c:if>
 					<ul>
@@ -205,6 +206,14 @@
 						<li>${item}
 					</c:forEach>
 					</ul>
+					<c:if test="${not empty erroriNonBloccanti}">
+					<br>
+					</c:if>
+					<c:if test='${not empty avvisiNonBloccanti}' >		
+						<c:forEach items="${avvisiNonBloccanti}" step="1" var="item">
+							<p style="color: blue"><b>ATTENZIONE: </b>${item}</p>
+						</c:forEach>
+					</c:if>
 					<br>Si vuole procedere ugualmente con ${testoConferma} dell'anagrafica gara SIMOG?
 					<br><br>
 				</tr>

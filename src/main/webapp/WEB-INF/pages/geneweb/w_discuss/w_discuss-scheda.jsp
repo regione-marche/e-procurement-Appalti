@@ -28,6 +28,7 @@
  
  	<c:set var="getDiscMessOperatore" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetDiscMessOperatoreFunction",pageContext,discid_p,discid)}'/>
    	<c:set var="getDiscMessPubblicato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GetDiscMessPubblicatoFunction",pageContext,discid_p,discid)}'/>
+	<c:set var="getDiscDestCount" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetDiscDestFunction",pageContext,discid_p)}'/>
    	
 	<c:set var="titoloCompleto" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTitleDiscussioniFunction",pageContext,"W_DISCUSS")}'/>
 	<c:choose>
@@ -111,47 +112,7 @@
 						</td>
 					</gene:campoScheda>
 					
-					<gene:javaScript>
-						
-						<c:if test='${modo eq "VISUALIZZA"}'>
-						
-							setMessaggioLetto(${discid_p},${discid},${sessionScope.profiloUtente.id});
-						
-							function setMessaggioLetto(discid_p, discid, syscon) {
-								$.ajax({
-							        type: "GET",
-							        async: false,
-							        beforeSend: function(x) {
-									if(x && x.overrideMimeType) {
-										x.overrideMimeType("application/json;charset=UTF-8");
-								       }
-									},
-							        url: "${pageContext.request.contextPath}" + "/pg/EseguiOperazioniConversazione.do",
-							        data: "discid_p=" + discid_p + "&discid=" + discid + "&syscon=" + syscon + "&operazione=setMessaggioLetto",
-							    });
-							}
-						</c:if>
 					
-						function pubblicaMessaggio(discid_p, discid, syscon) {
-							if (confirm("Inviare il messaggio ? Dopo l'invio tutti i dati e gli allegati saranno bloccati.")) {
-								$.ajax({
-							        type: "GET",
-							        async: false,
-							        beforeSend: function(x) {
-									if(x && x.overrideMimeType) {
-										x.overrideMimeType("application/json;charset=UTF-8");
-								       }
-									},
-							        url: "${pageContext.request.contextPath}" + "/pg/EseguiOperazioniConversazione.do",
-							        data: "discid_p=" + discid_p + "&discid=" + discid + "&syscon=" + syscon + "&operazione=pubblicaMessaggio",
-							        complete: function(e){
-							        	historyVaiIndietroDi(1);
-							        }
-							    });
-							  }
-						}
-
-					</gene:javaScript>
 					<c:if test='${modo eq "VISUALIZZA" and pubblicato eq "false"}'>
 						<gene:redefineInsert name="addToAzioni" >
 							<tr>
@@ -248,35 +209,60 @@
 					</c:choose>
 				</table>
 				
-				<gene:javaScript>
-		
-					function visualizzaFileAllegato(discid_p,discid,allnum,allname) {
-						var href = "${pageContext.request.contextPath}/pg/VisualizzaDocumentoWDISCALL.do";
-						document.location.href=href + "?" + csrfToken + "&discid_p=" + discid_p + "&discid=" + discid + "&allnum=" + allnum + "&allname=" + allname;
-					}	
-					
-					function pubblicaMessaggio(discid_p, discid, syscon) {
-						if (confirm("Inviare il messaggio ? Dopo l'invio tutti i dati e gli allegati saranno bloccati.")) {
-							$.ajax({
-						        type: "GET",
-						        async: false,
-						        beforeSend: function(x) {
-								if(x && x.overrideMimeType) {
-									x.overrideMimeType("application/json;charset=UTF-8");
-							       }
-								},
-						        url: "${pageContext.request.contextPath}" + "/pg/EseguiOperazioniConversazione.do",
-						        data: "discid_p=" + discid_p + "&discid=" + discid + "&syscon=" + syscon + "&operazione=pubblicaMessaggio",
-						        complete: function(e){
-						        	historyVaiIndietroDi(1);
-						        }
-						    });
-						  }
-					}
 				
-				</gene:javaScript>
 								
 			</gene:pagina>
 		</gene:formPagine>
 	</gene:redefineInsert>
+	<gene:javaScript>
+	
+		<c:if test='${modo eq "VISUALIZZA"}'>
+		
+			setMessaggioLetto(${discid_p},${discid},${sessionScope.profiloUtente.id});
+		
+			function setMessaggioLetto(discid_p, discid, syscon) {
+				$.ajax({
+					type: "GET",
+					async: false,
+					beforeSend: function(x) {
+					if(x && x.overrideMimeType) {
+						x.overrideMimeType("application/json;charset=UTF-8");
+					   }
+					},
+					url: "${pageContext.request.contextPath}" + "/pg/EseguiOperazioniConversazione.do",
+					data: "discid_p=" + discid_p + "&discid=" + discid + "&syscon=" + syscon + "&operazione=setMessaggioLetto",
+				});
+			}
+		</c:if>
+
+		function visualizzaFileAllegato(discid_p,discid,allnum,allname) {
+			var href = "${pageContext.request.contextPath}/pg/VisualizzaDocumentoWDISCALL.do";
+			document.location.href=href + "?discid_p=" + discid_p + "&discid=" + discid + "&allnum=" + allnum + "&allname=" + allname;
+		}	
+		
+		function pubblicaMessaggio(discid_p, discid, syscon) {
+			var countDestinatariTutti = "${countDestinatariTutti}"
+			var countDestinatariAlcuni = "${countDestinatariAlcuni}"
+			if(countDestinatariTutti==="0") 
+				alert("Non è possibile procedere all'invio del messaggio.\nNon è presente alcun destinatario: rivedere la lista dei permessi e/o impostare gli indirizzi mail degli utenti");
+			else if(countDestinatariAlcuni==="0")
+				alert("Non è possibile procedere all'invio del messaggio.\nNessun destinatario impostato per la conversazione");
+			else if (confirm("Inviare il messaggio?\nDopo l'invio tutti i dati e gli allegati saranno bloccati.")) {
+				$.ajax({
+					type: "GET",
+					async: false,
+					beforeSend: function(x) {
+					if(x && x.overrideMimeType) {
+						x.overrideMimeType("application/json;charset=UTF-8");
+					   }
+					},
+					url: "${pageContext.request.contextPath}" + "/pg/EseguiOperazioniConversazione.do",
+					data: "discid_p=" + discid_p + "&discid=" + discid + "&syscon=" + syscon + "&operazione=pubblicaMessaggio",
+					complete: function(e){
+						historyVaiIndietroDi(1);
+					}
+				});
+			  }
+		}
+	</gene:javaScript>
 </gene:template>

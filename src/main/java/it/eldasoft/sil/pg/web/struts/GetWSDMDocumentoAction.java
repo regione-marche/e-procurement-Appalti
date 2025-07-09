@@ -61,6 +61,13 @@ public class GetWSDMDocumentoAction extends Action {
     if(servizio==null || "".equals(servizio))
       servizio ="FASCICOLOPROTOCOLLO";
 
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+      username = credenziali[0];
+      password = credenziali[1];
+    }
+
     JSONObject result = new JSONObject();
     int totalMITTENTI = 0;
     int totalDESTINATARI = 0;

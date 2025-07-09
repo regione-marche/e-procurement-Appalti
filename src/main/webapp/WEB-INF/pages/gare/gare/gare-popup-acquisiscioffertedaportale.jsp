@@ -48,7 +48,7 @@
 		<c:set var="codStatoGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetStatoGaraFunction", pageContext, codiceGara)}' />	
 	
 		<c:if test="${isSuperataDataTerminePresentazione ne 'false' }">
-			<c:set var="numDitteGaraCorso" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.ConteggioDitteFunction", pageContext, ngara,"ACQUISIZIONE = 9 AND AMMGAR = 2")}' />
+			<c:set var="numDitteGaraCorso" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.ConteggioDitteFunction", pageContext, ngara,"ACQUISIZIONE = 9 AND AMMGAR = \'2\'")}' />
 		</c:if>
 				
 		<gene:redefineInsert name="corpo">

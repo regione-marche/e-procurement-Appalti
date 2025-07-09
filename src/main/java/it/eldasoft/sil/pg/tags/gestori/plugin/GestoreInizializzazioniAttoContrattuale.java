@@ -102,7 +102,7 @@ public class GestoreInizializzazioniAttoContrattuale extends AbstractGestorePrel
 
 	      try {
 	        List listaDitteAggiudicatarie = sqlManager.getListVector("select aq.id, aq.ngara, aq.dittao, i.nomest, aq.iaggiu, d.ricsub, aq.ridiso, "
-	            + "aq.impgar, aq.nquiet, aq.dquiet, aq.istcre, aq.indist, d.ribauo, d.impoff, aq.banapp, aq.coorba, aq.codbic from ditgaq aq, impr i, ditg d "
+	            + "aq.impgar, aq.nquiet, aq.dquiet, aq.istcre, aq.indist, d.ribauo, d.impoff, aq.banapp, aq.coorba, aq.codbic, d.codcnel from ditgaq aq, impr i, ditg d "
 	            + "where aq.ngara=? and aq.dittao = i.codimp and aq.ngara=d.ngara5 and aq.dittao=d.dittao order by aq.numord", new Object[]{ngara});
 	        pageContext.setAttribute("listaDitteAggiudicatarie", listaDitteAggiudicatarie,
 	            PageContext.REQUEST_SCOPE);

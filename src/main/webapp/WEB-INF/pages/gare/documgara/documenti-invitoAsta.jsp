@@ -50,7 +50,7 @@
 				<gene:campoScheda campo="IDDOCDIG_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="N12;1;;;DIGID"  value="${item[6]}" />
 				<gene:campoScheda campo="STATODOC_${param.contatore}" entita="DOCUMGARA" campoFittizio="true"  visibile="false" definizione="N3;0;;;STODOCDG" value="${item[7]}" />
 				<gene:campoScheda campo="TIPOLOGIA_${param.contatore}" entita="DOCUMGARA" campoFittizio="true"  visibile="false" definizione="N3;0;;;G1TIPOLODG" value="${item[19]}" />
-				<gene:campoScheda campo="DIGDESDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2000;0;;;DIGDESDOC"  gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote" value="${documentiInvitoDescFile[(3 * param.contatore) - 3]}"/>
+				<gene:campoScheda campo="DIGDESDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2000;0;;;DIGDESDOC"  gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote" value="${documentiInvitoDescFile[(4 * param.contatore) - 3]}"/>
 				<gene:campoScheda campo="DESCRIZIONE_${param.contatore}" entita="DOCUMGARA" campoFittizio="true"  obbligatorio="true" definizione="T200;0;;;DESCLIBDG" value="${item[13]}" />
 				<c:if test='${modoAperturaScheda eq "MODIFICA"  and (gestioneUrl eq "true" or associataRdaJIRIDE eq "true") }'>
 					<gene:campoScheda title="" nome="tipoAllegato_${param.contatore}">
@@ -72,35 +72,41 @@
 				<gene:campoScheda campo="URLDOC_${param.contatore}" entita="DOCUMGARA" campoFittizio="true"  visibile='${gestioneUrl eq "true" }' definizione="T2000;0;;;G1URLDOC" value="${item[18]}" href="javascript:apriUrl('${item[18]}')" >
 					<gene:checkCampoScheda funzione='validURL("##")' obbligatorio="true" messaggio="Il valore dell'indirizzo URL specificato non è valido: è possibile inserire solo un indirizzo URL che inizi con 'ftp://', 'ftps://', 'sftp://', 'http://', 'https://' o 'www.'e non contenga spazi o virgole" onsubmit="false"/>
 				</gene:campoScheda>
-				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" modificabile="false" campoFittizio="true" definizione="T100;0;;;DIGNOMDOC"  value="${documentiInvitoDescFile[(3 * param.contatore) - 2 ]}" href="javascript:visualizzaFileAllegato('${item[5]}','${item[6]}',${gene:string4Js(documentiInvitoDescFile[(3 * param.contatore) - 2 ])});">
+				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" modificabile="false" campoFittizio="true" definizione="T100;0;;;DIGNOMDOC"  value="${documentiInvitoDescFile[(4 * param.contatore) - 3 ]}" href="javascript:visualizzaFileAllegato('${item[5]}','${item[6]}',${gene:string4Js(documentiInvitoDescFile[(4 * param.contatore) - 3 ])});">
 					<c:if test='${modoAperturaScheda eq "VISUALIZZA" }'>
-						<c:if test="${documentiInvitoDescFile[(3 * param.contatore) - 1 ] eq '1'}">
+						<c:if test="${param.isVerificaPDFA eq '1' && documentiInvitoDescFile[(4 * param.contatore) - 1 ] eq 'pdf/a'}">
+							&nbsp;<img id="imgCheckPDFaDocMessage_${param.contatore}" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
+						</c:if>
+						<c:if test="${documentiInvitoDescFile[(4 * param.contatore) - 2 ] eq '1'}">
 							<span style="float:right;"><img width="16" height="16" src="${pageContext.request.contextPath}/img/isquantimod.png"/>&nbsp;In attesa di firma</span>
 						</c:if>
 					</c:if>
-					<c:if test='${not empty documentiInvitoDescFile[(3 * param.contatore) - 2 ] and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and item[7] ne "5" and param.autorizzatoModifiche ne "2" and not empty param.firmaRemota and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.FirmaRemotaDocumenti")}'>
-						<a style="float:right;" href="javascript:openModal('${item[5]}','${item[6]}','${documentiInvitoDescFile[(3 * param.contatore) - 2 ]}','${pageContext.request.contextPath}');">
+					<c:if test='${not empty documentiInvitoDescFile[(4 * param.contatore) - 3 ] and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and item[7] ne "5" and param.autorizzatoModifiche ne "2" and not empty param.firmaRemota and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.FirmaRemotaDocumenti")}'>
+						<a style="float:right;" href="javascript:openModal('${item[5]}','${item[6]}','${documentiInvitoDescFile[(4 * param.contatore) - 3 ]}','${pageContext.request.contextPath}');">
 						<img src="${pageContext.request.contextPath}/img/firmaRemota.png" title="Firma digitale del documento" alt="Firma documento" width="16" height="16">
 						<span title="Firma digitale del documento">Firma documento</span></a>
 					</c:if>
-					<c:if test='${idStampa ne "DGUE" and not empty documentiInvitoDescFile[(3 * param.contatore) - 2 ] and (empty documentiInvitoDescFile[(3 * param.contatore) - 1 ] or documentiInvitoDescFile[(3 * param.contatore) - 1 ] eq "2") and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and param.autorizzatoModifiche ne "2" and param.firmaDocumento eq "1" and item[7] ne "5"}'>
+					<c:if test='${idStampa ne "DGUE" and not empty documentiInvitoDescFile[(4 * param.contatore) - 3 ] and (empty documentiInvitoDescFile[(4 * param.contatore) - 2 ] or documentiInvitoDescFile[(4 * param.contatore) - 2 ] eq "2") and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and param.autorizzatoModifiche ne "2" and param.firmaDocumento eq "1" and item[7] ne "5"}'>
 						<a style="float:right;" href="javascript:apriModaleRichiestaFirma('${item[5]}','${item[6]}','${param.contatore}');">
 						<img src="${pageContext.request.contextPath}/img/firmaRemota.png" title="Firma digitale del documento" alt="Firma documento" width="16" height="16">
 						<span title="Firma digitale del documento">Firma documento</span></a>
 					</c:if>
 				</gene:campoScheda>
+				<gene:campoScheda campo="DIGTIPDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T5;0;;;DIGTIPDOC" />
 				<gene:campoScheda campo="IDSTAMPA_${param.contatore}" entita="DOCUMGARA" campoFittizio="true" visibile="false" definizione="T20;0;;;G1IDSTAMPA" value="${item[20]}" />
 				<gene:campoScheda campo="NOMEDOCGEN_${param.contatore}" campoFittizio="true" visibile="false" definizione="T100"/>
 				<c:if test='${modoAperturaScheda eq "MODIFICA" }'>
 					<gene:campoScheda title="Nome file" nome="selezioneFile_${param.contatore}">
 						<input type="file" name="selFile[${param.contatore}]" id="selFile[${param.contatore}]" class="file" size="70" onkeydown="return bloccaCaratteriDaTastiera(event);" onchange='javascript:scegliFile(${param.contatore});'/>
+						<span id="checkPDFaDocMessage_${param.contatore}" style="display:none; color: blue;"><b>ATTENZIONE:</b> file non conforme al formato PDF/A</span>
+						<img id="imgCheckPDFaDocMessage_${param.contatore}" style="display:none;" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
 						<c:if test='${modoAperturaScheda eq "MODIFICA" && not empty idStampa && idStampa ne ""}'>
 							<br><img src="${pageContext.request.contextPath}/img/pdf.gif"/>&nbsp;
 							  <a id="genera_${param.contatore}" href="javascript:generaAllegaPdf('${item[1]}','${param.contatore}','${item[20]}','${contextPath}')">Genera PDF da modello</a>
 						</c:if>
 						
 						<c:if test="${param.richiestaFirma eq '1' }">
-							<span id="spanRichiestaFirma_${param.contatore}" style="float:right;display:none;">Richiesta firma?<input type="checkbox" name="richiestaFirma_${param.contatore}" id="richiestaFirma_${param.contatore}" size="50" <c:if test="${documentiInvitoDescFile[(3 * param.contatore) - 1 ] eq '1'}">checked</c:if> onchange="javascript:aggiornaRichiestaFirma(${param.contatore},this);"> </span>
+							<span id="spanRichiestaFirma_${param.contatore}" style="float:right;display:none;">Richiesta firma?<input type="checkbox" name="richiestaFirma_${param.contatore}" id="richiestaFirma_${param.contatore}" size="50" <c:if test="${documentiInvitoDescFile[(4 * param.contatore) - 2 ] eq '1'}">checked</c:if> onchange="javascript:aggiornaRichiestaFirma(${param.contatore},this);"> </span>
 						</c:if>
 					</gene:campoScheda>
 					<gene:campoScheda title="Nome file" nome="selezioneFileDocumentale_${param.contatore}">
@@ -109,7 +115,7 @@
 				</c:if>
 				<gene:campoScheda campo="VALENZA_${param.contatore}" entita="DOCUMGARA" campoFittizio="true" visibile="false" definizione="N2;0;;;VALENZADG" value="${item[11]}" />
 				<c:if test="${param.richiestaFirma eq '1' or param.firmaDocumento eq '1'}">
-					<gene:campoScheda campo="DIGFIRMA_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2;0;" value="${documentiInvitoDescFile[(3 * param.contatore) - 1 ]}" />
+					<gene:campoScheda campo="DIGFIRMA_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2;0;" value="${documentiInvitoDescFile[(4 * param.contatore) - 2 ]}" />
 				</c:if>
 </c:when>
 <c:otherwise>
@@ -141,8 +147,14 @@
 						 </c:if>
 					</gene:campoScheda>
 				</c:if>
+				
 				<gene:campoScheda campo="ALLMAIL_${param.contatore}" entita="DOCUMGARA" campoFittizio="true" definizione="T1;0;;SN;G1ALLMAIL" value='1'/>
-				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" modificabile="false" campoFittizio="true" definizione="T100;0;;;DIGNOMDOC"  value=''/>
+				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" modificabile="false" campoFittizio="true" definizione="T100;0;;;DIGNOMDOC"  value=''>
+					<c:if test="${param.isVerificaPDFA eq '1' && documentiInvitoDescFile[(4 * param.contatore) - 1 ] eq 'pdf/a'}">
+						&nbsp;<img id="imgCheckPDFaDocMessage_${param.contatore}" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
+					</c:if>
+				</gene:campoScheda>
+				<gene:campoScheda campo="DIGTIPDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T5;0;;;DIGTIPDOC" />
 				<gene:campoScheda campo="URLDOC_${param.contatore}" entita="DOCUMGARA" campoFittizio="true"  visibile='${gestioneUrl eq "true" }' definizione="T2000;0;;;G1URLDOC" >
 					<gene:checkCampoScheda funzione='validURL("##")' obbligatorio="true" messaggio="Il valore dell'indirizzo URL specificato non è valido: è possibile inserire solo un indirizzo URL che inizi con 'ftp://', 'ftps://', 'sftp://', 'http://', 'https://' o 'www.'e non contenga spazi o virgole" onsubmit="false"/>
 				</gene:campoScheda>
@@ -150,10 +162,12 @@
 				<gene:campoScheda campo="NOMEDOCGEN_${param.contatore}" campoFittizio="true" visibile="false" definizione="T100"/>
 				<c:if test='${modoAperturaScheda eq "MODIFICA" }'>
 					<gene:campoScheda title="Nome file" nome="selezioneFile_${param.contatore}">
-							<input type="file" name="selFile[${param.contatore}]" id="selFile[${param.contatore}]" class="file" size="70" onkeydown="return bloccaCaratteriDaTastiera(event);" onchange='javascript:scegliFile(${param.contatore});'/>
-							<c:if test="${param.richiestaFirma eq '1'}">
-								<span id="spanRichiestaFirma_${param.contatore}" style="float:right;display:none;">Richiesta firma?<input type="checkbox" name="richiestaFirma_${param.contatore}" id="richiestaFirma_${param.contatore}" size="50" onchange="javascript:aggiornaRichiestaFirma(${param.contatore},this);"> </span>
-							</c:if>
+						<input type="file" name="selFile[${param.contatore}]" id="selFile[${param.contatore}]" class="file" size="70" onkeydown="return bloccaCaratteriDaTastiera(event);" onchange='javascript:scegliFile(${param.contatore});'/>
+						<span id="checkPDFaDocMessage_${param.contatore}" style="display:none; color: blue;"><b>ATTENZIONE:</b> file non conforme al formato PDF/A</span>
+						<img id="imgCheckPDFaDocMessage_${param.contatore}" style="display:none;" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
+						<c:if test="${param.richiestaFirma eq '1'}">
+						<span id="spanRichiestaFirma_${param.contatore}" style="float:right;display:none;">Richiesta firma?<input type="checkbox" name="richiestaFirma_${param.contatore}" id="richiestaFirma_${param.contatore}" size="50" onchange="javascript:aggiornaRichiestaFirma(${param.contatore},this);"> </span>
+						</c:if>
 					</gene:campoScheda>
 					<gene:campoScheda title="Nome file" nome="selezioneFileDocumentale_${param.contatore}">
 							<input type="button" value="Sfoglia da fascicolo" name="selFile[${param.contatore}]" id="selFileDocumentale[${param.contatore}]" size="70" onkeydown="return bloccaCaratteriDaTastiera(event);" onclick='javascript:apriPopupSelezioneDocumentale(${param.contatore});'/>
@@ -266,6 +280,9 @@ function popolaFormDocumentale(indice,username,password,ruolo,nome,cognome,codic
 				$("#rowW_DOCDIG_DIGNOMDOC_" + indice).hide();
 				setValue("W_DOCDIG_DIGNOMDOC_" + indice,"");
 				setValue("W_DOCDIG_IDDOCDIG_" + indice,"");
+				document.getElementById("selFile[" + indice + "]")? document.getElementById("selFile[" + indice + "]").value="" : null;
+				$('#checkPDFaDocMessage_'+indice).css("display", "none");
+				$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");				
 				$("#rowselezioneFile_" + indice).hide();
 				$("#rowselezioneFileDocumentale_" + indice).hide();
 				if(aggiornaAllmail == true)

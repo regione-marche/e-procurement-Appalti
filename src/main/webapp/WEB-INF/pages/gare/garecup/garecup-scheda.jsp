@@ -20,12 +20,12 @@
 	<c:when test="${param.tipoDettaglio eq 1}">
 		<gene:campoScheda campo="ID_${param.contatore}" entita="GARECUP" campoFittizio="true" visibile="false" definizione="N12;1" value="${item[0]}" />
 		<gene:campoScheda campo="NGARA_${param.contatore}" entita="GARECUP" campoFittizio="true" visibile="false" definizione="T20;0" value="${item[1]}" />
-		<gene:campoScheda campo="CUP_${param.contatore}" entita="GARECUP"  campoFittizio="true"  title="Codice CUP di progetto" definizione="T15;0"  value="${item[2]}" />
+		<gene:campoScheda campo="CUP_${param.contatore}" entita="GARECUP"  campoFittizio="true" definizione="T15;0;;;G1CUPCUP"  value="${item[2]}" />
 	</c:when>
 	<c:otherwise>
 		<gene:campoScheda campo="ID_${param.contatore}" entita="GARECUP" campoFittizio="true" visibile="false" definizione="N12;1"  />
 		<gene:campoScheda campo="NGARA_${param.contatore}" entita="GARECUP" campoFittizio="true" visibile="false" definizione="T20;0"  value="${param.chiave }"/>
-		<gene:campoScheda campo="CUP_${param.contatore}" entita="GARECUP"  campoFittizio="true"  title="Codice CUP di progetto" definizione="T15;0" />
+		<gene:campoScheda campo="CUP_${param.contatore}" entita="GARECUP"  campoFittizio="true" definizione="T15;0;;;G1CUPCUP" />
 	</c:otherwise>
 </c:choose>
 
@@ -36,4 +36,14 @@
 		 	validazioneCup(this);
 		});
 	</c:if>
+	
+	<c:if test="${modo ne 'VISUALIZZA'}">
+		$('#rowGARECUP_CUP_${param.contatore}').find("td:last").append($('#rowtitoloGARECUP_${param.contatore}'));
+		$('#rowtitoloGARECUP_${param.contatore}').css("float","right");
+		var count = $('#rowLinkAddGARECUP').children('td').length;
+		if(count < 2){
+			$('<td></td>').insertBefore($('#rowLinkAddGARECUP .valore-dato')); 
+			}
+		$('#rowLinkAddGARECUP .valore-dato').attr('colspan',1);
+	</c:if>		
 </gene:javaScript>

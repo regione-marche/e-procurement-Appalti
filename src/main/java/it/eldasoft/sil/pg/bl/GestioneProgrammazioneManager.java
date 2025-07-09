@@ -420,8 +420,8 @@ public class GestioneProgrammazioneManager {
               Long conteggio = (Long) sqlManager.getObject("select count(*) from garerda where numrda = ? and codgar = ?", new Object[] {codiceRda, codgar});
               if(conteggio == null || (conteggio!=null && conteggio.longValue()==0)){
                 Long id = new Long(genChiaviManager.getNextId("GARERDA"));
-                sqlManager.update("insert into garerda (id, codgar, numrda, tipologia, codvoc, voce, descrizione, codcat,prezun,unimis,quanti,rup,importo, catalogo, amministrazione) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", 
-                    new Object[] {id,codgar,codiceRda,settoreRda,codiceArticoloRda,descrizioneArticoloRda,descRda,categoriaMerceologicaDescRda,prezzoUnitarioRda,tipo,quantitaRda,rupRda,importo,codiceCatalogo,amministrazione});
+                sqlManager.update("insert into garerda (id, codgar, numrda, tipologia, codvoc, voce, descrizione, prezun,unimis,quanti,rup,importo, catalogo, amministrazione) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", 
+                    new Object[] {id,codgar,codiceRda,settoreRda,codiceArticoloRda,descrizioneArticoloRda,descRda,prezzoUnitarioRda,tipo,quantitaRda,rupRda,importo,codiceCatalogo,amministrazione});
                 rdaSuccess.add(codiceRda);
               }else {
                 sqlManager.update("update garerda set tipologia=?, codvoc=?, voce=?, descrizione=?, codcat=?, prezun=?, unimis=?, quanti=?, rup=?, importo=?, catalogo=?, amministrazione=? where codgar = ? and numrda=?", 
@@ -673,8 +673,8 @@ public class GestioneProgrammazioneManager {
           Long conteggio = (Long) sqlManager.getObject("select count(*) from garerda where numrda = ? and codgar = ? and ngara =?", new Object[] {rda[i], codgar, ngara});
           if(conteggio == null || (conteggio!=null && conteggio.longValue()==0)){
             Long id = new Long(genChiaviManager.getNextId("GARERDA"));
-            sqlManager.update("insert into garerda (id, codgar, numrda, tipologia, codvoc, voce, descrizione, codcat,prezun,unimis,quanti,rup,importo, catalogo, amministrazione) "
-                + "select distinct "+id+", codgar, numrda, tipologia, codvoc, voce, descrizione, codcat,prezun,unimis,quanti,rup,importo, catalogo, amministrazione from GARERDA where numrda = ? and ngara is null and codgar = ?",new Object[] {rda[i],codgar});
+            sqlManager.update("insert into garerda (id, codgar, numrda, tipologia, codvoc, voce, descrizione, prezun,unimis,quanti,rup,importo, catalogo, amministrazione) "
+                + "select distinct "+id+", codgar, numrda, tipologia, codvoc, voce, descrizione, prezun,unimis,quanti,rup,importo, catalogo, amministrazione from GARERDA where numrda = ? and ngara is null and codgar = ?",new Object[] {rda[i],codgar});
             sqlManager.update("update garerda set ngara = ? where id = ?",new Object[] {ngara,id}); 
           }
           collegaScollegaRdaWS(client,true, rda[i], ngara,APP,stato,cig);//TODO fare una sola transazione con arrRda? recuperare cig e stato!
@@ -780,12 +780,10 @@ public class GestioneProgrammazioneManager {
   }
 
   /**
-   * Il metodo consente di sbiancare il campo  NGARA in GARERDA le RDA/RDI selezionate dalla maschera di selezione. 
+   * Il metodo consente di importare i record di garerda nella gcap. 
    * @param ngara
    * @param codgara
-   * @param rda
-   * @param uffint
-   * @param syscon
+   * @param isLotto
    * @throws GestoreException
    */
   public void importaRda(String codgar, String ngara, boolean isLotto) throws GestoreException {

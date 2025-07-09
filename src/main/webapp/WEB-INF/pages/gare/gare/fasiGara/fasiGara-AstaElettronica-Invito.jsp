@@ -45,7 +45,7 @@
 <c:if test="${integrazioneWSDM eq '1' }">
 	<c:set var="protocolloSingoloInvito" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.GetPropertyWsdmFunction", "wsdm.protocolloSingoloInvito", idconfi)}' />
 </c:if>
-
+<c:set var="isVerificaPDFA" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "uploadFile.verifica.pdfA")}'/>
 <c:set var="gestioneUrl" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsGestioneUrlDocumentazioneFunction", pageContext)}' scope="request"/>
 <c:set var="firmaProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
 <c:if test='${firmaProvider eq 2}'>
@@ -55,7 +55,6 @@
 <c:set var="numeroDocumentoWSDM" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.CheckAssociataRdaJIRIDEFunction", pageContext, codiceGara)}' scope="request"/>
 
 <c:set var="richiestaFirma" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "documentiDb.richiestaFirma")}'/>
-
 <c:set var="modelliPredispostiAttivoIncondizionato" value="1" scope="request" />
 
 <c:set var="meruolo" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetMERUOLOFunction",  pageContext, numeroGara)}'/>
@@ -221,6 +220,7 @@
 						<jsp:param name="autorizzatoModifiche" value="${autorizzatoModifiche}"/>
 						<jsp:param name="numeroDocumentoWSDM" value="${numeroDocumentoWSDM}"/>
 						<jsp:param name="gestioneERP" value="${gestioneERP}"/>
+						<jsp:param name="isVerificaPDFA" value="${isVerificaPDFA}"/>
 					</jsp:include>			
 					
 					<input type="hidden" name="isGaraLottiConOffertaUnica" id="isGaraLottiConOffertaUnica" value="${isGaraLottiConOffertaUnica}" />
@@ -261,7 +261,7 @@ function visualizzaFileAllegatoCustom(idprg,iddocdig,dignomdoc) {
 				document.formVisFirmaDigitale.submit();
 			}else{
 				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 			}
 		</c:when>
 		<c:otherwise>
@@ -271,7 +271,7 @@ function visualizzaFileAllegatoCustom(idprg,iddocdig,dignomdoc) {
 				document.formVisFirmaDigitale.submit();
 			}else{
 				var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-				document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+				document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 			}
 		</c:otherwise>
 	</c:choose>

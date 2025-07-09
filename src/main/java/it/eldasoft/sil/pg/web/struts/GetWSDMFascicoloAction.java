@@ -2,6 +2,7 @@ package it.eldasoft.sil.pg.web.struts;
 
 import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.maggioli.eldasoft.ws.conf.WSDMConfigurazioneOutType;
 import it.maggioli.eldasoft.ws.dm.WSDMFascicoloDocumentoType;
 import it.maggioli.eldasoft.ws.dm.WSDMFascicoloResType;
@@ -58,6 +59,14 @@ public class GetWSDMFascicoloAction extends Action {
     String key1 = request.getParameter("key1");
     String servizio = request.getParameter("servizio");
     String idconfi = request.getParameter("idconfi");
+
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+      username = credenziali[0];
+      password = credenziali[1];
+    }
+
     Long anno = null;
     if (request.getParameter("anno") != null && !"".equals(request.getParameter("anno"))) {
       anno = new Long(request.getParameter("anno"));

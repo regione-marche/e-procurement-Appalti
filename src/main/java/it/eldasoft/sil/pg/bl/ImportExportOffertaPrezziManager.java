@@ -1760,7 +1760,7 @@ public class ImportExportOffertaPrezziManager {
   public LoggerImportOffertaPrezzi importOffertaPrezzi(
       UploadFileForm fileExcel, String ngara, String codiceDitta,
       boolean archiviaXLSDocAss, boolean isGaraLottiConOffertaUnica,
-      String isPrequalifica, HttpSession session)
+      String isPrequalifica, HttpSession session, String pgarof)
     throws GestioneFileDocumentiAssociatiException,
       FileNotFoundException, IOException, GestoreException, Exception {
 
@@ -1991,7 +1991,7 @@ public class ImportExportOffertaPrezziManager {
             this.importOffertaPrezziGara(foglioLavorazioniForniture, ngara,
                 listaCampiImportExcel, isGaraLottiConOffertaUnica, session,
                 loggerImport, isCodificaAutomaticaAttiva, tipoFornitura,
-                listaCampiImportExcelGCAP_SAN);
+                listaCampiImportExcelGCAP_SAN, pgarof);
           }
 
           if (archiviaXLSDocAss) {
@@ -2240,7 +2240,7 @@ public class ImportExportOffertaPrezziManager {
       List<CampoImportExcel> listaCampiImportExcel, boolean isGaraLottiConOffertaUnica,
       HttpSession session, LoggerImportOffertaPrezzi loggerImport,
       boolean isCodificaAutomaticaAttiva, Long tipoFornitura,
-      List<CampoImportExcel> listaCampiImportExcelGCAP_SAN)
+      List<CampoImportExcel> listaCampiImportExcelGCAP_SAN, String pgarof)
                 throws SQLException, SqlComposerException, GestoreException {
 
     if (logger.isDebugEnabled())
@@ -2826,7 +2826,7 @@ public class ImportExportOffertaPrezziManager {
     sqlDao.update(updateGap, new Object[]{ngara});
 
     if (!mappaCodiciLotti.isEmpty()) {
-      this.creazioneLotti(mappaCodiciLotti, ngara, loggerImport, tipoFornitura,mappaDescrizioniLotti,null,mappaCodiciCIG);
+      this.creazioneLotti(mappaCodiciLotti, ngara, loggerImport, tipoFornitura,mappaDescrizioniLotti,null,mappaCodiciCIG,pgarof);
       this.aggiornamentoDitteLotti(mappaCodiciLotti, ngara);
     }
 
@@ -2847,7 +2847,7 @@ public class ImportExportOffertaPrezziManager {
    */
   public void creazioneLotti(HashMap<String,String> mappaCodiciLotti, String ngara,
       LoggerImportOffertaPrezzi loggerImport, Long tipoFornitura,HashMap<String,String> mappaDescrizioniLotti,
-      HashMap<String,Long> mappaCodiciLottiOLIAMM, HashMap<String,String> mappaCodiciCIG) throws GestoreException {
+      HashMap<String,Long> mappaCodiciLottiOLIAMM, HashMap<String,String> mappaCodiciCIG, String pgarof) throws GestoreException {
 
     Iterator<String> iterator = mappaCodiciLotti.keySet().iterator();
     double sommaImpapp=0;
@@ -2903,21 +2903,23 @@ public class ImportExportOffertaPrezziManager {
         Vector<?> datiTornata = this.sqlDao.getVectorQuery(
             "select TIPGEN, DPUBAV, DFPUBA, NAVVIG, DAVVIG, DIBAND, TATTOT, "
                  + "DATTOT, NATTOT, NPROAT, TIPGAR, MODLIC, CRITLIC, DETLIC, "
-                 + "CALCSOAN, VALTEC, CONTOECO, ULTDETLIC, AQOPER, AQNUMOPE from TORN where CODGAR = ? ",
+                 + "CALCSOAN, VALTEC, CONTOECO, ULTDETLIC, AQOPER, AQNUMOPE, METOEPV, LIMOEPV from TORN where CODGAR = ? ",
                  new Object[] { ngara });
 
         // Il campo TORN.TIPGEN dice se la gara e' per forniture (TIPGEN = 2)
         // o servizi (TIPGEN = 3)
-        Long campoTORN_TIPGEN = (Long) SqlManager.getValueFromVectorParam(
-            datiTornata, 0).getValue();
-        String fdfs = PgManager.getTabellatoPercCauzioneProvvisoria(campoTORN_TIPGEN.intValue());
-
-        String tmpPerCauzProvv = this.tabellatiManager.getDescrTabellato(fdfs, "1");
+        String tmpPerCauzProvv = null; //APPALTI-1377
+        if(pgarof!=null && !"".equals(pgarof)) {
+          tmpPerCauzProvv=pgarof;
+        }/*else {
+          Long campoTORN_TIPGEN = (Long) SqlManager.getValueFromVectorParam(
+              datiTornata, 0).getValue();
+          String fdfs = PgManager.getTabellatoPercCauzioneProvvisoria(campoTORN_TIPGEN.intValue());
+           tmpPerCauzProvv = this.tabellatiManager.getDescrTabellato(fdfs, "1");
+        }*/
         Double percentualeCauzProvv = UtilityNumeri.convertiDouble(
             tmpPerCauzProvv, UtilityNumeri.FORMATO_DOUBLE_CON_PUNTO_DECIMALE);
         valoriCampi.put("PGAROF", percentualeCauzProvv);
-
-        int numeroDecimali = this.pgManager.getArrotondamentoCauzioneProvvisoria(campoTORN_TIPGEN.intValue());
 
         Double percentualeCauzioneProvv = null;
         if(tmpPerCauzProvv!=null && !"".equals(tmpPerCauzProvv))
@@ -2957,6 +2959,8 @@ public class ImportExportOffertaPrezziManager {
         Long ultdetlic = null;
         Long aqoper = null;
         Long aqnumope = null;
+        String metoepv = null;
+        Long limoepv = null;
         if (SqlManager.getValueFromVectorParam(datiTornata, 15) != null) {
           valtec= (String) SqlManager.getValueFromVectorParam(datiTornata, 15).getValue();
         }
@@ -2972,6 +2976,12 @@ public class ImportExportOffertaPrezziManager {
         if (SqlManager.getValueFromVectorParam(datiTornata, 19) != null) {
           aqnumope = (Long) SqlManager.getValueFromVectorParam(datiTornata, 19).getValue();
         }
+        if (SqlManager.getValueFromVectorParam(datiTornata, 20) != null) {
+          metoepv = (String) SqlManager.getValueFromVectorParam(datiTornata, 20).getValue();
+        }
+        if (SqlManager.getValueFromVectorParam(datiTornata, 21) != null) {
+          limoepv = (Long) SqlManager.getValueFromVectorParam(datiTornata, 21).getValue();
+        }
         // Determinazione dei campi GARE.IMPAPP, GARE.IMPNRL, GARE.IMPSIC,
         // GARE.IDIAUT, GARE.GAROFF
         double importoSoloSicurezza = 0;
@@ -2983,7 +2993,7 @@ public class ImportExportOffertaPrezziManager {
             List<?> listaImportiSoloSicurezza = this.sqlDao.getVectorQueryForList(
                 "select QUANTI, PREZUN from GCAP where NGARA = ? and SOLSIC = ? "
                     + "and QUANTI is not null and PREZUN is not null",
-                new Object[] { codiceLotto, new Long(1) });
+                new Object[] { codiceLotto, "1" });
             if (listaImportiSoloSicurezza != null
                 && listaImportiSoloSicurezza.size() > 0) {
               for (int i = 0; i < listaImportiSoloSicurezza.size(); i++) {
@@ -3007,7 +3017,7 @@ public class ImportExportOffertaPrezziManager {
             listaImportiNonSoggettiARibasso = this.sqlDao.getVectorQueryForList(
                 "select QUANTI, PREZUN from GCAP where NGARA = ? and SOGRIB = ? "
                     + "and SOLSIC <> ? and QUANTI is not null and PREZUN is not null",
-                new Object[] { codiceLotto, new Long(1), new Long(1) });
+                new Object[] { codiceLotto, "1", "1" });
 
             if (listaImportiNonSoggettiARibasso != null
                 && listaImportiNonSoggettiARibasso.size() > 0) {
@@ -3035,7 +3045,7 @@ public class ImportExportOffertaPrezziManager {
             listaImportiSoggettiARibasso = this.sqlDao.getVectorQueryForList(
                 "select QUANTI, PREZUN from GCAP where NGARA = ? and SOLSIC <> ? "
                     + "and SOGRIB <> ? and QUANTI is not null and PREZUN is not null",
-                new Object[] { codiceLotto, new Long(1), new Long(1) });
+                new Object[] { codiceLotto, "1", "1" });
         } else {
                 listaImportiSoggettiARibasso = this.sqlDao.getVectorQueryForList(
                     "select QUANTI, PREZUN from GCAP where NGARA = ? "
@@ -3066,7 +3076,7 @@ public class ImportExportOffertaPrezziManager {
         if(percentualeCauzioneProvv!=null)
           valoriCampi.put("GAROFF", new Double(UtilityMath.round(impapp
               * percentualeCauzioneProvv.doubleValue()
-              / 100, numeroDecimali)));
+              / 100, 2)));
         else
           valoriCampi.put("GAROFF", null);
 
@@ -3190,7 +3200,7 @@ public class ImportExportOffertaPrezziManager {
 
         this.sqlDao.update(sqlInsertGARE, valori);
         //Inserimento dell'occorrenza in GARE1
-        this.sqlDao.update("insert into GARE1(NGARA,CODGAR1,VALTEC,CONTOECO,ULTDETLIC,AQOPER,AQNUMOPE) values(?,?,?,?,?,?,?)",new Object[]{codiceLotto,ngara,valtec,contoeco,ultdetlic,aqoper,aqnumope} );
+        this.sqlDao.update("insert into GARE1(NGARA,CODGAR1,VALTEC,CONTOECO,ULTDETLIC,AQOPER,AQNUMOPE,AMMRIN,AMMOPZ,METOEPV,LIMOEPV,ESECRIS) values(?,?,?,?,?,?,?,?,?,?,?,?)",new Object[]{codiceLotto,ngara,valtec,contoeco,ultdetlic,aqoper,aqnumope,"2","2",metoepv,limoepv,"2"} );
       } catch (SQLException e) {
         throw new GestoreException("Errore nella creazione del lotto '"
             + codiceLotto

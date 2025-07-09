@@ -27,6 +27,7 @@
 		<c:set var="id" value="${id}" scope="request"/>
 	</c:otherwise>
 </c:choose>
+${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ValidazioneParametroFunction", pageContext, tipoDoc, "N","")}
 
 <c:set var="ngara" value='${gene:getValCampo(key, "GARECONT.NGARA")}' />
 <c:set var="where" value="V_ODAPROD.NGARA = '${ngara }' and  V_ODAPROD.IDRIC=${id }"/>
@@ -44,7 +45,7 @@
 	var selezionaPagina = selezionaPaginaCustom;
 	function selezionaPaginaCustom(pageNumber){
 		var id="${id }"
-		document.pagineForm.action += "&id=" + id;
+		document.pagineForm.action += "?id=" + id;
 		selezionaPaginaDefault(pageNumber);
 	}
 

@@ -54,6 +54,8 @@ public class AnagraficaSimogManager {
 	private static final String ERRORI_NON_BLOCCANTI_KEY          = "erroriNonBloccanti";
 
     private static final String ERRORI_BLOCCANTI_KEY              = "erroriBloccanti";
+    
+    private static final String AVVISI_NON_BLOCCANTI_KEY              = "avvisiNonBloccanti";
 
 	  private static final String PROP_INVIO_DATI_CIG_WS_URL        = "it.eldasoft.inviodaticig.ws.url";
 
@@ -65,9 +67,11 @@ public class AnagraficaSimogManager {
 
 	  private static final String CTR_LOTTI_OGGETTO                 = "L'oggetto della gara non è valorizzato nei lotti ";
 
-	  private static final String CTR_GARA_RUP                      = "Il riferimento al responsabile unico procedimento non e' valorizzato";
+	  private static final String CTR_GARA_RUP                      = "Il riferimento al RUP non e' valorizzato";
 
-	  private static final String CTR_GARA_RUP_CHANGED              = "Il riferimento al responsabile unico procedimento e' differente dall'originario";
+	  private static final String CTR_GARA_RUP_CHANGED_GARE        = "Il riferimento al RUP e' differente dall'originario. Si sottolinea che viene considerato il responsabile per la fase di affidamento, se specificato nella gara, anziché il RUP";
+
+	  private static final String CTR_GARA_RUP_CHANGED_STIPULE     = "Il riferimento al RUP e' differente dall'originario";
 
 	  private static final String CTR_GARA_SA_CHANGED              = "Il riferimento alla stazione appaltante e' differente dall'originario";
 
@@ -79,13 +83,13 @@ public class AnagraficaSimogManager {
 
 	  private static final String CTR_LOTTI_CIG                     = "Risultano valorizzati i CIG nei lotti ";
 
-	  private static final String CTR_RUP_INTESTAZIONE              = "Il nome del responsabile unico procedimento non e' valorizzato";
+	  private static final String CTR_RUP_INTESTAZIONE              = "Il nome del RUP non e' valorizzato";
 
-	  private static final String CTR_RUP_CF                        = "Il codice fiscale del responsabile unico procedimento non e' valorizzato";
+	  private static final String CTR_RUP_CF                        = "Il codice fiscale del RUP non e' valorizzato";
 
-	  private static final String CTR_RUP_CF_NON_VALIDO             = "Il codice fiscale del responsabile unico procedimento non ha un formato valido";
+	  private static final String CTR_RUP_CF_NON_VALIDO             = "Il codice fiscale del RUP non ha un formato valido";
 
-	  private static final String CTR_RUP_PIVA_NON_VALIDA           = "La partita Iva del responsabile unico procedimento non ha un formato valido";
+	  private static final String CTR_RUP_PIVA_NON_VALIDA           = "La partita Iva del RUP non ha un formato valido";
 
 	  private static final String CTR_GARE_TORN_TIPGAR              = "Il tipo procedura non è valorizzato";
 
@@ -136,7 +140,9 @@ public class AnagraficaSimogManager {
 
 	  private static final String CTR_GARA_NOMOD                     = "La gara che si sta tentando di aggiornare e' in uno stato non modificabile: non e' possibile procedere nell'aggiornamento";
 
+	  private static final String CTR_GARTECNI                      = "La richiesta CIG viene fatta da parte del responsabile per la fase di affidamento anziché dal RUP";
 
+	  private static final String QUERY_GARTECNI                   = "select codtec from gartecni where inctec=1 and codgar=? and codtec is not null order by numtec desc";
 	/** Manager SQL per le operazioni su database */
 	private SqlManager sqlManager;
 
@@ -259,10 +265,7 @@ public class AnagraficaSimogManager {
 
     List datiGara = sqlManager.getVector(selectDatiGara,new Object[] { codgar });
     if (datiGara != null && datiGara.size() > 0) {
-    	String codRUP = (String) SqlManager.getValueFromVectorParam(datiGara,2).getValue();
-    	/*APPALTI-1063
-    	Long syscon = (Long) sqlManager.getObject("select syscon from w3usrsys where rup_codtec=? order by syscon", new Object[] { codRUP });
-    	*/
+        
     	String codein = (String) SqlManager.getValueFromVectorParam(datiGara,15).getValue();
         //Codice fiscale stazione appaltante
         String cfein = null;
@@ -450,7 +453,8 @@ public class AnagraficaSimogManager {
             + " torn.tipgen, "  //0
             + " torn.settore, "  //1
             + " torn.cenint, "  //2
-            + " torn.codrup "  //3
+            + " torn.codrup, "  //3
+            + " torn.codgar "  //4
             + " from torn,gare where gare.codgar1=torn.codgar "
             + " and gare.ngara = ? ";
 
@@ -460,6 +464,12 @@ public class AnagraficaSimogManager {
     String N_settore = (String) SqlManager.getValueFromVectorParam(DatiTorn,1).getValue();
     String N_cenint = (String) SqlManager.getValueFromVectorParam(DatiTorn,2).getValue();
     String N_codrup = (String) SqlManager.getValueFromVectorParam(DatiTorn,3).getValue();
+    /*String codgar = (String) SqlManager.getValueFromVectorParam(DatiTorn,4).getValue();
+    
+    Vector<?> gartecni = sqlManager.getVector(QUERY_GARTECNI,new Object[] {codgar});
+    if(gartecni != null && gartecni.size() >0)
+      N_codrup=SqlManager.getValueFromVectorParam(gartecni, 0).getStringValue(); //APPALTI-1492: utilizzare il responsabile per l'affidamento invece del RUP
+    */
 
     N_codgar = "$" + ngaravar;
 
@@ -774,22 +784,13 @@ public class AnagraficaSimogManager {
 
 	     // RUP
 	     String codRUP = (String) SqlManager.getValueFromVectorParam(datiGara,2).getValue();
+	     
+	     Vector<?> gartecni = sqlManager.getVector(QUERY_GARTECNI,new Object[] {codgar});
+	     if(gartecni != null && gartecni.size() >0)
+	       codRUP=SqlManager.getValueFromVectorParam(gartecni, 0).getStringValue(); //APPALTI-1492: utilizzare il responsabile per l'affidamento invece del RUP
+	     
 	     dccW3GARA.setValue("W3GARA.RUP_CODTEC",codRUP);
-	     /*APPALTI-1063
-	     // Gestione della collaborazione.Solo in Inserimento. Inserisco la collaborazione di default
-	     //solo se la collaborazione associata al RUP indicato è una sola
-	     if (codRUP != null && "INS".equals(tipoOperazione)) {
-	         List<?> datiW3AZIENDAUFFICIO = sqlManager.getListVector(
-		            "select w3aziendaufficio.id "
-		                + "from w3aziendaufficio, w3usrsyscoll "
-		                + "where w3aziendaufficio.id = w3usrsyscoll.w3aziendaufficio_id "
-		                + "and w3usrsyscoll.syscon = ? and w3usrsyscoll.rup_codtec = ? and w3aziendaufficio.azienda_cf = ?",
-		            new Object[] { syscon_remoto, codRUP, cfein });
-			if (datiW3AZIENDAUFFICIO != null && datiW3AZIENDAUFFICIO.size() == 1) {
-				Long collaborazione = (Long) SqlManager.getValueFromVectorParam(datiW3AZIENDAUFFICIO.get(0), 0).getValue();
-				dccW3GARA.setValue("W3GARA.COLLABORAZIONE", collaborazione);
-			}
-		 }*/
+	     
 
 	   	//Cig Accordo quadro - solo nel caso di adesione ad accordo quadro
         String isAdesione = (String) SqlManager.getValueFromVectorParam(datiGara,3).getValue();
@@ -1520,7 +1521,7 @@ public class AnagraficaSimogManager {
 
       //TIPNEG
       Long tipneg = (Long)SqlManager.getValueFromVectorParam(datiLotto,15).getValue();
-      if(tipneg != null && tipneg.longValue() > 32 && tipneg.longValue() < 44 ){
+      if(tipneg != null && tipneg.longValue() >= 33 && tipneg.longValue() <= 44 ){
 
           boolean inserisciCondizione = true;
 
@@ -1640,14 +1641,8 @@ public class AnagraficaSimogManager {
 	        if(codrich != null) {
 	        	esisteW3SMARTCIG = true;
 	        }
-
-
-	        String codRUP = (String) SqlManager.getValueFromVectorParam(datiGara,6).getValue();
-	        /*APPALTI-1063
-	        Long syscon = (Long) sqlManager.getObject("select syscon from w3usrsys where rup_codtec=? order by syscon", new Object[] { codRUP });
-	        */
+	        
 	        String codein = (String) SqlManager.getValueFromVectorParam(datiGara,12).getValue();
-
 	        //Codice fiscale stazione appaltante
 	        String cfein = null;
 	        Long altrisog= (Long) SqlManager.getValueFromVectorParam(datiGara,11).getValue();
@@ -1840,26 +1835,14 @@ public class AnagraficaSimogManager {
 
     //RUP
     String codRUP = (String) SqlManager.getValueFromVectorParam(datiGara,6).getValue();
+    
+    Vector<?> gartecni = sqlManager.getVector(QUERY_GARTECNI,new Object[] {codgar});
+    if(gartecni != null && gartecni.size() >0)
+      codRUP=SqlManager.getValueFromVectorParam(gartecni, 0).getStringValue(); //APPALTI-1492: utilizzare il responsabile per l'affidamento invece del RUP
+    
     if (codRUP != null) {
         dccW3SMARTCIG.setValue("W3SMARTCIG.RUP", codRUP);
     }
-
-    /*APPALTI-1063
-    // Gestione della collaborazione.
-    // Inserisco la collaborazione di default solo se la collaborazione
-    // associata al RUP indicato è una sola
-    if (codRUP != null && "INS".equals(tipoOperazione)) {
-    	List<?> datiW3AZIENDAUFFICIO = sqlManager.getListVector(
-                "select w3aziendaufficio.id "
-                    + "from w3aziendaufficio, w3usrsyscoll "
-                    + "where w3aziendaufficio.id = w3usrsyscoll.w3aziendaufficio_id "
-                    + "and w3usrsyscoll.syscon = ? and w3usrsyscoll.rup_codtec = ? and w3aziendaufficio.azienda_cf = ?",
-                new Object[] { syscon_remoto, codRUP, cfein });
-    	if (datiW3AZIENDAUFFICIO != null && datiW3AZIENDAUFFICIO.size() == 1) {
-    		Long collaborazione = (Long) SqlManager.getValueFromVectorParam(datiW3AZIENDAUFFICIO.get(0), 0).getValue();
-    		dccW3SMARTCIG.setValue("W3SMARTCIG.COLLABORAZIONE", collaborazione);
-    	}
-    }*/
 
     // Gestione delle categorie
       boolean inserisciCategorie = true;
@@ -1925,6 +1908,7 @@ public class AnagraficaSimogManager {
     HashMap<String,Object> response = new HashMap<String,Object>();
     ArrayList<String> erroriBloccanti = new ArrayList<String>();
     ArrayList<String> erroriNonBloccanti = new ArrayList<String>();
+    ArrayList<String> avvisiNonBloccanti = new ArrayList<String>();
 
     String selectDatiGara = null;
 
@@ -1993,7 +1977,7 @@ public class AnagraficaSimogManager {
         if (cenint != null) {
 	        // I nuovi dati devono essere in carico alla stessa SA che li aveva in carico originariamente
 	        String sa_originale = (String) sqlManager.getObject(
-	            "select codein from w3gara where w3gara.codgar = ?", new Object[] { codgar });
+	            "select codein from w3gara where w3gara.codgar = ? and stato_simog<>6", new Object[] { codgar });
 	        if (sa_originale != null) {
 	          if (!sa_originale.equals(cenint)) {
 	        	  erroriBloccanti.add(CTR_GARA_SA_CHANGED);
@@ -2014,21 +1998,21 @@ public class AnagraficaSimogManager {
         }
 
         String codRUP = (String) SqlManager.getValueFromVectorParam(datiTORNGARE,1).getValue();
+        
+        Vector<?> gartecni = sqlManager.getVector(QUERY_GARTECNI,new Object[] {codgar});
+        if(gartecni != null && gartecni.size() >0) {
+          codRUP=SqlManager.getValueFromVectorParam(gartecni, 0).getStringValue(); //APPALTI-1492: utilizzare il responsabile per l'affidamento invece del RUP
+          avvisiNonBloccanti.add(CTR_GARTECNI);
+        }
+        
         //RUP
-        if (codRUP != null) {
-        	//verifico se ci sono collaborazioni
-          /* APPALTI-1063
-        	Long sysconCount = (Long) sqlManager.getObject("select count(syscon) from w3usrsys where rup_codtec=?", new Object[] { codRUP });
-    	    if(Long.valueOf(0).equals(sysconCount)) {
-    	    	erroriBloccanti.add("Non e' stato impostato il collegamento del RUP con un utente applicativo." +
-    	    			"<br>Utilizzare la funzione 'RUP e centri di costo per richiesta CIG', disponibile dal menu' 'Gare', per configurare i dati.");
-    	    }*/
+        if (StringUtils.isNotBlank(codRUP)) {
             // I nuovi dati devono essere in carico allo stesso RUP che li aveva in carico originariamente
             String rup_originale = (String) sqlManager.getObject(
-                "select rup_codtec from w3gara where w3gara.codgar = ?", new Object[] { codgar });
+                "select rup_codtec from w3gara where w3gara.codgar = ? and stato_simog<>6", new Object[] { codgar });
             if (rup_originale != null) {
               if (!rup_originale.equals(codRUP)) {
-            	  erroriBloccanti.add(CTR_GARA_RUP_CHANGED);
+            	  erroriBloccanti.add(CTR_GARA_RUP_CHANGED_GARE);
               }
             }
             erroriBloccanti.addAll(inviaDatiRichiestaCigManager.controlloDatiTecnico(codRUP,true));
@@ -2132,6 +2116,7 @@ public class AnagraficaSimogManager {
 
     response.put(ERRORI_BLOCCANTI_KEY, erroriBloccanti);
     response.put(ERRORI_NON_BLOCCANTI_KEY, erroriNonBloccanti);
+    response.put(AVVISI_NON_BLOCCANTI_KEY, avvisiNonBloccanti);
 
     if (logger.isDebugEnabled())
       logger.debug("controllaDatiRichiestaCIG: fine metodo");
@@ -2155,6 +2140,7 @@ public class AnagraficaSimogManager {
     HashMap<String,Object> response = new HashMap<String,Object>();
     ArrayList<String> erroriBloccanti = new ArrayList<String>();
     ArrayList<String> erroriNonBloccanti = new ArrayList<String>();
+    ArrayList<String> avvisiNonBloccanti = new ArrayList<String>();
 
     String selectDatiGara = null;
     String selectDatiStipula = null;
@@ -2162,7 +2148,8 @@ public class AnagraficaSimogManager {
     selectDatiStipula = "select "
           + " gare.codgar1, "  //0
           + " g1stipula.oggetto, "  //1
-          + " g1stipula.impstipula "  //2
+          + " g1stipula.impstipula, "  //2
+          + " g1stipula.ngaravar "  //3
           + " from g1stipula, gare where g1stipula.ngara = gare.ngara "
           + " and g1stipula.id = ?";
 
@@ -2180,6 +2167,7 @@ public class AnagraficaSimogManager {
     String codgar1 = (String) SqlManager.getValueFromVectorParam(datiG1STIPULA,0).getValue();
     String oggetto = (String) SqlManager.getValueFromVectorParam(datiG1STIPULA,1).getValue();
     Double impstipula = (Double) SqlManager.getValueFromVectorParam(datiG1STIPULA,2).getValue();
+    String ngaravar = "$" +(String) SqlManager.getValueFromVectorParam(datiG1STIPULA,3).getValue();
 
     List datiTORNGARE = sqlManager.getVector(selectDatiGara,new Object[] { codgar1 });
     if (datiTORNGARE != null && datiTORNGARE.size() > 0) {
@@ -2199,9 +2187,9 @@ public class AnagraficaSimogManager {
         if (cenint != null) {
 	        // I nuovi dati devono essere in carico alla stessa SA che li aveva in carico originariamente
 	        String sa_originale = (String) sqlManager.getObject(
-	            "select codein from w3gara where w3gara.codgar = ?", new Object[] { codgar1 });
+	            "select codein from w3gara where w3gara.codgar = ? and stato_simog<>6", new Object[] { ngaravar });
 	        if (sa_originale != null) {
-	          if (!sa_originale.equals(cenint)) {
+	          if (!sa_originale.equals(cenint) && StringUtils.isNotBlank(ngaravar)) {
 	        	  erroriBloccanti.add(CTR_GARA_SA_CHANGED);
 	          }
 	        }
@@ -2220,21 +2208,20 @@ public class AnagraficaSimogManager {
         }
 
         String codRUP = (String) SqlManager.getValueFromVectorParam(datiTORNGARE,0).getValue();
+        
+        /*Vector<?> gartecni = sqlManager.getVector(QUERY_GARTECNI,new Object[] {codgar1});
+        if(gartecni != null && gartecni.size() >0) {
+          codRUP=SqlManager.getValueFromVectorParam(gartecni, 0).getStringValue(); //APPALTI-1492: utilizzare il responsabile per l'affidamento invece del RUP
+          avvisiNonBloccanti.add(CTR_GARTECNI);
+        }*/
         //RUP
-        if (codRUP != null) {
-          /* APPALTI-1063
-        	//verifico se ci sono collaborazioni
-        	Long sysconCount = (Long) sqlManager.getObject("select count(syscon) from w3usrsys where rup_codtec=?", new Object[] { codRUP });
-    	    if(Long.valueOf(0).equals(sysconCount)) {
-    	    	erroriBloccanti.add("Non e' stato impostato il collegamento del RUP con un utente applicativo." +
-    	    			"<br>Utilizzare la funzione 'RUP e centri di costo per richiesta CIG', disponibile dal menu' 'Stipule', per configurare i dati.");
-    	    }*/
+        if (StringUtils.isNotBlank(codRUP)) {
             // I nuovi dati devono essere in carico allo stesso RUP che li aveva in carico originariamente
             String rup_originale = (String) sqlManager.getObject(
-                "select rup_codtec from w3gara where w3gara.codgar = ? and stato_simog<>6", new Object[] { codgar1 });
+                "select rup_codtec from w3gara where w3gara.codgar = ? and stato_simog<>6", new Object[] { ngaravar });
             if (rup_originale != null) {
-              if (!rup_originale.equals(codRUP)) {
-            	  erroriBloccanti.add(CTR_GARA_RUP_CHANGED);
+              if (!rup_originale.equals(codRUP) && StringUtils.isNotBlank(ngaravar)) {
+            	  erroriBloccanti.add(CTR_GARA_RUP_CHANGED_STIPULE);
               }
             }
             erroriBloccanti.addAll(inviaDatiRichiestaCigManager.controlloDatiTecnico(codRUP,true));
@@ -2255,6 +2242,7 @@ public class AnagraficaSimogManager {
 
   response.put(ERRORI_BLOCCANTI_KEY, erroriBloccanti);
   response.put(ERRORI_NON_BLOCCANTI_KEY, erroriNonBloccanti);
+  response.put(AVVISI_NON_BLOCCANTI_KEY, avvisiNonBloccanti);
 
   if (logger.isDebugEnabled())
     logger.debug("controllaDatiRichiestaCIG: fine metodo");
@@ -2279,6 +2267,7 @@ public class AnagraficaSimogManager {
     HashMap<String,Object> response = new HashMap<String,Object>();
     ArrayList<String> erroriBloccanti = new ArrayList<String>();
     ArrayList<String> erroriNonBloccanti = new ArrayList<String>();
+    ArrayList<String> avvisiNonBloccanti = new ArrayList<String>();
 
     String  selectDatiGara = "select "
           + " gare.not_gar, "  //0
@@ -2305,7 +2294,7 @@ public class AnagraficaSimogManager {
         if (cenint != null) {
 	        // I nuovi dati devono essere in carico alla stessa SA che li aveva in carico originariamente
 	        String sa_originale = (String) sqlManager.getObject(
-	            "select codein from w3smartcig where codgar = ?", new Object[] { codgar });
+	            "select codein from w3smartcig where codgar = ? and stato<>6", new Object[] { codgar });
 	        if (sa_originale != null) {
 	          if (!sa_originale.equals(cenint)) {
 	        	  erroriBloccanti.add(CTR_GARA_SA_CHANGED);
@@ -2327,21 +2316,21 @@ public class AnagraficaSimogManager {
         }
 
         String codRUP = (String) SqlManager.getValueFromVectorParam(datiTORNGARE,1).getValue();
+        
+        Vector<?> gartecni = sqlManager.getVector(QUERY_GARTECNI,new Object[] {codgar});
+        if(gartecni != null && gartecni.size() >0) {
+          codRUP=SqlManager.getValueFromVectorParam(gartecni, 0).getStringValue(); //APPALTI-1492: utilizzare il responsabile per l'affidamento invece del RUP
+          avvisiNonBloccanti.add(CTR_GARTECNI);
+        }
         //RUP
-        if (codRUP != null) {
-          /* APPALTI-1063
-        	//verifico se ci sono collaborazioni
-        	Long sysconCount = (Long) sqlManager.getObject("select count(syscon) from w3usrsys where rup_codtec=?", new Object[] { codRUP });
-    	    if(Long.valueOf(0).equals(sysconCount)) {
-    	    	erroriBloccanti.add("Non e' stato impostato il collegamento del RUP con un utente applicativo." +
-    	    			"<br>Utilizzare la funzione 'RUP e centri di costo per richiesta CIG', disponibile dal menu' 'Gare', per configurare i dati.");
-    	    }*/
+        if (StringUtils.isNotBlank(codRUP)) {
+          
             // I nuovi dati devono essere in carico allo stesso RUP che li aveva in carico originariamente
             String rup_originale = (String) sqlManager.getObject(
-                "select rup from w3smartcig where codgar = ?", new Object[] { codgar });
+                "select rup from w3smartcig where codgar = ? and stato<>6", new Object[] { codgar });
             if (rup_originale != null) {
               if (!rup_originale.equals(codRUP)) {
-            	  erroriBloccanti.add(CTR_GARA_RUP_CHANGED);
+            	  erroriBloccanti.add(CTR_GARA_RUP_CHANGED_GARE);
               }
             }
             erroriBloccanti.addAll(inviaDatiRichiestaCigManager.controlloDatiTecnico(codRUP,true));
@@ -2372,6 +2361,7 @@ public class AnagraficaSimogManager {
 
     response.put(ERRORI_BLOCCANTI_KEY, erroriBloccanti);
     response.put(ERRORI_NON_BLOCCANTI_KEY, erroriNonBloccanti);
+    response.put(AVVISI_NON_BLOCCANTI_KEY, avvisiNonBloccanti);
 
     if (logger.isDebugEnabled())
       logger.debug("controllaDatiRichiestaSmartCIG: fine metodo");
@@ -2394,6 +2384,7 @@ public class AnagraficaSimogManager {
     HashMap<String,Object> response = new HashMap<String,Object>();
     ArrayList<String> erroriBloccanti = new ArrayList<String>();
     ArrayList<String> erroriNonBloccanti = new ArrayList<String>();
+    ArrayList<String> avvisiNonBloccanti = new ArrayList<String>();
 
     String selectDatiGara = null;
     String selectDatiStipula = null;
@@ -2401,7 +2392,8 @@ public class AnagraficaSimogManager {
     selectDatiStipula = "select "
           + " gare.codgar1, "  //0
           + " g1stipula.oggetto, "  //1
-          + " g1stipula.impstipula "  //2
+          + " g1stipula.impstipula, "  //2
+          + " g1stipula.ngaravar "  //3
           + " from g1stipula, gare where g1stipula.ngara = gare.ngara "
           + " and g1stipula.id = ?";
 
@@ -2419,6 +2411,7 @@ public class AnagraficaSimogManager {
     String codgar1 = (String) SqlManager.getValueFromVectorParam(datiG1STIPULA,0).getValue();
     String oggetto = (String) SqlManager.getValueFromVectorParam(datiG1STIPULA,1).getValue();
     Double impstipula = (Double) SqlManager.getValueFromVectorParam(datiG1STIPULA,2).getValue();
+    String ngaravar = "$" +(String) SqlManager.getValueFromVectorParam(datiG1STIPULA,3).getValue();
 
     List datiTORNGARE = sqlManager.getVector(selectDatiGara,new Object[] { codgar1 });
     if (datiTORNGARE != null && datiTORNGARE.size() > 0) {
@@ -2434,9 +2427,9 @@ public class AnagraficaSimogManager {
         if (cenint != null) {
 	        // I nuovi dati devono essere in carico alla stessa SA che li aveva in carico originariamente
 	        String sa_originale = (String) sqlManager.getObject(
-	            "select codein from w3smartcig where codgar = ?", new Object[] { codgar1 });
+	            "select codein from w3smartcig where codgar = ? and stato<>6", new Object[] { ngaravar });
 	        if (sa_originale != null) {
-	          if (!sa_originale.equals(cenint)) {
+	          if (!sa_originale.equals(cenint) && StringUtils.isNotBlank(ngaravar)) {
 	        	  erroriBloccanti.add(CTR_GARA_SA_CHANGED);
 	          }
 	        }
@@ -2456,21 +2449,20 @@ public class AnagraficaSimogManager {
         }
 
         String codRUP = (String) SqlManager.getValueFromVectorParam(datiTORNGARE,0).getValue();
+        
+       /* Vector<?> gartecni = sqlManager.getVector(QUERY_GARTECNI,new Object[] {codgar1});
+        if(gartecni != null && gartecni.size() >0) {
+          codRUP=SqlManager.getValueFromVectorParam(gartecni, 0).getStringValue(); //APPALTI-1492: utilizzare il responsabile per l'affidamento invece del RUP
+          avvisiNonBloccanti.add(CTR_GARTECNI);
+        }*/
         //RUP
-        if (codRUP != null) {
-          /* APPALTI-1063
-        	//verifico se ci sono collaborazioni
-        	Long sysconCount = (Long) sqlManager.getObject("select count(syscon) from w3usrsys where rup_codtec=?", new Object[] { codRUP });
-    	    if(Long.valueOf(0).equals(sysconCount)) {
-    	    	erroriBloccanti.add("Non e' stato impostato il collegamento del RUP con un utente applicativo." +
-    	    			"<br>Utilizzare la funzione 'RUP e centri di costo per richiesta CIG', disponibile dal menu' 'Gare', per configurare i dati.");
-    	    }*/
+        if (StringUtils.isNotBlank(codRUP)) {
             // I nuovi dati devono essere in carico allo stesso RUP che li aveva in carico originariamente
             String rup_originale = (String) sqlManager.getObject(
-                "select rup from w3smartcig where codgar = ?", new Object[] { codgar1 });
+                "select rup from w3smartcig where codgar = ? and stato<>6", new Object[] { ngaravar });
             if (rup_originale != null) {
-              if (!rup_originale.equals(codRUP)) {
-            	  erroriBloccanti.add(CTR_GARA_RUP_CHANGED);
+              if (!rup_originale.equals(codRUP) && StringUtils.isNotBlank(ngaravar)) {
+            	  erroriBloccanti.add(CTR_GARA_RUP_CHANGED_STIPULE);
               }
             }
             erroriBloccanti.addAll(inviaDatiRichiestaCigManager.controlloDatiTecnico(codRUP,true));
@@ -2487,6 +2479,7 @@ public class AnagraficaSimogManager {
 
     response.put(ERRORI_BLOCCANTI_KEY, erroriBloccanti);
     response.put(ERRORI_NON_BLOCCANTI_KEY, erroriNonBloccanti);
+    response.put(AVVISI_NON_BLOCCANTI_KEY, avvisiNonBloccanti);
 
     if (logger.isDebugEnabled())
       logger.debug("controllaDatiRichiestaSmartCIG: fine metodo");

@@ -120,7 +120,17 @@ public class GestorePubblicaStipula extends AbstractGestorePreload {
             page.setAttribute("codstipula", codstipula, PageContext.REQUEST_SCOPE);
           }
 
-          	//Controlli preliminari:
+          //Controlli preliminari:
+
+          //Controllo su presenza documenti con STATODOC = 1 & VISIBILITA = 2,3
+          Long conteggioDocumenti = (Long)this.sqlManager.getObject("select count(*) from G1DOCSTIPULA where IDSTIPULA = ? and STATODOC = ?"
+              + " and (VISIBILITA = ? or VISIBILITA = ?) ",
+                new Object[]{idStipula,Long.valueOf(1),Long.valueOf(2),Long.valueOf(3)});
+          if(conteggioDocumenti==null || conteggioDocumenti.longValue()==0){
+            controlloSuperato = "NO";
+            messaggio += "<br>Non ci sono documenti da pubblicare";
+          }
+
 	        //controllo la presenza dei file nei documenti obbligatori nei doc con visibilita 1 o 2
           Long conteggioDocObbligatori = (Long)this.sqlManager.getObject("select count(*) from G1DOCSTIPULA where IDSTIPULA = ? and OBBLIGATORIO = ?"
           		+ " and (VISIBILITA = ? or VISIBILITA = ?) ",

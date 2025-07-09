@@ -895,14 +895,22 @@ var isOffertaPerLotto="${isOffertaPerLotto}";
 			var reqmin = this.value;
 			if(reqmin==2){
 				var ammissione = getValue("V_DITGAMMIS_AMMGAR_" + numeroRiga);
-				if(ammissione == "" || (ammissione != 2 && ammissione !=6)){
+				let ammissionePositiva = ammissione == "" || (ammissione != 2 && ammissione !=6);
+				if(ammissionePositiva){
 					var msg="Confermi l'esclusione della ditta dal lotto in quanto non conforme ai requisiti minimi?";
 					if(confirm(msg)){
 						setValue("V_DITGAMMIS_AMMGAR_" + numeroRiga,"2");
 						document.getElementById("V_DITGAMMIS_AMMGAR_" + numeroRiga).onchange();
 						setValue("V_DITGAMMIS_MOTIVESCL_" + numeroRiga,"102");
+						rendiCampoNonModificabile("#V_DITGAMMIS_AMMGAR_" + numeroRiga);
+					} else {
+						$('#' + objId).val('');
 					}
+				} else {
+					rendiCampoNonModificabile("#V_DITGAMMIS_AMMGAR_" + numeroRiga);
 				}
+			} else {
+				rendiCampoModificabile("#V_DITGAMMIS_AMMGAR_" + numeroRiga);
 			}
 			var tmp = getValue("DITG_PARTGAR_" + numeroRiga);
 			if((tmp == null || tmp == "" || tmp == "0") && (reqmin != null && reqmin !="")){
@@ -913,11 +921,32 @@ var isOffertaPerLotto="${isOffertaPerLotto}";
 				
 			}
 		}
-		
-	
-		
-		
-		
+
+		function rendiCampoNonModificabile(idCampo) {
+			var cloneid = $(idCampo).attr('id') + "_clone";
+			if ($("#" + cloneid).size() == 0) {
+				var columnclone = $(idCampo).clone();
+				columnclone.attr('id',cloneid);
+				columnclone.prop("disabled", true);
+				columnclone.css('color','#000000');
+				columnclone.css('background-color','#E0E0E0');
+				$(idCampo).after(columnclone);
+				$(idCampo).hide();
+				columnclone.val($(idCampo).val());
+			} else {
+				$("#" + cloneid).val($(idCampo).val());
+				$(idCampo).hide();
+				$("#" + cloneid).show();
+			}
+		}
+
+		function rendiCampoModificabile(idCampo) {
+			$(idCampo).show();
+			var cloneid = $(idCampo).attr('id') + "_clone";
+			if (!($("#" + cloneid).size() == 0)) {
+				$("#" + cloneid).hide();
+			}
+		}
 		
 	</c:if>
 
@@ -1375,7 +1404,7 @@ var isOffertaPerLotto="${isOffertaPerLotto}";
 	
 		function dettaglioOffertaDitta(){
 			var chiave="${key}";
-			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/v_gcap_dpre/v_gcap_dpre-lista.jsp";
+			var href = contextPath + "/ApriPagina.do?href=gare/v_gcap_dpre/v_gcap_dpre-lista.jsp";
 			href += "&key="+chiave;
 			href += "&stepWizard=${varTmp}";
 			href += "&paginaAttivaWizard=${paginaAttivaWizard}";

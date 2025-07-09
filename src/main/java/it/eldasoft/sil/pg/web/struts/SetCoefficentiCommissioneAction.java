@@ -72,7 +72,8 @@ public class SetCoefficentiCommissioneAction extends Action {
           idcrival = new Long(this.genChiaviManager.getNextId("G1CRIVAL"));
           this.sqlManager.update("insert into G1CRIVAL(id, ngara, dittao, necvan, idcridef) values(?,?,?,?,?)",
               new Object[] { new Long(idcrival), ngara, ditta, necvan, new Long(idCridef) });
-        }
+        }else
+          idcrival=id;
       }
 
       String prefixIdgfof ="idgfof_";

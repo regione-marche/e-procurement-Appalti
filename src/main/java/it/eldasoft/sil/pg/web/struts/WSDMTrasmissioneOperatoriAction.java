@@ -5,6 +5,7 @@ import it.eldasoft.gene.commons.web.spring.DataSourceTransactionManagerBase;
 import it.eldasoft.gene.db.domain.LogEvento;
 import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.maggioli.eldasoft.ws.dm.WSDMLoginAttrType;
 import it.maggioli.eldasoft.ws.dm.WSDMOperatoreType;
 import it.maggioli.eldasoft.ws.dm.WSDMTrasmissioneDocumentoType;
@@ -65,6 +66,13 @@ public class WSDMTrasmissioneOperatoriAction extends Action {
     String vettIdWsdoc = request.getParameter("vettIdWsdoc");
     String ngara = request.getParameter("ngara");
     String idconfi = request.getParameter("idconfi");
+
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+      username = credenziali[0];
+      password = credenziali[1];
+    }
 
     int livEvento = 1;
     String errMsgEvento = null;

@@ -16,14 +16,17 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 import it.eldasoft.gene.db.domain.LogEvento;
 import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.utils.properties.ConfigManager;
-import it.maggioli.eldasoft.digitaltimestamp.beans.DigitalTimeStampInfo;
-import it.maggioli.eldasoft.digitaltimestamp.beans.DigitalTimeStampResult;
-import it.maggioli.eldasoft.digitaltimestamp.client.DigitalTimeStampClient;
+import it.maggioli.eldasoft.digitaltimestamp.client.EDigitalTimestamp;
+import it.maggioli.eldasoft.digitaltimestamp.client.IDigitalTimestamp;
+import it.maggioli.eldasoft.digitaltimestamp.model.ITimeStampResult;
+import it.maggioli.eldasoft.digitaltimestamp.model.info.BaseTimeStampInfo;
+import it.maggioli.eldasoft.digitaltimestamp.model.info.MaggioliTimeStampInfo;
 
 public class MarcaturaTemporaleFileUtils {
   static Logger logger = Logger.getLogger(MarcaturaTemporaleFileUtils.class);
@@ -35,6 +38,12 @@ public class MarcaturaTemporaleFileUtils {
     String tipo = ConfigManager.getValore("marcaturaTemp.provider.tipo");
     String username = ConfigManager.getValore("marcaturaTemp.provider.username");
     String password = ConfigManager.getValore("marcaturaTemp.provider.password");
+    
+    String tipoProcedimentoMarcatura = StringUtils.stripToEmpty(ConfigManager.getValore("marcaturaTemp.tipologia"));
+    
+    String kongAuthUrl = ConfigManager.getValore("keycloak.realms.baseurl")+ConfigManager.getValore("keycloak.progettosegreteria.subpath");
+    String kongAuthClientId = ConfigManager.getValore("keycloak.progettosegreteria.client.id");
+    String kongAuthClientSecret = ConfigManager.getValore("keycloak.progettosegreteria.client.secret");
 
     int livEvento = 1;
     String codEvento = "INVCOM_MARCATEMP";
@@ -43,26 +52,43 @@ public class MarcaturaTemporaleFileUtils {
     String errMsgEvento = "";
 
     try {
-      DigitalTimeStampInfo parametri = new DigitalTimeStampInfo();
-      parametri.setUrlServizio(urlAccesso);
-      parametri.setProviderUrl(urlProvider);
-      parametri.setProviderUsername(username);
-      parametri.setProviderPassword(password);
-      parametri.setProviderType(tipo);
-      DigitalTimeStampClient client = new DigitalTimeStampClient(parametri );
+
+      BaseTimeStampInfo baseInfo = BaseTimeStampInfo.DigitalTimeStampInfoBuilder.newDigitalTimeStampInfo()
+          .withProviderPassword(password)
+          .withProviderType(tipo)
+          .withProviderUrl(urlProvider)
+          .withProviderUsername(username)
+          .withUrlServizio(urlAccesso)
+          .build();
+      IDigitalTimestamp client = null;
+      // 3 == vecchio, 1 == nuovo (auth kong), 2 == blockchain?
+      if ("3".equals(tipoProcedimentoMarcatura) || "".equals(tipoProcedimentoMarcatura)) {
+        client = EDigitalTimestamp.MAGGIOLI_OLD(baseInfo);
+      } else if("1".equals(tipoProcedimentoMarcatura)) {
+        client = EDigitalTimestamp.MAGGIOLI(
+            MaggioliTimeStampInfo.DigitalTimeStampInfoBuilder.newDigitalTimeStampInfo()
+            .withBaseInfo(baseInfo)
+            .withAuthUrl(kongAuthUrl)
+            .withAuthClientId(kongAuthClientId)
+            .withAuthClientSecret(kongAuthClientSecret)
+            .withAuthType(2)
+            .build()
+            );
+      } else {
+        throw new RuntimeException("The Provider '" + tipoProcedimentoMarcatura + "' is not supported yet"); 
+      }
+
       String filePath = StrutsUtilities.getTempDir() + File.separatorChar + UUID.randomUUID().toString();
-      DigitalTimeStampResult res = client.digitalTimeStampFile(file, filePath);
-      if(res.getResult()) {
-        ret.put("file", res.getFile());
+      ITimeStampResult timeStampResult = client.getTimestampedFile(file, filePath);
+      
+      if(timeStampResult.getResult()) {
+        ret.put("file", timeStampResult.getFile());
         ret.put("esito","OK");
-        //pdf = res.getFile();
-        //nomeAllegato+=".tsd";
-        //descrizioneAllegato += " con marcatura temporale";
       }else {
         livEvento = 3;
-        errMsgEvento = res.getErrorMessage();
+        errMsgEvento = timeStampResult.getErrorMessage();
         ret.put("esito","NOK");
-        String messaggio ="Errore in fase di marcatura temporale. ErrorCode = " + res.getErrorCode() + ". ErrorMessage=" + errMsgEvento;
+        String messaggio ="Errore in fase di marcatura temporale. ErrorCode = " + timeStampResult.getErrorCode() + ". ErrorMessage=" + errMsgEvento;
         logger.error(messaggio);
       }
     }catch (Exception e) {

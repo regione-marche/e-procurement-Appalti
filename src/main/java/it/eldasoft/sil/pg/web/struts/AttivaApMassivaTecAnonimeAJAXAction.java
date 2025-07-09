@@ -92,6 +92,7 @@ public class AttivaApMassivaTecAnonimeAJAXAction extends Action {
     Long numeroAcquisizioni = new Long(0);
     Long numeroAcquisizioniErrore = new Long(0);
     Long numeroAcquisizioniScartate = new Long(0);
+    Long numeroAcquisizioniSaltatePerFS12RettificaInCorso = new Long(0);
     boolean autorizzatoModifica = true;
     String sez = request.getParameter("sez");
 
@@ -147,11 +148,11 @@ public class AttivaApMassivaTecAnonimeAJAXAction extends Action {
       status = this.sqlManager.startTransaction();
 
           //gestione esclusione/riammissione buste in stato 5 e 8
-          mepaManager.impostaComunicazioniAScartate(ngara,"OFFERTE");
-          mepaManager.impostaComunicazioniDaRiaquisire(ngara);
+          mepaManager.impostaComunicazioniAScartate(ngara,"OFFERTE", null);
+          mepaManager.impostaComunicazioniDaRiaquisire(ngara, null);
           //gestione esclusione/riammissione buste in stato 13 e 20
-          mepaManager.impostaComunicazioniAnonimeAScartate(ngara, "OFFERTE");
-          mepaManager.impostaComunicazioniAnonimeDaRiaquisire(ngara);
+          mepaManager.impostaComunicazioniAnonimeAScartate(ngara, "OFFERTE", null);
+          mepaManager.impostaComunicazioniAnonimeDaRiaquisire(ngara, null);
           sqlManager.update("update W_INVCOM set COMSTATO = ? where IDPRG=? and COMSTATO=? and COMTIPO=? and comkey2=?", new Object[] { "_13", "PA", "13", "FS11B", ngara });
 
           request.setAttribute("anonima", "1");
@@ -160,6 +161,7 @@ public class AttivaApMassivaTecAnonimeAJAXAction extends Action {
           numeroAcquisizioni = (Long) hMap.get("numeroAcquisizioni");
           numeroAcquisizioniErrore = (Long) hMap.get("numeroAcquisizioniErrore");
           numeroAcquisizioniScartate = (Long) hMap.get("numeroAcquisizioniScartate");
+          numeroAcquisizioniSaltatePerFS12RettificaInCorso = (Long) hMap.get("numeroAcquisizioniSaltatePerFS12RettificaInCorso");
           request.getSession().setAttribute("passBusteB", password);
 
           sqlManager.update("update W_INVCOM set COMSTATO = ? where IDPRG=? and COMSTATO=? and COMTIPO=? and comkey2=?", new Object[] { "13", "PA", "_13", "FS11B", ngara });
@@ -209,6 +211,7 @@ public class AttivaApMassivaTecAnonimeAJAXAction extends Action {
         descrFine += numeroAcquisizioni + " buste aperte, "
             + numeroAcquisizioniErrore + " buste con errore, "
             + numeroAcquisizioniScartate + " buste non aperte perché appartenenti a ditte escluse dalla gara, "
+            + numeroAcquisizioniSaltatePerFS12RettificaInCorso + " buste non aperte perché rettifica busta tecnica in corso, "
             + "utente con diritto sulla modifica della gara:" + (new Boolean(autorizzatoModifica)).toString();
 
         LogEvento logEvento = LogEventiUtils.createLogEvento(request);
@@ -225,12 +228,14 @@ public class AttivaApMassivaTecAnonimeAJAXAction extends Action {
       logger.info("Apertura busta tecnica (gara "+ngara+"): numero acquisizioni " + numeroAcquisizioni);
       logger.info("Apertura busta tecnica (gara "+ngara+"): numero acquisizioni con errore " + numeroAcquisizioniErrore);
       logger.info("Apertura busta tecnica (gara "+ngara+"): non acquisite perchè escluse dalla gara " + numeroAcquisizioniScartate);
+      logger.info("Apertura busta tecnica (gara "+ngara+"): non acquisite perchè rettifica busta tecnica in corso " + numeroAcquisizioniSaltatePerFS12RettificaInCorso);
 
       result.put("ngara", ngara);
       result.put("dittao", dittao);
       result.put("numeroAcquisizioni", numeroAcquisizioni);
       result.put("numeroAcquisizioniErrore", numeroAcquisizioniErrore);
       result.put("numeroAcquisizioniScartate", numeroAcquisizioniScartate);
+      result.put("numeroAcquisizioniSaltatePerFS12RettificaInCorso", numeroAcquisizioniSaltatePerFS12RettificaInCorso);
       result.put("autorizzatoModifica", (new Boolean(autorizzatoModifica)).toString());
     }
 

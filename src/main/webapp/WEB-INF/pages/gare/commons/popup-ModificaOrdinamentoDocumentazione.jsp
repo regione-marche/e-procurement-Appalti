@@ -12,7 +12,7 @@
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 
@@ -144,7 +144,7 @@
 		<c:set var="descTipoDoc" value="Documenti dell'invito"/>
 	</c:when>
 	<c:when test="${tipoDoc eq 10}">
-		<c:set var="descTipoDoc" value="Atti e documenti (art.29 c.1 DLgs 50/2016)"/>
+		<c:set var="descTipoDoc" value="Atti e documenti"/>
 	</c:when>
 	<c:when test="${tipoDoc eq 11}">
 		<c:set var="descTipoDoc" value="Allegati all'ordine di acquisto"/>
@@ -161,13 +161,16 @@
 
 <c:choose>
 	<c:when test="${tipoDoc ne 10}">
-		<c:set var="where" value="DOCUMGARA.CODGAR='${codgar1 }' and DOCUMGARA.GRUPPO=${tipoDoc}"/>
+		<c:set var="where" value="DOCUMGARA.CODGAR=? and DOCUMGARA.GRUPPO=?"/>
+		<c:set var="parametri" value="T:${codgar1};N:${tipoDoc}"/> 
 	</c:when>
 	<c:when test="${!empty ngara }">
-		<c:set var="where" value="DOCUMGARA.CODGAR='${codgar1 }' and DOCUMGARA.NGARA='${ngara }' and DOCUMGARA.GRUPPO=${tipoDoc}"/>
+		<c:set var="where" value="DOCUMGARA.CODGAR=? and DOCUMGARA.NGARA=? and DOCUMGARA.GRUPPO=?"/>
+		<c:set var="parametri" value="T:${codgar1};T:${ngara};N:${tipoDoc}"/> 
 	</c:when>
 	<c:otherwise>
-		<c:set var="where" value="DOCUMGARA.CODGAR='${codgar1 }' and DOCUMGARA.NGARA is null and DOCUMGARA.GRUPPO=${tipoDoc}"/>
+		<c:set var="where" value="DOCUMGARA.CODGAR=? and DOCUMGARA.NGARA is null and DOCUMGARA.GRUPPO=?"/>
+		<c:set var="parametri" value="T:${codgar1};N:${tipoDoc}"/> 
 	</c:otherwise>
 </c:choose>
 
@@ -188,12 +191,14 @@
 
 <c:if test="${not empty param.tipologia}">
 	<c:set var="tipologia" value="${param.tipologia}"/>
-	<c:set var="where" value="${where} and TIPOLOGIA = ${tipologia}"/>
+	<c:set var="where" value="${where} and TIPOLOGIA = ?"/>
+	<c:set var="parametri" value="${parametri};N:${tipologia}"/> 
 </c:if>
 
 <c:if test="${not empty param.busta}">
 	<c:set var="busta" value="${param.busta}"/>
-	<c:set var="where" value="${where} and BUSTA = ${busta}"/>
+	<c:set var="where" value="${where} and BUSTA = ?"/>
+	<c:set var="parametri" value="${parametri};N:${busta}"/> 
 </c:if>
 
 <c:if test="${not empty fasEle}">
@@ -216,6 +221,8 @@
 	<c:set var="verificaNumordNullo" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.IsNumordNulloFunction", pageContext, codgar1, tipoDoc)}' scope="request"/>
 </c:if>
 
+${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "DOCUMGARA", where, parametri)}
+			
 <c:choose>
 	<c:when test='${verificaNumordNullo eq true and esitoRicalcNumordDocGara ne "1"}' >
 		<c:set var="modo" value="MODIFICA" scope="request" />
@@ -226,7 +233,7 @@
 			<br/>
 			E' in corso il riassegnamento del numero d'ordine ...
 			<br/><br/>
-				<gene:formLista entita="DOCUMGARA" where="${where }" pagesize="20" tableclass="datilista" sortColumn="1" gestisciProtezioni="false" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupModificaOrdinamentoDocumentazione">
+				<gene:formLista entita="DOCUMGARA"  pagesize="20" tableclass="datilista" sortColumn="1" gestisciProtezioni="false" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupModificaOrdinamentoDocumentazione">
 				<gene:campoLista campo="CODGAR"  visibile="false" />
 				<input type="hidden" name="numeroDocumenti" id="numeroDocumenti" value="" />
 				<input type="hidden" name="codgar1" id="codgar1" value="${codgar1}" />
@@ -309,7 +316,7 @@
 					
 			<tr>
 				<td ${stileDati}>
-  				<gene:formLista entita="DOCUMGARA" where="${where }" pagesize="0" tableclass="datilista" sortColumn="${ordinamento }" gestisciProtezioni="false" >
+  				<gene:formLista entita="DOCUMGARA"  pagesize="0" tableclass="datilista" sortColumn="${ordinamento }" gestisciProtezioni="false" >
   					<gene:redefineInsert name="listaNuovo" />
 					<gene:redefineInsert name="listaEliminaSelezione" />
 											
@@ -328,11 +335,14 @@
 					<gene:campoLista campo="NGARA"  visibile="false" />
 					<gene:campoLista campo="NORDDOCG"  visibile="false"/>
 					<gene:campoLista campo="NUMORD"  visibile="false"/>
+					<gene:campoLista campo="IDSTAMPA" visibile="false"/>
+					<gene:campoLista campo="LARGEFILEDATA" visibile="false"/>
 					<c:choose>
 						<c:when test="${tipoDoc eq 1 or tipoDoc eq 4 or tipoDoc eq 6 or tipoDoc eq 10 or tipoDoc eq 15 or tipoDoc eq 11}">
 							<gene:campoLista campo="DESCRIZIONE"  />
 							<gene:campoLista campo="DIGNOMDOC"  entita="W_DOCDIG" where="documgara.idprg=w_docdig.idprg and documgara.iddocdg=w_docdig.iddocdig"  href="javascript:visualizzaFileAllegato('${datiRiga.DOCUMGARA_IDPRG}','${datiRiga.DOCUMGARA_IDDOCDG}',${gene:string4Js(datiRiga.W_DOCDIG_DIGNOMDOC)});"/>
-							<gene:campoLista campo="URLDOC"  visibile='${gestioneUrl eq "true"}' />
+							<gene:campoLista campo="URLDOC"  visibile="false"/>
+							<gene:campoLista campo="URLDOCfitt" campoFittizio="true"  definizione="T2000;;;;G1URLDOC" visibile='${gestioneUrl eq "true"}' value="${datiRiga.DOCUMGARA_IDSTAMPA eq 'LARGEFILE'? (not empty datiRiga.DOCUMGARA_LARGEFILEDATA? fn:substringAfter(fn:substringAfter(datiRiga.DOCUMGARA_LARGEFILEDATA, '|'),'|') : '') : datiRiga.DOCUMGARA_URLDOC}" />
 							<gene:campoLista campo="ALLMAIL"  title="Allegare a comunicazione?" visibile='${tipoDoc eq 6}' />
 						</c:when>
 						<c:when test="${tipoDoc eq 5}">
@@ -411,7 +421,7 @@
 	function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 		
 		var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-		document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+		document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 	}
 	
 	
@@ -479,7 +489,7 @@
 	           	bloccaRichiesteServer();
 				
 				var href = "${contextPath }/pg/AggiornaNumOrdineDocumentazione.do" ;
-				href+= "?"+csrfToken+"&listaNorddocg=" + listaNorddocg + "&listaNumord=" + listaNumord + "&ngara=" + ngara +  "&codgar1=" + codgar1 + "&direzione="  + direzione + "&tipoDoc=" + tipoDoc ;
+				href+= "?listaNorddocg=" + listaNorddocg + "&listaNumord=" + listaNumord + "&ngara=" + ngara +  "&codgar1=" + codgar1 + "&direzione="  + direzione + "&tipoDoc=" + tipoDoc ;
 				href+=  "&genereGara=" + genereGara + "&isFaseInvito=" + isFaseInvito + "&esitoRicalcNumordDocGara=" + esitoRicalcNumordDocGara + "&tipologia=" + tipologia + "&busta=" + busta + "&titolo=" + titoloTipologia;
 				href+= "&fasEle=" + fasEle;
 				//alert(href);

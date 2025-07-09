@@ -7,8 +7,10 @@ import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.domain.LogEvento;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.utils.LogEventiUtils;
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.utility.UtilityDate;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoResType;
@@ -67,6 +69,13 @@ public class InserimentoDocumentiDaPRotocolloAction extends Action {
 
     String servizio = request.getParameter("servizio");
     String idconfi = request.getParameter("idconfi");
+
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+      username = credenziali[0];
+      password = credenziali[1];
+    }
 
     String profilo = request.getParameter("profilo");
 
@@ -212,6 +221,7 @@ public class InserimentoDocumentiDaPRotocolloAction extends Action {
               DataColumnContainer containerW_DOCDIG = new DataColumnContainer(elencoCampiW_DOCDIG);
 
               containerW_DOCDIG.insert("W_DOCDIG", sqlManager);
+              ObjectStorageUtils.addFile("PG", newProgressivoW_DOCDIG);
 
               //Inserimento in DOCUMGARA
               par[4]= newProgressivoW_DOCDIG;   //iddocdg

@@ -135,7 +135,7 @@
  	function download(nomeFile){
  		var chiave= '${key }';
  		if(confirm("Si sta per scaricare (download) una copia del file in locale. Ogni modifica\nverrà apportata alla copia locale ma non all'originale.\nContinuare?")){
-  			var href="${contextPath}/pg/DownloadFile.do?"+csrfToken+"&nomeFile="+nomeFile+"&chiave="+chiave+"&paginaRicaricata=gare/anticor/anticor-scheda.jsp";
+  			var href="${contextPath}/pg/DownloadFile.do?nomeFile="+nomeFile+"&chiave="+chiave+"&paginaRicaricata=gare/anticor/anticor-scheda.jsp";
   			<c:if test="${!empty codfiscUffint }">
   				var codfisc="${codfiscUffint }";
   				href+="&codfisc=" + codfisc;

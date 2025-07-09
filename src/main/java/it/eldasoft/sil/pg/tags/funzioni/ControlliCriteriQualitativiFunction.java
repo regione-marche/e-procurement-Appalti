@@ -55,6 +55,10 @@ public class ControlliCriteriQualitativiFunction extends AbstractFunzioneTag {
           if (!"ok".equals(esitoControlloLotto)) {
             if ("true".equals(isValutazioneCommissione)) {
               esitoControlloLotto = functionCommissione.function(pageContext, new Object[]{pageContext, lotto, "1", codgar, "1"});
+              if("ko-nonomogeneo".equals(esitoControlloLotto)) {
+                  esitoControllo = esitoControlloLotto;
+                  break;
+              }
               if (!"ok".equals(esitoControlloLotto)) {
                 esitoControllo = "nok-commissione";
                 break;

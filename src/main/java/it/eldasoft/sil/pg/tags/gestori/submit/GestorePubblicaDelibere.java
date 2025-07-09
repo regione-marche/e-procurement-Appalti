@@ -24,6 +24,7 @@ import org.apache.commons.lang.time.DateUtils;
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
 
+import intra.regionemarche.ResultClass;
 import it.eldasoft.gene.db.datautils.DataColumn;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.domain.LogEvento;
@@ -33,6 +34,8 @@ import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.sil.pg.bl.GestioneRegioneMarcheManager;
+import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityStringhe;
 
 
@@ -40,6 +43,8 @@ public class GestorePubblicaDelibere extends
 AbstractGestoreEntita {
 
   static Logger               logger         = Logger.getLogger(GestorePubblicaSuPortale.class);
+
+private GestioneRegioneMarcheManager gestioneRegioneMarcheManager;
   
   public GestorePubblicaDelibere() {
     super(false);
@@ -106,15 +111,61 @@ AbstractGestoreEntita {
     // si predispone il gestore per l'aggiornamento dell'entità
     DefaultGestoreEntitaChiaveNumerica gestore = new DefaultGestoreEntitaChiaveNumerica(
         "PUBBLI", "NUMPUB",new String[] { "CODGAR9" }, this.getRequest());
-
+    
     container.getColumn("PUBBLI.NUMPUB").setValue(
         new JdbcParametro(JdbcParametro.TIPO_NUMERICO, null));
     gestore.inserisci(status, container);
-    
+
     ngara = UtilityStringhe.convertiNullInStringaVuota(ngara);
     this.getRequest().setAttribute("pubblicazioneEseguita", "1");
-    
+
+    Long genPubblicazione = null;
+    String messageKey = null;
     try {
+      if (GestioneRegioneMarcheManager.isConfiguratoPerRM()) {
+    	gestioneRegioneMarcheManager = (GestioneRegioneMarcheManager) UtilitySpring.getBean("gestioneRegioneMarcheManager",
+    	        this.getServletContext(), GestioneRegioneMarcheManager.class);
+    	String temaRegionale = UtilityStruts.getParametroString(this.getRequest(), "temaRegionale");
+		String tipologiaBando = UtilityStruts.getParametroString(this.getRequest(), "tipologiaBando");
+		String strutturaRegionale = UtilityStruts.getParametroString(this.getRequest(), "strutturaRegionale");
+		String sezioneLavoriPubblici = UtilityStruts.getParametroString(this.getRequest(), "lavoriPubblici");
+		String idBando = UtilityStruts.getParametroString(this.getRequest(), "bandoIdRegMarche");
+		genPubblicazione = (Long) sqlManager.getObject("select genere from V_GARE_GENERE where codgar = ? and genere <100 ", new Object[]{codgar});
+		if ("1".equals(sezioneLavoriPubblici) || "2".equals(sezioneLavoriPubblici)) {
+			this.sqlManager.update("update TORN set sezlavpub=? where CODGAR=?",new Object[]{sezioneLavoriPubblici,codgar});
+		}
+		if (idBando != null && !"".equals(idBando)) {
+			ResultClass risposta = this.gestioneRegioneMarcheManager.updateDelibera(ngara, codgar,
+					genPubblicazione, datpub, new Long(strutturaRegionale), new Long(temaRegionale),
+					new Long(tipologiaBando), "BANDO", new Long(idBando));
+			if (!risposta.isResult()) {
+				String msg = risposta.getError();
+				livEvento = 3;
+				messageKey = "errors.gestoreException.*.ws.bandiRegioneMarche.updateBando.esitoNOK";
+				errMsgEvento = this.resBundleGenerale.getString(messageKey);
+				errMsgEvento = errMsgEvento.replace("{0}", msg);
+				throw new GestoreException(
+						"L'aggiornamento del bando da parte del servizio remoto non e' andato a buon fine",
+						"ws.bandiRegioneMarche.updateBando.esitoNOK", new Object[] { msg },
+						new Exception());
+			}
+		}else {
+	    	ResultClass risposta = this.gestioneRegioneMarcheManager.insertDelibera(ngara, codgar,
+					genPubblicazione, datpub, new Long(strutturaRegionale), new Long(temaRegionale),
+					new Long(tipologiaBando), "BANDO");
+	    	if (!risposta.isResult()) {
+				String msg = risposta.getError();
+				livEvento = 3;
+				messageKey = "errors.gestoreException.*.ws.bandiRegioneMarche.addBando.esitoNOK";
+				errMsgEvento = this.resBundleGenerale.getString(messageKey);
+				errMsgEvento = errMsgEvento.replace("{0}", msg);
+				throw new GestoreException(
+						"L'inserimento del bando da parte del servizio remoto non e' andato a buon fine",
+						"ws.bandiRegioneMarche.addBando.esitoNOK", new Object[] { msg }, new Exception());
+			}
+		}
+      }
+
       List<String> itemsString = Arrays.asList(listaDocumentiString.split(",\\s*"));
       for(int i = 0; i<itemsString.size();i++){
         Long norddocg = Long.parseLong(itemsString.get(i).replaceAll("[^0-9]", ""));
@@ -125,15 +176,15 @@ AbstractGestoreEntita {
       this.sqlManager.update("update TORN set DULTAGG = ? where CODGAR=?",new Object[]{datpub,codgar});
       ngara = UtilityStringhe.convertiNullInStringaVuota(ngara);
       this.getRequest().setAttribute("pubblicazioneEseguita", "1");
-      
+
       Long genere = (Long) sqlManager.getObject("select genere from V_GARE_GENERE where codgar = ? and genere <100 ", new Object[]{codgar});
       if(new Long(2).equals(genere)){
         logOggetto = ngara;
       }else{
         logOggetto = codgar;
       }
-      
-      } catch (SQLException e) {
+
+    } catch (SQLException e) {
         livEvento = 3;
         errMsgEvento = e.getMessage();
         this.getRequest().setAttribute("pubblicazioneEseguita", "error");
@@ -149,11 +200,10 @@ AbstractGestoreEntita {
           logEvento.setErrmsg(errMsgEvento);
           LogEventiUtils.insertLogEventi(logEvento);
         } catch (Exception le) {
-          String messageKey = "errors.logEventi.inaspettataException";
+          messageKey = "errors.logEventi.inaspettataException";
           logger.error(this.resBundleGenerale.getString(messageKey), le);
         }
       }
-       
   }
 
   @Override

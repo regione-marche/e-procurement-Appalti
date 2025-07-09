@@ -103,7 +103,7 @@
 		
 		function avviaPubblica(entita,numgara){
 			var action = "${pageContext.request.contextPath}/w3/AvviaPubblicaGaraLotto.do";
-			action=action + '?' + csrfToken + '&entita=' + entita + '&numgara=' + numgara;
+			action=action + '?entita=' + entita + '&numgara=' + numgara;
 			document.location.href=action;
 		}
 	

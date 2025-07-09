@@ -7,6 +7,7 @@
 var percorsoImg;
 var comkey1;
 var soccorsoIstruttorio;
+var comunicazioniRettifica;
 var stepWizard;
 var busta;
 var bustaDescr;
@@ -24,6 +25,7 @@ function _setPercorsoImg(valore){
 $(window).ready(function (){
 	var _tableComunicazioni = null;
 	soccorsoIstruttorio = $("#soccorsoIstruttorio").val();
+	comunicazioniRettifica = $("#comunicazioniRettifica").val();
 	stepWizard = $("#stepWizard").val();
 	
 	//Si allarga la dimensione della finestra
@@ -76,7 +78,7 @@ $(window).ready(function (){
 			},
 	        url: "pg/GetDatiComunicazioniDitte.do",
 	        data : "ngara=" +  ngara + "&ditta=" + ditta + "&genereGara=" + genereGara + "&riceviComunicazioni=" + riceviComunicazioni
-	        	+"&codgar=" + codiceGara + "&soccorsoIstruttorio=" + soccorsoIstruttorio,
+	        	+"&codgar=" + codiceGara + "&soccorsoIstruttorio=" + soccorsoIstruttorio+"&comunicazioniRettifica="+comunicazioniRettifica,
 	        success: function(json) {
 	        	_popolaTabellaComunicazioni(json.data);
 				if(integrazioneWSDM != 1){
@@ -376,8 +378,11 @@ $(window).ready(function (){
 		        		var thead = '',  tbody = '';
 		        		$.each(json.data, function (i, d) {
 		        			tbody += '<tr>';
-		        			tbody += '<td class="descrizione">' + d.descrizione + '</td>';
+							tbody += '<td class="descrizione">' + $('<div/>').text(d.descrizione).html() + '</td>';
 							tbody += '<td class="nomeAllegato"><span title="Scarica allegato" class="spanNomeAllegato"><a>'+ d.nome + '</a></span>';
+							if(d.digtipdoc=='pdf/a'){
+								tbody +='  <span class="spanFirmacheck">&nbsp;<img id="imgCheckPDFaDocMessage" src="' + percorsoImg + 'pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A"></span>' ;
+							}
 							if(d.firmacheck!==null){
 								if(d.firmacheck=='1'){
 									tbody +='  <span class="spanFirmacheck">&nbsp;<img src="' + percorsoImg + 'firmaRemota-valid.png" title="Verifica automatica firma digitale riuscita (data verifica '+d.firmacheckts+')" alt="Verifica automatica firma digitale riuscita" width="16" height="16"></span>' ;
@@ -493,7 +498,7 @@ $(window).ready(function (){
 						tracciamentoDownloadDocimpresa(idprg, iddocdig,ngara,ditta,"2");
 					}
 					var href = contextPath + "/pg/VisualizzaFileAllegato.do";
-					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+					document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 				}
 				break;
 			default:
@@ -536,7 +541,7 @@ $(window).ready(function (){
 						tracciamentoDownloadDocimpresa(idprg, iddocdig,ngara,ditta,"2");
 					}
 					var href = contextPath + "/pg/VisualizzaFileAllegato.do";
-					document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+					document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 				}
 				break;
 		}

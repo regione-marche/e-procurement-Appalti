@@ -93,7 +93,7 @@
 		function gestioneCodiceCIG(valore){
 			if(valore!=null && valore!=""){
 				setValue("GARE_CODCIG", valore.toUpperCase(), false);
-				if ("2" == getValue("ESENTE_CIG")) {
+				if ("2" == getValue("ESENTE_CIG") || "" == getValue("ESENTE_CIG")) {
 					if (!controllaCIG("GARE_CODCIG")) {
 						return false;
 					}

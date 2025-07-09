@@ -16,8 +16,13 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Vector;
 
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
+import it.eldasoft.gene.ws.objectstorage.UploadInfo;
+import it.eldasoft.utils.sicurezza.CriptazioneException;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.struts.upload.FormFile;
@@ -49,6 +54,7 @@ import it.eldasoft.sil.pg.web.struts.UploadMultiploForm;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
+import it.maggioli.eldasoft.ws.conf.WSERPConfigurazioneOutType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloAllegatoType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoResType;
 import it.maggioli.eldasoft.ws.dm.WSDMProtocolloDocumentoType;
@@ -124,20 +130,20 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
         //GESTIONE QFORM
         Long idModello = datiForm.getLong("QFORM.IDMODELLO");
         try {
+        	String oggettoModello = null;
+        	Long idQform = datiForm.getLong("QFORM.ID");
           if("INSQFORM".equals(modoQform)){
-            String oggettoModello = (String)this.sqlManager.getObject("select oggetto from qformlib where id=?", new Object[] {idModello});
-            datiForm.addColumn("QFORM.OGGETTO", JdbcParametro.TIPO_TESTO, oggettoModello);
+            oggettoModello = (String)this.sqlManager.getObject("select oggetto from qformlib where id=?", new Object[] {idModello});
           }else {
             String archivioMod = UtilityStruts.getParametroString(this.getRequest(),"archivioMod");
             if("SI".equals(archivioMod)) {
-              String oggettoModello = (String)this.sqlManager.getObject("select oggetto from qformlib where id=?", new Object[] {idModello});
-              datiForm.setValue("QFORM.OGGETTO", oggettoModello);
+              oggettoModello = (String)this.sqlManager.getObject("select oggetto from qformlib where id=?", new Object[] {idModello});
+            } else {
+              oggettoModello = (String)this.sqlManager.getObject("select oggetto from qform where id=?", new Object[] {idQform});
             }
-            datiForm.setOriginalValue("QFORM.OGGETTO", new JdbcParametro(JdbcParametro.TIPO_TESTO,""));
           }
           Long id = new Long(genChiaviManager.getNextId("QFORM"));
 
-          //datiForm.setValue("QFORM.OGGETTO", oggettoModello);
           datiForm.setValue("QFORM.ID", id);
           datiForm.setOriginalValue("QFORM.ENTITA", new JdbcParametro(JdbcParametro.TIPO_TESTO,""));
           datiForm.setOriginalValue("QFORM.KEY1", new JdbcParametro(JdbcParametro.TIPO_TESTO,""));
@@ -154,18 +160,28 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
           }
           datiForm.removeColumns(new String[] {"DULTAGGMOD_FIT"});
           datiForm.insert("QFORM", sqlManager);
+
+          this.sqlManager.update("update qform set oggetto=? where id =?", new Object[] { oggettoModello, id });
+
           this.getRequest().setAttribute("RISULTATO", "OK");
           if("INSQFORM_RETT".equals(modoQform)) {
             this.getRequest().setAttribute("idQformRett", id);
 
           }
 
+          String ngara=datiForm.getString("QFORM.KEY1");
           Long busta = datiForm.getLong("QFORM.BUSTA");
           if(new Long(1).equals(busta) || new Long(4).equals(busta)) {
             //Va cancellato il documento DGUE
-            String ngara=datiForm.getString("QFORM.KEY1");
             String codgar = (String)this.sqlManager.getObject("select codgar1 from gare where ngara=?",new Object[] {ngara});
             this.sqlManager.update("delete from documgara where codgar=? and gruppo=3 and busta=? and IDSTAMPA = 'DGUE' ", new Object[] {codgar,busta});
+          }
+
+          String iselprem  = (String) sqlManager.getObject("select iselprem from garealbo where ngara=?", new Object[] {ngara});
+          if("1".equals(iselprem)){
+            if(logger.isDebugEnabled()) logger.debug("Inizio import QFROM");
+            PgManager.importQuestions(ngara, id, sqlManager, genChiaviManager, JSONObject.fromObject(oggettoModello));
+            if(logger.isDebugEnabled()) logger.debug("Fine import QFROM");
           }
         } catch (SQLException e) {
           throw new GestoreException("Errore nell'inserimento del formulario", null, e);
@@ -478,16 +494,34 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
           if (newDataColumnContainer.getLong(gestore.getCampoNumericoChiave()) != null) {
             // Devo cancellare l'occorrenza in W_DOCDIG
             try {
-              this.getSqlManager().update(
-                  "delete from W_DOCDIG where IDPRG = ? and IDDOCDIG = ?",
-                  new Object[] {"PG",
-                      newDataColumnContainer.getLong("DOCUMGARA.IDDOCDG") });
-              this.getSqlManager().update(
-                  "delete from WSALLEGATI where KEY2 = ?",
-                  new Object[] {newDataColumnContainer.getLong("DOCUMGARA.IDDOCDG") });
+            	if(newDataColumnContainer.isColumn("DOCUMGARA.IDDOCDG")
+                        && newDataColumnContainer.getLong("DOCUMGARA.IDDOCDG") != null ) {
+                  UploadInfo oldBucketInfo = ObjectStorageUtils.getUploadInfo("select bucket_ref, bucket_uuid from w_docdig where idprg=? and iddocdig=?",new Object[] {"PG",newDataColumnContainer.getLong("DOCUMGARA.IDDOCDG")});
+                  ObjectStorageUtils.deleteFile(oldBucketInfo.bucket_ref(),oldBucketInfo.uuid());
+                    this.getSqlManager().update(
+                            "delete from W_DOCDIG where IDPRG = ? and IDDOCDIG = ?",
+                            new Object[] {"PG",
+                                newDataColumnContainer.getLong("DOCUMGARA.IDDOCDG") });
+                        this.getSqlManager().update(
+                            "delete from WSALLEGATI where KEY2 = ?",
+                            new Object[] {newDataColumnContainer.getLong("DOCUMGARA.IDDOCDG").toString() });
+            	}
             } catch (SQLException e) {
               throw new GestoreException(
                   "Errore nella cancellazione di W_DOCDIG", null, e);
+            }
+            try{
+              List largefiledata = this.sqlManager.getListVector("select largefiledata from documgara where codgar=? and norddocg=? and idstampa='LARGEFILE' and largefiledata is not null", new Object[] {valoreChiave[0].getValue().stringValue(), newDataColumnContainer.getLong("DOCUMGARA.NORDDOCG")});
+              if(largefiledata!=null && !largefiledata.isEmpty()){
+                for(int j=0;j<largefiledata.size();j++){
+                  String[] data = SqlManager.getValueFromVectorParam(largefiledata.get(j),0).stringValue().split("\\|");
+                  if(data.length>=2)
+                    ObjectStorageUtils.deleteFile(data[0],data[1],2L);//cancello occorrenze caricate su bucket tramite m-largefiles
+                }
+              }
+            }catch(SQLException e){
+              throw new GestoreException(
+                      "Errore nella schedulazione della cancellazione del largefile di DOCUMGARA", null, e);
             }
 
             gestore.elimina(status, newDataColumnContainer);
@@ -628,18 +662,24 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
                     || (newDataColumnContainer.getLong("DOCUMGARA.IDDOCDG") != null
                         && (fname == null || fname.length() == 0) && (nomeAllegatoDocumentale == null || nomeAllegatoDocumentale.length() == 0) && (nomeAllegatoWSERP == null || nomeAllegatoWSERP.length() == 0) && cancellareAllegato)) {
                   try {
-                    this.getSqlManager().update(
-                        "delete from W_DOCDIG where IDPRG = ? and IDDOCDIG = ?",
-                        new Object[] {"PG",
-                            newDataColumnContainer.getLong("DOCUMGARA.IDDOCDG") });
-                    this.getSqlManager().update(
-                        "delete from WSALLEGATI where KEY2 = ?",
-                        new Object[] {newDataColumnContainer.getLong("DOCUMGARA.IDDOCDG") });
-                    this.getSqlManager().update(
-                        "update DOCUMGARA set IDDOCDG = null where CODGAR=? and NORDDOCG =?",
-                        new Object[] {
-                            newDataColumnContainer.getString("DOCUMGARA.CODGAR"),
-                            newDataColumnContainer.getLong("DOCUMGARA.NORDDOCG") });
+                	  
+            	  if(newDataColumnContainer.isColumn("DOCUMGARA.IDDOCDG")
+                          && newDataColumnContainer.getLong("DOCUMGARA.IDDOCDG") != null ) {
+                      UploadInfo oldBucketInfo = ObjectStorageUtils.getUploadInfo("select bucket_ref, bucket_uuid from w_docdig where idprg=? and iddocdig=?",new Object[] {"PG",newDataColumnContainer.getLong("DOCUMGARA.IDDOCDG")});
+                      ObjectStorageUtils.deleteFile(oldBucketInfo.bucket_ref(),oldBucketInfo.uuid());
+                      this.getSqlManager().update(
+                              "delete from W_DOCDIG where IDPRG = ? and IDDOCDIG = ?",
+                              new Object[] {"PG",
+                                  newDataColumnContainer.getLong("DOCUMGARA.IDDOCDG") });
+                          this.getSqlManager().update(
+                              "delete from WSALLEGATI where KEY2 = ?",
+                              new Object[] {newDataColumnContainer.getLong("DOCUMGARA.IDDOCDG").toString() });
+                          this.getSqlManager().update(
+                              "update DOCUMGARA set IDDOCDG = null where CODGAR=? and NORDDOCG =?",
+                              new Object[] {
+                                  newDataColumnContainer.getString("DOCUMGARA.CODGAR"),
+                                  newDataColumnContainer.getLong("DOCUMGARA.NORDDOCG") });
+            	  }
 
                   } catch (SQLException e) {
                     throw new GestoreException(
@@ -746,6 +786,18 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
       String servizio = this.getRequest().getParameter("getdocumentoallegato_servizio_" + indice);
       String idconfi = this.getRequest().getParameter("idconfi");
 
+      String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+      if("1".equals(wsdmLoginComune)){
+        try {
+          String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio, idconfi);
+          username = credenziali[0];
+          password = credenziali[1];
+        }catch (CriptazioneException | SQLException e) {
+            throw new GestoreException(
+                    "Errore nel recupero delle credenziali comuni per l'integrazione WSDM", null, e);
+          }
+      }
+
       WSDMProtocolloDocumentoResType wsdmProtocolloDocumentoRes;
 
       if(numeroprotocollo != null && numeroprotocollo.length()>0 && annoprotocollo != null){
@@ -783,6 +835,16 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
             "Errore nell'interrogazione del servizio", wsdmProtocolloDocumentoRes.getMessaggio());
       }
     }
+    
+    //Si determina se è attiva l'integrazione con WSERP
+    String tipoWSERP = null;
+    String urlWSERP = ConfigManager.getValore("wserp.erp.url");
+    if(urlWSERP != null && !"".equals(urlWSERP)){
+      WSERPConfigurazioneOutType configurazione = this.gestioneWSERPManager.wserpConfigurazioneLeggi("WSERP");
+      if(configurazione.isEsito()){
+        tipoWSERP = configurazione.getRemotewserp();
+      }
+    }
 
     String nomeallegatoWSERP = this.getRequest().getParameter("getdocumentoallegatoWSERP_nomeallegato_" + indice);
     if(nomeallegatoWSERP!= null && nomeallegatoWSERP.length()>0){
@@ -799,11 +861,28 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
 
         String titoloallegatoWSERP = this.getRequest().getParameter("getdocumentoallegatoWSERP_titoloallegato_" + indice);
         String idfileWSERP = this.getRequest().getParameter("getdocumentoallegatoWSERP_idfile_" + indice);
-
-        WSERPAllegatoType allegato = gestioneWSERPManager.wserpLeggiAllegato(usernameWSERP, passwordWSERP, nomeallegatoWSERP, servizioWSERP, idfileWSERP);
+        
+        String chiamante = "RDA";
+        String codiceOda = this.getRequest().getParameter("getdocumentoallegatoWSERP_codiceOda_" + indice);
+        if("CONI".equals(tipoWSERP) && codiceOda != null && !codiceOda.isEmpty()) {
+          idfileWSERP = codiceOda;
+          chiamante = "ODA";
+        }
+        WSERPAllegatoType allegato = gestioneWSERPManager.wserpLeggiAllegato(usernameWSERP, passwordWSERP, nomeallegatoWSERP, servizioWSERP, idfileWSERP, chiamante);
 
         nomeallegatodocumentale = allegato.getNome();
         contenutoallegatodocumentale =  allegato.getContenuto();
+        
+        //recuperare da codicerda come filtro
+        if("ARCHIFLOW".equals(tipoWSERP)) {
+          try {
+            String codiceRda = (String) this.getSqlManager().getObject("select numrda from garerda where codgar = ? ", new Object[]{datiForm.getString("DOCUMGARA.CODGAR")});
+            idDocumentale = (Long) this.getSqlManager().getObject("select id from WSDOCUMENTO where NUMERODOC = ? ", new Object[]{codiceRda});
+          } catch (SQLException e) {
+              throw new GestoreException(
+                "Errore nella lettura dell'id del documento", null, e);
+          }
+        }
     }
 
     try {
@@ -926,11 +1005,26 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
 
             //salvataggio dell'occorrenza inwsallegati se il file proviene dal documentale
             if (nomeallegato != null && nomeallegato.length()>0 && idDocumentale != null){
+              
               GenChiaviManager genChiaviManager = (GenChiaviManager) UtilitySpring.getBean("genChiaviManager",
                   this.getServletContext(), GenChiaviManager.class);
               Long id = new Long(genChiaviManager.getNextId("WSALLEGATI"));
               try {
-                this.getSqlManager().update("insert into wsallegati (id,entita,key1,key2,idwsdoc) values(?,?,?,?,?)", new Object[]{id,"W_DOCDIG","PG",new Long(numDoc),idDocumentale});
+                this.getSqlManager().update("insert into wsallegati (id,entita,key1,key2,idwsdoc) values(?,?,?,?,?)", new Object[]{id,"W_DOCDIG","PG",numDoc.toString(),idDocumentale});
+              } catch (SQLException e) {
+                throw new GestoreException(
+                    "Errore nell'inserimento su wsallegati", null, e);
+              }
+            }
+            
+            //salvataggio dell'occorrenza inwsallegati se il file proviene dal documentale da WSERP
+            if ("ARCHIFLOW".equals(tipoWSERP) && nomeallegatoWSERP != null && nomeallegatoWSERP.length()>0 && idDocumentale != null){
+              
+              GenChiaviManager genChiaviManager = (GenChiaviManager) UtilitySpring.getBean("genChiaviManager",
+                  this.getServletContext(), GenChiaviManager.class);
+              Long id = new Long(genChiaviManager.getNextId("WSALLEGATI"));
+              try {
+                this.getSqlManager().update("insert into wsallegati (id,entita,key1,key2,idwsdoc) values(?,?,?,?,?)", new Object[]{id,"W_DOCDIG","PG",numDoc.toString(),idDocumentale});
               } catch (SQLException e) {
                 throw new GestoreException(
                     "Errore nell'inserimento su wsallegati", null, e);
@@ -944,11 +1038,14 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
           newDataColumnContainer.update("W_DOCDIG", this.geneManager.getSql());
           //se non sto effettuando un inserimento
           if (nomeallegato == null || nomeallegato.length()==0){
-          this.getSqlManager().update(
-              "delete from WSALLEGATI where KEY2 = ?",
-              new Object[] { numDoc });
+        	  if(numDoc!=null) {
+                  this.getSqlManager().update(
+                          "delete from WSALLEGATI where KEY2 = ?",
+                          new Object[] { numDoc.toString() });
+        	  }
           }
         }
+        ObjectStorageUtils.addFile(newDataColumnContainer.getColumn("W_DOCDIG.IDPRG").getValue().getStringValue(), newDataColumnContainer.getColumn("W_DOCDIG.IDDOCDIG").getValue().longValue());
       }
     } catch (FileNotFoundException e) {
       throw new GestoreException("File da caricare non trovato",
@@ -1013,6 +1110,19 @@ public class GestoreDocumentazioneGara extends AbstractGestoreEntita {
       throw new GestoreException(
           "Il file selezionato utilizza una estensione non ammessa", "upload.estensioneNonAmmessa",
           new String[] {nomeFile }, null);
+    }else {
+      try {
+        if(!FileAllegatoManager.checkFileContent(file, nomeFile)){
+          throw new GestoreException("Il file selezionato da caricare viene scartato in quanto ha un contenuto in formato non valido secondo le verifiche mediante la libreria Apache Tika",
+              "upload.erroreVerificaContenuto", new String[]{nomeFile}, null);
+        } else if(nomeFile.toLowerCase().endsWith(".pdf") && FileAllegatoManager.isMaliciousPdf(file, nomeFile)) {
+          throw new GestoreException("Il file selezionato da caricare viene scartato in quanto sembra codificare dei contenuti non sicuri (malware)",
+                  "upload.erroreContenutoMalevolo", new String[]{nomeFile}, null);
+        }
+      }catch (IOException e) {
+        throw new GestoreException("Il file selezionato da caricare viene scartato in quanto non risulta possibile la lettura del suo contenuto",
+            "upload.erroreVerificaContenuto", new String[]{nomeFile}, e);
+      }
     }
 
     return salvareW_DOCDIG;

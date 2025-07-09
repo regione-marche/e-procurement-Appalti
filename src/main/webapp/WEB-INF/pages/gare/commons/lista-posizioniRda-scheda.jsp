@@ -163,7 +163,9 @@
     </style>
 
   </gene:redefineInsert>
-
+  
+  <c:set var="integrazioneWSERP" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSERPFunction", pageContext)}' />
+  
   <c:choose>
     <c:when test='${param.genere eq "20"}'>
       <c:set var="genereTitolo" value="del catalogo"/>
@@ -176,11 +178,17 @@
     </c:otherwise>
   </c:choose>
 
-
   <gene:setString name="titoloMaschera" value="Lista posizioni ${genereTitolo} ${param.codice} " />
-
+  
   <gene:redefineInsert name="corpo">
-
+  <c:if test='${requestScope.tipoWSERP eq "INARCASSA"}'>
+    <div>
+       <br>
+        <h3>ATTENZIONE: aggiungendo nuove posizioni si procederà alla eliminazione delle eventuali lavorazioni preesistenti</h3>
+    </div>
+    
+  </c:if>
+  
     <input type="hidden" name="codgar" id="codgar" value="${param.codgar}" />
     <input type="hidden" name="genere" id="genere" value="${param.genere}" />
     <input type="hidden" name="operation" id="operation" value="VISUALIZZA" />
@@ -224,7 +232,7 @@
     <c:set var="menuPosizioni" value="Importa"/>
     <tr>
     <tr>
-      <td class="vocemenulaterale">
+      <td class="vocemenulaterale">        
         <c:if test='${isNavigazioneDisattiva eq isNavigazioneDisattiva}'>
           <a href="#" id="menuimporta" title=${menuPosizioni} tabindex="1512">${menuPosizioni}</a>
         </c:if>

@@ -93,7 +93,7 @@ public class GestorePubblicaSuAmministrazioneTrasparente extends AbstractGestore
         codiceRUP = UtilityStringhe.convertiNullInStringaVuota(codiceRUP);
         if ("".equals(codiceRUP)) {
           controlloSuperato = "NO";
-          messaggio += "<br>Non è stato inserito il responsabile unico procedimento.";
+          messaggio += "<br>Non è stato inserito il RUP.";
         }
       }
       //Controllo se la gara è aggiudicata ed eventualmente se la ditta aggiudicataria

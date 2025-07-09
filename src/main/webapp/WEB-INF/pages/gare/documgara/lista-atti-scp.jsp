@@ -209,8 +209,7 @@ $('#jstree2').on('select_node.jstree', function (e, data) {
 });
 
 $("#jstree2").bind("select_node.jstree", function (e, data) {
-	 var href = data.node.a_attr.href + "&" + csrfToken;
-	 document.location.href = href;
+	 document.location.href = data.node.a_attr.href;
 });
 		
 </gene:javaScript>

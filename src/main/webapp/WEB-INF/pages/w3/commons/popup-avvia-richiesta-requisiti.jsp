@@ -72,7 +72,7 @@
 		
 		function avviaRichiestaRequisiti(entita,numgara,numreq,idgara){
 			var action = "${pageContext.request.contextPath}/w3/AvviaRichiestaRequisiti.do";
-			action=action + '?' + csrfToken + '&entita=' + entita + '&numgara=' + numgara + '&numreq=' + numreq + '&idgara=' + idgara;
+			action=action + '?entita=' + entita + '&numgara=' + numgara + '&numreq=' + numreq + '&idgara=' + idgara;
 			document.location.href=action;
 		}
 	

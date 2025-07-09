@@ -288,10 +288,19 @@
 						<gene:campoLista campo="TIPPARFIT" campoFittizio = "true" value = "${datiRiga.GOEV_TIPPAR}" definizione = "N7" edit="true" visibile="false" />
 						<gene:campoLista campo="LIVPARFIT" campoFittizio = "true" value = "${datiRiga.GOEV_LIVPAR}" definizione = "N7" edit="true" visibile="false" />
 						<gene:campoLista title="&nbsp;" width="20">
-							<c:if test="${datiRiga.GOEV_LIVPAR ne 3 && gene:checkProt(pageContext, 'MASC.VIS.GARE.G1CRIDEF-scheda')}">
-								<a href="javascript:dettaglioModalitaAssegnazionePunteggio('${datiRiga.G1CRIDEF_ID}','${datiRiga.GOEV_NGARA}',${datiRiga.GOEV_NECVAN},'${sezionitec}');" title="Dettaglio assegnazione punteggio" >
-									<img width="16" height="16" title="Dettaglio assegnazione punteggio" alt="Dettaglio assegnazione punteggio" src="${pageContext.request.contextPath}/img/dettaglio-criteri.png"/>
-								</a>
+							<c:if test="${gene:checkProt(pageContext, 'MASC.VIS.GARE.G1CRIDEF-scheda')}">
+								<c:choose>
+									<c:when test="${datiRiga.GOEV_LIVPAR ne 3}">
+										<a href="javascript:dettaglioModalitaAssegnazionePunteggio('${datiRiga.G1CRIDEF_ID}','${datiRiga.GOEV_NGARA}',${datiRiga.GOEV_NECVAN},'${sezionitec}');" title="Dettaglio assegnazione punteggio" >
+											<img width="16" height="16" title="Dettaglio assegnazione punteggio" alt="Dettaglio assegnazione punteggio" src="${pageContext.request.contextPath}/img/dettaglio-criteri.png"/>
+										</a>
+									</c:when>
+									<c:when test="${datiRiga.GOEV_LIVPAR eq 3}">
+										<a href="javascript:settaRiparametrazione('${chiaveRigaJava}','${sezionitec}');" title="Dettaglio assegnazione punteggio" >
+											<img width="16" height="16" title="Dettaglio assegnazione punteggio" alt="Dettaglio assegnazione punteggio" src="${pageContext.request.contextPath}/img/dettaglio-criteri.png"/>
+										</a>
+									</c:when>
+								</c:choose>
 							</c:if>
 						</gene:campoLista>
 						<gene:campoLista campo="FORMATO" title="Formato" entita="G1CRIDEF" where="G1CRIDEF.NGARA = GOEV.NGARA AND G1CRIDEF.NECVAN = GOEV.NECVAN" ordinabile="false" width="100"/>
@@ -575,7 +584,7 @@
 		function listaVisualizza(){
 			var bloccoPubblicazione="${condizioniBloccoTelematica }";
 			var condizioniBloccoNonTelematica = "${condizioniBloccoNonTelematica }";
-			document.forms[0].action=document.forms[0].action+"&bloccoPubblicazione=" + bloccoPubblicazione + "&condizioniBloccoNonTelematica=" + condizioniBloccoNonTelematica;
+			document.forms[0].action=document.forms[0].action+"?bloccoPubblicazione=" + bloccoPubblicazione + "&condizioniBloccoNonTelematica=" + condizioniBloccoNonTelematica;
 			document.forms[0].key.value=chiaveRiga;
 			document.forms[0].metodo.value="apri";
 			document.forms[0].activePage.value="0";
@@ -584,18 +593,18 @@
 	</c:if> 
 	
 	function cambiaPaginaCriteri(pagina){
-		document.pagineForm.action += "&paginaCriterio=" + pagina;
+		document.pagineForm.action += "?paginaCriterio=" + pagina;
 		document.pagineForm.submit();	
 	}
 	
 	<c:if test="${tipoCriterio eq 3}">
 		function ConfermaAnnulla(){
-			document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+			document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 			schedaAnnulla();
 		}
 		
 		function ConfermaModifica(){
-			document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+			document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 			schedaConferma();
 		}
 		
@@ -619,7 +628,7 @@
 	</c:if>  
 	
 	function dettaglioModalitaAssegnazionePunteggio(id, ngara, necvan,sezionitec){
-		var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/g1cridef/g1cridef-scheda.jsp";
+		var href = contextPath + "/ApriPagina.do?href=gare/g1cridef/g1cridef-scheda.jsp";
 		href += "&key=G1CRIDEF.ID=N:" + id ;
 		href += "&ngara=" + ngara + "&necvan=" + necvan + "&sezionitec=" + sezionitec;
 		var bloccoDati = false;
@@ -630,6 +639,19 @@
 		href += "&bloccoDati=" + bloccoDati;
 		document.location.href = href;
 	}    
+	
+	function settaRiparametrazione(chiave,sezionitec){
+		var href = contextPath + "/ApriPagina.do?href=gare/goev/goev-dettaglioRiparametrazione.jsp";
+		href += "&key="+chiave
+		href += "&sezionitec=" + sezionitec;
+		var bloccoDati = false;
+		var condizioniBloccoTelematica="${condizioniBloccoTelematica }";
+		var condizioniBloccoNonTelematica="${condizioniBloccoNonTelematica }";
+		if(condizioniBloccoTelematica == "true" || condizioniBloccoNonTelematica == "true")
+			bloccoDati=true;
+		href += "&bloccoDati=" + bloccoDati;
+		document.location.href = href;
+	}  
 	
 	<c:if test='${modo eq "MODIFICA" and tipoCriterio eq 3}'>
 		if(document.getElementById("tecnici")!=null)

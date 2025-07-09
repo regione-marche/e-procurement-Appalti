@@ -20,7 +20,7 @@
 
 <c:set var="where" value="DITG.NGARA5=? and exists(select * from ISCRIZCAT where DITG.DITTAO=ISCRIZCAT.CODIMP and DITG.CODGAR5=ISCRIZCAT.CODGAR and DITG.NGARA5=ISCRIZCAT.NGARA and ISCRIZCAT.CODCAT=?)" />
 <c:set var="parametri" value="T:${param.opes_ngara};T:${param.cais_caisim}"/>
-${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunction", pageContext, "DITG", where, parametri)}
+${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "DITG", where, parametri)}
 
 <gene:template file="lista-template.jsp" gestisciProtezioni="true" idMaschera="lista-operatoriIscritti" schema="GARE">
 	<gene:setString name="titoloMaschera" value="${param.cais_caisim} - ${param.cais_descat} - Lista operatori iscritti" />
@@ -95,7 +95,7 @@ ${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ImpostazioneFiltroFunctio
 	</c:when>
 	<c:otherwise>
 		var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
+		document.location.href = contextPath + "/ApriPagina.do?" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
 	</c:otherwise>
 	</c:choose>
 	}

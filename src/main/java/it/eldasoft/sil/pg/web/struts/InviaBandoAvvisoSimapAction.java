@@ -12,7 +12,6 @@
  */
 package it.eldasoft.sil.pg.web.struts;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -20,41 +19,29 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 
-
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.axis.utils.StringUtils;
+import org.apache.log4j.Logger;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
 
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.commons.web.struts.CostantiGeneraliStruts;
 import it.eldasoft.gene.commons.web.struts.DispatchActionBaseNoOpzioni;
+import it.eldasoft.gene.db.domain.AccountSSO;
 import it.eldasoft.sil.pg.bl.ControllaBandoAvvisoSimapManager;
 import it.eldasoft.sil.pg.bl.InviaBandoAvvisoSimapManager;
+import it.eldasoft.sil.pg.bl.LeggiPubblicazioniManager;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.sicurezza.CriptazioneException;
 import it.eldasoft.utils.sicurezza.FactoryCriptazioneByte;
 import it.eldasoft.utils.sicurezza.ICriptazioneByte;
-import it.eldasoft.sil.pg.bl.ControllaBandoAvvisoSimapManager;
-import it.eldasoft.sil.pg.bl.InviaBandoAvvisoSimapManager;
-import it.eldasoft.sil.pg.bl.LeggiPubblicazioniManager;
-import it.eldasoft.simap.ws.EsitoSimapWS;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
-import org.apache.struts.action.ActionForm;
-import org.apache.struts.action.ActionForward;
-import org.apache.struts.action.ActionMapping;
 
 public class InviaBandoAvvisoSimapAction extends DispatchActionBaseNoOpzioni {
 
@@ -100,44 +87,36 @@ public class InviaBandoAvvisoSimapAction extends DispatchActionBaseNoOpzioni {
     String iterga = request.getParameter("iterga");
     String username = null;
     String password = null;
+    String tipoAvvGAREAVVISO = request.getParameter("tipoAvvGAREAVVISO");
+    String settore = request.getParameter("settore");
+    String genereGara = request.getParameter("genereGara");
+
+    boolean usaToken = false;
 
     ProfiloUtente profiloUtente = (ProfiloUtente) request.getSession().getAttribute(
         CostantiGenerali.PROFILO_UTENTE_SESSIONE);
-
-    String ssoprotocollo = StringUtils.stripToEmpty(ConfigManager.getValore("sso.protocollo"));
-    boolean autenticazioneSSO = !("".equals(ssoprotocollo) || "0".equals(ssoprotocollo));
     
-    if ("CORRENTI".equals(credenziali) || autenticazioneSSO) {
-
-
-      username = profiloUtente.getLogin();
-      String passwordCifrata = profiloUtente.getPwd();
-      if (passwordCifrata != null) {
-        ICriptazioneByte decriptatore;
-        try {
-          decriptatore = FactoryCriptazioneByte.getInstance(
-              ConfigManager.getValore(CostantiGenerali.PROP_TIPOLOGIA_CIFRATURA_DATI),
-              passwordCifrata.getBytes(), ICriptazioneByte.FORMATO_DATO_CIFRATO);
-          password = new String(decriptatore.getDatoNonCifrato());
-        } catch (CriptazioneException e) {
-          logger.error(
-              this.resBundleGenerale.getString(e.getChiaveResourceBundle()), e);
-        }
-      }
-    } else if ("ALTRE".equals(credenziali)) {
-      username = request.getParameter("username");
-      password = request.getParameter("password");
-    }
-
     try {
+      if ("CORRENTI".equals(credenziali)) {
+        usaToken = true;
+        username = profiloUtente.getLogin();
+        password = ConfigManager.getValore(InviaBandoAvvisoSimapManager.PROP_TOKEN_ACCESSO_FEU);
+        if (StringUtils.isEmpty(password)) {
+          throw new Exception("Valorizzare il token per l\'accesso ai servizi (property \'feu.token\')");
+        }
+      } else if ("ALTRE".equals(credenziali)) {
+        username = request.getParameter("username");
+        password = request.getParameter("password");
+      }
+
       HashMap<String,Object> result = new HashMap<String,Object>();
-      result = controllaBandoAvvisoSimapManager.controllaBandoAvvisoSimap(codgar, formulario,sottotipo, username, password);
+      result = controllaBandoAvvisoSimapManager.controllaBandoAvvisoSimap(codgar, null, formulario,sottotipo, username, password);
       ArrayList<String> erroriBloccanti = (ArrayList<String>) result.get("erroriBloccanti");
       ArrayList<String> erroriNonBloccanti = (ArrayList<String>) result.get("erroriNonBloccanti");
       String xml = (String) result.get("xml");
       if(erroriBloccanti.size() == 0 && erroriNonBloccanti.size() == 0){
         //INVIO SUBITO PERCHE' NON SONO STATI TROVATI ERRORI
-        String res = inviaBandoAvvisoSimapManager.inviaBandoAvvisoSimap(codgar, formulario, sottotipo, username, password);
+        String res = inviaBandoAvvisoSimapManager.inviaBandoAvvisoSimap(codgar, null, formulario, sottotipo, username, password, request, usaToken);
         JSONObject jsonResult = JSONObject.fromObject(res);
         boolean esito = (Boolean) jsonResult.get("esito");
         if(esito){target = FORWARD_SUCCESS;}
@@ -155,7 +134,7 @@ public class InviaBandoAvvisoSimapAction extends DispatchActionBaseNoOpzioni {
           request.setAttribute("xml", xml);
           request.setAttribute("tipoavviso",sottotipo);
           request.setAttribute("iterga",iterga);
-          if (!"CORRENTI".equals(credenziali) && !autenticazioneSSO) {
+          if (!"CORRENTI".equals(credenziali)) {
           request.setAttribute("password",password);
           request.setAttribute("username",username);}
           else{
@@ -184,6 +163,10 @@ public class InviaBandoAvvisoSimapAction extends DispatchActionBaseNoOpzioni {
 
     if (messageKey != null) response.reset();
 
+    request.setAttribute("tipoAvvGAREAVVISO", tipoAvvGAREAVVISO);
+    request.setAttribute("settore", settore);
+    request.setAttribute("genereGara", genereGara);
+
     if (logger.isDebugEnabled()) logger.debug("InviaBandoAvvisoSimapAction: fine metodo");
 
     return mapping.findForward(target);
@@ -206,6 +189,11 @@ public class InviaBandoAvvisoSimapAction extends DispatchActionBaseNoOpzioni {
     if(sottotipoStringa != null && sottotipoStringa.length() > 0){sottotipo = new BigInteger(sottotipoStringa);}
     String credenziali = request.getParameter("credenziali");
     String iterga = request.getParameter("iterga");
+    String tipoAvvGAREAVVISO = request.getParameter("tipoAvvGAREAVVISO");
+    String settore = request.getParameter("settore");
+    String genereGara = request.getParameter("genereGara");
+
+    boolean usaToken = false;
 
     ProfiloUtente profiloUtente = (ProfiloUtente) request.getSession().getAttribute(
         CostantiGenerali.PROFILO_UTENTE_SESSIONE);
@@ -213,34 +201,27 @@ public class InviaBandoAvvisoSimapAction extends DispatchActionBaseNoOpzioni {
     boolean autenticazioneSSO = profiloUtente.isAutenticazioneSSO();
 
     if ("CORRENTI".equals(credenziali) || autenticazioneSSO) {
-
-
+      usaToken = true;
       username = profiloUtente.getLogin();
-      String passwordCifrata = profiloUtente.getPwd();
-      if (passwordCifrata != null) {
-        ICriptazioneByte decriptatore;
-        try {
-          decriptatore = FactoryCriptazioneByte.getInstance(
-              ConfigManager.getValore(CostantiGenerali.PROP_TIPOLOGIA_CIFRATURA_DATI),
-              passwordCifrata.getBytes(), ICriptazioneByte.FORMATO_DATO_CIFRATO);
-          password = new String(decriptatore.getDatoNonCifrato());
-        } catch (CriptazioneException e) {
-          logger.error(
-              this.resBundleGenerale.getString(e.getChiaveResourceBundle()), e);
-        }
+      password = ConfigManager.getValore(InviaBandoAvvisoSimapManager.PROP_TOKEN_ACCESSO_FEU);
+      if (StringUtils.isEmpty(password)) {
+        throw new Exception("Valorizzare il token per l\'accesso ai servizi (property \'feu.token\')");
       }
     } else{
       username = request.getParameter("username");
       password = request.getParameter("password");
     }
 
-    String res = inviaBandoAvvisoSimapManager.inviaBandoAvvisoSimap(codgar, formulario, sottotipo, username, password);
+    String res = inviaBandoAvvisoSimapManager.inviaBandoAvvisoSimap(codgar, null, formulario, sottotipo, username, password, request, usaToken);
     JSONObject jsonResult = JSONObject.fromObject(res);
     boolean esito = (Boolean) jsonResult.get("esito");
     if(esito){target = FORWARD_SUCCESS;}
     else{
       target = FORWARD_ERROR;
       String messaggio = (String) jsonResult.get("messaggio");
+      request.setAttribute("tipoAvvGAREAVVISO", tipoAvvGAREAVVISO);
+      request.setAttribute("settore", settore);
+      request.setAttribute("genereGara", genereGara);
       logger.error("inviabandoavvisosimap ERROR : " + messaggio);
       this.aggiungiMessaggio(request, "errors.inviabandoavvisosimap.error", messaggio);
     }
@@ -265,7 +246,7 @@ public class InviaBandoAvvisoSimapAction extends DispatchActionBaseNoOpzioni {
     String target = FORWARD_SUCCESS;
     
     String codgar = request.getParameter("codgar");
-    JSONArray ja = this.leggiPubblicazioniManager.leggiPubblicazioni(codgar,request);
+    JSONArray ja = this.leggiPubblicazioniManager.leggiPubblicazioni(codgar,request,null,null);
     
     ArrayList<ArrayList> pubblicazioni = new ArrayList<ArrayList>();
     

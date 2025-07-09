@@ -144,12 +144,17 @@ public class ProcessHomeAction extends DispatchActionBaseNoOpzioni {
     params += "%;T:" + profiloUtente.getId();
 
     final String uffintAbilitata = ConfigManager.getValore("it.eldasoft.associazioneUffintAbilitata");
+    final String multiEnteAbilitata = ConfigManager.getValore("loginMultiEnte");
     final OpzioniUtente opzioniUtente = new OpzioniUtente(profiloUtente.getFunzioniUtenteAbilitate());
     final CheckOpzioniUtente opzioniAmministratore = new CheckOpzioniUtente(CostantiGeneraliAccount.OPZIONI_AMMINISTRAZIONE_PARAM_SISTEMA);
-    if (uffintAbilitata.equals("1") && !opzioniAmministratore.test(opzioniUtente)) {
+    if (uffintAbilitata.equals("1") && !opzioniAmministratore.test(opzioniUtente) && !"1".equals(multiEnteAbilitata)) {
       where += " AND CENINT IN (select codein from usr_ein where syscon = ? )";
       params += ";T:" + profiloUtente.getId();
     }
+    if ("1".equals(multiEnteAbilitata)) {
+      where += " AND CENINT = ?";
+      params += ";T:" + request.getSession().getAttribute("uffint");
+    }  
 
     final String filtroLivelloUtente = FiltroLivelloUtenteFunction.getFiltroLivelloUtente(entita, profiloUtente);
     if (filtroLivelloUtente != null && !filtroLivelloUtente.isEmpty())
@@ -362,6 +367,27 @@ public class ProcessHomeAction extends DispatchActionBaseNoOpzioni {
 
     return UtilityStruts.redirectToPage(href, false, request);
   }
+  
+  public ActionForward trovaDocumentiDurc(ActionMapping mapping, ActionForm form,
+      HttpServletRequest request, HttpServletResponse response) {
+    if(LOGGER.isDebugEnabled()) LOGGER.debug("trovaDocumentiDurc: iniziometodo");
+
+    final String href = "gare/v_gare_docditta/lista-durc.jsp";
+    final String entita = "V_GARE_DOCDITTA";
+
+    String where = "(V_GARE_DOCDITTA.DESCRIZIONE = 'DURC' "
+        + "and V_GARE_DOCDITTA.IDPRG IS NOT NULL "
+        + "and V_GARE_DOCDITTA.IDDOCDG IS NOT NULL)";
+    String params = "";
+
+    UtilityTags.createHashAttributeForSqlBuild(request.getSession(), entita, 0);
+    UtilityTags.putAttributeForSqlBuild(request.getSession(), entita, 0, UtilityTags.DEFAULT_HIDDEN_WHERE_DA_TROVA, where);
+    UtilityTags.putAttributeForSqlBuild(request.getSession(), entita, 0, UtilityTags.DEFAULT_HIDDEN_PARAMETRI_DA_TROVA, params);
+
+    if(LOGGER.isDebugEnabled()) LOGGER.debug("trovaDocumentiDurc: fine metodo");
+
+    return UtilityStruts.redirectToPage(href, false, request);
+  }
 
   public ActionForward trovaOrdiniNso(ActionMapping mapping, ActionForm form,
       HttpServletRequest request, HttpServletResponse response) {
@@ -540,7 +566,58 @@ public class ProcessHomeAction extends DispatchActionBaseNoOpzioni {
 
     return UtilityStruts.redirectToPage(href, false, request);
   }
+  
+  public ActionForward trovaStipulaDaFirmare(ActionMapping mapping, ActionForm form,
+      HttpServletRequest request, HttpServletResponse response) {
+    if (LOGGER.isDebugEnabled()) LOGGER.debug("trovaStipulaDaFirmare: inizio metodo");
 
+    final ProfiloUtente profiloUtente = (ProfiloUtente) request.getSession().getAttribute(CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+    final String href = "gare/v_gare_stipula/v_gare_stipula-lista-daFirmare.jsp";
+    final String entita = "V_GARE_STIPULA";
+    String where = "(V_GARE_STIPULA.ISARCHI <> ? OR V_GARE_STIPULA.ISARCHI IS NULL) "
+        + "and (V_GARE_STIPULA.STATO IS NOT NULL and V_GARE_STIPULA.STATO < 5)"
+        + "and V_GARE_STIPULA.CONTRACT = ?";
+    String params = "T:1;N:"+profiloUtente.getId();
+
+    final String filtroLivelloUtente = FiltroLivelloUtenteFunction.getFiltroLivelloUtente(entita, profiloUtente);
+
+    if (filtroLivelloUtente != "")
+      where += " AND " + filtroLivelloUtente;
+
+    UtilityTags.createHashAttributeForSqlBuild(request.getSession(), entita, 0);
+    UtilityTags.putAttributeForSqlBuild(request.getSession(), entita, 0, UtilityTags.DEFAULT_HIDDEN_WHERE_DA_TROVA, where);
+    UtilityTags.putAttributeForSqlBuild(request.getSession(), entita, 0, UtilityTags.DEFAULT_HIDDEN_PARAMETRI_DA_TROVA, params);
+
+    if (LOGGER.isDebugEnabled()) LOGGER.debug("trovaStipulaDaFirmare: fine metodo");
+
+    return UtilityStruts.redirectToPage(href, false, request);
+  }
+
+  public ActionForward consultaAlboFornitoriRai(ActionMapping mapping, ActionForm form,
+      HttpServletRequest request, HttpServletResponse response) {
+    if (LOGGER.isDebugEnabled()) LOGGER.debug("consultaAlboFornitoriRai: inizio metodo");
+
+    final ProfiloUtente profiloUtente = (ProfiloUtente) request.getSession().getAttribute(CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+    final String href = "gare/gare/alboFornitori/albo-richiesta-lista.jsp";
+    final String entita = "";
+    String where = "";
+    String params = "T:1;N:"+profiloUtente.getId();
+
+    final String filtroLivelloUtente = FiltroLivelloUtenteFunction.getFiltroLivelloUtente(entita, profiloUtente);
+
+    if (filtroLivelloUtente != "")
+      where += " AND " + filtroLivelloUtente;
+
+    UtilityTags.createHashAttributeForSqlBuild(request.getSession(), entita, 0);
+    UtilityTags.putAttributeForSqlBuild(request.getSession(), entita, 0, UtilityTags.DEFAULT_HIDDEN_WHERE_DA_TROVA, where);
+    UtilityTags.putAttributeForSqlBuild(request.getSession(), entita, 0, UtilityTags.DEFAULT_HIDDEN_PARAMETRI_DA_TROVA, params);
+
+    if (LOGGER.isDebugEnabled()) LOGGER.debug("consultaAlboFornitoriRai: fine metodo");
+
+    return UtilityStruts.redirectToPage(href, false, request);
+  }
+
+  
   public ActionForward trovaGaraLotto(ActionMapping mapping, ActionForm form,
       HttpServletRequest request, HttpServletResponse response) {
     if (LOGGER.isDebugEnabled()) LOGGER.debug("trovaGaraLotto: inizio metodo");

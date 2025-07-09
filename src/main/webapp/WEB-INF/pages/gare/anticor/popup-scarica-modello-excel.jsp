@@ -78,7 +78,7 @@
 			var anno = '${anno}';
 			var tipoExport = $('input[name=rbexport]:checked').val();
 			$("#confermaDownload").attr("disabled", true).css( "opacity", "0.5" );
-			var href="${contextPath}/pg/ExportAdempimenti190.do?"+csrfToken+"&chiave="+chiave+"&tipoExport="+tipoExport+"&anno="+anno+"&numeroPopUp=1";
+			var href="${contextPath}/pg/ExportAdempimenti190.do?chiave="+chiave+"&tipoExport="+tipoExport+"&anno="+anno+"&numeroPopUp=1";
 			document.location.href=href;
 		}
 

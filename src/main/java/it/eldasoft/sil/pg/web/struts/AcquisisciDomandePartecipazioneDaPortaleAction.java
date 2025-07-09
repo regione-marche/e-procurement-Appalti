@@ -66,7 +66,7 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
   private MEPAManager         mepaManager;
 
   private GestioneWSDMManager gestioneWSDMManager;
-  
+
   private PgManagerEst1 pgManagerEst1;
 
   public void setSqlManager(SqlManager sqlManager) {
@@ -88,7 +88,7 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
   public void setGestioneWSDMManager(GestioneWSDMManager gestioneWSDMManager) {
     this.gestioneWSDMManager = gestioneWSDMManager;
   }
-  
+
   public void setPgManagerEst1(PgManagerEst1 pgManagerEst1) {
 	    this.pgManagerEst1 = pgManagerEst1;
 	  }
@@ -121,7 +121,7 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
 
     String dbFunctionDateToString = sqlManager.getDBFunction("DATETIMETOSTRING",
         new String[] { "comdatprot" });
-    String selectW_INVCOM = "select idprg, idcom, comkey1, comnumprot, " + dbFunctionDateToString + ", comkey3 from w_invcom where comkey2 = ? and comstato = '5' and comtipo = 'FS10' order by comdatastato";
+    String selectW_INVCOM = "select idprg, idcom, comkey1, comnumprot, " + dbFunctionDateToString + ", comkey3 from w_invcom where comkey2 = ? and comstato = '5' and comtipo = 'FS10' order by comkey1, comkey3";
     String selectW_PUSER = "select userkey1 from w_puser where usernome = ?";
     String selectW_DOCDIG = "select idprg, iddocdig from w_docdig where digent = ? and idprg = ? and digkey1 = ? and lower(dignomdoc) = '" + CostantiAppalti.nomeFileDatiPartecipazione + "'";
     String updateW_INVCOM = "update w_invcom set comstato = ? where idprg = ? and idcom = ?";
@@ -158,7 +158,8 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
         erroreGestito=true;
         messageKey ="errors.gestoreException.*.acquisizione.DomandePartecipazioneDaPortale.DatiIncosistenti";
         messaggioPerLog = resBundleGenerale.getString(messageKey);
-        throw new GestoreException("Non é possibile procedere con l'acquisizione delle domande di partecipazione da portale Appalti perché dati inconsistenti.","acquisizione.DomandePartecipazioneDaPortale.DatiIncosistenti" , new Exception());
+        result.put("Esito", "Errore");
+        result.put("MsgErrore", messaggioPerLog);
       }
 
       //Controllo che la data termine presentazione domande non sia passata
@@ -169,16 +170,18 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
         messaggioPerLog = resBundleGenerale.getString(messageKey);
         messaggioPerLog = messaggioPerLog.replace("{0}", esitoControllo[1]);
         messaggioPerLog = messaggioPerLog.replace("{1}", esitoControllo[2]);
-        throw new GestoreException("Non é possibile procedere con l'acquisizione delle domande di partecipazione da portale Appalti perché termini non scaduti.","acquisizione.DomandePartecipazioneDaPortale.TerminiNonScaduti", new Object[]{esitoControllo[1],esitoControllo[2]} , new Exception());
+        result.put("Esito", "Errore");
+        result.put("MsgErrore", messaggioPerLog);
       }
-      
+
       //Controllo che la gara non sia sospesa
       boolean isGaraSospesa = pgManagerEst1.isGaraSospesa(codgar1);
       if(isGaraSospesa){
         erroreGestito=true;
         messageKey ="errors.gestoreException.*.acquisizione.DomandePartecipazioneDaPortale.GaraSospesa";
         messaggioPerLog = resBundleGenerale.getString(messageKey);
-        throw new GestoreException("Non é possibile procedere con l'acquisizione delle offerte da portale Appalti perché gara sospesa.","acquisizione.OfferteDaPortale.GaraSospesa", new Object[]{} , new Exception());
+        result.put("Esito", "Errore");
+        result.put("MsgErrore", messaggioPerLog);
       }
 
       List<?> datiW_INVCOM = this.sqlManager.getListVector(selectW_INVCOM, new Object[] { ngara });
@@ -201,6 +204,14 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
 
             String w_invcom_idprg = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 0).getValue();
             Long w_invcom_idcom = (Long) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 1).getValue();
+
+            //APPALTI-874
+            Long iddocdig = (Long) this.sqlManager.getObject("select iddocdig from w_docdig where digkey1=? and digent='W_INVCOM' and upper(DIGNOMDOC) LIKE 'RIEPILOGO_BUSTE.PDF%'", new Object[] {w_invcom_idcom.toString()});
+            if(iddocdig!=null) {
+              Long occorrenzeWsAllegati = (Long) this.sqlManager.getObject("select count(*) from wsallegati where key1=? and key2=? and entita=?", new Object[] {w_invcom_idprg,iddocdig.toString(), "W_DOCDIG"});
+              if(new Long(0).equals(occorrenzeWsAllegati))
+                mepaManager.gestioneWSALLEGATI(w_invcom_idcom, w_invcom_idprg, iddocdig);
+            }
             String comkey1 = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 2).getValue();
             String userkey1 = (String) this.sqlManager.getObject(selectW_PUSER, new Object[] { comkey1 });
             String comnumprot = (String) SqlManager.getValueFromVectorParam(datiW_INVCOM.get(i), 3).getValue();
@@ -309,6 +320,11 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
                   gestoreDITG.inserisci(status, containerDITG);
                   // Inizializzazione documenti della ditta
                   pgManager.inserimentoDocumentazioneDitta(codgar1, ngara, codimp);
+                  
+                  //gestisco l'avvalimento 
+                  if(document.getTipoPartecipazione().getAvvalimento() && document.getTipoPartecipazione().getImpreseAusiliarie()!=null) {
+                    pgManagerEst1.inserisciDitteAvvalimento(ngara,codimp,document.getTipoPartecipazione().getImpreseAusiliarie().getImpresaAusiliariaList(),request);
+                  }
 
                   //Salvataggio della data DATFS10
                   dataCorrente=new Date();
@@ -360,6 +376,33 @@ public class AcquisisciDomandePartecipazioneDaPortaleAction extends Action {
 
               }
             }
+          }
+        }
+      }
+      try {
+        status = this.sqlManager.startTransaction();
+        //Si deve calcolare il numero ordine secondo il criterio della data di presentazione offerta
+        String isGaraLottiConOffertaUnica = "false";
+        // Si determina se la gara è ad Offerta unica
+        Long genere = (Long) this.sqlManager.getObject("select genere from gare where ngara=?", new Object[]{ngara});
+        if (new Long(3).equals(genere))
+          isGaraLottiConOffertaUnica = "true";
+
+        Long paginaAttiva = new Long(GestioneFasiRicezioneFunction.FASE_RICEZIONE_DOMANDE_DI_PARTECIPAZIONE);
+        pgManagerEst1.setNumeroOrdine(ngara, codgar1, isGaraLottiConOffertaUnica, "false", "false", paginaAttiva.toString(), 2);
+      }catch (SQLException e){
+        logger.error("Errore nel riordinamento delle domande di partecipazione");
+      }finally {
+        if (status != null) {
+          try {
+            if (commit == true) {
+              livEvento = 1;
+              errMsgEvento = "";
+              this.sqlManager.commitTransaction(status);
+            } else {
+              this.sqlManager.rollbackTransaction(status);
+            }
+          } catch (SQLException e) {
           }
         }
       }

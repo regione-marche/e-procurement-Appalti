@@ -63,6 +63,8 @@ public class SetWSLoginAction extends Action {
       } else {
         syscon = request.getParameter("syscon");
       }
+      if(!"configurazione".equals(request.getParameter("pagina")) && "-1".equals(syscon))
+        return null;
     }
 
     String username = request.getParameter("username");

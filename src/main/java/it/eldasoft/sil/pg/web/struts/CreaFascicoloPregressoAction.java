@@ -9,6 +9,7 @@ import java.util.Vector;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import it.eldasoft.utils.properties.ConfigManager;
 import org.apache.log4j.Logger;
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
@@ -119,6 +120,13 @@ public class CreaFascicoloPregressoAction extends Action {
         String idconfi = request.getParameter("idconfi");
         Long genereGara = null;
         String servizio = "FASCICOLOPROTOCOLLO";
+
+        String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+        if("1".equals(wsdmLoginComune)){
+          String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+          username = credenziali[0];
+          password = credenziali[1];
+        }
 
         HashMap<String, Object> parWSDM = null;
         int i=0;

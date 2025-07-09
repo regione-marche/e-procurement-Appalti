@@ -80,7 +80,22 @@
 <c:if test='${integrazioneWSERP eq "1"}'>
 	<c:set var="presenzaRda" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetWSERPPresenzaRdaFunction", pageContext, codiceGara, ngara, requestScope.tipoWSERP)}' />
 	<c:set var="tipoWSERP" value='${requestScope.tipoWSERP}' />
+	<c:set var="integrazioneSIGLA" value='${tipoWSERP eq "SIGLA" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GestioneUnicaERP")}' />
 </c:if>
+
+<c:set var="comunicaEsitoRdaInGaraTITLE" value="Invia dati contratto ad ERP"/>
+<c:if test='${integrazioneSIGLA}'>
+	<c:set var="comunicaEsitoRdaInGaraTITLE" value="Crea contratto in SIGLA"/>
+</c:if>
+
+<c:if test='${		  modo eq "NUOVO"
+				 and  integrazioneWSERP eq "1" 
+				 and  tipoWSERP eq "RAI" 
+				 and  gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp") 
+             }'>
+	<c:set var="esisteGaraNumeroContrattoErp" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsisteGaraNumeroContrattoErpFunction",  pageContext, ngara )}' />
+</c:if>
+
 
 <%/* Dati generali della gara */%>
 <gene:formScheda entita="GARE" gestisciProtezioni="true" plugin="it.eldasoft.sil.pg.tags.gestori.plugin.GestoreInizializzazioniAttoContrattuale"
@@ -115,15 +130,29 @@
 				</td>
 			</tr>
 		</c:if>
-		<c:if test='${modo eq "VISUALIZZA" and autorizzatoModifiche ne "2" and (((tipoWSERP eq "CAV" or tipoWSERP eq "AMIU") && empty datiRiga.GARE1_NUMRDO && isAccordoQuadro ne 1) and (presenzaRda eq "1" || presenzaRda eq "2")) }'>
+		<c:if test='${modo eq "VISUALIZZA" and autorizzatoModifiche ne "2" and (((tipoWSERP eq "CAV" or tipoWSERP eq "AMIU") && empty datiRiga.GARE1_NUMRDO && isAccordoQuadro ne 1) and (presenzaRda eq "1" || presenzaRda eq "2") || (integrazioneSIGLA && empty(datiRiga.GARE_NREPAT)) )}'>
 			<tr>
 				<td class="vocemenulaterale">
-					<a href="javascript:comunicaEsitoRdaInGara('${key}','${requestScope.tipoWSERP}');" title='Invia dati contratto ad ERP' tabindex="1512">
-						Invia dati contratto ad ERP
+					<a href="javascript:comunicaEsitoRdaInGara('${key}','${requestScope.tipoWSERP}');" title='${comunicaEsitoRdaInGaraTITLE}' tabindex="1512">
+						${comunicaEsitoRdaInGaraTITLE}
 					</a>
 				</td>
 			</tr>
 		</c:if>
+
+		<c:if test='${     modo eq "VISUALIZZA" 
+		               and integrazioneWSERP eq "1" 
+		               and tipoWSERP eq "RAI" 
+		               and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.G1STIPULA.AssegnaNumeroContrattoErp")
+		               
+		             }'>
+			<tr>
+				<td class="vocemenulaterale" >
+					<a href="javascript:popUpAssociaContrattoErp();" title="Associa contratto Sap" tabindex="1505">Associa contratto Sap</a>
+				</td>
+			</tr>
+		</c:if>	
+				
 	</gene:redefineInsert>
 	<gene:redefineInsert name="documentiAssociati" >
 	<c:choose>
@@ -154,6 +183,7 @@
 		<jsp:param name="tipoContratto" value="contratto"/>
 		<jsp:param name="codice" value="${codiceGara}"/>
 		<jsp:param name="ncont" value="${ncont}"/>
+		<jsp:param name="integrazioneWSERP" value="${integrazioneWSERP}"/>
 	</jsp:include>
 	
 	<c:if test='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARECONT.DCONSD")}'>
@@ -343,12 +373,13 @@
 	function archivioImpresaAggDef(){
 		var codiceImpresa = getValue("GARE_DITTA");
 		var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href;
+		document.location.href = contextPath + "/ApriPagina.do?" + href;
 	}
 
 	function gestioneContrattoDEC(ngara){
-		var href = "href=gare/gare/gare-popup-integrazione-dec.jsp&ngara=" + ngara + "&ncont=" + ${ncont };
-		openPopUpCustom(href, "integrazioneDEC", 780, 550, "no", "yes");
+		var codiceImpresa = getValue("GARE_DITTA");
+		var href = "href=gare/gare/gare-popup-integrazione-dec.jsp&ngara=" + ngara + "&ncont=${ncont }&codimp=" + codiceImpresa;
+		openPopUpCustom(href, "integrazioneDEC", 800, 550, "no", "yes");
 	}
 	
 	function gestionePUBTRASP(pubtrasp){
@@ -473,21 +504,33 @@
 		var ncont="${ncont }";
 		var ngaral="${ngaral }";
 		var codimp="${codimp }";
-		document.pagineForm.action += "&modcont=" + modcont + "&isAccordoQuadro=" + isAccordoQuadro + "&codcont=" + codcont + "&ncont=" + ncont + "&ngaral=" + ngaral + "&codimp=" + codimp;
+		document.pagineForm.action += "?modcont=" + modcont + "&isAccordoQuadro=" + isAccordoQuadro + "&codcont=" + codcont + "&ncont=" + ncont + "&ngaral=" + ngaral + "&codimp=" + codimp;
 		selezionaPaginaDefault(pageNumber);
 	}
 	
 	function comunicaEsitoRdaInGara(ngara,tipoWSERP){
 		var href="href=gare/gare/gare-popup-comunicaEsitoRda.jsp&ngara=" + ngara + "&isGaraLottiConOffertaUnica=true"+ "&tipoWSERP=" + tipoWSERP;
-		openPopUpCustom(href, "comunicaEsitoRda", 700, 600, "yes","yes");
+		var width = 700;
+		if(tipoWSERP == "SIGLA"){
+			width = 800;
+		}
+		openPopUpCustom(href, "comunicaEsitoRda", width, 600, "yes","yes");
 	}
 	
 	
 	
 	function documentiAssociatiGarecont(){
 		var keys = "GARECONT.NGARA=T:"+getValue("GARECONT_NGARA")+";GARECONT.NCONT=N:"+${ncont};
-		var href = contextPath+'/ListaDocumentiAssociati.do?'+csrfToken+'&metodo=visualizza&entita=GARECONT&valori='+keys;
+		var href = contextPath+'/ListaDocumentiAssociati.do?metodo=visualizza&entita=GARECONT&valori='+keys;
 		document.location.href = href;
 	}
+	
+	function popUpAssociaContrattoErp(){
+	   var codGara = $('#GARE_NGARA').val();
+	   var codStipula = $('#G1STIPULA_CODSTIPULA').val();
+	   var idStipula  = $('#G1STIPULA_ID').val();
+	   var href = "href=gare/g1stipula/popup-richiesta-numero-contratto-Erp.jsp&modo=NUOVO&idStipula="+idStipula+"&codStipula="+codStipula+"&codGara="+codGara;
+	   openPopUpCustom(href, "Associa numero contratto Sap", 800, 450, "yes", "yes");
+	}	
 	
 </gene:javaScript>

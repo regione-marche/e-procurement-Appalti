@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 
@@ -159,6 +160,57 @@ public class AtacWSERPManager {
     //return null;
   }
 
+
+  public Long getTipologiaFromGruppo(String codgar, Long gruppo) throws SQLException, GestoreException{
+    Long tipologia = null;
+    List<?> w9cfPubb = sqlManager.getListVector("select ID, CL_WHERE_VIS, CL_WHERE_ULT from G1CF_PUBB where GRUPPO = ? and id != 17 order by ID desc", new Object[] {gruppo});
+    if (w9cfPubb != null && !w9cfPubb.isEmpty()) {
+
+      for (int i = 0; i < w9cfPubb.size(); i++) {
+        tipologia = SqlManager.getValueFromVectorParam(w9cfPubb.get(i), 0).longValue();
+        String clausolaWhereVis = (String) SqlManager.getValueFromVectorParam(w9cfPubb.get(i), 1).getValue();
+        String clausolaWhereUlt = (String) SqlManager.getValueFromVectorParam(w9cfPubb.get(i), 2).getValue();
+        if (clausolaWhereVis != null && !clausolaWhereVis.equals("")) {
+          clausolaWhereVis = " and (" + clausolaWhereVis + ")";
+        }
+        if (clausolaWhereUlt != null && !clausolaWhereUlt.equals("")) {
+          clausolaWhereVis = clausolaWhereVis + " and (" + clausolaWhereUlt + ")";
+        }
+        String selectVisibile = "select count(*) from TORN left outer join GARE on TORN.CODGAR=GARE.CODGAR1 where TORN.CODGAR=? ";
+        Long countVisibile = (Long) sqlManager.getObject(selectVisibile + clausolaWhereVis, new Object[] {codgar});
+        if(countVisibile.intValue()>0){
+          break;
+        }
+      }
+    }
+    
+    String verNPA = null;
+    try {
+      verNPA = (String) sqlManager.getObject("select vernpa from torn where codgar = ?", new Object[] { codgar });
+    } catch (SQLException e1) {
+      logger.error("Errore durante la lettura della versione npa della gara " + codgar, e1);
+      throw new GestoreException("Errore durante la lettura della versione npa della gara " + codgar, null, e1);
+    }
+    
+    if(tipologia==null){
+      switch(gruppo.intValue()) {
+      case 1:
+        if (StringUtils.isNotEmpty(verNPA))
+          tipologia = Long.valueOf(103);
+        else
+          tipologia = Long.valueOf(3);
+      break;
+      case 4:
+        if (StringUtils.isNotEmpty(verNPA))
+          tipologia = Long.valueOf(110);
+        else
+          tipologia = Long.valueOf(20);
+      break;
+      default:
+      }
+    }
+    return tipologia;
+  }
 
 
 

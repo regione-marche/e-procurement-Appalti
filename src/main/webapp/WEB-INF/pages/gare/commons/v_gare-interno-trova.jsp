@@ -107,10 +107,10 @@
   	function trovaCreaNuovaGara(){
 			<c:choose>
 				<c:when test="${param.entita eq 'V_GARE_ELEDITTE' }">
-					document.forms[0].action += "&tipoGara=garaLottoUnico&garaPerElenco=1";
+					document.forms[0].action += "?tipoGara=garaLottoUnico&garaPerElenco=1";
 				</c:when>
 				<c:otherwise>
-					document.forms[0].action += "&tipoGara=garaLottoUnico&garaPerCatalogo=1";
+					document.forms[0].action += "?tipoGara=garaLottoUnico&garaPerCatalogo=1";
 				</c:otherwise>
 			</c:choose>
 			document.trova.jspPathTo.value="/WEB-INF/pages/gare/gare/gare-scheda.jsp";

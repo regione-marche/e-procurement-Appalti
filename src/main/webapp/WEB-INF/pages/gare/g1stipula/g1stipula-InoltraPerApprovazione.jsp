@@ -61,7 +61,7 @@
 			
 			window.onload = function () { 
 				window.opener.bloccaRichiesteServer();
-				window.opener.location = "${contextPath}/History.do?"+csrfToken+"&metodo=reload";
+				window.opener.location = "${contextPath}/History.do?metodo=reload";
 			}
 			
 			function chiudi(){

@@ -148,7 +148,7 @@
 	<gene:javaScript>
 	
 		if("${isRup}"){
-			window.opener.location.href = '${pageContext.request.contextPath}/ApriPagina.do?' + csrfToken + '&href=w3/w3deleghe/w3deleghe-scheda.jsp?'+csrfToken+'&modo=NUOVO';
+			window.opener.location.href = '${pageContext.request.contextPath}/ApriPagina.do?href=w3/w3deleghe/w3deleghe-scheda.jsp&modo=NUOVO';
 			window.close();
 		}
 		

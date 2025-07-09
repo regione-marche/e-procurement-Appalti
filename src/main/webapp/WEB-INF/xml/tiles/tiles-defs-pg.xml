@@ -67,6 +67,18 @@
 		<put name="titoloMaschera" value="Esportazione della lista dei lotti della gara completata" />
 		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-exportLottiGara.jsp"/>
 	</definition>
+
+	<definition name="exportLottiPartecipanti" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Esportazione della lista dei lotti e dei partecipanti della gara" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-exportLottiPartecipanti.jsp"/>
+	</definition>
+
+	<definition name="successExportLottiPartecipanti" extends=".popupDef">
+		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>
+		<put name="titoloMaschera" value="Esportazione della lista dei lotti e dei partecipanti della gara completata" />
+		<put name="dettaglio" value="/WEB-INF/pages/gare/gare/gare-popup-exportLottiPartecipanti.jsp"/>
+	</definition>
 	
 	<definition name="exportOperatoriIscritti" extends=".popupDef">
 		<put name="eventiDiPagina" value="onload='setVariables();findTableDatiLista();initPagina();'"/>

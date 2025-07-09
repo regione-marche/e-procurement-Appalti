@@ -27,6 +27,7 @@
 <jsp:include page="./defStepWizardFasiGara.jsp" />
 
 <c:set var="tmp" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.GestioneFaseAstaElettronicaFunction", pageContext, numeroGara,bustalotti)}'/>
+<c:set var="isVerificaPDFA" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "uploadFile.verifica.pdfA")}'/>
 
 
 <c:choose>
@@ -125,16 +126,20 @@
 		
 		
 		function scegliFile(indice) {
+			var file = document.getElementById("selFile[" + indice + "]").files[0];
 			var selezioneFile = document.getElementById("selFile[" + indice + "]").value;
 			var lunghezza_stringa=selezioneFile.length;
 			var posizione_barra=selezioneFile.lastIndexOf("\\");
 			var nome=selezioneFile.substring(posizione_barra+1,lunghezza_stringa).toUpperCase();
 			
+			var ext = nome.split(".")[1].toLowerCase();
 			var formatoAllegati="${formatoAllegati}";
 			if(!controlloTipoFile(nome,formatoAllegati)){
 				alert("Il formato del file selezionato non è valido.\nI formati consentiti sono: " + formatoAllegati);
 				document.getElementById("selFile[" + indice + "]").value="";
 				setValue("W_DOCDIG_DIGNOMDOC_" + indice,"");
+				$('#checkPDFaDocMessage_'+indice).css("display", "none");
+				$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
 				return;
 			}
 			
@@ -142,10 +147,79 @@
 				alert("Il nome del file non può superare i 100 caratteri!");
 				document.getElementById("selFile[" + indice + "]").value="";
 				setValue("W_DOCDIG_DIGNOMDOC_" + indice,"");
+				$('#checkPDFaDocMessage_'+indice).css("display", "none");
+				$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
 			}else{
 				setValue("W_DOCDIG_DIGNOMDOC_" + indice,nome);
 				$("#spanRichiestaFirma_" + indice).show();
+				setValue("W_DOCDIG_DIGTIPDOC_"+indice,ext);
+				<c:if test="${isVerificaPDFA eq '1'}">
+					if(nome.includes('.PDF')){
+						checkValiditaPDFA(file,indice);
+					} else {
+						$('#checkPDFaDocMessage_'+indice).css("display", "none");
+						$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
+					}
+				</c:if>
 			}
+		}
+		
+		function checkValiditaPDFA(file,indice) {
+			if(file != undefined){
+				var formdata = false;
+				if (window.FormData) {
+					formdata = new FormData();
+				}
+				if (formdata) {
+					formdata.append("file", file);
+				}
+				_wait();
+				$.ajax({
+					url: "CheckFormatoFilePDFa.do",
+					data: formdata,
+					enctype: 'multipart/form-data',
+					type: 'POST',
+					cache: false,
+					contentType: false,
+					processData: false,
+					dataType: "json",
+					success: function(res) {
+						console.log(res);
+						if(res.esito == 'ko'){
+							$('#checkPDFaDocMessage_'+indice).css("display", "contents");
+							$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
+							setValue("W_DOCDIG_DIGTIPDOC_"+indice,"pdf");
+						} else {
+							$('#checkPDFaDocMessage_'+indice).css("display", "none");
+							$('#imgCheckPDFaDocMessage_'+indice).css("display", "unset");
+							setValue("W_DOCDIG_DIGTIPDOC_"+indice,"pdf/a");
+						}
+					},
+					error: function(e) {
+						alert('Errore nella verifica del file!');
+					},
+					complete: function() {
+						_nowait();
+					}
+				});
+			} else {
+				$('#checkPDFaDocMessage_'+indice).css("display", "none");
+				$('#imgCheckPDFaDocMessage_'+indice).css("display", "none");
+				setValue("W_DOCDIG_DIGTIPDOC_"+indice,null);
+			}
+		}
+			
+		function _wait() {
+			document.getElementById('bloccaScreen').style.visibility = 'visible';
+			$('#bloccaScreen').css("width", $(document).width());
+			$('#bloccaScreen').css("height", $(document).height());
+			document.getElementById('wait').style.visibility = 'visible';
+			$("#wait").offset({ top: $(window).height() / 2, left: ($(window).width() / 2) - 200 });
+		}
+	
+		function _nowait() {
+			document.getElementById('bloccaScreen').style.visibility = 'hidden';
+			document.getElementById('wait').style.visibility = 'hidden';
 		}
 		
 		function scegliFileDocumentale(param1,param2,indice) {
@@ -175,7 +249,7 @@
 		
 		function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 			var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-			document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+			document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 		}
 		
 		
@@ -226,7 +300,7 @@
 				onOffMsg();
  	 		}else {
 				document.forms[0].encoding="multipart/form-data";
-				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do?"+csrfToken;
+				document.forms[0].action = "${pageContext.request.contextPath}/pg/Scheda.do";
 				conferma_Default();	
 			}
 			
@@ -308,10 +382,10 @@
 		
 	</c:if>
 	
-	function impostaGaraNonAggiudicata(ngara,codgar1,esineg,datneg,npannrevagg){
-		var href="href=gare/commons/popup-ImpostaGaraNonAggiudicata.jsp&ngara=" + ngara + "&codgar1=" + codgar1 + "&esineg=" + esineg + "&datneg=" + datneg + "&npannrevagg=" + npannrevagg;
+	function impostaGaraNonAggiudicata(ngara,codgar1,esineg,datneg,npannrevagg,giustneg){
+		var href="href=gare/commons/popup-ImpostaGaraNonAggiudicata.jsp&ngara=" + ngara + "&codgar1=" + codgar1 + "&esineg=" + esineg + "&datneg=" + datneg + "&npannrevagg=" + npannrevagg + "&giustneg=" + giustneg;
 		href+="&isLottoOffUnica=Si";
-		openPopUpCustom(href, "impostaGaraNonAggiudicata", 700, 400, "yes", "yes");
+		openPopUpCustom(href, "impostaGaraNonAggiudicata", 850, 400, "yes", "yes");
 	}
 	
 	<c:if test='${updateLista eq 1 and pgAsta eq 1}'>

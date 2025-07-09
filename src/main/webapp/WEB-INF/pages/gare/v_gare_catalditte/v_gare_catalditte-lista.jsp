@@ -11,6 +11,7 @@
 %>
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 
 <c:set var="abilitazioneGare" value="${sessionScope.profiloUtente.abilitazioneGare}" />
 <c:set var="filtroLivelloUtente" value='${gene:callFunction2("it.eldasoft.gene.tags.utils.functions.FiltroLivelloUtenteFunction", pageContext, "V_GARE_CATALDITTE")}' />
@@ -250,17 +251,20 @@
   		where="${filtroUffint }">
   	
   	<c:set var='visualizzaPopUp' value='${gene:checkProt(pageContext, "MASC.VIS.GARE.GARE-scheda") || gene:checkProtFunz(pageContext, "MOD","MOD") || gene:checkProtFunz(pageContext, "DEL","DEL") }'/>
-  	
+  		<c:set var="bloccoPubblicazioneANAC" value='false'/>
 			<gene:campoLista title="Opzioni" width="50">
 				<c:if test='${visualizzaPopUp}'>
 					<gene:PopUp variableJs="rigaPopUpMenu${currentRow}" onClick="chiaveRiga='${chiaveRigaJava}'">
+						 <c:set var="codgarRiga" value='${fn:substring(chiaveRiga, fn:indexOf(chiaveRiga, ":")+1, fn:length(chiaveRiga))}'/>
+						<c:set var="bloccoPubblicazioneANAC" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.npa.GetBloccoModificaPCP", pageContext, codgarRiga, "false")}'/>
+						
 						<c:if test='${gene:checkProt(pageContext, "MASC.VIS.GARE.GARE-scheda")}' >
 							<gene:PopUpItem title="Visualizza catalogo" href="visualizzaGara('${chiaveRigaJava}')" />
 						</c:if>
 						<c:if test='${(datiRiga.G_PERMESSI_AUTORI ne "2") && gene:checkProt(pageContext, "MASC.VIS.GARE.GARE-scheda") && gene:checkProtFunz(pageContext, "MOD","MOD")}' >
 							<gene:PopUpItem title="Modifica catalogo" href="modificaGara('${chiaveRigaJava}')" />
 						</c:if>
-						<c:if test='${(datiRiga.G_PERMESSI_AUTORI ne "2") && gene:checkProtFunz(pageContext, "DEL","DEL")}' >
+						<c:if test='${(datiRiga.G_PERMESSI_AUTORI ne "2") && gene:checkProtFunz(pageContext, "DEL","DEL") && bloccoPubblicazioneANAC ne "true"}' >
 							<gene:PopUpItem title="Elimina catalogo" href="eliminaGara()" />
 						</c:if>
 						<c:if test='${(abilitazioneGare eq "A" || datiRiga.G_PERMESSI_PROPRI eq "1") && gene:checkProtFunz(pageContext, "ALT","Condividi-catalogo")}'>
@@ -412,7 +416,7 @@
 		document.forms[0].jspPathTo.value = "/WEB-INF/gare/gare/gare-scheda.jsp"
 		document.forms[0].entita.value = "GARE";
 		document.forms[0].metodo.value = "nuovo";
-		document.forms[0].action+="&tipoGara=garaLottoUnico&garaPerCatalogo=1";
+		document.forms[0].action+="?tipoGara=garaLottoUnico&garaPerCatalogo=1";
 		document.forms[0].submit();
 	}
 	

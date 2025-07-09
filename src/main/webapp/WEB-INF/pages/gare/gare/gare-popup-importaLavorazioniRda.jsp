@@ -83,7 +83,7 @@
 			function confermaImportRda(){
 				bloccaRichiesteServer();
 				var isLotto = ${isLotto};
-				var href = contextPath + "/pg/EseguiImportRda.do?"+csrfToken+"&codgar=${codiceGara}&ngara=${lottoSorgente}&isLotto="+isLotto;
+				var href = contextPath + "/pg/EseguiImportRda.do?codgar=${codiceGara}&ngara=${lottoSorgente}&isLotto="+isLotto;
 				document.location.href = href;
 			}
 		</c:if>

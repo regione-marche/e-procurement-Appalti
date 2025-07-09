@@ -9,7 +9,7 @@ CpvVPGrpDiv = [{"grpid": "g1", "grpdesc": "Agricoltura e alimentazione", "grpdiv
      {"grpid": "g2", "grpdesc": "Altri servizi", "grpdiv" : ["50","51","55","63","64","65","75","85","92","98"]},
      {"grpid": "g3", "grpdesc": "Ambiente e risanamento", "grpdiv" : ["41","90"]},
      {"grpid": "g4", "grpdesc": "Difesa e sicurezza", "grpdiv" : ["31","35","45","50","51","72","73","75","80"]},
-     {"grpid": "g5", "grpdesc": "Edilizia e proprietà immobiliare", "grpdiv" : ["45","70","71","79","90"]},
+     {"grpid": "g5", "grpdesc": "Edilizia e proprieta\' immobiliare", "grpdiv" : ["45","70","71","79","90"]},
      {"grpid": "g6", "grpdesc": "Energia e relativi servizi", "grpdiv" : ["09","76"]},
      {"grpid": "g7", "grpdesc": "Estrazione e minerali", "grpdiv" : ["14","44"]},
      {"grpid": "g8", "grpdesc": "Finanza e relativi servizi", "grpdiv" : ["66"]},
@@ -356,11 +356,61 @@ function _caricaAlberoCpvVP(modo, cpvvpref, cpvvprefview) {
  * Selezione del CPV
  */
 function _selcpvvp(node, cpvvpref, cpvvprefview) {
+	
 	var cpvvpcod = node.attr("cpvvpcod");
-	cpvvpref.val(cpvvpcod);
-	cpvvpref.change();
-	cpvvprefview.text(cpvvpcod);
-	$("#finestraalberocpvvp").dialog( "close" );
+	var prefissoCPV = cpvvpcod.substring(0,2);
+	var passatoControlli;
+	var dettaglioErrore;
+	
+	var tipgen = getValue("TORN_TIPGEN");
+	var tipoapp = getValue("GAREAVVISI_TIPOAPP");
+	var tipoele = getValue("GAREALBO_TIPOELE");
+	var tipoDiAppalto;
+	if (tipgen == 1 || tipoapp >= 100 || tipoele >= 100) {
+		tipoDiAppalto = "Lavori";
+	} else if (tipgen == 2 || (tipoapp >= 10 && tipoapp < 100) || (tipoele >= 10 && tipoele < 100)) {
+		tipoDiAppalto = "Forniture";
+	} else if (tipgen == 3 || tipoapp < 10 || tipoele < 10) {
+		tipoDiAppalto = "Servizi";
+	}
+	
+	if ("Lavori" == tipoDiAppalto) {
+		if (prefissoCPV == 45) {
+			passatoControlli = true;
+		} else {
+			passatoControlli = false;
+			dettaglioErrore = " per lavori i primi due caratteri devono essere uguali a '45'.";
+		}
+	} else if ("Forniture" == tipoDiAppalto) {
+		if (prefissoCPV <= 44 || prefissoCPV == 48) {
+			passatoControlli = true;
+		} else {
+			passatoControlli = false;
+			dettaglioErrore = " per forniture i primi due caratteri devono essere compresi tra '00' e '44' oppure '48'.";
+		}
+	} else if ("Servizi" == tipoDiAppalto) {
+		if (prefissoCPV >= 49 && prefissoCPV <= 98) {
+			passatoControlli = true;
+		} else {
+			passatoControlli = false;
+			dettaglioErrore = " per servizi i primi due caratteri devono essere compresi tra '49' e '98'.";
+		}
+	} else {
+		passatoControlli = false;
+	}
+	if (!passatoControlli){
+		if (confirm('Il codice CPV selezionato non e\' consistente con il tipo di appalto:' + dettaglioErrore + ' \r\nConfermi ugualmente il valore selezionato?')){
+			cpvvpref.val(cpvvpcod);
+			cpvvpref.change();
+			cpvvprefview.text(cpvvpcod);
+			$("#finestraalberocpvvp").dialog( "close" );
+		}
+	} else {
+		cpvvpref.val(cpvvpcod);
+		cpvvpref.change();
+		cpvvprefview.text(cpvvpcod);
+		$("#finestraalberocpvvp").dialog( "close" );
+	}
 }
 
 

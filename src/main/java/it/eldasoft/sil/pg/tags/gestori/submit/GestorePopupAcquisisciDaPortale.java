@@ -536,14 +536,10 @@ public class GestorePopupAcquisisciDaPortale extends GestoreFasiRicezione {
       if(this.getRequest()!=null)
         this.getRequest().setAttribute("erroreAcquisizione", "1");
       throw new GestoreException("Errore nella lettura del file XML", null, e);
-    } catch (SQLException e){
+    } catch(Exception e) {
       if(this.getRequest()!=null)
         this.getRequest().setAttribute("erroreAcquisizione", "1");
-      throw new GestoreException("Errore nella lettura dei dati delle categorie", null, e);
-    }catch(Exception e) {
-      if(this.getRequest()!=null)
-        this.getRequest().setAttribute("erroreAcquisizione", "1");
-      throw new GestoreException("Errore nella lettura dei dati delle categorie", null, e);
+      throw new GestoreException("Errore nell'acquisizione dell'iscrizione a elenco", null, e);
     }
 
     return codiceDitta;

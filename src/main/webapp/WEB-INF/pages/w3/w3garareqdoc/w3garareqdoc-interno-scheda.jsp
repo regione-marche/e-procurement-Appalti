@@ -24,7 +24,7 @@
 		<gene:campoScheda title="Numero gara" entita="W3GARAREQDOC" campo="NUMGARA_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3GARAREQDOC_NUMGARA" value="${item[0]}"/>
 		<gene:campoScheda title="Numero requisito" entita="W3GARAREQDOC" campo="NUMREQ_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3GARAREQDOC_NUMREQ" value="${item[1]}"/>
 		<gene:campoScheda title="Numero doc" entita="W3GARAREQDOC" campo="NUMDOC_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3GARAREQDOC_NUMDOC" value="${item[2]}"/>
-		<gene:campoScheda title="Codice tipo" entita="W3GARAREQDOC" campo="CODICE_TIPO_DOC_${param.contatore}" campoFittizio="true" visibile="true" definizione="T100;0;W3029;" value="${item[3]}"/>
+		<gene:campoScheda title="Codice tipo" entita="W3GARAREQDOC" campo="CODICE_TIPO_DOC_${param.contatore}" campoFittizio="true" visibile="true" definizione="N7;0;W3029;" value="${item[3]}"/>
 		<gene:campoScheda title="Descrizione" entita="W3GARAREQDOC" campo="DESCRIZIONE_${param.contatore}" campoFittizio="true" visibile="true" definizione="T800;;;;W3GARAREQDOC_DESCRIZIONE" value="${item[4]}"/>
 		<gene:campoScheda title="Ente emettitore" entita="W3GARAREQDOC" campo="EMETTITORE_${param.contatore}" campoFittizio="true" visibile="true" definizione="T300;;;;W3GARAREQDOC_EMETTITORE" value="${item[5]}"/>
 		<gene:campoScheda title="Fax dell'ente emettitore" entita="W3GARAREQDOC" campo="FAX_${param.contatore}" campoFittizio="true" visibile="true" definizione="T13;;;;W3GARAREQDOC_FAX" value="${item[6]}"/>
@@ -36,7 +36,7 @@
 		<gene:campoScheda title="Numero gara" entita="W3GARAREQDOC" campo="NUMGARA_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3GARAREQDOC_NUMGARA" value="${numgara}"/>
 		<gene:campoScheda title="Numero requisito" entita="W3GARAREQDOC" campo="NUMREQ_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3GARAREQDOC_NUMREQ" value="${numreq}"/>
 		<gene:campoScheda title="Numero doc" entita="W3GARAREQDOC" campo="NUMDOC_${param.contatore}" campoFittizio="true" visibile="false" definizione="N10;1;;;W3GARAREQDOC_NUMDOC" />
-		<gene:campoScheda title="Codice tipo" entita="W3GARAREQDOC" campo="CODICE_TIPO_DOC_${param.contatore}" campoFittizio="true" visibile="true" definizione="T100;0;W3029;"/>
+		<gene:campoScheda title="Codice tipo" entita="W3GARAREQDOC" campo="CODICE_TIPO_DOC_${param.contatore}" campoFittizio="true" visibile="true" definizione="N7;0;W3029;"/>
 		<gene:campoScheda title="Descrizione" entita="W3GARAREQDOC" campo="DESCRIZIONE_${param.contatore}" campoFittizio="true" visibile="true" definizione="T800;;;;W3GARAREQDOC_DESCRIZIONE" />
 		<gene:campoScheda title="Ente emettitore" entita="W3GARAREQDOC" campo="EMETTITORE_${param.contatore}" campoFittizio="true" visibile="true" definizione="T300;;;;W3GARAREQDOC_EMETTITORE" />
 		<gene:campoScheda title="Fax dell'ente emettitore" entita="W3GARAREQDOC" campo="FAX_${param.contatore}" campoFittizio="true" visibile="true" definizione="T13;;;;W3GARAREQDOC_FAX" />

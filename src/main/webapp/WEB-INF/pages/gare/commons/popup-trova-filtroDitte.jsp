@@ -430,11 +430,11 @@
 			
 			<c:choose>
 				<c:when test="${gateway eq '1' and multiuffint eq '1'}">
-					<gene:campoTrova campo="STATO" id="ART80_STATO" entita="ART80" where="ART80.CODIMP=DITG.DITTAO AND ART80.CODEIN='${uffint }'" title="Esito verifica requisiti art.80"/>
+					<gene:campoTrova campo="STATO" id="ART80_STATO" entita="ART80" where="ART80.CODIMP=DITG.DITTAO AND ART80.CODEIN='${uffint }'" title="Esito verifica requisiti"/>
 					
 				</c:when>
 				<c:when test='${not empty urlWs80 and urlWs80 ne ""}'>
-					<gene:campoTrova campo="ART80_STATO" id="ART80_STATO" entita="IMPR" where="IMPR.CODIMP=DITG.DITTAO" title="Esito verifica requisiti art.80"/>
+					<gene:campoTrova campo="ART80_STATO" id="ART80_STATO" entita="IMPR" where="IMPR.CODIMP=DITG.DITTAO" title="Esito verifica requisiti"/>
 					
 				</c:when>
 			</c:choose>
@@ -480,6 +480,9 @@
 		<c:if test="${isGaraElenco eq 1 or isGaraCatalogo eq 1}">
 			<span id="LinkSelezioneCategoria" ><a id="aLinkSelezioneCategoria" href="javascript:ApriAlberoCategorie();" class="link-generico">Selezione categoria da albero</a></span>
 			<div id="mascheraAlberoCategorie" title="Selezione Categoria" style="display: none;">
+			
+			<input type="hidden" id="campoCodiceCategoria" name="campoCodiceCategoria" value="Campo8" />
+			<input type="hidden" id="campoDescrizioneCategoria" name="campoDescrizioneCategoria" value="Campo9" />
 			
 				
 					<table class=dettaglio-tab id="pannelloRicercaCategorie">
@@ -576,9 +579,9 @@
 				}
 			}			
 			//ATTENZIONE: Se si inseriscono campi prima del campo CAISIM , si deve controllare nel codice sorgente della pagina
-			//da browser qual'è il nuovo indice assegnato al campo e modificare di conseguenza il codice seguente
+			//da browser qual è il nuovo indice assegnato al campo e modificare di conseguenza il codice seguente
 			<c:if test="${isGaraElenco eq 1 or isGaraCatalogo eq 1}">
-				$("#LinkSelezioneCategoria").appendTo($("#Campo8").parent());
+				$("#LinkSelezioneCategoria").appendTo($("#"+$("#campoCodiceCategoria").val()).parent());
 								
 				function ApriAlberoCategorie(){
 					var ngara="${ngara }";

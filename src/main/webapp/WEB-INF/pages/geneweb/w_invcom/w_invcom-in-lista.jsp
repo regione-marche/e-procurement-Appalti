@@ -17,7 +17,7 @@
 
 
 <%-- l'oggetto in sessione che contiene i filtri per comunicazioni inviate e ricevute e' il medesimo, per cui al primo accesso svuoto --%>
-<c:if test="${not empty param.chiave}">
+<c:if test="${not empty param.chiave || param.resetFiltro eq 'true'}">
 	<c:remove var="trovaW_INVCOM" scope="session" />
 	<c:remove var="filtroComunicazioniIn" scope="session" />
 	<c:remove var="filtroComunicazioniOut" scope="session" />
@@ -63,8 +63,7 @@ si passa a un'altra pagina, si utilizza il parametro keyParent perchè il paramet
 		poichè la chiave dell'entità è ID. Quindi si è dovuto passare in chiave G1STIPULA.ID, però poi in COMKEY1 si deve continuare a memorizzare CODSTIPULA, per mantenere
 		la compatibilità con i dati pregressi e col Portale
 		 --%>
-		<c:set var="whereStipula" value='ID=${gene:getValCampo(chiave,"ID")}' />
-		<c:set var="codstipula" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "CODSTIPULA","G1STIPULA",whereStipula)}' />
+		<c:set var="codstipula" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select CODSTIPULA from G1STIPULA where ID=?", gene:getValCampo(chiave,"ID"))}'/>
 	</c:if>
 
 	<c:set var="campiKey" value='${fn:split(chiave,";")}' />
@@ -115,6 +114,13 @@ si passa a un'altra pagina, si utilizza il parametro keyParent perchè il paramet
 		<c:set var="addKeyRiga" value='${addKeyRiga};W_INVCOM.COMKEY2=T:1' />
 	</c:if>
 </c:if>
+<c:if test="${param.entitaNoKey eq 'HOMEPG'}">
+	<c:set var="whereKey" value="W_INVCOM.IDPRG='PA' AND W_INVCOM.COMENT = 'HOMEPG' AND W_INVCOM.COMTIPO='FS12' AND W_INVCOM.COMSTATO='3' " />
+	<c:if test='${not empty uffint}' >
+		<c:set var="whereKey" value="${whereKey} AND W_INVCOM.IDCFG='${uffint}'" />
+	</c:if>
+	<gene:historyClear/>
+</c:if>
 
 
 <c:if test="${! empty sessionScope.filtroComunicazioniIn}">
@@ -159,15 +165,51 @@ addKeyRiga=${addKeyRiga}*<br/>
 		<c:set var="titoloMaschera" value="Comunicazioni ricevute per l'ordine ${param.COD_ORD}" />
 	</c:when>
 	<c:otherwise>
-		<c:set var="titoloMaschera" value="Comunicazioni ricevute per la gara ${comkey1}" />
+		<c:choose>
+			<c:when test="${fn:contains(chiave,'G1STIPULA')}">
+				<c:set var="titoloMaschera" value="Comunicazioni ricevute per la stipula ${comkey1}" />
+			</c:when>
+			<c:when test="${param.entitaNoKey eq 'HOMEPG'}">
+				<c:set var="titoloMaschera" value="Comunicazioni generiche ricevute" />
+			</c:when>
+			<c:otherwise>
+				<c:set var="titoloMaschera" value="Comunicazioni ricevute per la gara ${comkey1}"  />
+			</c:otherwise>
+		</c:choose>
 	</c:otherwise>
 </c:choose>
 
 <c:set var="idconfi" value='${param.idconfi}'/>
 <c:set var="codgar" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetCodgar1Function", pageContext, comkey1)}'/>
 <c:set var="integrazioneWSDM" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNFunction", pageContext, codgar, idconfi)}'/>
+<c:set var="iterga" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetITERGAFunction", pageContext, codgar)}' />
+<c:set var="isfineconc" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select isfineconc from torn where codgar=?", codgar)}'/>
 
 <gene:template file="lista-template.jsp" gestisciProtezioni="true" idMaschera="W_INVCOM-IN-lista" schema="GENEWEB">
+
+	<gene:redefineInsert name="head">
+		<style type="text/css">
+
+			span.etichettagenerica {
+				color: black;
+				float: left;
+				margin-top: 1px;
+				margin-bottom: 1px;
+				padding-left: 3px;
+				padding-right: 3px;
+				padding-top: 1px;
+				padding-bottom: 1px;
+				-moz-border-radius-topleft: 4px; 
+				-webkit-border-top-left-radius: 4px; 
+				-khtml-border-top-left-radius: 4px; 
+				border-top-left-radius: 4px;
+				margin-right: 3px;
+				background-color: #FFDD00; 
+				border: 1px solid #FF8800; 
+			}
+
+		</style>
+	</gene:redefineInsert>
 
 	<gene:setString name="titoloMaschera" value="${titoloMaschera}" />
 
@@ -183,6 +225,25 @@ addKeyRiga=${addKeyRiga}*<br/>
 	
 	<gene:redefineInsert name="corpo">
 		<table class="lista">
+
+		<c:set var="comkey1" value='${gene:getValCampo(addKeyRiga, "COMKEY1")}'/>
+		<c:set var="coment" value='${fn:substringBefore(chiave,".")}' />
+		<c:if test="${coment eq 'GAREAVVISI' }">
+			<c:set var="coment" value='GARE' />
+		</c:if>
+		<c:if test='${param.entitaNoKey eq "HOMEPG"}' >
+			<c:set var="coment" value='HOMEPG' />
+		</c:if>
+		<c:set var="chiaveControlloAutorizzazioni" value='${comkey1}' />
+
+		<c:if test="${coment eq 'GARECONT' }">
+			<c:set var="chiaveControlloAutorizzazioni" value='${idMeric}' />
+		</c:if>
+		<c:if test="${coment eq 'G1STIPULA' }">
+			<c:set var="chiaveControlloAutorizzazioni" value='${codstipula}' />
+		</c:if>
+		<c:set var="autorizzatoGestioneComunicazioneGaraLotto" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.AutorizzatoGestioneComunicazioneGaraLottoFunction",pageContext,coment,chiaveControlloAutorizzazioni)}' />
+
 		<c:if test="${!empty sessionScope.filtroComunicazioniIn}">
 			<tr>
 				<td style="font: 11px Verdana, Arial, Helvetica, sans-serif;">
@@ -209,24 +270,34 @@ addKeyRiga=${addKeyRiga}*<br/>
 				<c:set var="filtroSoccorsoIstruttorio" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetFiltroSoccorsoIstruttorioFunction", pageContext, tipo)}'/>
 				
 				<gene:formLista entita="W_INVCOM" pagesize="20" 
-					tableclass="datilista" gestisciProtezioni="true" sortColumn="-6" where="${whereKey}${filtroComunicazioniIn}${filtroSoccorsoIstruttorio }" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreW_INVCOM" pathScheda="geneweb/w_invcom/w_invcom-in-scheda.jsp">
+					tableclass="datilista" gestisciProtezioni="true" sortColumn="-8" where="${whereKey}${filtroComunicazioniIn}${filtroSoccorsoIstruttorio }" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreW_INVCOM" pathScheda="geneweb/w_invcom/w_invcom-in-scheda.jsp">
 					<gene:campoLista title="Opzioni"
 						width="50">
 						<c:if test="${currentRow >= 0}">
 							<gene:PopUp variableJs="rigaPopUpMenu${currentRow}"
-								onClick="chiaveRiga='${chiaveRigaJava}'">
+								onClick="chiaveRiga='${chiaveRigaJava}';etichettaComunicazione='${ datiRiga.W_INVCOM_COMETICH}'">
 								<gene:PopUpItemResource
 									resource="popupmenu.tags.lista.visualizza"
 									title="Visualizza" />
+								<c:if test='${ gene:checkProt(pageContext, "FUNZ.VIS.ALT.GENEWEB.W_INVCOM-lista.assegnaEtichetta") and autorizzatoGestioneComunicazioneGaraLotto eq "true" and coment ne "HOMEPG" }'>
+									<gene:PopUpItem title="Assegna etichetta" href="javascript:apriModaleAssegnaEtichetta(chiaveRiga,etichettaComunicazione);"/>
+								</c:if>
 							</gene:PopUp>
 						</c:if>
 					</gene:campoLista>
 				
 					<gene:campoLista campo="IDPRG" visibile="false" />
 					<gene:campoLista campo="IDCOM" visibile="false" title="N°" width="40" href="javascript:chiaveRiga='${chiaveRigaJava}';listaVisualizza();" />
-					<gene:campoLista campo="COMMITT" />
+					<gene:campoLista campo="COMETICH" visibile="false" title="Etichetta"/>
+					<gene:campoLista campo="COMMITT" visibile="false"/>
+					<gene:campoLista campo="COMMITT_fittizio" campoFittizio='true' definizione='T161;;;;COMMITT' visibile="true" value="${(iterga ne '9' || isfineconc eq '1' || (not empty datiRiga.W_INVCOM_COMMITT and gene:matches(datiRiga.W_INVCOM_COMMITT, '^operatore \\\d{5}$', false)))?datiRiga.W_INVCOM_COMMITT:'Dato anonimizzato'}"/>
 					<%--gene:campoLista campo="NOMIMP" entita="IMPR" from="W_PUSER" where="W_INVCOM.COMKEY1 = W_PUSER.USERNOME AND W_PUSER.USERENT = 'IMPR' AND W_PUSER.USERKEY1 = IMPR.CODIMP" title="Mittente" ordinabile="false" / --%>
-					<gene:campoLista campo="COMMSGOGG" href="javascript:chiaveRiga='${chiaveRigaJava}';listaVisualizza();" />
+					<gene:campoLista campo="COMMSGOGG" href="javascript:chiaveRiga='${chiaveRigaJava}';listaVisualizza();" >
+						<c:if test='${ not empty datiRiga.W_INVCOM_COMETICH and gene:checkProt(pageContext, "COLS.VIS.GENEWEB.W_INVCOM.COMETICH")}'>
+							<br>
+							<span class="etichettagenerica" >${ gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select tab1desc from tab1 where tab1cod=? and tab1tip=?", "W_012",datiRiga.W_INVCOM_COMETICH) }</span>
+						</c:if>
+					</gene:campoLista>
 					<gene:campoLista campo="COMDATINS" definizione="D;0;;TIMESTAMP;COMDATINS" width="150" title="Data e ora invio" />
 					<gene:campoLista campo="COMNUMPROT" width="80" visibile="${integrazioneWSDM =='1'}" title="Num.prot."/>
 					<gene:campoLista campo="COMDATLET" width="150" />
@@ -236,10 +307,14 @@ addKeyRiga=${addKeyRiga}*<br/>
 					<input type="hidden" name="keyAdd" value="${addKeyRiga}" />
 					<input type="hidden" name="chiaveWSDM" id="chiaveWSDM" value="${chiaveWSDM}" />
 					<input type="hidden" name="entitaWSDM" id="entitaWSDM" value="${entitaWSDM}" />
+					<c:if test='${param.entitaNoKey eq "HOMEPG"}' >
+						<input type="hidden" name="entitaNoKey" value="HOMEPG" />
+					</c:if>
 				</gene:formLista>
 				</td>
 			</tr>
 		</table>
+		<jsp:include page="/WEB-INF/pages/geneweb/w_invcom/modaleAssegnaEtichetta.jsp"/>
 	</gene:redefineInsert>
 
 	<gene:redefineInsert name="listaNuovo" />
@@ -251,7 +326,7 @@ addKeyRiga=${addKeyRiga}*<br/>
 		</c:if>
 
 		function impostaFiltro(){
-			var comando = "href=geneweb/w_invcom/w_invcom-in-popup-filtro-trova.jsp&integrazioneWSDM=${integrazioneWSDM}";
+			var comando = "href=geneweb/w_invcom/w_invcom-in-popup-filtro-trova.jsp&integrazioneWSDM=${integrazioneWSDM}&homepg=${param.entitaNoKey eq 'HOMEPG'}&codgar=${codgar}";
 			openPopUpCustom(comando, "impostaFiltro", 800, 320, "yes", "yes");
 		}
 
@@ -262,3 +337,4 @@ addKeyRiga=${addKeyRiga}*<br/>
 	</gene:javaScript>
 	
 </gene:template>
+

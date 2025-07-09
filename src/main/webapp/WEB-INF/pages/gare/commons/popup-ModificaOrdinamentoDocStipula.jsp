@@ -28,7 +28,9 @@
 
 <c:set var="titoloForm" value="Modifica disposizione documenti"/>
 
-<c:set var="where" value="g1docstipula.idstipula='${idStipula}'"/>
+<c:set var="where" value="g1docstipula.idstipula=?"/>
+<c:set var="parametri" value="N:${idStipula}"/> 
+${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "G1DOCSTIPULA", where, parametri)}
 
 <gene:template file="popup-template.jsp" gestisciProtezioni="false" >
 
@@ -68,7 +70,7 @@
 					
 			<tr>
 				<td ${stileDati}>
-  				<gene:formLista entita="G1DOCSTIPULA" where="${where }" pagesize="0" tableclass="datilista" sortColumn="4;5" gestisciProtezioni="false" >
+  				<gene:formLista entita="G1DOCSTIPULA" pagesize="0" tableclass="datilista" sortColumn="4;5" gestisciProtezioni="false" >
   					<gene:redefineInsert name="listaNuovo" />
 					<gene:redefineInsert name="listaEliminaSelezione" />
 					
@@ -124,7 +126,7 @@
 	function visualizzaFileAllegato(idprg,iddocdig,dignomdoc) {
 		
 		var href = "${pageContext.request.contextPath}/pg/VisualizzaFileAllegato.do";
-		document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+		document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 	}
 	
 	
@@ -177,7 +179,7 @@
 	           	bloccaRichiesteServer();
 				
 				var href = "${contextPath }/pg/AggiornaNumOrdineDocStipula.do" ;
-				href+= "?"+csrfToken+"&listaId=" + listaId + "&listaNumord=" + listaNumord + "&idStipula=" + idStipula + "&direzione="  + direzione;
+				href+= "?listaId=" + listaId + "&listaNumord=" + listaNumord + "&idStipula=" + idStipula + "&direzione="  + direzione;
 				document.location.href = href;
 			}
     	  });

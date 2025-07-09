@@ -21,7 +21,7 @@ import it.eldasoft.gene.tags.decorators.campi.AbstractGestoreCampoTabellato;
 public class GestoreCampoStatoProdottiME extends AbstractGestoreCampoTabellato {
 
   public GestoreCampoStatoProdottiME() {
-    super(false, "T12");
+    super(false, "N7");
   }
 
   /**

@@ -16,12 +16,15 @@
 
 <gene:redefineInsert name="head" >
 	<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/jquery/wsdm/jquery.wsdm.css" >
-	
+
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.easytabs.js"></script>
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.validate.min.js"></script>
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmsupporto.js?v=${sessionScope.versioneModuloAttivo}"></script>
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.wsdmfascicoloprotocollo.js?v=${sessionScope.versioneModuloAttivo}"></script>
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.fascicolo.js"></script>
+	<script>
+		_skipGetWSDMFascicolo=${param.skipGetWSDMFascicolo}
+	</script>
 	
 	<style type="text/css">
 		.dataTables_filter {
@@ -39,6 +42,10 @@
 		
 		.dataTables_paginate {
 			padding-bottom: 5px;
+		}
+
+		div#mascheraParametriWSDM {
+			height: auto !important;
 		}
 
 	</style>
@@ -94,6 +101,13 @@
 			<td class="valore-dato"><span id="classificafascicolodescrizione" name="classificafascicolodescrizione" title="Classifica"></span></td>
 			<input type="hidden" id="classificadescrizione"  name="classificadescrizione"/>
 		</tr>
+		<tr id="sezioneclassificafascicolo" style="display: none;">
+			<td class="etichetta-dato">Classifica</td>
+			<td class="valore-dato">
+				<select id="classificafascicolonuovoselect" name="classificanuovo" style="max-width:450px"></select>
+				<span id="classificafascicolo" name="classificafascicolo" style="display: none;"></span>
+			</td>
+		</tr>
 		<tr>
 			<td class="etichetta-dato">Descrizione</td>
 			<td class="valore-dato"><span id="descrizionefascicolo" name="descrizionefascicolo" title="Descrizione"></span></td>
@@ -105,6 +119,13 @@
 		<tr style="display: none;">
 			<td class="etichetta-dato">Codice ufficio</td>
 			<td class="valore-dato"><input id="codiceufficionuovo" name="codiceufficionuovo" title="Codice ufficio" class="testo" type="text" size="6" value="" maxlength="4"></td>
+		</tr>
+		<tr id="sezionestruttura" style="display: none;">
+			<td class="etichetta-dato">Struttura</td>
+			<td class="valore-dato">
+				<select id="strutturaonuovoselect" name="strutturaonuovo" style="max-width:450px"></select>
+				<span id="struttura" name="struttura" style="display: none;"></span>
+			</td>
 		</tr>
 		<INPUT type="hidden" id="strutturaonuovo" name="strutturaonuovo"/>
 		<INPUT type="hidden" id="isRiservatezzaAttiva" name="isRiservatezzaAttiva" value="${isRiservatezzaAttiva}"/>
@@ -127,10 +148,13 @@
 <gene:redefineInsert name="addToAzioni">
 	<tr>
         <c:if test='${isNavigazioneDisattiva ne "1"}'>
-        	<tr style="display: none;" id="wsdmSalvaMenu"><td class="vocemenulaterale"><a title="Salva" tabindex="1512">Salva</a></td></tr>
-          	<tr style="display: none;" id="wsdmAnnullaMenu"><td class="vocemenulaterale"><a title="Annulla" tabindex="1512">Annulla</a></td></tr>
-          	<tr id="wsdmModificaMenu"><td class="vocemenulaterale"><a title="Associa fascicolo esistente" tabindex="1512">Associa fascicolo esistente</a></td></tr>
-          	<tr id="wsdmImpostaCredenziali"><td class="vocemenulaterale"><a title="Imposta credenziali" tabindex="1513">Imposta credenziali</a></td></tr>
+        	<tr style="display: none;" id="wsdmSalvaMenu"><td class="vocemenulaterale"><a title="Salva" tabindex="1512" href="#">Salva</a></td></tr>
+          	<tr style="display: none;" id="wsdmAnnullaMenu"><td class="vocemenulaterale"><a title="Annulla" tabindex="1512" href="#">Annulla</a></td></tr>
+          	<tr id="wsdmModificaMenu"><td class="vocemenulaterale"><a title="Associa fascicolo esistente" tabindex="1512" href="#">Associa fascicolo esistente</a></td></tr>
+          	<tr id="wsdmImpostaCredenziali"><td class="vocemenulaterale"><a title="Imposta credenziali" tabindex="1513" href="#">Imposta credenziali</a></td></tr>
+			<c:if test="${autorizzatoModifiche ne '2' and gene:checkProt(pageContext,'FUNZ.VIS.ALT.GARE.ChiudiFascicoloWSDM')}">
+					<tr id="wsdmChiudiFascicolo"><td class="vocemenulaterale"><a title="Chiudi fascicolo" tabindex="1514" href="#">Chiudi fascicolo</a></td></tr>
+			</c:if>
         </c:if>
 	</tr>
 </gene:redefineInsert>
@@ -190,3 +214,47 @@
 	<input type="hidden" id="getprotocolloallegato_servizio" name="getprotocolloallegato_servizio" value="${param.servizio }" />
 	<input type="hidden" id="getprotocolloallegato_idconfi" name="getprotocolloallegato_idconfi" value="${param.idconfi }" />
 </form>
+
+<div id="mascheraParametriWSDM" title='Chiudi fascicolo' style="display:none; height: auto">
+	<form id="richiestawslogin">
+		<table class="dettaglio-notab">
+			<input id="syscon" type="hidden" value="${profiloUtente.id}" />
+			<input id="servizio" type="hidden" value="FASCICOLOPROTOCOLLO" />
+			<input id="tiposistemaremoto" type="hidden" value="${tipoWSDM}" />
+			<input id="tabellatiInDB" type="hidden" value="${tabellatiInDB}" />
+			<input id="modoapertura" type="hidden" value="MODIFICA" />
+			<tr id=sezioneMessaggi>
+				<td colspan="2">
+					<div  id="messagiTrasmissione">Tramite la seguente funzione è possibile procedere alla chiusura del fascicolo associato.<br><br>
+						<div style="color: blue">Attenzione: una volta chiuso il fascicolo non sarà più possibile protocollare nuove comunicazioni o procedere al trasferimento di documenti al documentale.</div></div>
+					<br><br>
+				</td>
+			</tr>
+			<tr id=sezioneErrori style="display: none;">
+				<td colspan="2">
+					<div  class="error" id="erroriTrasmissione"></div>
+				</td>
+			</tr>
+			<tr id=sezioneWarning style="display: none;">
+				<td colspan="2">
+					<div  class="error" style="color: blue" id="warningsTrasmissione"></div>
+				</td>
+			</tr>
+			<tr id="sezionedatifascicolo">
+				<td colspan="2">
+					<b><br>Dati del fascicolo</b>
+					<br>
+					<div style="display: none;" class="error" id="documentifascicolomessaggio"></div>
+				</td>
+			</tr>
+			<tr>
+				<td class="etichetta-dato">Codice fascicolo (*)</td>
+				<td class="valore-dato"><input id="codicefascicolodisplay" name="codicefascicolodisplay" title="Codice fascicolo" type="text" size="47" value="" maxlength="100" readonly class="testo readonly"></td>
+			</tr>
+			<tr style="height: 100px">
+				&nbsp;
+			</tr>
+		</table>
+	</form>
+	<br>
+</div>

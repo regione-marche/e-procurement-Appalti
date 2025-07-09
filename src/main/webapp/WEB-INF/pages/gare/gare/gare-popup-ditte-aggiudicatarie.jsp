@@ -18,8 +18,9 @@
 
 
 	<c:set var="ngara" value='${NGARA}' />
+	<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from GARE where ngara=?", ngara)}'/>
 
-	<gene:formScheda entita="GARE" where="GARE.NGARA = '${ngara}'">
+	<gene:formScheda entita="GARE" where="GARE.NGARA = '${ngara}'" gestisciProtezioni="true">
 		<gene:campoScheda campo="MODLICG" visibile="false"/>
 		<gene:campoScheda>
 				<td colspan="2"><b><br>&nbsp;<br>Prima classificata</b></td>

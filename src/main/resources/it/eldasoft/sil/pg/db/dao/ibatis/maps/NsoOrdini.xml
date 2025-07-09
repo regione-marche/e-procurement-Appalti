@@ -9,12 +9,12 @@
 		SELECT nso.*,
 		uffint.nomein as nomein,
 		COALESCE(uffint.ivaein,uffint.cfein,'') as piva,
-		COALESCE(tab2.tab2d1,'IT') as codnaz,
+	    COALESCE(g_nazioni.codiso,'IT') as codnaz,
 		nso_p.codord as codord_padre,
 		nso_r.codord as codord_originario
 		FROM nso_ordini nso
 		LEFT JOIN uffint ON uffint.codein = nso.codein
-		LEFT JOIN tab2 ON tab2.TAB2TIP = uffint.codnaz AND tab2.tab2cod = 'G_z23'
+		LEFT JOIN g_nazioni ON g_nazioni.codice = uffint.codnaz
 		LEFT JOIN nso_ordini nso_p on nso.id_padre = nso_p.id and nso.id_padre != nso.id
 		LEFT JOIN nso_ordini nso_r on nso.id_originario = nso_r.id 
 		WHERE nso.id=#id#
@@ -46,26 +46,25 @@
 	</select>
 	
 	<select id="getDeliveryPointByNsoOrdiniId" resultClass="it.eldasoft.sil.pg.db.domain.nso.PuntoConsegna">
-		SELECT id,
+		SELECT nso_punticons.id,
 				nso_ordini_id,
-				codein,	
+				codein,
 				cod_punto_cons,
 				indirizzo,
 				localita,
 				cap,
 				citta,
-				tab2.tab2d1 as codnaz,
+			   	codiso as codnaz,
 				altre_indic,
 				altro_punto_cons,
 				cons_domicilio
- 				FROM nso_punticons, tab2
- 				WHERE tab2.TAB2TIP = nso_punticons.codnaz
- 				AND tab2cod = 'G_z23'
+ 				FROM nso_punticons, g_nazioni
+ 				WHERE g_nazioni.codice = nso_punticons.codnaz
  				AND nso_ordini_id=#id#
 	</select>
 	
 	<select id="getBuyerCustomerPartyByNsoOrdiniIdAndType" resultClass="it.eldasoft.sil.pg.db.domain.nso.Ordinante">
-		SELECT id,
+		SELECT nso_ordinanti.id,
 				nso_ordini_id,
 				tipo,
 				codein,
@@ -74,12 +73,11 @@
 				via,
 				citta,
 				cap,
-				tab2.tab2d1 as codnaz,
+			   	codiso as codnaz,
 				piva,
 				note
- 				FROM nso_ordinanti, tab2
- 				WHERE tab2.TAB2TIP = nso_ordinanti.codnaz
- 				AND tab2cod = 'G_z23'
+ 				FROM nso_ordinanti, g_nazioni
+ 				WHERE g_nazioni.codice = nso_ordinanti.codnaz
  				AND nso_ordini_id=#id#
  				AND tipo=#tipo#
 	</select>
@@ -94,14 +92,13 @@
 				nso_ordinanti.via,
 				nso_ordinanti.citta,
 				nso_ordinanti.cap,
-				tab2.tab2d1 as codnaz,
+				codiso as codnaz,
 				nso_ordinanti.piva,
 				nso_ordinanti.note,
 				uffint.codipa as codipa
- 				FROM nso_ordinanti, tab2, uffint
- 				WHERE tab2.TAB2TIP = nso_ordinanti.codnaz
+ 				FROM nso_ordinanti, g_nazioni, uffint
+ 				WHERE g_nazioni.codice = nso_ordinanti.codnaz
 				AND uffint.codein = nso_ordinanti.codein
- 				AND tab2cod = 'G_z23'
  				AND nso_ordini_id=#id#
  				ORDER BY nso_ordinanti.tipo ASC
 	</select>
@@ -116,14 +113,14 @@
 				nso_fornitore.via,
 				nso_fornitore.citta,
 				nso_fornitore.cap,
-				tab2.tab2d1 as codnaz,
+				codiso as codnaz,
 				nso_fornitore.persona_rif,
 				CASE
 					WHEN COALESCE(impr.natgiui, 0) = 10 THEN 'PF'
 					ELSE 'PIVA'
 				END AS type
 		FROM nso_fornitore
-			JOIN tab2 ON tab2.TAB2TIP = nso_fornitore.codnaz AND tab2.tab2cod = 'G_z23'
+			JOIN g_nazioni ON g_nazioni.codice = nso_fornitore.codnaz
 			LEFT JOIN impr on nso_fornitore.codimp = impr.codimp
 		WHERE nso_fornitore.nso_ordini_id=#id#
 	</select>
@@ -137,9 +134,9 @@
 				nso_beneficiario.localita, 
 				nso_beneficiario.cap, 
 				nso_beneficiario.citta, 
-				tab2.tab2d1 as codnaz
+				codiso as codnaz
 		FROM nso_beneficiario
-			JOIN tab2 ON tab2.TAB2TIP = nso_beneficiario.codnaz AND tab2.tab2cod = 'G_z23'
+			JOIN g_nazioni ON g_nazioni.codice = nso_beneficiario.codnaz
 		WHERE nso_beneficiario.nso_ordini_id=#id#
 	</select>
 	

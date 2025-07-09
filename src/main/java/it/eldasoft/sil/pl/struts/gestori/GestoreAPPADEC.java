@@ -9,6 +9,9 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
+import it.eldasoft.sil.pg.tags.gestori.submit.npa.GestoreG1NPAFORM;
+import it.eldasoft.utils.properties.ConfigManager;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
@@ -25,6 +28,7 @@ import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntita;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.AggiudicazioneManager;
+import it.eldasoft.sil.pg.bl.InviaVigilanzaManager;
 import it.eldasoft.sil.pl.bl.PlManager;
 import it.eldasoft.utils.metadata.cache.DizionarioCampi;
 import it.eldasoft.utils.metadata.domain.Campo;
@@ -39,6 +43,8 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
   private PlManager        plmanager        = null;
 
   private TabellatiManager tabellatiManager = null;
+  
+  private InviaVigilanzaManager inviaVigilanzaManager = null;
 
   // Gestore fittizio. Le operazioni di insert e delete devono essere eseguite
   // esplicitamente in questo gestore.
@@ -56,6 +62,7 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
     super.setRequest(request);
     plmanager = (PlManager) UtilitySpring.getBean("plManager", this.getServletContext(), PlManager.class);
     tabellatiManager = (TabellatiManager) UtilitySpring.getBean("tabellatiManager", this.getServletContext(), TabellatiManager.class);
+    inviaVigilanzaManager = (InviaVigilanzaManager) UtilitySpring.getBean("inviaVigilanzaManager", this.getServletContext(), InviaVigilanzaManager.class);
   }
 
   @Override
@@ -93,7 +100,7 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
         String codlav = impl.getString("APPA.CODLAV");
         Long nappal = impl.getLong("APPA.NAPPAL");
         Long ncont = impl.getLong("NCONT");
-        this.aggiornaIntegrazione(ngara, codlav, nappal, "INS", ncont);
+        this.aggiornaIntegrazione(impl, ngara, codlav, nappal, "INS", ncont);
       }
     }
 
@@ -125,24 +132,59 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
     } catch (SQLException e) {
       // Nessuna operazione...
     }
+
+    setAFFIDAMDIR(impl, impl);
+    setISABCOLLeTIPOCONT(impl);
+
     Long tiplavg = impl.getLong("APPA.TIPLAVG");
     if (new Long(1).equals(tiplavg)) {
       impl.addColumn("APPA.ISABSUBA", "1");
       impl.addColumn("APPA.ISABATTI", "1");
-      impl.addColumn("APPA.ISABCOLL", "1");
       impl.addColumn("APPA.ISABRIVA", "2");
       impl.addColumn("APPA.ISABQUEC", "1");
-      impl.addColumn("APPA.TIPOCONT", new Long(1));
     } else {
       impl.addColumn("APPA.ISABSUBA", "2");
       impl.addColumn("APPA.ISABATTI", "2");
-      impl.addColumn("APPA.ISABCOLL", "2");
       impl.addColumn("APPA.ISABRIVA", "2");
       impl.addColumn("APPA.ISABQUEC", "2");
-      impl.addColumn("APPA.TIPOCONT", new Long(2));
     }
 
     this.inserisci(status, impl, new GestoreAPPA());
+  }
+
+  private void setISABCOLLeTIPOCONT(DataColumnContainer impl) throws GestoreException{
+    String affidamdir = impl.getString("APPA.AFFIDAMDIR");
+    if (!impl.isColumn("APPA.ISABCOLL"))
+      impl.addColumn("APPA.ISABCOLL", "1");
+
+    if (!impl.isColumn("APPA.TIPOCONT"))
+      impl.addColumn("APPA.TIPOCONT", new Long(3));
+
+    if ("1".equals(affidamdir)) {
+      impl.setValue("APPA.ISABCOLL", "2");
+      impl.setValue("APPA.TIPOCONT", new Long(2));
+    }
+  }
+
+  public static void setAFFIDAMDIR(DataColumnContainer entrata, DataColumnContainer uscita) throws GestoreException{
+    String affidamdirEntrata = entrata.getString("APPA_AFFIDAMDIR");
+
+    String affidamdirUscita = null;
+    if (uscita.isColumn("APPA.AFFIDAMDIR")) {
+      affidamdirUscita = uscita.getString("APPA.AFFIDAMDIR");
+    }
+
+    if ("2".equals(affidamdirEntrata) || "0".equals(affidamdirEntrata) || (StringUtils.isEmpty(affidamdirEntrata) && StringUtils.isEmpty(affidamdirUscita))) {
+      affidamdirUscita = "2";
+    } else if ("1".equals(affidamdirEntrata)) {
+      affidamdirUscita = "1";
+    }
+
+    if (!uscita.isColumn("APPA.AFFIDAMDIR")) {
+      uscita.addColumn("APPA.AFFIDAMDIR", affidamdirUscita);
+    } else {
+      uscita.setValue("APPA.AFFIDAMDIR", affidamdirUscita);
+    }
   }
 
   /**
@@ -174,11 +216,15 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
     impl.addColumn("PERI.CODPROE", JdbcParametro.TIPO_DECIMALE, this.plmanager.getTabellatoIVA());
 
     Long tiplavg = impl.getLong("APPA.TIPLAVG");
-    if (new Long(1).equals(tiplavg)) {
+    /*if (new Long(1).equals(tiplavg)) {
       impl.addColumn("PERI.FORNSERV", JdbcParametro.TIPO_TESTO, "2");
     } else {
       impl.addColumn("PERI.FORNSERV", JdbcParametro.TIPO_TESTO, "1");
-    }
+    }*/
+
+    String modIntegLFS = ConfigManager.getValore("it.eldasoft.sil.pg.integrazione.dec");
+    if("1".equals(modIntegLFS))
+      impl.addColumn("PERI.FORNSERV", JdbcParametro.TIPO_TESTO, "1");
 
     try {
       List<?> datiTAB1 = this.getSqlManager().getListVector("Select tab1desc From tab1 Where tab1cod = ? order by tab1tip",
@@ -207,20 +253,19 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
     // addColumn
     impl.removeColumns(new String[] { "APPA.NAPPAL" });
 
+    setAFFIDAMDIR(impl, impl);
+    setISABCOLLeTIPOCONT(impl);
+
     if (new Long(1).equals(tiplavg)) {
       impl.addColumn("APPA.ISABSUBA", "1");
       impl.addColumn("APPA.ISABATTI", "1");
-      impl.addColumn("APPA.ISABCOLL", "1");
       impl.addColumn("APPA.ISABRIVA", "2");
       impl.addColumn("APPA.ISABQUEC", "1");
-      impl.addColumn("APPA.TIPOCONT", new Long(1));
     } else {
       impl.addColumn("APPA.ISABSUBA", "2");
       impl.addColumn("APPA.ISABATTI", "2");
-      impl.addColumn("APPA.ISABCOLL", "2");
       impl.addColumn("APPA.ISABRIVA", "2");
       impl.addColumn("APPA.ISABQUEC", "2");
-      impl.addColumn("APPA.TIPOCONT", new Long(2));
     }
     this.inserisci(status, impl, new GestoreAPPA());
 
@@ -241,7 +286,7 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
       String codlav = impl.getString("APPA.CODLAV");
       Long nappal = impl.getLong("APPA.NAPPAL");
       Long ncont = impl.getLong("NCONT");
-      this.aggiornaIntegrazione(ngara, codlav, nappal, "UPD",ncont);
+      this.aggiornaIntegrazione(impl, ngara, codlav, nappal, "UPD",ncont);
     }
   }
 
@@ -256,7 +301,7 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
    *        (INS: inserimento, UPD: aggiornamento)
    * @throws GestoreException
    */
-  private void aggiornaIntegrazione(String ngara, String codlav, Long nappal, String tipo, Long ncont) throws GestoreException {
+  private void aggiornaIntegrazione(DataColumnContainer impl, String ngara, String codlav, Long nappal, String tipo, Long ncont) throws GestoreException {
     try {
 
       // Aggiornamento di PERI
@@ -276,6 +321,9 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
       dccAPPA.setValue("APPA.NAPPAL", nappal);
       dccAPPA.setValue("APPA.NAPPAL", nappal);
       dccAPPA.setValue("APPA.FASEAPPALTO", "E");
+
+      setAFFIDAMDIR(impl,dccAPPA);
+      setISABCOLLeTIPOCONT(dccAPPA);
       this.dccAPPA_AltriDati(dccAPPA, ngara, ncont);
       dccAPPA.update("APPA", this.sqlManager);
 
@@ -318,7 +366,7 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
 
       // Aggiornamento di CONT
       DataColumnContainer dccCONT = new DataColumnContainer(this.sqlManager, "CONT",
-          "select * from cont where codlav = ? and nappal = ? and nproat = ?", new Object[] { codlav, nappal, new Long(1) });
+          "select CODLAV,NAPPAL,NPROAT,TIATTO,NREPAT,DAATTO,NIMPCO,ICPREV,IMPIVA,ITOTCONT,RIAUMI,RIDISO,IMCADE,PERCAUC,NPOFID,DPOFID,ISCRED,IMPLOR,IMPLATC,IMPLASC,IMPLANR,LREGCO,NREGCO,DREGCO,NUMEROCONTRATTO,NUMEROPROTOCOLLO,DATAPROTOCOLLO,DSCADCADE from cont where codlav = ? and nappal = ? and nproat = ?", new Object[] { codlav, nappal, new Long(1) });
       dccCONT.getColumn("CONT.CODLAV").setChiave(true);
       dccCONT.getColumn("CONT.NAPPAL").setChiave(true);
       dccCONT.getColumn("CONT.NPROAT").setChiave(true);
@@ -1021,7 +1069,7 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
     Long genere = null;
     Long modcont  = null;
     String codgar1 = null;
-    Long aqoper = null;
+    Long locnaz = null;
     String esecscig = "";
     String selectGARA = "select gare.codgar1, " // 0
         + "v_gare_torn.genere, " // 1
@@ -1069,11 +1117,14 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
         + "gare.nattog, " //43
         + "gare.dattog, "  //44
         + "torn.sommaur, " //45
-        + "gare.riboepv " // 46
-        + "from gare, v_gare_torn, torn "
+        + "gare.riboepv, " // 46
+        + "torn.vernpa, " // 47
+        + "gare1.impsomme " // 48
+        + "from gare, v_gare_torn, torn, gare1 "
         + "where gare.codgar1 = v_gare_torn.codgar "
-        + "and gare.codgar1 = torn.codgar and "
-        + "ngara = ?";
+        + "and gare.codgar1 = torn.codgar "
+        + "and gare.ngara = gare1.ngara "
+        + "and gare.ngara = ?";
 
     String selectGAREGenere3 = "select gare.tattoa, " // 0
         + "gare.nattoa, " // 1
@@ -1119,7 +1170,7 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
       //Recupero inizialmente i dati di GARECONT e GARE1 che mi servono per stabilire il campo CIG
       Object param[] = null;
       String selectGarecont = "select coorba,banapp,codbic,esecscig from garecont where ngara=? and ncont=?";
-      String selectGare1 = "select aqoper from gare1 where ngara=?";
+
       if (genere != null && new Long(3).equals(genere)) {
         if(new Long(1).equals(modcont)){
           selectGarecont = "select coorba,banapp,codbic,esecscig from garecont where ngara=? and ngaral=?";
@@ -1139,9 +1190,16 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
         dccAPPA.setValue("APPA.IBAN", coorba);
         dccAPPA.setValue("APPA.BANAPP", banapp);
         dccAPPA.setValue("APPA.BIC", codbic);
+        dccAPPA.setValue("APPA.FLAG_ACQ_SCIG", esecscig);
       }
 
-      aqoper = (Long) this.sqlManager.getObject(selectGare1, new Object[]{ngara});
+      String selectGare1 = "select locnaz from gare1 where ngara=?";
+      String parametroWhereSelectGare1 = ngara;
+      if (new Long(3).equals(genere)) {
+        parametroWhereSelectGare1=codgar1;
+      }
+      locnaz = (Long) this.sqlManager.getObject(selectGare1, new Object[]{parametroWhereSelectGare1});
+      dccAPPA.setValue("APPA.LOCNAZ", locnaz);
 
       String codcig = null;
       Date dacqcig = null;
@@ -1295,10 +1353,10 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
       String codcpv = null;
       if (genere != null && new Long(3).equals(genere) && new Long(2).equals(modcont)) {
         codcpv = (String) this.sqlManager.getObject("select gc.codcpv from garcpv gc,gare g where gc.ngara = g.ngara and g.codgar1=? and gc.tipcpv = ? "
-            + "and gc.codcpv is not null order by codiga", new Object[] { codgar1,new Long(1) });
+            + "and gc.codcpv is not null order by codiga", new Object[] { codgar1,"1" });
       }else{
         codcpv = (String) this.sqlManager.getObject("select codcpv from garcpv where ngara = ? and tipcpv = ?", new Object[] { ngara,
-            new Long(1) });
+            "1" });
       }
       dccAPPA.setValue("APPA.ALTCAT", codcpv);
 
@@ -1405,6 +1463,12 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
       }
       dccAPPA.setValue("APPA.SOMMEURG", sommeurg);
       dccAPPA.setValue("APPA.ULTDAT9", null);
+
+      String vernpa = (String) SqlManager.getValueFromVectorParam(datiGARA, 47).getValue();
+      Double impsomme = (Double) SqlManager.getValueFromVectorParam(datiGARA, 48).getValue();
+      if (StringUtils.isNotEmpty(vernpa)) {
+    	  dccAPPA.addColumn("APPA.APALTSOM", impsomme);
+      }
     }
 
     /*
@@ -1429,6 +1493,32 @@ public class GestoreAPPADEC extends AbstractGestoreEntita {
       dccAPPA.setValue("APPA.BIC", codbic);
     }
     */
+
+    Vector datiNpa = this.sqlManager.getVector("select torn.idappaltonpa, ditg.idpartecipnpa, torn.coddrp, torn.isconces, torn.settore, gare.tipgarg from torn, ditg, gare"
+        + " where torn.codgar=gare.codgar1 and ditg.dittao=gare.ditta and gare.ngara=ditg.ngara5 and gare.ngara=?", new Object[] {ngara});
+    if(datiNpa!=null && datiNpa.size()>0){
+      String idAppalto = (String) SqlManager.getValueFromVectorParam(datiNpa, 0).getValue();
+      String idPartecipante = (String) SqlManager.getValueFromVectorParam(datiNpa, 1).getValue();
+      String coddrp = (String) SqlManager.getValueFromVectorParam(datiNpa, 2).getValue();
+      String isconces = (String) SqlManager.getValueFromVectorParam(datiNpa, 3).getValue();
+      String settore = (String) SqlManager.getValueFromVectorParam(datiNpa, 4).getValue();
+      Long tipgarg = (Long) SqlManager.getValueFromVectorParam(datiNpa, 5).getValue();
+
+      Long direttiva = null;
+      if("1".equals(isconces)) 
+        direttiva = 3L;
+      else
+        if("O".equals(settore)) 
+          direttiva = 1L;
+        else if("S".equals(settore))
+          direttiva = 2L;
+
+      dccAPPA.setValue("APPA.IDAPPALTO", idAppalto);
+      dccAPPA.setValue("APPA.IDPARTECIPANTE", idPartecipante);
+      if(StringUtils.isNotBlank(coddrp) && StringUtils.isBlank(dccAPPA.getString("APPA.CODDRP")))
+        dccAPPA.setValue("APPA.CODDRP", coddrp);
+      dccAPPA.setValue("APPA.DIRETTIVA", direttiva);
+    }
 
     if (logger.isDebugEnabled()) logger.debug("dccAPPA_AltriDati: fine metodo");
 

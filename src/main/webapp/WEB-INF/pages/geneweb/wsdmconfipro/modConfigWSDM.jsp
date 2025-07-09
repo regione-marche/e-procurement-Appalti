@@ -1,4 +1,3 @@
-
 <%
 	/*
 	 * Created on 09-mar-2016
@@ -24,11 +23,9 @@
 <c:set var="isNavigazioneDisabilitata" value="1" scope="request" />
 
 <c:set var="idconfi" value="${param.idconfi}"/>
-<c:set var="descri" value="${param.descri}"/>
 <c:set var="key" value='WSDMCONFI.ID=N:${idconfi}' scope="request" />
 <c:set var="keyParent" value='WSDMCONFI.ID=N:${idconfi}' scope="request" />
 <c:set var="contextPath" value="${pageContext.request.contextPath}" scope="request" />
-<c:set var="codapp" value="${param.codapp}"/>
 
 <link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/jquery/wsdm/jquery.wsdm.css" >
 <script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.validate.min.js"></script>
@@ -63,11 +60,13 @@
 -->
 </script>
 
-<form action="${contextPath}/SalvaConfigurazioneWsdm.do" name="formProprieta" method="post" >
+<form action="${contextPath}/SalvaConfigurazioneWsdm.do" name="formProprieta" id="formProprieta" method="post" >
 
 	<c:set var="portaleConfigurato" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsisteUrlWsdmPortaleFunction", pageContext, param.idconfi)}' />
 		
 <script type="text/javascript">
+
+$("#formProprieta").attr('autocomplete', 'off');
 <!--
 	
 	//IMPOTANTE: è stata definita la funzione javascrit "disabilitaProp" che impostando la prop8 a no, interviene sulla property 'wsdm.accediFascicoloDocumentale' e 'wsdm.gestioneStrutturaCompetente'.
@@ -223,7 +222,7 @@
 				var idutente=$("#idUtenteProt").val();
 				var idutenteuop=$("#iduoProt").val();
 				
-				setWSLogin(syscon, servizio, username, password, ruolo, nome, cognome, codiceuo, idutente, idutenteuop, idconfi);
+				setWSLogin(syscon, servizio, username, password, ruolo, nome, cognome, codiceuo, idutente, idutenteuop, idconfi,"configurazione");
 			}
 			
 			if(condLoginComune && condUrlDocumentale ){
@@ -238,7 +237,7 @@
 				var idutente=$("#idUtenteDoc").val();
 				var idutenteuop=$("#iduoDoc").val();
 				
-				setWSLogin(syscon, servizio, username, password, ruolo, nome, cognome, codiceuo, idutente, idutenteuop, idconfi);
+				setWSLogin(syscon, servizio, username, password, ruolo, nome, cognome, codiceuo, idutente, idutenteuop, idconfi,"configurazione");
 			}
 			
 			if("${portaleConfigurato}" == "true"){
@@ -451,7 +450,7 @@
 				visualizzagestioneMittenteDaServizio = true;
 				visualizzaindMitenteUffint = true;
 			}
-			if($("#tiposistemaremoto").val()=="JIRIDE" || $("#tiposistemaremoto").val()=="ARCHIFLOW" || $("#tiposistemaremoto").val()=="ARCHIFLOWFA")
+			if($("#tiposistemaremoto").val()=="JIRIDE" || $("#tiposistemaremoto").val()=="ARCHIFLOW" || $("#tiposistemaremoto").val()=="ARCHIFLOWFA" || $("#tiposistemaremoto").val()=="HALLEY")
 				visualizzabloccoModInd=true;
 			
 			if($("#tiposistemaremoto").val()=="TITULUS"){
@@ -466,11 +465,15 @@
 			if($("#tiposistemaremoto").val()=="ITALPROT"){
 				visualizzafirmaDocumento=true;
 			}
-			if($("#tiposistemaremoto").val()=="INFOR"){
+			if($("#tiposistemaremoto").val()=="INFOR" || $("#tiposistemaremoto").val()=="HALLEY"){
 				visualizzaStrutturaCompetente=true;
 			}
 		}
-		
+
+		if($("#tiposistemaremoto").val()=="HALLEY"){
+			$("#pwdDocRiga").hide();
+			$("#pwdProtRiga").hide();
+		}
 		
 	    if(!condUrlProtocollo || ($("#tiposistemaremoto").val()!="JIRIDE" && $("#tiposistemaremoto").val()!="EASYDOC" && $("#tiposistemaremoto").val()!="PRISMA" && $("#tiposistemaremoto").val()!="JPROTOCOL") 
 	    		&& $("#tiposistemaremoto").val()!="ARCHIFLOWFA"){
@@ -1178,10 +1181,8 @@
 			
 			<input id="tiposistemaremoto" type="hidden" value="" />
 			<input id="servizio" type="hidden" value="" />
-			<input id="descri" name="descri" type="hidden" value="${descri}"/>
 			<input id="idconfi" type="hidden" value="${param.idconfi}" />
 			<input id="tabellatiInDB" type="hidden" value="" />
-			<input id="codapp" name="codapp" type="hidden" value="${codapp }" />
 			
 		<tr>
 			<td class="comandi-dettaglio" colspan="2" >

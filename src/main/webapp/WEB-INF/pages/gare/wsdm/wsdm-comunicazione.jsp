@@ -506,6 +506,10 @@
 			$("#finestraListaUffici").dialog("open");
 			_creaContainerListaUffici();
 		}
+		
+		<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.obbligoAssociaFascicoloEsistente")}'>
+			_isObbligoAssociazioneFascicolo=true;
+		</c:if>	
 	
 	</gene:javaScript>
 </gene:template>

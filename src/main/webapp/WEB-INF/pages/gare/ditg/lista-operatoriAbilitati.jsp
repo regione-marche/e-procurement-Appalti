@@ -20,7 +20,7 @@
 <c:set var="codiceGara" value='${gene:getValCampo(key, "V_GARE_ELEDITTE.CODGAR")}' />
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 
-<c:set var="where" value="DITG.CODGAR5='${codiceGara}' and (DITG.AMMGAR = 1 or DITG.AMMGAR is NULL) and DITG.ABILITAZ=1" />
+<c:set var="where" value="DITG.CODGAR5='${codiceGara}' and (DITG.AMMGAR = '1' or DITG.AMMGAR is NULL) and DITG.ABILITAZ=1" />
 
 <% // Fase Elenco concorrenti abilitati (pagina a lista) %>
 <c:set var="step3Wizard" value="-30" scope="request" />
@@ -167,7 +167,7 @@
 	</c:when>
 	<c:otherwise>
 		var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
+		document.location.href = contextPath + "/ApriPagina.do?" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
 	</c:otherwise>
 </c:choose>
 	}

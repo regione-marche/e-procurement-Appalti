@@ -100,8 +100,7 @@
 </c:choose>
 </c:if>
 
-<c:set var="whereNobustamm" value="codgar='${codiceGara }'"/>
-<c:set var="nobustamm" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetValoreCampoDBFunction", pageContext, "nobustamm","torn", whereNobustamm)}' />
+<c:set var="nobustamm" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select nobustamm from TORN where CODGAR=?", codiceGara)}' />
 
 <c:choose>
 	<c:when test='${ nobustamm ne "1"}'>

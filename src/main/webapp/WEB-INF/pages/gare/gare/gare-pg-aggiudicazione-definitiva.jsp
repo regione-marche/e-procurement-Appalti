@@ -20,12 +20,20 @@
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>		
 </gene:redefineInsert>
 
+<style type="text/css">
+	TABLE.dettaglio-tab {
+		border-top: 0px;
+	}
+</style>
+
 <c:set var="codiceGara" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.GetCodiceGaraFunction", pageContext)}' />
 <c:if test='${isGaraLottiConOffertaUnica eq "true" and not empty param.codiceGara}' >
 	<c:set var="codiceGara" value='${param.codiceGara}' />
 </c:if>
 <c:set var="numeroGara" value='${gene:getValCampo(key, "NGARA")}'/>
 <gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.GetTIPGENFunction" parametro='${codiceGara}' />
+<c:set var="isSottoSoglia" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.IsGaraSottosogliaFunction", pageContext, codiceGara)}' />
+<c:set var="tmpCalc" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.IsGaraDopoDLGS2016ManualeFunction", pageContext, numeroGara,"","","")}' />
 
 <c:set var="modelliPredispostiAttivoIncondizionato" value="1" scope="request" />
 
@@ -68,6 +76,7 @@
 
 <c:set var="isVecchiaOepv" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.isVecchiaOEPVFunction", pageContext, codiceGara)}' />
 <c:set var="contieneFormato52" value="${gene:callFunction2('it.eldasoft.sil.pg.tags.funzioni.CheckContieneFormatoFunction', pageContext, '52')}" />
+<c:set var="costoFisso" value="${gene:callFunction2('it.eldasoft.sil.pg.tags.funzioni.GetCOSTOFISSOFunction', pageContext, numeroGara)}" />
 
 
 <c:set var="ditta" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetDittaFunction", pageContext, numeroGara)}' />
@@ -105,9 +114,6 @@
         <c:when test='${tipoWSERP eq "AVM"}'>
         	<c:set var="comunicaEsitoTitle" value='Invia aggiudicazione ad ERP' />
         </c:when>
-        <c:when test='${tipoWSERP eq "RAIWAY"}'>
-        	<c:set var="comunicaEsitoTitle" value='Aggiorna aggiudicazione/fase gara su ERP' />
-        </c:when>
         <c:when test='${(tipoWSERP eq "TPER")}'>
         	<c:if test='${!empty ditta}'>
         		<c:set var="nazione" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetNazioneDittaFunction", pageContext, ditta)}' />
@@ -115,6 +121,9 @@
             <c:set var="comunicaEsitoTitle" value='Invia aggiudicazione ad ERP' />
         </c:when>
 		<c:when test='${tipoWSERP eq "ATAC"}'>
+			<c:set var="comunicaEsitoTitle" value='Invia aggiudicazione ad ERP' />
+		</c:when>
+		<c:when test='${tipoWSERP eq "INARCASSA"}'>
 			<c:set var="comunicaEsitoTitle" value='Invia aggiudicazione ad ERP' />
 		</c:when>
         <c:otherwise>
@@ -130,11 +139,30 @@
 	</c:choose>
 </c:if>
 
-<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE-scheda.AGGDEF.VisualizzaDettaglioPrezzi") and not empty ditta and (modlicg eq "5" or modlicg eq "14" or modlicg eq "16" or (modlicg eq "6" and (isVecchiaOepv or contieneFormato52))) }'>
+<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE-scheda.AGGDEF.VisualizzaDettaglioPrezzi") and not empty ditta and (modlicg eq "5" or modlicg eq "14" or modlicg eq "16" or (modlicg eq "6" and (isVecchiaOepv or contieneFormato52) and costoFisso ne "1")) }'>
 				<c:set var="dettagliOffPrezziVisibile" value="true"/>
-</c:if>				
+</c:if>
 
+<c:if test="${empty param.isGaraALotti}">
+<%-- C:IF per gestire le tag della tabella, è presente uno analogo a fine pagina nella chiusura dei tag--%>
+<c:set var="ricordarsiSchedeANAC" value='${not gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.npa.GetSeInviatoSchedePerLottiConclusiFunction", pageContext, gene:getValCampo(key,"NGARA"), "")}'/>
+
+<table class="dettaglio-tab-lista">
+<c:set var="verNPA" value="${gene:callFunctionN('it.eldasoft.gene.tags.functions.GetSafeDataFromDB', pageContext, 'select vernpa from torn where codgar=?', codiceGara)}"/>
+<c:if test="${ricordarsiSchedeANAC and not empty verNPA and gene:callFunctionN('it.eldasoft.sil.pg.tags.funzioni.GetSeAttivoModuloANACFormFunction', pageContext, codiceGara) eq 'true'}">
+	<tr>
+		<td style="PADDING: 20px 0px 15px 0px; color: #0000FF;">
+			<b>ATTENZIONE:</b> ricordarsi di inviare ad ANAC la scheda relativa alla fase di aggiudicazione.
+		</td>
+	</tr>
+</c:if>
+<tr>
+<td>
+</c:if>
 <gene:formScheda entita="GARE" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreAggiudicazioneDefinitiva">
+
+	<c:set var="esistonoPubblicazioniSuPortale" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteBloccoPubblicazionePortaleFunction", pageContext,codiceGara,"BANDO","false")}' />
+	<c:set var="isFunzionePubblicazioneAttiOfferte" value='${datiRiga.TORN_GARTEL eq "1" and esistonoPubblicazioniSuPortale and gene:checkProtFunz(pageContext, "ALT", "PubblicazioneAtti")}' />
 
 	<jsp:include page="/WEB-INF/pages/commons/bloccaModifica-scheda.jsp">
 		<jsp:param name="entita" value="V_GARE_TORN"/>
@@ -207,14 +235,14 @@
 		<c:if test='${modo eq "VISUALIZZA" and gene:checkProtFunz(pageContext, "MOD","MOD") and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ImpostaGaraNonAggiud") and (bustalotti eq "1" || bustalotti eq "2")}'>
 		      <td class="vocemenulaterale">
 			      	<c:if test='${isNavigazioneDisattiva ne "1" }'>
-							<a href="javascript:impostaGaraNonAggiudicata('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','${datiRiga.GARE_ESINEG}','${datiRiga.GARE_DATNEG}','${datiRiga.GARE1_NPANNREVAGG}');" title="Imposta lotto non aggiudicato" tabindex="1506">
+							<a href="javascript:impostaGaraNonAggiudicata('${datiRiga.GARE_NGARA}','${datiRiga.GARE_CODGAR1}','${datiRiga.GARE_ESINEG}','${datiRiga.GARE_DATNEG}','${datiRiga.GARE1_NPANNREVAGG}','${datiRiga.GARE1_GIUSTNEG}');" title="Imposta lotto non aggiudicato" tabindex="1506">
 					</c:if>
 					  Imposta lotto non aggiudicato
 					<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>			  
 				</td>
 		</c:if>
 		
-		<c:if test='${autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.AggiornaFasiGaraERP") and (((tipoWSERP eq "SMEUP" || (tipoWSERP eq "UGOVPA" && empty datiRiga.GARE1_NUMRDO && isDatiContratto eq "true")|| (tipoWSERP eq "AVM" && empty datiRiga.GARE1_NUMRDO) ) and (presenzaRda eq "1" || presenzaRda eq "2")) || (tipoWSERP eq "RAIWAY" and presenzaRda eq "1") || (tipoWSERP eq "TPER" && empty datiRiga.GARE1_NUMRDO && nazione eq "1") || (isPresenzaInvioERP eq "true"))}'>
+		<c:if test='${autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.AggiornaFasiGaraERP") and ((((tipoWSERP eq "INARCASSA") || tipoWSERP eq "SMEUP" || (tipoWSERP eq "UGOVPA" && empty datiRiga.GARE1_NUMRDO && isDatiContratto eq "true")|| (tipoWSERP eq "AVM" && empty datiRiga.GARE1_NUMRDO) ) and (presenzaRda eq "1" || presenzaRda eq "2")) || (tipoWSERP eq "TPER" && empty datiRiga.GARE1_NUMRDO && nazione eq "1") || (isPresenzaInvioERP eq "true"))}'>
 			<tr>
 				<td class="vocemenulaterale">
 					<a href="javascript:comunicaEsitoRdaInGara('${key}','${requestScope.tipoWSERP}');" title='${comunicaEsitoTitle}' tabindex="1507">
@@ -224,7 +252,7 @@
 			</tr>
 		</c:if>
 		<c:if test='${autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE-scheda.AGGDEF.RettificaImportoAggiudizazione") and not empty datiRiga.GARE_DITTA and (datiRiga.TORN_ITERGA ne 6 or (datiRiga.TORN_ITERGA eq 6 and datiRiga.GARECONT_STATO <=2 ))}' >
-			<c:if test='${!(integrazioneWSERP eq "1" and not empty datiRiga.GARE1_NUMRDO && requestScope.tipoWSERP ne "FNM")}'>
+			<c:if test='${!(integrazioneWSERP eq "1" and not empty datiRiga.GARE1_NUMRDO and (requestScope.tipoWSERP ne "FNM" and requestScope.tipoWSERP ne "INARCASSA"))}'>
 				<tr>
 					<td class="vocemenulaterale">
 						<c:if test='${isNavigazioneDisattiva ne "1"}'><a href="javascript:rettificaImportoAgg();" title="Rettifica importo aggiudicazione" tabindex="1508"></c:if>
@@ -243,7 +271,26 @@
 				</td>
 			</tr>
 		</c:if>
-		</gene:redefineInsert>
+		<c:if test='${isFunzionePubblicazioneAttiOfferte}' >
+			<tr>
+				<td class="vocemenulaterale">
+					<c:if test='${isNavigazioneDisattiva ne "1"}'><a href="javascript:pubblicazioneAtti();" title="Pubblicazione atti e offerte" tabindex="1510"></c:if>
+						Pubblicazione atti e offerte
+					<c:if test='${isNavigazioneDisattiva ne "1"}'></a></c:if>
+				</td>
+			</tr>
+		</c:if>
+		<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.FVOE") and gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.GetSeAttivoModuloANACFormFunction", pageContext, codiceGara) eq "true"}'>
+			<c:set var="visualizzaFVOE" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.CheckVisualizzaFVOEFunction", pageContext,codiceGara)}' />
+				<tr>
+					<td class="vocemenulaterale">
+						<a href='javascript:apriFVOE();' title="Verifiche FVOE" tabindex="1514">
+							Verifiche FVOE
+						</a>
+					</td>
+				</tr>
+		</c:if>
+	</gene:redefineInsert>
 	</c:if>
 	
 	
@@ -268,6 +315,7 @@
 	<gene:campoScheda campo="CENINT" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="false"/>
 	<gene:campoScheda campo="ITERGA" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="false"/>
 	<gene:campoScheda campo="OFFAUM" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="false"/>
+	<gene:campoScheda campo="GARTEL" entita="TORN" where="GARE.CODGAR1 = TORN.CODGAR" visibile="false"/>
 	<gene:campoScheda campo="STATO" entita="GARECONT" where="GARE.NGARA = GARECONT.NGARA and GARECONT.NCONT=1" visibile="false"/>
 	<gene:campoScheda campo="CODSTIPULA" entita="G1STIPULA" where="GARE.NGARA = G1STIPULA.NGARA and G1STIPULA.NCONT=1" visibile="false"/>
 
@@ -554,9 +602,10 @@
 		<gene:campoScheda campo="IMPPERM" title="di cui importo per permuta" modificabile="false" entita="DITG" where="DITG.NGARA5 = GARE.NGARA AND DITG.CODGAR5 = GARE.CODGAR1 AND DITG.DITTAO = GARE.DITTA" visibile="${ (datiRiga.GARE1_ULTDETLIC eq 1 or datiRiga.GARE1_ULTDETLIC eq 3) and aqoper ne 2}"/>
 		<gene:campoScheda campo="IMPCANO" title="di cui importo per canone assistenza" modificabile="false" entita="DITG" where="DITG.NGARA5 = GARE.NGARA AND DITG.CODGAR5 = GARE.CODGAR1 AND DITG.DITTAO = GARE.DITTA" visibile="${ (datiRiga.GARE1_ULTDETLIC eq 2 or datiRiga.GARE1_ULTDETLIC eq 3) and aqoper ne 2 }"/>
 		<gene:campoScheda campo="NOTDEFI"  entita="GARE1" where="GARE1.NGARA = GARE.NGARA" />
-		<gene:campoScheda campo="NUMRDO" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" title="${comunicaEsitoMsg}" visibile='${integrazioneWSERP eq "1" && (tipoWSERP eq "AVM" || tipoWSERP eq "RAIWAY")}' modificabile='false' />	
+		<gene:campoScheda campo="NUMRDO" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" title="${comunicaEsitoMsg}" visibile='${integrazioneWSERP eq "1" && (tipoWSERP eq "AVM")}' modificabile='false' />	
 		<c:if test='${bustalotti eq "1" || bustalotti eq "2"}'>
 			<gene:campoScheda campo="ESINEG" visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false" title="Esito lotto non aggiudicato"/>
+			<gene:campoScheda campo="GIUSTNEG" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false"/>
 			<gene:campoScheda campo="DATNEG" visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false"/>
 			<gene:campoScheda campo="NPANNREVAGG" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false"/>
 			<gene:campoScheda campo="NOTNEG" entita="GARE1" where="GARE1.NGARA=GARE.NGARA"  visibile="${!empty datiRiga.GARE_ESINEG }" modificabile="false"/>
@@ -697,6 +746,14 @@
 		</jsp:include>
 	</c:if>
 	
+	<gene:gruppoCampi idProtezioni="PUBATTI" visibile="${isFunzionePubblicazioneAttiOfferte}" >
+		<gene:campoScheda>
+			<td colspan="2"><b>Pubblicazione atti e offerte</b></td>
+		</gene:campoScheda>
+		<gene:campoScheda campo="DPUBATTI" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" modificabile="false" />
+		<gene:campoScheda campo="NPROATTI" entita="GARE1" where="GARE1.NGARA=GARE.NGARA" modificabile="false" visibile="${not empty datiRiga.GARE1_NPROATTI}" />
+	</gene:gruppoCampi>
+	
 	<input type="hidden" name="isGaraLottiConOffertaUnica" id="isGaraLottiConOffertaUnica" value="${isGaraLottiConOffertaUnica}" />
 	<input type="hidden" name="WIZARD_PAGINA_ATTIVA" value="${paginaAttivaWizard}" />
 	<input type="hidden" name="DIREZIONE_WIZARD" id="DIREZIONE_WIZARD" value="" />
@@ -714,18 +771,25 @@
 					<INPUT type="button" class="bottone-azione" value="Annulla" title="Annulla modifiche" onclick="javascript:schedaAnnulla()">
 				</c:when>
 				<c:otherwise>
+					<c:set var="permessiAggiudicazioneDefinitiva" value='${(autorizzatoModifiche ne "2") and gene:checkProtFunz(pageContext, "ALT", "SelezionaDittaAggDef") and (!isProceduraTelematica or (isProceduraTelematica and (meruolo eq 1 or meruolo eq 3))) and esisteODADefinito ne "SI" and empty datiRiga.GARE_DITTA}' />
+					<c:if test='${permessiAggiudicazioneDefinitiva}' >
+						<INPUT type="button" class="bottone-azione" value='Aggiudicazione definitiva' title='Aggiudicazione definitiva' onclick="javascript:aggiudicazioneDefinitiva();" id="btnAggiudicazioneDef">&nbsp;
+					</c:if>
+					<c:set var="permessiSchedaModifica" value='${(autorizzatoModifiche ne "2") and gene:checkProtFunz(pageContext,"MOD","SCHEDAMOD")}' />
+					<c:if test='${permessiSchedaModifica}'>
+						<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' onclick="javascript:schedaModifica()">&nbsp;
+					</c:if>
+					
+					<c:if test="${(permessiAggiudicazioneDefinitiva or permessiSchedaModifica) and (isFunzionePubblicazioneAttiOfferte or isGaraLottiConOffertaUnica eq 'true')}"><br><br></c:if>
+
 					<c:if test='${isGaraLottiConOffertaUnica eq "true"}'>	
-						<INPUT type="button"  class="bottone-azione" value='Torna a elenco lotti' title='Torna a elenco lotti' onclick="javascript:historyVaiIndietroDi(1);">&nbsp;&nbsp;&nbsp;
+						<INPUT type="button"  class="bottone-azione" value='Torna a elenco lotti' title='Torna a elenco lotti' onclick="javascript:historyVaiIndietroDi(1);">&nbsp;
 					</c:if>
-					<c:if test='${(autorizzatoModifiche ne "2") and gene:checkProtFunz(pageContext, "ALT", "SelezionaDittaAggDef") and (!isProceduraTelematica or (isProceduraTelematica and (meruolo eq 1 or meruolo eq 3))) and esisteODADefinito ne "SI" and empty datiRiga.GARE_DITTA}' >
-						<INPUT type="button" class="bottone-azione" value='Aggiudicazione definitiva' title='Aggiudicazione definitiva' onclick="javascript:aggiudicazioneDefinitiva();" id="btnAggiudicazioneDef">
-					</c:if>
-					<c:if test='${(autorizzatoModifiche ne "2") and gene:checkProtFunz(pageContext,"MOD","SCHEDAMOD")}'>
-						<INPUT type="button"  class="bottone-azione" value='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' title='${gene:resource("label.tags.template.dettaglio.schedaModifica")}' onclick="javascript:schedaModifica()">
+					<c:if test='${isFunzionePubblicazioneAttiOfferte}'>
+						<INPUT type="button"  class="bottone-azione" value='Pubblicazione atti e offerte' title='Pubblicazione atti e offerte' onclick="javascript:pubblicazioneAtti()">&nbsp;
 					</c:if>
 				</c:otherwise>
 			</c:choose>
-			&nbsp;
 		</td>
 	</gene:campoScheda>
 
@@ -778,7 +842,7 @@
 	function archivioImpresaAggDef(){
 		var codiceImpresa = getValue("GARE_DITTA");
 		var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href;
+		document.location.href = contextPath + "/ApriPagina.do?" + href;
 	}
 	
 	function aggiudicazioneDefinitiva(){
@@ -792,8 +856,8 @@
 	
 	var ridisoPrec = getValue("GARE_RIDISO");
 	
-	//Se RIDISO = 1 si dimezza il valore di IMPGAR
-	//Se RIDISO = 2 si raddoppia il valore di IMPGAR 
+	//Se RIDISO = 1 si riduce del 30% il valore di IMPGAR
+	//Se RIDISO = 2 si ripristina il valore di IMPGAR
 	function calcolaIMPGAR(){
 		var newRidiso = getValue("GARE_RIDISO");
 		var oldRidiso = ridisoPrec;
@@ -807,9 +871,9 @@
 		
 		if (newRidiso != oldRidiso) {
 			if (newRidiso==1) {
-				importoCauzione = importoCauzione / 2;
+				importoCauzione = importoCauzione * (1-0.3);//riduzione del 30%  (prima 50%) - DLgs 36-2023 
 			}else{ 
-				importoCauzione = importoCauzione * 2;
+				importoCauzione = importoCauzione / (1-0.3);
 			}
 		}
 		ridisoPrec = newRidiso;
@@ -840,9 +904,9 @@
 			
 			if (newRidiso != oldRidiso) {
 				if (newRidiso==1) {
-					importoCauzione = importoCauzione / 2;
+					importoCauzione = importoCauzione * (1-0.3);//riduzione del 30%  (prima 50%) - DLgs 36-2023 
 				}else{ 
-					importoCauzione = importoCauzione * 2;
+					importoCauzione = importoCauzione / (1-0.3);
 				}
 			}
 			ridisoPrec[indice] = newRidiso;
@@ -874,7 +938,6 @@
 		href += "&modlicg=" + getValue("GARE_MODLICG");
 		href += "&isGaraLottiConOffertaUnica=" + isGaraLottiConOffertaUnica;
 		href += "&daAgg=SI";
-		href += "&" + csrfToken;
 		document.location.href = href;
 	}
 		
@@ -934,7 +997,7 @@
 				ribauo = calcolaRIBAUO(impapp,onprge,impsic,impnrl,sicinc,importo,onsogrib);
 				ribauo = parseFloat(ribauo);
 			}
-			var percauz = calcoloPercentualeCauzione(ribauo);
+			var percauz = calcoloPercentualeCauzione(ribauo,accqua=='1',${isGaraDLGS2023},${isSottoSoglia});
 			var importoTemp = importo;
 			if(accqua=='1'){
 				importoTemp = getValue("GARE_IMPAPP");
@@ -947,7 +1010,7 @@
 		var ridiso = getValue("GARE_RIDISO");
 		
 		if (ridiso==1) {
-			importoGaranzia = importoGaranzia / 2;
+			importoGaranzia = importoGaranzia * (1-0.3);//riduzione del 30%  (prima 50%) APPALTI-1377 - DLgs 36-2023
 		}
 		setValue("GARE_IMPGAR",toMoney(importoGaranzia));
 		
@@ -1006,13 +1069,13 @@
 		
 	function archivioImpresa(codiceImpresa){
 		var href = ("href=gene/impr/impr-scheda.jsp&key=IMPR.CODIMP=T:" + codiceImpresa);
-		document.location.href = contextPath + "/ApriPagina.do?"+csrfToken+"&" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
+		document.location.href = contextPath + "/ApriPagina.do?" + href + "&key=IMPR.CODIMP=T:" + codiceImpresa;
 	}
 	
 	function apriListaCauzioneDitte(){
 		var codgar = getValue("GARE_CODGAR1");
 		var ngara = getValue("GARE_NGARA");
-		var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/ditg/lista-cauzioneDitte.jsp";
+		var href = contextPath + "/ApriPagina.do?href=gare/ditg/lista-cauzioneDitte.jsp";
 		href += "&codgar=" + codgar;
 		href += "&ngara=" + ngara;
 		document.location.href = href;
@@ -1069,10 +1132,10 @@
 	
 	
 	<c:if test='${bustalotti eq "1" || bustalotti eq "2"}'>
-		function impostaGaraNonAggiudicata(ngara,codgar1,esineg,datneg,npannrevagg){
-			var href="href=gare/commons/popup-ImpostaGaraNonAggiudicata.jsp&ngara=" + ngara + "&codgar1=" + codgar1 + "&esineg=" + esineg + "&datneg=" + datneg + "&npannrevagg=" + npannrevagg;
+		function impostaGaraNonAggiudicata(ngara,codgar1,esineg,datneg,npannrevagg,giustneg){
+			var href="href=gare/commons/popup-ImpostaGaraNonAggiudicata.jsp&ngara=" + ngara + "&codgar1=" + codgar1 + "&esineg=" + esineg + "&datneg=" + datneg + "&npannrevagg=" + npannrevagg + "&giustneg=" + giustneg;
 			href+="&isLottoOffUnica=Si";
-			openPopUpCustom(href, "impostaGaraNonAggiudicata", 700, 400, "yes", "yes");
+			openPopUpCustom(href, "impostaGaraNonAggiudicata", 850, 400, "yes", "yes");
 		}
 	</c:if>
 	
@@ -1158,5 +1221,42 @@
 		$("#GARE1_RIBAGGINIview").text("");
 		$("#GARE1_IAGGIUINIview").text("");
 	}
+
+	function pubblicazioneAtti(){
+		var codgar = getValue("GARE_CODGAR1");
+		var ngara = getValue("GARE_NGARA");
+		formInserisciDitgPub.codgar.value = codgar;
+		formInserisciDitgPub.ngara.value = ngara;
+		formInserisciDitgPub.submit();
+	}
+
+	function apriFVOE(){
+		var visualizzaFVOE = "${visualizzaFVOE eq 'true'}";
+		if(visualizzaFVOE!=="true"){
+			alertFVOENonAccessibile();
+			return;
+		}
+		bloccaRichiesteServer();
+		document.formVisualizzaFVOE.submit();
+	}
+
 	</gene:javaScript>
 </gene:formScheda>
+<c:if test="${empty param.isGaraALotti}">
+</td>
+</tr>
+</table>
+</c:if>
+
+<form name="formInserisciDitgPub" action="${pageContext.request.contextPath}/pg/InitPubblicazioneAtti.do" method="post">
+	<input type="hidden" name="codgar" value="" />
+	<input type="hidden" name="ngara" value="" />
+	<input type="hidden" name="isGaraLottiConOffertaUnica" value="${isGaraLottiConOffertaUnica eq 'true'}" />
+</form>
+
+<form name="formVisualizzaFVOE" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+	<input type="hidden" name="href" value="gare/g1fvoe/g1fvoe-lista.jsp" />
+	<input type="hidden" name="codiceGara" value="${codiceGara}" />
+	<input type="hidden" name="autorizzatoModifiche" value="${autorizzatoModifiche }" />
+	<input type="hidden" name="idconfi" value="${idconfi}" />
+</form>

@@ -93,7 +93,7 @@ public class ConsultazioneDellePubblicazioniSIMAPBatchManager {
 		if (listaGare != null && listaGare.size() > 0) {
 			for (int i = 0; i < listaGare.size(); i++) {
 				codgar = (String) SqlManager.getValueFromVectorParam(listaGare.get(i), 0).getValue();
-				JSONArray ja = this.leggiPubblicazioniManager.leggiPubblicazioni(codgar,null);
+				JSONArray ja = this.leggiPubblicazioniManager.leggiPubblicazioni(codgar,null,null,null);
 			}
 		}
 

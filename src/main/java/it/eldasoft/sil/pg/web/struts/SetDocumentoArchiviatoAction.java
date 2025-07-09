@@ -70,7 +70,7 @@ public class SetDocumentoArchiviatoAction extends Action {
 
         Long cnt = null;
         if(!"true".equals(cos) && !"21".equals(stato) && !"23".equals(stato)){
-          cnt = (Long) this.sqlManager.getObject(selectWSALLEGATI, new Object[] { entita, key1, new Long(key2) });
+          cnt = (Long) this.sqlManager.getObject(selectWSALLEGATI, new Object[] { entita, key1, key2 });
         }
         if(cnt == null || cnt.longValue() == 0){
 

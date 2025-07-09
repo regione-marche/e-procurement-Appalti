@@ -31,7 +31,6 @@ import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
-import it.eldasoft.gene.commons.web.struts.CostantiGeneraliStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.w3.bl.GestioneServiziIDGARACIGManager;
 import it.eldasoft.utils.properties.ConfigManager;
@@ -77,6 +76,11 @@ public class CheckCollaborazioniAction extends ActionBaseNoOpzioni {
     String messageKey = null;
     boolean memorizzaCredenziali = false;
     boolean rpntFailed = false;
+    String errore = null;
+    String evento = "CONSULTA_COLL";
+    String messaggioBaseResponse = "Risposta SIMOG consultazione indici di collaborazione per l'utente";
+    String simogwsuser = null;
+    String simogwspass = null;
 
     try {
       ProfiloUtente profilo = (ProfiloUtente) request.getSession().getAttribute(
@@ -101,8 +105,6 @@ public class CheckCollaborazioniAction extends ActionBaseNoOpzioni {
       }
       
       
-      String simogwsuser = null;
-      String simogwspass = null;
 
       HashMap<String, String> hMapSIMOGWSUserPass = new HashMap<String, String>();
       // Gestione USER
@@ -122,9 +124,11 @@ public class CheckCollaborazioniAction extends ActionBaseNoOpzioni {
          memorizzaCredenziali=true;
        }
       }
-      
+
       // Richiesta lista collaborazioni
+      GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 0, 1, simogwsuser, evento, "Invio richiesta a SIMOG consultazione indici di collaborazione per l'utente", null);  
       List<Vector<Object>> listaCC = this.gestioneServiziIDGARACIGManager.checkCollaborazioni(uffint, simogwsuser, simogwspass, rpntFailed);
+       
       // se arrivo qui, le credenziali sono valide
       if(memorizzaCredenziali && rpntFailed) {
         this.gestioneServiziIDGARACIGManager.memorizzaSIMOGWSUserPass(syscon,simogwsuser, simogwspass);
@@ -159,9 +163,10 @@ public class CheckCollaborazioniAction extends ActionBaseNoOpzioni {
         messageKey = "errors.gestioneIDGARACIG.error";
         this.aggiungiMessaggio(request, messageKey, "Operazione non possibile: il RUP non ha accesso su SIMOG per la stazione appaltante corrente");
       }
-      
+      GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 1, 1, simogwsuser, evento, messaggioBaseResponse, null); 
       request.getSession().setAttribute("numeroPopUp", "1");
     } catch (GestoreException e) {
+      errore = e.getMessage();
       messageKey = "errors.gestioneIDGARACIG.error";
       logger.error(this.resBundleGenerale.getString(messageKey), e);
       this.aggiungiMessaggio(request, messageKey, e.getMessage());
@@ -180,10 +185,14 @@ public class CheckCollaborazioniAction extends ActionBaseNoOpzioni {
         }
       }
     } catch (Throwable e) {
+      errore = e.getMessage();
       messageKey = "errors.applicazione.inaspettataException";
       logger.error(this.resBundleGenerale.getString(messageKey), e);
       this.aggiungiMessaggio(request, messageKey);
     }
+    if(errore!=null)
+      GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 1, 3, simogwsuser, evento, messaggioBaseResponse, errore);
+
     if (messageKey != null) response.reset();
 
     if (logger.isDebugEnabled())

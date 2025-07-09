@@ -21,13 +21,17 @@
 <c:set var="documentiAssociatiDB" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.documentiAssociatiDB")}'/>
 <c:set var="exportDocumenti" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.sil.pg.pathArchivioDocumentiGara")}'/>
 <c:set var="integrazioneWSDM" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNDocumentaleFunction", pageContext, param.codgar, param.idconfi)}' />
-<c:set var="exportCOS" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "cos.sftp.url")}'/>
+<c:set var="integrazioneWSDMProtocollo" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNFunction", pageContext, param.codgar,param.idconfi)}'/>
+<c:set var="conservazioneAttiva" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneConservazioneDigitaleFunction", pageContext, param.codgar)}'/>
 <c:set var="isRiservatezzaAttiva" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.IsRiservatezzaAttivaFunction", pageContext, param.codice, param.idconfi )}' />
 <c:if test='${integrazioneWSDM eq "1"}'>
 	<c:set var="tipoWSDM" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetTipoWSDMFunction", pageContext, "DOCUMENTALE", "NO",param.idconfi)}' />
 	<c:set var="associaDoc" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.GetPropertyWsdmFunction", "wsdm.associaDocumentiProtocollo",param.idconfi)}'/>
 </c:if>
 <c:set var="abilitazioneTrasmissioneWSDM" value='${integrazioneWSDM eq "1" and tipoWSDM == "PALEO" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasmettiAOperatoriInterni")}' />
+
+<!-- NON TOGLIERE, sembra che non viene utilizzato ma è utilizzato nel JS jquery.archiviadoc.js per la visualizzazione dell'icona di verificaPDFA -->
+<c:set var="isVerificaPDFA" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "uploadFile.verifica.pdfA")}'/>
 
 <c:set var="digitalSignatureUrlCheck" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-check-url")}'/>
 <c:set var="digitalSignatureProvider" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "digital-signature-provider")}'/>
@@ -40,11 +44,48 @@
 	</c:otherwise>
 </c:choose>
 
+<c:set var="iterga" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select iterga from torn where codgar=?", param.codgar)}'/>
+<c:if test="${iterga eq 9 or iterga eq 10}">
+	<c:set var="bloccoPaginaPerConcorsi" value='${empty gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select isfineconc from torn where codgar=?", param.codgar)? "1":"0"}'/>
+	<c:if test="${bloccoPaginaPerConcorsi eq 1}">
+		<c:set var="tmp" value='${gene:callFunction3("it.eldasoft.gene.tags.functions.SetErroreFunction", pageContext, "errors.funzione.nonAttiva","La funzione \'Archivia documenti\' non è utilizzabile per i concorsi di progettazione che risultano in fase anonima")}'/>
+	</c:if>
+</c:if>
+<c:set var="mostraFiltroEml" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.MostraFiltroEMLFunction", pageContext,param.codice)}'/>
+
 <gene:template file="scheda-template.jsp">
 
 	<gene:redefineInsert name="head" >
 		<script type="text/javascript">
 			var _contextPath="${pageContext.request.contextPath}";
+			var $dropdownGareCollegate=null
+			<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ArchiviaGareCollegate")}'>
+				${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.GetListaGareCollegateFunction", pageContext, param.codgar)}
+				<c:if test="${not empty listaGareEAbilitazione}">
+					$dropdownGareCollegate = $('<label/>').text('Accedi all\'archivio documenti delle procedure collegate ')
+					$select = $('<select/>').appendTo($dropdownGareCollegate);
+					$('<option data-auth="no-option"/>').val("no-option").text("").appendTo($select);
+					$select.change(function(){ 
+					var optionSelected = $("option:selected", this);
+						if(optionSelected.attr("data-auth") != "no-option" ){
+							if(optionSelected.attr("data-auth") == "true")
+								if(confirm("Confermi l'accesso all'archivio documenti della procedura "+optionSelected.attr("data-chiave")+" ?"))
+									apriArchiviaDocumenti(optionSelected.val(),optionSelected.attr("data-chiave"),optionSelected.attr("data-genere"),optionSelected.attr("data-gartel"),optionSelected.attr("data-idconfi"));
+								else
+									$select.val('');
+							else{
+								alert("Non è possibile procedere: non si possiedono i privilegi di accesso alla procedura selezionata");
+								$select.val('');
+							}
+						}
+						
+					})
+					<c:forEach items="${listaGareEAbilitazione}" var="gara">
+						$('<option data-auth="${gara[1]}" data-chiave="${gara[3]}" data-genere="${gara[4]}" data-gartel="${gara[5]}"  data-idconfi="${gara[6]}"/>').val("${gara[2]}").text("${gara[0]}").appendTo($select);
+					</c:forEach>
+				</c:if >
+			</c:if>
+			var _mostraFiltroEML=${mostraFiltroEml}
 		</script>
 	
 		<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/jquery/wsdm/jquery.wsdm.css" >
@@ -133,6 +174,10 @@
 			}
 			
 			TABLE.schedagperm TR.intestazione TH.ck, TABLE.schedagperm TR TD.datadescr {
+				width: 50px;
+				text-align: center;
+			}
+			TABLE.schedagperm TR.intestazione TH.ck, TABLE.schedagperm TR TD.protdescr {
 				word-break:break-word;
 				width: 50px;
 				text-align: center;
@@ -186,6 +231,14 @@
 				width: 98%;
 				font-style: italic;
 			}
+			
+			#add {
+			  float: right;
+			}
+			
+			#add label select{
+				width:105px;
+			}
 				
 		</style>
 		
@@ -214,10 +267,12 @@
 	
 	<gene:redefineInsert name="corpo">
 
+			<input type="hidden" name="isVerificaPDFA" id="isVerificaPDFA" value="${isVerificaPDFA}" />
 			<input type="hidden" name="codice" id="codice" value="${param.codice}" />
 			<input type="hidden" name="codgar" id="codgar" value="${param.codgar}" />
 			<input type="hidden" name="genere" id="genere" value="${param.genere}" />
 			<input type="hidden" name="operation" id="operation" value="VISUALIZZA" />
+			<input type="hidden" name="integrazioneWSDMProtocollo" id="integrazioneWSDMProtocollo" value="${integrazioneWSDMProtocollo}" />
 			<input type="hidden" id="contextPath" name="contextPath" value="${contextPath}" />
 			<input type="hidden" id="documentiAssociatiDB" name="documentiAssociatiDB" value="${documentiAssociatiDB}" />
 			<input type="hidden" id="gartel" name="gartel" value="${param.gartel}" />
@@ -240,8 +295,8 @@
 						<c:when test='${isNavigazioneDisattiva ne "1"}'>
 							<c:if test='${integrazioneWSDM eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciAlDocumentale")}'>
 								<INPUT type="button" id="pulsantearchprot" class="bottone-azione" value='Trasferisci al documentale' title='Trasferisci al documentale'>
-							</c:if>	
-							<c:if test='${!empty exportCOS and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciCos")}'>
+							</c:if>
+							<c:if test='${(conservazioneAttiva eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciCos")) or (conservazioneAttiva eq "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciDigiP"))}'>
 								<INPUT type="button" id="pulsantearchcos" class="bottone-azione" value='Trasferisci a sistema conservazione' title='Trasferisci a sistema conservazione'>
 							</c:if>
 							<c:if test='${!empty exportDocumenti and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ExportDocumenti")}'>
@@ -262,42 +317,42 @@
 			<c:choose>
 		        <c:when test='${isNavigazioneDisattiva ne "1"}'>
 		        	<c:if test='${param.gartel eq "1" and associaDoc eq "1"}'>
-		        	<tr>
-			        	<td class="vocemenulaterale">
-			        		<c:if test='${integrazioneWSDM eq "1" and  gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.AssociaDocDitteAProtocollo")}'>
-								<a href="#" id="menuassociadoc" title="Associa documenti buste telematiche a protocollo" tabindex="1512">Associa documenti buste telematiche a protocollo</a>
-							</c:if>	
-					  	</td>
-					  </tr>
+						<c:if test='${integrazioneWSDM eq "1" and  gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.AssociaDocDitteAProtocollo")}'>
+							<tr>
+								<td class="vocemenulaterale">
+									<a href="#" id="menuassociadoc" title="Associa documenti buste telematiche a protocollo" tabindex="1512">Associa documenti buste telematiche a protocollo</a>
+								</td>
+							</tr>
+						</c:if>	
 		        	</c:if>
-		        	<tr>
-			        	<td class="vocemenulaterale">
-			        		<c:if test='${integrazioneWSDM eq "1" and  gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciAlDocumentale")}'>
+					<c:if test='${integrazioneWSDM eq "1" and  gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciAlDocumentale")}'>
+						<tr>
+							<td class="vocemenulaterale">
 								<a href="#" id="menuarchprot" title="Trasferisci al documentale" tabindex="1513">Trasferisci al documentale</a>
-							</c:if>	
-					  	</td>
-					  </tr>
-		        	<tr>
-						<td class="vocemenulaterale">
-							<c:if test='${abilitazioneTrasmissioneWSDM}'>
-								<a href="javascript:apriTrasmettiAOperatoriInterni();" id="menutrasmetti" title="Trasmetti a operatori interni" tabindex="1514">Trasmetti a operatori interni</a>
-							</c:if>	
-						</td>
-					</tr>
-					<tr>
-						<td class="vocemenulaterale">
-							<c:if test='${!empty exportCOS and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciCos")}'>
-								<a href="#" id="menuexpcos" title="Trasferisci a sistema conservazione" tabindex="1515">Trasferisci a sistema conservazione</a>
-							</c:if>	
-						</td>
-					</tr>
-			        <tr>	
-			        	<td class="vocemenulaterale">
-							<c:if test='${!empty exportDocumenti and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ExportDocumenti")}'>
-								<a href="#" id="menuexpdoc" title="Export su file zip" tabindex="1516">Export su file zip</a>
-							</c:if>
-					  	</td>
-					  </tr>
+							</td>
+						</tr>
+					</c:if>	
+					<c:if test='${integrazioneWSDM eq "1" and  gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ConservaDocumentiAgg") && tipoWSDM == "TITULUS" && (param.genere ne 11 && param.genere ne 10 && param.genere ne 20) and (param.entita eq "GARE" || param.entita eq "TORN")}'>
+						<tr>	
+							<td class="vocemenulaterale">	
+								<a href="#" id="menuconsdocaggi" title="Conservazione documenti aggiudicatario" tabindex="1514">Conservazione doc. aggiudicatario</a>			
+							</td>
+						</tr>
+					</c:if>
+					<c:if test='${(conservazioneAttiva eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciCos")) or (conservazioneAttiva eq "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciDigiP"))}'>
+						<tr>
+							<td class="vocemenulaterale">						
+								<a href="#" id="menuexpcos" title="Trasferisci a sistema conservazione" tabindex="1515">Trasferisci a sistema conservazione</a>						
+							</td>
+						</tr>
+					</c:if>	
+					<c:if test='${!empty exportDocumenti and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ExportDocumenti")}'>
+						<tr>	
+							<td class="vocemenulaterale">	
+								<a href="#" id="menuexpdoc" title="Export su file zip" tabindex="1516">Export su file zip</a>			
+							</td>
+						</tr>
+					</c:if>
 		        </c:when>
 			    <c:otherwise>
 			    </c:otherwise>
@@ -326,6 +381,24 @@
 			$("#finestraListaUffici").dialog("open");
 			_creaContainerListaUffici();
 		}
+		
+		function apriArchiviaDocumenti(codgar,chiave,genere,gartel,idconfi) {
+		bloccaRichiesteServer();
+		var entita = "GARE";
+		formVisualizzaDocumenti.codice.value = chiave;
+		formVisualizzaDocumenti.codgar.value = codgar;
+		formVisualizzaDocumenti.key1.value = chiave;
+		formVisualizzaDocumenti.genere.value = genere;
+		formVisualizzaDocumenti.entita.value = entita;
+		formVisualizzaDocumenti.chiaveOriginale.value = chiave;
+		formVisualizzaDocumenti.idconfi.value = idconfi;
+		formVisualizzaDocumenti.gartel.value = gartel;
+		formVisualizzaDocumenti.submit();
+	}
+	
+	<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.obbligoAssociaFascicoloEsistente")}'>
+		_isObbligoAssociazioneFascicolo=true;
+	</c:if>
 	
 	</gene:javaScript>
 </gene:template>
@@ -693,5 +766,19 @@
 				</tr>
 			</table>
 		</div>
+		
+		<form name="formVisualizzaDocumenti" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+			<input type="hidden" name="href" value="gare/commons/archivia-documenti-scheda.jsp" /> 
+			<input type="hidden" name="codice" id="codice" value="" />
+			<input type="hidden" name="codgar" id="codgar" value="" />
+			<input type="hidden" name="genere" id="genere" value="" />
+			<input type="hidden" name="entita" value="" />
+			<input type="hidden" name="key1" value="" />
+			<input type="hidden" name="chiaveOriginale" value="" />
+			<input type="hidden" name="gartel" value="" />
+			<input type="hidden" name="idconfi" value="" />
+			<input type="hidden" name="key" value="archiviaDoc${param.codgar}" />
+		</form>
+		
 
 

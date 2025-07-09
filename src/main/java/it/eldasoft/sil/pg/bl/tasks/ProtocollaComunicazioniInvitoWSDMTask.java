@@ -398,7 +398,9 @@ public class ProtocollaComunicazioniInvitoWSDMTask {
             errMsgEventoPubblicazione="";
             try {
               gestioneWSDMManager.aggiornamentoGara(codgara,numeroProtocollo,abilitatoInvioSingolo);
-              gestioneProgrammazioneManager.aggiornaRdaGara(codgara,null,null);
+              if(gestioneProgrammazioneManager.isAttivaIntegrazioneProgrammazione()){
+                gestioneProgrammazioneManager.aggiornaRdaGara(codgara,null,null);
+              }
             } catch (SQLException e) {
               livEventoPubblicazione=3;
               errMsgEventoPubblicazione=e.getMessage();

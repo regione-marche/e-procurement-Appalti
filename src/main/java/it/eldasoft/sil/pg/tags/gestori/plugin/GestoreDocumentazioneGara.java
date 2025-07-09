@@ -3,6 +3,9 @@ package it.eldasoft.sil.pg.tags.gestori.plugin;
 import java.sql.SQLException;
 import java.util.HashMap;
 
+import it.eldasoft.sil.pg.bl.PgManager;
+import org.apache.commons.lang.StringUtils;
+
 import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
@@ -54,6 +57,9 @@ public class GestoreDocumentazioneGara extends AbstractGestorePreload {
     GeneManager geneManager = (GeneManager) UtilitySpring.getBean("geneManager",
         page, GeneManager.class);
 
+    PgManager pgManager = (PgManager) UtilitySpring.getBean("pgManager",
+            page, PgManager.class);
+
     PgManagerEst1 pgManagerEst1 = (PgManagerEst1) UtilitySpring.getBean("pgManagerEst1",
         page, PgManagerEst1.class);
 
@@ -85,39 +91,90 @@ public class GestoreDocumentazioneGara extends AbstractGestorePreload {
 
     String profiloAttivo = (String) session.getAttribute("profiloAttivo");
 
-    if(filtroDocumentazione == null || "".equals(filtroDocumentazione)){
+    //Se è stata eseguita la pubblicazione su portale web si deve bloccare ogni
+    //modifica nella pagina
+    SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",page, SqlManager.class);
+
+    HashMap key = UtilityTags.stringParamsToHashMap(
+        (String) page.getAttribute(UtilityTags.DEFAULT_HIDDEN_KEY_TABELLA, PageContext.REQUEST_SCOPE),null);
+
+    String codiceGara = null;
+    String select = null;
+    String ngara = null;
+    String vernpa = null;
+    if (key.get("GARE.NGARA") != null){
+      ngara = ((JdbcParametro) key.get("GARE.NGARA")).getStringValue();
+      select="select CODGAR1 from GARE where NGARA=?";
+      try {
+        codiceGara = (String) sqlManager.getObject(select,new Object[] { ngara });
+        vernpa = (String) sqlManager.getObject("select vernpa from torn where codgar=?", new Object[] {codiceGara});
+      }catch (SQLException e) {
+        throw new JspException(
+            "Errore durante la determinazione del codice della gara", e);
+       }
+    }else if (key.get("GAREAVVISI.NGARA") != null) {
+		ngara = ((JdbcParametro) key.get("GAREAVVISI.NGARA")).getStringValue();
+		select="select CODGAR from GAREAVVISI where NGARA=?";
+		try {
+			codiceGara = (String) sqlManager.getObject(select,new Object[] { ngara });
+			vernpa = (String) sqlManager.getObject("select vernpa from torn where codgar=?", new Object[] {codiceGara});
+		}catch (SQLException e) {
+			throw new JspException("Errore durante la determinazione del codice della gara", e);
+		}
+    }else{
+      codiceGara = ((JdbcParametro) key.get("TORN.CODGAR")).getStringValue();
+      try {
+        ngara = (String) sqlManager.getObject("select ngara from GARE where codgar1=?",new Object[] { codiceGara });
+        vernpa = (String) sqlManager.getObject("select vernpa from torn where codgar=?", new Object[] {codiceGara});
+      }catch (SQLException e) {
+        throw new JspException(
+            "Errore durante la determinazione del codice della gara", e);
+       }
+    }
+
+    page.setAttribute("vernpa", vernpa, PageContext.REQUEST_SCOPE);
+    String isPaginaDocumentazione = (String)page.getAttribute("isPaginaDocumentazione");
+    boolean moduloNPAAttivo;
+    try {
+      moduloNPAAttivo = pgManager.isModuloAnacFormAttivo(page.getSession(), codiceGara);
+    }catch (SQLException e) {
+      throw new JspException("Errore durante la lettura del profilo dalla sessione");
+    }
+
+    if(StringUtils.isEmpty(filtroDocumentazione)){
       //Valutazione del tipo di documentazione in cui aprire la pagina la prima volta
       if("2".equals(genereGara))
         pagina="GARE-scheda";
       else if("3".equals(genereGara))
         pagina="TORN-OFFUNICA-scheda";
+      else if ("11".equals(genereGara))
+    	pagina="GAREAVVISI-scheda";
       else
         if(chiave.indexOf("NGARA") > 0)
           pagina="GARE-scheda";
         else
           pagina="TORN-scheda";
 
-
-
-
-
       Long filtroAttivo = null;
-      if(isFasiRicezione || geneManager.getProfili().checkProtec(profiloAttivo,"SEZ","VIS","GARE." + pagina + ".DOCUMGARA.DOCUMGARA"))
+      if(isFasiRicezione || geneManager.getProfili().checkProtec(profiloAttivo,"SEZ","VIS","GARE." + pagina + ".DOCUMGARA.DOCUMGARA")) {
         filtroAttivo = new Long(1);
+        if (StringUtils.isNotEmpty(vernpa) && "true".equals(isPaginaDocumentazione) && moduloNPAAttivo) {
+        	filtroAttivo = 0L;
+        }
+      }
       else{
         if(geneManager.getProfili().checkProtec(profiloAttivo,"SEZ","VIS","GARE." + pagina + ".DOCUMGARA.DOCUMREQ") && !"3".equals(itergaMacro))
           filtroAttivo = new Long(2);
         else{
           if(geneManager.getProfili().checkProtec(profiloAttivo,"SEZ","VIS","GARE." + pagina + ".DOCUMGARA.DOCUMCONC"))
             filtroAttivo = new Long(3);
-
         }
       }
-
-
       page.setAttribute("tipoDoc", filtroAttivo, PageContext.REQUEST_SCOPE);
       if(filtroAttivo!=null)
         tipoDocumento = filtroAttivo.toString();
+    }else if("0".equals(filtroDocumentazione) && moduloNPAAttivo){
+        page.setAttribute("tipoDoc", 0L, PageContext.REQUEST_SCOPE);
     }else if("1".equals(filtroDocumentazione)){
       page.setAttribute("tipoDoc", new Long(1), PageContext.REQUEST_SCOPE);
     }else if("2".equals(filtroDocumentazione)){
@@ -140,36 +197,6 @@ public class GestoreDocumentazioneGara extends AbstractGestorePreload {
     }else if("15".equals(filtroDocumentazione)){
       page.setAttribute("tipoDoc", new Long(15), PageContext.REQUEST_SCOPE);
     }
-
-    //Se è stata eseguita la pubblicazione su portale web si deve bloccare ogni
-    //modifica nella pagina
-    SqlManager sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager",page, SqlManager.class);
-
-    HashMap key = UtilityTags.stringParamsToHashMap(
-        (String) page.getAttribute(UtilityTags.DEFAULT_HIDDEN_KEY_TABELLA, PageContext.REQUEST_SCOPE),null);
-
-    String codiceGara = null;
-    String select = null;
-    String ngara = null;
-    if (key.get("GARE.NGARA") != null){
-      ngara = ((JdbcParametro) key.get("GARE.NGARA")).getStringValue();
-      select="select CODGAR1 from GARE where NGARA=?";
-      try {
-        codiceGara = (String) sqlManager.getObject(select,new Object[] { ngara });
-      }catch (SQLException e) {
-        throw new JspException(
-            "Errore durante la determinazione del codice della gara", e);
-       }
-    }else{
-      codiceGara = ((JdbcParametro) key.get("TORN.CODGAR")).getStringValue();
-      try {
-        ngara = (String) sqlManager.getObject("select ngara from GARE where codgar1=?",new Object[] { codiceGara });
-      }catch (SQLException e) {
-        throw new JspException(
-            "Errore durante la determinazione del codice della gara", e);
-       }
-    }
-
 
     if (UtilityTags.SCHEDA_MODO_VISUALIZZA.equals(modoAperturaScheda)) {
 

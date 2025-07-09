@@ -77,7 +77,7 @@ public class MDgueClient {
       if(e.getMessage().contains("400"))
         msg = "File xml non valido: il file analizzato non è un documento DGUE";
       if(e.getMessage().contains("500"))
-        msg = "File xml non valido: il file analizzato non è un documento DGUE response ma un DGUE request";
+        msg = "File xml non valido: si è verificato un errore durante la traduzione del file XML";
       json.put("error", msg);
       return json;
     } catch(Exception e) {

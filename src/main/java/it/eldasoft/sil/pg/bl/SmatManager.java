@@ -1463,7 +1463,11 @@ public class SmatManager {
           "update aerilpre set dittao = ? where dittao = ?","garilanci",
           "update garilanci set dittao = ? where dittao = ?","ditgaq",
           "update ditgaq set dittao = ? where dittao = ?","verifiche",
-          "update verifiche set codimp = ? where codimp = ?","impr",
+          "update verifiche set codimp = ? where codimp = ?","ditgpub",
+          "update ditgpub set dittao = ? where dittao = ?","g1documatti",
+          "update g1documatti set dittao = ? where dittao = ?","g1aggisto",
+          "update g1aggisto set ditta = ? where ditta = ?","ditgqform",
+          "update ditgqform set dittao = ? where dittao = ?","impr",
           "update impr set codimp = ? where codimp = ?"};
     }
     for (int i = 0; (i + 1) < updateTables.length; i += 2) {

@@ -21,6 +21,7 @@ import it.eldasoft.gene.db.domain.LogEvento;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
 import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.sicurezza.CriptazioneException;
 import it.eldasoft.utils.sicurezza.FactoryCriptazioneByte;
@@ -37,6 +38,7 @@ import it.maggioli.eldasoft.ws.erp.WSERPArticoloResType;
 import it.maggioli.eldasoft.ws.erp.WSERPCondizionePagamentoResType;
 import it.maggioli.eldasoft.ws.erp.WSERPFornitoreResType;
 import it.maggioli.eldasoft.ws.erp.WSERPFornitoreType;
+import it.maggioli.eldasoft.ws.erp.WSERPFornitoriResType;
 import it.maggioli.eldasoft.ws.erp.WSERPGaraType;
 import it.maggioli.eldasoft.ws.erp.WSERPLiquidatoResType;
 import it.maggioli.eldasoft.ws.erp.WSERPLiquidatoType;
@@ -44,6 +46,8 @@ import it.maggioli.eldasoft.ws.erp.WSERPLottoRdaType;
 import it.maggioli.eldasoft.ws.erp.WSERPOdaResType;
 import it.maggioli.eldasoft.ws.erp.WSERPOdaType;
 import it.maggioli.eldasoft.ws.erp.WSERPPosizioneRdaType;
+import it.maggioli.eldasoft.ws.erp.WSERPPraticaResType;
+import it.maggioli.eldasoft.ws.erp.WSERPPraticaType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaResType;
 import it.maggioli.eldasoft.ws.erp.WSERPRdaType;
 import it.maggioli.eldasoft.ws.erp.WSERP_PortType;
@@ -57,10 +61,12 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 
 import javax.crypto.BadPaddingException;
@@ -73,13 +79,14 @@ import javax.xml.rpc.ServiceException;
 import org.apache.axis.client.Stub;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
 
 
 public class GestioneWSERPManager {
 
 
   /** Logger */
-  static Logger               logger                                          = Logger.getLogger(GestioneWSDMManager.class);
+  static Logger               logger                                          = Logger.getLogger(GestioneWSERPManager.class);
 
   public  static final String SERVIZIO_ERP                                    = "WSERP";
   private static final String PROP_WSERPCONFIGURAZIONE_ERP_URL                = "wserpconfigurazione.erp.url";
@@ -208,6 +215,30 @@ public class GestioneWSERPManager {
 
     return wserpRdaRes;
   }
+  
+  
+
+  /**
+   * Lettura della lista Fornitori.
+   *
+   * @param username
+   * @param password
+   * @param servizio
+   * @return
+   * @throws GestoreException
+   */
+  public WSERPFornitoriResType wserpListaFornitori(String username, String password, String servizio, WSERPFornitoreType fornitoreSearch) throws GestoreException {
+    WSERPFornitoriResType wserpFornitoreRes = null;
+    try {
+      WSERP_PortType wserp = this.getWSERP(username, password, servizio);
+      wserpFornitoreRes = wserp.WSERPListaFornitori(username, password, fornitoreSearch);
+    } catch (Throwable t) {
+      throw new GestoreException("Si e' verificato un errore durante la lettura dei fornitori: " + t.getMessage(),
+          "wserp.erp.listafornitori.remote.error", t);
+    }
+
+    return wserpFornitoreRes;
+  }
 
 
   /**
@@ -287,6 +318,34 @@ public class GestioneWSERPManager {
 
     return wserpRdaRes;
   }
+  
+  
+  /**
+   * Lettura degli allegati di una Oda.
+   *
+   * @param username
+   * @param password
+   * @param servizio
+   * @return
+   * @throws GestoreException
+   */
+  public WSERPOdaResType wserpListaFilesOda(String username, String password, String servizio, WSERPOdaType[] odaArray) throws GestoreException {
+    WSERPOdaResType wserpOdaRes = new WSERPOdaResType();
+
+    try {
+      WSERP_PortType wserp = this.getWSERP(username, password, servizio);
+      wserpOdaRes = wserp.WSERPListaFilesOda(username, password, odaArray);
+
+    } catch (Throwable t) {
+
+      throw new GestoreException("Si e' verificato un errore durante la lettura della lista delle OdA: " + t.getMessage(),
+          "wserp.erp.listafilesoda.remote.error", t);
+    }
+
+
+
+    return wserpOdaRes;
+  }
 
 
   /**
@@ -326,13 +385,13 @@ public class GestioneWSERPManager {
    * @return
    * @throws GestoreException
    */
-  public WSERPAllegatoType wserpLeggiAllegato(String username, String password, String nomedoc, String servizio, String idfile) throws GestoreException {
+  public WSERPAllegatoType wserpLeggiAllegato(String username, String password, String nomedoc, String servizio, String idfile, String chiamante) throws GestoreException {
     
 	WSERPAllegatoType wserpAllegato=null;  
 	try {
       WSERP_PortType wserp = this.getWSERP(username, password, servizio);
 
-      WSERPAllegatoResType wserpAllegatoRes = wserp.WSERPDownloadFile(username, password, nomedoc, null, null, idfile);
+      WSERPAllegatoResType wserpAllegatoRes = wserp.WSERPDownloadFile(username, password, nomedoc, chiamante, null, idfile);
 
       wserpAllegato = wserpAllegatoRes.getAllegato();
 
@@ -506,6 +565,33 @@ public class GestioneWSERPManager {
     wserpRdaRes.isEsito();
 
     return wserpRdaRes;
+  }
+  
+  
+  /**
+   * Aggiornamento ODA
+   *
+   * @param username
+   * @param password
+   * @param servizio
+   * @param arrayOda
+   * @return
+   * @throws GestoreException
+   */
+  public WSERPOdaResType wserpAggiornaOdaContratto(String username, String password, String servizio, WSERPOdaType[] arrayOda) throws GestoreException {
+    
+    WSERPOdaResType wserpOdaResType = new WSERPOdaResType();  
+    try {
+      WSERP_PortType wserp = this.getWSERP(username, password, servizio);
+      wserpOdaResType = wserp.WSERPAggiornaOdaContratto(username, password, arrayOda);
+
+    } catch (Throwable t) {
+      throw new GestoreException("Si e' verificato un errore durante l'aggiornamento dell'oda: " + t.getMessage(),
+          "wserp.erp.wserp.erp.aggiornaoda.remote.error", t);
+    }
+    
+    return wserpOdaResType;
+
   }
 
 
@@ -757,6 +843,117 @@ public class GestioneWSERPManager {
           }//if
         }//for
       }
+    } else if("INARCASSA".equals(tipoWSERP)){
+        if(rdaArray != null && rdaArray.length > 0){
+          for (int h = 0; h < rdaArray.length; h++) { // TODO:ROS: attulamente chiamiamo 1 sola rda per volta...
+        	                                          // quindi questo for sarebbe inutile. Tenuto per 
+        	  										  // possibili cambiamenti ...
+            WSERPRdaType hRda = rdaArray[h];
+            WSERPPosizioneRdaType[] hPosRdaArray = hRda.getPosizioneRdaArray();
+            if(hPosRdaArray != null && hPosRdaArray.length > 0){
+              for (int p = 0; p < hPosRdaArray.length; p++) {
+            	  
+                WSERPPosizioneRdaType hPosRda = hPosRdaArray[p];
+                String codiceCarrello  = null;
+                String codiceRda       = hRda.getCodiceRda();
+                String posizioneRda    = hPosRda.getPosizioneRiferimento();
+                String codiceCategoria = null;
+                String percentualeIva  = null;
+
+                Double quantita = null;
+                Double prezzo   = null;
+                
+                if(hPosRda.getQuantita() != null){
+                  quantita = hPosRda.getQuantita();
+                }
+                String descrizione = hRda.getOggetto(); //TODO:ROS: vogliamo la descrizione della rda o della posizione ?
+
+                String oggetto = hPosRda.getDescrizioneEstesa();
+
+                String codiceArticolo = hPosRda.getCodiceArticolo();
+                codiceArticolo= UtilityStringhe.convertiNullInStringaVuota(codiceArticolo) ;
+                
+                String unitaMisura = hPosRda.getUm();
+                unitaMisura = UtilityStringhe.convertiNullInStringaVuota(unitaMisura);
+                //verifica ed eventuale inserimento unita misura
+                Long ret = (Long) this.sqlManager.getObject(
+                    "select count(*) from UNIMIS where CONTA = ? and TIPO = ? ",
+                    new Object[] { new Long(-1), unitaMisura });
+                if(new Long(0).equals(ret) && !"".equals(unitaMisura)){
+                  this.sqlManager.update("insert into UNIMIS (CONTA, TIPO, DESUNI, NUMDEC) values (?, ?, ?, ?)",
+                      new Object[] { new Long(-1), unitaMisura, unitaMisura, new Long(0) });
+                }
+                
+                if(hPosRda.getPrezzoPrevisto() != null){
+                  prezzo = hPosRda.getPrezzoPrevisto();
+                }
+
+                Long maxContafEsistente = (Long) sqlManager.getObject(
+                    "select coalesce(max(contaf),0) from GCAP where ngara = ?", new Object[] { codiceLotto });
+                Long contaf = new Long(maxContafEsistente+1);
+                if("".equals(codiceArticolo)){
+                  codiceArticolo = "#"+contaf+"#";
+                }
+                
+                // scrivi nella tabella GCAP
+                this.sqlManager.update(strSqlInsert, new Object[]{codiceLotto, contaf,
+                    new Long(maxContafEsistente+1),codiceArticolo,quantita,prezzo,new Long(3),"2","2",oggetto,
+                    null,unitaMisura,codiceCarrello,codiceRda,posizioneRda,null,null,null,null});
+                
+                // scrivo nella tabella 
+                //descrizione estesa
+                this.sqlManager.update(strSqlInsertEst,
+                    new Object[] { descrizione,codiceLotto, new Long(maxContafEsistente+1)});
+                maxContafEsistente++;
+
+              }//for
+            }//if
+          }//for
+        }
+
+      } else if("SIGLA".equals(tipoWSERP)){
+      //simile a CAV con regole scritte nel doc
+
+      if(rdaArray != null && rdaArray.length > 0){
+        for (int h = 0; h < rdaArray.length; h++) {
+          WSERPRdaType hRda = rdaArray[h];
+          String codiceArticolo = hRda.getCodiceArticolo();
+          codiceArticolo= UtilityStringhe.convertiNullInStringaVuota(codiceArticolo);
+          String unitaMisura = hRda.getUm();
+          unitaMisura = UtilityStringhe.convertiNullInStringaVuota(unitaMisura);
+          String descrizione = hRda.getDescrizione();
+          descrizione = UtilityStringhe.convertiNullInStringaVuota(descrizione);
+          Double iva = null;
+          if(hRda.getIva() != null){
+            iva = hRda.getIva();
+          }
+          Long maxContafEsistente = (Long) sqlManager.getObject(
+              "select coalesce(max(contaf),0) from GCAP where ngara = ?", new Object[] { codiceGara });
+          Long contaf = new Long(maxContafEsistente+1);
+          
+          if("".equals(codiceArticolo)){
+            codiceArticolo = "#"+contaf+"#";
+          }
+          //verifica ed eventuale inserimento unita misura
+          Long ret = (Long) this.sqlManager.getObject(
+              "select count(*) from UNIMIS where CONTA = ? and TIPO = ? ",
+              new Object[] { new Long(-1), unitaMisura });
+          if(new Long(0).equals(ret) && !"".equals(unitaMisura)){
+            this.sqlManager.update("insert into UNIMIS (CONTA, TIPO, DESUNI, NUMDEC) values (?, ?, ?, ?)",
+                new Object[] { new Long(-1), unitaMisura, unitaMisura, new Long(0) });
+          }
+          this.sqlManager.update(strSqlInsert, new Object[]{codiceGara, contaf,
+              new Long(maxContafEsistente+1),codiceArticolo,null,null,new Long(3),"2","2",descrizione,
+              null,unitaMisura,null,null,null,null,iva,null,null});
+          //descrizione estesa
+          this.sqlManager.update(strSqlInsertEst,
+              new Object[] { descrizione,codiceGara, new Long(maxContafEsistente+1)});
+          maxContafEsistente++;
+
+        }//for
+      }
+
+    
     }else{
       if(rdaArray != null && rdaArray.length > 0){
         for (int h = 0; h < rdaArray.length; h++) {
@@ -1189,8 +1386,24 @@ public class GestioneWSERPManager {
 			          }
 			          
 			          String codcpv =  lottoRda.getCodCpv();
+			          String codCpvPrimary=lottoRda.getCpvPrimary();
+			          String codCpvSecondary=lottoRda.getCpvSecondary();
+			          codCpvSecondary= StringUtils.stripToEmpty(codCpvSecondary);
+			          String[] arrayCpvSecondary = null;
+			          if(!"".equals(codCpvSecondary)) {
+			        	  arrayCpvSecondary = codCpvSecondary.split(";");  
+			          }
 			          
-			          Double importoCauzioneProvvisoria = pgManager.calcolaGAROFF(impapp, percentuale, tipgen);
+			          //Adeguamento APP-1377
+			          Double impMax = 0.0;
+			          if(impapp!=null)
+			            impMax=impapp;
+			          if(impAltro!=null)
+			            impMax+=impAltro;
+			          if(impMax<=0)
+			            impMax=null;
+			          
+			          Double importoCauzioneProvvisoria = pgManager.calcolaGAROFF(impMax, percentuale, tipgen);
 			          
 		              this.sqlManager.update("insert into GARE (ngara, codgar1, codiga, not_gar, precut, tipgarg, modlicg," +
 			                  " critlicg, detlicg, calcsoang, applegregg, estimp, pgarof, garoff, modastg, ribcal, sicinc, onsogrib," +
@@ -1206,7 +1419,13 @@ public class GestioneWSERPManager {
 
 
 	        		  //CODCPV
-		              this.sqlManager.update("insert into garcpv(ngara,numcpv,codcpv,tipcpv) values (?,?,?,?)", new Object[]{codiceLotto, Long.valueOf(1),codcpv, "1"});
+		              this.sqlManager.update("insert into garcpv(ngara,numcpv,codcpv,tipcpv) values (?,?,?,?)", new Object[]{codiceLotto, Long.valueOf(1),codCpvPrimary, "1"});
+		              if(arrayCpvSecondary!=null) {
+		            	  for(int d = 0 ; d < arrayCpvSecondary.length; d++){
+		                      String cpvSecondary_d = arrayCpvSecondary[d];
+		                      this.sqlManager.update("insert into garcpv(ngara,numcpv,codcpv,tipcpv) values (?,?,?,?)", new Object[]{codiceLotto, Long.valueOf(d+2),cpvSecondary_d, "2"});		                      
+		            	  }//for
+		              }
 		              
 		              
 	        	  }//for lotti
@@ -1276,6 +1495,9 @@ public class GestioneWSERPManager {
     	ngara = UtilityStringhe.convertiNullInStringaVuota(ngara);
         codiceRda = UtilityStringhe.convertiNullInStringaVuota(codiceRda);
         posizioneRda = UtilityStringhe.convertiNullInStringaVuota(posizioneRda);
+        
+        // ricavo la listaRdaGara a seconda di linkrda ( valorizzato a 1 se ho garerda e 2 altrimenti..
+        // poi la valorizzazione puo' essere personalizzata...
         List listaRdaGara = null;
         if("1".equals(linkrda)){
         	
@@ -1302,10 +1524,41 @@ public class GestioneWSERPManager {
             		  
             	  }
              }else{
-                  listaRdaGara = this.sqlManager.getListVector(
-                      "select CODGAR,NUMRDA,POSRDA,CODCARR,ESERCIZIO from GARERDA where CODGAR = ? and NGARA = ? and NUMRDA is not null",
-                        new Object[] { codgar,ngara });
+            	 if(!"".equals(codgar) && !"".equals(ngara) && !codgar.substring(1).equals(ngara)) {
+                     listaRdaGara = this.sqlManager.getListVector(
+                             "select CODGAR,NUMRDA,POSRDA,CODCARR,ESERCIZIO from GARERDA where CODGAR = ? and NGARA = ? and NUMRDA is not null",
+                               new Object[] { codgar,ngara });
+            	 }else {
+                     listaRdaGara = this.sqlManager.getListVector(
+                             "select CODGAR,NUMRDA,POSRDA,CODCARR,ESERCIZIO from GARERDA where CODGAR = ? and NUMRDA is not null",
+                               new Object[] { codgar});
+            	 }
              }
+          }else if("INARCASSA".equals(tipoWSERP) || "CONI".equals(tipoWSERP)) { 
+        	  if(!"".equals(codiceRda)){
+            	  if(!"".equals(codgar) && !"".equals(ngara) ) {
+          	  		listaRdaGara = this.sqlManager.getListVector(
+          	  				"select CODGAR,NUMRDA,POSRDA,CODCARR,ESERCIZIO from GARERDA where CODGAR = ? and NGARA = ? and NUMRDA is not null ",
+          	  				new Object[] { codgar, ngara });
+            	  } else {
+                    listaRdaGara = this.sqlManager.getListVector(
+                            "select CODGAR,NUMRDA,POSRDA,CODCARR,ESERCIZIO from GARERDA where CODGAR = ? and NUMRDA is not null",
+                              new Object[] { codgar});        		  
+            	  }
+        	  }else {
+             	 if(!"".equals(codgar) && !"".equals(ngara) && !codgar.substring(1).equals(ngara)) {
+                     listaRdaGara = this.sqlManager.getListVector(
+                             "select CODGAR,NUMRDA,POSRDA,CODCARR,ESERCIZIO from GARERDA where CODGAR = ? and NGARA = ? and NUMRDA is not null",
+                               new Object[] { codgar,ngara });
+            	 }else {
+                     listaRdaGara = this.sqlManager.getListVector(
+                             "select CODGAR,NUMRDA,POSRDA,CODCARR,ESERCIZIO from GARERDA where CODGAR = ? and NUMRDA is not null",
+                               new Object[] { codgar});
+            	 }
+        	  }
+          } else if("ARCHIFLOW".equals(tipoWSERP)) { 
+            listaRdaGara = this.sqlManager.getListVector("select CODGAR,NUMRDA,POSRDA,CODCARR,ESERCIZIO from GARERDA where CODGAR = ? and NUMRDA is not null",
+                             new Object[] { codgar});
           }else {
             if(!"".equals(codiceRda)){
 	        	if("CAV".equals(tipoWSERP)) {
@@ -1324,8 +1577,12 @@ public class GestioneWSERPManager {
             }
           }
 
+          // per ogni rda presente in listaRdaGara devo relizzare la "dissociazione"
+          // nb: ci sono personalizzazioni che riguardano "come" dissociare rda 
           if (listaRdaGara != null && listaRdaGara.size() > 0) {
             for (int k = 0; k < listaRdaGara.size(); k++) {
+            	
+              // estraggo i campi presenti nei record delle rda...	
               Vector tmp = (Vector) listaRdaGara.get(k);
               codiceRda = ((JdbcParametro) tmp.get(1)).getStringValue();
               posizioneRda = ((JdbcParametro) tmp.get(2)).getStringValue();
@@ -1333,6 +1590,8 @@ public class GestioneWSERPManager {
               codiceCarrello = UtilityStringhe.convertiNullInStringaVuota(codiceCarrello);
               String esercizio = ((JdbcParametro) tmp.get(4)).getStringValue();
               esercizio = UtilityStringhe.convertiNullInStringaVuota(esercizio);
+              
+              // "disassocio" rda sia facendo la chiamata al servizio che eseguendo opportuno update/delete nel db..
               WSERPRdaType rdaDatiAggiuntivi = new WSERPRdaType();
 
               String codiceGara = codgar;
@@ -1341,26 +1600,33 @@ public class GestioneWSERPManager {
                 if(!"".equals(ngara)){
                   codiceGara = ngara;
                 }else{
-                  codiceGara = codgar.substring(1);
-                }
-
+              	   codiceGara = codgar.substring(1);
+                }//if
                 codiceCarrello =  esercizio;
               }else{
                 if(codiceGara.indexOf("$")==0){
                   codiceGara = codgar.substring(1);
-                }
-              }
+                }//if
+              }//if
               
               if("AMIU".equals(tipoWSERP)){
                   String codiceCig = (String) this.sqlManager.getObject(
                           "select codcig from GARE where NGARA = ?", new Object[] { ngara });
                 rdaDatiAggiuntivi.setCodiceCig(codiceCig);
                 rdaDatiAggiuntivi.setCodiceGara(codgar);
+              } else if("INARCASSA".equals(tipoWSERP)){
+            	  rdaDatiAggiuntivi.setCodiceGara(codgar);
+            	  rdaDatiAggiuntivi.setIdLotto(ngara);  
+              } else if("ARCHIFLOW".equals(tipoWSERP)){
+                rdaDatiAggiuntivi.setCodiceGara(codgar);
               }
 
+              // qui ivoco il servizio per disassociare ( la specifica dalla dissociazione e' l'ultimo parametro-> flagAssociazione
               WSERPRdaResType wserpRdaRes = this.wserpAssociaRdaGara(username, password, servizio, codiceCarrello, codiceRda, posizioneRda, codiceGara, rdaDatiAggiuntivi, false);
+              
+              // ora sistemo il db...
               if(wserpRdaRes.isEsito()){
-                if("FNM".equals(tipoWSERP)){
+                if("FNM".equals(tipoWSERP) || "CONI".equals(tipoWSERP)){
                   if(!"".equals(codiceRda)){
                     if( !"".equals(codgar) && !"".equals(ngara) && !codgar.substring(1).equals(ngara)){
                       this.sqlManager.update(
@@ -1371,12 +1637,22 @@ public class GestioneWSERPManager {
                           "update garerda set numrda = null, posrda = null where codgar = ? and numrda = ? ",
                           new Object[] { codgar,codiceRda});
                     }
-
                   }else{
                     this.sqlManager.update(
                         "update garerda set numrda = null, posrda = null where codgar = ? ",
                         new Object[] { codgar });
                   }
+                }else if("INARCASSA".equals(tipoWSERP)){
+                    this.sqlManager.update(
+                            "update garerda set numrda = null, posrda = null where codgar = ? and numrda = ? ",
+                            new Object[] { codgar,codiceRda });
+                    this.sqlManager.update(
+                            "update gcap set codrda = null, posrda = null where ngara in (select ngara from gare where codgar1= ?) and codrda = ? ",
+                            new Object[] { codgar,codiceRda });                	
+                }else if("ARCHIFLOW".equals(tipoWSERP)){
+                  this.sqlManager.update(
+                      "update garerda set numrda = null where codgar = ? and numrda = ? ",
+                      new Object[] { codgar,codiceRda });               
                 }else{
                   if(!"".equals(codiceRda)){
                     this.sqlManager.update(
@@ -1524,7 +1800,7 @@ public class GestioneWSERPManager {
             }
 
           }
-          if("TPER".equals(tipoWSERP) || "ANTHEA".equals(tipoWSERP) || "ATAC".equals(tipoWSERP)){
+          if("TPER".equals(tipoWSERP) || "ANTHEA".equals(tipoWSERP) || "ATAC".equals(tipoWSERP) || "AMIU".equals(tipoWSERP) || "INARCASSA".equals(tipoWSERP) || "CONI".equals(tipoWSERP)){
             updateDatiL190 = "update garecont set impliq = ? , dverbc = ? , dcertu = ?" +
             " where ngara = ? and ncont = ?";
             this.sqlManager.update(updateDatiL190, new Object[] {impLiquidato, dataInizio, dataUltimazione, ngara, ncont });
@@ -1566,21 +1842,24 @@ public class GestioneWSERPManager {
 
   if (logger.isDebugEnabled()) logger.debug("updNumeroRdo: inizio metodo");
 
-    try {
+  try {
+    if(ngara != null){
+      if("FNM".equals(tipoWSERP)
+          || "RAIWAY".equals(tipoWSERP) 
+          || "INARCASSA".equals(tipoWSERP) 
+          || "CONI".equals(tipoWSERP))
+      {
+        String updateNumRdo = "update gare1 set numrdo = ?  where codgar1 = ? and ngara = ? ";
+        this.sqlManager.update(updateNumRdo, new Object[] {numRdo, codgar, ngara });
 
-      if(ngara != null){
-        if("FNM".equals(tipoWSERP) || "RAIWAY".equals(tipoWSERP)){
-          String updateNumRdo = "update gare1 set numrdo = ?  where codgar1 = ? and ngara = ? ";
-          this.sqlManager.update(updateNumRdo, new Object[] {numRdo, codgar, ngara });
-          if (logger.isInfoEnabled()) {
-            //logger.info("");
-          }
+        if (logger.isInfoEnabled()) {
+          //logger.info("");
         }
       }
-
-    } catch (SQLException e) {
-      throw new GestoreException("Errore nell'aggiornamento del numero Rdo ", null, e);
     }
+  } catch (SQLException e) {
+    throw new GestoreException("Errore nell'aggiornamento del numero Rdo ", null, e);
+  }
 
   if (logger.isDebugEnabled()) logger.debug("updNumeroRdo: fine metodo");
 
@@ -1622,7 +1901,7 @@ public class GestioneWSERPManager {
     		  this.sqlManager.update(updateIMPR, new Object[] { cgenimp,dofimp,codimp});
     	  }
     	  
-    	  if("RAIWAY".equals(tipoWSERP)){
+    	  if("RAIWAY".equals(tipoWSERP) || "CONI".equals(tipoWSERP)){
     		  updateIMPR = "update impr set cgenimp = ?  where codimp = ? and cgenimp is null";
     	      this.sqlManager.update(updateIMPR, new Object[] { cgenimp,codimp});
     	  }
@@ -2275,6 +2554,38 @@ public class GestioneWSERPManager {
       }
 
     }//IF ATAC
+    
+    
+    if("SIGLA".equals(tipoWSERP)){
+      String queryDatiObbligatori = "select i.cfimp, tec.cftec "
+          + "from impr i "
+          + "inner join gare g on i.codimp = g.ditta "
+          + "inner join TORN t on t.CODGAR = g.CODGAR1 "
+          + "inner join TECNI tec on tec.codtec = t.CODRUP "
+          + "where g.ngara = ? ";
+      Vector<?> datiObbligatori = this.sqlManager.getVector(queryDatiObbligatori,new Object[]{ngara});
+      if(datiObbligatori!= null && !datiObbligatori.isEmpty()){
+        
+        String cf = (String) SqlManager.getValueFromVectorParam(datiObbligatori, 0).getValue();
+        cf = UtilityStringhe.convertiNullInStringaVuota(cf);
+        
+        String cftec = (String) SqlManager.getValueFromVectorParam(datiObbligatori, 1).getValue();
+        cftec = UtilityStringhe.convertiNullInStringaVuota(cftec);
+        
+        // Codice fiscale dell'aggiudicatario
+        if ("".equals(cf)) {
+          controlliSuperati = new Boolean(false);
+          msg += "Non è valorizzato il codice fiscale dell'aggiudicatario.\n";
+        }
+        
+        // Codice fiscale del responsabile
+        if ("".equals(cftec)) {
+          controlliSuperati = new Boolean(false);
+          msg += "Non è valorizzato il codice fiscale del responsabile.\n";
+        }
+      }
+    }
+    
 
     valoriRitorno.put("esito", controlliSuperati);
     valoriRitorno.put("msg", msg);
@@ -2293,16 +2604,37 @@ public class GestioneWSERPManager {
       String tipo = allegato.getTipo();
       nomeFile = nomeFile + "." + tipo;
       String titoloFile = allegato.getTitolo();
-      Long gruppo = new Long(1);
-      Long tipologia = new Long(1);
-
-      if(iterga != null && !(new Long(1).equals(iterga) || new Long(2).equals(iterga) || new Long(4).equals(iterga))){
-        gruppo = new Long(6);
-        tipologia = new Long(6);
+      
+      String verNPA = null;
+      try {
+        verNPA = (String) sqlManager.getObject("select vernpa from torn where codgar = ?", new Object[] { codiceGara });
+      } catch (SQLException e1) {
+        logger.error("Errore durante la lettura della versione npa della gara " + codiceGara, e1);
+        throw new GestoreException("Errore durante la lettura della versione npa della gara " + codiceGara, null, e1);
       }
-      if(iterga != null && new Long(4).equals(iterga)){
-        gruppo = new Long(1);
-        tipologia = new Long(2);
+      //default gruppo/tipologia
+      Long gruppo = Long.valueOf(1);
+      Long tipologia = null;
+      
+      if (StringUtils.isNotEmpty(verNPA))
+          tipologia = Long.valueOf(103);
+        else
+          tipologia = Long.valueOf(3);
+
+      if(iterga != null && !(Long.valueOf(1).equals(iterga) || Long.valueOf(2).equals(iterga) || Long.valueOf(4).equals(iterga))){
+        gruppo = Long.valueOf(6);
+        if (StringUtils.isNotEmpty(verNPA))
+          tipologia = Long.valueOf(104);
+        else
+          tipologia = Long.valueOf(6);
+      }
+      
+      if(iterga != null && Long.valueOf(4).equals(iterga)){
+        gruppo = Long.valueOf(1);
+        if (StringUtils.isNotEmpty(verNPA))
+          tipologia = Long.valueOf(102);
+        else
+          tipologia = Long.valueOf(2);
       }
 
       // Inserimento in W_DOCDIG
@@ -2338,6 +2670,7 @@ public class GestioneWSERPManager {
           DataColumnContainer containerW_DOCDIG = new DataColumnContainer(elencoCampiW_DOCDIG);
 
           containerW_DOCDIG.insert("W_DOCDIG", sqlManager);
+          ObjectStorageUtils.addFile("PG", newIDDOCDIG);
 
           String selectDOCUMGARA_MAX = "select max(NORDDOCG) from DOCUMGARA where CODGAR=?";
           Long nProgressivoDOCUMGARA = (Long) sqlManager.getObject(selectDOCUMGARA_MAX, new Object[] { codiceGara });
@@ -2475,7 +2808,7 @@ public class GestioneWSERPManager {
 
         this.sqlManager.update(insertGarecont, new Object[] {ngara, new Long(1), dataInizio, dataUltimazione, impLiquidato, ditta});
 
-        this.sqlManager.update(insertDitg, new Object[] {ngara, codgar, ditta, nomimo, new Long(1)});
+        this.sqlManager.update(insertDitg, new Object[] {ngara, codgar, ditta, nomimo, "1"});
 
         Long numper = (Long) this.sqlManager.getObject( "select max(numper) from g_permessi", new Object[] {});
         numper =numper + new Long(1);
@@ -2546,4 +2879,187 @@ public class GestioneWSERPManager {
 	    return result;
   }
 
-}
+  public String wserpControlloDatiPratica(String username, String password, String servizio, String codgar) throws GestoreException {
+    
+    String res = "";
+    String ngara = "";
+    Long genere = null;
+    WSERPPraticaResType praticaRes = null;
+    
+    try {
+      List<String>  listaGare = this.sqlManager.getListVector("select codgar, codice, genere from v_gare_genere where codgar = ?", new Object[] { codgar });
+      if (listaGare != null && !listaGare.isEmpty()) {
+        for (int i = 0; i < listaGare.size(); i++) {
+          codgar = (String) SqlManager.getValueFromVectorParam(listaGare.get(i), 0).getValue();
+          codgar = UtilityStringhe.convertiNullInStringaVuota(codgar);
+          ngara = (String) SqlManager.getValueFromVectorParam(listaGare.get(i), 1).getValue();
+          ngara = UtilityStringhe.convertiNullInStringaVuota(ngara);
+          genere = SqlManager.getValueFromVectorParam(listaGare.get(i), 2).longValue();
+          
+          /*
+           * Non vengono controllati: 
+           * Gara a lotti plichi distinti genere=1
+           * Gara a lotti plico unico genere=3
+           */
+          if(!(Long.valueOf(1).equals(genere)) && !(Long.valueOf(3).equals(genere))) {
+            WSERPPraticaType praticaType = new WSERPPraticaType(codgar, ngara, null, null, null, null);
+            WSERP_PortType wserp = this.getWSERP(username, password, servizio);
+            praticaRes = wserp.WSERPDettaglioPratica(username, password, praticaType);
+            if(praticaRes.isEsito()) {
+              if(praticaRes.getPratica() != null) {
+                  
+                String criterioDiGaraWS = praticaRes.getPratica().getCriterioAggiudicazione();
+                String idTipologiaPraticaWS = praticaRes.getPratica().getTipoProcedura();
+                
+                Long idCriterioDiGaraDB = null;
+                try {
+                  idCriterioDiGaraDB = (Long) this.sqlManager.getObject(
+                      "select CRITLICG from GARE where ngara = ?",
+                      new Object[]{ngara});
+                } catch (SQLException e) {
+                  throw new RuntimeException(e);
+                }
+                
+                Boolean criterioDiGaraOK = ("OFFERTA_ECONOMICAMENTE_PIU_VANTAGGIOSA".equals(criterioDiGaraWS) && (Long.valueOf(2).equals(idCriterioDiGaraDB))
+                                         || "PREZZO_PIU_BASSO".equals(criterioDiGaraWS) && (Long.valueOf(1).equals(idCriterioDiGaraDB)));
+                
+                if(Boolean.FALSE.equals(criterioDiGaraOK)) {
+                  /*
+                    Gara lotto unico genere=2
+                    Gara a lotti plichi distinti genere=1 (lotti con genere=100)
+                    Gara a lotti plico unico genere=3 (lotti con genere=300)
+                  */
+                  if(Long.valueOf(2).equals(genere)) {
+                    res += "<br>Criterio di gara non coerente rispetto alla pratica associata alla gara ";
+                  } else {
+                    res += "<br>Criterio di gara non coerente rispetto alla pratica associata per il lotto "+ngara;
+                  }
+                }
+                /*
+                String descCritlicg = "";
+                if(idCriterioDiGaraDB != null){
+                  descCritlicg = tabellatiManager.getDescrTabellato("A2081", idCriterioDiGaraDB.toString());
+                }
+                */
+                
+                String idTipologiaPraticaMapped = null;
+                Long tipoProcedura = null;
+                if(idTipologiaPraticaWS != null) {
+                  if(idTipologiaPraticaWS.length()==1) {
+                    idTipologiaPraticaWS = "0"+idTipologiaPraticaWS;
+                  }
+                  idTipologiaPraticaMapped = (String) this.sqlManager.getObject(
+                      "select tab2d2 from tab2 where tab2cod='A1z18' and tab2tip= ?", new Object[]{idTipologiaPraticaWS});
+                }
+                idTipologiaPraticaMapped = UtilityStringhe.convertiNullInStringaVuota(idTipologiaPraticaMapped);
+                
+                if(!"".equals(idTipologiaPraticaMapped)) {
+                  if(Long.valueOf(2).equals(genere) || Long.valueOf(100).equals(genere) || Long.valueOf(300).equals(genere)) {
+                    tipoProcedura = (Long) this.sqlManager.getObject(
+                        "select TIPGARG from GARE where ngara = ?", new Object[]{ngara});
+                  }
+                  if(tipoProcedura != null && !idTipologiaPraticaMapped.equals(tipoProcedura.toString())) {
+                    if(Long.valueOf(2).equals(genere)) {
+                      res += "<br>Tipo procedura non coerente rispetto alla pratica associata alla gara";
+                    } else {
+                      res += "<br>Tipo procedura non coerente rispetto alla pratica associata per il lotto "+ngara;
+                    }
+                  }
+                  
+                } else {
+                  if(Long.valueOf(2).equals(genere)) {
+                    res += "<br>Tipologia di pratica non prevista, impossibile effettuare il controllo alla gara";
+                  } else {
+                    res += "<br>Tipologia di pratica non prevista, impossibile effettuare il controllo per il lotto "+ngara;
+                  }
+                }
+
+                
+                
+                
+              } else {
+                res += "<br>Non è possibile recuperare la pratica associata al lotto "+ngara;
+              }
+            }
+          }
+        }
+      }
+    } catch (Throwable t) {
+      throw new GestoreException("Si e' verificato un errore durante la lettura del fornitore: " + t.getMessage(),
+          "wserp.erp.dettagliofornitore.remote.error", t);
+    }
+
+    return res;
+    
+  }//wserpControlloDatiPratica
+  
+	public List<String> recuperaRdaAssociateAllaGara(String codiceGara, String codiceLotto, String filtroLotto) throws GestoreException {
+		List<String> listaRda = new ArrayList<String>();
+		
+		String queryRecuperoRdaGara = "select g.numrda "
+									+ "from  garerda g "
+									+ "where g.codgar = ?";
+		if("true".equals(filtroLotto)) {
+			queryRecuperoRdaGara += " and g.ngara = ?";
+		}
+		try {
+			List<?> lista = null;
+			if("true".equals(filtroLotto)) {
+				lista = this.sqlManager.getListVector(queryRecuperoRdaGara, new Object[]{codiceGara,codiceLotto});
+			}else {
+				lista = this.sqlManager.getListVector(queryRecuperoRdaGara, new Object[]{codiceGara});
+			}
+			
+			if (lista!=null && !lista.isEmpty() ) {
+				for(int i=0; i<lista.size(); i++) {
+					String numrda = SqlManager.getValueFromVectorParam(lista.get(i), 0).getStringValue();
+					listaRda.add(numrda);
+				}//for
+			}//if
+								
+		} catch (Throwable t) {
+			// TODO:ROS: da vedere come gestire i casi d'errore generati qui
+			throw new GestoreException("Si e' verificato un errore durante la lettura delle Rda associate alla gara " + t.getMessage(),
+			          "wserp.erp.listarda.remote.error", t);
+		}//try	
+		
+		return listaRda;
+		
+	}//recuperaRdaAssociateAllaGara 
+	
+	public void eliminaAssociazionePosizioni(String codice) throws GestoreException {
+	    TransactionStatus status = null;
+	    boolean commit = false;		
+	
+        try {
+            status = this.sqlManager.startTransaction();          
+            
+            String sqlDeleteGcap = "delete from gcap where ngara = ?";            
+            this.sqlManager.update(sqlDeleteGcap, new Object[]{codice});
+            
+            String sqlDeleteGcapEst = "delete from gcap_est where ngara = ?";            
+            this.sqlManager.update(sqlDeleteGcapEst, new Object[]{codice});               
+            
+            commit = true;
+            
+        } catch (SQLException e) {    
+      	  throw new GestoreException("Si e' verificato un errore durante la cancellazione delle posizioni associate alla gara " + e.getMessage(),
+		          "wserp.erp.listarda.remote.error", e); //TODO:ROS: bisogna cambiare il riferimento del messaggio
+        } finally {
+            if (status != null) {
+              try {
+                if (commit) {
+                  this.sqlManager.commitTransaction(status);
+                } else {
+                  this.sqlManager.rollbackTransaction(status);
+                }//if
+              } catch (SQLException e) {
+            	  throw new GestoreException("Si e' verificato un errore durante la cancellazione delle posizioni associate alla gara " + e.getMessage(),
+        		          "wserp.erp.listarda.remote.error", e);
+              }//try
+            }//if 
+        }//finally
+		
+	}//eliminaAssociazionePosizioni	
+
+}//class GestioneWSERPManager

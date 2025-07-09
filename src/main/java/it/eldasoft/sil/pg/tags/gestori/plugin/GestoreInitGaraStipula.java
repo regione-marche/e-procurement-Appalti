@@ -10,23 +10,24 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.plugin;
 
-import it.eldasoft.gene.bl.SqlManager;
-import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
-import it.eldasoft.gene.tags.BodyTagSupportGene;
-import it.eldasoft.gene.tags.utils.UtilityTags;
-import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestorePreload;
-import it.eldasoft.utils.spring.UtilitySpring;
-import it.eldasoft.utils.utility.UtilityDate;
-import it.eldasoft.utils.utility.UtilityStringhe;
-
 import java.sql.SQLException;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.Calendar;
+import java.util.List;
 import java.util.Vector;
 
 import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import org.apache.commons.lang3.StringUtils;
+
+import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.tags.BodyTagSupportGene;
+import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestorePreload;
+import it.eldasoft.sil.pg.bl.PgManager;
+import it.eldasoft.utils.spring.UtilitySpring;
+import it.eldasoft.utils.utility.UtilityDate;
 
 /**
  * Gestore che inizializza una gara creata rapidamente con i dati di aggiudicazione per poter fare una stipula
@@ -36,6 +37,7 @@ import javax.servlet.jsp.PageContext;
 public class GestoreInitGaraStipula extends AbstractGestorePreload {
 
 	SqlManager sqlManager = null;
+	PgManager pgManager = null;
 
 	public GestoreInitGaraStipula(BodyTagSupportGene tag) {
 		super(tag);
@@ -47,6 +49,7 @@ public class GestoreInitGaraStipula extends AbstractGestorePreload {
 
 	public void inizializzaManager(PageContext page) {
 		sqlManager = (SqlManager) UtilitySpring.getBean("sqlManager", page, SqlManager.class);
+		pgManager = (PgManager) UtilitySpring.getBean("pgManager", page, PgManager.class);
 
 	}
 
@@ -74,6 +77,12 @@ public class GestoreInitGaraStipula extends AbstractGestorePreload {
 				iscuc = SqlManager.getValueFromVectorParam(datiSA, 2).getStringValue();
                 page.setAttribute("initISCUC", iscuc, PageContext.REQUEST_SCOPE);
 			}
+
+			String verNPA = pgManager.getVersioneNpaCorrente();
+			if (StringUtils.isNotBlank(verNPA)) {
+				page.setAttribute("initVERNPA", verNPA, PageContext.REQUEST_SCOPE);
+			}
+
 		} catch (SQLException e) {
 			throw new JspException("Errore durante la lettura dei dati della uffint", e);
 		}

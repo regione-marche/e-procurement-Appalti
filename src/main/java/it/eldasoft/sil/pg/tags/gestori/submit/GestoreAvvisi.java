@@ -10,27 +10,38 @@
  */
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.Vector;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.transaction.TransactionStatus;
+
+import it.eldasoft.gene.bl.GestoreProfili;
 import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
+import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.db.datautils.DataColumn;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.domain.LogEvento;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.utils.LogEventiUtils;
+import it.eldasoft.gene.web.struts.tags.UtilityStruts;
+import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreChiaveIDAutoincrementante;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
+import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveIDAutoincrementante;
 import it.eldasoft.gene.web.struts.tags.gestori.DefaultGestoreEntitaChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.sil.pg.bl.PgManagerEst1;
+import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.sql.SQLException;
-import java.util.Vector;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.log4j.Logger;
-import org.springframework.transaction.TransactionStatus;
 
 /**
  * Gestore per salvataggio dati generali degli avvisi
@@ -129,6 +140,11 @@ public class GestoreAvvisi extends AbstractGestoreEntita {
   public void preInsert(TransactionStatus status, DataColumnContainer datiForm)
 			throws GestoreException {
 
+	  String regex = "^[a-zA-Z0-9]+$";
+
+	  if(datiForm.isColumn("GARE.CUPPRG") && datiForm.isModifiedColumn("GARE.CUPPRG") && datiForm.getColumn("GARE.CUPPRG").getValue().stringValue()!=null
+          && !"".equals(datiForm.getColumn("GARE.CUPPRG").getValue().stringValue()) && (datiForm.getColumn("GARE.CUPPRG").getValue().stringValue().length()!= 15 || !datiForm.getColumn("GARE.CUPPRG").getValue().stringValue().matches(regex)))
+        throw new GestoreException("Il codice CUP specificato non è valido","controlloCodiceCUP");
 
 	//variabili per tracciatura eventi
     int livEvento = 1;
@@ -145,6 +161,7 @@ public class GestoreAvvisi extends AbstractGestoreEntita {
         nuovoCODGAR = "$".concat(nuovoNGARA);
       } else {
         String numeroGaraDestinazione = datiForm.getString("GAREAVVISI.NGARA");
+        numeroGaraDestinazione = numeroGaraDestinazione.trim();
         pgManager.verificaPreliminareDatiCopiaGara(null, numeroGaraDestinazione,
             null, numeroGaraDestinazione, false);
         nuovoNGARA = numeroGaraDestinazione;
@@ -166,6 +183,36 @@ public class GestoreAvvisi extends AbstractGestoreEntita {
       } catch (SQLException e) {
         throw new GestoreException("Errore nell'insert dell'occorrenza in GARE",null, e);
       }
+
+      try {
+			String verNPA = pgManager.getVersioneNpaCorrente();
+			if (StringUtils.isNotBlank(verNPA)) {
+				if (!datiForm.isColumn("TORN.VERNPA")) {
+					datiForm.addColumn("TORN.VERNPA", verNPA);
+				} else {
+					datiForm.setValue("TORN.VERNPA", verNPA);
+				}
+			}
+		} catch (SQLException e) {
+			throw new GestoreException("Errore nella lettura dei dati relativi a NPA", null, e);
+		}
+
+      GestoreProfili gestoreProfili = this.getGeneManager().getProfili();
+      if (StringUtils.isNotBlank(ConfigManager.getValore("comunicazioni.notifiche.idcfg"))
+    		  && gestoreProfili.checkProtec((String) this.getRequest().getSession().getAttribute(CostantiGenerali.PROFILO_ATTIVO), "COLS", "VIS","GARE.TORN.INDNOTIFICHE")
+    		  && gestoreProfili.checkProtec((String) this.getRequest().getSession().getAttribute(CostantiGenerali.PROFILO_ATTIVO), "SEZ", "VIS","GARE.GAREAVVISI-scheda.DATIGEN.NOTIFICHECOMUNICAZIONI")) {
+			String indirizziDefault = ConfigManager.getValore("comunicazioni.notifiche.indirizziDefault");
+			ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+			if (StringUtils.isBlank(indirizziDefault)) {
+				indirizziDefault = profilo.getMail();
+			}
+			if (StringUtils.isNotBlank(indirizziDefault)) {
+				if (!datiForm.isColumn("TORN.INDNOTIFICHE")) {
+					datiForm.addColumn("TORN.INDNOTIFICHE", indirizziDefault);
+				}
+				datiForm.setValue("TORN.INDNOTIFICHE", indirizziDefault);
+			}
+		}
 
       // Salvataggio delle informazioni minime nella tabella TORN (come
       // una vera e propria gara a lotto unico)
@@ -215,6 +262,12 @@ public class GestoreAvvisi extends AbstractGestoreEntita {
         //Gestione CPV
         this.updateGARCPV(status, datiForm, nuovoNGARA);
     }
+    
+    //Aggiornamenti CUP
+    AbstractGestoreChiaveIDAutoincrementante gestoreGARECUP = new DefaultGestoreEntitaChiaveIDAutoincrementante(
+        "GARECUP", "ID", this.getRequest());
+    pgManagerEst1.checkAndInsertCUP(status,datiForm,gestoreGARECUP,"GARECUP",nuovoNGARA, this.getRequest());
+
   }
 
 	@Override
@@ -225,6 +278,20 @@ public class GestoreAvvisi extends AbstractGestoreEntita {
   public void preUpdate(TransactionStatus status, DataColumnContainer datiForm)
 			throws GestoreException {
 
+	  String regex = "^[a-zA-Z0-9]+$";
+
+      if(datiForm.isColumn("GARE.CUPPRG") && datiForm.isModifiedColumn("GARE.CUPPRG") && datiForm.getColumn("GARE.CUPPRG").getValue().stringValue()!=null
+          && !"".equals(datiForm.getColumn("GARE.CUPPRG").getValue().stringValue()) && (datiForm.getColumn("GARE.CUPPRG").getValue().stringValue().length()!= 15 || !datiForm.getColumn("GARE.CUPPRG").getValue().stringValue().matches(regex)))
+        throw new GestoreException("Il codice CUP specificato non è valido","controlloCodiceCUP");
+
+        try {
+            if (datiForm.isColumn("GARE.CUPPRG") && datiForm.isModifiedColumn("GARE.CUPPRG")) {
+                pgManagerEst1.inserisciSchedaID(datiForm.getColumn("GAREAVVISI.NGARA").getValue().getStringValue(), this.getRequest(), status);
+            }
+        } catch (Throwable e) {
+            throw new GestoreException("Errore nell'inserimento della scheda ID", null, e);
+        }
+
 	  try {
         datiForm.addColumn("TORN.CODGAR", JdbcParametro.TIPO_TESTO);
         datiForm.update("TORN", sqlManager);
@@ -232,6 +299,16 @@ public class GestoreAvvisi extends AbstractGestoreEntita {
         throw new GestoreException("Errore nell'update dell'occorrenza in TORN",
                 null, e);
       }
+
+
+      try {
+        datiForm.addColumn("GARE.NGARA", JdbcParametro.TIPO_TESTO);
+        datiForm.update("GARE", sqlManager);
+      } catch (SQLException e) {
+        throw new GestoreException("Errore nell'update dell'occorrenza in GARE",
+                null, e);
+      } 
+
 
       // Gestione delle sezioni pubblicazioni
       AbstractGestoreChiaveNumerica gestorePUBBLI = new DefaultGestoreEntitaChiaveNumerica(
@@ -260,7 +337,75 @@ public class GestoreAvvisi extends AbstractGestoreEntita {
           //Gestione CPV
           this.updateGARCPV(status, datiForm, datiForm.getColumn("GAREAVVISI.NGARA").getValue().getStringValue());
       }
+      
+      //Aggiornamenti CUP
+      AbstractGestoreChiaveIDAutoincrementante gestoreGARECUP = new DefaultGestoreEntitaChiaveIDAutoincrementante(
+          "GARECUP", "ID", this.getRequest());
+      pgManagerEst1.checkAndInsertCUP(status,datiForm,gestoreGARECUP,"GARECUP",datiForm.getString("GARE.NGARA"), this.getRequest());
 
+      String bloccoModificaPCP = UtilityStruts.getParametroString(this.getRequest(), "bloccoModificaPCP");
+      String descrErrMsg = "";
+      if("true".equalsIgnoreCase(bloccoModificaPCP)){
+    	  HashMap<String, DataColumn> hm = datiForm.getColonne();
+          Iterator<?> it = hm.entrySet().iterator();
+
+          boolean tracciareCampo=true;
+          boolean modificheDaTracciare=false;
+    	  while (it.hasNext()) {
+              Entry<String, DataColumn> pair = (Entry<String, DataColumn>)it.next();
+              if(pair.getValue().isModified()){
+                //condizioni per non tracciare i campi:
+                //campi fittizZi che contengo nel nome la stringa "FIT"
+                //Campi fittizzi delle sezioni dinamiche che contengono nel nome le stringhe "INDICE_" e "MOD_"
+                //Campi che contengono nei nomi le stringhe: "NGARA","TIPCPV","TIPLAVG","IMPAPP","CIG","NUMCPV"
+                if(pair.getKey().indexOf("FIT")>=0 || pair.getKey().indexOf("INDICE_")>=0 || pair.getKey().indexOf("MOD_")>=0  ||
+                    pair.getKey().indexOf("NGARA")>=0 || pair.getKey().indexOf("TIPCPV")>=0 || pair.getKey().indexOf("TIPLAVG")>=0 ||
+                    (pair.getKey().indexOf("CIG")>=0 && !"GARE1.MOTESENTECIG".equals(pair.getKey())) ||
+                    pair.getKey().indexOf("NUMCPV")>=0 || pair.getKey().indexOf("STATOGARA")>=0)
+                  tracciareCampo=false;
+                else
+                  tracciareCampo=true;
+
+                if(tracciareCampo){
+                  modificheDaTracciare = true;
+                  if(!"".equals(descrErrMsg)){
+                    descrErrMsg+="\n";
+                  }
+                  if(pair.getKey().indexOf("DEL_CPVCOMP")>0){
+                    //Nel caso di eliminazione di CPV complementari non ho le chiavi della occorrenza eliminata, quindi
+                    //il messaggio sarà generico
+                    descrErrMsg+= "Eliminata una occorrenza di CPVCOMP.";
+                  }else{
+                    JdbcParametro paramOrigin = pair.getValue().getOriginalValue();
+                    String valOriginale = "";
+                    if(paramOrigin!=null){
+                      valOriginale = paramOrigin.toString();
+                    }
+                    JdbcParametro paramNuovo = pair.getValue().getValue();
+                    String valNuovo = "";
+                    if(paramNuovo!=null){
+                      valNuovo = paramNuovo.toString();
+                    }
+                    if("".equals(valOriginale)){valOriginale = "NULL";}
+                    if("".equals(valNuovo)){valNuovo = "NULL";}
+                    descrErrMsg+= pair.getKey() + ": ";
+                    descrErrMsg+= "valore vecchio= " + valOriginale + ", ";
+                    descrErrMsg+= "valore nuovo= " + valNuovo;
+                  }
+                }
+              }
+          }
+    	  if(modificheDaTracciare){
+	          LogEvento logEvento = LogEventiUtils.createLogEvento(this.getRequest());
+	          logEvento.setLivEvento(1);
+	          logEvento.setOggEvento(datiForm.getColumn("GAREAVVISI.NGARA").getValue().stringValue());
+	          logEvento.setCodEvento("GA_MODIFICA_PROCEDURA_PUB");
+	          String descrizioneEvento = "Modifica dati avviso dopo invio schede ad ANAC.";
+	          logEvento.setDescr(descrizioneEvento);
+	          logEvento.setErrmsg("Dettaglio modifiche:\n" + descrErrMsg);
+	          LogEventiUtils.insertLogEventi(logEvento);
+    	  }
+      }
 	}
 	  /**
 	   * Aggiorna sia la prima occorrenza dei CPV, sia le n occorrenze successive

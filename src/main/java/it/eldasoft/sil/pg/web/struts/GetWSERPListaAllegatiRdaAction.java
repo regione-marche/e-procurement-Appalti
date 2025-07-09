@@ -90,7 +90,7 @@ public class GetWSERPListaAllegatiRdaAction extends Action {
       WSERPRdaType[] rdaArray= null;
 
       if("1".equals(genere) || "3".equals(genere)){
-        if("AVM".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP)){
+        if("AVM".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "INARCASSA".equals(tipoWSERP) || "AMIU".equals(tipoWSERP) || "ARCHIFLOW".equals(tipoWSERP)){
           countRda = (Long) sqlManager.getObject(
               "select count(*) from garerda where codgar = ?",new Object[] { codice });
         }
@@ -158,7 +158,7 @@ public class GetWSERPListaAllegatiRdaAction extends Action {
               "select count(*) from garerda where codgar in (select codgar1 from gare where ngara = ?)",new Object[] { codice });
         }
         
-        if("AMIU".equals(tipoWSERP)){
+        if("AMIU".equals(tipoWSERP) || "INARCASSA".equals(tipoWSERP) || "ARCHIFLOW".equals(tipoWSERP)){
             countRda = (Long) sqlManager.getObject(
                 "select count(*) from garerda where codgar = ?",new Object[] { codice });
         }
@@ -192,8 +192,10 @@ public class GetWSERPListaAllegatiRdaAction extends Action {
             selRdaGara = "select codrda,posrda,codcarr,codvoc from gcap where ngara = ? order by codcarr,codrda,posrda";
           }else{
             linkrda = "1";
-            if("AMIU".equals(tipoWSERP)){
+            if("AMIU".equals(tipoWSERP) || "INARCASSA".equals(tipoWSERP)){
                 selRdaGara = "select numrda,posrda from garerda where codgar = ? order by numrda,posrda";
+            } else if("ARCHIFLOW".equals(tipoWSERP)){
+              selRdaGara = "select numrda,codcarr from garerda where codgar = ?";
             }else {
                 selRdaGara = "select numrda,posrda from garerda" +
                         " where codgar in (select codgar1 from gare where ngara = ?) order by numrda,posrda";
@@ -208,17 +210,22 @@ public class GetWSERPListaAllegatiRdaAction extends Action {
               String posRda = (String) SqlManager.getValueFromVectorParam(rdaGara.get(i), 1).getValue();
 
               WSERPRdaType rda = new WSERPRdaType();
-              rda.setCodiceRda(codRda);
-              rda.setPosizioneRda(posRda);
-              if("2".equals(linkrda)){
-                String codCarr = (String) SqlManager.getValueFromVectorParam(rdaGara.get(i), 2).getValue();
-                rda.setCodiceCarrello(codCarr);
-                String codvoc = (String) SqlManager.getValueFromVectorParam(rdaGara.get(i), 3).getValue();
-                rda.setDescrizione(codRda + "/" + posRda + " - " + codvoc);
-              }else{
-                rda.setDescrizione(codRda + "/" + posRda);
+              if("ARCHIFLOW".equals(tipoWSERP)){
+                rda.setCodiceRda(codRda);
+                // all'interno di posRda c'e' il codice carrello
+                rda.setCodiceCarrello(posRda);
+              } else {
+                rda.setCodiceRda(codRda);
+                rda.setPosizioneRda(posRda);
+                if("2".equals(linkrda)){
+                  String codCarr = (String) SqlManager.getValueFromVectorParam(rdaGara.get(i), 2).getValue();
+                  rda.setCodiceCarrello(codCarr);
+                  String codvoc = (String) SqlManager.getValueFromVectorParam(rdaGara.get(i), 3).getValue();
+                  rda.setDescrizione(codRda + "/" + posRda + " - " + codvoc);
+                }else{
+                  rda.setDescrizione(codRda + "/" + posRda);
+                }
               }
-
               rdaArray[i] = rda;
             }
           }
@@ -248,7 +255,7 @@ public class GetWSERPListaAllegatiRdaAction extends Action {
               for (int a = 0; a < allegatiArray.length; a++) {
                 HashMap<String, Object> hMap = new HashMap<String, Object>();
                 if(codiceRda!= null && allegatiArray[a] != null){
-                	if("AMIU".equals(tipoWSERP)){
+                	if("AMIU".equals(tipoWSERP) || "INARCASSA".equals(tipoWSERP) || "ARCHIFLOW".equals(tipoWSERP)){
                         hMap.put("titoloallegato", codiceRda);
                         hMap.put("tipoallegato", allegatiArray[a].getTipo());
                         hMap.put("nomeallegato", allegatiArray[a].getNome());
@@ -277,7 +284,7 @@ public class GetWSERPListaAllegatiRdaAction extends Action {
       totalAfterFilterAllegatiRda = hMapAllegatiRda.size();
     }
 
-    if("AMIU".equals(tipoWSERP)) {
+    if("AMIU".equals(tipoWSERP) || "INARCASSA".equals(tipoWSERP) || "ARCHIFLOW".equals(tipoWSERP)) {
         result.put("iTotalRecordsALLEGATI", totalAllegatiRda);
         result.put("iTotalDisplayRecordsALLEGATI", totalAfterFilterAllegatiRda);
         result.put("dataALLEGATI", hMapAllegatiRda);

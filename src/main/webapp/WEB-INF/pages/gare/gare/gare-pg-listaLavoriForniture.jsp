@@ -57,6 +57,8 @@
 
 <c:set var="isAccordoQuadro" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.IsAccordoQuadroFunction", pageContext, codiceGara)}'/>
 
+<c:set var="cinecaUgovpaEditing" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "cineca.ugovpa.editing")}'/>
+
 <c:if test='${isProceduraTelematica}'>
 	<c:set var="itergaMacro" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetITERGAMacroFunction", pageContext, key)}'/>
 	<c:set var="iterga" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetITERGAFunction", pageContext, codiceGara)}' />
@@ -161,6 +163,18 @@
 			<c:if test='${BloccoOfferteDitte eq "VERO" or BloccoAggiudicazione eq "VERO" or fasgar > 1 or condizioniBloccoTelematica}'>
 				<c:set var="visLetturaRda" value='false' />
 			</c:if>
+		</c:when>
+		<c:when test='${tipoWSERP eq "INARCASSA"}'> <!-- TODO:ROS: da controllare le condizioni sotto: devo mantenere quelle di CAV? -->
+			<c:set var="visLetturaRda" value='true' />
+			<c:if test='${isAccordoQuadro eq "2"}'>
+				<c:set var="bloccoImportXLS"  value = "true"/>
+			</c:if>	
+			<c:if test='${BloccoOfferteDitte eq "VERO" or BloccoAggiudicazione eq "VERO" or fasgar > 1 or condizioniBloccoTelematica}'>
+				<c:set var="visLetturaRda" value='false' />
+			</c:if>
+		</c:when>
+		<c:when test='${tipoWSERP eq "SIGLA"}'>
+			<c:set var="integrazioneSIGLA" value='${tipoWSERP eq "SIGLA" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GestioneUnicaERP")}' />
 		</c:when>
 		<c:otherwise>
 			<c:set var="visLetturaRda" value='false' />
@@ -375,10 +389,28 @@
 							</td>
 						</tr>
 					</c:if>
-					
+					<c:if test='${integrazioneSIGLA}'>
+						<tr>
+							<td class="vocemenulaterale" >
+								<a href="javascript:apriFormRicercaArticoliSIGLA()" title="Verifica integrazione articoli" tabindex="1511">
+										Inserisci articoli da SIGLA
+								</a>
+							</td>
+						</tr>
+					</c:if>	
+
 					<c:if test='${autorizzatoModifiche ne "2" and visLetturaRda eq "true" }'>
 						<c:set var="presenzaRda" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetWSERPPresenzaRdaFunction", pageContext, codiceGara, numeroGara, requestScope.tipoWSERP)}' />
-						<c:if test='${(tipoWSERP eq "ATAC" and visCaricaRda eq "true") || (tipoWSERP eq "RAIWAY" and presenzaRda eq "1") || (!(tipoWSERP eq "ATAC") and !(tipoWSERP eq "RAIWAY") and !(tipoWSERP eq "CAV") and !((tipoWSERP eq "AVM" || tipoWSERP eq "UGOVPA") and (isAccordoQuadro eq "1" || ! empty requestScope.ngaraaq)))}'>
+						<c:if test='${       (tipoWSERP eq "ATAC" and visCaricaRda eq "true") 
+						                  || (tipoWSERP eq "RAIWAY" and presenzaRda eq "1") 
+						                  || (tipoWSERP eq "INARCASSA" and presenzaRda eq "1")
+						                  || (      !(tipoWSERP eq "ATAC") 
+						                        and !(tipoWSERP eq "RAIWAY") 
+						                        and !(tipoWSERP eq "CAV") 
+						                        and !(tipoWSERP eq "INARCASSA")
+						                        and !(       (tipoWSERP eq "AVM" || tipoWSERP eq "UGOVPA") 
+						                                 and (isAccordoQuadro eq "1" || ! empty requestScope.ngaraaq)
+						                             ))}'>
 							<tr>
 								<td class="vocemenulaterale">
 									<a href="javascript:leggiCarrelloRda('${codiceGara}','${ngara}');" title="${titleCarica}" tabindex="1510">
@@ -407,6 +439,16 @@
 								</td>
 							</tr>
 						</c:if>	
+						
+						<c:if test='${tipoWSERP eq "INARCASSA"}'>
+							<tr>
+								<td class="vocemenulaterale" >
+									<a href="javascript:apriInsertPosizioniErp('${codiceGara}','${ngara}')" title="Inserisci posizioni da ERP" tabindex="5511">
+											Inserisci posizioni da ERP
+									</a>
+								</td>
+							</tr>
+						</c:if>							
 						
 					</c:if>
 					<c:if test='${autorizzatoModifiche ne "2" and garaAggiudicata and ((gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.GARE-scheda.LISTALAVFORN.importXLSVariazionePrezzi") and tipologiaGara ne "3" ) or (gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TORN-OFFUNICA-scheda.LISTALAVFORN.importXLSVariazionePrezzi") and tipologiaGara eq "3") )
@@ -535,6 +577,12 @@
 		</td>
 	</tr>
 </table>
+
+<form name="formRicercaInserimentoArticoli" action="${pageContext.request.contextPath}/pg/FormRicercaInserimentoArticoli.do" method="post">
+	<input type="hidden" name="metodo" id="metodo" value="apri" />
+	<input type="hidden" name="ngara" id="ngara" value="${ngara}" />
+	<input type="hidden" name="codein" id="codein" value="${sessionScope.uffint}" />
+</form>
 
 <gene:javaScript>
 	
@@ -681,7 +729,19 @@
 	
 	<c:if test='${condizioniBloccoTelematica || (bloccoOperazioniSmeUp eq "true")}'>
 		function listaVisualizza(){
-			document.forms[0].action+="&bloccoPubblicazione=true";
+			<c:choose>
+			  <c:when test='${tipoWSERP eq "SMEUP" || tipoWSERP eq "UGOVPA"}'>
+				if(${cinecaUgovpaEditing == 1 && !condizioniBloccoTelematica}){
+					document.forms[0].action+="?bloccoPubblicazione=false&cinecaUgovpaEditing=1";
+				}
+				else {
+					document.forms[0].action+="?bloccoPubblicazione=true&cinecaUgovpaEditing=0";
+				}
+			  </c:when>
+			  <c:otherwise>
+				document.forms[0].action+="?bloccoPubblicazione=true&cinecaUgovpaEditing=0";
+			  </c:otherwise>
+			</c:choose>
 			document.forms[0].key.value=chiaveRiga;
 			document.forms[0].metodo.value="apri";
 			document.forms[0].activePage.value="0";
@@ -768,6 +828,22 @@
 			var href = "href=gare/commons/conferma-ins-lavorazioni-erp.jsp?codgar="+codgar+"&ngara="+ngara;
 			openPopUpCustom(href, "insLavorazioniErp", 600, 350, "no", "yes");
 		}
+		
+		function apriInsertPosizioniErp(codgar,ngara) {
+			// var href = "href=gare/commons/lista-posizioniRda-scheda.jsp?codgar="+codgar+"&ngara="+ngara;
+			bloccaRichiesteServer();
+			formListaRda.href.value = "gare/commons/lista-posizioniRda-scheda.jsp";
+			formListaRda.codgar.value = codgar;
+			formListaRda.codiceRda.value = '${codiceRda}';
+			formListaRda.modo.value = "posRda";
+			formListaRda.codice.value = ngara;
+			formListaRda.genere.value = "2";
+			<c:if test='${lottoDiGara eq "true"}'>
+				formListaRda.filtroLotto.value = "true";
+			</c:if>
+
+			formListaRda.submit();
+		}		
 	 
 	</c:if>	
 	
@@ -795,6 +871,10 @@
 		openPopUpCustom(href, "importaLavorazioniRda", 700, 450, "yes", "yes");
 	}
 	
+	function apriFormRicercaArticoliSIGLA(){
+		formRicercaInserimentoArticoli.submit();
+	}
+
 </gene:javaScript>
 
 

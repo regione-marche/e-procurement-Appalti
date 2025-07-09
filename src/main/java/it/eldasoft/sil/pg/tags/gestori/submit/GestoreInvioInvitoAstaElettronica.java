@@ -23,6 +23,7 @@ import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.pg.bl.GestioneWSDMManager;
 import it.eldasoft.sil.pg.bl.PgManager;
 import it.eldasoft.utils.properties.ConfigManager;
+import it.eldasoft.utils.sicurezza.CriptazioneException;
 import it.eldasoft.utils.spring.UtilitySpring;
 import it.eldasoft.utils.utility.UtilityDate;
 
@@ -127,12 +128,7 @@ public class GestoreInvioInvitoAstaElettronica extends
         gestorePubPortale.setRequest(this.getRequest());
         String riservatezzaAttiva = ConfigManager.getValore("wsdm.applicaRiservatezza."+idconfiStringa);
         gestorePubPortale.invioInvito(datiForm, profilo, numDestinatari, numAllegati, integrazioneWSDM,riservatezzaAttiva, false, null, null, null, null,idconfiStringa);
-      } catch (SQLException e) {
-        this.getRequest().setAttribute("invioEseguito", "Errori");
-        livEvento = 3;
-        errMsgEvento = "Errore nell'invio dell'invito";
-        throw new GestoreException("Errore nell'invio dell'invito", null, e);
-      } catch (IOException e) {
+      } catch (SQLException | IOException e) {
         this.getRequest().setAttribute("invioEseguito", "Errori");
         livEvento = 3;
         errMsgEvento = "Errore nell'invio dell'invito";
@@ -140,7 +136,7 @@ public class GestoreInvioInvitoAstaElettronica extends
       } catch (GestoreException e) {
         this.getRequest().setAttribute("invioEseguito", "Errori");
         throw e;
-      }catch (DocumentException e) {
+      }catch (DocumentException | CriptazioneException e) {
         this.getRequest().setAttribute("pubblicazioneEseguita", "Errori");
         livEvento = 3;
         errMsgEvento = "Errore nella creazione del Fascicolo";

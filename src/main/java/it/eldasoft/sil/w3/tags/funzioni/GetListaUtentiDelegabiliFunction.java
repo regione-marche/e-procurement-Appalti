@@ -40,14 +40,14 @@ public class GetListaUtentiDelegabiliFunction extends AbstractFunzioneTag {
          
          if("".equals(uffint)) {
            listaUsers = sqlManager.getListVector(
-               "select syscon, sysute from usrsys where sysdisab=0 and "
+               "select syscon, sysute from usrsys where sysdisab='0' and "
                +"syscon not in (select id_collaboratore from w9deleghe where cfrup = ? and id_collaboratore IS NOT NULL and codein IS NULL) and syscon <> ? order by sysute asc",
                       new Object[] {profilo.getCodiceFiscale(),profilo.getId()});
          }else {
            
              listaUsers = sqlManager.getListVector(
-                 "select a.syscon, b.sysute from usr_ein a join usrsys b on a.syscon = b.syscon where a.codein = ?  and b.sysdisab=0 and "
-                 +"a.syscon not in (select id_collaboratore from w9deleghe where cfrup = ? and codein = ? and id_collaboratore IS NOT NULL) and a.syscon <> ? order by b.sysute asc",
+                 "select distinct a.syscon, a.sysute from usrsys a left join usr_ein b on a.syscon = b.syscon where (b.codein = ? or a.syspwbou LIKE '%ou89%')  and a.sysdisab='0' and "
+                 +"a.syscon not in (select id_collaboratore from w9deleghe where cfrup = ? and codein = ? and id_collaboratore IS NOT NULL) and a.syscon <> ? order by a.sysute asc",
                         new Object[] { uffint, profilo.getCodiceFiscale(), uffint, profilo.getId() });  
          }
          

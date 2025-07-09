@@ -93,11 +93,11 @@
 		<gene:gruppoCampi idProtezioni="GEN">
 			<tr><td colspan="3"><b>Dati generali</b></td></tr>
 			<gene:campoTrova campo="CODICE"/>
-			<gene:campoTrova campo="NUMAVCP" entita="TORN" where="torn.codgar = v_gare_torn.codgar"/>
+			<gene:campoTrova campo="IDAPPALTONPA" entita="TORN" where="torn.codgar = v_gare_torn.codgar"/>
 			<gene:campoTrova campo="TIPGEN"/>
 			<gene:campoTrova campo="SETTORE" entita="TORN" where="torn.codgar = v_gare_torn.codgar"/>
 			<gene:campoTrova campo="OGGETTO"/>
-			<gene:campoTrova campo="NOMTEC" entita="TECNI"  from="TORN" where="torn.codgar = v_gare_torn.codgar and tecni.codtec=torn.codrup" title="Resonsabile unico di procedimento"/>
+			<gene:campoTrova campo="NOMTEC" entita="TECNI"  from="TORN" where="torn.codgar = v_gare_torn.codgar and tecni.codtec=torn.codrup" title="RUP"/>
 			<gene:campoTrova campo="ISLOTTI" />
 			<gene:campoTrova campo="GENERE" />
 			<gene:campoTrova campo="TIPGAR" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoTIPGARPaginaTrova"/>
@@ -105,6 +105,7 @@
 			<c:if test="${gene:checkProt(pageContext, 'COLS.VIS.GARE.GARE.PRECED')}">
 				<gene:campoTrova entita="GARE" campo="PRECED" where="GARE.NGARA=V_GARE_TORN.CODICE"/>
 			</c:if>
+			<gene:campoTrova entita="GARE" campo="NGARAPA" where="GARE.NGARA=V_GARE_TORN.CODICE"/>
 			<gene:campoTrova campo="STATO" entita="V_GARE_STATOESITO" where="V_GARE_STATOESITO.CODICE=V_GARE_TORN.CODICE" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoStato"/>
 			<gene:campoTrova campo="ESITO" entita="V_GARE_STATOESITO" where="V_GARE_STATOESITO.CODICE=V_GARE_TORN.CODICE" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoEsito"/>
 			<gene:campoTrova entita="GARE" campo="DATTOG" title="Data atto autorizzativo" where="gare.codgar1 = v_gare_torn.codgar" />
@@ -119,12 +120,9 @@
 				<gene:campoTrova entita="GAREIDS" campo="DATEMISS" title="Data emissione impegno di spesa" where="gareids.codgar = v_gare_torn.codgar" />
 			</c:if>
 			<c:if test="${! empty sessionScope.uffint && gene:checkProt(pageContext, 'COLS.VIS.GARE.TORN.ALTRISOG')}">
-				<c:set var="iscuc" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetIscucFunction", pageContext, sessionScope.uffint)}' />
-				<c:if test="${iscuc == '1'}">
-					<gene:campoTrova entita="UFFINT" campo="NOMEIN" from="GARALTSOG, GARE" where="GARALTSOG.CENINT =  UFFINT.CODEIN and GARALTSOG.NGARA = GARE.NGARA and GARE.CODGAR1 = V_GARE_TORN.CODGAR" title="Soggetto per cui agisce la centrale di committenza"/>
-				</c:if>
+				<gene:campoTrova entita="UFFINT" campo="NOMEIN" from="GARALTSOG, GARE" where="GARALTSOG.CENINT =  UFFINT.CODEIN and GARALTSOG.NGARA = GARE.NGARA and GARE.CODGAR1 = V_GARE_TORN.CODGAR" title="Soggetto per cui agisce la stazione appaltante"/>
 			</c:if>
-			<c:if test="${isCigAbilitato eq '1' }">
+			<c:if test="${false and isCigAbilitato eq '1'}"> //APP-1927 dismesso
 				<gene:campoTrova entita="V_W3GARE" campo="STATO_GARA" where="v_w3gare.codgar = v_gare_torn.codgar" />
 			</c:if>
 			<c:if test="${gene:checkProt(pageContext, 'COLS.VIS.GARE.TORN.CLIV2')}">
@@ -179,7 +177,7 @@
   
   <gene:javaScript>
   	function trovaCreaNuovaGara(){
-			document.location.href = contextPath + "/pg/InitNuovaGara.do?" + csrfToken;
+			document.location.href = contextPath + "/pg/InitNuovaGara.do";
   	}
   	
   	<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.PersonalizzazioneAutovie")}'>

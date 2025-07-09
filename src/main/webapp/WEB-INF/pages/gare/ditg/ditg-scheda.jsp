@@ -101,8 +101,8 @@
 						inseribile="true">
 						<gene:campoScheda campo="DITTAO" entita="DITG" obbligatorio="true" />
 						<gene:campoScheda title="Ragione sociale" campo="NOMEST" campoFittizio="true" definizione="T2000;;;;NOMIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.NOMEST")}'/>
-						<gene:campoScheda title="Codice fiscale" campo="CFIMP" campoFittizio="true" definizione="T16;;;;CFIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CFIMP")}'/>
-						<gene:campoScheda title="Partita I.V.A." campo="PIVIMP" campoFittizio="true" definizione="T16;;;;PIVIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.PIVIMP")}'/>
+						<gene:campoScheda title="Codice fiscale" campo="CFIMP" campoFittizio="true" definizione="T30;;;;CFIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CFIMP")}'/>
+						<gene:campoScheda title="Partita I.V.A." campo="PIVIMP" campoFittizio="true" definizione="T30;;;;PIVIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.PIVIMP")}'/>
 						<gene:campoScheda title="Codice dell'Anagrafico Generale" campo="CGENIMP" campoFittizio="true" definizione="T20;;;;CGENIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CGENIMP") && fn:contains(listaOpzioniDisponibili, "OP127#")}'/>
 					</gene:archivio>
 				</c:when>
@@ -126,8 +126,8 @@
 								inseribile="true">
 								<gene:campoScheda title="Codice ditta mandataria" campo="CODDIC" campoFittizio="true" definizione="T10;;;;CODDIC" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.RAGIMP.CODDIC")}' />
 								<gene:campoScheda title="Ragione sociale" campo="NOMEST1" campoFittizio="true" definizione="T2000;;;;NOMIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.NOMEST")}' />
-								<gene:campoScheda title="Codice fiscale" campo="CFIMP" campoFittizio="true" definizione="T16;;;;CFIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CFIMP")}' />
-								<gene:campoScheda title="Partita I.V.A." campo="PIVIMP" campoFittizio="true" definizione="T16;;;;PIVIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.PIVIMP")}' />
+								<gene:campoScheda title="Codice fiscale" campo="CFIMP" campoFittizio="true" definizione="T30;;;;CFIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CFIMP")}' />
+								<gene:campoScheda title="Partita I.V.A." campo="PIVIMP" campoFittizio="true" definizione="T30;;;;PIVIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.PIVIMP")}' />
 								<gene:campoScheda title="Codice dell'Anagrafico Generale" campo="CGENIMP" campoFittizio="true" definizione="T20;;;;CGENIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CGENIMP") && fn:contains(listaOpzioniDisponibili, "OP127#")}'/>
 							</gene:archivio>
 							<gene:campoScheda title="Quota di partecipazione" campo="QUODIC" campoFittizio="true" definizione="F9.5;;;PRC;QUODIC" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.RAGIMP.QUODIC")}' />
@@ -143,8 +143,8 @@
 									</gene:campoScheda>
 									<gene:campoScheda title="Codice ditta mandataria" campo="CODDIC" campoFittizio="true" definizione="T10;;;;CODDIC" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.RAGIMP.CODDIC")}' value="${codiceMandataria}" modificabile="false"/>
 									<gene:campoScheda title="Ragione sociale" campo="NOMEST1" campoFittizio="true" definizione="T2000;;;;NOMIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.NOMEST")}' value="${ragSocMandataria}" modificabile="false"/>
-									<gene:campoScheda title="Codice fiscale" campo="CFIMP" campoFittizio="true" definizione="T16;;;;CFIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CFIMP")}' value="${codfiscMandataria}" modificabile="false"/>
-									<gene:campoScheda title="Partita I.V.A." campo="PIVIMP" campoFittizio="true" definizione="T16;;;;PIVIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.PIVIMP")}' value="${pivaMandataria}" modificabile="false"/>
+									<gene:campoScheda title="Codice fiscale" campo="CFIMP" campoFittizio="true" definizione="T30;;;;CFIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CFIMP")}' value="${codfiscMandataria}" modificabile="false"/>
+									<gene:campoScheda title="Partita I.V.A." campo="PIVIMP" campoFittizio="true" definizione="T30;;;;PIVIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.PIVIMP")}' value="${pivaMandataria}" modificabile="false"/>
 									<gene:campoScheda title="Quota di partecipazione" campo="QUODIC" campoFittizio="true" definizione="F9.5;;;PRC;QUODIC" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.RAGIMP.QUODIC")&& isGaraElenco ne "1"}'  modificabile="false"/>
 								</c:when>
 								<c:otherwise>
@@ -173,8 +173,8 @@
 										inseribile="true">
 										<gene:campoScheda title="Codice ditta mandataria" campo="CODDIC" campoFittizio="true" definizione="T10;;;;CODDIC" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.RAGIMP.CODDIC")}' value="${codiceMandataria}" modificabile="false"/>
 										<gene:campoScheda title="Ragione sociale" campo="NOMEST1" campoFittizio="true" definizione="T2000;;;;NOMIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.NOMEST")}' value="${ragSocMandataria}" modificabile="false"/>
-										<gene:campoScheda title="Codice fiscale" campo="CFIMP" campoFittizio="true" definizione="T16;;;;CFIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CFIMP")}' value="${codfiscMandataria}" modificabile="false"/>
-										<gene:campoScheda title="Partita I.V.A." campo="PIVIMP" campoFittizio="true" definizione="T16;;;;PIVIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.PIVIMP")}' value="${pivaMandataria}" modificabile="false"/>
+										<gene:campoScheda title="Codice fiscale" campo="CFIMP" campoFittizio="true" definizione="T30;;;;CFIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.CFIMP")}' value="${codfiscMandataria}" modificabile="false"/>
+										<gene:campoScheda title="Partita I.V.A." campo="PIVIMP" campoFittizio="true" definizione="T30;;;;PIVIMP" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.IMPR.PIVIMP")}' value="${pivaMandataria}" modificabile="false"/>
 									</gene:archivio>
 									<gene:campoScheda title="Quota di partecipazione" campo="QUODIC" campoFittizio="true" definizione="F9.5;;;PRC;QUODIC" visibile='${gene:checkProt(pageContext, "COLS.VIS.GENE.RAGIMP.QUODIC")&& isGaraElenco ne "1"}'  modificabile="false"/>
 								

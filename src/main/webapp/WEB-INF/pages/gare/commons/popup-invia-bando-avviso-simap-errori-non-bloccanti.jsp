@@ -36,6 +36,9 @@
 			<input type="hidden" name="tipoavviso" value="${tipoavviso}" />
 			<input type="hidden" name="iterga" value="${iterga}" />
 			<input type="hidden" name="metodo" value="inviaComunque" />
+			<input type="hidden" name="tipoAvvGAREAVVISO" value="${tipoAvvGAREAVVISO}"/>
+			<input type="hidden" name="settore" value="${settore}"/>
+			<input type="hidden" name="genereGara" value="${genereGara}"/>
 			
 			<table class="dettaglio-notab">
 			<tr>

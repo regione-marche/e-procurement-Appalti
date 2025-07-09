@@ -9,6 +9,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import it.eldasoft.utils.properties.ConfigManager;
 import net.sf.json.JSONObject;
 
 import org.apache.struts.action.Action;
@@ -48,6 +49,13 @@ public class GetWSDMDescrizioneTabellatoPrismaAction extends Action {
     String servizio = request.getParameter("servizio");
     String classifica = request.getParameter("classifica");
     String idconfi = request.getParameter("idconfi");
+
+    String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+    if("1".equals(wsdmLoginComune)){
+      String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+      username = credenziali[0];
+      password = credenziali[1];
+    }
 
     List<String[]> listaClassifiche = this.gestioneWSDMManager.getValoriClassifiche(username, password, ruolo, nome, cognome, codiceuo,
         idutente, idutenteunop, servizio, classifica,null,null,idconfi);

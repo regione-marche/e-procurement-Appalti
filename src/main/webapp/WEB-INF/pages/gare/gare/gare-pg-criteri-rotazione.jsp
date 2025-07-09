@@ -20,17 +20,30 @@
 
 <gene:redefineInsert name="head">
 	<script type="text/javascript" src="${pageContext.request.contextPath}/js/common-gare.js"></script>		
+	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.jstree.js"></script>
+	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.jstree.cpvvp.mod.js"></script>
+	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.jstree.cpvvsupp.mod.js"></script>
+	<script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery.jstree.nuts.mod.js"></script>
+	<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/jquery/cpvvp/jquery.cpvvp.mod.css" >
 </gene:redefineInsert>
 	
 <c:set var="genere" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetTipologiaGaraFunction", pageContext, key)}' scope="request"/>
 <c:set var="codiceGara" value="${gene:concat('$',gene:getValCampo(key, 'NGARA'))}"/>
-<c:set var="isFascicoloDocumentaleAbilitato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.IsApplicaFascicolazioneValidaFunction",  pageContext, codiceGara, idconfi)}' />
-	
+<c:set var="bloccoPubblicazionePortaleBando" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteBloccoPubblicazionePortaleFunction", pageContext,codiceGara,"BANDO","false")}' />
+<c:set var="bloccoModificatiDati" value='${bloccoPubblicazionePortaleBando eq "TRUE" && modo eq "MODIFICA"}'/>
+
 <%/* Dati generali della gara */%>
 <gene:formScheda entita="GARE" gestisciProtezioni="true" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestoreElencoDitte">
 	<gene:redefineInsert name="schedaNuovo" />
 	<gene:redefineInsert name="pulsanteNuovo"/>
-			
+
+	<gene:campoScheda visibile="${bloccoModificatiDati eq 'true'}">
+		<td colspan="2" style="color:#0000FF">
+			<br><b>ATTENZIONE:</b>&nbsp;
+			Parte dei dati sono in sola consultazione perché l'elenco è pubblicato su portale Appalti.
+			<br>&nbsp;
+		</td>
+	</gene:campoScheda>
 	<gene:gruppoCampi idProtezioni="GEN" >
 		<gene:campoScheda>
 			<td colspan="2"><b>Criterio di rotazione</b></td>
@@ -41,7 +54,10 @@
 
 		<gene:campoScheda campo="CODGAR" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" visibile="false" />
 		<gene:campoScheda campo="TIPOLOGIA"  entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" visibile="false"/>
-		
+		<gene:campoScheda campo="TIPOELE"  entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" visibile="false"/>
+
+		<gene:campoScheda campo="ISELPREM"  entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA"/>
+		<gene:campoScheda campo="ISELPREMOB" entita="GAREALBO" obbligatorio="true" />
 	    <gene:archivio titolo="Criteri rotazione"
 		    lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GARE.GAREALBO.TIPOALGO"),"gare/algoritmi/algoritmi-lista-popup.jsp","")}'
 		    scheda=''
@@ -83,6 +99,7 @@
 		</gene:campoScheda>
 		<gene:campoScheda campo="TIPOCLASS"  entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" obbligatorio="true"/>
 		<gene:campoScheda campo="ISCRIRT" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA"  obbligatorio="true"/>
+		<gene:campoScheda campo="AGGRTCOMP" entita="GAREALBO" />
 		<gene:campoScheda campo="COORDSIC" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" />
 		<gene:campoScheda campo="REQTORRE" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" />
 		<gene:campoScheda campo="PUBOPE" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" visibile='${fn:contains(listaOpzioniDisponibili, "OP114#")}'/>  
@@ -100,70 +117,34 @@
 	</gene:gruppoCampi>
 
 	<gene:fnJavaScriptScheda funzione='gestioneCTRLAGGIU("#GAREALBO_CTRLAGGIU#")' elencocampi='GAREALBO_CTRLAGGIU' esegui="true" />
-	
-	
-	<c:if test="${isFascicoloDocumentaleAbilitato eq '1'}">
-		<c:set var="tipoWSDM" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetTipoWSDMFunction", pageContext, "FASCICOLOPROTOCOLLO", "NO", idconfi)}' />
-		<gene:gruppoCampi idProtezioni="ISPGD">
-			<gene:campoScheda>
-				<td colspan="2"><b>Integrazione con sistema di protocollazione e gestione documentale</b></td>
-			</gene:campoScheda>
-			<c:if test="${!empty datiRiga.WSFASCICOLO_CODICE and datiRiga.WSFASCICOLO_CODICE !=''}">
-				<c:set var="rifFascicolo" value="Cod.: ${datiRiga.WSFASCICOLO_CODICE}"/>
-			</c:if>
-			<c:if test="${!empty datiRiga.WSFASCICOLO_ANNO and datiRiga.WSFASCICOLO_ANNO !=''}">
-				<c:if test="${!empty rifFascicolo && rifFascicolo !=''}">
-					<c:set var="rifFascicolo" value="${rifFascicolo } -"/>
-				</c:if>
-				<c:set var="rifFascicolo" value="${rifFascicolo } Anno: ${datiRiga.WSFASCICOLO_ANNO}"/>
-			</c:if>
-			<c:if test="${!empty datiRiga.WSFASCICOLO_NUMERO and datiRiga.WSFASCICOLO_NUMERO !=''}">
-				<c:if test="${!empty rifFascicolo && rifFascicolo !=''}">
-					<c:set var="rifFascicolo" value="${rifFascicolo } -"/>
-				</c:if>
-				<c:set var="rifFascicolo" value="${rifFascicolo } Num.: ${datiRiga.WSFASCICOLO_NUMERO}"/>
-			</c:if>
-			<c:if test="${!empty datiRiga.WSFASCICOLO_CLASSIFICA and datiRiga.WSFASCICOLO_CLASSIFICA !='' && tipoWSDM ne 'JIRIDE'}">
-				<c:if test="${!empty rifFascicolo && rifFascicolo !=''}">
-					<c:set var="rifFascicolo" value="${rifFascicolo } -"/>
-				</c:if>
-				<c:set var="rifFascicolo" value="${rifFascicolo } Classifica: ${datiRiga.WSFASCICOLO_CLASSIFICA}"/>
-			</c:if>
-			<c:if test="${tipoWSDM eq 'TITULUS' || tipoWSDM eq 'ENGINEERINGDOC'}">
-				<c:choose>
-					<c:when test="${tipoWSDM eq 'ENGINEERINGDOC'}">
-						<c:set var="labelCoduff" value="U.O. di competenza"/>
-					</c:when>
-					<c:otherwise>
-						<c:set var="labelCoduff" value="Ufficio"/>
-					</c:otherwise>
-				</c:choose>
-				<c:if test="${!empty datiRiga.WSFASCICOLO_CODAOO and datiRiga.WSFASCICOLO_CODAOO !=''}" >
-					<c:set var="rifFascicolo" value="${rifFascicolo } - AOO: ${datiRiga.WSFASCICOLO_CODAOO}"/>
-					<c:if test="${!empty datiRiga.WSFASCICOLO_DESAOO and datiRiga.WSFASCICOLO_DESAOO !=''}" >
-						<c:set var="rifFascicolo" value="${rifFascicolo } ${datiRiga.WSFASCICOLO_DESAOO}"/>
-					</c:if>
-				</c:if>
-				<c:if test="${!empty datiRiga.WSFASCICOLO_CODUFF and datiRiga.WSFASCICOLO_CODUFF !=''}" >
-					<c:set var="rifFascicolo" value="${rifFascicolo } - ${labelCoduff}: ${datiRiga.WSFASCICOLO_CODUFF}"/>
-					<c:if test="${!empty datiRiga.WSFASCICOLO_DESUFF and datiRiga.WSFASCICOLO_DESUFF !=''}" >
-						<c:set var="rifFascicolo" value="${rifFascicolo } ${datiRiga.WSFASCICOLO_DESUFF}"/>
-					</c:if>
-				</c:if>
-			</c:if>
-			<gene:campoScheda campo="ISPGD_FIT" campoFittizio="true" title="Riferimento al fascicolo" definizione="T40;"  value="${rifFascicolo}" modificabile="false"/>
-			<gene:campoScheda campo="CODICE" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
-			<gene:campoScheda campo="ANNO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
-			<gene:campoScheda campo="NUMERO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
-			<gene:campoScheda campo="CLASSIFICA" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
-			
-			<gene:campoScheda campo="CODAOO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
-			<gene:campoScheda campo="DESAOO" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
-			<gene:campoScheda campo="CODUFF" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
-			<gene:campoScheda campo="DESUFF" entita="WSFASCICOLO" where="WSFASCICOLO.KEY1=GARE.NGARA and WSFASCICOLO.ENTITA='GARE'" visibile="false"/>
-		</gene:gruppoCampi>
-	</c:if>
-	
+	<gene:fnJavaScriptScheda funzione='gestioneAGGRTCOMP("#GAREALBO_TIPOALGO#","#GAREALBO_ISCRIRT#")' elencocampi='GAREALBO_TIPOALGO;GAREALBO_ISCRIRT' esegui="true" />
+	<gene:fnJavaScriptScheda funzione='gestioneISELPREM("#GAREALBO_ISELPREM#")' elencocampi='GAREALBO_ISELPREM' esegui="true" />
+
+	<jsp:include page="/WEB-INF/pages/gare/garcpv/codiciCPV-gara.jsp">
+		<jsp:param name="datiModificabili" value="${not bloccoModificaPCP}"/>
+		<jsp:param name="lottoOffertaUnica" value="true"/>
+		<jsp:param name="initCODCPV" value="${initCODCPV }"/>
+		<jsp:param name="bloccoModificaPCP" value="${bloccoModificaPCP}"/>
+	</jsp:include>
+
+	<gene:gruppoCampi idProtezioni="LUOGOESEC" >
+		<gene:campoScheda>
+			<td colspan="2"><b>Luogo di esecuzione</b></td>
+		</gene:campoScheda>
+		<c:choose>
+			<c:when test="${not bloccoModificaPCP}">
+				<gene:campoScheda campo="CODNUTS" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" href="#" speciale="true" >
+					<gene:popupCampo titolo="Dettaglio codice NUTS" href="#" />
+				</gene:campoScheda>
+			</c:when>
+			<c:otherwise>
+				<gene:campoScheda campo="CODNUTS" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" />
+			</c:otherwise>
+		</c:choose>
+	</gene:gruppoCampi>
+
+
+
 	<input type="hidden" name="genere" value="${genere}" />
 	
 	<gene:campoScheda>	
@@ -189,6 +170,15 @@
 						</td>
 					</tr>
 				</c:if>
+			</c:if>
+			<c:if test='${datiRiga.GAREALBO_ISELPREM eq "1"}'>
+					<tr>
+						<td class="vocemenulaterale">
+							<a href="javascript:accediElementiPremiali('${datiRiga.GARE_NGARA}');" title="Accedi ad elementi premiali">
+								Accedi ad elementi premiali
+							</a>
+						</td>
+					</tr>
 			</c:if>
 		</gene:redefineInsert>
 	</c:if>
@@ -228,7 +218,17 @@
 			</c:if>
 		}
 	}
-	
+
+	function gestioneAGGRTCOMP(tipoalgo,iscrirt) {
+		var tipologie = [10,13];
+		if(!(tipologie.includes(parseInt(tipoalgo))) || iscrirt!=2){
+			setValue("GAREALBO_AGGRTCOMP", "");
+			showObj("rowGAREALBO_AGGRTCOMP",false);
+		} else {
+			showObj("rowGAREALBO_AGGRTCOMP",true);
+		}
+	}
+
 	function checkValorePositivo(valore) {
 		if (valore!=null && valore!="") {
 			if (toVal(valore)>0)
@@ -240,4 +240,48 @@
 		}
 	}
 
+	function accediElementiPremiali(ngara){
+		formVisElementiPremiali.ngara.value=ngara;
+		formVisElementiPremiali.submit();
+	}
+
+	function gestioneISELPREM(iselprem) {
+		if(iselprem != null && iselprem === '1'){
+			showObj("rowGAREALBO_ISELPREMOB",true);
+			<c:if test='${modo ne "VISUALIZZA"}'>
+				if ($('#GAREALBO_ISELPREMOB').val() === '')
+					setValue("GAREALBO_ISELPREMOB", "1");
+			</c:if>
+		} else {
+			setValue("GAREALBO_ISELPREMOB", "");
+			<c:if test='${modo ne "VISUALIZZA"}'>
+			showObj("rowGAREALBO_ISELPREMOB",false);
+			</c:if>
+		}
+	}
+
+	$(document).ready(function(){
+		var bloccoModificaDati = "${bloccoModificatiDati}";
+		if(bloccoModificaDati==='true'){
+			$('#GAREALBO_ISELPREM, #GAREALBO_TIPOCLASS, #GAREALBO_ISCRIRT').on('mousedown', function(e) {
+				e.preventDefault();
+				this.blur();
+				window.focus();
+			}).css('background-color','#EFEFEF');
+		}
+		_creaFinestraAlberoNUTS();
+		_creaLinkAlberoNUTS($("#TORN_CODNUTS").parent(), "${modo}", $("#TORN_CODNUTS"), $("#TORN_CODNUTSview") );
+
+		$("input[name^='TORN_CODNUTS']").attr('readonly','readonly');
+		$("input[name^='TORN_CODNUTS']").attr('tabindex','-1');
+		$("input[name^='TORN_CODNUTS']").css('border-width','1px');
+		$("input[name^='TORN_CODNUTS']").css('background-color','#E0E0E0');
+
+	});
+
 </gene:javaScript>
+
+<form name="formVisElementiPremiali" id="formVisElementiPremiali" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">
+	<input type="hidden" name="href" value="gare/elpremalbo/elpremalbo-lista.jsp" />
+	<input type="hidden" name="ngara" id="ngara" value="" />
+</form>

@@ -11,13 +11,17 @@
 package it.eldasoft.sil.pg.tags.funzioni;
 
 import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
 import it.eldasoft.gene.tags.utils.AbstractFunzioneTag;
 import it.eldasoft.utils.spring.UtilitySpring;
-
-import java.sql.SQLException;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
 
 /**
  * Funzione che determina l'ordinamento della lista di
@@ -28,7 +32,7 @@ import javax.servlet.jsp.PageContext;
 public class GetOrdinamentoElencoOpEconomiciFunction extends AbstractFunzioneTag {
 
   public GetOrdinamentoElencoOpEconomiciFunction() {
-    super(4, new Class[] { PageContext.class,String.class,String.class,String.class });
+    super(5, new Class[] { PageContext.class,String.class,String.class,String.class,String.class  });
   }
 
   @Override
@@ -38,6 +42,7 @@ public class GetOrdinamentoElencoOpEconomiciFunction extends AbstractFunzioneTag
     String tipoalogoString = (String) params[1];
     String classifica = (String)params[2];
     String entita = (String)params[3];
+    String ngara = (String)params[4];
     String ordinamento ="13";
 
 	String select = "select tab1desc from tab1 where tab1cod='A1073' and tab1tip=?";
@@ -46,6 +51,12 @@ public class GetOrdinamentoElencoOpEconomiciFunction extends AbstractFunzioneTag
         pageContext, SqlManager.class);
 
 	try {
+      String isElencoElPrem = (String) sqlManager.getObject("select iselprem from garealbo where ngara=(select elencoe from gare where ngara=?)", new Object[]{ngara});
+      Vector<JdbcParametro> datiFasce = sqlManager.getVector("select elpremsinf, elpremsint from gare1 where ngara=?", new Object[]{ngara});
+      Double elpremsinf = datiFasce.get(0).getValue() != null ? ((Number) datiFasce.get(0).getValue()).doubleValue() : null;
+      Double elpremsint = datiFasce.get(1).getValue() != null ? ((Number) datiFasce.get(1).getValue()).doubleValue() : null;
+      Long countElementiPremiali = (Long) sqlManager.getObject("select count(*) from elpremgare where ngara=?", new Object[]{ngara});
+      boolean inseritiElementiPremiali = countElementiPremiali != null && countElementiPremiali > 0;
       if(tipoalogoString!=null && !"".equals(tipoalogoString)){
 	    Long tipoalgo = Long.parseLong(tipoalogoString);
 	    int tipoAlgoritmo = tipoalgo.intValue();
@@ -115,6 +126,22 @@ public class GetOrdinamentoElencoOpEconomiciFunction extends AbstractFunzioneTag
 
         String tipoalgoDesc = (String) sqlManager.getObject(select, new Object[]{tipoalgo});
         pageContext.setAttribute("criterioRotazioneDesc", tipoalgoDesc, PageContext.REQUEST_SCOPE);
+
+        if ("1".equals(isElencoElPrem) && inseritiElementiPremiali) {
+          String[] numbers = ordinamento.split(";");
+          List<Integer> incrementedNumbers = new ArrayList<>();
+          int skipColonne = 1;
+          ordinamento = "-8;";
+          if (elpremsinf != null && elpremsint != null) {
+            ordinamento = "-9;";
+            skipColonne += 1;
+          }
+          for (String number : numbers) {
+            int num = Integer.parseInt(number);
+            incrementedNumbers.add(num + skipColonne);
+          }
+          ordinamento += String.join(";", incrementedNumbers.stream().map(String::valueOf).toArray(String[]::new));
+        }
 	  }
 
 

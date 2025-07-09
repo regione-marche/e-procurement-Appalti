@@ -41,6 +41,15 @@
 			<c:set var="idcom" value="${idcom}" />
 		</c:otherwise>
 	</c:choose>
+		
+	<c:choose>
+		<c:when test='${not empty param.coment}'>
+			<c:set var="coment" value="${param.coment}" />
+		</c:when>
+		<c:otherwise>
+			<c:set var="coment" value="${coment}" />
+		</c:otherwise>
+	</c:choose>
 	
 	<c:choose>
 		<c:when test='${not empty param.filtroRadio}'>
@@ -65,6 +74,7 @@
 			<c:set var="msgSelect" value="Visualizza imprese non inserite tra i destinatari"/>
 			<c:set var="msgEtichetta" value="Visualizza solo imprese non ancora inserite tra i destinatari?"/>
 			<c:set var="entitaRicerca" value="IMPR" />
+			<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.GetFiltriDestinatariComunicazioniGenericheFunction" />
 		</c:when>
 		<c:when test="${filtroRadio eq '2'}">
 			<c:set var="msgSelect" value="Visualizza tecnici non inseriti tra i destinatari"/>
@@ -82,7 +92,7 @@
 			
 	<gene:redefineInsert name="corpo">
 		<gene:formTrova entita="${entitaRicerca }" gestisciProtezioni="true"
-			lista="geneweb/w_invcomdes/w_invcomdes-lista-destinatariAnagrafica-popup.jsp"
+			lista="geneweb/w_invcomdes/w_invcomdes-lista.jsp"
 			gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.trova.gestori.DestinatariAnagraficaGestoreTrova">
 			
 			<tr>
@@ -91,7 +101,7 @@
 					<input type="radio" value="1" id="radioImpresa" name="filtroAnagrafica" <c:if test='${filtroRadio eq "1"}'>checked="checked"</c:if> onclick="javascript:cambiaEntita(1);" />Imprese
 					&nbsp;
 					<input type="radio" value="2" id="radioTecnici" name="filtroAnagrafica" <c:if test='${filtroRadio eq "2"}'>checked="checked"</c:if> onclick="javascript:cambiaEntita(2);"/>Tecnici
-					<c:if test="${! empty sessionScope.uffint}">
+					<c:if test="${! empty sessionScope.uffint && coment ne 'HOMEPG'}">
 						&nbsp;
 						<input type="radio" value="3" id="radioUtentiRup" name="filtroAnagrafica" <c:if test='${filtroRadio eq "3"}'>checked="checked"</c:if> onclick="javascript:cambiaEntita(3);"/>Utenti/RUP delle Amministrazioni aderenti
 					</c:if>
@@ -101,6 +111,11 @@
 			
 			<c:choose>
 				<c:when test="${filtroRadio eq '1'}">
+					<c:if test="${coment eq 'HOMEPG' and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.V_GARE_ELEDITTE-lista.ApriGare') && filtroRadio eq '1'}" >
+						<tr>
+							<td colspan="3"><b>Dati generali</b></td>
+						</tr>
+					</c:if>
 					<gene:campoTrova campo="CODIMP" />
 					<gene:campoTrova campo="NOMEST" />
 					<gene:campoTrova campo="CFIMP" />
@@ -131,21 +146,78 @@
 			</c:choose>
 						
 
-			<tr>
-				<td class="etichetta-dato"/>
-				<td class="operatore-trova"/>
-				<td class="valore-dato-trova"/>
-			</tr>
-			<tr>
-				<td class="etichetta-dato">${msgEtichetta }</td>
-				<td class="operatore-trova"/>
-				<td class="valore-dato-trova">
-					<select id="CampoFitt" name="CampoFitt" title="${msgSelect }">
-						<option value="1" selected="selected">Si</option>
-						<option value="2" >No</option>
-					</select>
-				</td>
-			</tr>
+			<c:if test="${coment eq 'HOMEPG' and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.V_GARE_ELEDITTE-lista.ApriGare') && filtroRadio eq '1'}" >
+				<tr>
+					<td colspan="3"><b>Dati elenco operatori</b></td>
+					</tr>
+				<tr>
+					<td class="etichetta-dato">Iscrizione a elenco operatori (considera l'anagrafica iscritta direttamente oppure come mandataria di RT)</td>
+					<td class="operatore-trova"/>
+					<td class="valore-dato-trova">
+						<select id="CampoFittIscriz" name="CampoFittIscriz" title="Iscrizione a elenco operatori" onchange="javascript:showAndHideSezioneFiltriElenchi()">
+							<option value=""></option>
+							<option value="1" <c:if test="${param.campoFittIscriz eq 1}" >selected="selected"</c:if> >Iscritto ad almeno un elenco</option>
+							<option value="2" <c:if test="${param.campoFittIscriz eq 2}" >selected="selected"</c:if>>Non iscritto ad alcun elenco</option>
+						</select>
+					</td>
+				</tr>
+				
+				<tr id="sezioneFiltriElenchi" <c:if test="${param.campoFittIscriz ne 1}" >style="display: none;"</c:if>>
+					<td class="etichetta-dato">Codice elenco</td>
+					<td class="operatore-trova"/>
+					<td class="valore-dato-trova" width="70px">
+						<select name="CampoFittNgara" id="CampoFittNgara"">
+							<option value="">&nbsp;</option>
+								<c:if test='${!empty listaElenchi}'>
+									<c:forEach items="${listaElenchi}" var="listaElenchi">
+										<option value="${listaElenchi[0]}" <c:if test="${param.campoFittNgara eq listaElenchi[0]}" >selected="selected"</c:if> >${listaElenchi[0]}&nbsp;</option>
+									</c:forEach>
+								</c:if>
+						</select>
+					</td>
+				</tr>
+				<tr id="sezioneFiltriAbilitazioni" <c:if test="${param.campoFittIscriz ne 1}" >style="display: none;"</c:if>>
+					<td class="etichetta-dato">Stato abilitazione (riferito allo specifico elenco, se indicato, altrimenti riferito a qualsiasi elenco a cui l'operatore è iscritto)</td>
+					<td class="operatore-trova"/>
+					<td class="valore-dato-trova" width="70px">
+						<select name="CampoFittAbilitaz" id="CampoFittAbilitaz" >
+							<option value="">&nbsp;</option>
+								<c:if test='${!empty listaAbilitazioni}'>
+									<c:forEach items="${listaAbilitazioni}" var="listaAbilitazioni">
+										<option value="${listaAbilitazioni[0]}" <c:if test="${param.campoFittAbilitaz eq listaAbilitazioni[0]}" >selected="selected"</c:if> >${listaAbilitazioni[1]}&nbsp;</option>
+									</c:forEach>
+								</c:if>
+						</select>
+					</td>
+				</tr>
+				</c:if>
+				<tr>
+					<td class="etichetta-dato"/>
+					<td class="operatore-trova"/>
+					<td class="valore-dato-trova"/>
+				</tr>
+				<c:if test="${coment eq 'HOMEPG' and gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.V_GARE_ELEDITTE-lista.ApriGare') && filtroRadio eq '1'}" >
+				<tr id="sezioneFiltriComponentiRT"  <c:if test="${param.campoFittIscriz ne 1}" >style="display: none;"</c:if>>
+					<td class="etichetta-dato">Visualizza mandanti RT? (considera le componenti del RT di cui l'anagrafica estratta è mandataria, solo per lo specifico elenco se indicato, altrimenti per qualsiasi elenco)</td>
+					<td class="operatore-trova"/>
+					<td class="valore-dato-trova">
+						<select id="CampoFittRT" name="CampoFittRT" title="Visualizza componenti RT">
+							<option value="1" <c:if test="${param.campoFittRT eq 1}" >selected="selected"</c:if> >No</option>
+							<option value="2" <c:if test="${param.campoFittRT eq 2}" >selected="selected"</c:if> >Si</option>
+						</select>
+					</td>
+				</tr>
+				</c:if>
+				<tr>
+					<td class="etichetta-dato">${msgEtichetta}</td>
+					<td class="operatore-trova"/>
+					<td class="valore-dato-trova">
+						<select id="CampoFitt" name="CampoFitt" title="${msgSelect}">
+							<option value="1" <c:if test="${param.campoFitt eq 1}" >selected="selected"</c:if>>Si</option>
+							<option value="2" <c:if test="${param.campoFitt eq 2}" >selected="selected"</c:if>>No</option>
+						</select>
+					</td>
+				</tr>
 			
 			<input type="hidden" name="idprg" value="${idprg}" />
 			<input type="hidden" name="idcom" value="${idcom}" />
@@ -153,6 +225,7 @@
 			<input type="hidden" name="filtroRadio" value="${filtroRadio}" />
 			<input type="hidden" name="entitaRicerca" value="${entitaRicerca}" />
 			<input type="hidden" name="descc" value="${descc}" />
+			<input type="hidden" name="coment" value="${coment}" />
 						
 				
 		</gene:formTrova>
@@ -168,6 +241,27 @@
 				}
 				trovaClear();		
 			}
+			
+			function showAndHideSezioneFiltriElenchi(){
+					if($('#CampoFittIscriz').val() == "1"){
+						$('#sezioneFiltriElenchi').show();
+						$('#sezioneFiltriAbilitazioni').show();
+						$('#sezioneFiltriComponentiRT').show();
+					}
+					else{
+						$('#sezioneFiltriElenchi').hide();
+						$('#CampoFittNgara').val('');
+						$('#sezioneFiltriAbilitazioni').hide();
+						$('#CampoFittAbilitaz').val('');
+						$('#sezioneFiltriComponentiRT').hide();
+						$('#CampoFittCompRT').val('');
+					}
+				}
+			$(document).ready(function(){
+				if('${coment}' =='HOMEPG' && ${gene:checkProt(pageContext, 'FUNZ.VIS.ALT.GARE.V_GARE_ELEDITTE-lista.ApriGare')} && ${filtroRadio} == '1')
+					window.resizeTo(950,700);
+			})
+			
 		</gene:javaScript>
 		
 		

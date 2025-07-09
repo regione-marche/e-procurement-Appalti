@@ -19,8 +19,6 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
-<gene:callFunction obj="it.eldasoft.sil.pg.tags.funzioni.archWhereFunctions.ComponiWhereGAREFunction" />
-
 <c:choose>
 	<c:when test='${!empty chiave}'>
 		<c:set var="chiave" value='${chiave}' />
@@ -72,8 +70,12 @@
 							Scegliere i lotti in cui copiare la ditta.
 							<br>
 							<b>Attenzione: se la ditta risulta già inserita nei lotti selezionati, verr&agrave; cancellata</b>
-							<br>				
-							<gene:formLista entita="GARE" sortColumn="3" where="GARE.CODGAR1 = '${codiceGara}' AND (GARE.FASGAR < 7 or GARE.FASGAR IS NULL) AND GARE.NGARA <> '${numeroGara}'" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupCopiaDitta" >
+							<br>
+							<c:set var="codiceGara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select codgar1 from gare where codgar1=?", codiceGara)}'/>
+							<c:set var="numeroGara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select ngara from gare where ngara=?", numeroGara)}'/>
+							<c:set var="where" value="GARE.CODGAR1 = '${codiceGara }' AND (GARE.FASGAR < 7 or GARE.FASGAR IS NULL) AND GARE.NGARA <> '${numeroGara }'"/>
+													
+							<gene:formLista entita="GARE" where="${where }" sortColumn="3" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupCopiaDitta" >
 								<gene:set name="titoloMenu">
 									<jsp:include page="/WEB-INF/pages/commons/iconeCheckUncheck.jsp" />
 								</gene:set>

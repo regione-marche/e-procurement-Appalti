@@ -18,6 +18,8 @@
 	<c:set var="codgar" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetCodgar1Function", pageContext, gene:getValCampo(key,"NGARA"))}' />
 	<c:set var="uffintGara" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetUffintGaraFunction",  pageContext,codgar)}' scope="request"/>
 	<c:set var="idconfi" value='${gene:callFunction3("it.eldasoft.gene.tags.functions.GetWSDMConfiAttivaFunction",  pageContext,uffintGara,sessionScope.moduloAttivo)}' scope="request"/>
+	<c:set var="sql" value="select vernpa from torn where codgar=?"/>
+	<c:set var="verNPA" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, sql, codgar)}' scope="request"/>
 	<gene:redefineInsert name="corpo">
 		<gene:formPagine gestisciProtezioni="true" >
 		
@@ -26,10 +28,13 @@
 			<gene:pagina title="Dati generali" idProtezioni="DATIGEN">
 				<jsp:include page="gareavvisi-datigen.jsp" />
 			</gene:pagina>
+			<gene:pagina title="Dati procedimento" idProtezioni="DATIPROCEDIMENTO">
+				<jsp:include page="gareavvisi-pg-datiprocedimento.jsp" />
+			</gene:pagina>
 			<gene:pagina title="Documentazione" idProtezioni="DOC">
 				<jsp:include page="gareavvisi-pg-documentazione.jsp" />
 			</gene:pagina>
-			<gene:pagina title="Pubblicità avviso" idProtezioni="PUBBLI" >
+			<gene:pagina title="Pubblicità avviso" idProtezioni="PUBBLI" visibile="${empty verNPA}">
 				<jsp:include page="gareavvisi-pg-pub-bando.jsp" />
 			</gene:pagina>
 			

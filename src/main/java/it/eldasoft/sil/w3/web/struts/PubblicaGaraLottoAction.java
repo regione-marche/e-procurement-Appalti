@@ -12,11 +12,13 @@ package it.eldasoft.sil.w3.web.struts;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.commons.web.domain.CostantiGenerali;
 import it.eldasoft.gene.commons.web.domain.ProfiloUtente;
 import it.eldasoft.gene.commons.web.struts.ActionBaseNoOpzioni;
@@ -24,6 +26,7 @@ import it.eldasoft.gene.commons.web.struts.CostantiGeneraliStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.sil.w3.bl.GestioneServiziIDGARACIGManager;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
@@ -54,9 +57,13 @@ public class PubblicaGaraLottoAction extends ActionBaseNoOpzioni {
     String target = FORWARD_SUCCESS;
     String messageKey = null;
     boolean rpntFailed = false;
-
+    String errore = null;
+    String evento = "PUBBLICA";
+    String messaggioBaseResponse = "Risposta SIMOG pubblicazione gara";
+    String riferimento = "";
+    Long numgara = null;
     try {
-      Long numgara = new Long(request.getParameter("numgara"));
+      numgara = new Long(request.getParameter("numgara"));
       String recuperaUser = request.getParameter("recuperauser");
       String recuperaPassword = request.getParameter("recuperapassword");
       String rpntFailedString = request.getParameter("rpntFailed");
@@ -87,8 +94,17 @@ public class PubblicaGaraLottoAction extends ActionBaseNoOpzioni {
       }
       
       // Invio al web service
+      List<?> datiW3GARA = this.gestioneServiziIDGARACIGManager.getSqlManager().getVector("select id_gara, codgar from w3gara where numgara = ?", new Object[] { numgara }); 
+      String idgaraDB = (String) SqlManager.getValueFromVectorParam(datiW3GARA, 0).getValue();
+      String codgar = (String) SqlManager.getValueFromVectorParam(datiW3GARA, 1).getValue();
+      riferimento = " (N.gara "+idgaraDB;
+      if(StringUtils.stripToNull(codgar)!=null)
+        riferimento += ", rif.gara "+codgar.replace("$","");
+      riferimento += ")";
+      
+      GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 0, 1, numgara.toString(), evento, "Invio richiesta a SIMOG pubblicazione gara"+riferimento, null);    
       this.gestioneServiziIDGARACIGManager.pubblica(simogwsuser, simogwspass, numgara,rpntFailed);
-
+      GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 0, 1, numgara.toString(), evento, messaggioBaseResponse+riferimento, null);    
       target = FORWARD_SUCCESS;
       request.getSession().setAttribute("numgara", numgara);
       request.getSession().setAttribute("numeroPopUp", "1");
@@ -98,6 +114,7 @@ public class PubblicaGaraLottoAction extends ActionBaseNoOpzioni {
       if(GestioneServiziIDGARACIGManager.GARAGIAPUBBLICATA.equals(e.getMessage())) {
         request.getSession().setAttribute("garaGiaPubblicata", "true");
       }else {
+        errore = e.getMessage();
         target = FORWARD_ERROR;
         messageKey = "errors.gestioneIDGARACIG.error";
         logger.error(this.resBundleGenerale.getString(messageKey), e);
@@ -118,12 +135,16 @@ public class PubblicaGaraLottoAction extends ActionBaseNoOpzioni {
         }
       }
     } catch (Throwable e) {
+      errore = e.getMessage();
       target = CostantiGeneraliStruts.FORWARD_ERRORE_GENERALE;
       messageKey = "errors.applicazione.inaspettataException";
       logger.error(this.resBundleGenerale.getString(messageKey), e);
       this.aggiungiMessaggio(request, messageKey);
     }
-
+    
+    if(errore!=null)
+      GestioneServiziIDGARACIGManager.loggaEventoSIMOG(request, 1, 3, numgara.toString(), evento, messaggioBaseResponse+riferimento, errore);    
+    
     if (messageKey != null) response.reset();
 
     if (logger.isDebugEnabled())

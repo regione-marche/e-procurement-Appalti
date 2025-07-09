@@ -146,10 +146,6 @@
 	<c:set var="esistonoDitteAmmissioneSoccorso" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsistonoDitteAmmissioneSoccorsoIstruttorioFunction", pageContext, ngara, paginaAttivaWizard,"false" )}' />
 </c:if>
 
-<c:if test="${esistonoDitteConPunteggio eq 'no' }">
-	<c:set var="esitoControlloG1cridef" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ControlloAllineamentoG1cridefG1crivalFunction", pageContext, ngara, tipo, "" )}' />
-</c:if>
-
 <c:choose>
 	<c:when test='${param.lottoPlicoUnico}'>
 		<c:set var="codice" value="${codgar}" />
@@ -161,13 +157,18 @@
 
 <c:set var="isValutazioneCommissione" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.IsValutazioneCommissioneFunction",pageContext,codice)}' />
 
+<c:if test="${esistonoDitteConPunteggio eq 'no' and isValutazioneCommissione}">
+	<c:set var="esitoControlloGiudiziCommissione" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.ControlloGiudizioCommissioneFunction", pageContext, ngara,tipo,codgar, "")}' />
+	</c:if>
+
+
 <c:if test="${tipo eq '1' }">
 	<c:set var="statocg" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetSTATOCGFunction",pageContext,ngara)}' />
 </c:if>
-<c:if test="${esitoControlloG1cridef eq 'nok' and isValutazioneCommissione}">
-	<c:set var="esitoControlloGiudiziCommissione" value='${gene:callFunction5("it.eldasoft.sil.pg.tags.funzioni.ControlloGiudizioCommissioneFunction", pageContext, ngara,tipo,codgar, "" )}' />
-	<c:if test="${esitoControlloGiudiziCommissione eq 'ok' or esitoControlloGiudiziCommissione eq 'ko'}">
-		<c:set var="esitoControlloG1cridef" value='ok'/>
+<c:if test="${esitoControlloGiudiziCommissione eq 'ko' || empty esitoControlloGiudiziCommissione}">
+	<c:set var="esitoControlloG1cridef" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.ControlloAllineamentoG1cridefG1crivalFunction", pageContext, ngara, tipo, "" )}' />
+	<c:if test="${esitoControlloG1cridef eq 'ok'}">
+		<c:set var="esitoControlloGiudiziCommissione" value='ok'/>
 	</c:if>
 </c:if>
 
@@ -209,27 +210,34 @@
 				<c:set var="blocco" value="true"/>
 				Per procedere con il calcolo dei punteggi, deve essere prima acquisita la busta economica per ogni ditta nella lista.<br>
 			</c:when>
-			<c:when test="${esitoControlloG1cridef == 'nok'}">
-				<c:set var="blocco" value="true"/>
-				Per procedere con il calcolo dei punteggi, deve essere prima completata la compilazione del dettaglio valutazione per tutte le ditte in gara.<br><br>
-				Verificare la ditta '${ragioneSocDitta }' o attivare la funzione 'Verifica dettaglio valutazione completato' per ottenere l'elenco completo delle ditte in gara con valutazione non completa.<br>
-			</c:when>
-			<c:when test="${esitoControlloG1cridef == 'nok-coeffNonValidi'}">
-				<c:set var="blocco" value="true"/>
-				Per procedere con il calcolo dei punteggi, i coefficenti assegnati nel dettaglio valutazione delle ditte in gara devono essere tutti inferiori o uguali a 1
-				(verificare la ditta '${ragioneSocDitta }').<br>
-			</c:when>
 			<c:when test="${esitoControlloGiudiziCommissione == 'ko'}">
 				<c:set var="blocco" value="true"/>
 				Per procedere con il calcolo dei punteggi, deve essere prima completata la compilazione del dettaglio valutazione per tutte le ditte in gara.
 				Compilare la valutazione di tutti i singoli commissari oppure quella complessiva.<br><br>
 				Verificare la ditta '${dittaGiudizioCommissione }' o attivare la funzione 'Verifica dettaglio valutazione completato' per ottenere l'elenco completo delle ditte in gara con valutazione non completa.<br>
 			</c:when>
+			<c:when test="${esitoControlloGiudiziCommissione == 'ko-nonomogeneo'}">
+				<c:set var="blocco" value="true"/>
+				Attenzione, sono state compilate delle valutazioni da parte della commissione per il criterio '${criterioGiudizioCommissione}' solo per alcune ditte. 
+				Per procedere con il calcolo dei punteggi, deve essere compilata la valutazione di tale criterio da parte dei commissari per tutte le ditte in gara.
+				<br><br>
+				Attivare la funzione 'Verifica dettaglio valutazione completato' per ottenere l'elenco completo delle ditte in gara con valutazione non completa.<br>
+			</c:when>
 			<c:when test="${esitoControlloGiudiziCommissione == 'ko-nonvalido'}">
 				<c:set var="blocco" value="true"/>
 				Per procedere con il calcolo dei punteggi, i coefficenti assegnati nel dettaglio valutazione delle ditte da parte dei singoli commissari devono essere tutti inferiori o uguali a 1
 				(verificare la ditta '${dittaGiudizioCommissione }').<br>
 			</c:when>
+			<c:when test="${esitoControlloG1cridef == 'nok'}">
+				<c:set var="blocco" value="true"/>
+				Per procedere con il calcolo dei punteggi, deve essere prima completata la compilazione del dettaglio valutazione per tutte le ditte in gara.<br><br>
+				Verificare la ditta '${esitoControlloGiudiziCommissione }' o attivare la funzione 'Verifica dettaglio valutazione completato' per ottenere l'elenco completo delle ditte in gara con valutazione non completa.<br>
+			</c:when>
+			<c:when test="${esitoControlloG1cridef == 'nok-coeffNonValidi'}">
+				<c:set var="blocco" value="true"/>
+				Per procedere con il calcolo dei punteggi, i coefficenti assegnati nel dettaglio valutazione delle ditte in gara devono essere tutti inferiori o uguali a 1
+				(verificare la ditta '${ragioneSocDitta }').<br>
+			</c:when>		
 			<c:when test="${esistonoDitteRequisitiMinimiNulli == 'true'}">
 				<c:set var="blocco" value="true"/>
 				Per procedere con il calcolo dei punteggi, deve essere prima specificata la conformità ai requisiti minimi per ogni ditta in gara.<br>

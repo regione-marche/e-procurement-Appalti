@@ -47,7 +47,11 @@
 		<table class="lista">
 		<tr>
 		<td>
-		<gene:formLista pagesize="25" sortColumn="2" tableclass="datilista" entita="V_GARE_PRODOTTI_VALUTATI" where="V_GARE_PRODOTTI_VALUTATI.NGARA = '${ngara}' AND AFFIDAMENTO IS NULL" gestisciProtezioni="true">
+		<c:set var="where" value="V_GARE_PRODOTTI_VALUTATI.NGARA = ? AND AFFIDAMENTO IS NULL"/>
+		<c:set var="parametri" value="T:${ngara}"/>
+		${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "V_GARE_PRODOTTI_VALUTATI", where, parametri)}
+	
+		<gene:formLista pagesize="25" sortColumn="2" tableclass="datilista" entita="V_GARE_PRODOTTI_VALUTATI" gestisciProtezioni="true">
 			<gene:campoLista  title="Seleziona affidamento<br><center>${titoloMenu}</center>" width="50">
 				<c:if test="${currentRow >= 0 && not empty datiRiga.V_GARE_PRODOTTI_VALUTATI_DITTAO}">
 							<input type="checkbox" name="keys" value="${datiRiga.V_GARE_PRODOTTI_VALUTATI_DITTAO}" />
@@ -87,7 +91,7 @@
 	  		if (numAffidamenti == 0) {
 	      		alert("Selezionare almeno un affidamento");
 	      	} else {
-	      		document.forms[0].action="${pageContext.request.contextPath}/pg/CreaAffValutazioneProdotti.do?"+csrfToken;
+	      		document.forms[0].action="${pageContext.request.contextPath}/pg/CreaAffValutazioneProdotti.do";
  				bloccaRichiesteServer();
 				document.forms[0].submit();
 			}

@@ -47,7 +47,7 @@ function selezionaPaginaCustom(pageNumber){
 	var ncont="${param.ncont }";
 	var ngaral="${param.ngaral }";
 	var codimp="${param.codimp }";
-	document.pagineForm.action += "&modcont=" + modcont + "&isAccordoQuadro=" + isAccordoQuadro + "&codcont=" + codcont + "&ncont=" + ncont + "&ngaral=" + ngaral + "&codimp=" + codimp;
+	document.pagineForm.action += "?modcont=" + modcont + "&isAccordoQuadro=" + isAccordoQuadro + "&codcont=" + codcont + "&ncont=" + ncont + "&ngaral=" + ngaral + "&codimp=" + codimp;
 	selezionaPaginaDefault(pageNumber);
 }
 </gene:javaScript>

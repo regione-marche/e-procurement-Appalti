@@ -69,7 +69,7 @@ public class AutorizzatoModificaComunicazioneFunction extends
           }else{
             codgar = (String) sqlManager.getObject("select codgar1 from gare where ngara = ?", new Object[] {comkey2 });
             // verifico NSO_ORDINI in caso contrario si continua con le verifiche prestabilite 
-            if (codgar == null) {
+            if (codgar == null && StringUtils.isNumeric(comkey2)) {
               codgar = (String) sqlManager.getObject("select g.codgar1 from gare g"
                                                     + " JOIN nso_ordini no on no.ngara = g.ngara"
                                                     + " where no.id = ?", new Object[] {comkey2 });
@@ -97,6 +97,10 @@ public class AutorizzatoModificaComunicazioneFunction extends
         		idStipula = (Long) sqlManager.getObject("select id from g1stipula where codstipula = ?", new Object[] {comkey1 });
         	}
             codgar=idStipula.toString();
+        } else if ("HOMEPG".equals(coment)) {
+          //APPALTI-1316: skippo i successivi controlli e autorizzo tutto per il coment HOMEPG
+          pageContext.setAttribute("autorizzatoTelematiche", autorizzatoTelematiche, PageContext.REQUEST_SCOPE);
+          return "true";
         } else {
           // si tratta di una comunicazione da inviare che parte dalla tornata (offerta unica)
           codgar = comkey1;

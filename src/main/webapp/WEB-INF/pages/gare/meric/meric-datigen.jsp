@@ -222,7 +222,7 @@
 <gene:javaScript>
 	
 	function apriGestionePermessiRicercaMercatoStandard(id) {
-		document.location.href='${pageContext.request.contextPath}/pg/VisualizzaPermessiUtentiRicercaMercato.do?"+csrfToken+"&id='+id;
+		document.location.href='${pageContext.request.contextPath}/pg/VisualizzaPermessiUtentiRicercaMercato.do?id='+id;
 		bloccaRichiesteServer();
 		formVisualizzaPermessiUtentiStandard.id.value = id;
 <c:choose>

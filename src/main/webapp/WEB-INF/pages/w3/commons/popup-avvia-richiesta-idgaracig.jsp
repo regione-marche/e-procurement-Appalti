@@ -101,13 +101,13 @@
 		
 		function avviaRichiestaIDGARACIG(entita,numgara,numlott){
 			var action = "${pageContext.request.contextPath}/w3/AvviaRichiestaIDGARACIG.do";
-			action=action + '?' + csrfToken + '&entita=' + entita + '&numgara=' + numgara + '&numlott=' + numlott;
+			action=action + '?entita=' + entita + '&numgara=' + numgara + '&numlott=' + numlott;
 			document.location.href=action;
 		}
 	
 		function avviaRichiestaSMARTCIG(entita,numgara){
 			var action = "${pageContext.request.contextPath}/w3/AvviaRichiestaIDGARACIG.do";
-			action=action + '?' + csrfToken + '&entita=' + entita + '&numgara=' + numgara + '&numlott=1';
+			action=action + '?entita=' + entita + '&numgara=' + numgara + '&numlott=1';
 			document.location.href=action;
 		}
 		

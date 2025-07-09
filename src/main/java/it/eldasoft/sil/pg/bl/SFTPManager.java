@@ -19,21 +19,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-
-import org.apache.commons.codec.digest.DigestUtils;
 
 import net.schmizz.sshj.sftp.FileAttributes;
 import net.schmizz.sshj.sftp.OpenMode;
 import net.schmizz.sshj.sftp.RemoteFile;
 import net.schmizz.sshj.sftp.RemoteResourceInfo;
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
-import net.schmizz.sshj.xfer.FilePermission;
 import net.schmizz.sshj.xfer.InMemorySourceFile;
 import net.schmizz.sshj.xfer.LocalDestFile;
+
+import static it.eldasoft.gene.utils.ConfigurazionePerUffintUtils.getOptConfigurazionePerUfficioIntestatario;
 
 
 /**
@@ -45,17 +42,16 @@ import net.schmizz.sshj.xfer.LocalDestFile;
  */
 public class SFTPManager {
   
-    public static final String URL = "cos.sftp.url";
-    public static final String LOGIN = "cos.sftp.login";
-    public static final String PASSWORD = "cos.sftp.password";
-    public static final String PORT = "cos.sftp.port";
+    public static final String URL = "conservazione.sftp.url";
+    public static final String LOGIN = "conservazione.sftp.login";
+    public static final String PASSWORD = "conservazione.sftp.password";
+    public static final String PORT = "conservazione.sftp.port";
 
     protected SSHClient ssh = new SSHClient();
     public SFTPClient sftp = null;
-    public void connect(String host, String username, String password)
+    public void connect(String host, String username, String password, int port)
             throws IOException {
             ssh.addHostKeyVerifier(new PromiscuousVerifier());
-            int port = Integer.parseInt(ConfigManager.getValore(PORT));
             ssh.connect(host, port);
         
         try {
@@ -67,17 +63,18 @@ public class SFTPManager {
         }
     }
     
-    public void connect() throws IOException, CriptazioneException
+    public void connect(String uffint) throws IOException, CriptazioneException
     {
-      String password = ConfigManager.getValore(PASSWORD);
+      String password = getOptConfigurazionePerUfficioIntestatario(PASSWORD,uffint);
       ICriptazioneByte icb = FactoryCriptazioneByte.getInstance(ConfigManager.getValore(CostantiGenerali.PROP_TIPOLOGIA_CIFRATURA_DATI),
           password.getBytes(), it.eldasoft.utils.sicurezza.ICriptazioneByte.FORMATO_DATO_CIFRATO);
       String passwordDecoded = new String(icb.getDatoNonCifrato());
         
         connect(
-                ConfigManager.getValore(URL),
-                ConfigManager.getValore(LOGIN),
-                passwordDecoded
+                getOptConfigurazionePerUfficioIntestatario(URL,uffint),
+                getOptConfigurazionePerUfficioIntestatario(LOGIN,uffint),
+                passwordDecoded,
+                Integer.parseInt(getOptConfigurazionePerUfficioIntestatario(PORT,uffint))
         );
     }
     

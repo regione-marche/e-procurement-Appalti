@@ -101,7 +101,7 @@
 	}	
 	
 	function dettaglioOrdine(ngara){
-			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/garecont/garecont-scheda.jsp";
+			var href = contextPath + "/ApriPagina.do?href=gare/garecont/garecont-scheda.jsp";
 			href += "&key=GARECONT.NGARA=T:" + ngara + ";GARECONT.NCONT=N:1";
 			var id="${id}";
 			href += "&id=" + id;
@@ -110,7 +110,7 @@
 	}
 	
 	function listaOrdini(ngara,ditta){
-			var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=gare/meric/meric-listaProdotti.jsp";
+			var href = contextPath + "/ApriPagina.do?href=gare/meric/meric-listaProdotti.jsp";
 			var id="${id}";
 			if(ngara!=null && ngara!="")
 				href += "&key=V_ODAPROD.NGARA=T:" + ngara + ";V_ODAPROD.IDRIC=N:"+id;

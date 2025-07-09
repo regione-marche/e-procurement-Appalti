@@ -338,13 +338,15 @@ public class AcquisizioneElencoManager {
 
         if(hMIndice.get(ngara)==null) {
           hMIndice.put(ngara, new Integer(indiceCorrente));
-          messaggioElenco = new MessaggioAcquisizione(ngara, MessaggioAcquisizione.iscrizione);
+          if(isMailDestinatari)
+			messaggioElenco = new MessaggioAcquisizione(ngara, MessaggioAcquisizione.iscrizione);
           nuovoElenco=true;
           indiceElenco=indiceCorrente;
           indiceCorrente++;
         }else {
           indiceElenco = hMIndice.get(ngara).intValue();
-          messaggioElenco = listaMessaggi.get(indiceElenco);
+          if(isMailDestinatari)
+			messaggioElenco = listaMessaggi.get(indiceElenco);
           nuovoElenco=false;
         }
         status=null;
@@ -622,7 +624,7 @@ public class AcquisizioneElencoManager {
         descrEventoTemp = " (cod.ditta " + ditta + ", id.comunicazione " + idcom + ")";
         descrEvento = descrEventoIntestazione + descrEventoTemp;
         try {
-          numFs2Pendenti = (Long)this.sqlManager.getObject("select count(*) from w_invcom where idprg='PA' and comkey2=? and comtipo='FS2' and comstato=5 and comkey1=?", new Object[] {ngara, user});
+          numFs2Pendenti = (Long)this.sqlManager.getObject("select count(*) from w_invcom where idprg='PA' and comkey2=? and comtipo='FS2' and comstato='5' and comkey1=?", new Object[] {ngara, user});
           if(numFs2Pendenti!=null && numFs2Pendenti.longValue()>0) {
             fs2Pendenti=true;
             errMsgEvento="Deve essere prima acquisita la richiesta di iscrizione (FS2)";
@@ -1049,7 +1051,7 @@ public class AcquisizioneElencoManager {
         descrEvento = descrEventoTmp + " (cod.ditta " + user + ", id.comunicazione " + idcom + ")";
 
         try {
-          numFs2Pendenti = (Long)this.sqlManager.getObject("select count(*) from w_invcom where idprg='PA' and comkey2=? and comtipo='FS2' and comstato=5 and comkey1=?", new Object[] {ngara,comkey1});
+          numFs2Pendenti = (Long)this.sqlManager.getObject("select count(*) from w_invcom where idprg='PA' and comkey2=? and comtipo='FS2' and comstato='5' and comkey1=?", new Object[] {ngara,comkey1});
           if(numFs2Pendenti!=null && numFs2Pendenti.longValue()>0) {
             fs2Pendenti=true;
             errMsgEvento = "acquisisciAggiornamentoIscrizioni - aggiornamento operatore " + user + " dell'elenco "+ ngara + " errore: ci sono FS2 da acquisire";

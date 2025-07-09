@@ -86,7 +86,7 @@
 <c:set var="modo" value="NUOVO" scope="request" />
 	
 	<gene:redefineInsert name="corpo">
-	<gene:formScheda entita="TORN" gestisciProtezioni="false" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupCreaDocumentoMDGUE">
+	<gene:formScheda entita="TORN" gestisciProtezioni="false" gestore="it.eldasoft.sil.pg.tags.gestori.submit.GestorePopupCreaDocumento">
 	
 	<gene:campoScheda>
 		<td colSpan="2">
@@ -112,6 +112,7 @@
 		<gene:campoScheda campo="GARTEL" campoFittizio="true" defaultValue="${isProceduraTelematica}" visibile="false" definizione="T10;0"/>
 		<gene:campoScheda campo="TIPOLOGIA" campoFittizio="true" defaultValue="${tipologia}" visibile="false" definizione="T10;0"/>
 		<gene:campoScheda campo="inizializzaAllmail" campoFittizio="true" defaultValue="${inizializzaAllmail}" visibile="false" definizione="T10;0"/>
+		<gene:campoScheda campo="IDSTAMPA" campoFittizio="true" defaultValue="DGUE" visibile="false" definizione="T10;0"/>
 		
 		<c:if test='${esisteDocumentoMDGUE eq "true"}' >
 		  	<gene:redefineInsert name="buttons">

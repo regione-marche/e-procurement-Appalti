@@ -155,7 +155,7 @@ public class GestoreGARE extends AbstractGestoreEntita {
         String linkrda = "";
         if("SMEUP".equals(tipoWSERP)){
           linkrda = "2";
-        }else if("AVM".equals(tipoWSERP) || "FNM".equals(tipoWSERP) || "AMIU".equals(tipoWSERP)){
+        }else if("AVM".equals(tipoWSERP) || "FNM".equals(tipoWSERP) || "AMIU".equals(tipoWSERP) || "INARCASSA".equals(tipoWSERP) || "CONI".equals(tipoWSERP)){
           Long countRda;
           try {
             countRda = (Long) sqlManager.getObject(
@@ -446,6 +446,8 @@ public class GestoreGARE extends AbstractGestoreEntita {
                 "Errore nel calcolo di TORN.ITERGA",null, e);
           }
         }
+        if (!datiForm.isColumn("TORN.ORDIELE"))
+          datiForm.addColumn("TORN.ORDIELE",  "2");
       }
 
       // Gestione del codice CIG fittizio
@@ -523,12 +525,14 @@ public class GestoreGARE extends AbstractGestoreEntita {
       if (!this.confrontoValtecLottoTornata(datiForm, lottoOffertaUnica))
         throw new GestoreException("Non è possibile impostare la valutazione requisiti minimi mediante busta tecnica","controlloValtecLottiGara");
 
+      String regex = "^[a-zA-Z0-9]+$";
+
       if("SI".equalsIgnoreCase(lottoOffertaUnica) && datiForm.isColumn("GARE.CUPPRG") && datiForm.isModifiedColumn("GARE.CUPPRG") && datiForm.getColumn("GARE.CUPPRG").getValue().stringValue()!=null
-          && !"".equals(datiForm.getColumn("GARE.CUPPRG").getValue().stringValue()) && datiForm.getColumn("GARE.CUPPRG").getValue().stringValue().length()!= 15)
+          && !"".equals(datiForm.getColumn("GARE.CUPPRG").getValue().stringValue()) && (datiForm.getColumn("GARE.CUPPRG").getValue().stringValue().length()!= 15 || !datiForm.getColumn("GARE.CUPPRG").getValue().stringValue().matches(regex)))
         throw new GestoreException("Il codice CUP specificato non è valido","controlloCodiceCUP");
 
       if("SI".equalsIgnoreCase(lottoOffertaUnica) && datiForm.isColumn("GARE1.CODCUI") && datiForm.isModifiedColumn("GARE1.CODCUI") && datiForm.getColumn("GARE1.CODCUI").getValue().stringValue()!=null
-          && !"".equals(datiForm.getColumn("GARE1.CODCUI").getValue().stringValue()) && (datiForm.getColumn("GARE1.CODCUI").getValue().stringValue().length()< 20 || datiForm.getColumn("GARE1.CODCUI").getValue().stringValue().length() >22))
+          && !"".equals(datiForm.getColumn("GARE1.CODCUI").getValue().stringValue()) && (datiForm.getColumn("GARE1.CODCUI").getValue().stringValue().length()< 20 || datiForm.getColumn("GARE1.CODCUI").getValue().stringValue().length() >22 || !datiForm.getColumn("GARE1.CODCUI").getValue().stringValue().matches(regex)))
         throw new GestoreException("Il codice CUI specificato non è valido","controlloCodiceCUI");
 
       // Gestione della sezione 'Categoria prevalente'
@@ -586,7 +590,7 @@ public class GestoreGARE extends AbstractGestoreEntita {
   	        // Se si sta inserendo una nuova gara dopo averla collegata ad un appalto
   	        // si va a valorizzare campi della scheda 'Altri dati'
   	        Vector<?> datiAppa = sqlManager.getVector(
-  	            "select ANSS, ANOMSS, PROLAV, COMLAV, ALTCAT, LOCINT" +
+  	            "select ANSS, ANOMSS, PROLAV, COMLAV, ALTCAT, LOCINT, LOCNAZ" +
   	            "  from APPA where CODLAV = ? and NAPPAL = ? ",
   	            new Object[]{codiceAppalto, numeroAppalto});
   	        if (datiAppa != null && datiAppa.size() > 0) {
@@ -604,9 +608,11 @@ public class GestoreGARE extends AbstractGestoreEntita {
   	                new Object[]{datiForm.getString("GARE.NGARA"), new Long(1),
   	                    ((JdbcParametro)datiAppa.get(4)).getValue(), "1"});
   	          }
-  	          if (((JdbcParametro)datiAppa.get(5)).getValue() != null)
-  	                datiForm.addColumn("GARE.LOCINT", ((JdbcParametro)datiAppa.get(5)).getValue());
-  	        }
+              if (((JdbcParametro)datiAppa.get(5)).getValue() != null )
+                datiForm.addColumn("GARE.LOCINT", ((JdbcParametro)datiAppa.get(5)).getValue());
+              if (((JdbcParametro)datiAppa.get(6)).getValue() != null)
+                datiForm.addColumn("GARE1.LOCNAZ",  ((JdbcParametro) datiAppa.get(6)).getValue());
+            }
   	        Vector<?> datiPeri = sqlManager.getVector(
   	            "select CUPPRG, CUPMST, CUIINT from PERI where CODLAV = ?",
   	             new Object[]{codiceAppalto});
@@ -752,13 +758,29 @@ public class GestoreGARE extends AbstractGestoreEntita {
           datiForm.getColumn("GARE1.IMPRIN").setOriginalValue(new JdbcParametro(JdbcParametro.TIPO_DECIMALE, null));
         if (datiForm.isColumn("GARE1.IMPALTRO"))
           datiForm.getColumn("GARE1.IMPALTRO").setOriginalValue(new JdbcParametro(JdbcParametro.TIPO_DECIMALE, null));
+        if (datiForm.isColumn("GARE1.IMPSOMME"))
+            datiForm.getColumn("GARE1.IMPSOMME").setOriginalValue(new JdbcParametro(JdbcParametro.TIPO_DECIMALE, null));
         if (datiForm.isColumn("GARE1.CODCUI"))
           datiForm.getColumn("GARE1.CODCUI").setOriginalValue(new JdbcParametro(JdbcParametro.TIPO_TESTO, null));
+        if (datiForm.isColumn("GARE1.LOCNAZ"))
+          datiForm.getColumn("GARE1.LOCNAZ").setOriginalValue(new JdbcParametro(JdbcParametro.TIPO_NUMERICO, new Long(-1)));
           String gartel = datiForm.getString("TORN.GARTEL");
           if (gartel != null && "1".equals(gartel)) {
               if (datiForm.isColumn("GARE1.ESPLPORT"))
                   datiForm.getColumn("GARE1.ESPLPORT").setOriginalValue(new JdbcParametro(JdbcParametro.TIPO_TESTO, null));
 	      }
+          if (!datiForm.isColumn("GARE1.DISPOPART"))
+        	  datiForm.addColumn("GARE1.DISPOPART", 1L);
+          if (!datiForm.isColumn("GARE1.MOTCOLL"))
+        	  datiForm.addColumn("GARE1.MOTCOLL", 10L);
+          if (!datiForm.isColumn("GARE1.AFFIRIS"))
+            datiForm.addColumn("GARE1.AFFIRIS",  "3");
+          if (!datiForm.isColumn("GARE1.ESECRIS"))
+            datiForm.addColumn("GARE1.ESECRIS",  "2");
+        if (datiForm.isColumn("GARE1.METOEPV"))
+          datiForm.getColumn("GARE1.METOEPV").setOriginalValue(new JdbcParametro(JdbcParametro.TIPO_NUMERICO, new Long(-1)));
+        if (datiForm.isColumn("GARE1.LIMOEPV"))
+          datiForm.getColumn("GARE1.LIMOEPV").setOriginalValue(new JdbcParametro(JdbcParametro.TIPO_NUMERICO, new Long(-1)));
 
         try {
           gestoreGARE1.update(status, datiForm);
@@ -897,7 +919,7 @@ public class GestoreGARE extends AbstractGestoreEntita {
           WSERPConfigurazioneOutType configurazione = this.gestioneWSERPManager.wserpConfigurazioneLeggi("WSERP");
           if(configurazione.isEsito()){
             String tipoWSERP = configurazione.getRemotewserp();
-            if("FNM".equals(tipoWSERP) || "RAIWAY".equals(tipoWSERP)){
+            if("FNM".equals(tipoWSERP)){
               if (tipoGara != null && tipoGara.equalsIgnoreCase("garaLottoUnico")) {
                 String codcpv = this.getRequest().getParameter("codCPV");
                 codcpv = UtilityStringhe.convertiNullInStringaVuota(codcpv);
@@ -912,11 +934,48 @@ public class GestoreGARE extends AbstractGestoreEntita {
                 }
               }
             }
+            
+            if("RAIWAY".equals(tipoWSERP)){
+                if (tipoGara != null && tipoGara.equalsIgnoreCase("garaLottoUnico")) {
+                  String codcpv = this.getRequest().getParameter("codCPV");
+                  codcpv = UtilityStringhe.convertiNullInStringaVuota(codcpv);
+                  String codcpvcompl = this.getRequest().getParameter("codCPVCOMPL");
+                  codcpvcompl = UtilityStringhe.convertiNullInStringaVuota(codcpvcompl);
+                  codcpvcompl = StringUtils.stripToEmpty(codcpvcompl);
+  		          String[] arrayCpvSecondary = null;
+  		          if(!"".equals(codcpvcompl)) {
+  		        	  arrayCpvSecondary = codcpvcompl.split(";");  
+  		          }
+                  if(!"".equals(codcpv)){
+                    try {
+                      sqlManager.update(
+                          "insert into GARCPV (NGARA, NUMCPV, CODCPV, TIPCPV ) values  (?, ? , ?, ?)",
+                          new Object[]{datiForm.getString("GARE.NGARA"), Long.valueOf(1), codcpv, "1"});
+  		              if(arrayCpvSecondary!=null) {
+  		            	  for(int d = 0 ; d < arrayCpvSecondary.length; d++){
+  		                      String cpvSecondary_d = arrayCpvSecondary[d];
+  		                      this.sqlManager.update("insert into garcpv(ngara,numcpv,codcpv,tipcpv) values (?,?,?,?)", new Object[]{datiForm.getString("GARE.NGARA"), Long.valueOf(d+2),cpvSecondary_d, "2"});		                      
+  		            	  }//for
+  		              }
+                    } catch (SQLException sqle) {
+                      throw new GestoreException("Errore nell'inizializzazione del codice CPV",null,sqle);
+                    }
+                  }
+                }
+              }
+            
           }
       }//integrazione WSERP
 
+      String preced = null;
+      String ngarapa = null;
       if(datiForm.isColumn("GARE.PRECED") && datiForm.getString("GARE.PRECED") !=null && !"".equals(datiForm.getString("GARE.PRECED"))){
-        String preced = datiForm.getString("GARE.PRECED");
+        preced = datiForm.getString("GARE.PRECED");
+      }
+      if(datiForm.isColumn("GARE.NGARAPA") && datiForm.getString("GARE.NGARAPA") !=null && !"".equals(datiForm.getString("GARE.NGARAPA"))){
+        preced = ngarapa = datiForm.getString("GARE.NGARAPA");
+      }
+      if(StringUtils.isNotBlank(preced)){
         String selectFascicolo = "select entita, codice, anno, numero, classifica, codaoo, coduff, struttura, isriserva, desclassi, desvoce, desaoo, desuff from wsfascicolo where key1 =?";
         try {
           String chiave = preced;
@@ -955,6 +1014,40 @@ public class GestoreGARE extends AbstractGestoreEntita {
         }
 
       }
+      
+      if(StringUtils.isNotBlank(ngarapa)){
+        try {
+          // //////////////////////////////////////////////
+          // Copia occorrenze GFOF
+          // //////////////////////////////////////////////
+
+          List<?> listaOccorrenzeDaCopiareGFOF = null;
+          DataColumnContainer campiDaCopiare = null;
+
+          String sql = "select * from GFOF where ngara2=?";
+          listaOccorrenzeDaCopiareGFOF = this.geneManager.getSql().getListHashMap(sql ,new Object[] { ngarapa});
+
+          if (listaOccorrenzeDaCopiareGFOF != null && listaOccorrenzeDaCopiareGFOF.size() > 0) {
+            campiDaCopiare = new DataColumnContainer(this.geneManager.getSql(),"GFOF", sql, new Object[] {ngarapa});
+
+            for (int rowGFOF = 0; rowGFOF < listaOccorrenzeDaCopiareGFOF.size(); rowGFOF++) {
+              campiDaCopiare.setValoriFromMap(((HashMap<?,?>) listaOccorrenzeDaCopiareGFOF.get(rowGFOF)), true);
+              campiDaCopiare.setValue("GFOF.NGARA2", datiForm.getString("GARE.NGARA"));
+              campiDaCopiare.getColumn("GFOF.ID").setChiave(true);
+              campiDaCopiare.setValue("GFOF.ID", new Long(this.genChiaviManager.getNextId("GFOF")));
+              campiDaCopiare.insert("GFOF", this.geneManager.getSql());
+            }
+          }
+        } catch (SQLException e) {
+          throw new GestoreException("Errore nella copia delle informazioni della commissione della gara " + ngarapa,null,e);
+        }
+        //Aggiornamento del concorso associato
+        try {
+          this.sqlManager.update("update gare set fasgar=?, stepgar=? where ngara=? ", new Object[]{new Long(7),new Long(70),ngarapa});
+        } catch (SQLException e) {
+          throw new GestoreException("Errore nell'aggiornamento della fase di gara del concorso " + ngarapa, null, e);
+        }
+      }
 
     } finally {
       //Tracciatura eventi
@@ -990,8 +1083,9 @@ public class GestoreGARE extends AbstractGestoreEntita {
     boolean garaLottoUnico = false;
     if (codgar1 == null || (codgar1.startsWith("$"))) garaLottoUnico = true;
 
+    Boolean isModificatoValoreMassimo = datiForm.isModifiedColumn("GARE.IMPAPP") || datiForm.isModifiedColumn("GARE1.IMPRIN") || datiForm.isModifiedColumn("GARE1.IMPSERV") || datiForm.isModifiedColumn("GARE1.IMPPROR") || datiForm.isModifiedColumn("GARE1.IMPALTRO");
     // nel caso di aggiornamento dell'importo a base di gara, aggiorno alcuni importi
-    if (datiForm.isModifiedColumn("GARE.IMPAPP")) {
+    if (isModificatoValoreMassimo) {
 
       Double impapp= datiForm.getColumn("GARE.IMPAPP").getValue().doubleValue();
       Double imprin= datiForm.getColumn("GARE1.IMPRIN").getValue().doubleValue();
@@ -1133,19 +1227,28 @@ public class GestoreGARE extends AbstractGestoreEntita {
       throws GestoreException {
     if (datiForm.isColumn("GARE.IMPAPP")
         && (datiForm.isModifiedColumn("GARE.IMPAPP") || !datiForm.isColumn("GARE.GAROFF"))) {
-      /*
-      double importoAppalto = 0;
-      if (datiForm.getColumn("GARE.IMPAPP").getValue().doubleValue() != null)
-        importoAppalto = datiForm.getColumn("GARE.IMPAPP").getValue().doubleValue().doubleValue();
 
-      double percentuale = 0;
-      if (datiForm.getColumn("GARE.PGAROF").getValue().doubleValue() != null)
-        percentuale = datiForm.getColumn("GARE.PGAROF").getValue().doubleValue().doubleValue();
-
-      int tipgen = datiForm.getColumn("TORN.TIPGEN").getValue().longValue().intValue();
-      int numeroDecimali = this.pgManager.getArrotondamentoCauzioneProvvisoria(tipgen);
-       */
-      Double importoCauzioneProvvisoria = pgManager.calcolaGAROFF(datiForm.getColumn("GARE.IMPAPP").getValue().doubleValue(),
+      Double imp = datiForm.getColumn("GARE.IMPAPP").getValue().doubleValue();//per il caso di nuovo inserimento
+      
+      Double valMax=null;
+      try {
+        Object valMaxOb = this.sqlManager.getObject(
+            "select valmax from v_gare_importi where ngara = ? and codgar = ?",
+            new Object[] {datiForm.getColumn("GARE.NGARA").getValue().stringValue(),datiForm.getColumn("GARE.CODGAR1").getValue().stringValue()});
+         if(valMaxOb != null) 
+           valMax=new Double(valMaxOb.toString());
+      } catch (SQLException e) {
+        logger.error("Errore nel calcolo dell'importo a garanzia provvisoria");
+      }
+      if(valMax != null) { 
+        Double originalImp = datiForm.getColumn("GARE.IMPAPP").getOriginalValue().doubleValue();
+        if(originalImp==null)
+          originalImp=0.0;
+        if(imp==null)
+          imp=0.0;
+        imp=valMax-originalImp+imp;
+      }
+      Double importoCauzioneProvvisoria = pgManager.calcolaGAROFF(imp,
           datiForm.getColumn("GARE.PGAROF").getValue().doubleValue(), datiForm.getColumn("TORN.TIPGEN").getValue().longValue());
       datiForm.addColumn("GARE.GAROFF", JdbcParametro.TIPO_DECIMALE,importoCauzioneProvvisoria);
     }
@@ -1211,6 +1314,27 @@ public class GestoreGARE extends AbstractGestoreEntita {
             new DataColumn[] {datiForm.getColumn("GARE.CODGAR1"),datiForm.getColumn("GARE.NGARA")}, null,null);
     }    
     
+    boolean isInsertConCollegamentoAppalto = datiForm.isColumn("ISGARA_DA_APPALTO");
+    if (isInsertConCollegamentoAppalto) {
+    	try {
+    		String codiceAppalto = datiForm.getString("GARE.CLAVOR");
+    		List<?> datiDFINA = sqlManager.getListVector("select tifina,impofi from DFINA where codlav=?", new Object[] { codiceAppalto });
+            for (int i=0; i<datiDFINA.size();i++) {
+            	Vector<?> finanziamentoDaAggiungere = (Vector<?>) datiDFINA.get(i);
+            	String tifina = ((JdbcParametro)finanziamentoDaAggiungere.get(0)).getStringValue();
+            	if (tifina != null && tifina.length() > 0) {
+            		if (!(tifina.indexOf('C') == 0)) {
+            			tifina = tifina.substring(0,1);
+            		}
+            	}
+            	Double impofi = ((JdbcParametro)finanziamentoDaAggiungere.get(1)).doubleValue();
+            	sqlManager.update("insert into G1DFINA (ID, NGARA, TIFINA, IMPOFI) values (?,?,?,?)",
+      	        	new Object[]{genChiaviManager.getNextId("G1DFINA"),datiForm.getString("GARE.NGARA"),tifina,impofi});
+            }
+    	} catch(SQLException e) {
+    		throw new GestoreException("Errore nell'inserimento delle occorrenze di DFINA in G1DFINA", null, e);
+    	}
+    }
   }
 
   @Override
@@ -1337,19 +1461,45 @@ public class GestoreGARE extends AbstractGestoreEntita {
       }
     }
 
-  //Controlli che non devono essere eseguiti per lotto di gara con offerta unica
+    Boolean isModificatoValoreMassimo = datiForm.isModifiedColumn("GARE.IMPAPP") || datiForm.isModifiedColumn("GARE.IMPNRL") || datiForm.isModifiedColumn("GARE.IMPSIC") || datiForm.isModifiedColumn("GARE.IMPMANO")
+            || datiForm.isModifiedColumn("GARE1.IMPSERV") || datiForm.isModifiedColumn("GARE1.IMPPROR") || datiForm.isModifiedColumn("GARE1.IMPALTRO")
+            || datiForm.isModifiedColumn("GARE.IMPMIS") || datiForm.isModifiedColumn("GARE.IMPNRM") || datiForm.isModifiedColumn("GARE.IMPSMI")
+            || datiForm.isModifiedColumn("GARE.IMPCOR") || datiForm.isModifiedColumn("GARE.IMPNRC") || datiForm.isModifiedColumn("GARE.IMPSCO");
+
+    if (isModificatoValoreMassimo) {
+      try {
+        Long idSchedaCM1 = (Long) this.sqlManager.getObject("select g1npascheda.id from g1npascheda,g1npaform,g1cf_npa where g1npascheda.idform=g1npaform.id and g1npaform.idcfnpa=g1cf_npa.id and g1cf_npa.nome_scheda='CM1' and g1npascheda.statonpa=1 and g1npaform.codgar=?",
+                new Object[] {codgar1.getValue().stringValue()});
+        if (idSchedaCM1 != null)
+          this.sqlManager.update("update g1npascheda set isnocanc='1' where id=?", new Object[] {idSchedaCM1});
+      } catch (SQLException e) {
+        throw new GestoreException("Errore durante l'aggiornamento del campo ISNOCANC", null, e);
+      }
+    }
+
+    //Controlli che non devono essere eseguiti per lotto di gara con offerta unica
     String lottoOffertaUnica = UtilityStruts.getParametroString(this.getRequest(), "LOTTO_OFFERTAUNICA");
 
     if(datiForm.isColumn("GARE.CODCIG") && datiForm.isModifiedColumn("GARE.CODCIG") && datiForm.getColumn("GARE.CODCIG").getValue().stringValue()!=null
         && !"".equals(datiForm.getColumn("GARE.CODCIG").getValue().stringValue()) && datiForm.getColumn("GARE.CODCIG").getValue().stringValue().length()!= 10)
       throw new GestoreException("Il codice CIG specificato non è valido","controlloCodiceCIG");
 
+    String regex = "^[a-zA-Z0-9]+$";
+    
     if(datiForm.isColumn("GARE.CUPPRG") && datiForm.isModifiedColumn("GARE.CUPPRG") && datiForm.getColumn("GARE.CUPPRG").getValue().stringValue()!=null
-        && !"".equals(datiForm.getColumn("GARE.CUPPRG").getValue().stringValue()) && datiForm.getColumn("GARE.CUPPRG").getValue().stringValue().length()!= 15)
+        && !"".equals(datiForm.getColumn("GARE.CUPPRG").getValue().stringValue()) && (datiForm.getColumn("GARE.CUPPRG").getValue().stringValue().length()!= 15 || !datiForm.getColumn("GARE.CUPPRG").getValue().stringValue().matches(regex)))
       throw new GestoreException("Il codice CUP specificato non è valido","controlloCodiceCUP");
 
+    try {
+      if (datiForm.isColumn("GARE.CUPPRG") && datiForm.isModifiedColumn("GARE.CUPPRG")) {
+        pgManagerEst1.inserisciSchedaID(datiForm.getColumn("GARE.NGARA").getValue().getStringValue(), this.getRequest(), status);
+      }
+    } catch (Throwable e) {
+      throw new GestoreException("Errore nell'inserimento della scheda ID", null, e);
+    }
+
     if(datiForm.isColumn("GARE1.CODCUI") && datiForm.isModifiedColumn("GARE1.CODCUI") && datiForm.getColumn("GARE1.CODCUI").getValue().stringValue()!=null
-        && !"".equals(datiForm.getColumn("GARE1.CODCUI").getValue().stringValue()) && (datiForm.getColumn("GARE1.CODCUI").getValue().stringValue().length()< 20 || datiForm.getColumn("GARE1.CODCUI").getValue().stringValue().length() >22))
+        && !"".equals(datiForm.getColumn("GARE1.CODCUI").getValue().stringValue()) && (datiForm.getColumn("GARE1.CODCUI").getValue().stringValue().length()< 20 || datiForm.getColumn("GARE1.CODCUI").getValue().stringValue().length() >22 || !datiForm.getColumn("GARE1.CODCUI").getValue().stringValue().matches(regex)))
       throw new GestoreException("Il codice CUI specificato non è valido","controlloCodiceCUI");
 
     // Gestione della sezione 'Categoria prevalente'
@@ -1391,8 +1541,21 @@ public class GestoreGARE extends AbstractGestoreEntita {
       	//Gestione delle sezioni n cup
         AbstractGestoreChiaveIDAutoincrementante gestoreGARECUP = new DefaultGestoreEntitaChiaveIDAutoincrementante(
 			"GARECUP", "ID", this.getRequest());
+		//this.gestisciAggiornamentiRecordSchedaMultipla(status, datiForm,
+		//	gestoreGARECUP, "GARECUP", new DataColumn[] {datiForm.getColumn("GARE.NGARA")}, null);
+        this.pgManagerEst1.checkAndInsertCUP(status, datiForm,gestoreGARECUP, "GARECUP", datiForm.getString("GARE.NGARA"), this.getRequest());
+
+		//Gestione delle sezioni quotader
+        AbstractGestoreChiaveIDAutoincrementante gestoreG1QUOTADER = new DefaultGestoreEntitaChiaveIDAutoincrementante(
+			"G1QUOTADER", "ID", this.getRequest());
 		this.gestisciAggiornamentiRecordSchedaMultipla(status, datiForm,
-			gestoreGARECUP, "GARECUP", new DataColumn[] {datiForm.getColumn("GARE.NGARA")}, null);
+			gestoreG1QUOTADER, "G1QUOTADER", new DataColumn[] {datiForm.getColumn("GARE.NGARA")}, null);
+
+		//Gestione delle sezioni mispremiali
+        AbstractGestoreChiaveIDAutoincrementante gestoreG1MISPREMIALI = new DefaultGestoreEntitaChiaveIDAutoincrementante(
+			"G1MISPREMIALI", "ID", this.getRequest());
+		this.gestisciAggiornamentiRecordSchedaMultipla(status, datiForm,
+			gestoreG1MISPREMIALI, "G1MISPREMIALI", new DataColumn[] {datiForm.getColumn("GARE.NGARA")}, null);
 
 		//Controllo sulla modifica del campo ELENCOE
         if(datiForm.isColumn("GARE.ELENCOE") && datiForm.isModifiedColumn("GARE.ELENCOE")){
@@ -1407,6 +1570,14 @@ public class GestoreGARE extends AbstractGestoreEntita {
             throw new GestoreException("Non è possibile modificare il riferimento all'elenco poichè vi sono delle ditte in gara","modificaElencoe.DitteAssociate",
                 new Object[]{msgTipoElencoCatalogo}, new Exception());
           }
+          try {
+            Long countElementiPremiali = (Long) sqlManager.getObject("select count(*) from ELPREMGARE where ngara=?", new Object[] {datiForm.getString("GARE.NGARA")});
+            if(countElementiPremiali > 0) {
+              throw new GestoreException("Non è possibile modificare il riferimento all'elenco poichè vi sono degli elementi premiali aggiunti alla gara","modificaElencoe.ElementiPremialiAssociati", new Exception());
+            }
+          } catch (SQLException e) {
+            throw new GestoreException("Errore durante la lettura degli elementi premiali",null,e);
+          }
         }
         String urlMDGUE = ConfigManager.getValore(CostantiAppalti.PROP_INTEGRAZIONE_MDGUE_URL);
         if(urlMDGUE!=null && !"".equals(urlMDGUE) && datiForm.isColumn("GARE.TIPGARG") && datiForm.isModifiedColumn("GARE.TIPGARG")) {
@@ -1417,15 +1588,37 @@ public class GestoreGARE extends AbstractGestoreEntita {
           }
         }
      }else{
+    	 this.setContributiDaImportoBaseAsta(datiForm, codgar1.getValue().stringValue());
+    	 this.calcolaGAROFF(datiForm);
 		//Gestione delle sezioni n cup
 		 AbstractGestoreChiaveIDAutoincrementante gestoreGARECUP = new DefaultGestoreEntitaChiaveIDAutoincrementante(
 		  "GARECUP", "ID", this.getRequest());
-		 this.gestisciAggiornamentiRecordSchedaMultipla(status, datiForm,
-		  gestoreGARECUP, "GARECUP", new DataColumn[] {datiForm.getColumn("GARE.NGARA")}, null);
+		 //this.gestisciAggiornamentiRecordSchedaMultipla(status, datiForm,
+		 // gestoreGARECUP, "GARECUP", new DataColumn[] {datiForm.getColumn("GARE.NGARA")}, null);
+		 this.pgManagerEst1.checkAndInsertCUP(status, datiForm,gestoreGARECUP, "GARECUP", datiForm.getString("GARE.NGARA"), this.getRequest());
+
+
+		//Gestione delle sezioni quotader
+        AbstractGestoreChiaveIDAutoincrementante gestoreG1QUOTADER = new DefaultGestoreEntitaChiaveIDAutoincrementante(
+			"G1QUOTADER", "ID", this.getRequest());
+		this.gestisciAggiornamentiRecordSchedaMultipla(status, datiForm,
+			gestoreG1QUOTADER, "G1QUOTADER", new DataColumn[] {datiForm.getColumn("GARE.NGARA")}, null);
+
+		//Gestione delle sezioni mispremiali
+        AbstractGestoreChiaveIDAutoincrementante gestoreG1MISPREMIALI = new DefaultGestoreEntitaChiaveIDAutoincrementante(
+			"G1MISPREMIALI", "ID", this.getRequest());
+		this.gestisciAggiornamentiRecordSchedaMultipla(status, datiForm,
+			gestoreG1MISPREMIALI, "G1MISPREMIALI", new DataColumn[] {datiForm.getColumn("GARE.NGARA")}, null);
     }
 
     // Gestione CPV
     this.updateGARCPV(status, datiForm);
+
+    //Gestione delle sezioni finanziamento
+    AbstractGestoreChiaveIDAutoincrementante gestoreG1DFINA = new DefaultGestoreEntitaChiaveIDAutoincrementante(
+		"G1DFINA", "ID", this.getRequest());
+	this.gestisciAggiornamentiRecordSchedaMultipla(status, datiForm,
+		gestoreG1DFINA, "G1DFINA", new DataColumn[] {datiForm.getColumn("GARE.NGARA")}, null);
 
     //Controlli specifici dei lotti di gara, sia offerta unica che distinte
     if(codgar1.getValue().stringValue() != null && !"".equals(codgar1.getValue().stringValue()) &&
@@ -1514,7 +1707,8 @@ public class GestoreGARE extends AbstractGestoreEntita {
 
     String descrErrMsg = "";
     String bloccoModificaPubblicazione = UtilityStruts.getParametroString(this.getRequest(), "bloccoModificaPubblicazione");
-    if("TRUE".equals(bloccoModificaPubblicazione)){
+    String bloccoModificaPCP = UtilityStruts.getParametroString(this.getRequest(), "bloccoModificaPCP");
+    if("TRUE".equals(bloccoModificaPubblicazione) || "true".equalsIgnoreCase(bloccoModificaPCP)){
       HashMap<String, DataColumn> hm = datiForm.getColonne();
       Iterator<?> it = hm.entrySet().iterator();
 
@@ -1532,7 +1726,8 @@ public class GestoreGARE extends AbstractGestoreEntita {
                 (pair.getKey().indexOf("IMPAPP")>=0 && !"GARE.IMPAPP".equals(pair.getKey())) || (pair.getKey().indexOf("CIG")>=0 && !"GARE1.MOTESENTECIG".equals(pair.getKey())) ||
                 pair.getKey().indexOf("IMPPER")>=0 || pair.getKey().indexOf("IMPCOR_RIB")>=0 || pair.getKey().indexOf("IMPMIS_RIB")>=0 ||
                 pair.getKey().indexOf("NUMCPV")>=0 || pair.getKey().indexOf("GARE.GAROFF")>=0 || pair.getKey().indexOf("STATOGARA")>=0
-                || pair.getKey().indexOf("OGGCONT_")>=0 || pair.getKey().indexOf("_CAT_PRE_")>=0 || pair.getKey().indexOf("OPES.PERCEN_CATEG")>=0)
+                || pair.getKey().indexOf("OGGCONT_")>=0 || pair.getKey().indexOf("_CAT_PRE_")>=0 || pair.getKey().indexOf("OPES.PERCEN_CATEG")>=0
+                || pair.getKey().indexOf("CENTROCOSTO")>=0)
               tracciareCampo=false;
             else
               tracciareCampo=true;
@@ -1572,7 +1767,12 @@ public class GestoreGARE extends AbstractGestoreEntita {
         logEvento.setLivEvento(1);
         logEvento.setOggEvento(datiForm.getColumn("GARE.NGARA").getValue().stringValue());
         logEvento.setCodEvento("GA_MODIFICA_PROCEDURA_PUB");
-        logEvento.setDescr("Modifica dati gara o lotto di gara dopo pubblicazione su portale Appalti.");
+        String descrizioneEvento = "Modifica dati gara o lotto di gara dopo pubblicazione su portale Appalti";
+        if ("true".equalsIgnoreCase(bloccoModificaPCP)) {
+        	descrizioneEvento += " o invio schede ad ANAC";
+        }
+        descrizioneEvento += ".";
+        logEvento.setDescr(descrizioneEvento);
         logEvento.setErrmsg("Dettaglio modifiche:\n" + descrErrMsg);
         LogEventiUtils.insertLogEventi(logEvento);
       }
@@ -1980,8 +2180,32 @@ public class GestoreGARE extends AbstractGestoreEntita {
   private void controlloAccordoQuadro(DataColumnContainer datiForm, boolean controlloDitte) throws GestoreException{
       try {
 
+    	  if(controlloDitte){
+              if(datiForm.isColumn("TORN.NGARAAQ") && datiForm.isModifiedColumn("TORN.NGARAAQ")){
+                Long conteggioDitte = (Long)this.sqlManager.getObject("select count(dittao) from ditg where codgar5=? ",
+                    new Object[]{datiForm.getString("GARE.CODGAR1")});
+                if(conteggioDitte!= null && conteggioDitte.longValue()>0){
+                  throw new GestoreException("Non e possibile modificare il riferimento all'accordo quadro poichè vi sono delle ditte in gara","riferimentoAccordoQuadro.DitteAssociate",
+                      null, new Exception());
+                }
+                Long conteggioLavorazioni = (Long)this.sqlManager.getObject("select count(ngara) from gcap where ngara=? and contafaq is not null",
+                    new Object[]{datiForm.getString("GARE.NGARA")});
+                if(conteggioLavorazioni!= null && conteggioLavorazioni.longValue()>0){
+                  throw new GestoreException("Non e possibile modificare il riferimento all'accordo quadro poichè sono definite delle lavorazioni riferite all'accordo quadro stesso","riferimentoAccordoQuadro.LavorazioniAssociate",
+                      null, new Exception());
+                }
+              }
+            }
+            if(datiForm.isColumn("TORN.ALTRISOG") && datiForm.isColumn("TORN.ISADESIONE")){
+              Long altrisog = datiForm.getLong("TORN.ALTRISOG");
+              String isAdesione = datiForm.getString("TORN.ISADESIONE");
+              if((new Long(2)).equals(altrisog) && isAdesione!=null && "1".equals(isAdesione))
+                throw new GestoreException("Non e possibile modificare il riferimento all'accordo quadro poichè altrisog è valorizzato","riferimentoAccordoQuadro.Altrisog",
+                    null, new Exception());
+            }
+
         //Non è possibile modificare il CENINT se valorizzato NGARAAQ e ci sono occorrenze in GARALTSOG
-        if(datiForm.isColumn("TORN.NGARAAQ") && datiForm.getString("TORN.NGARAAQ") !=null && !"".equals(datiForm.getString("TORN.NGARAAQ"))){
+        if(datiForm.isColumn("TORN.NGARAAQ") && StringUtils.isNotEmpty(datiForm.getString("TORN.NGARAAQ"))){
           String ngaraaq = datiForm.getString("TORN.NGARAAQ");
           Long conteggioSoggetti = (Long)this.sqlManager.getObject("select count(id) from garaltsog where ngara=? ",
               new Object[]{ngaraaq});
@@ -2035,7 +2259,7 @@ public class GestoreGARE extends AbstractGestoreEntita {
               if(impapp == null)
                 impapp = new Double(0);
               BigDecimal bdImportoDisponibile = BigDecimal.valueOf(new Double(impaut.doubleValue() - impimp.doubleValue())).setScale(2, BigDecimal.ROUND_HALF_UP);
-              if(impapp.doubleValue() > bdImportoDisponibile.doubleValue()){
+              if(impapp.doubleValue() > bdImportoDisponibile.doubleValue() && datiForm.isModifiedColumn("GARE.IMPAPP")){
                 String impautS = UtilityNumeri.convertiImporto(impaut, 2);
                 String impimpS = UtilityNumeri.convertiImporto(impimp, 2);
                 Double residuo = new Double(impaut.doubleValue() - impimp.doubleValue());
@@ -2049,29 +2273,97 @@ public class GestoreGARE extends AbstractGestoreEntita {
                   null, new Exception());
             }
           }
-        }
-        if(controlloDitte){
-          if(datiForm.isColumn("TORN.NGARAAQ") && datiForm.isModifiedColumn("TORN.NGARAAQ")){
-            Long conteggioDitte = (Long)this.sqlManager.getObject("select count(dittao) from ditg where codgar5=? ",
-                new Object[]{datiForm.getString("GARE.CODGAR1")});
-            if(conteggioDitte!= null && conteggioDitte.longValue()>0){
-              throw new GestoreException("Non e possibile modificare il riferimento all'accordo quadro poichè vi sono delle ditte in gara","riferimentoAccordoQuadro.DitteAssociate",
-                  null, new Exception());
-            }
-            Long conteggioLavorazioni = (Long)this.sqlManager.getObject("select count(ngara) from gcap where ngara=? and contafaq is not null",
-                new Object[]{datiForm.getString("GARE.NGARA")});
-            if(conteggioLavorazioni!= null && conteggioLavorazioni.longValue()>0){
-              throw new GestoreException("Non e possibile modificare il riferimento all'accordo quadro poichè sono definite delle lavorazioni riferite all'accordo quadro stesso","riferimentoAccordoQuadro.LavorazioniAssociate",
-                  null, new Exception());
-            }
-          }
-        }
-        if(datiForm.isColumn("TORN.ALTRISOG") && datiForm.isColumn("TORN.ISADESIONE")){
-          Long altrisog = datiForm.getLong("TORN.ALTRISOG");
-          String isAdesione = datiForm.getString("TORN.ISADESIONE");
-          if((new Long(2)).equals(altrisog) && isAdesione!=null && "1".equals(isAdesione))
-            throw new GestoreException("Non e possibile modificare il riferimento all'accordo quadro poichè altrisog è valorizzato","riferimentoAccordoQuadro.Altrisog",
-                null, new Exception());
+
+          	String paginaDatiGenGare = null;
+          	
+          	if(datiForm.isColumn("PAGINADATIGENERALIGARE")) {
+          		paginaDatiGenGare = datiForm.getString("PAGINADATIGENERALIGARE");
+          	}
+          	
+          	String isconcprog = null;
+          	String settore = null;
+          	String isalleg = null;
+          	String isconces = null;
+          	Long tipgen = null;
+			if (datiForm.isColumn("TORN.ISCONCPROG")) {
+				isconcprog = datiForm.getString("TORN.ISCONCPROG");
+			}
+			if (datiForm.isColumn("TORN.SETTORE")) {
+				settore = datiForm.getString("TORN.SETTORE");
+			}
+			if (datiForm.isColumn("TORN.ISALLEG")) {
+				isalleg = datiForm.getString("TORN.ISALLEG");
+			}
+			if (datiForm.isColumn("TORN.ISCONCES")) {
+				isconces = datiForm.getString("TORN.ISCONCES");
+			}
+			if (datiForm.isColumn("TORN.TIPGEN")) {
+				tipgen = datiForm.getLong("TORN.TIPGEN");
+			}
+
+			String isconcprogAQ = null;
+          	String settoreAQ = null;
+          	String isallegAQ = null;
+          	Long motescluAQ = null;
+          	Long motesclcAQ = null;
+          	String isconcesAQ = null;
+          	Long tipgenAQ = null;
+			Vector<?> datiAccordoQuadroTORN = sqlManager.getVector("select torn.isconcprog,torn.settore,torn.isalleg,torn.motesclu,torn.motesclc,torn.isconces,torn.tipgen from torn,gare where torn.codgar=gare.codgar1 and gare.ngara=?", new Object[] { ngaraaq });
+			if (datiAccordoQuadroTORN != null && datiAccordoQuadroTORN.size() != 0) {
+				isconcprogAQ = ((JdbcParametro) datiAccordoQuadroTORN.get(0)).getStringValue();
+				settoreAQ = ((JdbcParametro) datiAccordoQuadroTORN.get(1)).getStringValue();
+				isallegAQ = ((JdbcParametro) datiAccordoQuadroTORN.get(2)).getStringValue();
+				motescluAQ = ((JdbcParametro) datiAccordoQuadroTORN.get(3)).longValue();
+				motesclcAQ = ((JdbcParametro) datiAccordoQuadroTORN.get(4)).longValue();
+				isconcesAQ = ((JdbcParametro) datiAccordoQuadroTORN.get(5)).getStringValue();
+	          	tipgenAQ = ((JdbcParametro) datiAccordoQuadroTORN.get(6)).longValue();
+			}
+
+			isconcprog = convertiNullaVuotaIn2(isconcprog);
+			settore = convertiNullaVuotaIn2(settore);
+			isalleg = convertiNullaVuotaIn2(isalleg);
+			isconcprogAQ = convertiNullaVuotaIn2(isconcprogAQ);
+			settoreAQ = convertiNullaVuotaIn2(settoreAQ);
+			isallegAQ = convertiNullaVuotaIn2(isallegAQ);
+			isconces = convertiNullaVuotaIn2(isconces);
+			isconcesAQ = convertiNullaVuotaIn2(isconcesAQ);
+
+			if ("si".equals(paginaDatiGenGare)) {
+				if (!tipgenAQ.equals(tipgen)) {
+					throw new GestoreException("Il 'Tipo di appalto' non può essere diverso da quello dell'Accordo quadro",
+			                  "riferimentoAccordoQuadro.DiversoTipoAppalto",
+			                  null, new Exception());
+				}
+				if (!isconcesAQ.equals(isconces)) {
+					throw new GestoreException("Il flag 'Contratto di concessione?' dell'adesione non può essere diverso da quello dell'Accordo quadro",
+			                  "riferimentoAccordoQuadro.DiversoIsConces",
+			                  null, new Exception());
+				}
+				if (!isconcprogAQ.equals(isconcprog)) {
+					throw new GestoreException("Il flag 'Concorso di progettazione' dell'adesione non può essere diverso da quello dell'Accordo quadro",
+			                  null, new Exception());
+				}
+				if (!settoreAQ.equals(settore)) {
+					throw new GestoreException("Il 'Tipo di settore' dell'adesione non può essere diverso da quello dell'Accordo quadro",
+			                  "riferimentoAccordoQuadro.DiversoSettore",
+			                  null, new Exception());
+				}
+				if (!isallegAQ.equals(isalleg)) {
+					throw new GestoreException("Il flag 'Regime alleggerito' dell'adesione non può essere diverso da quello dell'Accordo quadro",
+			                  "riferimentoAccordoQuadro.DiversoIsAlleg",
+			                  null, new Exception());
+				}
+				if (datiForm.isColumn("TORN.MOTESCLU")) {
+					datiForm.setValue("TORN.MOTESCLU", motescluAQ);
+				} else {
+					datiForm.addColumn("TORN.MOTESCLU", motescluAQ);
+				}
+				if (datiForm.isColumn("TORN.MOTESCLC")) {
+					datiForm.setValue("TORN.MOTESCLC", motesclcAQ);
+				} else {
+					datiForm.addColumn("TORN.MOTESCLC", motesclcAQ);
+				}
+			}
         }
       } catch (SQLException e) {
         throw new GestoreException("Errore durante il controllo sulla presenza delle ditte della gara",null,e);
@@ -2364,58 +2656,101 @@ public class GestoreGARE extends AbstractGestoreEntita {
           if (updateOccorrenza) {
             if (newDataColumnContainer.getLong(gestore.getCampoNumericoChiave()) == null){
               newDataColumnContainer.setValue("GARERDA.NGARA", dataColumnContainer.getString("GARE.NGARA"));
+              
               gestore.inserisci(status, newDataColumnContainer);
-              if("CAV".equals(tipoWSERP) || "AMIU".equals(tipoWSERP)){
-
-                String codgar  = newDataColumnContainer.getString("GARERDA.CODGAR");
-                String codiceRda  = newDataColumnContainer.getString("GARERDA.NUMRDA");
-                String codiceCarrello  = newDataColumnContainer.getString("GARERDA.CODCARR");
-                String esercizio  = newDataColumnContainer.getString("GARERDA.ESERCIZIO");
-                String codiceLotto = newDataColumnContainer.getString("GARERDA.NGARA");
-                WSERPRdaType rdaDatiAggiuntivi = new WSERPRdaType();
-                //solo per AMIU
-                if("AMIU".equals(tipoWSERP)) {
-                	String codiceCig  = dataColumnContainer.getString("GARE.CODCIG");
-                    rdaDatiAggiuntivi.setCodiceCig(codiceCig);
-                    rdaDatiAggiuntivi.setCodiceGara(codgar);
-                }
-
-                String servizio = "WSERP";
-                ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
-                    CostantiGenerali.PROFILO_UTENTE_SESSIONE);
-                Long syscon = new Long(profilo.getId());
-                String[] credenziali = this.gestioneWSERPManager.wserpGetLogin(syscon, servizio);
-                String username = credenziali[0];
-                String password = credenziali[1];
-
-                WSERPRdaResType wserpRdaRes = this.gestioneWSERPManager.wserpAssociaRdaGara(username, password, servizio, codiceCarrello, codiceRda, null, codiceLotto, rdaDatiAggiuntivi, true);
-
-                if(wserpRdaRes.isEsito()){
-                    Long idRda  = newDataColumnContainer.getLong("GARERDA.ID");
-                    if("CAV".equals(tipoWSERP)) {
-                        //lettura dal ws
-                        WSERPRdaType rdaSearch = new WSERPRdaType();
-                        rdaSearch.setCodiceRda(codiceRda);
-                        rdaSearch.setTipoRdaErp(esercizio);
-                        WSERPRdaResType dettaglioRdares= this.gestioneWSERPManager.wserpDettaglioRda(username, password, servizio, rdaSearch);
-                        if(dettaglioRdares.isEsito()){
-                          this.gestioneWSERPManager.insPosizioniRda(username, password, servizio, codgar, codiceLotto, idRda, dettaglioRdares.getRdaArray());
-                        }
-                    }
-                }else{
-                	if("AMIU".equals(tipoWSERP)) {
-                        throw new GestoreException(
-                                "Errore durante l'operazione di collegamento delle RdA alla gara",
-                                "collegaRdaGaraMsg",new Object[] {wserpRdaRes.getMessaggio()}, null);
-                	}else {
-                        throw new GestoreException(
-                                "Errore durante l'operazione di collegamento delle RdA alla gara",
-                                "collegaRdaGara", null);
-                	}
-                }
-              }//FNM
-            }
-            else{
+              
+              switch (tipoWSERP) {
+                case "CAV":
+                case "AMIU":{
+			                String codgar  = newDataColumnContainer.getString("GARERDA.CODGAR");
+			                String codiceRda  = newDataColumnContainer.getString("GARERDA.NUMRDA");
+			                String codiceCarrello  = newDataColumnContainer.getString("GARERDA.CODCARR");
+			                String esercizio  = newDataColumnContainer.getString("GARERDA.ESERCIZIO");
+			                String codiceLotto = newDataColumnContainer.getString("GARERDA.NGARA");
+			                
+			                WSERPRdaType rdaDatiAggiuntivi = new WSERPRdaType();
+			                //solo per AMIU
+			                if("AMIU".equals(tipoWSERP)) {
+			                	String codiceCig  = dataColumnContainer.getString("GARE.CODCIG");
+			                    rdaDatiAggiuntivi.setCodiceCig(codiceCig);
+			                    rdaDatiAggiuntivi.setCodiceGara(codgar);
+			                }
+			
+			                String servizio = "WSERP";
+			                ProfiloUtente profilo = (ProfiloUtente) this.getRequest().getSession().getAttribute(
+			                    CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+			                Long syscon = new Long(profilo.getId());
+			                String[] credenziali = this.gestioneWSERPManager.wserpGetLogin(syscon, servizio);
+			                String username = credenziali[0];
+			                String password = credenziali[1];
+			
+			                WSERPRdaResType wserpRdaRes = this.gestioneWSERPManager.wserpAssociaRdaGara(username, password, servizio, codiceCarrello, codiceRda, null, codiceLotto, rdaDatiAggiuntivi, true);
+			
+			                if(wserpRdaRes.isEsito()){
+			                    Long idRda  = newDataColumnContainer.getLong("GARERDA.ID");
+			                    if("CAV".equals(tipoWSERP)) {
+			                        //lettura dal ws
+			                        WSERPRdaType rdaSearch = new WSERPRdaType();
+			                        rdaSearch.setCodiceRda(codiceRda);
+			                        rdaSearch.setTipoRdaErp(esercizio);
+			                        WSERPRdaResType dettaglioRdares= this.gestioneWSERPManager.wserpDettaglioRda(username, password, servizio, rdaSearch);
+			                        if(dettaglioRdares.isEsito()){
+			                          this.gestioneWSERPManager.insPosizioniRda(username, password, servizio, codgar, codiceLotto, idRda, dettaglioRdares.getRdaArray());
+			                        }
+			                    }
+			                }else{
+			                	if("AMIU".equals(tipoWSERP)) {
+			                        throw new GestoreException(
+			                                "Errore durante l'operazione di collegamento delle RdA alla gara",
+			                                "collegaRdaGaraMsg",new Object[] {wserpRdaRes.getMessaggio()}, null);
+			                	}else {
+			                        throw new GestoreException(
+			                                "Errore durante l'operazione di collegamento delle RdA alla gara",
+			                                "collegaRdaGara", null);
+			                	}
+			                }
+                		  }
+			              break;
+				              
+                case "INARCASSA":
+                case "CONI":
+                          { 
+                        	 String codiceRda  = newDataColumnContainer.getString("GARERDA.NUMRDA");
+                        	 String codiceGara = newDataColumnContainer.getString("GARERDA.CODGAR");
+                        	 String idLotto    = newDataColumnContainer.getString("GARERDA.NGARA");
+                        	 
+ 			              	// togliamo il $ dal codiceGara
+ 			              	//codiceGara = codiceGara.substring(1);
+                        	 
+                        	 WSERPRdaType rdaDatiAggiuntivi = new WSERPRdaType();
+                        	 rdaDatiAggiuntivi.setCodiceGara(codiceGara); 
+                        	 rdaDatiAggiuntivi.setIdLotto(idLotto);
+                        	 
+ 			                 String servizio = "WSERP";
+ 			                 ProfiloUtente profilo = (ProfiloUtente) this.getRequest()
+ 			                		                                     .getSession()
+ 			                		                                     .getAttribute(CostantiGenerali.PROFILO_UTENTE_SESSIONE);
+ 			                 Long syscon = new Long(profilo.getId());
+ 			                 String[] credenziali = this.gestioneWSERPManager.wserpGetLogin(syscon, servizio);
+ 			                 String username = credenziali[0];
+ 			                 String password = credenziali[1];
+ 		 	
+  	 		                 WSERPRdaResType wserpRdaRes = this.gestioneWSERPManager.wserpAssociaRdaGara(username, password, servizio, null, codiceRda, null, null, rdaDatiAggiuntivi, true);
+ 			
+ 			                 if(!wserpRdaRes.isEsito()){ 
+		                          throw new GestoreException(
+				                                  "Errore durante l'operazione di collegamento delle RdA alla gara",
+				                                  "collegaRdaGaraMsg",
+				                                  new Object[] {wserpRdaRes.getMessaggio()},
+				                                  null
+		                                    ); 			                	 
+ 			                 }//if
+                          }
+                	      break;
+				              
+              }//switch
+              
+            } else {
               gestore.update(status, newDataColumnContainer);
             }
 
@@ -2446,6 +2781,15 @@ public class GestoreGARE extends AbstractGestoreEntita {
       }
     }
   }
+
+	private String convertiNullaVuotaIn2(String stringa) {
+		if (stringa == null || "".equals(stringa)) {
+			return "2";
+		} else {
+			return stringa;
+		}
+	}
+
 }
 
 

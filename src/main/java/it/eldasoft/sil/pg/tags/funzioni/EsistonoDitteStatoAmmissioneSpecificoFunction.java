@@ -19,6 +19,7 @@ import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
 
 public class EsistonoDitteStatoAmmissioneSpecificoFunction extends AbstractFunzioneTag {
 
@@ -52,9 +53,9 @@ public class EsistonoDitteStatoAmmissioneSpecificoFunction extends AbstractFunzi
         else if(stepLong.longValue()==GestioneFasiRicezioneFunction.FASE_APERTURA_DOMANDE_DI_PARTECIPAZIONE)
           fase = new Long (-4);
         
-        statoAmmissione = StringUtils.stripToEmpty(statoAmmissione);
-        if(!"".equals(statoAmmissione)) {
-            Long conteggio = (Long) sqlManager.getObject(selectStatoSpecifico, new Object[] {codgar,fase,statoAmmissione});
+        statoAmmissione = StringUtils.stripToNull(statoAmmissione);
+        if(statoAmmissione != null) {
+            Long conteggio = (Long) sqlManager.getObject(selectStatoSpecifico, new Object[] {codgar,fase,NumberUtils.createInteger(statoAmmissione)});
             if (conteggio != null && conteggio.longValue() > 0) {
               esistonoDitteStatoAmmissioneSpecifico = "true";
             }

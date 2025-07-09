@@ -16,6 +16,7 @@ import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.PatternSyntaxException;
@@ -47,8 +48,6 @@ public class ControllaBandoAvvisoSimapManager {
 
   private static final String ERRORI_NON_BLOCCANTI_KEY        = "erroriNonBloccanti";
   private static final String ERRORI_BLOCCANTI_KEY            = "erroriBloccanti";
-  private static final String ERRORI_NON_BLOCCANTI_TEL_KEY = "erroriNonBloccantiTel";
-  private static final String ERRORI_NON_BLOCCANTI_FAX_KEY = "erroriNonBloccantiFax";
 
   private static final String CTR_AUTHORITY                  = "Il riferimento alla stazione appaltante non e' valorizzato";
   private static final String CTR_OGGETTO                    = "L'oggetto della gara non e' valorizzato";
@@ -57,8 +56,11 @@ public class ControllaBandoAvvisoSimapManager {
   //messaggi temporanei da modificare
   private static final String CTR_TORN_TIPGAR                = "Il tipo procedura non è valorizzato";
   private static final String CTR_GARE_TIPGAR                = "Il tipo procedura non è valorizzato";
-  private static final String CTR_CPV                        = "Il codice CPV non è valorizzato";
-  private static final String CTR_CPV_LOTTO                  = "Il codice CPV non è valorizzato nei lotti ";
+  private static final String CTR_CPV_VUOTO                  = "Il codice CPV non è valorizzato";
+  private static final String CTR_CPV_VUOTO_LOTTI            = "Il codice CPV non è valorizzato nei lotti ";
+  private static final String CTR_CPV                        = "Il codice CPV non è consistente con il tipo di appalto";
+  private static final String CTR_CPV_LOTTO                  = "Il codice CPV non è consistente con il tipo di appalto nei lotti ";
+  
   private static final String CTR_CIG                        = "Il codice CIG non è valorizzato";
   private static final String CTR_CIG_LOTTO                  = "Il codice CIG non è valorizzato nei lotti ";
   private static final String CTR_DATTOA                     = "La data atto aggiudicazione non è valorizzata";
@@ -66,10 +68,11 @@ public class ControllaBandoAvvisoSimapManager {
   private static final String CTR_TEUTIL                     = "La durata del contratto non è valorizzata";
   private static final String CTR_TEUTIL_LOTTO               = "La durata del contratto non è valorizzata nei lotti ";
   private static final String CTR_CODNUTS                    = "Il codice NUTS non è valorizzato";
+  private static final String CTR_LUNGHEZZA_CODNUTS          = "Il codice NUTS selezionato non è valido: deve indicare solo la nazione oppure una provincia.";
   private static final String CTR_AVVISO_TIPOAVV             = "La tipologia dell'avviso non è valorizzata";
   private static final String CTR_GOEV_LOTTI                 = "Non sono definiti correttamente i criteri di valutazione OEPV. Verificare i lotti ";
   private static final String CTR_GOEV_GARA                  = "Non sono definiti correttamente i criteri di valutazione OEPV";
-  private static final String CTR_TROPPI_LOTTI               = "La gara ha più di 1000 lotti";
+  private static final String CTR_TROPPI_LOTTI               = "La gara ha più di 10000 lotti";
   private static final String CTR_NESSUN_LOTTO               = "Non sono stati definiti i lotti della gara";
   private static final String CTR_PCOPRE_DATA                = "Alcuni dati del punto di contatto per la presentazione della domanda di partecipazione non sono valorizzati (verificare indirizzo, e-mail e URL)";
   private static final String CTR_PCOPRE_NOMPUN              = "La denominazione del punto di contatto per la presentazione della domanda di partecipazione non è valorizzata";
@@ -94,8 +97,11 @@ public class ControllaBandoAvvisoSimapManager {
   private static final String CTR_PROGEU                     = "La descrizione progetto finanziato dai fondi comunitari non è valorizzata";
   private static final String CTR_ACCAPUB                    = "Il flag 'Appalto rientra nel campo di applicazione dell'accordo sugli appalti pubblici' non è valorizzato";
   private static final String CTR_TEPAR                      = "Il termine per la presentazione della domanda di partecipazione non è valorizzato";
+  private static final String CTR_TEPAR_SCADUTI              = "Il termine per la presentazione della domanda di partecipazione non è successivo alla data odierna";
   private static final String CTR_TEOFF                      = "Il termine per la presentazione dell'offerta non è valorizzato";
+  private static final String CTR_TEOFF_SCADUTI              = "Il termine per la presentazione dell'offerta non è successivo alla data odierna";
   private static final String CTR_ESOFF                      = "La data di apertura delle offerte non è valorizzata";
+  private static final String CTR_ESOFF_NON_VALIDI           = "La data di apertura delle offerte deve essere successiva o uguale alla data termine presentazione dell'offerta";
   private static final String CTR_MOTACC                     = "La giustificazione procedura accelerata non è valorizzata";
 
   private static final String CTR_AQDURATA                   = "La durata dell'accordo quadro non è valorizzata";
@@ -107,10 +113,6 @@ public class ControllaBandoAvvisoSimapManager {
   private static final String CTR_LOTTI_IMPR_AGG_LOC         = "La provincia o il comune sede della ditta aggiudicataria o delle sue componenti, nel caso di raggruppamento, non sono valorizzati. Verificare i lotti ";
   private static final String CTR_GARA_IMPR_AGG_CF_PIVA      = "Il codice fiscale o la partita Iva della ditta aggiudicataria o delle sue componenti, nel caso di raggruppamento, non sono valorizzati o non hanno formato valido";
   private static final String CTR_GARA_IMPR_AGG_LOC          = "La provincia o il comune sede della ditta aggiudicataria o delle sue componenti, nel caso di raggruppamento, non sono valorizzati";
-  private static final String CTR_GARA_IMPR_AGG_TEL          = "Il numero di telefono della ditta aggiudicataria o delle sue componenti, nel caso di raggruppamento, non ha un formato valido (es.: +39 12345678, +39 12345678-0001, +39 12345678/79/80/81)";
-  private static final String CTR_LOTTI_IMPR_AGG_TEL         = "Il numero di telefono della ditta aggiudicataria o delle sue componenti, nel caso di raggruppamento, non ha un formato valido (es.: +39 12345678, +39 12345678-0001, +39 12345678/79/80/81). Verificare i lotti ";
-  private static final String CTR_GARA_IMPR_AGG_FAX          = "Il fax della ditta aggiudicataria o delle sue componenti, nel caso di raggruppamento, non ha un formato valido (es.: +39 12345678, +39 12345678-0001, +39 12345678/79/80/81)";
-  private static final String CTR_LOTTI_IMPR_AGG_FAX         = "Il fax della ditta aggiudicataria o delle sue componenti, nel caso di raggruppamento, non ha un formato valido (es.: +39 12345678, +39 12345678-0001, +39 12345678/79/80/81). Verificare i lotti ";
 
   private static final String CTR_GARA_NON_AGG               = "La gara non è aggiudicata nè ha esito negativo";
   private static final String CTR_LOTTI_NON_AGG              = "Nessun lotto della gara risulta aggiudicato né ha esito negativo";
@@ -136,6 +138,7 @@ public class ControllaBandoAvvisoSimapManager {
   /**
    *
    * @param codgar
+   * @param idForm
    * @param formulario
    * @param username
    * @param password
@@ -143,15 +146,12 @@ public class ControllaBandoAvvisoSimapManager {
    * @throws Exception
    * @throws Throwable
    */
-  public HashMap<String,Object> controllaBandoAvvisoSimap(String codgar, String formulario, BigInteger sottotipo,
+  public HashMap<String,Object> controllaBandoAvvisoSimap(String codgar, Long idForm, String formulario, BigInteger sottotipo,
       String username, String password) throws Exception, Throwable {
 
     if (logger.isDebugEnabled())
       logger.debug("controllaBandoAvvisoSimap: inizio metodo");
     HashMap<String,Object> response = new HashMap<String,Object>();
-    EsitoSimapWS esitoSimapWS = new EsitoSimapWS();
-    ArrayList<String> erroriBloccanti = new ArrayList<String>();
-    ArrayList<String> erroriNonBloccanti = new ArrayList<String>();
 
     String url = ConfigManager.getValore(PROP_BANDO_AVVISO_SIMAP_WS_URL);
     if (url == null || "".equals(url)) {
@@ -160,22 +160,47 @@ public class ControllaBandoAvvisoSimapManager {
           "inviabandoavvisosimap.ws.url");
     }
     try {
-      if ("FS1".equals(formulario)) {
+	if (idForm != null) {
+		String numeroEFORM = (String) sqlManager.getObject("select eform from g1npaform,g1cf_npa where g1npaform.idcfnpa=g1cf_npa.id and g1npaform.id=?", new Object[] { idForm });
+		if (numeroEFORM == null) {
+			throw new Exception("Numero EFORM è nullo");
+		}
+		switch (Integer.parseInt(numeroEFORM)) {
+		case 1: case 2: 
+			response = this.getXMLAvvisoProfiloCommittente(codgar);
+		break;
+
+		case 16: case 17: case 23: case 24:
+			response = this.getXMLBandoGara(codgar,numeroEFORM);
+		break;
+
+		case 4: case 5: case 7: case 8: case 10: case 11:
+			switch (Integer.parseInt(numeroEFORM)) {
+			case 4: case 5:
+				sottotipo = new BigInteger("1");
+				break;
+			case 7: case 8:
+				sottotipo = new BigInteger("2");
+				break;
+			case 10: case 11:
+				sottotipo = new BigInteger("3");
+				break;
+			}
+			response = this.getXMLAvvisoPreinformazione(codgar,sottotipo);
+		break;
+
+		case 29: case 30: case 36: case 37:
+			response = this.getXMLAvvisoAggiudicazione(codgar);
+		break;
+		}
+      } else if ("FS1".equals(formulario)) {
         response = this.getXMLAvvisoPreinformazione(codgar,sottotipo);
-        erroriBloccanti = (ArrayList<String>) response.get(ERRORI_BLOCCANTI_KEY);
-        erroriNonBloccanti = (ArrayList<String>) response.get(ERRORI_NON_BLOCCANTI_KEY);
       } else if ("FS2".equals(formulario)) {
-        response = this.getXMLBandoGara(codgar);
-        erroriBloccanti = (ArrayList<String>) response.get(ERRORI_BLOCCANTI_KEY);
-        erroriNonBloccanti = (ArrayList<String>) response.get(ERRORI_NON_BLOCCANTI_KEY);
+        response = this.getXMLBandoGara(codgar,null);
       } else if ("FS3".equals(formulario)) {
         response = this.getXMLAvvisoAggiudicazione(codgar);
-        erroriBloccanti = (ArrayList<String>) response.get(ERRORI_BLOCCANTI_KEY);
-        erroriNonBloccanti = (ArrayList<String>) response.get(ERRORI_NON_BLOCCANTI_KEY);
       } else if ("FS8".equals(formulario)) {
         response = this.getXMLAvvisoProfiloCommittente(codgar);
-        erroriBloccanti = (ArrayList<String>) response.get(ERRORI_BLOCCANTI_KEY);
-        erroriNonBloccanti = (ArrayList<String>) response.get(ERRORI_NON_BLOCCANTI_KEY);
       }
     } catch (Throwable t) {
       throw t;
@@ -219,7 +244,7 @@ public class ControllaBandoAvvisoSimapManager {
 
     //controllo se la gara ha più di mille lotti
     int numeroLotti = this.getNumeroLotti(codgar);
-    if(numeroLotti > 1000){
+    if(numeroLotti > 10000){
       erroriBloccanti.add(CTR_TROPPI_LOTTI);
     }
     if(numeroLotti <= 0){
@@ -357,13 +382,15 @@ public class ControllaBandoAvvisoSimapManager {
 
       //controllo errori CPV
       ArrayList erroriTemp = this.getCPVGara(codgar, genere);
-      erroriNonBloccanti.addAll(erroriTemp);
+      erroriBloccanti.addAll(erroriTemp);
 
       // Sito o luogo principale di esecuzione: codice NUTS
       String site_nuts = (String) SqlManager.getValueFromVectorParam(
           datiTORNGARE, 3).getValue();
       if (site_nuts == null) {
-        erroriNonBloccanti.add(CTR_CODNUTS);
+        erroriBloccanti.add(CTR_CODNUTS);
+      } else if (site_nuts.length() != 5 && site_nuts.length() != 2) {
+    	  erroriBloccanti.add(CTR_LUNGHEZZA_CODNUTS);
       }
 
       //punto di contatto pcopre
@@ -517,7 +544,7 @@ public class ControllaBandoAvvisoSimapManager {
    * @throws SQLException
    * @throws IOException
    */
-  private HashMap<String,Object> getXMLBandoGara(String codgar) throws SQLException,
+  private HashMap<String,Object> getXMLBandoGara(String codgar, String numeroEFORM) throws SQLException,
       IOException, Exception {
 
     if (logger.isDebugEnabled())
@@ -541,7 +568,7 @@ public class ControllaBandoAvvisoSimapManager {
 
     //controllo se la gara ha più di mille lotti
     int numeroLotti = this.getNumeroLotti(codgar);
-    if(numeroLotti > 1000){
+    if(numeroLotti > 10000){
       erroriBloccanti.add(CTR_TROPPI_LOTTI);
     }
     if(numeroLotti <= 0){
@@ -657,13 +684,15 @@ public class ControllaBandoAvvisoSimapManager {
 
       //controllo errori CPV
       ArrayList erroriTemp = this.getCPVGara(codgar, genere);
-      erroriNonBloccanti.addAll(erroriTemp);
+      erroriBloccanti.addAll(erroriTemp);
 
       // Sito o luogo principale di esecuzione: codice NUTS
       String site_nuts = (String) SqlManager.getValueFromVectorParam(
           datiTORNGARE, 3).getValue();
       if (site_nuts == null) {
-        erroriNonBloccanti.add(CTR_CODNUTS);
+        erroriBloccanti.add(CTR_CODNUTS);
+      } else if (site_nuts.length() != 5 && site_nuts.length() != 2) {
+    	  erroriBloccanti.add(CTR_LUNGHEZZA_CODNUTS);
       }
 
       //punto di contatto
@@ -725,8 +754,10 @@ public class ControllaBandoAvvisoSimapManager {
       }
 
       //controllo errori CIG
-      erroriTemp = this.getCIGGara(codgar, genere);
-      erroriBloccanti.addAll(erroriTemp);
+      if (numeroEFORM == null) {
+	      erroriTemp = this.getCIGGara(codgar, genere);
+	      erroriBloccanti.addAll(erroriTemp);
+      }
 
       //INSERIRE QUI I NUOVI CONTROLLI NON BLOCCANTI
       //SOLO SE LA GARA NON E' AVVISO
@@ -814,28 +845,73 @@ public class ControllaBandoAvvisoSimapManager {
             datiTORNGARE, 17).getValue();
         if (dtepar == null || otepar == null) {
           erroriNonBloccanti.add(CTR_TEPAR);
+        } else {
+        	Calendar cal = Calendar.getInstance();
+    		String oraScadenza = "";
+    		String minutiScadenza = "";
+        	cal.setTime(dtepar);
+			oraScadenza = otepar.substring(0, 2);
+			minutiScadenza = otepar.substring(3);
+			cal.add(Calendar.HOUR, Integer.parseInt(oraScadenza));
+			cal.add(Calendar.MINUTE, Integer.parseInt(minutiScadenza));
+			Calendar dataOdierna = Calendar.getInstance();
+			dataOdierna.set(Calendar.HOUR_OF_DAY, 23);
+			dataOdierna.set(Calendar.MINUTE, 59);
+			dataOdierna.set(Calendar.SECOND, 59);
+			if (cal.compareTo(dataOdierna) < 0) {
+				erroriNonBloccanti.add(CTR_TEPAR_SCADUTI);
+			}
         }
       }
 
+      Calendar cal = Calendar.getInstance();
+		String oraScadenza = "";
+		String minutiScadenza = "";
       // dteoff oteoff
-      if(iterga != null &&(iterga == 1)){
+      if(iterga != null &&(iterga == 1 || iterga == 9)){
         Date dteoff = (Date) SqlManager.getValueFromVectorParam(
             datiTORNGARE, 18).getValue();
         String oteoff = (String) SqlManager.getValueFromVectorParam(
             datiTORNGARE, 19).getValue();
         if (dteoff == null || oteoff == null) {
           erroriNonBloccanti.add(CTR_TEOFF);
+        } else {
+        	cal.setTime(dteoff);
+			oraScadenza = oteoff.substring(0, 2);
+			minutiScadenza = oteoff.substring(3);
+			cal.add(Calendar.HOUR, Integer.parseInt(oraScadenza));
+			cal.add(Calendar.MINUTE, Integer.parseInt(minutiScadenza));
+			Calendar dataOdierna = Calendar.getInstance();
+			dataOdierna.set(Calendar.HOUR_OF_DAY, 23);
+			dataOdierna.set(Calendar.MINUTE, 59);
+			dataOdierna.set(Calendar.SECOND, 59);
+			if (cal.compareTo(dataOdierna) < 0) {
+				erroriNonBloccanti.add(CTR_TEOFF_SCADUTI);
+			}
         }
       }
 
       // oesoff desoff
-      if(iterga != null &&(iterga == 1)){
+      if(iterga != null &&(iterga == 1 || iterga == 9)){
         Date desoff = (Date) SqlManager.getValueFromVectorParam(
             datiTORNGARE, 20).getValue();
         String oesoff = (String) SqlManager.getValueFromVectorParam(
             datiTORNGARE, 21).getValue();
+        Date dteoff = (Date) SqlManager.getValueFromVectorParam(
+            datiTORNGARE, 18).getValue();
+        String oteoff = (String) SqlManager.getValueFromVectorParam(
+            datiTORNGARE, 19).getValue();
         if (desoff == null || oesoff == null) {
           erroriNonBloccanti.add(CTR_ESOFF);
+        } else if (dteoff != null && oteoff != null) {
+        	Calendar calESOFF = Calendar.getInstance();
+    		calESOFF.setTime(desoff);
+    		calESOFF.set(Calendar.HOUR_OF_DAY, 23);
+    		calESOFF.set(Calendar.MINUTE, 59);
+    		calESOFF.set(Calendar.SECOND, 59);
+			if (cal.compareTo(calESOFF) > 0) {
+				erroriNonBloccanti.add(CTR_ESOFF_NON_VALIDI);
+			}
         }
       }
 
@@ -919,7 +995,7 @@ public class ControllaBandoAvvisoSimapManager {
 
     //controllo se la gara ha più di mille lotti
     int numeroLotti = this.getNumeroLotti(codgar);
-    if(numeroLotti > 1000){
+    if(numeroLotti > 10000){
       erroriBloccanti.add(CTR_TROPPI_LOTTI);
     }
     if(numeroLotti <= 0){
@@ -1006,6 +1082,8 @@ public class ControllaBandoAvvisoSimapManager {
           datiTORNGARE, 3).getValue();
       if (site_nuts == null) {
         erroriNonBloccanti.add(CTR_CODNUTS);
+      } else if (site_nuts.length() != 5 && site_nuts.length() != 2) {
+    	  erroriNonBloccanti.add(CTR_LUNGHEZZA_CODNUTS);
       }
 
       //controllo il campo not_gar
@@ -1190,12 +1268,14 @@ public class ControllaBandoAvvisoSimapManager {
       String site_nuts = (String) SqlManager.getValueFromVectorParam(
           datiTORNGARE, 1).getValue();
       if (site_nuts == null) {
-        erroriNonBloccanti.add(CTR_CODNUTS);
+        erroriBloccanti.add(CTR_CODNUTS);
+      } else if (site_nuts.length() != 5 && site_nuts.length() != 2) {
+    	  erroriBloccanti.add(CTR_LUNGHEZZA_CODNUTS);
       }
 
       //controllo errori CPV
       ArrayList erroriTemp = this.getCPVGara(codgar, genere);
-      erroriNonBloccanti.addAll(erroriTemp);
+      erroriBloccanti.addAll(erroriTemp);
 
       //punto di contatto
       Long pcodoc = (Long) SqlManager.getValueFromVectorParam(
@@ -1265,8 +1345,6 @@ public class ControllaBandoAvvisoSimapManager {
     String erroreImpresaAggiudicatrice = CTR_LOTTI_NON_AGG;
     String erroreGeneraleBloccanteCFIVA = CTR_LOTTI_IMPR_AGG_CF_PIVA;
     String erroreGeneraleNonBloccanteLoc = CTR_LOTTI_IMPR_AGG_LOC;
-    String erroreGeneraleNonBloccanteTel = CTR_LOTTI_IMPR_AGG_TEL;
-    String erroreGeneraleNonBloccanteFax = CTR_LOTTI_IMPR_AGG_FAX;
     String erroreComponentiRaggr = CTR_COMPONENTI_LOTTI_RT;
     //gara a lotti plichi distinti
       List lottiNGARA = sqlManager.getListVector(selectDittaAggiudicataria,
@@ -1315,12 +1393,6 @@ public class ControllaBandoAvvisoSimapManager {
                    if(temp.get(ERRORI_NON_BLOCCANTI_KEY)){
                      erroreNonBloccanteLotto = true;
                    }
-                   if(temp.get(ERRORI_NON_BLOCCANTI_TEL_KEY)){
-                     erroreNonBloccanteTelLotto = true;
-                   }
-                   if(temp.get(ERRORI_NON_BLOCCANTI_FAX_KEY)){
-                     erroreNonBloccanteFaxLotto = true;
-                   }
                   }
                  if(impreseRT.size() < 2){
                    if(genere == 2){
@@ -1342,12 +1414,6 @@ public class ControllaBandoAvvisoSimapManager {
                }
                if(temp.get(ERRORI_NON_BLOCCANTI_KEY)){
                  erroreNonBloccanteLotto = true;
-               }
-               if(temp.get(ERRORI_NON_BLOCCANTI_TEL_KEY)){
-                 erroreNonBloccanteTelLotto = true;
-               }
-               if(temp.get(ERRORI_NON_BLOCCANTI_FAX_KEY)){
-                 erroreNonBloccanteFaxLotto = true;
                }
              }
              if(aqoper != null && aqoper.intValue()==2){
@@ -1372,12 +1438,6 @@ public class ControllaBandoAvvisoSimapManager {
                        if(temp.get(ERRORI_NON_BLOCCANTI_KEY)){
                          erroreNonBloccanteLotto = true;
                        }
-                       if(temp.get(ERRORI_NON_BLOCCANTI_TEL_KEY)){
-                         erroreNonBloccanteTelLotto = true;
-                       }
-                       if(temp.get(ERRORI_NON_BLOCCANTI_FAX_KEY)){
-                         erroreNonBloccanteFaxLotto = true;
-                       }
                      }
                    }else{
                      HashMap<String,Boolean> temp = controllaDatiImpresa(dittao);
@@ -1386,12 +1446,6 @@ public class ControllaBandoAvvisoSimapManager {
                      }
                      if(temp.get(ERRORI_NON_BLOCCANTI_KEY)){
                        erroreNonBloccanteLotto = true;
-                     }
-                     if(temp.get(ERRORI_NON_BLOCCANTI_TEL_KEY)){
-                       erroreNonBloccanteTelLotto = true;
-                     }
-                     if(temp.get(ERRORI_NON_BLOCCANTI_FAX_KEY)){
-                       erroreNonBloccanteFaxLotto = true;
                      }
                    }
                  }
@@ -1432,40 +1486,10 @@ public class ControllaBandoAvvisoSimapManager {
               erroreGeneraleNonBloccanteLoc = erroreGeneraleNonBloccanteLoc + codiga;
             }
           }
-          if(erroreNonBloccanteTelLotto){
-            if(genere == 2){
-              erroriNonBloccanti.add(CTR_GARA_IMPR_AGG_TEL);
-            }
-            else{
-              if(!isFirstNonBloccTel){
-                erroreGeneraleNonBloccanteTel = erroreGeneraleNonBloccanteTel + ", ";
-              }
-              isFirstNonBloccTel = false;
-              erroreGeneraleNonBloccanteTel = erroreGeneraleNonBloccanteTel + codiga;
-            }
-          }
-          if(erroreNonBloccanteFaxLotto){
-            if(genere == 2){
-              erroriNonBloccanti.add(CTR_GARA_IMPR_AGG_FAX);
-            }
-            else{
-              if(!isFirstNonBloccFax){
-                erroreGeneraleNonBloccanteFax = erroreGeneraleNonBloccanteFax + ", ";
-              }
-              isFirstNonBloccFax = false;
-              erroreGeneraleNonBloccanteFax = erroreGeneraleNonBloccanteFax + codiga;
-            }
-          }
         }
         if(genere != 2){
           if(!isFirstNonBloccLoc){
             erroriNonBloccanti.add(erroreGeneraleNonBloccanteLoc);
-          }
-          if(!isFirstNonBloccTel){
-            erroriNonBloccanti.add(erroreGeneraleNonBloccanteTel);
-          }
-          if(!isFirstNonBloccFax){
-            erroriNonBloccanti.add(erroreGeneraleNonBloccanteFax);
           }
           if(!isFirstBloccCFIVA){
             erroriBloccanti.add(erroreGeneraleBloccanteCFIVA);
@@ -1485,13 +1509,11 @@ public class ControllaBandoAvvisoSimapManager {
   }
 
   private HashMap<String,Boolean> controllaDatiImpresa(String codiceImpresa) throws SQLException, GestoreException{
-    String selectImpr = "select impr.CFIMP, impr.pivimp, impr.nazimp, impr.locimp, impr.proimp, impr.telimp, impr.faximp from impr where impr.codimp = ?";
+    String selectImpr = "select impr.CFIMP, impr.pivimp, impr.nazimp, impr.locimp, impr.proimp from impr where impr.codimp = ?";
 
     HashMap risposta = new HashMap<String,Boolean>();
     risposta.put(ERRORI_BLOCCANTI_KEY, false);
     risposta.put(ERRORI_NON_BLOCCANTI_KEY, false);
-    risposta.put(ERRORI_NON_BLOCCANTI_FAX_KEY, false);
-    risposta.put(ERRORI_NON_BLOCCANTI_TEL_KEY, false);
 
     List impresaAgg = sqlManager.getVector(selectImpr,
         new Object[] { codiceImpresa });
@@ -1525,17 +1547,6 @@ public class ControllaBandoAvvisoSimapManager {
          risposta.put(ERRORI_NON_BLOCCANTI_KEY, true);
        }
 
-       String imprTelimp = (String) SqlManager.getValueFromVectorParam(impresaAgg,
-           5).getValue();
-       String imprFaximp = (String) SqlManager.getValueFromVectorParam(impresaAgg,
-           6).getValue();
-
-       if(!validazionePhoneFax(imprTelimp)){
-         risposta.put(ERRORI_NON_BLOCCANTI_TEL_KEY, true);
-       };
-       if(!validazionePhoneFax(imprFaximp)){
-         risposta.put(ERRORI_NON_BLOCCANTI_FAX_KEY, true);
-       };
     }
     return risposta;
   }
@@ -1552,45 +1563,112 @@ public class ControllaBandoAvvisoSimapManager {
    * @return
    * @throws SQLException
    */
-  private ArrayList<String> getCPVGara(String codgar, Long genere) throws SQLException {
+	private ArrayList<String> getCPVGara(String codgar, Long genere) throws SQLException {
 
-    if (logger.isDebugEnabled()) logger.debug("getCPVGara: inizio metodo");
-    ArrayList<String> errori = new ArrayList<String>();
+		if (logger.isDebugEnabled())
+			logger.debug("getCPVGara: inizio metodo");
+		ArrayList<String> errori = new ArrayList<String>();
 
-    String select ="select ngara, codiga from gare where codgar1 = ?";
-    if(genere == 3){
-      select += " and ngara != codgar1";
-    }
-    List lottiNGARA = sqlManager.getListVector(select, new Object[] { codgar });
-    String errorMessage = CTR_CPV_LOTTO;
-    boolean isFirst = true;
-    if (lottiNGARA != null && lottiNGARA.size() > 0) {
-      for (int i = 0; i < lottiNGARA.size(); i++) {
-        String ngara = (String) SqlManager.getValueFromVectorParam(
-            lottiNGARA.get(i), 0).getValue();
-        String codiga = (String) SqlManager.getValueFromVectorParam(
-            lottiNGARA.get(i), 1).getValue();
-        if(!this.getControlloCPVLotto(ngara)){
-          if(genere == 1 || genere == 3){
-            if(!isFirst){
-              errorMessage = errorMessage + ", ";
-            }
-            errorMessage = errorMessage + codiga;
-          }
-          else{
-            errorMessage = CTR_CPV;
-          }
-          isFirst = false;
-        }
-      }
-      if(!isFirst){
-        errori.add(errorMessage);
-      }
-    }
+		String select = "select ngara, codiga from gare where codgar1 = ?";
+		if (genere == 3) {
+			select += " and ngara != codgar1";
+		}
+		List lottiNGARA = sqlManager.getListVector(select, new Object[] { codgar });
+		String errorMessage = CTR_CPV_LOTTO;
+		String errorMessageVuoto = CTR_CPV_VUOTO_LOTTI;
+		String dettaglioErrore = "";
+		boolean isFirst = true;
+		boolean isFirstVuoto = true;
+		if (lottiNGARA != null && lottiNGARA.size() > 0) {
+			for (int i = 0; i < lottiNGARA.size(); i++) {
+				String ngara = (String) SqlManager.getValueFromVectorParam(lottiNGARA.get(i), 0).getValue();
+				String codiga = (String) SqlManager.getValueFromVectorParam(lottiNGARA.get(i), 1).getValue();
 
-    if (logger.isDebugEnabled()) logger.debug("getCPVGara: fine metodo");
-    return errori;
-  }
+				String selectGARCPV = "select codcpv from garcpv where ngara = ? and tipcpv = '1' order by numcpv";
+				String cpvMain = (String) sqlManager.getObject(selectGARCPV, new Object[] { ngara });
+
+				Long tipgen = (Long) sqlManager.getObject("select torn.tipgen from gare,torn where gare.codgar1=torn.codgar and gare.ngara=?", new Object[] { ngara });
+				Long tipoapp = (Long) sqlManager.getObject("select gareavvisi.tipoapp from gareavvisi where gareavvisi.ngara=?", new Object[] { ngara });
+				String tipoDiAppalto = "";
+				if (((Long) 1L).equals(tipgen) || (tipoapp != null && tipoapp >= 100)){
+					tipoDiAppalto = "Lavori";
+				} else if (((Long) 2L).equals(tipgen) || (tipoapp != null && tipoapp >= 10 && tipoapp < 100)) {
+					tipoDiAppalto = "Forniture";
+				} else if (((Long) 3L).equals(tipgen) || (tipoapp != null && tipoapp < 10)) {
+					tipoDiAppalto = "Servizi";
+				}
+
+				Boolean passatoControlli = true;
+				Boolean isValorizzato = true;
+				if (cpvMain == null) {
+					isValorizzato = false;
+				} else {
+					if (cpvMain.length() < 2) {
+						passatoControlli = false;
+					} else {
+						int prefissoCPV = Integer.parseInt(cpvMain.substring(0,2));
+						if ("Lavori".equals(tipoDiAppalto)) {
+							if (prefissoCPV == 45) {
+								passatoControlli = true;
+							} else {
+								passatoControlli = false;
+								dettaglioErrore = ": per lavori i primi due caratteri devono essere uguali a '45'.";
+							}
+						} else if ("Forniture".equals(tipoDiAppalto)) {
+							if (prefissoCPV <= 44 || prefissoCPV == 48) {
+								passatoControlli = true;
+							} else {
+								passatoControlli = false;
+								dettaglioErrore = ": per forniture i primi due caratteri devono essere compresi tra '00' e '44' oppure '48'.";
+							}
+						} else if ("Servizi".equals(tipoDiAppalto)) {
+							if (prefissoCPV >= 49 && prefissoCPV <= 98) {
+								passatoControlli = true;
+							} else {
+								passatoControlli = false;
+								dettaglioErrore = ": per servizi i primi due caratteri devono essere compresi tra '49' e '98'.";
+							}
+						} else {
+							passatoControlli = false;
+						}
+					}
+				}
+
+				if (!isValorizzato) {
+					if (genere == 1 || genere == 3) {
+						if (!isFirstVuoto) {
+							errorMessageVuoto = errorMessageVuoto + ", ";
+						}
+						errorMessageVuoto = errorMessageVuoto + codiga;
+					} else {
+						errorMessageVuoto = CTR_CPV_VUOTO;
+					}
+					isFirstVuoto = false;
+				}else if (!passatoControlli) {
+//					if (!this.getControlloCPVLotto(ngara)) {}
+					if (genere == 1 || genere == 3) {
+						if (!isFirst) {
+							errorMessage = errorMessage + ", ";
+						}
+						errorMessage = errorMessage + codiga;
+					} else {
+						errorMessage = CTR_CPV;
+					}
+					isFirst = false;
+				}
+			}
+			if (!isFirstVuoto) {
+				errori.add(errorMessageVuoto);
+			}
+			if (!isFirst) {
+				errorMessage += dettaglioErrore;
+				errori.add(errorMessage);
+			}
+		}
+
+		if (logger.isDebugEnabled()) logger.debug("getCPVGara: fine metodo");
+		return errori;
+	}
 
   /**
    * Ricava i codici CIG per la gara:
@@ -1963,7 +2041,12 @@ public class ControllaBandoAvvisoSimapManager {
    */
   private boolean controlloGoevLotto(String ngara) throws SQLException {
     Double maxPunTecnico = pgManager.getSommaPunteggioTecnico(ngara);
-    Double maxPunEconomico = pgManager.getSommaPunteggioEconomico(ngara);
+    Double maxPunEconomico = null;
+
+    String costofisso = (String) sqlManager.getObject("select costofisso from gare1 where ngara=?", new Object[] {ngara});
+    if (!"1".equals(costofisso))
+      maxPunEconomico = pgManager.getSommaPunteggioEconomico(ngara);
+
     if(maxPunTecnico == null){
       return true;
     }
@@ -2122,8 +2205,7 @@ public class ControllaBandoAvvisoSimapManager {
    */
   private boolean getControlloCPVLotto(String ngara) throws SQLException {
     String selectGARCPV = "select codcpv from garcpv where ngara = ? and tipcpv = '1' order by numcpv";
-    String cpvMain = (String) sqlManager.getObject(selectGARCPV,
-        new Object[] { ngara });
+    String cpvMain = (String) sqlManager.getObject(selectGARCPV, new Object[] { ngara });
     if (cpvMain == null) {
       return false;
     }
@@ -2300,25 +2382,6 @@ public class ControllaBandoAvvisoSimapManager {
         }
       }
       return errors;
-  }
-
-  public static boolean validazionePhoneFax(String phoneFax) throws GestoreException {
-
-    boolean res = true;
-    try {
-      // Pattern XSD -->
-      // (\+\d{1,3}\s\d+(\-\d+)*((\s)?/(\s)?(\+\d{1,3}\s)?\d+(\-\d+)*)*)
-      String regex = "(\\+[0-9]{1,3} [0-9]+(\\-[0-9]+)*(( )?/( )?(\\+[0-9]{1,3} )?[0-9]+(\\-[0-9]+)*)*)";
-
-      if (phoneFax != null && !"".equals(phoneFax)) {
-        if (!phoneFax.matches(regex) || phoneFax.length()>100) {
-          res = false;
-        }
-      }
-    } catch (PatternSyntaxException pse) {
-      throw new GestoreException("Errore in validazione del numero OJS", "validazionePhoneFax", pse);
-    }
-    return res;
   }
 
 }

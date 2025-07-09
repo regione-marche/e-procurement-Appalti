@@ -209,7 +209,6 @@
 		href += "&idOrdine="+${idOrdine};
 		href += "&operazione=" + "ADD";
 		href += "&uffint=" + uffint;
-		href += "&" + csrfToken;
 		document.location.href = href;
 	}
 	

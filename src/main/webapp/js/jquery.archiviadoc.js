@@ -5,7 +5,15 @@
 
 var _integrazioneCOS;
 var _integrazioneWSDM;
+var _integrazioneDigiP;
+var _integrazioneWSDMProtocollo;
 var _isStipula=false;
+var _isVerificaPDFA;
+var _escludiEML = true;
+
+var TIPO_DOCUMENTO_ELENCO_ARCHIVIAZIONE                = "UBUY EO - documentazione procedura";
+var TIPO_DOCUMENTO_GARA_ARCHIVIAZIONE                  = "UBUY - documentazione procedura";
+var TIPO_DOCUMENTO_AVVISO_ARCHIVIAZIONE                = "UBUY AV - documentazione procedura";
 
 $(window).on("load", function (){
 	
@@ -286,6 +294,8 @@ $(window).on("load", function (){
 		_tr.append('<th/>');
 		_tr.append('<th/>');
 		_tr.append('<th/>');
+		_tr.append('<th/>');
+		_tr.append('<th/>');
 		var _thck = $('<th/>', {"id": "arch","class": "ck"}); //12
 		_tr.append(_thck);
 		var _thck_cos = $('<th/>', {"id": "arch_cos","class": "ck"});
@@ -298,6 +308,8 @@ $(window).on("load", function (){
 		
 		var _tr2 = $('<tr/>', {"class": "intestazione"});
 		_tr2.append('<td/>', {"class": "codice"});
+		_tr2.append('<td/>');
+		_tr2.append('<td/>');
 		_tr2.append('<td/>');
 		_tr2.append('<td/>');
 		_tr2.append('<td/>');
@@ -338,7 +350,7 @@ $(window).on("load", function (){
             _visStatoSel = false;
         }
         
-        if(_integrazioneCOS != '1')
+        if(_integrazioneCOS != '1' && _integrazioneDigiP != '1')
         {
             $("#menuexpcos").hide();
             $("#pulsanteexpCOS").hide();
@@ -347,7 +359,7 @@ $(window).on("load", function (){
             
         }
 
-		
+		_isVerificaPDFA = $("#isVerificaPDFA").val();
 
 		_creaTabellaDocumenti();
 		
@@ -365,7 +377,8 @@ $(window).on("load", function (){
 						genere: $("#genere").val(),
 						stipula: stipula,
 						key1: $("#key1").val(),
-						chiaveOriginale: $("#chiaveOriginale").val()
+						chiaveOriginale: $("#chiaveOriginale").val(),
+						escludiEML: _escludiEML
 					};	
 				},
 				"complete": function() {
@@ -411,7 +424,7 @@ $(window).on("load", function (){
 					case 4: TipoDocDesc = "Documento dell'esito"; break;
 					case 5: TipoDocDesc = "Documento per la trasparenza"; break;
 					case 6 : TipoDocDesc = "Documento dell'invito a presentare offerta"; break;
-					case 10: TipoDocDesc = "Atto o documento art.29 c.1 DLgs.50/2016"; break;
+					case 10: TipoDocDesc = "Atto o documento"; break;
 					case 11: TipoDocDesc = "Documento allegato all'ordine di acquisto"; break;
 					case 12: TipoDocDesc = "Documento dell'invito all'asta elettronica"; break;
 					case 15: TipoDocDesc = "Delibera a contrarre o atto equivalente"; break;
@@ -434,7 +447,7 @@ $(window).on("load", function (){
 					"visible": _lottoVisibile,
 					"sTitle": "Lotto",
 					"searchable": false,
-					"sWidth": "100px",
+					"sWidth": "50px",
 					"targets": [ 2 ]
 				},
 				{
@@ -459,7 +472,11 @@ $(window).on("load", function (){
 					"sTitle": "Descrizione",
 					"targets": [ 5 ],
 					"sWidth": "100px",
-					"class" : "descr"
+					"class" : "descr",
+					"render":  function (data) {
+						// Render as plain text to prevent XSS
+						return $('<div/>').text(data).html();
+					}
 				},
 				{
 					"data": "IDPRG.value",
@@ -474,16 +491,33 @@ $(window).on("load", function (){
 					"targets": [ 7 ],
 				},
 				{
+					"data": "IDPRG.value",
+					"visible": true,
+					"sTitle": "Id file",
+					"searchable": true,
+					"targets": [ 8 ],
+					"render": function ( data, type, full, meta ) {
+						if(full.PROVENIENZA.value==='4')
+							return full.DIGNOMDOC.value.split("_")[0];
+						else
+							return  full.IDPRG.value + full.IDDOCDIG.value
+					}
+				},
+				{
 					"data": "DIGNOMDOC.value",
 					"visible": true,
-					"sTitle": "Nome documento",
-					"targets": [ 8 ],
+					"sTitle": "Nome file",
+					"targets": [ 9 ],
 					"sWidth": "100px",
 					"class" : "descr",
 					"render": function ( data, type, full, meta ) {
 						var _span = $("<span/>");
 						var _a = $("<a/>",{id: "nomedoc_" + full.PROVENIENZA.value + "_" + full.IDPRG.value + "_" + full.IDDOCDIG.value ,href: "#", "text": full.DIGNOMDOC.value, "class": "link-generico"});
 						_span.append(_a);
+						var _img = $("<img/>",{title: "File conforme al formato PDF/A",src: _contextPath+"/img/pdfa.png", alt: "File conforme al formato PDF/A"});
+						if(_isVerificaPDFA != undefined && _isVerificaPDFA != null && _isVerificaPDFA == 1 && full.TIPODOCUMENTO != undefined && full.TIPODOCUMENTO.value != null && full.TIPODOCUMENTO.value == "pdf/a"){
+							_span.append("&nbsp;").append("&nbsp;").append(_img);
+						}
 						return _span.html();
 					}
 				},
@@ -491,15 +525,23 @@ $(window).on("load", function (){
 					"data": "DATA.value",
 					"visible": true,
 					"sTitle": "Data",
-					"targets": [ 9 ],
+					"targets": [ 10 ],
 					"sWidth": "100px",
 					"class" : "datadescr"
+				},
+				{
+					"data": "NUM_PROT.value",
+					"visible": $("#integrazioneWSDMProtocollo").val()==1,
+					"sTitle": "N.protocollo",
+					"targets": [ 11 ],
+					"sWidth": "50px",
+					"class" : "protdescr"
 				},
 				{
 					"data": "STATO.value",
 					"visible": _visStatoSel,
 					"sTitle": "Stato",
-					"targets": [ 10 ],
+					"targets": [ 12 ],
 					"sWidth": "100px",
 					"class" : "stato",
 					"render": function ( data, type, full, meta ) {
@@ -555,7 +597,7 @@ $(window).on("load", function (){
 					"data": "STATO_COS.value",
 					"visible": _visStatoSel_cos,
 					"sTitle": "Stato",
-					"targets": [ 11 ],
+					"targets": [ 13 ],
 					"sWidth": "100px",
 					"class" : "stato",
 					"render": function ( data, type, full, meta ) {
@@ -590,7 +632,7 @@ $(window).on("load", function (){
                             _span.append(statoDesc);
                             break;
                         case 5://trasferito in area FTP con file di indice
-                        	statoDesc = "Trasferito in area FTP, con indice";
+                        	statoDesc = _integrazioneDigiP == '1'? "Trasferito in area FTP, con RdV positivo" : "Trasferito in area FTP, con indice";
                         	_span.append(statoDesc);
                             break;
                         case 6://trasferimento COS completato
@@ -608,13 +650,24 @@ $(window).on("load", function (){
 								_span.append(statoDesc);
 							}
                             break;
-                        case 8://errore in fase di creazione dell'indice (doc. mancante)'
+                        case 8://errore in fase di creazione dell'indice (doc. mancante)' //SOLO COS
                             statoDesc = "Errore in creazione file di indice";
 							var _a = $("<a/>",{id: "detterrore_" + full.PROVENIENZA.value + "_" + full.IDPRG.value + "_" + full.IDDOCDIG.value ,href: "#", "text": "...", "class": "link-generico"});
 							var _div = $("<div/>", {"text":full.ESITO.value});
 							_div.css("display","none");
 							_span.append(_div).append(statoDesc + "&nbsp;").append(_a);
                             break;
+						case 9://Ultimo update fascicolo in errore //SOLO DIGIP
+							statoDesc = "In attesa fascicolazione";
+							var _a = $("<a/>",{id: "detterrore_" + full.PROVENIENZA.value + "_" + full.IDPRG.value + "_" + full.IDDOCDIG.value ,href: "#", "text": "...", "class": "link-generico"});
+							if(full.ESITO.value != null){
+								var _div = $("<div/>", {"text":full.ESITO.value});
+								_div.css("display","none");
+								_span.append(_div).append(statoDesc + "&nbsp;").append(_a);
+							} else{
+								_span.append(statoDesc);
+							}
+							break;
 						default:
 							statoDesc = "Da archiviare";
 							_span.append(statoDesc);
@@ -627,13 +680,13 @@ $(window).on("load", function (){
 				{
 					"data": "IDWSDOC.value",
 					"visible": _visStatoSel,
-					"targets": [ 12 ],
+					"targets": [ 14 ],
 					"class" : "ck",
 					"sWidth" : "70px",
 					"render": function ( data, type, full, meta ) {
 						var _div = $("<div/>");
 						var _check = $("<input/>",{"type":"checkbox", "id": "usr_ck_x_" + full.PROVENIENZA.value + "_" + full.IDPRG.value + "_" + full.IDDOCDIG.value});
-						//Si introduce il campo check nascoto per potere tenere traccia delle righe gi√† processate per l'archiviazione.
+						//Si introduce il campo check nascoto per potere tenere traccia delle righe gi‡ processate per l'archiviazione.
 						var _check1 = $("<input/>",{"type":"checkbox", "id": "usr_ck_processata_" + full.PROVENIENZA.value + "_" + full.IDPRG.value + "_" + full.IDDOCDIG.value, "style":"display:none"});
 						var _stato = $("<input/>",{"type":"hidden", "id": "stato_" + full.IDPRG.value + "_" + full.IDDOCDIG.value  , "value": + full.STATO.value });
 						switch(full.STATO.value) {
@@ -671,7 +724,7 @@ $(window).on("load", function (){
                 {
 					"data": "IDWSDOC.value",
 					"visible": _visStatoSel_cos,
-					"targets": [ 13 ],
+					"targets": [ 15 ],
 					"class" : "ck",
 					"sWidth" : "70px",
 					"render": function ( data, type, full, meta ) {
@@ -703,6 +756,7 @@ $(window).on("load", function (){
 						case 4://caricato su sftp cos, ma in attesa della generazione del file
                         case 5: //caricato su sftp cos e file di indice generato
 						case 6:
+						case 9:
 							break;
 						default:
 							_div.append(_check);
@@ -718,7 +772,7 @@ $(window).on("load", function (){
 					"data": "PROVENIENZA.value",
 					"visible": false,
 					"searchable": false,
-					"targets": [ 14 ],
+					"targets": [ 16 ],
 					"class" : "descr",
 				}
 
@@ -755,8 +809,10 @@ $(window).on("load", function (){
 			
 	        "pagingType": "full_numbers",
 	        "lengthMenu": [[50, 70, 100], ["50 documenti", "70 documenti", "100 documenti"]],
+			"dom" : 'l<"#add">frtip',
 	        "ordering": false,
 	        "aoColumns": [
+				 { "bSortable": true, "bSearchable": true },
 			     { "bSortable": true, "bSearchable": true },
 			     { "bSortable": true, "bSearchable": true },
 			     { "bSortable": false, "bSearchable": true },
@@ -769,27 +825,36 @@ $(window).on("load", function (){
 				 { "bSortable": true, "bSearchable": true },
 			     { "bSortable": true, "bSearchable": true },
 			     { "bSortable": false, "bSearchable": true },
-				 { "bSortable": false, "bSearchable": false }
+				 { "bSortable": false, "bSearchable": true }
 			   ]
 	    });
-	
-			$('#documenti tfoot td').eq(0).html( '<input class="search" size="10" type="text" placeholder="Ricerca tipologia "/>' );
+			var columnNo = 0;
+			var fileNameColumn = 0;
+			$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca tipologia "/>' );
 			if($("#genere").val()=='3'){
-				$('#documenti tfoot td').eq(1).html( '<input class="search" size="10" type="text" placeholder="Ricerca lotto "/>' );
-				$('#documenti tfoot td').eq(2).html( '<input class="search" size="10" type="text" placeholder="Ricerca C.F. "/>' );
-				$('#documenti tfoot td').eq(3).html( '<input class="search" size="10" type="text" placeholder="Ricerca ditta "/>' );
-				$('#documenti tfoot td').eq(4).html( '<input class="search" size="10" type="text" placeholder="Ricerca descrizione "/>' );
-				$('#documenti tfoot td').eq(5).html( '<input class="search" size="10" type="text" placeholder="Ricerca nome"/>' );
-				$('#documenti tfoot td').eq(6).html( '<input class="search" size="10" type="text" placeholder="Ricerca data"/>' );
-				$('#documenti tfoot td').eq(7).html( '<input class="search" size="10" type="text" placeholder="Ricerca stato"/>' );
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca lotto "/>' );
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca C.F. "/>' );
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca ditta "/>' );
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca descrizione "/>' );
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca id"/>' );
+				fileNameColumn=columnNo;
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca nome"/>' );
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca data"/>' );
+				if($("#integrazioneWSDMProtocollo").val()==1)
+					$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca protocollo"/>' );
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca stato"/>' );
 
 			}else{
-				$('#documenti tfoot td').eq(1).html( '<input class="search" size="10" type="text" placeholder="Ricerca C.F. "/>' );
-				$('#documenti tfoot td').eq(2).html( '<input class="search" size="10" type="text" placeholder="Ricerca ditta "/>' );
-				$('#documenti tfoot td').eq(3).html( '<input class="search" size="10" type="text" placeholder="Ricerca descrizione "/>' );
-				$('#documenti tfoot td').eq(4).html( '<input class="search" size="10" type="text" placeholder="Ricerca nome"/>' );
-				$('#documenti tfoot td').eq(5).html( '<input class="search" size="10" type="text" placeholder="Ricerca data"/>' );
-				$('#documenti tfoot td').eq(6).html( '<input class="search" size="10" type="text" placeholder="Ricerca stato"/>' );
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca C.F. "/>' );
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca ditta "/>' );
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca descrizione "/>' );
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca id"/>' );
+				fileNameColumn=columnNo;
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca nome"/>' );
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca data"/>' );
+				if($("#integrazioneWSDMProtocollo").val()==1)
+					$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca protocollo"/>' );
+				$('#documenti tfoot td').eq(columnNo++).html( '<input class="search" size="10" type="text" placeholder="Ricerca stato"/>' );
 			}
 			
 			
@@ -802,18 +867,65 @@ $(window).on("load", function (){
 
 		
 		var _center = $("<center/>");
-		var _href = "<a href='javascript:_selezionaTutti();' Title='Seleziona tutti'> <img src='"+_contextPath+"/img/ico_check.gif' height='15' width='15' alt='Seleziona tutti'></a>";
+		var _href = "<a href='javascript:showMenuSelezione();' Title='Seleziona tutti'> <img src='"+_contextPath+"/img/ico_check.gif' height='15' width='15' alt='Seleziona tutti'></a>";
 		var _href = _href + "&nbsp;";
-		var _href = _href + "<a href='javascript:_deselezionaTutti();' Title='Deseleziona tutti'><img src='"+_contextPath+"/img/ico_uncheck.gif' height='15' width='15' alt='Deseleziona tutti'></a>";
+		var _href = _href + "<a href='javascript:showMenuDeselezione();' Title='Deseleziona tutti'><img src='"+_contextPath+"/img/ico_uncheck.gif' height='15' width='15' alt='Deseleziona tutti'></a>";
+		
+		var _href = _href + '<div id="popmenuCheck" class="popupmenuskin" style="visibility: hidden;text-align: left"><div class="chiusuramenu"><a href="javascript:hideMenuSelezione();"><img src="'+_contextPath+'/img/chiudi.gif" height="8" width="8" alt="Chiudi" title="Chiudi"></a></div><div class="menuitems" id=""><a href="javascript:_selezionaTutti();" tabindex="0">&nbsp;Seleziona tutti su pagina corrente</a></div><div class="menuitems" id=""><a href="javascript:_archiviaTutto();" tabindex="1">&nbsp;Seleziona su tutte le pagine</a></div></div>'
+		var _href = _href + "&nbsp;";
+		var _href = _href + '<div id="popmenuUncheck" class="popupmenuskin" style="visibility: hidden;text-align: left"><div class="chiusuramenu"><a href="javascript:hideMenuDeselezione();"><img src="'+_contextPath+'/img/chiudi.gif" height="8" width="8" alt="Chiudi" title="Chiudi"></a></div><div class="menuitems" id=""><a href="javascript:_deselezionaTutti();" tabindex="0">&nbsp;Deseleziona tutti su pag. corrente</a></div><div class="menuitems" id=""><a href="javascript:_annullaArchiviaTutto();" tabindex="1">&nbsp;Deseleziona su tutte le pagine</a></div></div>'
+		
+		
 		_center.append(_href);
 		_center.appendTo($("#arch"));
 
 		var _center_cos = $("<center/>");
-		var _href_cos = "<a href='javascript:_selezionaTutti_cos();' Title='Seleziona tutti'> <img src='"+_contextPath+"/img/ico_check.gif' height='15' width='15' alt='Seleziona tutti'></a>";
+		var _href_cos = "<a href='javascript:showMenuSelezione_cos();' Title='Seleziona tutti'> <img src='"+_contextPath+"/img/ico_check.gif' height='15' width='15' alt='Seleziona tutti'></a>";
 		var _href_cos = _href_cos + "&nbsp;";
-		var _href_cos = _href_cos + "<a href='javascript:_deselezionaTutti_cos();' Title='Deseleziona tutti'><img src='"+_contextPath+"/img/ico_uncheck.gif' height='15' width='15' alt='Deseleziona tutti'></a>";
+		var _href_cos = _href_cos + "<a href='javascript:showMenuDeselezione_cos();' Title='Deseleziona tutti'><img src='"+_contextPath+"/img/ico_uncheck.gif' height='15' width='15' alt='Deseleziona tutti'></a>";
+		
+		var _href_cos = _href_cos + '<div id="popmenuCheck_cos" class="popupmenuskin" style="visibility: hidden;text-align: left"><div class="chiusuramenu"><a href="javascript:hideMenuSelezione_cos();"><img src="'+_contextPath+'/img/chiudi.gif" height="8" width="8" alt="Chiudi" title="Chiudi"></a></div><div class="menuitems" id=""><a href="javascript:_selezionaTutti_cos();" tabindex="0">&nbsp;Seleziona sulla pagina corrente</a></div><div class="menuitems" id=""><a href="javascript:_archiviaTutto_cos();" tabindex="1">&nbsp;Seleziona su tutte le pagine</a></div></div>'
+		var _href_cos = _href_cos + "&nbsp;";
+		var _href_cos = _href_cos + '<div id="popmenuUncheck_cos" class="popupmenuskin" style="visibility: hidden;text-align: left"><div class="chiusuramenu"><a href="javascript:hideMenuDeselezione_cos();"><img src="'+_contextPath+'/img/chiudi.gif" height="8" width="8" alt="Chiudi" title="Chiudi"></a></div><div class="menuitems" id=""><a href="javascript:_deselezionaTutti_cos();" tabindex="0">&nbsp;Deseleziona sulla pagina corrente</a></div><div class="menuitems" id=""><a href="javascript:_annullaArchiviaTutto_cos();" tabindex="1">&nbsp;Deseleziona su tutte le pagine</a></div></div>'
+		
 		_center_cos.append(_href_cos);
 		_center_cos.appendTo($("#arch_cos"));
+		
+		$('#popmenuCheck div a').mouseover(function() {
+			$(this).parent('.menuitems').attr('id','mouseoverpopup');
+		}).mouseout(function() {
+			$(this).parent('.menuitems').attr('id','');
+		})
+		$('#popmenuUncheck div a').mouseover(function() {
+			$(this).parent('.menuitems').attr('id','mouseoverpopup');
+		}).mouseout(function() {
+			$(this).parent('.menuitems').attr('id','');
+		})
+		$('#popmenuCheck_cos div a').mouseover(function() {
+			$(this).parent('.menuitems').attr('id','mouseoverpopup');
+		}).mouseout(function() {
+			$(this).parent('.menuitems').attr('id','');
+		})
+		$('#popmenuUncheck_cos div a').mouseover(function() {
+			$(this).parent('.menuitems').attr('id','mouseoverpopup');
+		}).mouseout(function() {
+			$(this).parent('.menuitems').attr('id','');
+		})
+		$(window).click(function(e) {
+		  if(!document.getElementById('popmenuCheck')?.contains(e.target) && $('#popmenuCheck').css("visibility") == "visible" ) {
+			  hideMenuSelezione();
+		  }
+		  if(!document.getElementById('popmenuUncheck')?.contains(e.target) && $('#popmenuUncheck').css("visibility") == "visible" ) {
+			  hideMenuDeselezione();
+		  }
+		  if(!document.getElementById('popmenuCheck_cos')?.contains(e.target) && $('#popmenuCheck_cos').css("visibility") == "visible" ) {
+			  hideMenuSelezione_cos();
+		  }
+		  if(!document.getElementById('popmenuUncheck_cos')?.contains(e.target) && $('#popmenuUncheck_cos').css("visibility") == "visible" ) {
+			  hideMenuDeselezione_cos();
+		  }
+		})
+		
 		
 		$('#documenti thead th').eq(9).prop("title","Data");
 		
@@ -844,8 +956,32 @@ $(window).on("load", function (){
 			visualizzaFileAllegato(_provenienza,_k1,_k2,_text);
 		});
 		
+		if($dropdownGareCollegate)
+			$dropdownGareCollegate.appendTo('#add');
 
-		
+		if(_mostraFiltroEML) {
+			$dropdownFiltroEML = $('<label style="margin-left: 10px"/>').text('Mostra ricevute PEC ')
+			$select = $('<select id="escludiEML"/>').appendTo($dropdownFiltroEML);
+			$('<option value=No"/>').val("1").text("No").appendTo($select);
+			$('<option value=Si"/>').val("2").text("Si").appendTo($select);
+			$("#escludiEML").val(_escludiEML?"1":"2");
+			$select.change(function () {
+				_escludiEML = $("#escludiEML").val()!=="2";
+				$('#documenti').DataTable().ajax.reload();
+			})
+			$dropdownFiltroEML.appendTo('#documenti_length')
+		}
+
+		/* Aggiungi il filtro personalizzato
+		$.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+			var filtro = $select.val();
+			var fileName = data[9]; // Colonna 9 (indice 9) con nome file
+			if (filtro === "2") {
+				return !fileName.trim().toLowerCase().endsWith(".eml"); // esclude .eml
+			}
+			return true;
+		});
+		*/
 	}
 	
 
@@ -856,12 +992,13 @@ $(window).on("load", function (){
 			async: false,
 			url: "pg/SetRichiestaArchiviazioneCOS.do",
 			data : {
-				codgar: $("#codgar").val()
+				codgar: $("#codgar").val(),
 			},
 			
 			complete: function() {
 				_nowaitgperm();
-				historyReload();
+				$("#mascheraConfermaCOS").dialog( "close" );
+				$('#documenti').DataTable().ajax.reload();
 			},
 			
 			success: function(data){
@@ -893,7 +1030,7 @@ $(window).on("load", function (){
 					_idwsdoc = '2';
 				}
 									
-				//si devono processare solo le richieste che non risultano giÔøΩ procesate
+				//si devono processare solo le richieste che non risultano gi? procesate
 				if(!$('#cos_usr_ck_processata_' + _provenienza + "_" + _k1 + "_" + _k2).prop( "checked")){
 					_waitgperm();
 					$.ajax({
@@ -930,11 +1067,27 @@ $(window).on("load", function (){
 	$('#menuarchprot, #pulsantearchprot').on("click",function() {
 	
 		var nSelected = 0;
+		
+		var tableResultXpage= $('#documenti').DataTable().page.info()?.length; //salvo il numero di occorrenze per pagina
+		var page= $('#documenti').DataTable().page(); //salvo la pagina attiva
+		var backupSearch = [];
+		$('#documenti').DataTable().columns().eq(0).each( function (colIdx) {
+				backupSearch.push($('#documenti').DataTable().column(colIdx).search()); //salvo i filtri impostati
+				$('#documenti').DataTable().column(colIdx).search(''); //rimuovo i filtri
+		})
+		$('#documenti').DataTable().page.len(-1).draw(); //setto a infinito il numero di occorrenze per pagina
+
 		$( "input[id^='usr_ck_x_']" ).each( function( index ) {
 			if($( this ).prop( "checked") && !$( this ).prop( "disabled")){
-				nSelected= nSelected + 1;
+				nSelected= nSelected + 1; //conto!
 			}
 		});
+		$('#documenti').DataTable().columns().eq(0).each( function (colIdx) {
+					$('#documenti').DataTable().column(colIdx).search(backupSearch[colIdx]); //ripristino i filtri impostati
+		})
+		$('#documenti').DataTable().page.len(tableResultXpage)?.draw(); //ripristino il numero di occorrenze per pagina
+		$('#documenti').DataTable().page(page).draw(false); //ripristino la pagina attiva
+		$("#escludiEML").val(_escludiEML?"1":"2"); //ripristino il valore del filtro EML
 
 		if(nSelected > 0){
 			var opt = {
@@ -950,6 +1103,15 @@ $(window).on("load", function (){
 				_dialog_title.css("color","#002856");
 				$(this).parent().find("div.ui-dialog-buttonpane").css("background","#FFFFFF");
 			},
+			position: { using: function( pos ) {
+                $( this ).css({
+					top:'50%',
+					left: '50%',
+					marginRight: '50%',
+					transform: 'translate(-50%, -50%)'
+					
+				});
+			}},
 			autoOpen: false,
 			modal: true,
 			width: 700,
@@ -986,16 +1148,27 @@ $(window).on("load", function (){
 					 $("#sezionedatidocumentale").hide();
 				 }
 				
-				if(_tipoWSDM == "ENGINEERINGDOC")
+				if(_tipoWSDM == "ENGINEERINGDOC" || _tipoWSDM == "LAPISOPERA")
 					$("#sezionedatidocumentale").hide();	
 				
 				if (_tipoWSDM == "JIRIDE"){
 					_popolaTabellato("tipocollegamento","tipocollegamento");
 					_controlloAssociaDocumentiProtocollo();
 				}
-				if (_tipoWSDM == "LAPISOPERA"){
-					$("#classificadocumento").show();
-					$("#classificadocumento").closest('tr').show();
+				
+				if (_tipoWSDM == "TITULUS"){
+					$("#tipodocumento").show();
+					$("#tipodocumento").closest('tr').show();
+					if($("#genere").val() == 10 || $("#genere").val() == 20)
+					 	$("#tipodocumento").val(TIPO_DOCUMENTO_ELENCO_ARCHIVIAZIONE);
+					else if($("#genere").val() == 11)
+						$("#tipodocumento").val(TIPO_DOCUMENTO_AVVISO_ARCHIVIAZIONE);
+					else
+						$("#tipodocumento").val(TIPO_DOCUMENTO_GARA_ARCHIVIAZIONE);
+					
+				}
+				if(_fascicolazioneAbilitata==1 && _tipoWSDM == "HALLEY"){
+					$("#oggettofascicolo").parent().parent().hide();
 				}
 			}, 800);
 		
@@ -1017,11 +1190,27 @@ $(window).on("load", function (){
 	$('#menuexpcos, #pulsantearchcos').on("click",function() {
 	
 		var nSelected = 0;
+		var tableResultXpage= $('#documenti').DataTable().page.info()?.length; //salvo il numero di occorrenze per pagina
+		var page= $('#documenti').DataTable().page(); //salvo la pagina attiva
+		var backupSearch = [];
+		$('#documenti').DataTable().columns().eq(0).each( function (colIdx) {
+				backupSearch.push($('#documenti').DataTable().column(colIdx).search()); //salvo i filtri impostati
+				$('#documenti').DataTable().column(colIdx).search(''); //rimuovo i filtri
+		})
+		$('#documenti').DataTable().page.len(-1).draw(); //setto a infinito il numero di occorrenze per pagina
+		
 		$( "input[id^='cos_usr_ck_x_']" ).each( function( index ) {
 			if($( this ).prop( "checked") && !$( this ).prop( "disabled")){
-				nSelected= nSelected + 1;
+				nSelected= nSelected + 1; //conto!
 			}
 		});
+		$('#documenti').DataTable().columns().eq(0).each( function (colIdx) {
+					$('#documenti').DataTable().column(colIdx).search(backupSearch[colIdx]); //ripristino i filtri impostati
+		})
+		$('#documenti').DataTable().page.len(tableResultXpage)?.draw(); //ripristino il numero di occorrenze per pagina
+		$('#documenti').DataTable().page(page).draw(false); //ripristino la pagina attiva
+		$("#escludiEML").val(_escludiEML?"1":"2"); //ripristino il valore del filtro EML
+		
 		var controlloGaraOk = true;
 		var confermaButton = true;
 		var controlloConfigOk = true;
@@ -1085,11 +1274,20 @@ $(window).on("load", function (){
 					$("#messaggioErrorGara").hide();
 					$("#messaggioErrorConfig").hide();
 				},
+				position: { using: function( pos ) {
+					$( this ).css({
+						top:'50%',
+						left: '50%',
+						marginRight: '50%',
+						transform: 'translate(-50%, -50%)'
+						
+					});
+				}},
 				autoOpen: false,
 				modal: true,
 				width: 550,
 				height:250,
-				title: 'Trasferimento a conservazione digitale',
+				title: 'Trasferimento a conservazione digitale - '+(_integrazioneDigiP==='1'?'DigiP':'COS'),
 				buttons: {
 					"Conferma" : sendRequestCos,
 					"Annulla": function() {
@@ -1127,6 +1325,15 @@ $(window).on("load", function (){
 						$("#elencoErroriGara").hide();
 					}
 				},
+				position: { using: function( pos ) {
+					$( this ).css({
+						top:'50%',
+						left: '50%',
+						marginRight: '50%',
+						transform: 'translate(-50%, -50%)'
+						
+					});
+				}},
 				autoOpen: false,
 				modal: true,
 				width: 550,
@@ -1150,6 +1357,14 @@ $(window).on("load", function (){
 		
 	$('#menuexpdoc, #pulsanteexpdoc').on("click", function() {
 		var comando = "href=gare/commons/popup-richiesta-export-documenti.jsp?codgar=" + $("#codgar").val() + "&genere=" + $("#genere").val() + "&codice=" + $("#codice").val();
+		comando += "&entita=" + $('#entita').val();
+		if(_isStipula) 
+			comando+="&idstipula=" + $('#key1').val();
+		openPopUpCustom(comando, "exportDocumenti", 700, 450, "yes", "yes");
+	});
+	
+	$('#menuconsdocaggi').on("click", function() {
+		var comando = "href=gare/commons/popup-conservazione-documenti-aggiudicatario.jsp?codgar=" + $("#codgar").val() + "&genere=" + $("#genere").val() + "&codice=" + $("#codice").val();
 		comando += "&entita=" + $('#entita').val();
 		if(_isStipula) 
 			comando+="&idstipula=" + $('#key1').val();
@@ -1288,7 +1503,7 @@ $(window).on("load", function (){
 					} else {
 						_idwsdoc = '2';
 					}
-					//si devono processare solo le richieste che non risultano gi√† procesate
+					//si devono processare solo le richieste che non risultano gi‡ procesate
 					if(!$('#usr_ck_processata_' + _provenienza + "_" + _k1 + "_" + _k2).prop( "checked")){
 						var _stato = $('#stato_' + _k1 + "_" + _k2).val();
 						_waitgperm();
@@ -1317,9 +1532,8 @@ $(window).on("load", function (){
 			});
 			
 			$("#mascheraParametriWSDM").dialog( "close" );
-			
-			_tableDocumenti.destroy(true);
-			_popolaDocumenti();
+
+			$('#documenti').DataTable().ajax.reload();
 		}
 
     };	
@@ -1352,7 +1566,7 @@ $(window).on("load", function (){
 	    });
 	 
 	$('#idunitaoperativamittente').on("change", function() {
-		if (_tipoWSDM == "PRISMA" || _tipoWSDM == "INFOR"){
+		if (_tipoWSDM == "PRISMA" || _tipoWSDM == "INFOR" || _tipoWSDM == "HALLEY"){
 			$('#idunitaoperativadestinataria').val($('#idunitaoperativamittente').val());
 		}
     });
@@ -1388,6 +1602,39 @@ $(window).on("load", function (){
 				
 			});
 });
+
+	function showMenuSelezione(){
+		hideMenuDeselezione();
+		$('#popmenuCheck').css('visibility','visible');
+	}
+	function showMenuDeselezione(){
+		hideMenuSelezione();
+		$('#popmenuUncheck').css('visibility','visible');
+	}
+	
+	function hideMenuSelezione(){
+		$('#popmenuCheck').css('visibility','hidden');
+	}
+	function hideMenuDeselezione(){
+		$('#popmenuUncheck').css('visibility','hidden');
+	}
+	
+	function showMenuSelezione_cos(){
+		hideMenuDeselezione_cos();
+		$('#popmenuCheck_cos').css('visibility','visible');
+	}
+	function showMenuDeselezione_cos(){
+		hideMenuSelezione_cos();
+		$('#popmenuUncheck_cos').css('visibility','visible');
+	}
+	
+	function hideMenuSelezione_cos(){
+		$('#popmenuCheck_cos').css('visibility','hidden');
+	}
+	function hideMenuDeselezione_cos(){
+		$('#popmenuUncheck_cos').css('visibility','hidden');
+	}
+
 
 
 	/*
@@ -1445,13 +1692,14 @@ $(window).on("load", function (){
 			$('#indirizzomittente option').eq(0).prop('selected', true);
 		}
 		
-		if (_tipoWSDM == "TITULUS" || _tipoWSDM == "SMAT")
+		if (_tipoWSDM == "SMAT")
 			$("#sezionedatidocumentale").hide();
 		
-		if(_tipoWSDM == "PRISMA" || _tipoWSDM == "INFOR" || _tipoWSDM == "DOCER"){
+		if(_tipoWSDM == "PRISMA" || _tipoWSDM == "INFOR" || _tipoWSDM == "DOCER" || _tipoWSDM == "HALLEY"){
 			//$("#idunitaoperativamittente").hide();
 			$("#idunitaoperativamittente").closest('tr').show();
 		}
+		
 		
 		
 		$('#inserimentoinfascicolo').on("change", function() {
@@ -1503,6 +1751,7 @@ $(window).on("load", function (){
 					$.map( data, function( item ) {
 						_integrazioneWSDM = item[0];
 						_integrazioneCOS = item[1];
+						_integrazioneDigiP = item[2];
 					});
 	        	}
 			},
@@ -1515,10 +1764,12 @@ $(window).on("load", function (){
 
 	
   function _selezionaTutti() {
+	  hideMenuSelezione();
    $("input[id^='usr_ck_x_']").prop("checked","checked");
   }
 
   function _deselezionaTutti() {
+	  hideMenuDeselezione();
 	$( "input[id^='usr_ck_x_']" ).each( function( index ) {
 			if ($( this ).prop( "disabled")) {
 				;
@@ -1528,11 +1779,31 @@ $(window).on("load", function (){
 	});
   }
   
+  function _archiviaTutto() {
+	var tableResultXpage= $('#documenti').DataTable().page.info()?.length;
+	var page= $('#documenti').DataTable().page();
+	$('#documenti').DataTable().page.len(-1).draw();
+	_selezionaTutti();
+	$('#documenti').DataTable().page.len(tableResultXpage)?.draw();
+	$('#documenti').DataTable().page(page).draw(false);
+	}
+	
+function _annullaArchiviaTutto() {
+	var tableResultXpage= $('#documenti').DataTable().page.info()?.length;
+	var page= $('#documenti').DataTable().page();
+	$('#documenti').DataTable().page.len(-1).draw();
+	_deselezionaTutti();
+	$('#documenti').DataTable().page.len(tableResultXpage)?.draw();
+	$('#documenti').DataTable().page(page).draw(false);
+	}
+  
   function _selezionaTutti_cos() {
+	  hideMenuSelezione_cos();
 	   $("input[id^='cos_usr_ck_x_']").prop("checked","checked");
 	  }
 
 	  function _deselezionaTutti_cos() {
+		  hideMenuDeselezione_cos();
 		$( "input[id^='cos_usr_ck_x_']" ).each( function( index ) {
 				if ($( this ).prop( "disabled")) {
 					;
@@ -1541,6 +1812,26 @@ $(window).on("load", function (){
 				}
 		});
 	  }
+	  
+function _archiviaTutto_cos() {
+	var tableResultXpage= $('#documenti').DataTable().page.info()?.length;
+	var page= $('#documenti').DataTable().page();
+	$('#documenti').DataTable().page.len(-1).draw();
+	_selezionaTutti_cos();
+	$('#documenti').DataTable().page.len(tableResultXpage)?.draw();
+	$('#documenti').DataTable().page(page).draw(false);
+	}
+	
+function _annullaArchiviaTutto_cos() {
+	var tableResultXpage= $('#documenti').DataTable().page.info()?.length;
+	var page= $('#documenti').DataTable().page();
+	$('#documenti').DataTable().page.len(-1).draw();
+	_deselezionaTutti_cos();
+	$('#documenti').DataTable().page.len(tableResultXpage)?.draw();
+	$('#documenti').DataTable().page(page).draw(false);
+	}
+	
+
   
   	  
 	  function _apriDescrErrore(provenienza) {
@@ -1556,7 +1847,7 @@ $(window).on("load", function (){
   function visualizzaFileAllegato(provenienza,idprg,iddocdig,dignomdoc) {
 		var contextPath = $("#contextPath").val();
 		if(provenienza == '4' && !($("#documentiAssociatiDB").val() == '1')){
-				var href = contextPath + "/DocumentoAssociato.do?"+csrfToken+"&metodo=download";
+				var href = contextPath + "/DocumentoAssociato.do?metodo=download";
 				document.location.href=href+"&id=" + iddocdig;
 		}else{
 			digitalSignatureWsCheck: $("#digitalSignatureWsCheck").val();
@@ -1576,7 +1867,7 @@ $(window).on("load", function (){
 						
 					}else{
 						var href = contextPath + "/pg/VisualizzaFileAllegato.do";
-						document.location.href=href+"?"+csrfToken+"&idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+						document.location.href=href+"?idprg=" + idprg + "&iddocdig=" + iddocdig + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 					}
 					break;
 				default:
@@ -1590,10 +1881,10 @@ $(window).on("load", function (){
 							
 						openPopUpCustom(href, "DownloadP7M", 900, 550, "yes", "yes");
 					}else{
-						if (confirm("Si sta per scaricare (download) una copia del file in locale. Ogni modifica verr√† apportata alla copia locale ma non all\'originale. Continuare?"))
+						if (confirm("Si sta per scaricare (download) una copia del file in locale. Ogni modifica verr‡ apportata alla copia locale ma non all\'originale. Continuare?"))
 						{
 							var href = contextPath+"/VisualizzaFileDIGOGG.do";
-							document.location.href = href+"?"+csrfToken+"&c0acod=" + c0acod + "&dignomdoc=" + encodeURIComponent(dignomdoc);
+							document.location.href = href+"?c0acod=" + c0acod + "&dignomdoc=" + encodeURIComponent(dignomdoc);
 						}
 					}
 					break;

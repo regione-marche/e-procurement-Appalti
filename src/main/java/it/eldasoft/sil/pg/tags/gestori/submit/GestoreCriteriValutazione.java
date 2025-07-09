@@ -11,7 +11,10 @@
 package it.eldasoft.sil.pg.tags.gestori.submit;
 
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 import org.springframework.transaction.TransactionStatus;
@@ -19,6 +22,10 @@ import org.springframework.transaction.TransactionStatus;
 import it.eldasoft.gene.bl.SqlManager;
 import it.eldasoft.gene.db.datautils.DataColumn;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
+import it.eldasoft.gene.db.domain.LogEvento;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.utils.LogEventiUtils;
+import it.eldasoft.gene.web.struts.tags.UtilityStruts;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreChiaveIDAutoincrementante;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreChiaveNumerica;
 import it.eldasoft.gene.web.struts.tags.gestori.AbstractGestoreEntita;
@@ -110,6 +117,56 @@ public class GestoreCriteriValutazione extends AbstractGestoreEntita {
     DefaultGestoreEntita gestoreCRIDEF = new DefaultGestoreEntita("G1CRIDEF",
         this.getRequest());
     gestoreCRIDEF.update(status, datiForm);
+    
+    //APP-94, gestione update campo GOEV.ISNORIPAR
+    DefaultGestoreEntita gestoreGOEV = new DefaultGestoreEntita("GOEV",
+        this.getRequest());
+    gestoreGOEV.update(status, datiForm);
+    
+    //APP-94, gestione modifica dopo pubblicazione
+    String descrErrMsg = "";
+    String bloccoModificaPubblicazione = UtilityStruts.getParametroString(this.getRequest(), "bloccoModificaPubblicazione");
+    if("true".equals(bloccoModificaPubblicazione)){
+      HashMap<String, DataColumn> hm = datiForm.getColonne();
+      Iterator<?> it = hm.entrySet().iterator();
+
+      boolean modificheDaTracciare=false;
+      while (it.hasNext()) {
+        Entry<String, DataColumn> pair = (Entry<String, DataColumn>)it.next();
+        if(pair.getValue().isModified()){
+          modificheDaTracciare=true;
+         //la gestione è copiata dal gestore gare
+          if(!"".equals(descrErrMsg)){
+            descrErrMsg+="\n";
+          }
+          JdbcParametro paramOrigin = pair.getValue().getOriginalValue();
+          String valOriginale = "";
+          if(paramOrigin!=null){
+            valOriginale = paramOrigin.toString();
+          }
+          JdbcParametro paramNuovo = pair.getValue().getValue();
+          String valNuovo = "";
+          if(paramNuovo!=null){
+            valNuovo = paramNuovo.toString();
+          }
+          if("".equals(valOriginale)){valOriginale = "NULL";}
+          if("".equals(valNuovo)){valNuovo = "NULL";}
+          descrErrMsg+= pair.getKey() + ": ";
+          descrErrMsg+= "valore vecchio= " + valOriginale + ", ";
+          descrErrMsg+= "valore nuovo= " + valNuovo;
+          }
+        }
+
+      if(modificheDaTracciare){
+        LogEvento logEvento = LogEventiUtils.createLogEvento(this.getRequest());
+        logEvento.setLivEvento(1);
+        logEvento.setOggEvento(datiForm.getColumn("NGARA").getValue().getStringValue());
+        logEvento.setCodEvento("GA_MODIFICA_CRIDEF_PUB");
+        logEvento.setDescr("Modifica dettaglio criterio di valutazione dopo pubblicazione su portale Appalti");
+        logEvento.setErrmsg("Dettaglio modifiche:\n" + descrErrMsg);
+        LogEventiUtils.insertLogEventi(logEvento);
+      }
+    }
 
     AbstractGestoreChiaveIDAutoincrementante gestoreGARCOMPREQ = new DefaultGestoreEntitaChiaveIDAutoincrementante(
         "G1CRIREG", "ID", this.getRequest());
@@ -119,7 +176,7 @@ public class GestoreCriteriValutazione extends AbstractGestoreEntita {
     String id = datiForm.getColumn("G1CRIDEF.ID").getValue().getStringValue();
     String codgar = datiForm.getColumn("CODGAR").getValue().getStringValue();
     String ngara = datiForm.getColumn("NGARA").getValue().getStringValue();
-    //String ngara = "G00153";
+    
     String formatoCorrente = datiForm.getColumn("G1CRIDEF.FORMATO").getValue().getStringValue();
     if(formatoCorrente == null || formatoCorrente.length()<= 0){
       throw new GestoreException("Formato non definito","criteri.formatoNonDefinito");
@@ -155,26 +212,18 @@ public class GestoreCriteriValutazione extends AbstractGestoreEntita {
       }
     }
 
-    String delete = "delete from documgara where ngara = ? and descrizione = 'Offerta tecnica'";
+	String delete = "delete from documgara where ngara = ? and busta = 2 and gentel = '1' and descrizione = 'Offerta tecnica'";
     String insertDoc = "insert into documgara (codgar,ngara,norddocg,numord,busta,gruppo,tipodoc,descrizione,obbligatorio,modfirma,valenza,gentel,seztec) values (?,?,?,1,2,3,1,'Offerta tecnica','1',1,0,'1',2)";
     String queryCriteriDefiniti = "select formato from g1cridef, goev where g1cridef.ngara = ? and g1cridef.necvan = goev.necvan and g1cridef.ngara = goev.ngara and formato != 100 and goev.tippar=1";
-    String selectDescrizioni = "select descrizione from documgara where ngara = ?";
+	String selectDocumentiTecniciGenerati = "select ngara from documgara where ngara = ? and busta = 2 and gentel = '1' and descrizione = 'Offerta tecnica'";
     String selectMaxNord = "select max(norddocg) from documgara where codgar = ?";
     try {
-      List listaFormatiDef = this.sqlManager.getListVector(queryCriteriDefiniti,new Object[]{ngara});
-      if(listaFormatiDef != null && listaFormatiDef.size() > 0){
-        Long MaxNorddocg = new Long(0);
-        boolean trovataOffTecnica = false;
-        if(listaFormatiDef != null && listaFormatiDef.size() > 0){
-          List listaDoc = this.sqlManager.getListVector(selectDescrizioni,new Object[]{ngara});
-          for (int i = 0; i < listaDoc.size(); i++) {
-            String offTecnica = (String) SqlManager.getValueFromVectorParam(listaDoc.get(i), 0).getValue();
-            if (offTecnica != null && offTecnica.equals("Offerta tecnica")) {
-              trovataOffTecnica = true;
-            }
-          }
-        }
-        if (!trovataOffTecnica) {
+      List listaFormatiDef = this.sqlManager.getListVector(queryCriteriDefiniti, new Object[] { ngara });
+      if (listaFormatiDef != null && listaFormatiDef.size() > 0) {
+        List documentiTecniciGenerati = this.sqlManager.getListVector(selectDocumentiTecniciGenerati, new Object[] { ngara });
+        Boolean trovatoDocumentoInserito = (documentiTecniciGenerati != null && documentiTecniciGenerati.size() > 0) ? true : false;
+        if (!trovatoDocumentoInserito) {
+          Long MaxNorddocg = new Long(0);
           Long norddocg = (Long) sqlManager.getObject(selectMaxNord, new Object[] { codgar });
           if (norddocg != null) {
             MaxNorddocg = norddocg;
@@ -187,6 +236,7 @@ public class GestoreCriteriValutazione extends AbstractGestoreEntita {
         logger.debug("codgar = " + codgar);
       }
     } catch (SQLException e) {
+      throw new GestoreException("Errore nell'aggiornamento dei documenti richiesti", "preUpdate", e);
     }
   }
 

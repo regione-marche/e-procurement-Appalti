@@ -8,6 +8,7 @@ import java.util.HashMap;
 import org.apache.struts.upload.FormFile;
 import org.springframework.transaction.TransactionStatus;
 
+import it.eldasoft.gene.bl.FileAllegatoManager;
 import it.eldasoft.gene.db.datautils.DataColumn;
 import it.eldasoft.gene.db.datautils.DataColumnContainer;
 import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
@@ -155,6 +156,13 @@ public class GestoreW3GARADOC extends AbstractGestoreChiaveNumerica {
               FormFile formFile = (FormFile) hmFile.get(new Long(i));
               if (formFile!= null){
                 if(formFile.getFileSize() > 0 && formFile.getFileSize() <= MAX_FILE_SIZE) {
+                  if(!FileAllegatoManager.checkFileContent(formFile.getFileData(),formFile.getFileName())){
+                    throw new GestoreException("Il file selezionato da caricare viene scartato in quanto ha un contenuto in formato non valido secondo le verifiche mediante la libreria Apache Tika",
+                        "upload.erroreVerificaContenuto", new String[]{formFile.getFileName()}, null);
+                  } else if(formFile.getFileName().toLowerCase().endsWith(".pdf") && FileAllegatoManager.isMaliciousPdf(formFile.getFileData(), formFile.getFileName())) {
+                    throw new GestoreException("Il file selezionato da caricare viene scartato in quanto sembra codificare dei contenuti non sicuri (malware)",
+                            "upload.erroreContenutoMalevolo", new String[]{formFile.getFileName()}, null);
+                  }
                   ByteArrayOutputStream baos = new ByteArrayOutputStream();
                   baos.write(formFile.getFileData());
     

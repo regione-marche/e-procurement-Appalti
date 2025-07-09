@@ -38,6 +38,7 @@
 			<c:set var="ngara" value="${param.ngara}" />
 		</c:otherwise>
 	</c:choose>
+	<c:set var="ngara" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select NGARA from GARE where NGARA=?", ngara)}'/>	
 	
 	<gene:setString name="titoloMaschera" value="Reinvia comunicazione" />
 	

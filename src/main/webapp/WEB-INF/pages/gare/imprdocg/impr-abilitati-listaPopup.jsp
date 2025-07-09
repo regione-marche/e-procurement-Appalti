@@ -11,12 +11,13 @@
 %>
 <%@ taglib uri="http://www.eldasoft.it/genetags" prefix="gene"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
 <c:set var="codiceGara" value='${gene:getValCampo(key, "DITG.CODGAR5")}'/>
 <c:set var="numeroGara" value='${gene:getValCampo(key, "DITG.NGARA5")}'/>
 <c:set var="codiceDitta" value='${gene:getValCampo(key, "DITG.DITTAO")}'/>
 <c:set var="contextPath" value="${pageContext.request.contextPath}"/>
-<c:set var="inclause" value="(${param.inclause})"/>
+<c:set var="inclause" value="${param.inclause}"/>
 <c:set var="numeroDitteAbilitate" value="${param.numeroDitteAbilitate}"/>
 <c:set var="genereModelloComunicazione" value="51"/>
 
@@ -63,7 +64,23 @@
 	</gene:redefineInsert>
 	
 	<gene:setString name="titoloMaschera"	value="Operatori in corso di abilitazione" />
-	<c:set var="whereDITG"	value="DITG.CODGAR5='${codiceGara}' and (DITG.NGARA5='${numeroGara }') and DITG.DITTAO in ${inclause} " />
+	<c:set var="where"	value="DITG.CODGAR5=? and DITG.NGARA5=? and DITG.DITTAO in (" />
+	<c:set var="parametri" value="T:${codiceGara};T:${numeroGara}"/>
+	<c:set var="dittaoInClause" value='${fn:split(inclause,",")}' />
+	<c:forEach begin="1" end='${fn:length(dittaoInClause)}' step="1" varStatus="indicekey">
+		<c:set var="strTmp" value='${dittaoInClause[indicekey.index-1]}' />
+		<c:set var="parametri" value='${parametri};T:${strTmp}'/>
+		<c:choose>
+			<c:when test="${indicekey.last}">
+				<c:set var="where" value='${where}?)' />
+			</c:when>
+			<c:otherwise>
+				<c:set var="where" value='${where}?,' />
+			</c:otherwise>
+		</c:choose>
+	</c:forEach>
+	${gene:callFunction4("it.eldasoft.gene.tags.functions.ImpostazioneFiltroFunction", pageContext, "DITG", where, parametri)}
+	
 		<% // Ridefinisco il corpo della lista %>
 	<gene:redefineInsert name="corpo">
 		<%// Creo la lista delle occorrenze appena abilitate%>
@@ -101,8 +118,7 @@
 			</tr>
 			<tr>
 				<td${stileDati}>
-				<gene:formLista entita="DITG"
-						where='${whereDITG}' pagesize="20" tableclass="datilista"
+				<gene:formLista entita="DITG" pagesize="20" tableclass="datilista"
 						sortColumn="2" gestisciProtezioni="true">
 						<gene:redefineInsert name="listaNuovo" />
 						<gene:redefineInsert name="listaEliminaSelezione" />
@@ -216,6 +232,11 @@
 		</table>
 	</gene:redefineInsert>
 	<gene:javaScript>
+	
+		<c:if test='${gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.obbligoAssociaFascicoloEsistente")}'>
+			_isObbligoAssociazioneFascicolo=true;
+		</c:if>
+			
 			
 		function inviaMail(){
 			var winOpener = window.opener;
@@ -489,7 +510,7 @@
 						var testoOggettoDocumento= "${numeroGara} - " + $('#oggettodocumento').val();
 						$("#oggettodocumento").val(testoOggettoDocumento);
 					}
-					if (_tipoWSDM == "LAPISOPERA" && _fascicoliPresenti == 0){
+					if ((_tipoWSDM == "LAPISOPERA" || _isObbligoAssociazioneFascicolo) && _fascicoliPresenti == 0){
 						$('#pulsanteConferma').hide();
 					}
 				}
@@ -593,8 +614,8 @@
 				}
 				
 				
-				if ((_tipoWSDM != "JIRIDE"  && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA") || (_tipoWSDM == "JIRIDE" && _delegaInvioMailDocumentaleAbilitata != 1) || (_tipoWSDM == "ARCHIFLOW" && _delegaInvioMailDocumentaleAbilitata != 1)
-					|| (_tipoWSDM == "ARCHIFLOWFA" && _delegaInvioMailDocumentaleAbilitata != 1)) {
+				if ((_tipoWSDM != "JIRIDE"  && _tipoWSDM != "ARCHIFLOW" && _tipoWSDM != "ARCHIFLOWFA" && _tipoWSDM != "HALLEY") || (_tipoWSDM == "JIRIDE" && _delegaInvioMailDocumentaleAbilitata != 1) || (_tipoWSDM == "ARCHIFLOW" && _delegaInvioMailDocumentaleAbilitata != 1)
+					|| (_tipoWSDM == "ARCHIFLOWFA" && _delegaInvioMailDocumentaleAbilitata != 1) || (_tipoWSDM == "HALLEY" && _delegaInvioMailDocumentaleAbilitata != 1)) {
 					$("#indirizzomittente").hide();
 					$("#indirizzomittente").closest('tr').hide();
 					$('#indirizzomittente option').eq(0).prop('selected', true);

@@ -35,8 +35,8 @@
 			<gene:campoScheda campo="PIVA_FIT_${param.contatore}" campoFittizio="true" definizione="T50" visibile="false"/>
 			<gene:campoScheda campo="NAZIMP_FIT_${param.contatore}" campoFittizio="true" definizione="T50" visibile="false"/>
 		</gene:archivio>
-		<gene:campoScheda campo="CODFISC_${param.contatore}" entita="ANTICORDITTE" campoFittizio="true" definizione="T16;0;;;CFANTICORD" value="${item[3]}" />
-		<gene:campoScheda campo="IDFISCEST_${param.contatore}" entita="ANTICORDITTE" campoFittizio="true" definizione="T16;0;;;CFESTANTICORD" value="${item[4]}" />
+		<gene:campoScheda campo="CODFISC_${param.contatore}" entita="ANTICORDITTE" campoFittizio="true" definizione="T30;0;;;CFANTICORD" value="${item[3]}" />
+		<gene:campoScheda campo="IDFISCEST_${param.contatore}" entita="ANTICORDITTE" campoFittizio="true" definizione="T30;0;;;CFESTANTICORD" value="${item[4]}" />
 		<gene:campoScheda campo="RUOLO_${param.contatore}" entita="ANTICORDITTE" campoFittizio="true" definizione="N7;0;A1094;;RUOLOANTICORD" value="${item[5]}" />
 	</c:when>
 	<c:otherwise>
@@ -58,8 +58,8 @@
 			<gene:campoScheda campo="PIVA_FIT_${param.contatore}" campoFittizio="true" definizione="T50" visibile="false"/>
 			<gene:campoScheda campo="NAZIMP_FIT_${param.contatore}" campoFittizio="true" definizione="T50" visibile="false"/>
 		</gene:archivio>
-		<gene:campoScheda campo="CODFISC_${param.contatore}" entita="ANTICORDITTE" campoFittizio="true" definizione="T16;0;;;CFANTICORD" />
-		<gene:campoScheda campo="IDFISCEST_${param.contatore}" entita="ANTICORDITTE" campoFittizio="true" definizione="T16;0;;;CFESTANTICORD" />
+		<gene:campoScheda campo="CODFISC_${param.contatore}" entita="ANTICORDITTE" campoFittizio="true" definizione="T30;0;;;CFANTICORD" />
+		<gene:campoScheda campo="IDFISCEST_${param.contatore}" entita="ANTICORDITTE" campoFittizio="true" definizione="T30;0;;;CFESTANTICORD" />
 		<gene:campoScheda campo="RUOLO_${param.contatore}" entita="ANTICORDITTE" campoFittizio="true" definizione="N7;0;A1094;;RUOLOANTICORD"  />
 		
 	</c:otherwise>

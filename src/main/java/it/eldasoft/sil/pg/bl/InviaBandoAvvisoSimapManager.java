@@ -20,18 +20,31 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.Date;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.Vector;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.xml.bind.DatatypeConverter;
 
+import it.eldasoft.gene.ws.objectstorage.ObjectStorageUtils;
+import it.eldasoft.gene.ws.objectstorage.UploadInfo;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+import org.apache.xml.security.utils.Base64;
+import org.springframework.transaction.TransactionStatus;
 
 import it.eldasoft.gene.bl.GenChiaviManager;
 import it.eldasoft.gene.bl.SqlManager;
+import it.eldasoft.gene.db.datautils.DataColumn;
+import it.eldasoft.gene.db.datautils.DataColumnContainer;
+import it.eldasoft.gene.db.domain.LogEvento;
+import it.eldasoft.gene.db.sql.sqlparser.JdbcParametro;
+import it.eldasoft.gene.utils.LogEventiUtils;
 import it.eldasoft.gene.web.struts.tags.gestori.GestoreException;
 import it.eldasoft.simap.ws.xmlbeans.AuthorityAType;
 import it.eldasoft.simap.ws.xmlbeans.AuthorityType;
@@ -72,6 +85,7 @@ import it.eldasoft.utils.properties.ConfigManager;
 import it.eldasoft.utils.utility.UtilityFiscali;
 import it.eldasoft.utils.utility.UtilityMath;
 import it.eldasoft.utils.utility.UtilityNumeri;
+import net.sf.json.JSONObject;
 
 
 public class InviaBandoAvvisoSimapManager {
@@ -79,6 +93,12 @@ public class InviaBandoAvvisoSimapManager {
   static Logger               logger                         = Logger.getLogger(InviaBandoAvvisoSimapManager.class);
 
   private static final String PROP_BANDO_AVVISO_SIMAP_WS_URL = "it.eldasoft.bandoavvisosimap.ws.url";
+  private static final String PROP_URL_BANDI = "invioScp.urlBandiPortaleAppalti";
+  private static final String PROP_URL_AVVISI = "invioScp.urlAvvisiPortaleAppalti";
+  private static final String PROP_URL_PUBBLICA = "portaleAppalti.urlPubblica";
+  private static final String PROP_URL_PROCEDURE = "invioScp.urlProcedurePortaleAppalti";
+
+  public static final String PROP_TOKEN_ACCESSO_FEU = "feu.token";
 
   private SqlManager          sqlManager;
   private GenChiaviManager    genChiaviManager;
@@ -103,8 +123,8 @@ public class InviaBandoAvvisoSimapManager {
    * @throws Exception
    * @throws Throwable
    */
-  public String inviaBandoAvvisoSimap(String codgar, String formulario, BigInteger sottoTipo,
-      String username, String password) throws Exception, Throwable {
+  public String inviaBandoAvvisoSimap(String codgar, Long idForm, String formulario, BigInteger sottoTipo,
+      String username, String password, HttpServletRequest request, boolean usaToken) throws Exception, Throwable {
 
     if (logger.isDebugEnabled())
       logger.debug("InviaBandoAvvisoSimap2018: inizio metodo");
@@ -112,6 +132,9 @@ public class InviaBandoAvvisoSimapManager {
     String settore = (String) sqlManager.getObject(
         "select settore from torn where codgar = ?",
         new Object[] { codgar });
+    Long tipoAvvGareAvvisi = (Long) sqlManager.getObject(
+            "select tipoavv from gareavvisi where codgar = ?",
+            new Object[] { codgar });
 
     String xml = null;
     String xmlEnc = null;
@@ -127,75 +150,130 @@ public class InviaBandoAvvisoSimapManager {
           "L'indirizzo per la connessione al web service non e' definito",
           "inviabandoavvisosimap.ws.url");
     }
+    if(urlString.endsWith("/"))
+      urlString=urlString.substring(0, urlString.length()-1);
+
+    String numeroEFORM = null;
+	Long idScheda = null;
+	String uuidEForm = null;
+
     try {
+		if (idForm != null) {
+			Vector<?> datiScheda = sqlManager.getVector("select g1npascheda.id, g1cf_npa.eform"
+	    			+ " from g1npaform,g1cf_npa,g1npascheda"
+	    			+ " where g1npaform.idcfnpa=g1cf_npa.id and g1npaform.id=g1npascheda.idform"
+	    			+ " and g1npaform.id=?", new Object[] { idForm });
+
+	    	idScheda = ((JdbcParametro) datiScheda.get(0)).longValue();
+	    	numeroEFORM = ((JdbcParametro) datiScheda.get(1)).getStringValue();
+
+			if (numeroEFORM == null) {
+				throw new Exception("Numero EFORM è nullo");
+			}
+			switch (Integer.parseInt(numeroEFORM)) {
+			case 1: case 2:
+				formulario = "FS8";
+				break;
+
+			case 16: case 17: case 23: case 24:
+				formulario = "FS2";
+				break;
+
+			case 4: case 5: case 7: case 8: case 10: case 11:
+				formulario = "FS1";
+				switch (Integer.parseInt(numeroEFORM)) {
+				case 4: case 5:
+					sottoTipo = new BigInteger("1");
+					break;
+				case 7: case 8:
+					sottoTipo = new BigInteger("2");
+					break;
+				case 10: case 11:
+					sottoTipo = new BigInteger("3");
+					break;
+				}
+				break;
+
+			case 29: case 30: case 36: case 37:
+				formulario = "FS3";
+				break;
+			}
+		}
+
       if ("FS1".equals(formulario)) {
 
-        xml = this.getXMLAvvisoSettore(codgar, formulario, sottoTipo,settore);
-        if("S".equals(settore)){
+        xml = this.getXMLAvvisoSettore(codgar, formulario, sottoTipo,settore,numeroEFORM,idScheda);
+        if("S".equals(settore) || ((Long) 2L).equals(tipoAvvGareAvvisi)){
           urlString = urlString + "/avvisoperiodicoindicativo";
         }else{
           urlString = urlString + "/avvisopreinformazione";
         }
-        URL url = new URL(urlString);
-        conn = (HttpURLConnection) url.openConnection();
-        conn.setDoOutput(true);
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "application/json");
-        conn.setRequestProperty("Authorization", "Basic " + authStringEnc);
+      }
+      else if ("FS2".equals(formulario)) {
 
-        byte[] xmlByte = xml.getBytes("UTF-8");
-        xmlEnc = DatatypeConverter.printBase64Binary(xmlByte);
-        }
-       else if ("FS2".equals(formulario)) {
-
-         xml = this.getXMLBandoGaraSettore(codgar, formulario, settore);
+         xml = this.getXMLBandoGaraSettore(codgar, formulario, settore,numeroEFORM,idScheda);
          if("S".equals(settore)){
            urlString = urlString + "/bandogarasettorispeciali";
          }else{
            urlString = urlString + "/bandogara";
          }
-         URL url = new URL(urlString);
-         conn = (HttpURLConnection) url.openConnection();
-         conn.setDoOutput(true);
-         conn.setRequestMethod("POST");
-         conn.setRequestProperty("Content-Type", "application/json");
-         conn.setRequestProperty("Authorization", "Basic " + authStringEnc);
+      }
+      else if ("FS3".equals(formulario)) {
 
-         byte[] xmlByte = xml.getBytes("UTF-8");
-         xmlEnc = DatatypeConverter.printBase64Binary(xmlByte);
-        }
-       else if ("FS3".equals(formulario)) {
-
-         xml = this.getXMLAvvisoAggiudicazioneSettore(codgar, formulario,settore);
+         xml = this.getXMLAvvisoAggiudicazioneSettore(codgar, formulario,settore,numeroEFORM,idScheda);
          if("S".equals(settore)){
            urlString = urlString + "/avvisoaggiudicazionesettorispeciali";
          }else{
            urlString = urlString + "/avvisoaggiudicazione";
          }
-         URL url = new URL(urlString);
-         conn = (HttpURLConnection) url.openConnection();
-         conn.setDoOutput(true);
-         conn.setRequestMethod("POST");
-         conn.setRequestProperty("Content-Type", "application/json");
-         conn.setRequestProperty("Authorization", "Basic " + authStringEnc);
-
-         byte[] xmlByte = xml.getBytes("UTF-8");
-         xmlEnc = DatatypeConverter.printBase64Binary(xmlByte);
-        }
-       else if ("FS8".equals(formulario)) {
-         urlString = urlString + "/avvisoprofilocommittente";
-         xml = this.getXMLAvvisoProfiloCommittente(codgar, formulario, settore);
-
-         URL url = new URL(urlString);
-         conn = (HttpURLConnection) url.openConnection();
-         conn.setDoOutput(true);
-         conn.setRequestMethod("POST");
-         conn.setRequestProperty("Content-Type", "application/json");
-         conn.setRequestProperty("Authorization", "Basic " + authStringEnc);
-
-         byte[] xmlByte = xml.getBytes("UTF-8");
-         xmlEnc = DatatypeConverter.printBase64Binary(xmlByte);
       }
+      else if ("FS8".equals(formulario)) {
+         urlString = urlString + "/avvisoprofilocommittente";
+         xml = this.getXMLAvvisoProfiloCommittente(codgar, formulario, settore,numeroEFORM,idScheda);
+      }
+
+      if (usaToken) {
+          urlString += "token";
+      }
+
+      URL url = new URL(urlString);
+      conn = (HttpURLConnection) url.openConnection();
+      conn.setDoOutput(true);
+      conn.setRequestMethod("POST");
+      conn.setRequestProperty("Content-Type", "application/json");
+      conn.setRequestProperty("Authorization", "Basic " + authStringEnc);
+
+      byte[] xmlByte = xml.getBytes("UTF-8");
+      xmlEnc = DatatypeConverter.printBase64Binary(xmlByte);
+
+      if (idForm != null) {
+    	String codiceGara = codgar;
+  		if (codiceGara.startsWith("$")) {
+  			codiceGara = codiceGara.substring(1);
+  		}
+
+    	int livEvento = 1;
+		String oggEvento = codiceGara;
+		String codEvento = "GA_FEU_REQ_INVIODATI";
+        uuidEForm = (String) sqlManager.getObject("select uuid_eform from g1npascheda where id=?", new Object[] {idScheda});
+		String descrEvento = "Invio richiesta a FEU - NUOVO EFORM " + numeroEFORM + " (id.avviso " + uuidEForm + " - id.scheda " + idScheda + ")";
+		String errMsgEvento = xml;
+
+    	LogEvento logEvento = null;
+		if (request == null) {
+			logEvento = new LogEvento();
+		} else {
+			logEvento = LogEventiUtils.createLogEvento((HttpServletRequest) request);
+		}
+		logEvento.setCodApplicazione("PG");
+		logEvento.setLivEvento(livEvento);
+		logEvento.setOggEvento(oggEvento);
+		logEvento.setCodEvento(codEvento);
+		logEvento.setDescr(descrEvento);
+		logEvento.setErrmsg(errMsgEvento);
+		LogEventiUtils.insertLogEventi(logEvento);
+      }
+
     } catch (Throwable t) {
       throw t;
     }
@@ -215,6 +293,33 @@ public class InviaBandoAvvisoSimapManager {
     while ((output = br.readLine()) != null) {
       res= res + output;
     }
+
+    if (idForm != null) {
+    	String codiceGara = codgar;
+  		if (codiceGara.startsWith("$")) {
+  			codiceGara = codiceGara.substring(1);
+  		}
+
+    	int livEvento = 1;
+		String oggEvento = codiceGara;
+		String codEvento = "GA_FEU_RES_INVIODATI";
+		String descrEvento = "Risposta FEU - NUOVO EFORM " + numeroEFORM + " (id.avviso " + uuidEForm + " - id.scheda " + idScheda + ")";
+		String errMsgEvento = res;
+
+    	LogEvento logEvento = null;
+		if (request == null) {
+			logEvento = new LogEvento();
+		} else {
+			logEvento = LogEventiUtils.createLogEvento((HttpServletRequest) request);
+		}
+		logEvento.setCodApplicazione("PG");
+		logEvento.setLivEvento(livEvento);
+		logEvento.setOggEvento(oggEvento);
+		logEvento.setCodEvento(codEvento);
+		logEvento.setDescr(descrEvento);
+		logEvento.setErrmsg(errMsgEvento);
+		LogEventiUtils.insertLogEventi(logEvento);
+      }
 
     conn.disconnect();
     return res;
@@ -549,6 +654,10 @@ public class InviaBandoAvvisoSimapManager {
 
       Long iterga = (Long) SqlManager.getValueFromVectorParam(
           datiTORNGARE, 9).getValue();
+      
+      if(new Long(9).equals(iterga))
+        iterga = 1L;
+      
       if(iterga != null){
         String strIterga = Long.toString(iterga);
         avvisoPreinformazione.setTYPEPROCEDURE(W3Z46PreType.Enum.forString(strIterga));
@@ -571,6 +680,10 @@ public class InviaBandoAvvisoSimapManager {
       String accappub = (String) SqlManager.getValueFromVectorParam(
           datiTORNGARE, 10).getValue();
       if(accappub != null)avvisoPreinformazione.setGPA(SnType.Enum.forString(accappub));
+
+      avvisoPreinformazione.setDOCUMENTURL(getUrlDocumentiGara(codgar));
+      avvisoPreinformazione.setDOCUMENTFURE(BigInteger.valueOf(1L));
+
       //FINE DELLA SCRITTURA DEL XML
     }
 
@@ -588,7 +701,7 @@ public class InviaBandoAvvisoSimapManager {
    * @throws IOException
    * @throws Exception
    */
-  private String getXMLAvvisoSettore(String codgar, String formulario, BigInteger tipoAvviso, String settore)
+  private String getXMLAvvisoSettore(String codgar, String formulario, BigInteger tipoAvviso, String settore, String numeroEFORM, Long idScheda)
       throws SQLException, IOException, Exception {
 
     if (logger.isDebugEnabled())
@@ -600,18 +713,49 @@ public class InviaBandoAvvisoSimapManager {
     Long iterga = (Long) sqlManager.getObject(
         "select iterga from torn where codgar = ?",
         new Object[] { codgar });
+    
+    if(new Long(9).equals(iterga))
+      iterga = 1L;
 
-    if("S".equals(settore)){
+    Long tipoAvvGareAvvisi = (Long) sqlManager.getObject(
+            "select tipoavv from gareavvisi where codgar = ?",
+            new Object[] { codgar });
+
+    if("S".equals(settore) || ((Long) 2L).equals(tipoAvvGareAvvisi)){
       AvvisoPeriodicoIndicativoDocument avvisoPeriodicoIndicativoDocument = AvvisoPeriodicoIndicativoDocument.Factory.newInstance();
       avvisoPeriodicoIndicativoDocument.documentProperties().setEncoding("UTF-8");
       AvvisoPeriodicoIndicativoType avvisoPeriodicoIndicativo = avvisoPeriodicoIndicativoDocument.addNewAvvisoPeriodicoIndicativo();
 
       avvisoPeriodicoIndicativo = (AvvisoPeriodicoIndicativoType) avvisoPreinformazione.changeType(AvvisoPeriodicoIndicativoType.type);
 
-      String uid;
-      uid = this.getUid(4, codgar);
-      if (uid != null){
-        avvisoPeriodicoIndicativo.setUUID(uid);
+		if (idScheda == null) {
+			String uid;
+			uid = this.getUid(4, codgar);
+			if (uid != null) {
+				avvisoPeriodicoIndicativo.setUUID(uid);
+			}
+		} else {
+			String uid;
+			uid = this.getUid(idScheda);
+			if (uid != null) {
+				avvisoPeriodicoIndicativo.setUUID(uid);
+			}
+		}
+
+      if (StringUtils.isNotEmpty(numeroEFORM)) {
+    	  avvisoPeriodicoIndicativo.setEFORMSSUBTYPE(numeroEFORM);
+      } else {
+	      switch (tipoAvviso.intValue()) {
+	      case 1:
+	    	  avvisoPeriodicoIndicativo.setEFORMSSUBTYPE("5");
+	    	  break;
+	      case 2:
+	    	  avvisoPeriodicoIndicativo.setEFORMSSUBTYPE("8");
+	    	  break;
+	      case 3:
+	    	  avvisoPeriodicoIndicativo.setEFORMSSUBTYPE("11");
+	    	  break;
+	      }
       }
 
       if(!(BigInteger.valueOf(2).compareTo(tipoAvviso) == 0) && !(tipoAvviso == BigInteger.valueOf(2))){
@@ -637,10 +781,34 @@ public class InviaBandoAvvisoSimapManager {
       AvvisoPreinformazioneDocument avvisoPreinformazioneDocument = AvvisoPreinformazioneDocument.Factory.newInstance();
       avvisoPreinformazioneDocument.documentProperties().setEncoding("UTF-8");
 
-      String uid;
-      uid = this.getUid(1, codgar);
-      if (uid != null){
-        avvisoPreinformazione.setUUID(uid);
+		if (idScheda == null) {
+			String uid;
+			uid = this.getUid(1, codgar);
+			if (uid != null) {
+				avvisoPreinformazione.setUUID(uid);
+			}
+		} else {
+			String uid;
+			uid = this.getUid(idScheda);
+			if (uid != null) {
+				avvisoPreinformazione.setUUID(uid);
+			}
+		}
+
+      if (StringUtils.isNotEmpty(numeroEFORM)) {
+    	  avvisoPreinformazione.setEFORMSSUBTYPE(numeroEFORM);
+      } else {
+	      switch (tipoAvviso.intValue()) {
+	      case 1:
+	    	  avvisoPreinformazione.setEFORMSSUBTYPE("4");
+	    	  break;
+	      case 2:
+	    	  avvisoPreinformazione.setEFORMSSUBTYPE("7");
+	    	  break;
+	      case 3:
+	    	  avvisoPreinformazione.setEFORMSSUBTYPE("10");
+	    	  break;
+	      }
       }
 
       if(!(BigInteger.valueOf(2).compareTo(tipoAvviso) == 0) && !(tipoAvviso == BigInteger.valueOf(2))){
@@ -992,6 +1160,9 @@ public class InviaBandoAvvisoSimapManager {
 
       bandoGara.setRECURRENTPROCNO(empty);
 
+      bandoGara.setDOCUMENTURL(getUrlDocumentiGara(codgar));
+      bandoGara.setDOCUMENTFURE(BigInteger.valueOf(1L));
+
       //FINE DELLA SCRITTURA
     }
 
@@ -1009,7 +1180,7 @@ public class InviaBandoAvvisoSimapManager {
    * @throws SQLException
    * @throws IOException
    */
-  private String getXMLBandoGaraSettore(String codgar, String formulario, String settore) throws SQLException,
+  private String getXMLBandoGaraSettore(String codgar, String formulario, String settore, String numeroEFORM, Long idScheda) throws SQLException,
       IOException, Exception {
 
     if (logger.isDebugEnabled())
@@ -1023,6 +1194,9 @@ public class InviaBandoAvvisoSimapManager {
         "select iterga from torn where codgar = ?",
         new Object[] { codgar });
 
+    if(new Long(9).equals(iterga))
+      iterga = 1L;
+    
     if("S".equals(settore)){
 
       BandoGaraSettoriSpecialiDocument bandoGaraSettoriSpecialiDocument = BandoGaraSettoriSpecialiDocument.Factory.newInstance();
@@ -1031,10 +1205,24 @@ public class InviaBandoAvvisoSimapManager {
 
       bandoGaraSettoriSpeciali = (BandoGaraSettoriSpecialiType) bandoGara.changeType(BandoGaraSettoriSpecialiType.type);
 
-      String uid;
-      uid = this.getUid(5, codgar);
-      if (uid != null){
-        bandoGaraSettoriSpeciali.setUUID(uid);
+		if (idScheda == null) {
+			String uid;
+			uid = this.getUid(5, codgar);
+			if (uid != null) {
+				bandoGaraSettoriSpeciali.setUUID(uid);
+			}
+		} else {
+			String uid;
+			uid = this.getUid(idScheda);
+			if (uid != null) {
+				bandoGaraSettoriSpeciali.setUUID(uid);
+			}
+		}
+      
+      if (StringUtils.isNotEmpty(numeroEFORM)) {
+    	  bandoGaraSettoriSpeciali.setEFORMSSUBTYPE(numeroEFORM);
+      } else {
+    	  bandoGaraSettoriSpeciali.setEFORMSSUBTYPE("17");
       }
 
       if(iterga == 1)bandoGaraSettoriSpeciali.setTYPEPROCEDURE(W3Z78Type.Enum.forString("1"));
@@ -1058,10 +1246,24 @@ public class InviaBandoAvvisoSimapManager {
       BandoGaraDocument bandoGaraDocument = BandoGaraDocument.Factory.newInstance();
       bandoGaraDocument.documentProperties().setEncoding("UTF-8");
 
-      String uid;
-      uid = this.getUid(2, codgar);
-      if (uid != null){
-        bandoGara.setUUID(uid);
+		if (idScheda == null) {
+			String uid;
+			uid = this.getUid(2, codgar);
+			if (uid != null) {
+				bandoGara.setUUID(uid);
+			}
+		} else {
+			String uid;
+			uid = this.getUid(idScheda);
+			if (uid != null) {
+				bandoGara.setUUID(uid);
+			}
+		}
+      
+      if (StringUtils.isNotEmpty(numeroEFORM)) {
+    	  bandoGara.setEFORMSSUBTYPE(numeroEFORM);
+      } else {
+    	  bandoGara.setEFORMSSUBTYPE("16");
       }
 
       String prourg = (String) sqlManager.getObject(
@@ -1181,10 +1383,9 @@ public class InviaBandoAvvisoSimapManager {
       if(genere == 1 || genere == 3){
         avvisoAggiudicazione.setDIVINTOLOTSYES(empty);
         AvvisoAggiudicazioneLottoType lots[] = null;
-        String selectLotti = "select ngara from gare where codgar1 = ? and (genere is null or genere != 3) order by NGARA";
+        String selectLotti = "select ngara from gare where codgar1 = ? and (genere is null or genere != 3) and (ditta is not null or esineg is not null) order by NGARA";
         List lottiNGARA = sqlManager.getListVector(selectLotti,
             new Object[] { codgar });
-        lots = new AvvisoAggiudicazioneLottoType[lottiNGARA.size()];
         if (lottiNGARA != null && lottiNGARA.size() > 0) {
           lots = new AvvisoAggiudicazioneLottoType[lottiNGARA.size()];
           for (int i = 0; i < lottiNGARA.size(); i++) {
@@ -1252,6 +1453,9 @@ public class InviaBandoAvvisoSimapManager {
 
       Long iterga = (Long) SqlManager.getValueFromVectorParam(
           datiTORNGARE, 5).getValue();
+      
+      if(new Long(9).equals(iterga))
+        iterga = 1L;
 
       //type procedure
       String prourg = (String) SqlManager.getValueFromVectorParam(
@@ -1320,7 +1524,7 @@ public class InviaBandoAvvisoSimapManager {
    * @throws SQLException
    * @throws IOException
    */
-  private String getXMLAvvisoAggiudicazioneSettore(String codgar, String formulario,String settore) throws SQLException,
+  private String getXMLAvvisoAggiudicazioneSettore(String codgar, String formulario,String settore, String numeroEFORM, Long idScheda) throws SQLException,
       IOException, Exception {
 
     if (logger.isDebugEnabled())
@@ -1332,6 +1536,9 @@ public class InviaBandoAvvisoSimapManager {
     Long iterga = (Long) sqlManager.getObject(
         "select iterga from torn where codgar = ?",
         new Object[] { codgar });
+    
+    if(new Long(9).equals(iterga))
+      iterga = 1L;
 
     if("S".equals(settore)){
 
@@ -1341,10 +1548,18 @@ public class InviaBandoAvvisoSimapManager {
 
       avvisoAggiudicazioneSettoriSpeciali = (AvvisoAggiudicazioneSettoriSpecialiType) avvisoAggiudicazione.changeType(AvvisoAggiudicazioneSettoriSpecialiType.type);
 
-      String uid = this.getUid(6, codgar);
-      if (uid != null){
-        avvisoAggiudicazioneSettoriSpeciali.setUUID(uid);
-      }
+		if (idScheda == null) {
+			String uid = this.getUid(6, codgar);
+			if (uid != null) {
+				avvisoAggiudicazioneSettoriSpeciali.setUUID(uid);
+			}
+		} else {
+			String uid;
+			uid = this.getUid(idScheda);
+			if (uid != null) {
+				avvisoAggiudicazioneSettoriSpeciali.setUUID(uid);
+			}
+		}
 
       if(iterga == 1)avvisoAggiudicazioneSettoriSpeciali.setTYPEPROCEDURE(W3Z79Type.Enum.forString("1"));
       else
@@ -1353,6 +1568,12 @@ public class InviaBandoAvvisoSimapManager {
       if(iterga == 4)avvisoAggiudicazioneSettoriSpeciali.setTYPEPROCEDURE(W3Z79Type.Enum.forString("11"));
       else
       if(iterga == 5 || iterga == 6)avvisoAggiudicazioneSettoriSpeciali.setTYPEPROCEDURE(W3Z79Type.Enum.forString("8"));
+
+      if (StringUtils.isNotEmpty(numeroEFORM)) {
+    	  avvisoAggiudicazioneSettoriSpeciali.setEFORMSSUBTYPE(numeroEFORM);
+      } else {
+    	  avvisoAggiudicazioneSettoriSpeciali.setEFORMSSUBTYPE("30");
+      }
 
       ByteArrayOutputStream baosBandoGara = new ByteArrayOutputStream();
       avvisoAggiudicazioneSettoriSpecialiDocument.setAvvisoAggiudicazioneSettoriSpeciali(avvisoAggiudicazioneSettoriSpeciali);
@@ -1364,9 +1585,23 @@ public class InviaBandoAvvisoSimapManager {
       AvvisoAggiudicazioneDocument avvisoAggiudicazioneDocument = AvvisoAggiudicazioneDocument.Factory.newInstance();
       avvisoAggiudicazioneDocument.documentProperties().setEncoding("UTF-8");
 
-      String uid = this.getUid(3, codgar);
-      if (uid != null){
-        avvisoAggiudicazione.setUUID(uid);
+		if (idScheda == null) {
+			String uid = this.getUid(3, codgar);
+			if (uid != null) {
+				avvisoAggiudicazione.setUUID(uid);
+			}
+		} else {
+			String uid;
+			uid = this.getUid(idScheda);
+			if (uid != null) {
+				avvisoAggiudicazione.setUUID(uid);
+			}
+		}
+
+      if (StringUtils.isNotEmpty(numeroEFORM)) {
+    	  avvisoAggiudicazione.setEFORMSSUBTYPE(numeroEFORM);
+      } else {
+    	  avvisoAggiudicazione.setEFORMSSUBTYPE("29");
       }
 
       String prourg = (String) sqlManager.getObject(
@@ -1411,7 +1646,7 @@ public class InviaBandoAvvisoSimapManager {
    * @throws IOException
    * @throws Exception
    */
-  private String getXMLAvvisoProfiloCommittente(String codgar, String formulario, String settore)
+  private String getXMLAvvisoProfiloCommittente(String codgar, String formulario, String settore, String numeroEFORM, Long idScheda)
       throws SQLException, IOException, Exception {
 
     if (logger.isDebugEnabled())
@@ -1429,6 +1664,9 @@ public class InviaBandoAvvisoSimapManager {
       if(genereTmp!= null && genereTmp.longValue()==11)
         genere = new Long(11);
     }
+    Long tipoAvvGareAvvisi = (Long) sqlManager.getObject(
+            "select tipoavv from gareavvisi where codgar = ?",
+            new Object[] { codgar });
 
     String selectTORNGARE = null;
 
@@ -1486,10 +1724,20 @@ public class InviaBandoAvvisoSimapManager {
     if (datiTORNGARE != null && datiTORNGARE.size() > 0) {
 
       //tipo di avviso
-      if("S".equals(settore)){
+      if("S".equals(settore) || ((Long) 2L).equals(tipoAvvGareAvvisi)){
         avvisoProfiloCommittente.setNOTICERELATION(W3Z61Type.Enum.forString("4"));
+        if (StringUtils.isNotEmpty(numeroEFORM)) {
+        	avvisoProfiloCommittente.setEFORMSSUBTYPE(numeroEFORM);
+        } else {
+        	avvisoProfiloCommittente.setEFORMSSUBTYPE("2");
+        }
       }else{
         avvisoProfiloCommittente.setNOTICERELATION(W3Z61Type.Enum.forString("3"));
+        if (StringUtils.isNotEmpty(numeroEFORM)) {
+        	avvisoProfiloCommittente.setEFORMSSUBTYPE(numeroEFORM);
+        } else {
+        	avvisoProfiloCommittente.setEFORMSSUBTYPE("1");
+        }
       }
 
 
@@ -1580,10 +1828,18 @@ public class InviaBandoAvvisoSimapManager {
         avvisoProfiloCommittente.setFURTHERINFOBODY(authority);
       }
 
-      String uid = this.getUid(8, codgar);
-      if (uid != null){
-        avvisoProfiloCommittente.setUUID(uid);
-      }
+		if (idScheda == null) {
+			String uid = this.getUid(8, codgar);
+			if (uid != null) {
+				avvisoProfiloCommittente.setUUID(uid);
+			}
+		} else {
+			String uid;
+			uid = this.getUid(idScheda);
+			if (uid != null) {
+				avvisoProfiloCommittente.setUUID(uid);
+			}
+		}
       //FINE DELLA SCRITTURA DEL XML
     }
 
@@ -1599,6 +1855,75 @@ public class InviaBandoAvvisoSimapManager {
 
   }
 
+	public void salvaXML(JSONObject pubblicazione, Long idForm) throws Throwable {
+		TransactionStatus transazioneUpdate = this.sqlManager.startTransaction();
+		boolean commitTransaction = false;
+		try {
+
+			Vector<?> datiScheda = sqlManager.getVector(
+					"select g1npascheda.id, idprg_eform, iddoc_eform, eform, codgar from g1npaform,g1npascheda,g1cf_npa where g1npaform.id=? and g1npaform.id=g1npascheda.idform and g1npaform.idcfnpa=g1cf_npa.id",
+					new Object[] { idForm });
+
+			Long idScheda = SqlManager.getValueFromVectorParam(datiScheda, 0).longValue();
+			String idprgEform = SqlManager.getValueFromVectorParam(datiScheda, 1).stringValue();
+			Long iddocEform = SqlManager.getValueFromVectorParam(datiScheda, 2).longValue();
+			String numeroEFORM = SqlManager.getValueFromVectorParam(datiScheda, 3).stringValue();
+			String codgar = SqlManager.getValueFromVectorParam(datiScheda, 4).stringValue();
+
+			if (idprgEform != null && iddocEform != null) {
+                UploadInfo oldBucketInfo = ObjectStorageUtils.getUploadInfo("select bucket_ref, bucket_uuid from w_docdig where idprg=? and iddocdig=?",new Object[] {idprgEform,iddocEform});
+                ObjectStorageUtils.deleteFile(oldBucketInfo.bucket_ref(),oldBucketInfo.uuid());
+				sqlManager.update("delete from W_DOCDIG where idprg=? and iddocdig=?", new Object[] { idprgEform, iddocEform });
+			}
+
+			Long maxIdDocDig = (Long) sqlManager.getObject("select max(iddocdig) from w_docdig where idprg='PG'", null);
+			Long newIdDocDig = null;
+			if (maxIdDocDig == null) {
+				newIdDocDig = 0L;
+			} else {
+				newIdDocDig = maxIdDocDig + 1;
+			}
+
+			String eformsXML = (String) pubblicazione.get("eforms_xml");
+			byte[] xmlByte = Base64.decode(eformsXML);
+			ByteArrayOutputStream baos = null;
+			baos = new ByteArrayOutputStream();
+			baos.write(xmlByte);
+
+			if (codgar != null && codgar.startsWith("$")) {
+				codgar = codgar.substring(1);
+			}
+			String descrizioneDocumento = "eForm " + numeroEFORM;
+			String nomeDocumento = codgar + "_eForm_" + numeroEFORM + ".xml";
+
+			DataColumnContainer containerDOCDIG = new DataColumnContainer(new DataColumn[] {
+					new DataColumn("W_DOCDIG.IDPRG", new JdbcParametro(JdbcParametro.TIPO_TESTO, "PG")),
+					new DataColumn("W_DOCDIG.IDDOCDIG", new JdbcParametro(JdbcParametro.TIPO_NUMERICO, newIdDocDig)),
+					new DataColumn("W_DOCDIG.DIGENT", new JdbcParametro(JdbcParametro.TIPO_TESTO, "G1NPASCHEDA")),
+					new DataColumn("W_DOCDIG.DIGKEY1", new JdbcParametro(JdbcParametro.TIPO_TESTO, idScheda.toString())),
+					new DataColumn("W_DOCDIG.DIGNOMDOC", new JdbcParametro(JdbcParametro.TIPO_TESTO, nomeDocumento)),
+					new DataColumn("W_DOCDIG.DIGDESDOC", new JdbcParametro(JdbcParametro.TIPO_TESTO, descrizioneDocumento)),
+					new DataColumn("W_DOCDIG.DIGOGG", new JdbcParametro(JdbcParametro.TIPO_BINARIO, baos)) });
+			containerDOCDIG.insert("W_DOCDIG", sqlManager);
+            ObjectStorageUtils.addFile("PG", newIdDocDig);
+
+			Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+			sqlManager.update("update g1npascheda set idprg_eform=?, iddoc_eform=?, dnot_eform=? where g1npascheda.id=?", new Object[] { "PG", newIdDocDig, timestamp, idScheda });
+			commitTransaction = true;
+		} catch (SQLException e) {
+			logger.error("Errore durante il salvataggio dell'eForm", e);
+		} finally {
+			try {
+				if (commitTransaction) {
+					this.sqlManager.commitTransaction(transazioneUpdate);
+				} else {
+					this.sqlManager.rollbackTransaction(transazioneUpdate);
+				}
+			} catch (SQLException e) {
+				throw new Throwable("Errore durante la chiusura della transazione", e);
+			}
+		}
+	}
 
   /* FUNZIONI*UTILI****FUNZIONI*UTILI****FUNZIONI*UTILI****FUNZIONI*UTILI****FUNZIONI*UTILI****FUNZIONI*UTILI****FUNZIONI*UTILI */
 
@@ -1613,6 +1938,7 @@ public class InviaBandoAvvisoSimapManager {
     if(modlicg== null || modlicg != 6){
       CriteriaType criteria = CriteriaType.Factory.newInstance();
       criteria.setTYPE(W3Z74Type.P);
+      criteria.setWEIGHTING(100);
       criteriaArray[0] = criteria;
     }
     else{
@@ -1691,7 +2017,7 @@ public class InviaBandoAvvisoSimapManager {
 
   private HashMap<String,Object> getDatiFittizia(String codgar) throws SQLException{
     HashMap<String,Object> response = new HashMap<String,Object>();
-    String selectFittizia = "select prosla, loclav, nomssl, teutil, temesi, codcig  from gare where gare.codgar1 = ? and gare.genere = 3";
+    String selectFittizia = "select prosla, loclav, nomssl, teutil, temesi, codcig, dinlavg  from gare where gare.codgar1 = ? and gare.genere = 3";
     List dati = sqlManager.getVector(selectFittizia,
         new Object[] { codgar });
     if (dati != null && dati.size() > 0) {
@@ -1707,6 +2033,8 @@ public class InviaBandoAvvisoSimapManager {
       response.put("temesi",temesi);
       String codcig = (String) SqlManager.getValueFromVectorParam(dati, 5).getValue();
       response.put("codcig",codcig);
+      Date dinlavg = (Date) SqlManager.getValueFromVectorParam(dati, 6).getValue();
+      response.put("dinlavg",dinlavg);
     }
     return response;
   }
@@ -1867,6 +2195,7 @@ public class InviaBandoAvvisoSimapManager {
            " torn.apfinfc," +
            " torn.progeu," +
            " gare.codcig" +
+           ", gare.dinlavg" +
            " from torn, gare, gare1, v_gare_importi " +
            " where torn.codgar = gare.codgar1 and gare.ngara = ? and gare1.ngara = gare.ngara and v_gare_importi.ngara = gare.ngara";
    } else {
@@ -1890,6 +2219,7 @@ public class InviaBandoAvvisoSimapManager {
              " torn.apfinfc," +
              " torn.progeu," +
              " gare.codcig" +
+             ", gare.dinlavg" +
              " from torn, gare, gareavvisi" +
              " where torn.codgar = gare.codgar1 and torn.codgar = gareavvisi.codgar and gare.ngara = ?";
    }
@@ -1981,28 +2311,54 @@ public class InviaBandoAvvisoSimapManager {
          10).getValue();
      Long aqtempo = (Long) SqlManager.getValueFromVectorParam(datiTORNGARE,
          11).getValue();
+     Date dinlavgDate = (Date) SqlManager.getValueFromVectorParam(datiTORNGARE,20).getValue();
 
      if(genere == 3){
        teutil = (Long) datiRigaFittizia.get("teutil");
        temesi = (Long) datiRigaFittizia.get("temesi");
+       dinlavgDate = (Date) datiRigaFittizia.get("dinlavg");
      }
 
-     if(teutil != null && temesi != null && temesi == 2 && (accqua == null || accqua.equals("2"))){
-         lottoCommon.setWORKMONTH(teutil.intValue());
-     }else{
-       if(aqdurata != null && (accqua != null && accqua.equals("1")) && (aqtempo != null && aqtempo == 1)){
-         lottoCommon.setWORKMONTH(aqdurata.intValue());
-       }
-       if(aqdurata != null && (accqua != null && accqua.equals("1")) && (aqtempo != null && aqtempo == 2)){
-         lottoCommon.setWORKMONTH((aqdurata.intValue())*12);
-       }
-       if(aqdurata != null && (accqua != null && accqua.equals("1")) && (aqtempo != null && aqtempo == 3)){
-           lottoCommon.setWORKDAYS(aqdurata.intValue());
-       }
+     if ("1".equals(accqua)) {
+         if (aqdurata != null && aqtempo != null) {
+             switch (aqtempo.intValue()) {
+                 case 1:
+                     lottoCommon.setWORKMONTH(aqdurata.intValue());
+                     break;
+                 case 2:
+                     lottoCommon.setWORKMONTH(aqdurata.intValue()*12);
+                     break;
+                 case 3:
+                     lottoCommon.setWORKDAYS(aqdurata.intValue());
+                     break;
+                 default:
+                     break;
+             }
+         }
+     } else if (teutil != null && temesi != null) {
+        if (((Long) 1L).equals(temesi)) {
+            if (dinlavgDate == null) {
+                lottoCommon.setWORKDAYS(teutil.intValue());
+            } else {
+                Calendar dinlavg = Calendar.getInstance();
+                dinlavg.setTime(dinlavgDate);
+                lottoCommon.setWORKSTARTDATE(dinlavg);
+                dinlavg.add(Calendar.DATE,teutil.intValue());
+                lottoCommon.setWORKENDDATE(dinlavg);
+            }
+        } else if (((Long) 2L).equals(temesi)) {
+            if (dinlavgDate == null) {
+                lottoCommon.setWORKMONTH(teutil.intValue());
+            } else {
+                Calendar dinlavg = Calendar.getInstance();
+                dinlavg.setTime(dinlavgDate);
+                lottoCommon.setWORKSTARTDATE(dinlavg);
+                dinlavg.add(Calendar.MONTH,teutil.intValue());
+                lottoCommon.setWORKENDDATE(dinlavg);
+            }
+        }
      }
-     if(teutil != null && temesi != null && temesi == 1 && (accqua == null || accqua.equals("2"))){
-       lottoCommon.setWORKDAYS(teutil.intValue());
-     }
+
      String ammvar = (String) SqlManager.getValueFromVectorParam(datiTORNGARE,
          12).getValue();
      if(ammvar != null){
@@ -2051,7 +2407,10 @@ public class InviaBandoAvvisoSimapManager {
          18).getValue();
      if(progeu == null){
        progeu = "";
-     }lottoCommon.setEUPROGRDESCR(progeu);
+     } else if (progeu.length() > 200) {
+    	 progeu = progeu.substring(0,200);
+     }
+     lottoCommon.setEUPROGRDESCR(progeu);
    }
 
    /**
@@ -2187,12 +2546,7 @@ public AvvisoAggiudicazioneLottoType getLottoAggiudicazioneInfo(String ngara, St
     }
 
     //cpv
-    CPVType cpvLotto = CPVType.Factory.newInstance();
-    if (genere.intValue() == 3) {
-      cpvLotto = this.getCPVLotto(codgar);
-    } else {
-      cpvLotto = this.getCPVLotto(ngara);
-    }
+    CPVType cpvLotto = this.getCPVLotto(ngara);
     if (cpvLotto != null && cpvLotto.getCPVMAIN() != null)
       lottoCommon.setCPV(cpvLotto);
 
@@ -2290,12 +2644,9 @@ public AvvisoAggiudicazioneLottoType getLottoAggiudicazioneInfo(String ngara, St
     return authority;
   }
 
-  private LottoAggiudicatoType  getDettaglioLottoAggiudicato(String ngara, int index) throws SQLException{
+  private LottoAggiudicatoType  getDettaglioLottoAggiudicato(String ngara, int index) throws SQLException,GestoreException{
     LottoAggiudicatoType lottoAggiudicato = LottoAggiudicatoType.Factory.newInstance();
     Empty empty = Empty.Factory.newInstance();
-    String selectGarecont = "select impqua from garecont, gare where gare.ngara = ? and "+
-            " ((gare.ngara = garecont.ngara and garecont.ncont=1) or " +
-            " (gare.codgar1 = garecont.ngara and (garecont.ngaral is null or garecont.ngaral=gare.ngara))) and garecont.codimp = gare.ditta";
 
     String selectLottoAggiudicato = "select gare.not_gar, " +
     		" gare.esineg, " +
@@ -2304,6 +2655,7 @@ public AvvisoAggiudicazioneLottoType getLottoAggiudicazioneInfo(String ngara, St
     		" gare.iaggiu, " +
     		" torn.accqua, " +
     		" gare1.aqoper " +
+            ", GARE.DAATTO" +
     		" from gare, torn, gare1 where gare.ngara = ? and gare1.ngara = gare.ngara and gare.codgar1 = torn.codgar" ;
 
     List datiTORNGARE = sqlManager.getVector(selectLottoAggiudicato,
@@ -2324,6 +2676,15 @@ public AvvisoAggiudicazioneLottoType getLottoAggiudicazioneInfo(String ngara, St
           5).getValue();
       Long aqoper = (Long) SqlManager.getValueFromVectorParam(datiTORNGARE,
           6).getValue();
+      Date daattoDate = (Date) SqlManager.getValueFromVectorParam(datiTORNGARE, 7).getValue();
+
+    List<Vector<JdbcParametro>> countOfferte = getCountDitteMPMIeEstere(ngara);
+
+    if(daattoDate != null){
+        Calendar daatto = Calendar.getInstance();
+        daatto.setTime(dattoaDate);
+        lottoAggiudicato.setCONTRACTISSUEDATE(daatto);
+    }
 
     lottoAggiudicato.setLOTNO(index+1);
     if(notgar!=null)lottoAggiudicato.setTITLE(notgar);
@@ -2341,7 +2702,7 @@ public AvvisoAggiudicazioneLottoType getLottoAggiudicazioneInfo(String ngara, St
         dattoa.setTime(dattoaDate);
         lottoAggiudicato.setCONTRACTAWARDDATE(dattoa);
       }
-      List listDitg = sqlManager.getListVector("select ngara5 from ditg where ngara5 = ? and invoff = 1",
+      List listDitg = sqlManager.getListVector("select ngara5 from ditg where ngara5 = ? and invoff = '1'",
           new Object[] { ngara });
 
       lottoAggiudicato.setOFFERSRECEIVED(listDitg.size());
@@ -2406,17 +2767,37 @@ public AvvisoAggiudicazioneLottoType getLottoAggiudicazioneInfo(String ngara, St
         //lottoAggiudicato.setTENDERSEXCLUDED(null);
       }//fine ditta non esiste
 
-      if("1".equals(accqua)){
-        Number impqua = (Number) sqlManager.getObject(selectGarecont,new Object[] { ngara });
-        if(impqua != null){
-          lottoAggiudicato.setFINALCOST(impqua.doubleValue());}
-        }else{
-          if(iaggiu != null)
-          lottoAggiudicato.setFINALCOST(iaggiu);
-        }
-      }//fine non è annullata
+        lottoAggiudicato.setNBSME(countOfferte.get(0).get(0).longValue().intValue());
+        lottoAggiudicato.setOFFERSRECEIVEDELECTR(countOfferte.get(3).get(0).longValue().intValue());
+        lottoAggiudicato.setNBOTHEREU(countOfferte.get(1).get(0).longValue().intValue());
+        lottoAggiudicato.setNBOTHERNONEU(countOfferte.get(2).get(0).longValue().intValue());
+
+	  if(iaggiu != null)
+		lottoAggiudicato.setFINALCOST(iaggiu);
+     }//fine non è annullata
     }//fine query non ha funzionato
     return lottoAggiudicato;
+  }
+
+  private List<Vector<JdbcParametro>> getCountDitteMPMIeEstere(String ngara) throws SQLException {
+      String selectBase = "select count(1) from ditg";
+      String joinIMPR1 = " join IMPR IMPR1 on ditg.dittao=impr1.codimp";
+      String joinG_NAZIONI1 = " left join G_NAZIONI G_NAZIONI1 on impr1.nazimp=g_nazioni1.codice";
+      String joinRAGIMP = " left join ragimp on ragimp.codime9=impr1.codimp and ragimp.impman = '1'";
+      String joinIMPR2 = " left join IMPR IMPR2 on ragimp.coddic=impr2.codimp";
+      String joinG_NAZIONI2 = " left join G_NAZIONI G_NAZIONI2 on impr2.nazimp=g_nazioni2.codice";
+      String whereBase = " where ngara5=? and ditg.invoff='1' and rtofferta is null";
+      String condizioneISMPMI = " and ((coddic is null and impr1.ismpmi='1') or (coddic is not null and impr2.ismpmi='1'))";
+      String condizioneISMEMBROUE = " and ((coddic is null and g_nazioni1.ismembroue='1' and impr1.nazimp<>1) or (coddic is not null and g_nazioni2.ismembroue='1' and impr2.nazimp<>1))";
+      String condizioneNotISMEMBROUE = " and ((coddic is null and g_nazioni1.ismembroue is null and impr1.nazimp<>1) or (coddic is not null and g_nazioni2.ismembroue is null and impr2.nazimp<>1))";
+      String selectCountOfferte = selectBase + joinIMPR1 + joinRAGIMP + joinIMPR2 + whereBase + condizioneISMPMI
+              + " UNION ALL "
+              + selectBase + joinIMPR1 + joinG_NAZIONI1 + joinRAGIMP + joinIMPR2 + joinG_NAZIONI2 + whereBase + condizioneISMEMBROUE
+              + " UNION ALL "
+              + selectBase + joinIMPR1 + joinG_NAZIONI1 + joinRAGIMP + joinIMPR2 + joinG_NAZIONI2 + whereBase + condizioneNotISMEMBROUE
+              + " UNION ALL "
+              + selectBase + whereBase;
+      return sqlManager.getListVector(selectCountOfferte, new Object[] {ngara,ngara,ngara,ngara});
   }
 
   private String getUid(int numeroFormulario, String codgar) throws SQLException{
@@ -2437,6 +2818,32 @@ public AvvisoAggiudicazioneLottoType getLottoAggiudicazioneInfo(String ngara, St
     return uuid;
   }
 
+	private String getUid(Long idScheda) throws SQLException {
+
+		String uidQuery = "select UUID_EFORM from G1NPASCHEDA where id=?";
+		String uuid = (String) sqlManager.getObject(uidQuery, new Object[] { idScheda });
+		if (uuid == null) {
+			UUID newUuid = UUID.randomUUID();
+			uuid = newUuid.toString();
+			String updateG1NPASCHEDA = "update G1NPASCHEDA set UUID_EFORM=? where id=?";
+			this.sqlManager.update(updateG1NPASCHEDA, new Object[] { uuid,idScheda });
+		}
+		return uuid;
+	}
+
+	public void eliminaEFORM(Long idForm) throws Throwable {
+		String selectDati = "select idprg_eform, iddoc_eform from G1NPASCHEDA where idform=?";
+		Vector<?> datiScheda = sqlManager.getVector(selectDati, new Object[] { idForm });
+		String idPrg = SqlManager.getValueFromVectorParam(datiScheda, 0).stringValue();
+		Long idDoc = SqlManager.getValueFromVectorParam(datiScheda, 1).longValue();
+		if (idPrg != null && idDoc != null) {
+            UploadInfo oldBucketInfo = ObjectStorageUtils.getUploadInfo("select bucket_ref, bucket_uuid from w_docdig where idprg=? and iddocdig=?",new Object[] {idPrg,idDoc});
+            ObjectStorageUtils.deleteFile(oldBucketInfo.bucket_ref(),oldBucketInfo.uuid());
+			sqlManager.update("delete from W_DOCDIG where idprg=? and iddocdig=?", new Object[] { idPrg, idDoc });
+			sqlManager.update("update g1npascheda set idprg_eform=null, iddoc_eform=null, dnot_eform=null where idform=?", new Object[] { idForm });
+		}
+	}
+
   private EconomicOperatorType getEconomicOperatorInfo(String ditta) throws SQLException{
     EconomicOperatorType ecoOpe = EconomicOperatorType.Factory.newInstance();
     String selectEconomicOperator = "select nomest, " +
@@ -2453,6 +2860,7 @@ public AvvisoAggiudicazioneLottoType getLottoAggiudicazioneInfo(String ngara, St
     		" emaiip, " +
     		" indweb, " +
     		" ismpmi " +
+            ", emai2ip " +
     		" from impr where codimp = ?";
     List datiEcoOpe = sqlManager.getVector(selectEconomicOperator,
         new Object[] { ditta });
@@ -2489,7 +2897,9 @@ public AvvisoAggiudicazioneLottoType getLottoAggiudicazioneInfo(String ngara, St
       String faximp = (String) SqlManager.getValueFromVectorParam(datiEcoOpe,10).getValue();
       if(faximp != null) ecoOpe.setFAXIMP(faximp);
       String emaiip = (String) SqlManager.getValueFromVectorParam(datiEcoOpe,11).getValue();
-      if(emaiip != null) ecoOpe.setEMAIIP(emaiip);
+      String emai2ip = (String) SqlManager.getValueFromVectorParam(datiEcoOpe,14).getValue();
+      if(StringUtils.isNotEmpty(emai2ip)) ecoOpe.setEMAIIP(emai2ip);
+      else if(emaiip != null) ecoOpe.setEMAIIP(emaiip);
       String indweb = (String) SqlManager.getValueFromVectorParam(datiEcoOpe,12).getValue();
       if(indweb != null) ecoOpe.setINDWEB(indweb);
       String sme = (String) SqlManager.getValueFromVectorParam(datiEcoOpe,13).getValue();
@@ -2502,6 +2912,22 @@ public AvvisoAggiudicazioneLottoType getLottoAggiudicazioneInfo(String ngara, St
       }
     return ecoOpe;
   }
+
+	public static String getUrlDocumentiGara(String codgar) {
+		String urlDocumentiGara = ConfigManager.getValore(PROP_URL_PUBBLICA);
+        String codice = "";
+        if (codgar.indexOf("$") == 0) {
+            codice = codgar.substring(1);
+        } else {
+            codice = codgar;
+        }
+        String urlProcedure = ConfigManager.getValore(PROP_URL_PROCEDURE);
+        if (urlDocumentiGara.endsWith("/") && urlProcedure.startsWith("/")) {
+            urlProcedure = urlProcedure.substring(1);
+        }
+        urlDocumentiGara += urlProcedure + codice;
+		return urlDocumentiGara;
+	}
 
 }
 

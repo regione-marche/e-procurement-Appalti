@@ -33,20 +33,32 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 
 <c:set var="genere" value="${param.genere}" />
 <c:set var="filtroLivelloUtente" value='${gene:callFunction2("it.eldasoft.gene.tags.utils.functions.FiltroLivelloUtenteFunction", pageContext, "V_GARE_ELEDITTE")}' />
-<c:set var="isPersonalizzazioneGenovaAttiva" value='${gene:callFunction("it.eldasoft.sil.pg.tags.funzioni.IsPersonalizzazioneGenovaAttivaFunction",pageContext)}' scope="request" />
 
+<c:if test='${modo ne "NUOVO"}'>
+<c:choose>
+	<c:when test='${! empty gene:getValCampo(param.key, "CODGAR")}' >
+		<c:set var="codiceGara" value="${gene:getValCampo(param.key,'CODGAR')}"/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="codiceGara" value="${gene:concat('$',gene:getValCampo(key, 'NGARA'))}"/>
+	</c:otherwise>
+</c:choose>
+</c:if>
 
 <c:if test='${modo ne "MODIFICA" && modo ne "NUOVO"}'>
-	<c:choose>
-		<c:when test='${! empty gene:getValCampo(param.key, "CODGAR")}' >
-			<c:set var="codiceGara" value="${gene:getValCampo(param.key,'CODGAR')}"/>
-		</c:when>
-		<c:otherwise>
-			<c:set var="codiceGara" value="${gene:concat('$',gene:getValCampo(key, 'NGARA'))}"/>
-		</c:otherwise>
-	</c:choose>
 <c:set var="integrazioneWSDMDocumentale" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNDocumentaleFunction", pageContext, codiceGara, idconfi)}' />
 <c:set var="isFascicoloDocumentaleAbilitato" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.IsFascicoloDocumentaleValidoFunction",  pageContext, codiceGara, idconfi)}' />
+</c:if>
+
+<c:set var="sql" value="select vernpa from torn where codgar=?"/>
+<c:set var="verNPA" value='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, sql, codiceGara)}'/>
+
+<c:if test='${modo ne "NUOVO"}'>
+	<c:set var="bloccoModificaPCP" value='${gene:callFunctionN("it.eldasoft.sil.pg.tags.funzioni.npa.GetBloccoModificaPCP", pageContext, codiceGara, "true")}'/>
+</c:if>
+
+<c:if test="${bloccoModificaPCP}">
+	<c:set var="bloccoModificatiDati" value='true' />
 </c:if>
 
 <c:set var="log" value="${param.log}"/> 
@@ -70,6 +82,11 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 
 <c:if test='${modo eq "VISUALIZZA" || metodo ne "modifica" }'>
 	<c:set var="IsW_CONFCOMPopolata" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.IsW_CONFCOMPopolataFunction",pageContext,genere)}' />
+</c:if>
+
+<c:set var="valoreTabellatoA1115Settore" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.GetValoreTabellatoA1115Function", pageContext, "6")}'/>
+<c:if test="${empty valoreTabellatoA1115Settore }">
+	<c:set var="valoreTabellatoA1115Settore" value="O"/>
 </c:if>
 
 		<jsp:include page="/WEB-INF/pages/commons/bloccaModifica-scheda.jsp">
@@ -99,14 +116,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	<c:if test='${gene:checkProtFunz(pageContext, "ALT","Condividi-gara") && modo eq "VISUALIZZA"}'> 
 	  <tr>    
 	      <td class="vocemenulaterale">
-	     		<c:choose>
-	     			<c:when test='${isPersonalizzazioneGenovaAttiva eq "1"}'>
-	     				<a href="javascript:apriGestionePermessi('${datiRiga.GARE_CODGAR1}','${genere}',${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})" />
-	     			</c:when>
-	     			<c:otherwise>
-	     				<a href="javascript:apriGestionePermessiStandard('${datiRiga.GARE_CODGAR1}','${genere}',${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})" />
-	     			</c:otherwise>
-	     		</c:choose>
+			  <a href="javascript:apriGestionePermessiStandard('${datiRiga.GARE_CODGAR1}','${genere}',${datiRiga.G_PERMESSI_PROPRI eq '1' or abilitazioneGare eq 'A'})" />
 				<c:if test="${ genere == '10'}">
 				  Condividi e proteggi elenco
 				</c:if>
@@ -189,12 +199,12 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	
 	
 	<c:set var="exportDocumenti" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "it.eldasoft.sil.pg.pathArchivioDocumentiGara")}'/>
-	<c:set var="exportCOS" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "cos.sftp.url")}'/>
+	<c:set var="conservazioneAttiva" value='${gene:callFunction2("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneConservazioneDigitaleFunction", pageContext, codiceGara)}'/>
 	
 	<gene:redefineInsert name="addToDocumenti" >
 		<c:set var="creaFascicolo" value='${gene:callFunction2("it.eldasoft.gene.tags.functions.GetPropertyWsdmFunction", accessoCreaFascicolo,idconfi)}'/>
 		<c:set var="integrazioneWSDM" value='${gene:callFunction3("it.eldasoft.sil.pg.tags.funzioni.EsisteIntegrazioneWSDNFunction", pageContext, codiceGara,idconfi)}' />
-		<c:if test='${modo eq "VISUALIZZA"  and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.CreaFascicolo")  and integrazioneWSDM eq "1" and creaFascicolo eq "1"}'>
+		<c:if test='${modo eq "VISUALIZZA"  and autorizzatoModifiche ne "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.CreaFascicolo")  and integrazioneWSDM eq "1" and creaFascicolo eq "1" and not gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.obbligoAssociaFascicoloEsistente")}'>
 			<c:set var="esisteFascicoloAssociato" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.EsisteFascicoloAssociatoFunction", pageContext, "GARE", datiRiga.GARE_NGARA,idconfi)}' scope="request"/>
 			<c:set var="tipoWSDM" value='${gene:callFunction4("it.eldasoft.sil.pg.tags.funzioni.GetTipoWSDMFunction", pageContext, "FASCICOLOPROTOCOLLO", "NO",idconfi)}' />
 			<c:if test="${ esisteFascicoloAssociato eq 'true' and tipoWSDM eq 'LAPISOPERA'}">
@@ -236,7 +246,8 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		</c:if>
 		<c:if test='${modo eq "VISUALIZZA" and 
 				((integrazioneWSDMDocumentale eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciAlDocumentale")) 
-                or (!empty exportCOS and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciCos"))
+                or (conservazioneAttiva eq "1" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciCos"))
+            	or (conservazioneAttiva eq "2" and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.TrasferisciDigiP"))
 				or (!empty exportDocumenti and gene:checkProt(pageContext, "FUNZ.VIS.ALT.GARE.ExportDocumenti")))}'>
 			<tr>
 				<c:choose>
@@ -304,6 +315,21 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 
 	<c:set var="msgChiaveErrore" value="${fn:replace(msgChiaveErrore, '\\\\', '')}" />	
 
+	<gene:campoScheda visibile="${ bloccoModificatiDati eq 'true' and modo eq 'MODIFICA'}">
+		<td colspan="2" style="color:#0000FF">
+		<br><b>ATTENZIONE:</b>&nbsp;
+		Parte dei dati sono in sola consultazione perché <c:if test="${bloccoModificaPCP}"> sono state inviate delle schede ad ANAC. </c:if>
+		<c:if test="${bloccoModificaPubblicazione}">
+			<c:choose>
+				<c:when test="${bloccoModificaPCP}">La gara è anche </c:when>
+				<c:otherwise>la gara è </c:otherwise>
+			</c:choose>
+			pubblicata su portale Appalti.
+		 </c:if>
+		    <br>&nbsp;
+		</td>
+	</gene:campoScheda>
+
 	<gene:gruppoCampi idProtezioni="GEN" >
 		<gene:campoScheda>
 			<td colspan="2"><b>Dati generali</b></td>
@@ -324,7 +350,9 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 </c:choose>
 
 		<gene:campoScheda campo="CODGAR" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" visibile="false" />
+		<gene:campoScheda campo="IDPIANINPA" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="false" visibile="${not empty verNPA or not empty initVERNPA}"/>
 		<gene:campoScheda campo="TIPOELE"  entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" title="${gene:if(genere == 20,'Catalogo per','Elenco per') }" gestore="it.eldasoft.sil.pg.tags.gestori.decoratori.GestoreCampoTipoElenco" obbligatorio="true" modificabile='${modoAperturaScheda eq "NUOVO"}'/>
+		<gene:campoScheda campo="SETTORE" entita="TORN" defaultValue="${valoreTabellatoA1115Settore}" />
 		<c:choose>
 			<c:when test="${ genere == '10'}">
 				<gene:campoScheda campo="TIPOLOGIA"  entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" obbligatorio="true" modificabile="${!bloccoTipologia }"/>
@@ -372,23 +400,9 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 			</c:otherwise>
 		</c:choose>
 		<gene:campoScheda>
-			<td colspan="2"><b>Stazione appaltante e Responsabile ${msg} </b></td>
+			<td colspan="2"><b>RUP o Responsabile ${msg} </b></td>
 		</gene:campoScheda>
-		<gene:archivio titolo="Uffici intestatari"
-			 lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GARE.TORN.CENINT"),"gene/uffint/uffint-lista-popup.jsp","")}'
-			 scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda.jsp","")}'
-			 schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda-popup.jsp","")}'
-			 campi="UFFINT.CODEIN;UFFINT.NOMEIN"
-			 chiave="TORN_CENINT"
-			 functionId="skip|abilitazione:1_parentFormName:formUFFINTElenchi"
-			 formName="formUFFINTElenchi">
-				<gene:campoScheda campo="CENINT" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" obbligatorio="true" defaultValue="${requestScope.initCENINT}" modificabile="${empty sessionScope.uffint }"/>
-				<gene:campoScheda campo="NOMEIN" title="Denominazione" entita="UFFINT" from="TORN" where="GARE.CODGAR1=TORN.CODGAR and TORN.CENINT=UFFINT.CODEIN" 
-					modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.TORN.CENINT") && empty sessionScope.uffint}' 
-					visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.TORN.CENINT")}' defaultValue="${requestScope.initNOMEIN}" />
-		</gene:archivio>
-		<gene:campoScheda campo="UFFDET" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" />
-		<gene:campoScheda campo="LIVACQ" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" />
+
 		<gene:archivio titolo="Tecnici"
 			 lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GARE.TORN.CODRUP"),"gene/tecni/tecni-lista-popup.jsp","")}'
 			 scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda.jsp","")}'
@@ -402,6 +416,78 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 					modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.TORN.CODRUP")}' 
 					visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.TORN.CODRUP")}' />
 		</gene:archivio>
+		</gene:gruppoCampi>
+		<gene:gruppoCampi idProtezioni="DRP" visibile="${(not empty verNPA or not empty initVERNPA) && gene:callFunctionN('it.eldasoft.sil.pg.tags.funzioni.GetSeAttivoModuloANACFormFunction', pageContext, codiceGara) eq 'true'}" >
+		<gene:campoScheda>
+			<td colspan="2"><b>Incaricato trasmissione schede ANAC (compilato automaticamente all'invio)</b></td>
+		</gene:campoScheda>
+		<gene:archivio titolo="Tecnici"
+			 lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GARE.GARTECNI.CODTEC"),"gene/tecni/tecni-lista-popup.jsp","")}'
+			 scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda.jsp","")}'
+			 schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaTecni"),"gene/tecni/tecni-scheda-popup.jsp","")}'
+			 campi="TECNI.CODTEC;TECNI.NOMTEC"
+			 functionId="skip"
+			 chiave="TORN_CODDRP"
+			 inseribile="true">
+				<gene:campoScheda campo="CODDRP" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" modificabile="false"/>
+				<gene:campoScheda campo="TORN_NOMDRP" title="Nome" campoFittizio="true" definizione="T161;;;;NOMTEC" value="${requestScope.initNOMDRP}"
+				modificabile='false' 
+		visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.GARTECNI.CODTEC") and gene:checkProt(pageContext, "COLS.VIS.GARE.TORN.CODDRP")}'/>
+		</gene:archivio>
+	</gene:gruppoCampi>
+	<gene:gruppoCampi idProtezioni="STAZAPP">
+		<gene:campoScheda>
+			<td colspan="2"><b>Stazione appaltante</b></td>
+		</gene:campoScheda>
+		<gene:archivio titolo="Uffici intestatari"
+			 lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GARE.TORN.CENINT"),"gene/uffint/uffint-lista-popup.jsp","")}'
+			 scheda='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda.jsp","")}'
+			 schedaPopUp='${gene:if(gene:checkProtObj( pageContext, "MASC.VIS","GENE.SchedaUffint"),"gene/uffint/uffint-scheda-popup.jsp","")}'
+			 campi="UFFINT.CODEIN;UFFINT.NOMEIN"
+			 chiave="TORN_CENINT"
+			 functionId="skip|abilitazione:1_parentFormName:formUFFINTElenchi"
+			 formName="formUFFINTElenchi">
+				<gene:campoScheda campo="CENINT" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" obbligatorio="true" defaultValue="${requestScope.initCENINT}" modificabile="${empty sessionScope.uffint }">
+					<gene:checkCampoScheda funzione='sbiancaCentroCosto()' obbligatorio="false" messaggio="" onsubmit="false"/>
+				</gene:campoScheda>
+				<gene:campoScheda campo="NOMEIN" title="Denominazione" entita="UFFINT" from="TORN" where="GARE.CODGAR1=TORN.CODGAR and TORN.CENINT=UFFINT.CODEIN" 
+					modificabile='${gene:checkProt(pageContext, "COLS.MOD.GARE.TORN.CENINT") && empty sessionScope.uffint}' 
+					visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.TORN.CENINT")}' defaultValue="${requestScope.initNOMEIN}" >
+					<gene:checkCampoScheda funzione='sbiancaCentroCosto()' obbligatorio="false" messaggio="" onsubmit="false"/>
+				</gene:campoScheda>
+		</gene:archivio>
+		<gene:campoScheda campo="UFFDET" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" />
+		<gene:campoScheda campo="LIVACQ" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" />
+
+		<gene:campoScheda campo="CODCENTRO" entita="TORN" visibile="false"/>
+		<gene:campoScheda campo="NOMCENTRO" entita="TORN" visibile="false"/>
+		<c:if test="${not empty datiRiga.TORN_CODCENTRO and not empty datiRiga.TORN_NOMCENTRO}">
+			<c:set var="centroDiCosto" value="${datiRiga.TORN_CODCENTRO} - ${datiRiga.TORN_NOMCENTRO}"/>
+		</c:if>
+		<c:if test='${not empty verNPA or not empty initVERNPA}'>
+			<gene:campoScheda campo="CENTROCOSTO" title="Centro di costo" speciale="true" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.TORN.CODCENTRO")}' modificabile="true" campoFittizio="true" definizione="T2000;0;;;;" value="${centroDiCosto}">
+				<gene:popupCampo titolo="Seleziona centro di costo" href="javascript:valorizzaCentroCosto(getValue('TORN_CENINT'))" />
+			</gene:campoScheda>
+
+			<gene:archivio titolo="Organizzazione competente per i ricorsi"
+						   lista='${gene:if(gene:checkProt(pageContext, "COLS.MOD.GARE.TORN.ORGRICORSO"),"gene/orgricorso/orgricorso-lista-popup.jsp","")}'
+						   scheda=''
+						   schedaPopUp="gene/orgricorso/orgricorso-scheda-popup.jsp"
+						   campi="PUNTICON.CODEIN;PUNTICON.NUMPUN;PUNTICON.NOMPUN"
+						   functionId="orgricorso"
+						   parametriWhere="T:${datiRiga.TORN_CENINT}"
+						   chiave="TORN_ORGRICORSO;CENINT_ORGRICORSO"
+						   formName="formOrganizzazioneRicorso"
+						   inseribile="true">
+				<gene:campoScheda campo="CENINT_ORGRICORSO" campoFittizio="true" definizione="T16" visibile="false" value="${datiRiga.TORN_CENINT}"/>
+				<gene:campoScheda campo="ORGRICORSO" entita="TORN" where="GARE.CODGAR1=TORN.CODGAR" visibile="false"/>
+				<c:set var="linkPCOPRE" value='javascript:archivioPunticon("${datiRiga.TORN_CENINT}","${datiRiga.TORN_ORGRICORSO}");' />
+				<gene:campoScheda campo="ORGRICORSO_NOMPUN" campoFittizio="true" definizione="T245;;;;G1_ORGRIC" value="${initNOMPUN_ORGRICORSO }" visibile='${gene:checkProt(pageContext, "COLS.VIS.GARE.TORN.ORGRICORSO")}' href='${gene:if(modo eq "VISUALIZZA",linkPCOPRE,"")}'/>
+			</gene:archivio>
+			<gene:fnJavaScriptScheda funzione='getOrganizzazioneRicorsi("#TORN_CENINT#","${modo}")' elencocampi='TORN_CENINT' esegui="true" />
+
+		</c:if>
+
 	</gene:gruppoCampi>
 	
 	<gene:campoScheda campo="VALISCR" entita="GAREALBO" where="GARE.CODGAR1=GAREALBO.CODGAR and GARE.NGARA=GAREALBO.NGARA" visibile="false"/> 
@@ -454,6 +540,9 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		<gene:campoScheda campo="PROPRI" entita="G_PERMESSI" campoFittizio="true" value="1" visibile="false"/>
 	</c:otherwise>
 	</c:choose>
+
+	<input type="hidden" name="bloccoModificaPCP" value="${bloccoModificaPCP}" />
+	<input type="hidden" name="bloccoModificatiDati" id="bloccoModificatiDati" value="${bloccoModificatiDati}"/>
 	
 </gene:formScheda>
 
@@ -495,10 +584,10 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	
 	function schedaNuovaGara(){
 		<c:if test="${ genere == '10'}">
-			document.forms[0].action += "&tipoGara=garaLottoUnico&garaPerElenco=1";
+			document.forms[0].action += "?tipoGara=garaLottoUnico&garaPerElenco=1";
 		</c:if>
 		<c:if test="${ genere == '20'}">
-			document.forms[0].action += "&tipoGara=garaLottoUnico&garaPerCatalogo=1";
+			document.forms[0].action += "?tipoGara=garaLottoUnico&garaPerCatalogo=1";
 		</c:if>
 		schedaNuovo();
 	}
@@ -526,7 +615,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	}
 	
 	function listaDiscussioni(){
-		var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=geneweb/w_discuss_p/w_discuss_p-lista.jsp&entita=" + document.forms[0].entita.value + "&chiave=" + document.forms[0].key.value;
+		var href = contextPath + "/ApriPagina.do?href=geneweb/w_discuss_p/w_discuss_p-lista.jsp&entita=" + document.forms[0].entita.value + "&chiave=" + document.forms[0].key.value;
 		document.location.href = href;
 	}
 	
@@ -561,7 +650,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	function leggiComunicazioni() {
 		var entitaWSDM="GARE";
 		var chiaveWSDM=getValue("GARE_NGARA");
-		var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=geneweb/w_invcom/w_invcom-in-lista.jsp&genere=${genere}&chiave=" + document.forms[0].key.value;
+		var href = contextPath + "/ApriPagina.do?href=geneweb/w_invcom/w_invcom-in-lista.jsp&genere=${genere}&chiave=" + document.forms[0].key.value;
 		href+="&entitaWSDM=" + entitaWSDM + "&chiaveWSDM=" + chiaveWSDM;
 		if(idconfi){
 			href = href + "&idconfi="+idconfi;
@@ -572,7 +661,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 	function inviaComunicazioni() {
 		var entitaWSDM="GARE";
 		var chiaveWSDM=getValue("GARE_NGARA");
-		var href = contextPath + "/ApriPagina.do?"+csrfToken+"&href=geneweb/w_invcom/w_invcom-lista.jsp&genere=${genere}&entita=" + document.forms[0].entita.value + "&chiave=" + document.forms[0].key.value;
+		var href = contextPath + "/ApriPagina.do?href=geneweb/w_invcom/w_invcom-lista.jsp&genere=${genere}&entita=" + document.forms[0].entita.value + "&chiave=" + document.forms[0].key.value;
 		href+="&entitaWSDM=" + entitaWSDM + "&chiaveWSDM=" + chiaveWSDM;
 		if(idconfi){
 			href = href + "&idconfi="+idconfi;
@@ -613,7 +702,7 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		if(idconfi){
 			href = href + "&idconfi="+idconfi;
 		}
-		document.location.href = href + "&" + csrfToken;
+		document.location.href = href;
 	}
 	
 	function apriExportDocumenti(codgar) {
@@ -631,6 +720,20 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		formVisualizzaDocumenti.chiaveOriginale.value = getValue("GARE_NGARA");
 		formVisualizzaDocumenti.submit();
 	}
+	
+	
+	function sbiancaCentroCosto(){
+		setValue("CENTROCOSTO","");
+		setValue("TORN_CODCENTRO","");
+		setValue("TORN_NOMCENTRO","");
+		return true;
+			
+	}
+	
+	$(document).ready(function() {
+		$("#CENTROCOSTO").prop('disabled', true);
+		$("#CENTROCOSTO").css('background-color', '#ECECEC');
+	});
 	
 	<c:if test='${gene:checkProt(pageContext, "COLS.VIS.GARE.TORN.UFFDET") and garaLottoUnico}'>
 		function gestioneVisualizzazioneUffedt(cenint,settaValore){
@@ -683,8 +786,21 @@ Se si crea una nuova comunicazione senza passare dalla lista delle comunicazioni
 		
 		var cenint=getValue("TORN_CENINT")
 		gestioneVisualizzazioneUffedt(cenint,"1");
+
+
 	</c:if>
-	
+
+	<c:if test='${modo eq "MODIFICA"}'>
+		var bloccoModificatiDati = $("#bloccoModificatiDati").val();
+		var bloccoModificaPCP = "${bloccoModificaPCP}";
+		bloccaDopoPubblicazione(bloccoModificatiDati,getValue("TORN_OFFTEL"),getValue("GARE_FASGAR")<=2,bloccoModificaPCP,"${impoOpzRinnModificabili}","${bloccoModificaPubblicazione}");
+	</c:if>
+
+
+	function archivioPunticon(codice,num){
+		var href = ("href=gene/punticon/punticon-scheda-popup.jsp&key=PUNTICON.CODEIN=T:" + codice + ";PUNTICON.NUMPUN=N:" + num);
+		openPopUp(href, "schedaPunticon");
+	}
 </gene:javaScript>
 
 		<form name="formVisualizzaDocumenti" action="${pageContext.request.contextPath}/ApriPagina.do" method="post">

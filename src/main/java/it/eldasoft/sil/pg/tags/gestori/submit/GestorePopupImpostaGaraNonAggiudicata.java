@@ -75,6 +75,9 @@ public class GestorePopupImpostaGaraNonAggiudicata extends AbstractGestoreEntita
     String isOffertaUnica = datiForm.getString("ISOFFERTAUNICA");
     Date datneg = datiForm.getData("DATNEG");
     String notneg = datiForm.getString("NOTNEG");
+    String giustneg = null;
+    if (datiForm.isColumn("GIUSTNEG"))
+      giustneg = datiForm.getString("GIUSTNEG");
     String npannrevagg = null;
     if(datiForm.isColumn("NPANNREVAGG")){
       npannrevagg = datiForm.getString("NPANNREVAGG");
@@ -98,25 +101,25 @@ public class GestorePopupImpostaGaraNonAggiudicata extends AbstractGestoreEntita
             new Object[] { esineg, datneg, ngara });
 
         this.getSqlManager().update(
-            "update gare1 set notneg=?, npannrevagg=? where NGARA = ?",
-            new Object[] { notneg,npannrevagg, ngara});
+            "update gare1 set notneg=?, npannrevagg=?, giustneg=? where NGARA = ?",
+            new Object[] { notneg,npannrevagg, giustneg, ngara});
       }
 
       //Nel caso di lotti di gara per gare ad offerte distinte si deve aggiornare anche TORN.ESINEG
       //Se lotto di gara ad offerta unica si aggiorna GARe.ESINEG della gara complementare
-      if("Si".equals(isLottoOffDistinte) || "Si".equals(isLottoOffunica)){
+      if("Si".equals(isLottoOffDistinte) || "Si".equals(isLottoOffunica)) {
         Long esinegTorn = esineg;
         Date datnegTorn = datneg;
         boolean sbiancamento = false;
-        String select ="select esineg from gare where codgar1=? and ngara <> ?";
-        if("Si".equals(isLottoOffunica))
+        String select = "select esineg from gare where codgar1=? and ngara <> ?";
+        if ("Si".equals(isLottoOffunica))
           select += " and ngara!=codgar1";
-        List esinegLotti = sqlManager.getListVector(select, new Object[]{codgar,ngara});
-        if(esinegLotti!= null && esinegLotti.size()>0){
-          for(int i=0;i<esinegLotti.size();i++){
+        List esinegLotti = sqlManager.getListVector(select, new Object[]{codgar, ngara});
+        if (esinegLotti != null && esinegLotti.size() > 0) {
+          for (int i = 0; i < esinegLotti.size(); i++) {
             Long esinegLotto = SqlManager.getValueFromVectorParam(esinegLotti.get(i), 0).longValue();
-            if (esinegLotto== null || (esinegLotto!= null && esineg!=null && !esinegLotto.equals(esineg))){
-              esinegTorn=null;
+            if (esinegLotto == null || (esinegLotto != null && esineg != null && !esinegLotto.equals(esineg))) {
+              esinegTorn = null;
               datnegTorn = null;
               sbiancamento = true;
               break;
@@ -124,16 +127,38 @@ public class GestorePopupImpostaGaraNonAggiudicata extends AbstractGestoreEntita
           }
         }
 
+        String giustnegTorn = giustneg;
+        boolean sbiancamentoGiustneg = false;
+        select = "select giustneg from gare1 where codgar1=? and ngara <> ?";
+        if ("Si".equals(isLottoOffunica))
+          select += " and ngara!=codgar1";
+        List giustnegLotti = sqlManager.getListVector(select, new Object[]{codgar, ngara});
+        if (giustnegLotti != null && giustnegLotti.size() > 0) {
+          for (int i = 0; i < giustnegLotti.size(); i++) {
+            String giustnegLotto = SqlManager.getValueFromVectorParam(giustnegLotti.get(i), 0).stringValue();
+            if (giustnegLotto == null || (giustnegLotto != null && giustneg != null && !giustnegLotto.equals(giustneg))) {
+              giustnegTorn = null;
+              sbiancamentoGiustneg = true;
+              break;
+            }
+          }
+        }
+
         select = "update torn set esineg=?, datneg=? where codgar = ?";
-        if("Si".equals(isLottoOffunica))
+        if ("Si".equals(isLottoOffunica))
           select = "update gare set esineg=?, datneg=? where ngara = ?";
         this.getSqlManager().update(
-            select, new Object[] { esinegTorn,datnegTorn, codgar});
+                select, new Object[]{esinegTorn, datnegTorn, codgar});
         //Nel caso di lotto offerta unica si deve sbiancare l'occorrenza di Gare1 associata alla gara fittizia
-        if("Si".equals(isLottoOffunica) && (sbiancamento || esinegTorn==null)){
+        if ("Si".equals(isLottoOffunica) && (sbiancamento || esinegTorn == null)) {
           this.getSqlManager().update(
-              "update gare1 set notneg=null, npannrevagg=null where NGARA = ?",
-              new Object[] { codgar});
+                  "update gare1 set notneg=null, npannrevagg=null, giustneg=null where NGARA = ?",
+                  new Object[]{codgar});
+        }
+        if ("Si".equals(isLottoOffunica) && ((sbiancamentoGiustneg || giustnegTorn==null) || (sbiancamento || esinegTorn == null))) {
+          this.getSqlManager().update("update gare1 set giustneg=null where ngara=?", new Object[] {codgar});
+        } else if ("Si".equals(isLottoOffunica) && !(sbiancamento || esinegTorn == null) && !(sbiancamentoGiustneg || giustnegTorn==null)) {
+          this.getSqlManager().update("update gare1 set giustneg=? where ngara=?", new Object[] { giustneg, codgar});
         }
 
       }
@@ -165,8 +190,8 @@ public class GestorePopupImpostaGaraNonAggiudicata extends AbstractGestoreEntita
         this.getSqlManager().update(
             "update gare set esineg=?, datneg = ? where codgar1 = ? and ngara!=codgar1",
             new Object[] { esineg,datneg,codgar});
-        String updateGare1 = "update gare1 set notneg=?, npannrevagg=? where codgar1 = ? and ngara!=codgar1";
-        this.getSqlManager().update(updateGare1,new Object[]{notneg,npannrevagg, codgar});
+        String updateGare1 = "update gare1 set notneg=?, npannrevagg=?, giustneg=? where codgar1 = ? and ngara!=codgar1";
+        this.getSqlManager().update(updateGare1,new Object[]{notneg,npannrevagg,giustneg, codgar});
       }
 
       //Aggiornamento della data ultimo aggiornamento solo se ESINEG e DATNEG sono stati realmente modificati rispetto ai
@@ -242,7 +267,7 @@ public class GestorePopupImpostaGaraNonAggiudicata extends AbstractGestoreEntita
                           "Errore durante l'operazione di scollegamento delle RdA dalla gara",
                           "scollegaRdaGara", null);
                     }
-                  }else if("AVM".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "AMIU".equals(tipoWSERP)){
+                  }else if("AVM".equals(tipoWSERP) || "UGOVPA".equals(tipoWSERP) || "AMIU".equals(tipoWSERP) || "INARCASSA".equals(tipoWSERP) || "ARCHIFLOW".equals(tipoWSERP) || "CONI".equals(tipoWSERP)){
                     //nel caso di FNM non si scollega
                     Long countGareRda = (Long)this.sqlManager.getObject("select count(numrda) from garerda where codgar = ? and numrda is not null", new Object[]{codgar});
                     String linkrda = null;
@@ -266,14 +291,14 @@ public class GestorePopupImpostaGaraNonAggiudicata extends AbstractGestoreEntita
                             throw new GestoreException(
                                     "Errore durante l'operazione di scollegamento delle RdA dalla gara",
                                     "scollegaRdaGara", null);
-                    	}
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+                    	}//if
+                    }//if
+                  }//if
+                }//if
+              }//if
+            }//if
+          }//for
+        }//if
       //}
     } catch (SQLException e) {
       throw new GestoreException(

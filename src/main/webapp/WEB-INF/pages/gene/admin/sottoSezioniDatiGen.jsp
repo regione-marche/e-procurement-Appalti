@@ -89,6 +89,19 @@
  				</c:choose>
 		</td>
   	</tr>
+  	<tr>
+		<td class="etichetta-dato" >Abilitazione all'invio di comunicazioni generiche</td>
+			<td class="valore-dato">
+				<c:choose>
+					<c:when test='${fn:contains(listaOpzioniUtenteSys, "ou241#")}'>
+						<c:out value="Si"/>
+					</c:when>
+					<c:otherwise>
+						<c:out value="No"/>
+					</c:otherwise>
+				</c:choose>
+			</td>
+	</tr>
 </c:if>
 <c:set var="integrazioneLavori" value='${gene:isTable(pageContext,"APPA")}' />
 <c:if test='${moduloAttivo eq "PL" || (moduloAttivo eq "PG" && integrazioneLavori eq true)}'>

@@ -25,9 +25,23 @@
 Per integrazione M-DGUE controllo che ci sia la configurazione abilitata (integrazioneMDgueUrl popolata)
 
  --%>
-<c:if test="${genereGara ne '10' and genereGara ne '20' and genereGara ne '11' }">
-	<c:set var="integrazioneMDgueUrl" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "integrazioneMDgue.url")}'/>
-</c:if>
+<c:set var="isVerificaPDFA" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "uploadFile.verifica.pdfA")}'/>
+<c:set var="wsUrlRichiestaDurc" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "richiesta.durc.ws.client.url")}'/>
+<c:set var="wsUrlVerificaRegolarita" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "verifica.regolarita.ws.client.url")}'/>
+
+<c:choose>
+	<c:when test="${!empty wsUrlRichiestaDurc && !empty wsUrlVerificaRegolarita}">
+		<c:set var="integrazioneWsDurc" value='1'/>
+	</c:when>
+	<c:otherwise>
+		<c:set var="integrazioneWsDurc" value='0'/>
+	</c:otherwise>
+</c:choose>
+
+<c:set var="modWSDurc" value="${!(datiRiga.V_GARE_DOCDITTA_DESCRIZIONE eq 'DURC' and integrazioneWsDurc eq '1')}"/>
+
+<c:set var="integrazioneMDgueUrl" value='${gene:callFunction("it.eldasoft.gene.tags.functions.GetPropertyFunction", "integrazioneMDgue.url")}'/>
+
 <gene:campoLista campo="CODGAR" visibile="false" edit="${updateLista eq 1}"/>
 <gene:campoLista campo="CODIMP" visibile="false" edit="${updateLista eq 1}"/>
 <gene:campoLista campo="NORDDOCI" visibile="false" edit="${updateLista eq 1}"/>
@@ -40,13 +54,17 @@ Per integrazione M-DGUE controllo che ci sia la configurazione abilitata (integr
 <%-- <gene:campoLista campo="DIGNOMDOC" ordinabile="false" href='javascript:visualizzaFileAllegato("${datiRiga.V_GARE_DOCDITTA_IDPRG}",${datiRiga.V_GARE_DOCDITTA_IDDOCDG},${gene:string4Js(datiRiga.V_GARE_DOCDITTA_DIGNOMDOC)},"${datiRiga.V_GARE_DOCDITTA_DATARILASCIO}","${datiRiga.V_GARE_DOCDITTA_ORARILASCIO}" ,"${datiRiga.V_GARE_DOCDITTA_DOCTEL }",${currentRow}, "${datiRiga.IMPRDOCG_NORDDOCI}", "${datiRiga.IMPRDOCG_PROVENI}");'/> --%>
 <gene:campoLista campo="DIGNOMDOC" ordinabile="false" href='javascript:visualizzaFileAllegato("${datiRiga.V_GARE_DOCDITTA_IDPRG}",${datiRiga.V_GARE_DOCDITTA_IDDOCDG},${gene:string4Js(datiRiga.V_GARE_DOCDITTA_DIGNOMDOC)},"${datiRiga.V_GARE_DOCDITTA_DATARILASCIO}","${datiRiga.V_GARE_DOCDITTA_ORARILASCIO}" ,"${datiRiga.V_GARE_DOCDITTA_DOCTEL }",${currentRow}, "${datiRiga.IMPRDOCG_NORDDOCI}", "${datiRiga.IMPRDOCG_PROVENI}");'>
 	<%-- gestione MDGUE --%>
-	<c:if test="${(not empty integrazioneMDgueUrl and integrazioneMDgueUrl ne '') and fn:containsIgnoreCase(datiRiga.V_GARE_DOCDITTA_DIGNOMDOC, 'xml')}">
+	<c:if test="${(not empty integrazioneMDgueUrl and integrazioneMDgueUrl ne '') and fn:containsIgnoreCase(datiRiga.V_GARE_DOCDITTA_DIGNOMDOC, 'xml') and (fn:containsIgnoreCase(datiRiga.V_GARE_DOCDITTA_DIGNOMDOC, 'dgue') or fn:containsIgnoreCase(datiRiga.V_GARE_DOCDITTA_DIGNOMDOC, 'espd'))}">
 		<br>
 		<a href="javascript:visualizzaInMdgue('${datiRiga.V_GARE_DOCDITTA_IDPRG}','${datiRiga.V_GARE_DOCDITTA_IDDOCDG}')" >
 			Apri con M-DGUE
 		</a>
 	</c:if>
+	<c:if test="${isVerificaPDFA eq '1' && datiRiga.V_GARE_DOCDITTA_DIGTIPDOC eq 'pdf/a'}">
+		&nbsp;<img id="imgCheckPDFaDocMessage" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
+	</c:if>
 </gene:campoLista>
+
 <gene:campoLista campo="FIRMA_FIT" campoFittizio="true"  title ="" width="24" definizione="T2;;;;G1_DIGFIRMACHECK_DD" visibile="${updateLista eq 0}" >
 	<c:if test="${not empty datiRiga.V_GARE_DOCDITTA_FIRMACHECK and datiRiga.V_GARE_DOCDITTA_FIRMACHECK=='1' and updateLista eq 0}">
 		&nbsp;<img src="${pageContext.request.contextPath}/img/firmaRemota-valid.png" title="Verifica automatica firma digitale riuscita (data verifica ${datiRiga.V_GARE_DOCDITTA_FIRMACHECKTS})" alt="Verifica automatica firma digitale riuscita" width="16" height="16">
@@ -62,13 +80,14 @@ Per integrazione M-DGUE controllo che ci sia la configurazione abilitata (integr
 <gene:campoLista campo="FIRMACHECK" ordinabile="false" visibile="false"  />
 <gene:campoLista campo="FIRMACHECKTS" ordinabile="false" visibile="false" />
 <gene:campoLista campo="OBBLIGATORIO" title="Obbl.?" width="50" ordinabile="${genereGara eq 10 ||  genereGara eq 20 ||  tipo == 'CONSULTAZIONE'}" value="${gene:if(datiRiga.V_GARE_DOCDITTA_PROVENI eq 1, datiRiga.V_GARE_DOCDITTA_OBBLIGATORIO, '')}"/>
-<gene:campoLista campo="DATARILASCIO" width="100" edit="${updateLista eq 1 and datiRiga.V_GARE_DOCDITTA_DOCTEL ne 1}" ordinabile="${genereGara eq 10 ||  genereGara eq 20 ||  tipo == 'CONSULTAZIONE'}"/>
-<gene:campoLista campo="ORARILASCIO" title="Ora" width="40" edit="${updateLista eq 1 and datiRiga.V_GARE_DOCDITTA_DOCTEL ne 1}" ordinabile="${genereGara eq 10 ||  genereGara eq 20 ||  tipo == 'CONSULTAZIONE'}"/>
-<gene:campoLista campo="DATASCADENZA" width="100" edit="${updateLista eq 1}" ordinabile="${genereGara eq 10 ||  genereGara eq 20 ||  tipo == 'CONSULTAZIONE'}"/>
-<gene:campoLista campo="SITUAZDOCI" edit="${updateLista eq 1}" ordinabile="${genereGara eq 10 ||  genereGara eq 20 ||  tipo == 'CONSULTAZIONE'}"/>
+<gene:campoLista campo="DATARILASCIO" width="100" edit="${updateLista eq 1 and datiRiga.V_GARE_DOCDITTA_DOCTEL ne 1 and modWSDurc}" ordinabile="${genereGara eq 10 ||  genereGara eq 20 ||  tipo == 'CONSULTAZIONE'}"/>
+<gene:campoLista campo="ORARILASCIO" title="Ora" width="40" edit="${updateLista eq 1 and datiRiga.V_GARE_DOCDITTA_DOCTEL ne 1 and modWSDurc}" ordinabile="${genereGara eq 10 ||  genereGara eq 20 ||  tipo == 'CONSULTAZIONE'}"/>
+<gene:campoLista campo="DATASCADENZA" width="100" edit="${updateLista eq 1 and modWSDurc}" ordinabile="${genereGara eq 10 ||  genereGara eq 20 ||  tipo == 'CONSULTAZIONE'}"/>
+<gene:campoLista campo="SITUAZDOCI" edit="${updateLista eq 1 and modWSDurc}" ordinabile="${genereGara eq 10 ||  genereGara eq 20 ||  tipo == 'CONSULTAZIONE'}"/>
 
 <gene:campoLista campo="IDPRG" visibile="false" edit="${updateLista eq 1}"/>
 <gene:campoLista campo="IDDOCDG" visibile="false" edit="${updateLista eq 1}"/>
+<gene:campoLista campo="DIGTIPDOC" visibile="false" />
 
 <gene:campoLista title="&nbsp;" width="20" >
 	<a href="javascript:chiaveRiga='${chiaveRigaJava}';ulterioriCampi(${currentRow}+1, '${chiaveRigaJava}');" title="Ulteriori dettagli del documento" >

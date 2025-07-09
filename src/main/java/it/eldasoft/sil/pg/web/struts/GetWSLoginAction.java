@@ -93,6 +93,10 @@ public class GetWSLoginAction extends Action {
       String idutente = (String) SqlManager.getValueFromVectorParam(datiWSLogin, 6).getValue();
       String idutenteunop = (String) SqlManager.getValueFromVectorParam(datiWSLogin, 7).getValue();
 
+      if(!"configurazione".equals(request.getParameter("pagina")) && "1".equals(wsdmLoginComune)){
+        username=passwordDecoded=null;
+      }
+
       jsonArray.add(new Object[] { username, passwordDecoded, ruolo, nome, cognome, codiceuo, idutente, idutenteunop, wsdmLoginComune });
     }
 

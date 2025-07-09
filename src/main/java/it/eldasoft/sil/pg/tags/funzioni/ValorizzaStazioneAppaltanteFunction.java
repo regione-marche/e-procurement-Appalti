@@ -47,11 +47,12 @@ public class ValorizzaStazioneAppaltanteFunction extends AbstractFunzioneTag {
         pageContext, GeneManager.class);
 
     String uffintAbilitato = (String)pageContext.getSession().getAttribute("uffint");
-    String select ="select codein,nomein,iscuc from uffint";
+    String select ="select codein,nomein,iscuc,cfanac from uffint";
     Vector datiUffint;
     String codein = null;
     String nomein = null;
     String iscuc = null;
+    String cfanac = null;
     if(uffintAbilitato==null || "".equals(uffintAbilitato)){
       long occorrenzeUffint = geneManager.countOccorrenze("UFFINT", null, null);
       if(occorrenzeUffint==1){
@@ -66,9 +67,13 @@ public class ValorizzaStazioneAppaltanteFunction extends AbstractFunzioneTag {
           if(datiUffint.get(2) != null){
             iscuc = ((JdbcParametro) datiUffint.get(2)).getStringValue();
           }
+          if(datiUffint.get(3) != null){
+            cfanac = ((JdbcParametro) datiUffint.get(3)).getStringValue();
+          }
           pageContext.setAttribute("initCENINT", codein, PageContext.REQUEST_SCOPE);
           pageContext.setAttribute("initNOMEIN", nomein, PageContext.REQUEST_SCOPE);
           pageContext.setAttribute("initISCUC", iscuc, PageContext.REQUEST_SCOPE);
+          pageContext.setAttribute("initCFANAC", cfanac, PageContext.REQUEST_SCOPE);
         } catch (SQLException e) {
           throw new JspException(
               "Errore durante la lettura della tabella UFFINT ", e);
@@ -84,9 +89,13 @@ public class ValorizzaStazioneAppaltanteFunction extends AbstractFunzioneTag {
         if(datiUffint.get(2) != null){
           iscuc = ((JdbcParametro) datiUffint.get(2)).getStringValue();
         }
+        if(datiUffint.get(3) != null){
+          cfanac = ((JdbcParametro) datiUffint.get(3)).getStringValue();
+        }
         pageContext.setAttribute("initCENINT", uffintAbilitato, PageContext.REQUEST_SCOPE);
         pageContext.setAttribute("initNOMEIN", nomein, PageContext.REQUEST_SCOPE);
         pageContext.setAttribute("initISCUC", iscuc, PageContext.REQUEST_SCOPE);
+        pageContext.setAttribute("initCFANAC", cfanac, PageContext.REQUEST_SCOPE);
       } catch (SQLException e) {
         throw new JspException(
             "Errore durante la lettura della tabella UFFINT ", e);

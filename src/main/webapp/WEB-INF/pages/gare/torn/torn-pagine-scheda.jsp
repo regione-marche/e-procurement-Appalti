@@ -26,6 +26,8 @@
 <c:set var="faseGara-Apertura_doc_amm" value="false" />
 <c:set var="faseGaraOff" value="false" />
 
+<c:set var="verNPA" value ='${gene:callFunctionN("it.eldasoft.gene.tags.functions.GetSafeDataFromDB", pageContext, "select vernpa from torn where codgar=?", gene:getValCampo(key,"CODGAR"))}'/>
+
 <c:choose>
 	<c:when test="${itergaMacro eq 1}">
 		<c:set var="titleFasiRicezione" value="Ricezione offerte" />
@@ -52,6 +54,9 @@
 	</gene:pagina>
 	<gene:pagina title="Altri dati" idProtezioni="ALTRIDATI">
 		<jsp:include page="torn-pg-altridati.jsp" />
+	</gene:pagina>
+	<gene:pagina title="Dati procedimento" idProtezioni="DATIPROCEDIMENTO">
+		<jsp:include page="torn-pg-datiprocedimento.jsp" />
 	</gene:pagina>
 	<c:if test='${tipologiaGara == "3"}'>
 		<gene:pagina title="Lotti di gara" idProtezioni="LOTTI">
@@ -143,11 +148,13 @@
 			</gene:pagina>
 		</c:otherwise>
 	</c:choose>
+	<c:if test="${empty verNPA and empty initVERNPA}">
 	<gene:pagina title="Pubblicità gara" idProtezioni="PUBBLICITA">
 		<jsp:include page="/WEB-INF/pages/gare/torn/torn-pg-pubblicita.jsp">
 			<jsp:param name="iterga" value="${iterga}" /> 
 		</jsp:include>
 	</gene:pagina>
+	</c:if>
 	<gene:pagina title="Sintesi note e avvisi" idProtezioni="G_NOTEAVVISI">
 		<jsp:include page="torn-pg-lista-noteAvvisi.jsp" />
 	</gene:pagina>

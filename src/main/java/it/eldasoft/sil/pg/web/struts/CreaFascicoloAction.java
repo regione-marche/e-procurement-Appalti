@@ -77,6 +77,13 @@ public class CreaFascicoloAction extends Action {
       String uocompetenza = request.getParameter("uocompetenza");
       String uocompetenzadescrizione = request.getParameter("uocompetenzadescrizione");
 
+      String wsdmLoginComune = ConfigManager.getValore(GestioneWSDMManager.PROP_WSDM_LOGIN_COMUNE+idconfi);
+      if("1".equals(wsdmLoginComune)){
+        String[] credenziali = this.gestioneWSDMManager.recuperaCredenzialiComuni(servizio,idconfi);
+        username = credenziali[0];
+        password = credenziali[1];
+      }
+
       String riservatezzaAttiva = ConfigManager.getValore("wsdm.applicaRiservatezza."+idconfi);
       oggEvento = key1;
 

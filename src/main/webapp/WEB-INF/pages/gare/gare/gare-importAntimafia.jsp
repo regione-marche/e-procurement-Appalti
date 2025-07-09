@@ -82,7 +82,7 @@
 	}
 
 	function annulla(){
-		document.location.href = '${pageContext.request.contextPath}/Home.do' + "&" + csrfToken;
+		document.location.href = '${pageContext.request.contextPath}/Home.do';
 	}
 
 </gene:javaScript>

@@ -22,10 +22,16 @@
 
 <c:set var="parametriWhere" value="T:${codiceGara};T:${codiceGara};T:${codiceGara}" />
 <c:set var="functionId" value="documentiTrasparenza" />
+<c:set var="idStampa" value="${item[20]}" />
+<c:set var="nomeFile" value="${not empty item[24]? fn:substringAfter(fn:substringAfter(item[24], '|'),'|') : ''}"/>
 
 <c:choose>
 	<c:when test='${item[7] eq "5" and param.tipoDettaglio eq 1}'>
 		<c:set var="modificabile" value='false' />
+	</c:when>
+	<c:when test="${idStampa eq 'LARGEFILE'}">
+		<c:set var="modificabile" value='false' />
+		<c:set var="documentoLARGEFILE" value='true' />
 	</c:when>
 	<c:otherwise>
 		<c:set var="modificabile" value='true' />
@@ -51,30 +57,43 @@
 				<gene:campoScheda campo="IDDOCDIG_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="N12;1;;;DIGID"  value="${item[6]}" />
 				<gene:campoScheda campo="STATODOC_${param.contatore}" entita="DOCUMGARA" campoFittizio="true"  visibile="false" definizione="N3;0;;;STODOCDG" value="${item[7]}" />
 				<gene:campoScheda campo="TIPOLOGIA_${param.contatore}" entita="DOCUMGARA" campoFittizio="true"  visibile="false" definizione="N3;0;;;G1TIPOLODG" value="${item[19]}" />
-				<gene:campoScheda campo="DIGDESDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2000;0;;;DIGDESDOC"  gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote" value="${documentiTrasparenzaDescFile[(3 * param.contatore) - 3]}"/>
+				<gene:campoScheda campo="DIGDESDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2000;0;;;DIGDESDOC"  gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote" value="${documentiTrasparenzaDescFile[(4 * param.contatore) - 4]}"/>
 				<gene:campoScheda campo="DESCRIZIONE_${param.contatore}" entita="DOCUMGARA" campoFittizio="true"  obbligatorio="true" definizione="T200;0;;;DESCLIBDG" value="${item[13]}" modificabile='${campiEsistentiModificabiliDaProfilo and modificabile}'/>
-				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" modificabile="false" campoFittizio="true" definizione="T100;0;;;DIGNOMDOC"  value="${documentiTrasparenzaDescFile[(3 * param.contatore) - 2 ]}" href="javascript:visualizzaFileAllegato('${item[5]}','${item[6]}',${gene:string4Js(documentiTrasparenzaDescFile[(3 * param.contatore) - 2 ])});">
+				<gene:campoScheda title="${idStampa eq 'LARGEFILE'? 'Pdf di riepilogo' : 'Nome documento'}" campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" modificabile="false" campoFittizio="true" definizione="T100;0;;;DIGNOMDOC"  value="${documentiTrasparenzaDescFile[(4 * param.contatore) - 3 ]}" href="javascript:visualizzaFileAllegato('${item[5]}','${item[6]}',${gene:string4Js(documentiTrasparenzaDescFile[(4 * param.contatore) - 3 ])});">
+					<c:if test="${param.isVerificaPDFA eq '1' && documentiTrasparenzaDescFile[(4 * param.contatore) - 1 ] eq 'pdf/a'}">
+						&nbsp;<img id="imgCheckPDFaDocMessage_${param.contatore}" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
+					</c:if>
 					<c:if test='${modo eq "VISUALIZZA" || !campiEsistentiModificabiliDaProfilo}'>
-						<c:if test="${documentiTrasparenzaDescFile[(3 * param.contatore) - 1 ] eq '1'}">
+						<c:if test="${documentiTrasparenzaDescFile[(4 * param.contatore) - 2 ] eq '1'}">
 							<span style="float:right;"><img width="16" height="16" src="${pageContext.request.contextPath}/img/isquantimod.png"/>&nbsp;In attesa di firma</span>
 						</c:if>
 					</c:if>
-					<c:if test='${not empty documentiTrasparenzaDescFile[(3 * param.contatore) - 2 ] and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and item[7] ne "5" and param.autorizzatoModifiche ne "2" and not empty param.firmaRemota and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.FirmaRemotaDocumenti")}'>
-						<a style="float:right;" href="javascript:openModal('${item[5]}','${item[6]}','${documentiTrasparenzaDescFile[(3 * param.contatore) - 2 ]}','${pageContext.request.contextPath}');">
+					<c:if test='${not empty documentiTrasparenzaDescFile[(4 * param.contatore) - 3 ] and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and item[7] ne "5" and param.autorizzatoModifiche ne "2" and not empty param.firmaRemota and gene:checkProt(pageContext,"FUNZ.VIS.ALT.GARE.FirmaRemotaDocumenti")}'>
+						<a style="float:right;" href="javascript:openModal('${item[5]}','${item[6]}','${documentiTrasparenzaDescFile[(4 * param.contatore) - 3 ]}','${pageContext.request.contextPath}');">
 						<img src="${pageContext.request.contextPath}/img/firmaRemota.png" title="Firma digitale del documento" alt="Firma documento" width="16" height="16">
 						<span title="Firma digitale del documento">Firma documento</span></a>
 					</c:if>
-					<c:if test='${not empty documentiTrasparenzaDescFile[(3 * param.contatore) - 2 ] and (empty documentiTrasparenzaDescFile[(3 * param.contatore) - 1 ] or documentiTrasparenzaDescFile[(3 * param.contatore) - 1 ] eq "2") and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and param.autorizzatoModifiche ne "2" and param.firmaDocumento eq "1" and item[7] ne "5"}'>
+					<c:if test='${not empty documentiTrasparenzaDescFile[(4 * param.contatore) - 3 ] and (empty documentiTrasparenzaDescFile[(4 * param.contatore) - 2 ] or documentiTrasparenzaDescFile[(4 * param.contatore) - 2 ] eq "2") and modo eq "VISUALIZZA" and campiEsistentiModificabiliDaProfilo and param.autorizzatoModifiche ne "2" and param.firmaDocumento eq "1" and item[7] ne "5"}'>
 						<a style="float:right;" href="javascript:apriModaleRichiestaFirma('${item[5]}','${item[6]}','${param.contatore}');">
 						<img src="${pageContext.request.contextPath}/img/firmaRemota.png" title="Firma digitale del documento" alt="Firma documento" width="16" height="16">
 						<span title="Firma digitale del documento">Firma documento</span></a>
 					</c:if>
 				</gene:campoScheda>
+				<gene:campoScheda campo="DIGTIPDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2;0;;SN;DIGTIPDOC" value="${documentiTrasparenzaDescFile[(4 * param.contatore) - 1 ]}"/>
+				<c:if test="${idStampa eq 'LARGEFILE'}">
+					<gene:campoScheda campo="URLLARGEFILE_${param.contatore}" entita="DOCUMGARA" title="Nome documento (large file)" campoFittizio="true"  href="javascript:apriUrl('${item[18]}')" definizione="T2000;0;;;G1URLDOC" value="${nomeFile}" modificabile='false'>
+						<c:if test="${empty nomeFile and param.autorizzatoModifiche ne '2'}">
+							<a style="align-items: center;float:right;display: flex" title="Carica file" href="javascript:caricaLargeFile('<c:out value="${codiceGara}" />', '${item[2]}');"><img src="${pageContext.request.contextPath}/img/navigate-external-link.svg" width="16" height="16" style="margin-right: 5px"/>Carica file</a>
+						</c:if>
+					</gene:campoScheda>
+				</c:if>
 				<c:if test='${(modo eq "MODIFICA" or modo eq "NUOVO") and campiEsistentiModificabiliDaProfilo and modificabile}'>
 					<gene:campoScheda title="Nome file" nome="selezioneFile_${param.contatore}">
 							<input type="file" name="selFile[${param.contatore}]" id="selFile[${param.contatore}]" class="file" size="70" onkeydown="return bloccaCaratteriDaTastiera(event);" onchange='javascript:scegliFile(${param.contatore});'/>
-							<c:if test="${param.richiestaFirma eq '1' }">
-								<span id="spanRichiestaFirma_${param.contatore}" style="float:right;display:none;">Richiesta firma?<input type="checkbox" name="richiestaFirma_${param.contatore}" id="richiestaFirma_${param.contatore}" size="50" <c:if test="${documentiTrasparenzaDescFile[(3 * param.contatore) - 1 ] eq '1'}">checked</c:if> onchange="javascript:aggiornaRichiestaFirma(${param.contatore},this);"> </span>
+							<span id="checkPDFaDocMessage_${param.contatore}" style="display:none; color: blue;"><b>ATTENZIONE:</b> file non conforme al formato PDF/A</span>
+							<img id="imgCheckPDFaDocMessage_${param.contatore}" style="display:none;" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
+							<c:if test="${param.richiestaFirma eq '1'}">
+								<span id="spanRichiestaFirma_${param.contatore}" style="float:right;display:none;">Richiesta firma?<input type="checkbox" name="richiestaFirma_${param.contatore}" id="richiestaFirma_${param.contatore}" size="50" <c:if test="${documentiTrasparenzaDescFile[(4 * param.contatore) - 2 ] eq '1'}">checked</c:if> onchange="javascript:aggiornaRichiestaFirma(${param.contatore},this);"> </span>
 							</c:if>
 					</gene:campoScheda>
 				</c:if>
@@ -93,7 +112,7 @@
 					<gene:campoScheda campo="NOMIMP_${param.contatore}" entita="IMPR" campoFittizio="true" definizione="T61" title="Ragione sociale" value="${documentiTrasparenzaRagSoc[param.contatore - 1 ]}" visibile="${genereGara eq 3}" modificabile='${campiEsistentiModificabiliDaProfilo and modificabile}'/> 
 				</gene:archivio>
 				<c:if test="${param.richiestaFirma eq '1' or param.firmaDocumento eq '1'}">
-					<gene:campoScheda campo="DIGFIRMA_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2;0;" value="${documentiTrasparenzaDescFile[(3 * param.contatore) - 1 ]}" />
+					<gene:campoScheda campo="DIGFIRMA_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2;0;" value="${documentiTrasparenzaDescFile[(4 * param.contatore) - 2 ]}" />
 				</c:if>
 				<c:choose>
 					<c:when test="${genereGara eq '1' and !empty item[1] }">
@@ -127,10 +146,17 @@
 				<gene:campoScheda campo="TIPOLOGIA_${param.contatore}" entita="DOCUMGARA" campoFittizio="true"  visibile="false" definizione="N3;0;;;G1TIPOLODG" value="${param.tipologia}" />
 				<gene:campoScheda campo="DIGDESDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2000;0;;;DIGDESDOC"  gestore="it.eldasoft.gene.tags.decorators.campi.gestori.GestoreCampoNote"/>
 				<gene:campoScheda campo="DESCRIZIONE_${param.contatore}" entita="DOCUMGARA" campoFittizio="true"  obbligatorio="true" definizione="T200;0;;;DESCLIBDG" />
-				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" modificabile="false" campoFittizio="true" definizione="T100;0;;;DIGNOMDOC"  value=''/>
+				<gene:campoScheda campo="DIGNOMDOC_${param.contatore}" entita="W_DOCDIG" modificabile="false" campoFittizio="true" definizione="T100;0;;;DIGNOMDOC"  value=''>
+					<c:if test="${param.isVerificaPDFA eq '1' && documentiTrasparenzaDescFile[(4 * param.contatore) - 1 ] eq 'pdf/a'}">
+						&nbsp;<img id="imgCheckPDFaDocMessage_${param.contatore}" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
+					</c:if>
+				</gene:campoScheda>
+				<gene:campoScheda campo="DIGTIPDOC_${param.contatore}" entita="W_DOCDIG" campoFittizio="true" visibile="false" definizione="T2;0;;SN;DIGTIPDOC" />
 				<c:if test='${modo eq "MODIFICA" or modo eq "NUOVO"}'>
 					<gene:campoScheda title="Nome file" nome="selezioneFile_${param.contatore}">
 							<input type="file" name="selFile[${param.contatore}]" id="selFile[${param.contatore}]" class="file" size="70" onkeydown="return bloccaCaratteriDaTastiera(event);" onchange='javascript:scegliFile(${param.contatore});'/>
+							<span id="checkPDFaDocMessage_${param.contatore}" style="display:none; color: blue;"><b>ATTENZIONE:</b> file non conforme al formato PDF/A</span>
+							<img id="imgCheckPDFaDocMessage_${param.contatore}" style="display:none;" src="${pageContext.request.contextPath}/img/pdfa.png" title="File conforme al formato PDF/A" alt="File conforme al formato PDF/A">
 							<c:if test="${param.richiestaFirma eq '1'}">
 								<span id="spanRichiestaFirma_${param.contatore}" style="float:right;display:none;">Richiesta firma?<input type="checkbox" name="richiestaFirma_${param.contatore}" id="richiestaFirma_${param.contatore}" size="50" onchange="javascript:aggiornaRichiestaFirma(${param.contatore},this);"> </span>
 							</c:if>
@@ -176,7 +202,13 @@
 	if(nomdoc!=null && nomdoc!="")
 		$("#spanRichiestaFirma_" + indice).show();
 </c:if>
-<c:if test='${not modificabile }'>
+<c:if test='${not modificabile && empty documentoLARGEFILE}'>
 	$("#tdTitoloDestra_${param.contatore}").html('<img width="16" height="16" title="Documento pubblicato su portale" style="float:right;padding-right:4px" src="${pageContext.request.contextPath}/img/documento_pubblicato.png"/>');
 </c:if>
+
+	function apriUrl(urlDocumento){
+		if(urlDocumento.indexOf("http://")<0 && urlDocumento.indexOf("https://")<0)
+		urlDocumento = "http://" + urlDocumento;
+		window.open(urlDocumento,"url_documento");
+	}
 </gene:javaScript>
